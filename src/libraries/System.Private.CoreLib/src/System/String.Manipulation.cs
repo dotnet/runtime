@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -578,9 +580,9 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
-            if (values is List<string?> valuesIList)
+            if (values is List<string?> valuesList)
             {
-                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesIList));
+                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
             }
 
             if (values is string?[] valuesArray)
@@ -874,11 +876,8 @@ namespace System
         // a remove that just takes a startindex.
         public string Remove(int startIndex)
         {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-
-            if (startIndex >= Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLessThanLength);
+            if ((uint)startIndex > Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex < 0 ? SR.ArgumentOutOfRange_StartIndex : SR.ArgumentOutOfRange_StartIndexLargerThanLength);
 
             return Substring(0, startIndex);
         }
@@ -1142,7 +1141,7 @@ namespace System
                 thisIdx = replacementIdx + oldValueLength;
 
                 // Copy over newValue to replace the oldValue.
-                newValue.AsSpan().CopyTo(dstSpan.Slice(dstIdx));
+                newValue.CopyTo(dstSpan.Slice(dstIdx));
                 dstIdx += newValue.Length;
             }
 
@@ -1494,78 +1493,137 @@ namespace System
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
         private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
-            char sep0, sep1, sep2;
-
-            switch (separators.Length)
+            // Special-case no separators to mean any whitespace is a separator.
+            if (separators.Length == 0)
             {
-                // Special-case no separators to mean any whitespace is a separator.
-                case 0:
-                    for (int i = 0; i < Length; i++)
+                for (int i = 0; i < Length; i++)
+                {
+                    if (char.IsWhiteSpace(this[i]))
                     {
-                        if (char.IsWhiteSpace(this[i]))
-                        {
-                            sepListBuilder.Append(i);
-                        }
+                        sepListBuilder.Append(i);
                     }
-                    break;
+                }
+            }
 
-                // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
-                case 1:
-                    sep0 = separators[0];
-                    for (int i = 0; i < Length; i++)
+            // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
+            else if (separators.Length <= 3)
+            {
+                char sep0, sep1, sep2;
+                sep0 = separators[0];
+                sep1 = separators.Length > 1 ? separators[1] : sep0;
+                sep2 = separators.Length > 2 ? separators[2] : sep1;
+
+                if (Length >= 16 && Sse41.IsSupported)
+                {
+                    MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
+                    return;
+                }
+
+                for (int i = 0; i < Length; i++)
+                {
+                    char c = this[i];
+                    if (c == sep0 || c == sep1 || c == sep2)
                     {
-                        if (this[i] == sep0)
-                        {
-                            sepListBuilder.Append(i);
-                        }
+                        sepListBuilder.Append(i);
                     }
-                    break;
-                case 2:
-                    sep0 = separators[0];
-                    sep1 = separators[1];
+                }
+            }
+
+            // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
+            // This optimizes for chars being unlikely to match a separator.
+            else
+            {
+                unsafe
+                {
+                    ProbabilisticMap map = default;
+                    uint* charMap = (uint*)&map;
+                    InitializeProbabilisticMap(charMap, separators);
+
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (c == sep0 || c == sep1)
+                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                            separators.Contains(c))
                         {
                             sepListBuilder.Append(i);
                         }
                     }
-                    break;
-                case 3:
-                    sep0 = separators[0];
-                    sep1 = separators[1];
-                    sep2 = separators[2];
-                    for (int i = 0; i < Length; i++)
-                    {
-                        char c = this[i];
-                        if (c == sep0 || c == sep1 || c == sep2)
-                        {
-                            sepListBuilder.Append(i);
-                        }
-                    }
-                    break;
+                }
+            }
+        }
 
-                // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
-                // This optimizes for chars being unlikely to match a separator.
-                default:
-                    unsafe
-                    {
-                        ProbabilisticMap map = default;
-                        uint* charMap = (uint*)&map;
-                        InitializeProbabilisticMap(charMap, separators);
+        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
+        {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms without SSE.
+            if (!Sse41.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
-                        for (int i = 0; i < Length; i++)
-                        {
-                            char c = this[i];
-                            if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                                separators.Contains(c))
-                            {
-                                sepListBuilder.Append(i);
-                            }
-                        }
+            // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
+            Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+
+            Vector128<ushort> v1 = Vector128.Create(c);
+            Vector128<ushort> v2 = Vector128.Create(c2);
+            Vector128<ushort> v3 = Vector128.Create(c3);
+
+            ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
+            int cond = Length & -Vector128<ushort>.Count;
+            int i = 0;
+
+            for (; i < cond; i += Vector128<ushort>.Count)
+            {
+                Vector128<ushort> charVector = ReadVector(ref c0, i);
+                Vector128<ushort> cmp = Sse2.CompareEqual(charVector, v1);
+
+                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v2), cmp);
+                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v3), cmp);
+
+                if (Sse41.TestZ(cmp, cmp)) { continue; }
+
+                Vector128<byte> mask = Sse2.ShiftRightLogical(cmp.AsUInt64(), 4).AsByte();
+                mask = Ssse3.Shuffle(mask, shuffleConstant);
+
+                uint lowBits = Sse2.ConvertToUInt32(mask.AsUInt32());
+                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 32).AsByte();
+                uint highBits = Sse2.ConvertToUInt32(mask.AsUInt32());
+
+                for (int idx = i; lowBits != 0; idx++)
+                {
+                    if ((lowBits & 0xF) != 0)
+                    {
+                        sepListBuilder.Append(idx);
                     }
-                    break;
+
+                    lowBits >>= 8;
+                }
+
+                for (int idx = i + 4; highBits != 0; idx++)
+                {
+                    if ((highBits & 0xF) != 0)
+                    {
+                        sepListBuilder.Append(idx);
+                    }
+
+                    highBits >>= 8;
+                }
+            }
+
+            for (; i < Length; i++)
+            {
+                char curr = Unsafe.Add(ref c0, (IntPtr)(uint)i);
+                if (curr == c || curr == c2 || curr == c3)
+                {
+                    sepListBuilder.Append(i);
+                }
+            }
+
+            static Vector128<ushort> ReadVector(ref char c0, int offset)
+            {
+                ref char ci = ref Unsafe.Add(ref c0, (IntPtr)(uint)offset);
+                ref byte b = ref Unsafe.As<char, byte>(ref ci);
+                return Unsafe.ReadUnaligned<Vector128<ushort>>(ref b);
             }
         }
 
@@ -1689,7 +1747,7 @@ namespace System
             Buffer.Memmove(
                 elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
                 destination: ref result._firstChar,
-                source: ref Unsafe.Add(ref _firstChar, startIndex));
+                source: ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */));
 
             return result;
         }

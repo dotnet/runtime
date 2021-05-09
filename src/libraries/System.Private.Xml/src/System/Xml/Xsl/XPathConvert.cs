@@ -1683,7 +1683,7 @@ namespace System.Xml.Xsl
         * Hungarian: bi
         *
         */
-        private class BigInteger : IComparable
+        private sealed class BigInteger : IComparable
         {
             // Make this big enough that we rarely have to reallocate.
             private const int InitCapacity = 30;
@@ -2315,7 +2315,7 @@ namespace System.Xml.Xsl
         /**
         * Floating point number represented in base-10.
         */
-        private class FloatingDecimal
+        private sealed class FloatingDecimal
         {
             public const int MaxDigits = 50;
             private const int MaxExp10 = 310;  // Upper bound on base 10 exponent

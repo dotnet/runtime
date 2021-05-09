@@ -94,11 +94,6 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     spec.SetCodeBase(NULL);
 
-    if (!spec.HasUniqueIdentity())
-    {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
-        EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
-    }
-
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
 
@@ -1435,7 +1430,7 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
     {
         if (CORDebuggerAttached())
         {
-            COMPlusThrow(kNotSupportedException);
+            COMPlusThrow(kNotSupportedException, W("NotSupported_DebuggerAttached"));
         }
         Module* pModule = assembly->GetDomainAssembly()->GetModule();
         if (!pModule->IsEditAndContinueEnabled())
@@ -1447,6 +1442,7 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
         {
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
         }
+        g_metadataUpdatesApplied = true;
     }
 #else
     COMPlusThrow(kNotImplementedException);

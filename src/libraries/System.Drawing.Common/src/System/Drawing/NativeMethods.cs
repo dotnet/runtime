@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal class NativeMethods
+    internal static class NativeMethods
     {
         internal static HandleRef NullHandleRef => new HandleRef(null, IntPtr.Zero);
 

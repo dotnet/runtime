@@ -4,7 +4,7 @@
 namespace System.Configuration
 {
     // Information about a stream used in configuration
-    internal class StreamInfo
+    internal sealed class StreamInfo
     {
         // the configSource directive that generated this stream, null for a full config file
 

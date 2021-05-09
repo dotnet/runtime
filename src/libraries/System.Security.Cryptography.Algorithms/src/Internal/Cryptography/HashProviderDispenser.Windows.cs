@@ -30,39 +30,37 @@ namespace Internal.Cryptography
 
         public static class OneShotHashProvider
         {
-            private static volatile bool s_useCompatOneShot;
-
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 int hashSize; // in bytes
 
                 // Try using a pseudo-handle if available.
-                if (!s_useCompatOneShot)
+                if (Interop.BCrypt.PseudoHandlesSupported)
                 {
-                    if (HashDataUsingPseudoHandle(hashAlgorithmId, source, destination, out hashSize))
+                    HashDataUsingPseudoHandle(hashAlgorithmId, source, destination, out hashSize);
+                    return hashSize;
+                }
+                else
+                {
+                    // Pseudo-handle not available. Fall back to a shared handle with no using or dispose.
+                    SafeBCryptAlgorithmHandle cachedAlgorithmHandle = BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.None,
+                        out hashSize);
+
+                    if (destination.Length < hashSize)
                     {
-                        return hashSize;
+                        Debug.Fail("Caller should have checked length.");
+                        throw new CryptographicException();
                     }
+
+                    HashUpdateAndFinish(cachedAlgorithmHandle, hashSize, source, destination);
+
+                    return hashSize;
                 }
-
-                // Pseudo-handle not available or a precondition check failed.
-                // Fall back to a shared handle with no using or dispose.
-                SafeBCryptAlgorithmHandle cachedAlgorithmHandle = BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(
-                    hashAlgorithmId,
-                    BCryptOpenAlgorithmProviderFlags.None,
-                    out hashSize);
-
-                if (destination.Length < hashSize)
-                {
-                    throw new CryptographicException();
-                }
-
-                HashUpdateAndFinish(cachedAlgorithmHandle, hashSize, source, destination);
-
-                return hashSize;
             }
 
-            private static unsafe bool HashDataUsingPseudoHandle(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination, out int hashSize)
+            private static unsafe void HashDataUsingPseudoHandle(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination, out int hashSize)
             {
                 hashSize = default;
 
@@ -97,37 +95,27 @@ namespace Internal.Cryptography
                 else
                 {
                     Debug.Fail("Unknown hash algorithm.");
-                    return false;
+                    throw new CryptographicException();
                 }
 
                 if (destination.Length < digestSizeInBytes)
                 {
                     Debug.Fail("Caller should have checked length.");
-                    return false;
+                    throw new CryptographicException();
                 }
 
-                NTSTATUS ntStatus;
                 fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
                 fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
                 {
-                    try
-                    {
-                        ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pbSecret: null, cbSecret: 0, pSrc, source.Length, pDest, digestSizeInBytes);
-                    }
-                    catch (EntryPointNotFoundException)
-                    {
-                        s_useCompatOneShot = true; // this OS doesn't support BCryptHash with pseudohandles
-                        return false;
-                    }
-                }
+                    NTSTATUS ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pbSecret: null, cbSecret: 0, pSrc, source.Length, pDest, digestSizeInBytes);
 
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                {
-                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                    if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                    {
+                        throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                    }
                 }
 
                 hashSize = digestSizeInBytes;
-                return true; // success!
             }
 
             private static void HashUpdateAndFinish(
@@ -147,6 +135,7 @@ namespace Internal.Cryptography
 
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 {
+                    hHash.Dispose();
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
                 }
 

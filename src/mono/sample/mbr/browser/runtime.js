@@ -7,7 +7,7 @@ var Module = {
             App.init ();
         };
         config.environment_variables = {
-            "MONO_METADATA_UPDATE": "1"
+            "DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
         };
         config.fetch_file_cb = function (asset) {
             return fetch (asset, { credentials: 'same-origin' });

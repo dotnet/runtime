@@ -40,7 +40,7 @@ namespace System.Reflection.Emit
      * This class represents a property of an instantiation of a generic type builder.
      */
     [StructLayout(LayoutKind.Sequential)]
-    internal class PropertyOnTypeBuilderInst : PropertyInfo
+    internal sealed class PropertyOnTypeBuilderInst : PropertyInfo
     {
         private TypeBuilderInstantiation instantiation;
         private PropertyInfo prop;

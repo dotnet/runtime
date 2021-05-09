@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace System.ComponentModel.DataAnnotations
 {
-    internal class MetadataPropertyDescriptorWrapper : PropertyDescriptor
+    internal sealed class MetadataPropertyDescriptorWrapper : PropertyDescriptor
     {
         private readonly PropertyDescriptor _descriptor;
         private readonly bool _isReadOnly;

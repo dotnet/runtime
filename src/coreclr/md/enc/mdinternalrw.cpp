@@ -720,7 +720,7 @@ ULONG MDInternalRW::GetCountWithTokenKind(     // return hresult
         break;
     default:
 #ifdef _DEBUG
-        if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
             _ASSERTE(!"Invalid Blob Offset");
 #endif
         ulCount = 0;
@@ -2367,7 +2367,7 @@ MDInternalRW::GetSigFromToken(
 
     // not a known token type.
 #ifdef _DEBUG
-        if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
             _ASSERTE(!"Unexpected token type");
 #endif
     *pcbSig = 0;

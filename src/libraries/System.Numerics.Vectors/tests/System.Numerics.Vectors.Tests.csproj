@@ -3,9 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
-    <!-- ActiveIssue XUnit crashes on Apple Silicon
-        https://github.com/dotnet/runtime/issues/49110 -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GenericVectorTests.cs" />

@@ -31,30 +31,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
-#include "typelist.h"
-#undef DEF_TP
-};
-
 void CodeGenInterface::setFramePointerRequiredEH(bool value)
 {
     m_cgFramePointerRequired = value;
@@ -342,84 +318,165 @@ void CodeGen::genPrepForCompiler()
 #endif
 }
 
-/*****************************************************************************
- *  To report exception handling information to the VM, we need the size of the exception
- *  handling regions. To compute that, we need to emit labels for the beginning block of
- *  an EH region, and the block that immediately follows a region. Go through the EH
- *  table and mark all these blocks with BBF_HAS_LABEL to make this happen.
- *
- *  The beginning blocks of the EH regions already should have this flag set.
- *
- *  No blocks should be added or removed after this.
- *
- *  This code is closely couple with genReportEH() in the sense that any block
- *  that this procedure has determined it needs to have a label has to be selected
- *  using the same logic both here and in genReportEH(), so basically any time there is
- *  a change in the way we handle EH reporting, we have to keep the logic of these two
- *  methods 'in sync'.
- */
-
-void CodeGen::genPrepForEHCodegen()
+//------------------------------------------------------------------------
+// genMarkLabelsForCodegen: Mark labels required for codegen.
+//
+// Mark all blocks that require a label with BBF_HAS_LABEL. These are either blocks that are:
+// 1. the target of jumps (fall-through flow doesn't require a label),
+// 2. referenced labels such as for "switch" codegen,
+// 3. needed to denote the range of EH regions to the VM.
+// 4. needed to denote the range of code for alignment processing.
+//
+// No labels will be in the IR before now, but future codegen might annotate additional blocks
+// with this flag, such as "switch" codegen, or codegen-created blocks from genCreateTempLabel().
+// Also, the alignment processing code marks BBJ_COND fall-through labels elsewhere.
+//
+// To report exception handling information to the VM, we need the size of the exception
+// handling regions. To compute that, we need to emit labels for the beginning block of
+// an EH region, and the block that immediately follows a region. Go through the EH
+// table and mark all these blocks with BBF_HAS_LABEL to make this happen.
+//
+// This code is closely couple with genReportEH() in the sense that any block
+// that this procedure has determined it needs to have a label has to be selected
+// using the same logic both here and in genReportEH(), so basically any time there is
+// a change in the way we handle EH reporting, we have to keep the logic of these two
+// methods 'in sync'.
+//
+// No blocks should be added or removed after this.
+//
+void CodeGen::genMarkLabelsForCodegen()
 {
     assert(!compiler->fgSafeBasicBlockCreation);
+
+    JITDUMP("Mark labels for codegen\n");
+
+#ifdef DEBUG
+    // No label flags should be set before this.
+    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        assert((block->bbFlags & BBF_HAS_LABEL) == 0);
+    }
+#endif // DEBUG
+
+    // The first block is special; it always needs a label. This is to properly set up GC info.
+    JITDUMP("  " FMT_BB " : first block\n", compiler->fgFirstBB->bbNum);
+    compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+
+    // The current implementation of switch tables requires the first block to have a label so it
+    // can generate offsets to the switch label targets.
+    // (This is duplicative with the fact we always set the first block with a label above.)
+    // TODO-CQ: remove this when switches have been re-implemented to not use this.
+    if (compiler->fgHasSwitch)
+    {
+        JITDUMP("  " FMT_BB " : function has switch; mark first block\n", compiler->fgFirstBB->bbNum);
+        compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+    }
+
+    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        switch (block->bbJumpKind)
+        {
+            case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
+            case BBJ_COND:
+            case BBJ_EHCATCHRET:
+                JITDUMP("  " FMT_BB " : branch target\n", block->bbJumpDest->bbNum);
+                block->bbJumpDest->bbFlags |= BBF_HAS_LABEL;
+                break;
+
+            case BBJ_SWITCH:
+                unsigned jumpCnt;
+                jumpCnt = block->bbJumpSwt->bbsCount;
+                BasicBlock** jumpTab;
+                jumpTab = block->bbJumpSwt->bbsDstTab;
+                do
+                {
+                    JITDUMP("  " FMT_BB " : branch target\n", (*jumpTab)->bbNum);
+                    (*jumpTab)->bbFlags |= BBF_HAS_LABEL;
+                } while (++jumpTab, --jumpCnt);
+                break;
+
+            case BBJ_CALLFINALLY:
+                // The finally target itself will get marked by walking the EH table, below, and marking
+                // all handler begins.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if FEATURE_EH_CALLFINALLY_THUNKS
+                {
+                    // For callfinally thunks, we need to mark the block following the callfinally/always pair,
+                    // as that's needed for identifying the range of the "duplicate finally" region in EH data.
+                    BasicBlock* bbToLabel = block->bbNext;
+                    if (block->isBBCallAlwaysPair())
+                    {
+                        bbToLabel = bbToLabel->bbNext; // skip the BBJ_ALWAYS
+                    }
+                    if (bbToLabel != nullptr)
+                    {
+                        JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
+                        bbToLabel->bbFlags |= BBF_HAS_LABEL;
+                    }
+                }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+                break;
+
+            case BBJ_EHFINALLYRET:
+            case BBJ_EHFILTERRET:
+            case BBJ_RETURN:
+            case BBJ_THROW:
+            case BBJ_NONE:
+                break;
+
+            default:
+                noway_assert(!"Unexpected bbJumpKind");
+                break;
+        }
+    }
+
+    // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
+    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add; add = add->acdNext)
+    {
+        JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
+        add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
+    }
 
     EHblkDsc* HBtab;
     EHblkDsc* HBtabEnd;
 
-    bool anyFinallys = false;
-
     for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
          HBtab < HBtabEnd; HBtab++)
     {
-        assert(HBtab->ebdTryBeg->bbFlags & BBF_HAS_LABEL);
-        assert(HBtab->ebdHndBeg->bbFlags & BBF_HAS_LABEL);
+        HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
+        HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
+
+        JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
+        JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
         if (HBtab->ebdTryLast->bbNext != nullptr)
         {
             HBtab->ebdTryLast->bbNext->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->bbNext->bbNum);
         }
 
         if (HBtab->ebdHndLast->bbNext != nullptr)
         {
             HBtab->ebdHndLast->bbNext->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->bbNext->bbNum);
         }
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdFilter->bbFlags & BBF_HAS_LABEL);
-            // The block after the last block of the filter is
-            // the handler begin block, which we already asserted
-            // has BBF_HAS_LABEL set.
+            HBtab->ebdFilter->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : filter begin\n", HBtab->ebdFilter->bbNum);
         }
-
-#if FEATURE_EH_CALLFINALLY_THUNKS
-        if (HBtab->HasFinallyHandler())
-        {
-            anyFinallys = true;
-        }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
     }
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    if (anyFinallys)
+#ifdef DEBUG
+    if (compiler->verbose)
     {
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
-        {
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
-            {
-                BasicBlock* bbToLabel = block->bbNext;
-                if (block->isBBCallAlwaysPair())
-                {
-                    bbToLabel = bbToLabel->bbNext; // skip the BBJ_ALWAYS
-                }
-                if (bbToLabel != nullptr)
-                {
-                    bbToLabel->bbFlags |= BBF_HAS_LABEL;
-                }
-            } // block is BBJ_CALLFINALLY
-        }     // for each block
-    }         // if (anyFinallys)
-#endif        // FEATURE_EH_CALLFINALLY_THUNKS
+        printf("*************** After genMarkLabelsForCodegen()\n");
+        compiler->fgDispBasicBlocks();
+    }
+#endif // DEBUG
 }
 
 void CodeGenInterface::genUpdateLife(GenTree* tree)
@@ -978,7 +1035,8 @@ BasicBlock* CodeGen::genCreateTempLabel()
     compiler->fgSafeBasicBlockCreation = false;
 #endif
 
-    block->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
+    JITDUMP("Mark " FMT_BB " as label: codegen temp block\n", block->bbNum);
+    block->bbFlags |= BBF_HAS_LABEL;
 
     // Use coldness of current block, as this label will
     // be contained in it.
@@ -1022,8 +1080,8 @@ void CodeGen::genLogLabel(BasicBlock* bb)
 void CodeGen::genDefineTempLabel(BasicBlock* label)
 {
     genLogLabel(label);
-    label->bbEmitCookie =
-        GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+    label->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label->bbNum));
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -1091,7 +1149,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 
     if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
-        noway_assert(block->bbFlags & BBF_JMP_TARGET);
+        noway_assert(block->bbFlags & BBF_HAS_LABEL);
 
         SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
@@ -2003,7 +2061,7 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
     // calls the funclet during non-exceptional control flow.
     if (block->bbFlags & BBF_FINALLY_TARGET)
     {
-        assert(block->bbFlags & BBF_JMP_TARGET);
+        assert(block->bbFlags & BBF_HAS_LABEL);
 
 #ifdef DEBUG
         if (compiler->verbose)
@@ -2018,7 +2076,8 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
         // would be executed, which we would prefer not to do.
 
         block->bbUnwindNopEmitCookie =
-            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                                       false DEBUG_ARG(block->bbNum));
 
         instGen(INS_nop);
     }
@@ -2203,13 +2262,19 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %.0f\n",
+            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
-        if (compiler->fgProfileData_ILSizeMismatch)
+        if (compiler->fgPgoFailReason != nullptr)
         {
-            printf("; discarded IBC profile data due to mismatch in ILSize\n");
+            printf("; %s\n", compiler->fgPgoFailReason);
+        }
+
+        if ((compiler->fgPgoInlineePgo + compiler->fgPgoInlineeNoPgo + compiler->fgPgoInlineeNoPgoSingleBlock) > 0)
+        {
+            printf("; %u inlinees with PGO data; %u single block inlinees; %u inlinees without PGO data\n",
+                   compiler->fgPgoInlineePgo, compiler->fgPgoInlineeNoPgoSingleBlock, compiler->fgPgoInlineeNoPgo);
         }
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
@@ -2311,12 +2376,6 @@ void CodeGen::genEmitMachineCode()
     */
 
     compiler->unwindReserve();
-
-#if DISPLAY_SIZES
-
-    size_t dataSize = GetEmitter()->emitDataSize();
-
-#endif // DISPLAY_SIZES
 
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
@@ -2537,6 +2596,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
 #if DISPLAY_SIZES
 
+    size_t dataSize = GetEmitter()->emitDataSize();
     grossVMsize += compiler->info.compILCodeSize;
     totalNCsize += codeSize + dataSize + compiler->compInfoBlkSize;
     grossNCsize += codeSize + dataSize;
@@ -4004,40 +4064,38 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         if (doingFloat)
         {
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-            insCopy = ins_Copy(TYP_DOUBLE);
-            // Compute xtraReg here when we have a float argument
-            assert(xtraReg == REG_NA);
-
-            regMaskTP fpAvailMask;
-
-            fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
-#if defined(FEATURE_HFA)
-            fpAvailMask &= RBM_ALLDOUBLE;
-#else
-#if !defined(UNIX_AMD64_ABI)
-#error Error. Wrong architecture.
-#endif // !defined(UNIX_AMD64_ABI)
-#endif // defined(FEATURE_HFA)
-
-            if (fpAvailMask == RBM_NONE)
+#ifndef UNIX_AMD64_ABI
+            if (GlobalJitOptions::compFeatureHfa)
+#endif // !UNIX_AMD64_ABI
             {
-                fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
-#if defined(FEATURE_HFA)
-                fpAvailMask &= RBM_ALLDOUBLE;
-#else
-#if !defined(UNIX_AMD64_ABI)
-#error Error. Wrong architecture.
-#endif // !defined(UNIX_AMD64_ABI)
-#endif // defined(FEATURE_HFA)
+                insCopy = ins_Copy(TYP_DOUBLE);
+                // Compute xtraReg here when we have a float argument
+                assert(xtraReg == REG_NA);
+
+                regMaskTP fpAvailMask;
+
+                fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
+                if (GlobalJitOptions::compFeatureHfa)
+                {
+                    fpAvailMask &= RBM_ALLDOUBLE;
+                }
+
+                if (fpAvailMask == RBM_NONE)
+                {
+                    fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
+                    if (GlobalJitOptions::compFeatureHfa)
+                    {
+                        fpAvailMask &= RBM_ALLDOUBLE;
+                    }
+                }
+
+                assert(fpAvailMask != RBM_NONE);
+
+                // We pick the lowest avail register number
+                regMaskTP tempMask = genFindLowestBit(fpAvailMask);
+                xtraReg            = genRegNumFromMask(tempMask);
             }
-
-            assert(fpAvailMask != RBM_NONE);
-
-            // We pick the lowest avail register number
-            regMaskTP tempMask = genFindLowestBit(fpAvailMask);
-            xtraReg            = genRegNumFromMask(tempMask);
-#elif defined(TARGET_X86)
+#if defined(TARGET_X86)
             // This case shouldn't occur on x86 since NYI gets converted to an assert
             NYI("Homing circular FP registers via xtraReg");
 #endif
@@ -4318,7 +4376,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             /* Register argument - hopefully it stays in the same register */
             regNumber destRegNum  = REG_NA;
-            var_types destMemType = varDsc->TypeGet();
+            var_types destMemType = varDsc->GetRegisterType();
 
             if (regArgTab[argNum].slot == 1)
             {
@@ -4594,8 +4652,6 @@ void CodeGen::genEnregisterIncomingStackArgs()
             continue;
         }
 
-        var_types type = genActualType(varDsc->TypeGet());
-
         /* Is the variable dead on entry */
 
         if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
@@ -4610,7 +4666,9 @@ void CodeGen::genEnregisterIncomingStackArgs()
         regNumber regNum = varDsc->GetArgInitReg();
         assert(regNum != REG_STK);
 
-        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), regNum, varNum, 0);
+        var_types regType = varDsc->GetActualRegisterType();
+
+        GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
         regSet.verifyRegUsed(regNum);
 #ifdef USING_SCOPE_INFO
         psiMoveToReg(varNum);
@@ -4684,9 +4742,21 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (compiler->info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
+        const bool isTemp      = varDsc->lvIsTemp;
+        const bool hasGCPtr    = varDsc->HasGCPtr();
+        const bool isTracked   = varDsc->lvTracked;
+        const bool isStruct    = varTypeIsStruct(varDsc);
+        const bool compInitMem = compiler->info.compInitMem;
+
+        if (isTemp && !hasGCPtr)
         {
-            if (varDsc->lvTracked)
+            varDsc->lvMustInit = 0;
+            continue;
+        }
+
+        if (compInitMem || hasGCPtr || varDsc->lvMustInit)
+        {
+            if (isTracked)
             {
                 /* For uninitialized use of tracked variables, the liveness
                  * will bubble to the top (compiler->fgFirstBB) in fgInterBlockLocalVarLiveness()
@@ -4725,21 +4795,42 @@ void CodeGen::genCheckUseBlockInit()
                 }
             }
 
-            /* With compInitMem, all untracked vars will have to be init'ed */
-            /* VSW 102460 - Do not force initialization of compiler generated temps,
-                unless they are untracked GC type or structs that contain GC pointers */
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame &&
-                (!varDsc->lvIsTemp || varDsc->HasGCPtr()))
+            if (varDsc->lvOnFrame)
             {
-
-                varDsc->lvMustInit = true;
-
-                if (!counted)
+                bool mustInitThisVar = false;
+                if (hasGCPtr && !isTracked)
                 {
-                    initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
-                    counted = true;
+                    JITDUMP("must init V%02u because it has a GC ref\n", varNum);
+                    mustInitThisVar = true;
+                }
+                else if (hasGCPtr && isStruct)
+                {
+                    // TODO-1stClassStructs: support precise liveness reporting for such structs.
+                    JITDUMP("must init a tracked V%02u because it a struct with a GC ref\n", varNum);
+                    mustInitThisVar = true;
+                }
+                else
+                {
+                    // We are done with tracked or GC vars, now look at untracked vars without GC refs.
+                    if (!isTracked)
+                    {
+                        assert(!hasGCPtr && !isTemp);
+                        if (compInitMem)
+                        {
+                            JITDUMP("must init V%02u because compInitMem is set and it is not a temp\n", varNum);
+                            mustInitThisVar = true;
+                        }
+                    }
+                }
+                if (mustInitThisVar)
+                {
+                    varDsc->lvMustInit = true;
+
+                    if (!counted)
+                    {
+                        initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
+                        counted = true;
+                    }
                 }
             }
         }
@@ -9562,20 +9653,26 @@ bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
 
 bool Compiler::IsHfa(GenTree* tree)
 {
-#ifdef FEATURE_HFA
-    return IsHfa(gtGetStructHandleIfPresent(tree));
-#else
-    return false;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        return IsHfa(gtGetStructHandleIfPresent(tree));
+    }
+    else
+    {
+        return false;
+    }
 }
 
 var_types Compiler::GetHfaType(GenTree* tree)
 {
-#ifdef FEATURE_HFA
-    return GetHfaType(gtGetStructHandleIfPresent(tree));
-#else
-    return TYP_UNDEF;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        return GetHfaType(gtGetStructHandleIfPresent(tree));
+    }
+    else
+    {
+        return TYP_UNDEF;
+    }
 }
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
@@ -9585,18 +9682,19 @@ unsigned Compiler::GetHfaCount(GenTree* tree)
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
-#ifdef FEATURE_HFA
-    if (hClass != NO_CLASS_HANDLE)
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
-        if (elemKind != CORINFO_HFA_ELEM_NONE)
+        if (hClass != NO_CLASS_HANDLE)
         {
-            // This type may not appear elsewhere, but it will occupy a floating point register.
-            compFloatingPointUsed = true;
+            CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
+            if (elemKind != CORINFO_HFA_ELEM_NONE)
+            {
+                // This type may not appear elsewhere, but it will occupy a floating point register.
+                compFloatingPointUsed = true;
+            }
+            return HfaTypeFromElemKind(elemKind);
         }
-        return HfaTypeFromElemKind(elemKind);
     }
-#endif // FEATURE_HFA
     return TYP_UNDEF;
 }
 
@@ -11294,7 +11392,6 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         // genConsumeReg will return the valid register, either from the COPY
         // or from the original source.
         assert(reg != REG_NA);
-        regNumber varReg = REG_NA;
         if (isMultiRegVar)
         {
             // Each field is passed in its own register, use the field types.
@@ -11404,7 +11501,6 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         //
         // There should never be any circular dependencies, and we will check that here.
 
-        GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
         // GenTreeCopyOrReload only reports the highest index that has a valid register.
         // However, we need to ensure that we consume all the registers of the child node,
         // so we use its regCount.
@@ -11530,7 +11626,6 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
     if (targetReg != REG_NA)
     {
         // We shouldn't specify a no-op move.
-        regMaskTP targetRegMask = genRegMask(targetReg);
         assert(sourceReg != targetReg);
         var_types type;
         if (op1->IsMultiRegLclVar())
@@ -11791,9 +11886,28 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     // Is the first "VariableLiveRange" or the previous one has been closed so its "m_EndEmitLocation" is valid
     noway_assert(m_VariableLiveRanges->empty() || m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 
-    // Creates new live range with invalid end
-    m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
-    m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    if (!m_VariableLiveRanges->empty() &&
+        siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) &&
+        m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit))
+    {
+        JITDUMP("Extending debug range...\n");
+
+        // The variable is being born just after the instruction at which it died.
+        // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
+        m_VariableLiveRanges->back().m_EndEmitLocation.Init();
+    }
+    else
+    {
+        JITDUMP("New debug range: %s\n",
+                m_VariableLiveRanges->empty()
+                    ? "first"
+                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
+                          ? "new var or location"
+                          : "not adjacent");
+        // Creates new live range with invalid end
+        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+        m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    }
 
 #ifdef DEBUG
     if (!m_VariableLifeBarrier->hasLiveRangesToDump())

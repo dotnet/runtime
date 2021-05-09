@@ -2,16 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Reflection;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Diagnostics.Tracing;
 
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
     public partial class Exception
     {
+        internal static uint GetExceptionCount()
+        {
+            return (uint)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.EXCEPTION_COUNT);
+        }
+
         internal readonly struct DispatchState
         {
             public readonly MonoStackFrame[]? StackFrames;
@@ -102,22 +107,17 @@ namespace System
             _stackTraceString = null;
         }
 
-        [StackTraceHidden]
-        internal void SetCurrentStackTrace()
+        // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
+        // A false return value means the caller should early-exit the operation.
+        // Can also throw InvalidOperationException if a stack trace is already set or if object has been thrown.
+        private bool CanSetRemoteStackTrace()
         {
-            // Check to see if the exception already has a stack set in it.
             if (_traceIPs != null || _stackTraceString != null || _remoteStackTraceString != null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
-            // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
-            // when it's retrieved.
-            var sb = new StringBuilder(256);
-            new StackTrace(fNeedFileInfo: true).ToString(Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
-            sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
-            _remoteStackTraceString = sb.ToString();
+            return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
         private string? CreateSourceName()

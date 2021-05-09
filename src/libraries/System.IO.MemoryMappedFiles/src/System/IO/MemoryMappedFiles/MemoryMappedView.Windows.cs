@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.IO.MemoryMappedFiles
 {
-    internal partial class MemoryMappedView
+    internal sealed partial class MemoryMappedView
     {
         // These control the retry behaviour when lock violation errors occur during Flush:
         private const int MaxFlushWaits = 15;  // must be <=30

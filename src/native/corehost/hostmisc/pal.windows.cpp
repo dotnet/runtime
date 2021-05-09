@@ -49,10 +49,13 @@ pal::string_t pal::to_lower(const pal::string_t& in)
 
 pal::string_t pal::get_timestamp()
 {
-    std::time_t t = std::time(0);
+    std::time_t t = std::time(nullptr);
     const std::size_t elems = 100;
     char_t buf[elems];
-    std::wcsftime(buf, elems, _X("%c GMT"), std::gmtime(&t));
+
+    tm tm_l{};
+    ::gmtime_s(&tm_l, &t);
+    std::wcsftime(buf, elems, _X("%c GMT"), &tm_l);
 
     return pal::string_t(buf);
 }
@@ -141,7 +144,7 @@ bool pal::getcwd(pal::string_t* recv)
     {
         std::vector<pal::char_t> str;
         str.resize(result);
-        result = GetCurrentDirectoryW(str.size(), str.data());
+        result = GetCurrentDirectoryW(static_cast<uint32_t>(str.size()), str.data());
         assert(result <= str.size());
         if (result != 0)
         {
@@ -443,8 +446,8 @@ pal::string_t pal::get_current_os_rid_platform()
             if ((*pRtlGetVersion)(&osinfo) == 0)
             {
                 // Win7 RID is the minimum supported version.
-                int majorVer = 6;
-                int minorVer = 1;
+                uint32_t majorVer = 6;
+                uint32_t minorVer = 1;
 
                 if (osinfo.dwMajorVersion > majorVer)
                 {
@@ -608,18 +611,18 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     return realpath(&extraction_dir);
 }
 
-static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
+static bool wchar_convert_helper(DWORD code_page, const char* cstr, size_t len, pal::string_t* out)
 {
     out->clear();
 
     // No need of explicit null termination, so pass in the actual length.
-    size_t size = ::MultiByteToWideChar(code_page, 0, cstr, len, nullptr, 0);
+    size_t size = ::MultiByteToWideChar(code_page, 0, cstr, static_cast<uint32_t>(len), nullptr, 0);
     if (size == 0)
     {
         return false;
     }
     out->resize(size, '\0');
-    return ::MultiByteToWideChar(code_page, 0, cstr, len, &(*out)[0], out->size()) != 0;
+    return ::MultiByteToWideChar(code_page, 0, cstr, static_cast<uint32_t>(len), &(*out)[0], static_cast<uint32_t>(out->size())) != 0;
 }
 
 bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
@@ -633,7 +636,7 @@ bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
         return false;
     }
     out->resize(size, '\0');
-    return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out->data(), out->size(), nullptr, nullptr) != 0;
+    return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out->data(), static_cast<uint32_t>(out->size()), nullptr, nullptr) != 0;
 }
 
 bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
@@ -660,7 +663,7 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
     }
 
     char_t buf[MAX_PATH];
-    auto size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
+    size_t size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
     if (size == 0)
     {
         if (!skip_error_logging)
@@ -679,7 +682,7 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
     {
         str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
 
-        size = ::GetFullPathNameW(path->c_str(), size, (LPWSTR)str.data(), nullptr);
+        size = ::GetFullPathNameW(path->c_str(), static_cast<uint32_t>(size), (LPWSTR)str.data(), nullptr);
         assert(size <= str.size());
 
         if (size == 0)

@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.Xslt
         public Dictionary<QilName, List<QilFunction>> ApplyFunctions = new Dictionary<QilName, List<QilFunction>>();
     }
 
-    internal class Stylesheet : StylesheetLevel
+    internal sealed class Stylesheet : StylesheetLevel
     {
         private readonly Compiler _compiler;
         public List<Uri> ImportHrefs = new List<Uri>();

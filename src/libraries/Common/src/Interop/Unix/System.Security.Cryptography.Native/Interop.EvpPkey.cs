@@ -15,6 +15,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static extern void EvpPkeyDestroy(IntPtr pkey);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
+        internal static extern int EvpPKeySize(SafeEvpPKeyHandle pkey);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
     }

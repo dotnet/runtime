@@ -35,7 +35,7 @@ BOOL FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return GetThread() == g_pFinalizerThread;
+    return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
 void FinalizerThread::EnableFinalization()
@@ -488,8 +488,6 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
 #endif // FEATURE_COMINTEROP
 
         GCX_PREEMP();
-
-        Thread *pThread = GetThread();
 
         ULONGLONG startTime = CLRGetTickCount64();
         ULONGLONG endTime;

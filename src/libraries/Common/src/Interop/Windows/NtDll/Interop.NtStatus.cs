@@ -3,7 +3,7 @@
 
 internal static partial class Interop
 {
-    internal class StatusOptions
+    internal static class StatusOptions
     {
         // Error codes from ntstatus.h
         internal const uint STATUS_SUCCESS                = 0x00000000;

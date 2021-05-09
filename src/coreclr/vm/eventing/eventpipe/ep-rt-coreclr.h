@@ -1219,6 +1219,15 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 	return static_cast<int64_t>(InterlockedDecrement64 ((volatile LONG64 *)(value)));
 }
 
+static
+inline
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -1253,6 +1262,14 @@ ep_rt_init (void)
 		}
 #endif
 	}
+}
+
+static
+inline
+void
+ep_rt_init_finish (void)
+{
+	STATIC_CONTRACT_NOTHROW;
 }
 
 static
@@ -2767,7 +2784,7 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return GetThread ();
+	return GetThreadNULLOk ();
 }
 
 static
@@ -2865,7 +2882,7 @@ ep_rt_thread_set_activity_id (
  * ThreadSequenceNumberMap.
  */
 
-EP_RT_DEFINE_HASH_MAP(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
+EP_RT_DEFINE_HASH_MAP_REMOVE(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
 EP_RT_DEFINE_HASH_MAP_ITERATOR(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, ep_rt_thread_sequence_number_hash_map_iterator_t, EventPipeThreadSessionState *, uint32_t)
 
 /*

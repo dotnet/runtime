@@ -67,7 +67,7 @@ namespace System.Diagnostics
             Array.Copy(entries, 0, array, index, entries.Length);
         }
 
-        private class EntriesEnumerator : IEnumerator
+        private sealed class EntriesEnumerator : IEnumerator
         {
             private readonly EventLogEntryCollection entries;
             private int num = -1;

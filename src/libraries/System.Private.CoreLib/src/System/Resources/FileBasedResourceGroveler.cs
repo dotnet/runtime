@@ -19,7 +19,7 @@ using Internal.IO;
 
 namespace System.Resources
 {
-    internal class FileBasedResourceGroveler : IResourceGroveler
+    internal sealed class FileBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
 

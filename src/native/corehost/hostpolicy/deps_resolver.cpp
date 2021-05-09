@@ -43,29 +43,28 @@ void add_unique_path(
     pal::string_t* non_serviced,
     const pal::string_t& svc_dir)
 {
-    // Resolve sym links.
-    pal::string_t real = path;
-    pal::realpath(&real);
-
-    if (existing->count(real))
+    // To optimize startup time, we avoid calling realpath here.
+    // Because of this, there might be duplicates in the output
+    // whenever path is eiter non-normalized or a symbolic link.
+    if (existing->count(path))
     {
         return;
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], real.c_str());
+    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
 
-    if (starts_with(real, svc_dir, false))
+    if (starts_with(path, svc_dir, false))
     {
-        serviced->append(real);
+        serviced->append(path);
         serviced->push_back(PATH_SEPARATOR);
     }
     else
     {
-        non_serviced->append(real);
+        non_serviced->append(path);
         non_serviced->push_back(PATH_SEPARATOR);
     }
 
-    existing->insert(real);
+    existing->insert(path);
 }
 
 // Return the filename from deps path; a deps path always uses a '/' for the separator.
@@ -185,6 +184,7 @@ void deps_resolver_t::setup_shared_store_probes(
         {
             // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
+            m_needs_file_existence_checks = true;
         }
     }
 
@@ -192,6 +192,7 @@ void deps_resolver_t::setup_shared_store_probes(
     {
         // Path relative to the location of "dotnet.exe" if it's being used to run the app
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
+        m_needs_file_existence_checks = true;
     }
 
     for (const auto& global_shared : args.global_shared_stores)
@@ -200,6 +201,7 @@ void deps_resolver_t::setup_shared_store_probes(
         {
             // Global store probe: the global location
             m_probes.push_back(probe_config_t::lookup(global_shared));
+            m_needs_file_existence_checks = true;
         }
     }
 }
@@ -236,6 +238,8 @@ void deps_resolver_t::setup_probe_config(
         pal::string_t ext_pkgs = args.core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
+
+        m_needs_file_existence_checks = true;
     }
 
     // The published deps directory to be probed: either app or FX directory.
@@ -243,7 +247,7 @@ void deps_resolver_t::setup_probe_config(
     m_probes.push_back(probe_config_t::published_deps_dir());
 
     // The framework locations, starting with highest level framework.
-    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+    for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
     {
         if (pal::directory_exists(m_fx_definitions[i]->get_dir()))
         {
@@ -253,10 +257,15 @@ void deps_resolver_t::setup_probe_config(
 
     setup_shared_store_probes(args);
 
-    for (const auto& probe : m_additional_probes)
+    if (m_additional_probes.size() > 0)
     {
-        // Additional paths
-        m_probes.push_back(probe_config_t::lookup(probe));
+        for (const auto& probe : m_additional_probes)
+        {
+            // Additional paths
+            m_probes.push_back(probe_config_t::lookup(probe));
+        }
+
+        m_needs_file_existence_checks = true;
     }
 
     if (trace::is_enabled())
@@ -304,6 +313,11 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             continue;
         }
         pal::string_t probe_dir = config.probe_dir;
+        uint32_t search_options = deps_entry_t::search_options::none;
+        if (needs_file_existence_checks())
+        {
+            search_options |= deps_entry_t::search_options::file_existence;
+        }
 
         if (config.is_fx())
         {
@@ -318,7 +332,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 // If the deps json has the package name and version, then someone has already done rid selection and
                 // put the right asset in the dir. So checking just package name and version would suffice.
                 // No need to check further for the exact asset relative sub path.
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, false, candidate, found_in_bundle))
+                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate, search_options, found_in_bundle))
                 {
                     assert(!found_in_bundle);
                     trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
@@ -337,7 +351,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             {
                 if (entry.is_rid_specific)
                 {
-                    if (entry.to_rel_path(deps_dir, true, false, candidate))
+                    if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -346,7 +360,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, true, candidate, found_in_bundle))
+                    if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -356,7 +370,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else if (entry.to_full_path(probe_dir, config.only_serviceable_assets, candidate))
+        else if (entry.to_full_path(probe_dir, candidate, search_options | (config.only_serviceable_assets ? deps_entry_t::search_options::is_servicing : 0)))
         {
             trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
             return true;
@@ -572,7 +586,7 @@ bool deps_resolver_t::resolve_tpa_list(
     // Probe FX deps entries after app assemblies are added.
     if (m_is_framework_dependent)
     {
-        for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+        for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
         {
             const auto& deps_entries = m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime);
             for (const auto& entry : deps_entries)
@@ -588,10 +602,7 @@ bool deps_resolver_t::resolve_tpa_list(
     // Convert the paths into a string and return it 
     for (const auto& item : items)
     {
-        // Workaround for CoreFX not being able to resolve sym links.
-        pal::string_t real_asset_path = item.second.resolved_path;
-        pal::realpath(&real_asset_path);
-        output->append(real_asset_path);
+        output->append(item.second.resolved_path);
         output->push_back(PATH_SEPARATOR);
     }
 
@@ -864,7 +875,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // Add fx package locations to fx_dir
-    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+    for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
     {
         const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
 

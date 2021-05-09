@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class TypeToTypeInfoMarshaler : ICustomMarshaler
+    internal sealed class TypeToTypeInfoMarshaler : ICustomMarshaler
     {
         private static readonly TypeToTypeInfoMarshaler s_typeToTypeInfoMarshaler = new TypeToTypeInfoMarshaler();
 

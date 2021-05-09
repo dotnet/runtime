@@ -59,7 +59,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
 
-        private class ArrayPropertyDescriptor : SimplePropertyDescriptor
+        private sealed class ArrayPropertyDescriptor : SimplePropertyDescriptor
         {
             private readonly int _index;
 

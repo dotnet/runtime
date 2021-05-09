@@ -67,7 +67,7 @@ namespace System.IO
         public BufferedStream(Stream stream, int bufferSize)
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
 
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(bufferSize)));
@@ -79,13 +79,13 @@ namespace System.IO
             // & writes are greater than or equal to buffer size.
 
             if (!_stream.CanRead && !_stream.CanWrite)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         private void EnsureNotClosed()
         {
             if (_stream == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         private void EnsureCanSeek()
@@ -93,7 +93,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanSeek)
-                throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
         }
 
         private void EnsureCanRead()
@@ -101,7 +101,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanRead)
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
         }
 
         private void EnsureCanWrite()
@@ -109,7 +109,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanWrite)
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
         }
 
         private void EnsureShadowBufferAllocated()
@@ -203,7 +203,7 @@ namespace System.IO
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
                 EnsureNotClosed();
                 EnsureCanSeek();
@@ -237,6 +237,7 @@ namespace System.IO
             {
                 _stream = null;
                 _buffer = null;
+                _writePos = 0; // WriteByte hot path relies on this
 
                 // Call base.Dispose(bool) to cleanup async IO resources
                 base.Dispose(disposing);
@@ -263,6 +264,7 @@ namespace System.IO
             {
                 _stream = null;
                 _buffer = null;
+                _writePos = 0;
             }
         }
 
@@ -503,8 +505,7 @@ namespace System.IO
                 offset += bytesFromBuffer;
             }
 
-            // So the read buffer is empty.
-            Debug.Assert(_readLen == _readPos);
+            Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
             _readPos = _readLen = 0;
 
             // If there was anything in the write buffer, clear it.
@@ -554,8 +555,7 @@ namespace System.IO
                 destination = destination.Slice(bytesFromBuffer);
             }
 
-            // The read buffer must now be empty.
-            Debug.Assert(_readLen == _readPos);
+            Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
             _readPos = _readLen = 0;
 
             // If there was anything in the write buffer, clear it.
@@ -1165,6 +1165,18 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
+            if (_writePos > 0 && _writePos < _bufferSize - 1)
+            {
+                _buffer![_writePos++] = value;
+            }
+            else
+            {
+                WriteByteSlow(value);
+            }
+        }
+
+        private void WriteByteSlow(byte value)
+        {
             EnsureNotClosed();
 
             if (_writePos == 0)
@@ -1236,7 +1248,7 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             EnsureNotClosed();
             EnsureCanSeek();

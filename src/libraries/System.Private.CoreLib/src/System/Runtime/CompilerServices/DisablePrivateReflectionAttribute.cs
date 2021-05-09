@@ -3,6 +3,7 @@
 
 namespace System.Runtime.CompilerServices
 {
+    [Obsolete(Obsoletions.DisablePrivateReflectionAttributeMessage, DiagnosticId = Obsoletions.DisablePrivateReflectionAttributeDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed class DisablePrivateReflectionAttribute : Attribute
     {

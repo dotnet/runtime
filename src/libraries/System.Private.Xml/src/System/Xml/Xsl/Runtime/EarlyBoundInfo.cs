@@ -3,6 +3,7 @@
 
 #nullable disable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
@@ -14,13 +15,16 @@ namespace System.Xml.Xsl.Runtime
     {
         private readonly string _namespaceUri;            // Namespace Uri mapped to these early bound functions
         private readonly ConstructorInfo _constrInfo;     // Constructor for the early bound function object
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        private readonly Type _ebType;
 
-        public EarlyBoundInfo(string namespaceUri, Type ebType)
+        public EarlyBoundInfo(string namespaceUri, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type ebType)
         {
             Debug.Assert(namespaceUri != null && ebType != null);
 
             // Get the default constructor
             _namespaceUri = namespaceUri;
+            _ebType = ebType;
             _constrInfo = ebType.GetConstructor(Type.EmptyTypes);
             Debug.Assert(_constrInfo != null, "The early bound object type " + ebType.FullName + " must have a public default constructor");
         }
@@ -33,7 +37,11 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the Clr Type of the early bound object.
         /// </summary>
-        public Type EarlyBoundType { get { return _constrInfo.DeclaringType; } }
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        public Type EarlyBoundType
+        {
+            get { return _ebType; }
+        }
 
         /// <summary>
         /// Create an instance of the early bound object.

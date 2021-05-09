@@ -38,7 +38,10 @@ namespace System.ComponentModel
         /// Basic constructor that creates a property tab attribute that will create a tab
         /// of the specified type.
         /// </summary>
-        public PropertyTabAttribute(string tabClassName) : this(tabClassName, PropertyTabScope.Component)
+        public PropertyTabAttribute(
+            // Using PublicParameterlessConstructor to preserve the type. See https://github.com/mono/linker/issues/1878
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string tabClassName)
+            : this(tabClassName, PropertyTabScope.Component)
         {
         }
 
@@ -60,7 +63,10 @@ namespace System.ComponentModel
         /// Basic constructor that creates a property tab attribute that will create a tab
         /// of the specified type.
         /// </summary>
-        public PropertyTabAttribute(string tabClassName, PropertyTabScope tabScope)
+        public PropertyTabAttribute(
+            // Using PublicParameterlessConstructor to preserve the type. See https://github.com/mono/linker/issues/1878
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string tabClassName,
+            PropertyTabScope tabScope)
         {
             _tabClassNames = new string[] { tabClassName };
             if (tabScope < PropertyTabScope.Document)
@@ -79,43 +85,52 @@ namespace System.ComponentModel
             {
                 if (_tabClasses == null && _tabClassNames != null)
                 {
-                    _tabClasses = new Type[_tabClassNames.Length];
-                    for (int i = 0; i < _tabClassNames.Length; i++)
-                    {
-                        int commaIndex = _tabClassNames[i].IndexOf(',');
-                        string className = null;
-                        string assemblyName = null;
-
-                        if (commaIndex != -1)
-                        {
-                            className = _tabClassNames[i].AsSpan(0, commaIndex).Trim().ToString();
-                            assemblyName = _tabClassNames[i].AsSpan(commaIndex + 1).Trim().ToString();
-                        }
-                        else
-                        {
-                            className = _tabClassNames[i];
-                        }
-
-                        _tabClasses[i] = Type.GetType(className, false);
-
-                        if (_tabClasses[i] == null)
-                        {
-                            if (assemblyName != null)
-                            {
-                                Assembly a = Assembly.Load(assemblyName);
-                                if (a != null)
-                                {
-                                    _tabClasses[i] = a.GetType(className, true);
-                                }
-                            }
-                            else
-                            {
-                                throw new TypeLoadException(SR.Format(SR.PropertyTabAttributeTypeLoadException, className));
-                            }
-                        }
-                    }
+                    InitializeTabClasses();
                 }
                 return _tabClasses;
+            }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The APIs that specify _tabClassNames are either marked with DynamicallyAccessedMembers or RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+            Justification = "The APIs that specify _tabClassNames are either marked with DynamicallyAccessedMembers or RequiresUnreferencedCode.")]
+        private void InitializeTabClasses()
+        {
+            _tabClasses = new Type[_tabClassNames.Length];
+            for (int i = 0; i < _tabClassNames.Length; i++)
+            {
+                int commaIndex = _tabClassNames[i].IndexOf(',');
+                string className = null;
+                string assemblyName = null;
+
+                if (commaIndex != -1)
+                {
+                    className = _tabClassNames[i].AsSpan(0, commaIndex).Trim().ToString();
+                    assemblyName = _tabClassNames[i].AsSpan(commaIndex + 1).Trim().ToString();
+                }
+                else
+                {
+                    className = _tabClassNames[i];
+                }
+
+                _tabClasses[i] = Type.GetType(className, false);
+
+                if (_tabClasses[i] == null)
+                {
+                    if (assemblyName != null)
+                    {
+                        Assembly a = Assembly.Load(assemblyName);
+                        if (a != null)
+                        {
+                            _tabClasses[i] = a.GetType(className, true);
+                        }
+                    }
+                    else
+                    {
+                        throw new TypeLoadException(SR.Format(SR.PropertyTabAttributeTypeLoadException, className));
+                    }
+                }
             }
         }
 
@@ -128,9 +143,9 @@ namespace System.ComponentModel
 
         public override bool Equals(object other)
         {
-            if (other is PropertyTabAttribute)
+            if (other is PropertyTabAttribute propertyTabAttribute)
             {
-                return Equals((PropertyTabAttribute)other);
+                return Equals(propertyTabAttribute);
             }
             return false;
         }
@@ -158,7 +173,6 @@ namespace System.ComponentModel
             return true;
         }
 
-
         /// <summary>
         /// Returns the hashcode for this object.
         /// </summary>
@@ -167,6 +181,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
         /// </summary>
+        [RequiresUnreferencedCode("The Types referenced by tabClassNames may be trimmed.")]
         protected void InitializeArrays(string[] tabClassNames, PropertyTabScope[] tabScopes)
         {
             InitializeArrays(tabClassNames, null, tabScopes);

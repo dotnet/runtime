@@ -38,6 +38,9 @@ namespace ILCompiler
     {
         public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask, PgoSchemaElem[] schemaData)
         {
+            if (method == null)
+                throw new ArgumentNullException("method");
+
             Method = method;
             Flags = flags;
             ScenarioMask = scenarioMask;

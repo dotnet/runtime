@@ -158,9 +158,10 @@ csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
 # Analyzers
-dotnet_code_quality.ca1802.api_surface = private, internal
-dotnet_code_quality.ca1822.api_surface = private, internal
-dotnet_code_quality.ca2208.api_surface = public
+dotnet_code_quality.CA1052.api_surface = private, internal
+dotnet_code_quality.CA1802.api_surface = private, internal
+dotnet_code_quality.CA1822.api_surface = private, internal
+dotnet_code_quality.CA2208.api_surface = public
 
 # License header
 file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.

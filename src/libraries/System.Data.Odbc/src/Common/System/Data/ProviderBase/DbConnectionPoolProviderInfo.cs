@@ -3,7 +3,7 @@
 
 namespace System.Data.ProviderBase
 {
-    internal class DbConnectionPoolProviderInfo
+    internal sealed class DbConnectionPoolProviderInfo
     {
     }
 }

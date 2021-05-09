@@ -1394,7 +1394,7 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal class SystemThreadingTasks_FutureDebugView<TResult>
+    internal sealed class SystemThreadingTasks_FutureDebugView<TResult>
     {
         private readonly Task<TResult> m_task;
 

@@ -253,16 +253,6 @@ void Assembler::SetDLL(BOOL IsDll)
     m_fDLL = IsDll;
 }
 
-void Assembler::SetOBJ(BOOL IsObj)
-{
-    HRESULT OK;
-    OK = m_pCeeFileGen->SetObjSwitch(m_pCeeFile, IsObj);
-    _ASSERTE(SUCCEEDED(OK));
-
-    m_fOBJ = IsObj;
-}
-
-
 void Assembler::ResetArgNameList()
 {
     if(m_firstArgName) delArgNameList(m_firstArgName);

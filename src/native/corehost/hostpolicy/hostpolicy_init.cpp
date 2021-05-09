@@ -5,10 +5,10 @@
 #include <trace.h>
 #include "bundle/runner.h"
 
-void make_palstr_arr(int argc, const pal::char_t** argv, std::vector<pal::string_t>* out)
+void make_palstr_arr(size_t argc, const pal::char_t** argv, std::vector<pal::string_t>* out)
 {
     out->reserve(argc);
-    for (int i = 0; i < argc; ++i)
+    for (size_t i = 0; i < argc; ++i)
     {
         out->push_back(argv[i]);
     }

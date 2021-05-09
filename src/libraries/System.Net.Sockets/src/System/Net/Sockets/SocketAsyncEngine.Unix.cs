@@ -97,15 +97,16 @@ namespace System.Net.Sockets
         //
         // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
         //
-        public static SocketAsyncEngine RegisterSocket(IntPtr socketHandle, SocketAsyncContext context)
+        public static bool TryRegisterSocket(IntPtr socketHandle, SocketAsyncContext context, out SocketAsyncEngine? engine, out Interop.Error error)
         {
             int engineIndex = Math.Abs(Interlocked.Increment(ref s_allocateFromEngine) % s_engines.Length);
-            SocketAsyncEngine engine = s_engines[engineIndex];
-            engine.RegisterCore(socketHandle, context);
-            return engine;
+            SocketAsyncEngine nextEngine = s_engines[engineIndex];
+            bool registered = nextEngine.TryRegisterCore(socketHandle, context, out error);
+            engine = registered ? nextEngine : null;
+            return registered;
         }
 
-        private void RegisterCore(IntPtr socketHandle, SocketAsyncContext context)
+        private bool TryRegisterCore(IntPtr socketHandle, SocketAsyncContext context, out Interop.Error error)
         {
             bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
             if (!added)
@@ -115,22 +116,15 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_handle_already_used);
             }
 
-            Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
+            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
             if (error == Interop.Error.SUCCESS)
             {
-                return;
+                return true;
             }
 
             _handleToContextMap.TryRemove(socketHandle, out _);
-            if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
-            {
-                throw new OutOfMemoryException();
-            }
-            else
-            {
-                throw new InternalException(error);
-            }
+            return false;
         }
 
         public void UnregisterSocket(IntPtr socketHandle)

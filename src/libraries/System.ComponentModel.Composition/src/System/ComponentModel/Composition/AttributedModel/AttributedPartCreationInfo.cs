@@ -13,7 +13,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.AttributedModel
 {
-    internal class AttributedPartCreationInfo : IReflectionPartCreationInfo
+    internal sealed class AttributedPartCreationInfo : IReflectionPartCreationInfo
     {
         private readonly Type _type;
         private readonly bool _ignoreConstructorImports;

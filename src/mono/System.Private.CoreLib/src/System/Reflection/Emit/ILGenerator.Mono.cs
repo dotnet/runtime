@@ -1069,7 +1069,7 @@ namespace System.Reflection.Emit
         }
     }
 
-    internal class SequencePointList
+    internal sealed class SequencePointList
     {
         private ISymbolDocumentWriter doc;
         private SequencePoint[]? points;
@@ -1167,7 +1167,7 @@ namespace System.Reflection.Emit
         public int EndCol;
     }
 
-    internal class Stack
+    internal sealed class Stack
     {
         private object?[] _array;
         private int _size;
@@ -1194,7 +1194,7 @@ namespace System.Reflection.Emit
             _version = 0;
         }
 
-        public virtual int Count
+        public int Count
         {
             get
             {
@@ -1202,7 +1202,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual object? Peek()
+        public object? Peek()
         {
             if (_size == 0)
                 throw new InvalidOperationException();
@@ -1210,7 +1210,7 @@ namespace System.Reflection.Emit
             return _array[_size - 1];
         }
 
-        public virtual object? Pop()
+        public object? Pop()
         {
             if (_size == 0)
                 throw new InvalidOperationException();
@@ -1221,7 +1221,7 @@ namespace System.Reflection.Emit
             return obj;
         }
 
-        public virtual void Push(object obj)
+        public void Push(object obj)
         {
             if (_size == _array.Length)
             {

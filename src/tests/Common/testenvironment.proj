@@ -136,6 +136,7 @@
     <TestEnvironment Include="tailcallstress" TailcallStress="1" />
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
+    <TestEnvironment Include="gcstress0xf" GCStress="0xF" />
     <TestEnvironment Include="zapdisable" ZapDisable="1" ReadyToRun="0" />
     <TestEnvironment Include="heapverify1" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_zapdisable" GCStress="0xC" ZapDisable="1" ReadyToRun="0" />

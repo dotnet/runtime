@@ -41,7 +41,12 @@ namespace ILCompiler.IBC
                         // token type is 0, therefore it can't be a type
                         return new TypeSystemEntityOrUnknown((int)token);
                     }
-                    return new TypeSystemEntityOrUnknown((TypeDesc)_ilBody.GetObject((int)token));
+                    TypeDesc foundType = _ilBody.GetObject((int)token, NotFoundBehavior.ReturnNull) as TypeDesc;
+                    if (foundType == null)
+                    {
+                        return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
+                    }
+                    return new TypeSystemEntityOrUnknown(foundType);
                 }
                 catch
                 {
@@ -265,7 +270,9 @@ namespace ILCompiler.IBC
                                 metadataObject = null;
                                 try
                                 {
-                                    metadataObject = ilBody.GetObject(token);
+                                    metadataObject = ilBody.GetObject(token, NotFoundBehavior.ReturnNull);
+                                    if (metadataObject == null)
+                                        metadataObject = metadataNotResolvable;
                                 }
                                 catch (TypeSystemException)
                                 {
@@ -426,13 +433,17 @@ namespace ILCompiler.IBC
                                 // If no exclusive weight is found assign a non zero value that assumes the order in the pgo file is significant.
                                 exclusiveWeight = Math.Min(1000000.0 - profileEntryFound, 0.0) / 1000000.0;
                             }
-                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
+                            if (methodInProgress != null)
+                            {
+                                // If the method being loaded didn't have meaningful input, skip
+                                MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
+                                yield return mibcData;
+                            }
                             state = MibcGroupParseState.LookingForNextMethod;
                             exclusiveWeight = 0;
                             weights = null;
                             instrumentationDataLongs = null;
                             pgoSchemaData = null;
-                            yield return mibcData;
                         }
                         methodInProgress = null;
                         break;
@@ -505,7 +516,7 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+                public override MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
@@ -515,9 +526,14 @@ namespace ILCompiler.IBC
                         return Context.UniversalCanonType;
                     else
                     {
-                        if (throwIfNotFound)
+                        if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
-                            throw new TypeLoadException($"{nameSpace}.{name}");
+                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
+                            ModuleDesc.GetTypeResolutionFailure = failure;
+                            if (notFoundBehavior == NotFoundBehavior.Throw)
+                                failure.Throw();
+
+                            return null;
                         }
                         return null;
                     }

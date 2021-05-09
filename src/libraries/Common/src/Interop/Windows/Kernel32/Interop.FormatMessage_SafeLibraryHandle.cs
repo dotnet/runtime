@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         public const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         public const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;

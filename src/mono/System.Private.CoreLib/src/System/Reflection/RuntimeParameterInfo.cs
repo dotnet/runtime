@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.Reflection
 {
-    internal class RuntimeParameterInfo : ParameterInfo
+    internal sealed class RuntimeParameterInfo : ParameterInfo
     {
         internal MarshalAsAttribute? marshalAs;
 

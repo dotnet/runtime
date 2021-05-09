@@ -4,8 +4,8 @@
     <ProjectReference Include="..\src\Microsoft.XmlSerializer.Generator.csproj" />
   </ItemGroup>
   <PropertyGroup>
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=863421</ReleaseNotes>
-    <ProjectUrl>https://go.microsoft.com/fwlink/?linkid=858594</ProjectUrl>
+    <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=863421</PackageReleaseNotes>
+    <PackageProjectUrl>https://go.microsoft.com/fwlink/?linkid=858594</PackageProjectUrl>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>

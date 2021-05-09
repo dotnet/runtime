@@ -2,16 +2,10 @@
 # Set the RPATH of mscordbi so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   if(CLR_CMAKE_HOST_OSX)
-    if(CLR_CMAKE_HOST_ARCH_ARM64)
-      set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-      set(CMAKE_INSTALL_NAME_DIR "@rpath")
-    else(CLR_CMAKE_HOST_ARCH_ARM64)
-      set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-      set(CMAKE_INSTALL_RPATH "@loader_path")
-    endif(CLR_CMAKE_HOST_ARCH_ARM64)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
   endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
@@ -119,11 +113,5 @@ elseif(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-# Create the DBI module index header file containing the DBI build id
-# for xplat and the timestamp/size on Windows.
-if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    generate_module_index(mscordbi ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h)
-endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-
 # add the install targets
-install_clr(TARGETS mscordbi ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT runtime)

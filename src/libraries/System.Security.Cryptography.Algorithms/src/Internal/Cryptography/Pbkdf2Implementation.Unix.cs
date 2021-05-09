@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class Pbkdf2Implementation
+    internal static partial class Pbkdf2Implementation
     {
         public static unsafe void Fill(
             ReadOnlySpan<byte> password,
@@ -18,7 +18,7 @@ namespace Internal.Cryptography
         {
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(hashAlgorithmName.Name is not null);
-            IntPtr evpHashType = HashProviderDispenser.HashAlgorithmToEvp(hashAlgorithmName.Name);
+            IntPtr evpHashType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmName.Name);
             int result = Interop.Crypto.Pbkdf2(password, salt, iterations, evpHashType, destination);
             const int Success = 1;
 

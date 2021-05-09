@@ -15,7 +15,7 @@ internal static partial class Interop
 namespace System.DirectoryServices.Protocols
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal class Luid
+    internal sealed class Luid
     {
         private readonly int _lowPart;
         private readonly int _highPart;

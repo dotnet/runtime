@@ -1445,7 +1445,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     {1, 2, 3},
                     {4, 5, 6}
-                }); ;
+                });
 
             var actual = tensor;
             tensor = TensorOperations.Increment(tensor);
@@ -1509,7 +1509,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     {-1, 0, 1},
                     {2, 3, 4}
-                }); ;
+                });
 
             var actual = tensor;
             tensor = TensorOperations.Decrement(tensor);
@@ -2418,6 +2418,69 @@ namespace System.Numerics.Tensors.Tests
             IReadOnlyList<int> tensorList = tensor;
             int expectedIndexValue = constructor.IsReversedStride ? 4 : 2;
             Assert.Equal(expectedIndexValue, tensorList[1]);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetConstructedTensors))]
+        public void TestGetEnumerator(Tensor<int> tensor)
+        {
+            static IEnumerable<int> GetExpected(Tensor<int> tensor)
+            {
+                for (int index = 0; index < tensor.Length; ++index)
+                    yield return tensor.GetValue(index);
+            }
+
+            Assert.Equal(GetExpected(tensor), tensor);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetConstructedTensors))]
+        public void TestEnumeratorReset(Tensor<int> tensor)
+        {
+            static long AdvanceEnumerator(ref Tensor<int>.Enumerator enumerator, long maxCount)
+            {
+                long count = 0;
+                while (count < maxCount && enumerator.MoveNext())
+                    count++;
+
+                return count;
+            }
+
+            static void TestStepCountIfInRange(Tensor<int> tensor, long stepCount)
+            {
+                if (stepCount < 0 || stepCount > tensor.Length)
+                    return;
+
+                var enumerator = tensor.GetEnumerator();
+                long actualStepCount = AdvanceEnumerator(ref enumerator, stepCount);
+
+                Assert.Equal(stepCount, actualStepCount);
+
+                enumerator.Reset();
+
+                var itemsPostReset = new List<int>();
+                while (enumerator.MoveNext())
+                    itemsPostReset.Add(enumerator.Current);
+
+                Assert.Equal(tensor, itemsPostReset);
+            }
+
+            TestStepCountIfInRange(tensor, 1);
+            TestStepCountIfInRange(tensor, tensor.Length - 1);
+            TestStepCountIfInRange(tensor, tensor.Length / 4);
+            TestStepCountIfInRange(tensor, tensor.Length - tensor.Length / 4);
+            TestStepCountIfInRange(tensor, tensor.Length / 2);
+            TestStepCountIfInRange(tensor, tensor.Length);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetConstructedTensors))]
+        public void TestEnumeratorDispose_DoesNotThrow(Tensor<int> tensor)
+        {
+            var enumerator = tensor.GetEnumerator();
+
+            enumerator.Dispose();
+            enumerator.Dispose();
         }
     }
 }

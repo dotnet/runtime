@@ -2005,7 +2005,7 @@ namespace System.Net.WebSockets
                 return new DisabledKeepAliveTracker();
             }
 
-            private class DisabledKeepAliveTracker : KeepAliveTracker
+            private sealed class DisabledKeepAliveTracker : KeepAliveTracker
             {
                 public override void OnDataReceived()
                 {
@@ -2033,7 +2033,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            private class DefaultKeepAliveTracker : KeepAliveTracker
+            private sealed class DefaultKeepAliveTracker : KeepAliveTracker
             {
                 private static readonly TimerCallback s_KeepAliveTimerElapsedCallback = new TimerCallback(OnKeepAlive);
                 private readonly TimeSpan _keepAliveInterval;
@@ -2128,7 +2128,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private class OutstandingOperationHelper : IDisposable
+        private sealed class OutstandingOperationHelper : IDisposable
         {
             private volatile int _operationsOutstanding;
             private volatile CancellationTokenSource? _cancellationTokenSource;

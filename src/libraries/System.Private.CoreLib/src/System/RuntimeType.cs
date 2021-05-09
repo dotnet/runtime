@@ -793,7 +793,7 @@ namespace System
                     SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }
 
-        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParamters)
+        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParameters)
         {
             if (genericArguments == null)
                 throw new ArgumentNullException();
@@ -806,9 +806,9 @@ namespace System
                 ThrowIfTypeNeverValidGenericArgument(genericArguments[i]);
             }
 
-            if (genericArguments.Length != genericParamters.Length)
+            if (genericArguments.Length != genericParameters.Length)
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParamters.Length));
+                    SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
     }
 }

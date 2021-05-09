@@ -9,9 +9,6 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader-internals.h>
 
-char *
-mono_image_get_name_with_culture_if_needed (MonoImage *image);
-
 MonoImage*
 mono_image_loaded_internal (MonoAssemblyLoadContext *alc, const char *name);
 

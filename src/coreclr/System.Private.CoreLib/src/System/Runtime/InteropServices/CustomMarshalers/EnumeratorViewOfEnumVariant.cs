@@ -5,7 +5,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class EnumeratorViewOfEnumVariant : ICustomAdapter, System.Collections.IEnumerator
+    internal sealed class EnumeratorViewOfEnumVariant : ICustomAdapter, System.Collections.IEnumerator
     {
         private readonly IEnumVARIANT _enumVariantObject;
         private bool _fetchedLastObject;

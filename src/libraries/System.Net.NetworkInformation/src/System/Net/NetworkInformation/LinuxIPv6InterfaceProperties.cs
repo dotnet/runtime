@@ -5,7 +5,7 @@ using System.IO;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPv6InterfaceProperties : UnixIPv6InterfaceProperties
+    internal sealed class LinuxIPv6InterfaceProperties : UnixIPv6InterfaceProperties
     {
         private readonly LinuxNetworkInterface _linuxNetworkInterface;
 

@@ -156,58 +156,76 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
 // All lengths in this function exclude the terminal NULL.
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
-    const size_t folderPathLength   = wcslen(folderPath);
-    const size_t fileNameLength     = wcslen(fileName);
     const size_t extensionLength    = wcslen(extension);
-    const size_t maxPathLength      = MAX_PATH - 50; // subtract 50 because excel doesn't like paths longer then 230.
+    const size_t fileNameLength     = wcslen(fileName);
     const size_t randomStringLength = 8;
+    const size_t maxPathLength      = MAX_PATH - 50;
+    bool         appendRandomString = false;
 
-    size_t fullPathLength   = folderPathLength + 1 + extensionLength;
-    bool appendRandomString = false;
+    // See how long the folder part is, and start building the file path with the folder part.
+    //
+    WCHAR* fullPath = new WCHAR[MAX_PATH];
+    fullPath[0] = W('\0');
+    const size_t folderPathLength = GetFullPathNameW(folderPath, MAX_PATH, (LPWSTR)fullPath, NULL);
 
-    if (fileNameLength > 0)
+    if (folderPathLength == 0)
     {
-        fullPathLength += fileNameLength;
+        LogError("GetResultFileName - can't resolve folder path '%ws'", folderPath);
+        return nullptr;
     }
-    else
+
+    // Account for the folder, directory separator and extension.
+    //
+    size_t fullPathLength = folderPathLength + 1 + extensionLength;
+
+    // If we won't have room for a minimal file name part, bail.
+    //
+    if ((fullPathLength + randomStringLength) > maxPathLength)
     {
+        LogError("GetResultFileName - folder path '%ws' length + minimal file name exceeds limit %d", fullPath, maxPathLength);
+        return nullptr;
+    }
+
+    // Now figure out the file name part.
+    //
+    const size_t maxFileNameLength = maxPathLength - fullPathLength;
+    size_t usableFileNameLength = 0;
+
+    if (fileNameLength == 0)
+    {
+        // No file name provided. Use random string.
+        //
         fullPathLength += randomStringLength;
         appendRandomString = true;
     }
-
-    size_t charsToDelete = 0;
-
-    if (fullPathLength > maxPathLength)
+    else if (fileNameLength < maxFileNameLength)
     {
-        // The path name is too long; creating the file will fail. This can happen because we use the command line,
-        // which for ngen includes lots of environment variables, for example.
-        // Shorten the file name and add a random string to the end to avoid collisions.
-
-        charsToDelete = fullPathLength - maxPathLength + randomStringLength;
-
-        if (fileNameLength >= charsToDelete)
-        {
-            appendRandomString = true;
-            fullPathLength = maxPathLength;
-        }
-        else
-        {
-            LogError("GetResultFileName - path to the output file is too long '%ws\\%ws.%ws(%d)'", folderPath, fileName, extension, fullPathLength);
-            return nullptr;
-        }
+        // Reasonable length file name, use as is.
+        //
+        usableFileNameLength = fileNameLength;
+        fullPathLength += fileNameLength;
+        appendRandomString = false;
+    }
+    else
+    {
+        // Overly long file name, truncate and add random string.
+        //
+        usableFileNameLength = maxFileNameLength - randomStringLength;
+        fullPathLength += maxFileNameLength;
+        appendRandomString = true;
     }
 
-    WCHAR* fullPath = new WCHAR[fullPathLength + 1];
-    fullPath[0] = W('\0');
-    wcsncat_s(fullPath, fullPathLength + 1, folderPath, folderPathLength);
+    // Append the file name part
+    //
     wcsncat_s(fullPath, fullPathLength + 1, DIRECTORY_SEPARATOR_STR_W, 1);
+    wcsncat_s(fullPath, fullPathLength + 1, fileName, usableFileNameLength);
 
-    if (fileNameLength > charsToDelete)
-    {
-        wcsncat_s(fullPath, fullPathLength + 1, fileName, fileNameLength - charsToDelete);
-        ReplaceIllegalCharacters(fullPath + folderPathLength + 1);
-    }
+    // Clean up anything in the file part that can't be in a file name.
+    //
+    ReplaceIllegalCharacters(fullPath + folderPathLength + 1);
 
+    // Append random string, if we're using it.
+    //
     if (appendRandomString)
     {
        unsigned randomNumber = 0;
@@ -223,6 +241,8 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
        wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
     }
 
+    // Append extension
+    //
     wcsncat_s(fullPath, fullPathLength + 1, extension, extensionLength);
 
     return fullPath;

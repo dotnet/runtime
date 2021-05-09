@@ -387,7 +387,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string ToString() => "Call(" + _target + ")";
     }
 
-    internal class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
+    internal sealed class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
     {
         private readonly ByRefUpdater[] _byrefArgs;
 

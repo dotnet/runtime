@@ -8,9 +8,9 @@ using System.Reflection.Context.Custom;
 
 namespace System.Reflection.Context.Virtual
 {
-    internal partial class VirtualPropertyInfo
+    internal sealed partial class VirtualPropertyInfo
     {
-        private class PropertyGetter : PropertyGetterBase
+        private sealed class PropertyGetter : PropertyGetterBase
         {
             private readonly Func<object, object> _getter;
             private readonly IEnumerable<Attribute> _attributes;

@@ -14,13 +14,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly MethodInfo ResolvedServicesGetter = typeof(ServiceProviderEngineScope).GetProperty(
             nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
 
+        private static readonly MethodInfo ScopeLockGetter = typeof(ServiceProviderEngineScope).GetProperty(
+            nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
+
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
 
         private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors()[0];
 
-        private class ILEmitResolverBuilderRuntimeContext
+        private sealed class ILEmitResolverBuilderRuntimeContext
         {
             public IServiceScopeFactory ScopeFactory;
             public object[] Constants;
@@ -319,6 +322,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 LocalBuilder cacheKeyLocal = context.Generator.DeclareLocal(typeof(ServiceCacheKey));
                 LocalBuilder resolvedServicesLocal = context.Generator.DeclareLocal(typeof(IDictionary<ServiceCacheKey, object>));
+                LocalBuilder syncLocal = context.Generator.DeclareLocal(typeof(object));
                 LocalBuilder lockTakenLocal = context.Generator.DeclareLocal(typeof(bool));
                 LocalBuilder resultLocal = context.Generator.DeclareLocal(typeof(object));
 
@@ -339,8 +343,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Store resolved services
                 Stloc(context.Generator, resolvedServicesLocal.LocalIndex);
 
-                // Load resolvedServices
-                Ldloc(context.Generator, resolvedServicesLocal.LocalIndex);
+                // scope
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                // .Sync
+                context.Generator.Emit(OpCodes.Callvirt, ScopeLockGetter);
+                // Store syncLocal
+                Stloc(context.Generator, syncLocal.LocalIndex);
+
+                // Load syncLocal
+                Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Load address of lockTaken
                 context.Generator.Emit(OpCodes.Ldloca_S, lockTakenLocal.LocalIndex);
                 // Monitor.Enter
@@ -388,8 +399,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Ldloc(context.Generator, lockTakenLocal.LocalIndex);
                 // return if not
                 context.Generator.Emit(OpCodes.Brfalse, returnLabel);
-                // Load resolvedServices
-                Ldloc(context.Generator, resolvedServicesLocal.LocalIndex);
+                // Load syncLocal
+                Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Monitor.Exit
                 context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorExitMethodInfo);
 

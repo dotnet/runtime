@@ -410,7 +410,7 @@ namespace System.ComponentModel
 
         bool IList.IsFixedSize => _readOnly;
 
-        private class ArraySubsetEnumerator : IEnumerator
+        private sealed class ArraySubsetEnumerator : IEnumerator
         {
             private readonly Array _array;
             private readonly int _total;

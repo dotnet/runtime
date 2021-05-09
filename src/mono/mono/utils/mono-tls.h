@@ -125,7 +125,6 @@ mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 
 void mono_tls_init_gc_keys (void);
 void mono_tls_init_runtime_keys (void);
-void mono_tls_free_keys (void);
 
 G_EXTERN_C MonoInternalThread *mono_tls_get_thread_extern (void);
 G_EXTERN_C MonoJitTlsData     *mono_tls_get_jit_tls_extern (void);

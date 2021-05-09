@@ -145,7 +145,7 @@ namespace System
             {
                 return (_object is string str) ? str.Substring(_index, _length) : Span.ToString();
             }
-            return string.Format("System.ReadOnlyMemory<{0}>[{1}]", typeof(T).Name, _length);
+            return $"System.ReadOnlyMemory<{typeof(T).Name}>[{_length}]";
         }
 
         /// <summary>

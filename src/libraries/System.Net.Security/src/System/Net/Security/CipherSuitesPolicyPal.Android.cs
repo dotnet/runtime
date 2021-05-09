@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace System.Net.Security
 {
-    internal class CipherSuitesPolicyPal
+    internal sealed class CipherSuitesPolicyPal
     {
         internal TlsCipherSuite[] TlsCipherSuites { get; private set; }
 

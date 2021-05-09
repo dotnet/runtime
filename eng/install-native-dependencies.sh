@@ -13,12 +13,6 @@
 #
 # ./install-native-dependencies.sh <OS>
 
-if [ "$1" = "OSX" ] && [ "$2" = "arm64" ] && [ "$3" = "azDO" ]; then
-    # On AzDO macOS-10.15 build agents the Xcode currently defaults to Xcode 11.7
-    # Cross compilation for osx-arm64 requires xcode 12.2 or greater
-    sudo xcode-select -s /Applications/Xcode_12.2.app/Contents/Developer
-fi
-
 if [ "$1" = "Linux" ]; then
     sudo apt update
     if [ "$?" != "0" ]; then
@@ -28,8 +22,10 @@ if [ "$1" = "Linux" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
+elif [ "$1" = "MacCatalyst" ] || [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
+
+    echo "Installed xcode version: `xcode-select -p`"
 
     if [ "$3" = "azDO" ]; then
         # workaround for old osx images on hosted agents
@@ -46,19 +42,8 @@ elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "Android" ]; then
-    if [ -z "${ANDROID_OPENSSL_AAR}" ]; then
-        echo "The ANDROID_OPENSSL_AAR variable is not set. OpenSSL will not be installed."
-        exit 0;
-    fi
-    if [ -d "${ANDROID_OPENSSL_AAR}" ]; then
-        exit 0;
-    fi
-    OPENSSL_VER=1.1.1g-alpha-1
-    curl https://maven.google.com/com/android/ndk/thirdparty/openssl/${OPENSSL_VER}/openssl-${OPENSSL_VER}.aar -L --output /tmp/openssl.zip
-    unzip /tmp/openssl.zip -d "${ANDROID_OPENSSL_AAR}" && rm -rf /tmp/openssl.zip
 else
-    echo "Must pass \"Linux\", \"Android\", \"tvOS\", \"iOS\" or \"OSX\" as first argument."
+    echo "Must pass \"Linux\", \"tvOS\", \"iOS\" or \"OSX\" as first argument."
     exit 1
 fi
 

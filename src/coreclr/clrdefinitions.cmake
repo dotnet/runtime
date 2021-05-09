@@ -1,4 +1,4 @@
-include(clrfeatures.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/clrfeatures.cmake)
 
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:DACCESS_COMPILE>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>:CROSSGEN_COMPILE>)
@@ -57,9 +57,8 @@ if(CLR_CMAKE_HOST_WIN32)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(CLR_CMAKE_HOST_WIN32)
 
-# Only enable edit and continue on x86 and x64, exclude arm & arm64
+add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:EnC_SUPPORTED>)
 if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:EnC_SUPPORTED>)
   if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_ENC_SUPPORTED>)
   endif(CLR_CMAKE_TARGET_WIN32)

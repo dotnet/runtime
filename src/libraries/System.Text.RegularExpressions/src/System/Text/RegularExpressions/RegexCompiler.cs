@@ -15,9 +15,6 @@ namespace System.Text.RegularExpressions
     /// RegexCompiler translates a block of RegexCode to MSIL, and creates a
     /// subclass of the RegexRunner type.
     /// </summary>
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-        Target = "M:System.Text.RegularExpressions.RegexCompiler.#cctor",
-        Justification = "The referenced methods don't have any DynamicallyAccessedMembers annotations. See https://github.com/mono/linker/issues/1727")]
     internal abstract class RegexCompiler
     {
         private static readonly FieldInfo s_runtextbegField = RegexRunnerField("runtextbeg");
@@ -1371,7 +1368,7 @@ namespace System.Text.RegularExpressions
                     {
                         // Create a string to store the lookup table we use to find the offset.
                         Debug.Assert(_boyerMoorePrefix.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
-                        string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), (span, state) =>
+                        string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), static (span, state) =>
                         {
                             // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
                             // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
@@ -5259,7 +5256,7 @@ namespace System.Text.RegularExpressions
 
             // Generate the lookup table to store 128 answers as bits. We use a const string instead of a byte[] / static
             // data property because it lets IL emit handle all the details for us.
-            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
+            string bitVectorString = string.Create(8, (charClass, invariant), static (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {

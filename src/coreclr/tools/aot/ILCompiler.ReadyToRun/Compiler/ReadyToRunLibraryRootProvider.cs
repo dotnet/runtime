@@ -63,7 +63,7 @@ namespace ILCompiler
                     if (!CorInfoImpl.ShouldSkipCompilation(method))
                     {
                         CheckCanGenerateMethod(method);
-                        rootProvider.AddCompilationRoot(method, "Profile triggered method");
+                        rootProvider.AddCompilationRoot(method, rootMinimalDependencies: true, reason: "Profile triggered method");
                     }
                 }
                 catch (TypeSystemException)
@@ -116,7 +116,7 @@ namespace ILCompiler
                     if (!CorInfoImpl.ShouldSkipCompilation(method))
                     {
                         CheckCanGenerateMethod(methodToRoot);
-                        rootProvider.AddCompilationRoot(methodToRoot, reason);
+                        rootProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: reason);
                     }
                 }
                 catch (TypeSystemException)

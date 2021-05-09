@@ -91,7 +91,9 @@ namespace System.Net.Quic.Implementations.Mock
         }
 
         // TODO: Should clone the endpoint since it is mutable
-        internal override IPEndPoint LocalEndPoint => _localEndPoint;
+        // TODO: could this be made back to non-nullable?
+        //       For inbound we have it immediately, for outbound after connect.
+        internal override IPEndPoint? LocalEndPoint => _localEndPoint;
 
         // TODO: Should clone the endpoint since it is mutable
         internal override EndPoint RemoteEndPoint => _remoteEndPoint!;
@@ -208,6 +210,12 @@ namespace System.Net.Quic.Implementations.Mock
             ConnectionState? state = _state;
             if (state is not null)
             {
+                if (state._closed)
+                {
+                    return default;
+                }
+                state._closed = true;
+
                 if (_isClient)
                 {
                     state._clientErrorCode = errorCode;
@@ -270,6 +278,7 @@ namespace System.Net.Quic.Implementations.Mock
             public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
             public long _clientErrorCode;
             public long _serverErrorCode;
+            public bool _closed;
 
             public ConnectionState(SslApplicationProtocol applicationProtocol)
             {

@@ -31,8 +31,8 @@ namespace AppHost.Bundle.Tests
             var hostName = BundleHelper.GetHostName(fixture);
 
             // Publish the bundle
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options: BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -80,8 +80,7 @@ namespace AppHost.Bundle.Tests
                 return;
 
             var fixture = sharedTestState.TestFixture.Copy();
-            UseSingleFileSelfContainedHost(fixture);
-            var bundler = BundleHelper.BundleApp(fixture, out var singleFile, bundleOptions);
+            var bundler = BundleSelfContainedApp(fixture, out var singleFile, bundleOptions);
 
             // Run the bundled app (extract files to <path>)
             var cmd = Command.Create(singleFile);
@@ -110,8 +109,8 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
 
             // Publish the bundle
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -160,12 +159,11 @@ namespace AppHost.Bundle.Tests
             var appName = Path.GetFileNameWithoutExtension(hostName);
 
             // Publish the bundle
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
-
 
             // Run the bunded app for the first time, and extract files to 
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id

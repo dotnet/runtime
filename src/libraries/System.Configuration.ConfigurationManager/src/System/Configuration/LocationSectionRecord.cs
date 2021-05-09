@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Configuration
 {
     [DebuggerDisplay("LocationSectionRecord {ConfigKey}")]
-    internal class LocationSectionRecord
+    internal sealed class LocationSectionRecord
     {
         private List<ConfigurationException> _errors; // errors
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -35,21 +36,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static extern int EvpMdSize(IntPtr md);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMd5")]
-        internal static extern IntPtr EvpMd5();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha1")]
-        internal static extern IntPtr EvpSha1();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha256")]
-        internal static extern IntPtr EvpSha256();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha384")]
-        internal static extern IntPtr EvpSha384();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha512")]
-        internal static extern IntPtr EvpSha512();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static extern int GetMaxMdSize();

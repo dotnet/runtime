@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Primitives
             return NullDisposable.Instance;
         }
 
-        private class NullDisposable : IDisposable
+        private sealed class NullDisposable : IDisposable
         {
             public static readonly NullDisposable Instance = new NullDisposable();
 

@@ -287,7 +287,7 @@ namespace System.Data
 
             if (listAccessors == null || listAccessors.Length == 0)
             {
-                return ((ICustomTypeDescriptor)(new DataViewManagerListItemTypeDescriptor(this))).GetProperties();
+                return new DataViewManagerListItemTypeDescriptor(this).GetPropertiesInternal();
             }
             else
             {

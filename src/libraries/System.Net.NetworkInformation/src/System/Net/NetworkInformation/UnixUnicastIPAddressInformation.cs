@@ -5,7 +5,7 @@ using System.Net.Sockets;
 namespace System.Net.NetworkInformation
 {
     /// Provides information about a network interface's unicast address
-    internal class UnixUnicastIPAddressInformation : UnicastIPAddressInformation
+    internal sealed class UnixUnicastIPAddressInformation : UnicastIPAddressInformation
     {
         private readonly IPAddress _address;
         private readonly int _prefixLength;

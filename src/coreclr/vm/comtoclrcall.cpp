@@ -33,6 +33,7 @@
 #include "dbginterface.h"
 #include "sigbuilder.h"
 #include "notifyexternals.h"
+#include "callconvbuilder.hpp"
 #include "comdelegate.h"
 #include "finalizerthread.h"
 
@@ -505,7 +506,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     //
     HRESULT hr = S_OK;
 
-    pThread = GetThread();
+    pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         pThread = SetupThreadNoThrow();
@@ -1462,7 +1463,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     return NDirect::CreateCLRToNativeILStub(&sigDesc,
                                             (CorNativeLinkType)0,
                                             (CorNativeLinkFlags)0,
-                                            MetaSig::GetDefaultUnmanagedCallingConvention(),
+                                            CallConv::GetDefaultUnmanagedCallingConvention(),
                                             dwStubFlags);
 }
 

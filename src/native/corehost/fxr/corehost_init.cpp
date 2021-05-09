@@ -35,7 +35,7 @@ corehost_init_t::corehost_init_t(
 {
     make_cstr_arr(m_probe_paths, &m_probe_paths_cstr);
 
-    int fx_count = fx_definitions.size();
+    size_t fx_count = fx_definitions.size();
     m_fx_names.reserve(fx_count);
     m_fx_dirs.reserve(fx_count);
     m_fx_requested_versions.reserve(fx_count);
@@ -132,7 +132,12 @@ const host_interface_t& corehost_init_t::get_host_init_data()
     hi.host_info_dotnet_root = m_host_info_dotnet_root.c_str();
     hi.host_info_app_path = m_host_info_app_path.c_str();
 
-    hi.single_file_bundle_header_offset = bundle::info_t::is_single_file_bundle() ? bundle::info_t::the_app->header_offset() : 0;
+    hi.single_file_bundle_header_offset = 0;
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        int64_t offset = bundle::info_t::the_app->header_offset();
+        hi.single_file_bundle_header_offset = to_size_t_dbgchecked(offset);
+    }
 
     return hi;
 }

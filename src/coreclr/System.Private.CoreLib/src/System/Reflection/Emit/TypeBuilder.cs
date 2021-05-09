@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
         }
 
         #region Declarations
-        private class CustAttr
+        private sealed class CustAttr
         {
             private readonly ConstructorInfo? m_con;
             private readonly byte[]? m_binaryAttribute;

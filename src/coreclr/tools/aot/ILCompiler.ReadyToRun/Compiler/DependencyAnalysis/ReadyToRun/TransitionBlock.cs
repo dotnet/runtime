@@ -29,7 +29,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         X64UnixTransitionBlock.Instance;
 
                 case TargetArchitecture.ARM:
-                    return Arm32TransitionBlock.Instance;
+                    if (target.Abi == TargetAbi.CoreRTArmel)
+                    {
+                        return Arm32ElTransitionBlock.Instance;
+                    }
+                    else
+                    {
+                        return Arm32TransitionBlock.Instance;
+                    }
 
                 case TargetArchitecture.ARM64:
                     return Arm64TransitionBlock.Instance;
@@ -56,6 +63,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// This property is only overridden in AMD64 Unix variant of the transition block.
         /// </summary>
         public virtual bool IsX64UnixABI => false;
+
+        public virtual bool IsArmelABI => false;
+        public virtual bool IsArmhfABI => false;
 
         public abstract int PointerSize { get; }
 
@@ -301,11 +311,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotSupportedException();
 
                 case CorElementType.ELEMENT_TYPE_R4:
-                    fpReturnSize = sizeof(float);
+                    if (!IsArmelABI)
+                    {
+                        fpReturnSize = sizeof(float);
+                    }
                     break;
 
                 case CorElementType.ELEMENT_TYPE_R8:
-                    fpReturnSize = sizeof(double);
+                    if (!IsArmelABI)
+                    {
+                        fpReturnSize = sizeof(double);
+                    }
                     break;
 
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
@@ -499,27 +515,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override bool IsArgPassedByRef(TypeHandle th) => false;
         }
 
-        private sealed class Arm32TransitionBlock : TransitionBlock
+        private class Arm32TransitionBlock : TransitionBlock
         {
             public static TransitionBlock Instance = new Arm32TransitionBlock();
 
-            public override TargetArchitecture Architecture => TargetArchitecture.ARM;
-            public override int PointerSize => 4;
+            public sealed override TargetArchitecture Architecture => TargetArchitecture.ARM;
+            public sealed override int PointerSize => 4;
             // R0, R1, R2, R3
-            public override int NumArgumentRegisters => 4;
+            public sealed override int NumArgumentRegisters => 4;
             // R4, R5, R6, R7, R8, R9, R10, R11, R14
-            public override int NumCalleeSavedRegisters => 9;
+            public sealed override int NumCalleeSavedRegisters => 9;
             // Callee-saves, argument registers
-            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
-            public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
+            public sealed override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
+            public sealed override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
             // D0..D7
-            public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
-            public override int EnregisteredParamTypeMaxSize => 0;
-            public override int EnregisteredReturnTypeIntegerMaxSize => 4;
+            public sealed override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
+            public sealed override int EnregisteredParamTypeMaxSize => 0;
+            public sealed override int EnregisteredReturnTypeIntegerMaxSize => 4;
 
-            public override bool IsArgPassedByRef(TypeHandle th) => false;
+            public override bool IsArmhfABI => true;
 
-            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
+            public sealed override bool IsArgPassedByRef(TypeHandle th) => false;
+
+            public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
+        }
+
+        private class Arm32ElTransitionBlock : Arm32TransitionBlock
+        {
+            public new static TransitionBlock Instance = new Arm32ElTransitionBlock();
+
+            public override bool IsArmhfABI => false;
+            public override bool IsArmelABI => true;
         }
 
         private sealed class Arm64TransitionBlock : TransitionBlock

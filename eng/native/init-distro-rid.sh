@@ -174,8 +174,12 @@ initDistroRidGlobal()
                 distroRid="maccatalyst-$buildArch"
             elif [ "$targetOs" = "tvOS" ]; then
                 distroRid="tvos-$buildArch"
+            elif [ "$targetOs" = "tvOSSimulator" ]; then
+                distroRid="tvossimulator-$buildArch"
             elif [ "$targetOs" = "iOS" ]; then
                 distroRid="ios-$buildArch"
+            elif [ "$targetOs" = "iOSSimulator" ]; then
+                distroRid="iossimulator-$buildArch"
             elif [ "$targetOs" = "Android" ]; then
                 distroRid="android-$buildArch"
             elif [ "$targetOs" = "Browser" ]; then

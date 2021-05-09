@@ -58,7 +58,7 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    internal class LdapRequestState
+    internal sealed class LdapRequestState
     {
         internal DirectoryResponse _response;
         internal LdapAsyncResult _ldapAsync;
@@ -75,7 +75,7 @@ namespace System.DirectoryServices.Protocols
         Done = 2
     }
 
-    internal class LdapPartialAsyncResult : LdapAsyncResult
+    internal sealed class LdapPartialAsyncResult : LdapAsyncResult
     {
         internal LdapConnection _con;
         internal int _messageID = -1;

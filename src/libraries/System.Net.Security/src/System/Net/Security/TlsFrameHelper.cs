@@ -92,7 +92,7 @@ namespace System.Net.Security
         public override string ToString() => $"{Version}:{Type}[{Length}]";
     }
 
-    internal class TlsFrameHelper
+    internal static class TlsFrameHelper
     {
         public const int HeaderSize = 5;
 

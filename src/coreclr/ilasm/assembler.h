@@ -803,7 +803,6 @@ public:
     //MethodList  m_MethodList;
 
     BOOL    m_fDLL;
-    BOOL    m_fOBJ;
     BOOL    m_fEntryPointPresent;
     BOOL    m_fHaveFieldsWithRvas;
     BOOL    m_fFoldCode;
@@ -870,7 +869,6 @@ public:
     state_t CheckLocalTypeConsistancy(int instr, unsigned arg);
     state_t AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTION section);
     void SetDLL(BOOL);
-    void SetOBJ(BOOL);
     void ResetForNextMethod();
     void ResetLineNumbers();
     void SetStdMapping(BOOL val = TRUE) { m_fStdMapping = val; };

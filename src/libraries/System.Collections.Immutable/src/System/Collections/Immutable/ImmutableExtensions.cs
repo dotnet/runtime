@@ -108,7 +108,7 @@ namespace System.Collections.Immutable
         /// Wraps a <see cref="IList{T}"/> as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private class ListOfTWrapper<T> : IOrderedCollection<T>
+        private sealed class ListOfTWrapper<T> : IOrderedCollection<T>
         {
             /// <summary>
             /// The list being exposed.
@@ -168,7 +168,7 @@ namespace System.Collections.Immutable
         /// Wraps any <see cref="IEnumerable{T}"/> as an ordered, indexable list.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private class FallbackWrapper<T> : IOrderedCollection<T>
+        private sealed class FallbackWrapper<T> : IOrderedCollection<T>
         {
             /// <summary>
             /// The original sequence.

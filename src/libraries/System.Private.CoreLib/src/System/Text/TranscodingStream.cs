@@ -79,7 +79,7 @@ namespace System.Text
         public override long Position
         {
             get => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
-            set => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            set => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -185,7 +185,7 @@ namespace System.Text
             {
                 if (!CanRead)
                 {
-                    throw Error.GetReadNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
                 }
 
                 _innerDecoder = _innerEncoding.GetDecoder();
@@ -217,7 +217,7 @@ namespace System.Text
             {
                 if (!CanWrite)
                 {
-                    throw Error.GetWriteNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 }
 
                 _innerEncoder = _innerEncoding.GetEncoder();
@@ -312,18 +312,28 @@ namespace System.Text
 
                 try
                 {
-                    // Beware: Use our constant value instead of 'rentedBytes.Length' for the count
-                    // parameter below. The reason for this is that the array pool could've returned
-                    // a larger-than-expected array, but our worst-case expansion calculations
-                    // performed earlier didn't take that into account.
+                    int pendingReadDataPopulatedJustNow;
+                    bool isEofReached;
 
-                    int innerBytesReadJustNow = _innerStream.Read(rentedBytes, 0, DefaultReadByteBufferSize);
-                    bool isEofReached = (innerBytesReadJustNow == 0);
+                    do
+                    {
+                        // Beware: Use our constant value instead of 'rentedBytes.Length' for the count
+                        // parameter below. The reason for this is that the array pool could've returned
+                        // a larger-than-expected array, but our worst-case expansion calculations
+                        // performed earlier didn't take that into account.
 
-                    // convert bytes [inner] -> chars, then convert chars -> bytes [this]
+                        int innerBytesReadJustNow = _innerStream.Read(rentedBytes, 0, DefaultReadByteBufferSize);
+                        isEofReached = (innerBytesReadJustNow == 0);
 
-                    int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
-                    int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                        // Convert bytes [inner] -> chars, then convert chars -> bytes [this].
+                        // We can't return 0 to our caller until inner stream EOF has been reached. But if the
+                        // inner stream returns a non-empty but incomplete buffer, GetBytes may return 0 anyway
+                        // since it can't yet make forward progress on the input data. If this happens, we'll
+                        // loop so that we don't return 0 to our caller until we truly see inner stream EOF.
+
+                        int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
+                        pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                    } while (!isEofReached && pendingReadDataPopulatedJustNow == 0);
 
                     _readBufferOffset = 0;
                     _readBufferCount = pendingReadDataPopulatedJustNow;
@@ -381,18 +391,28 @@ namespace System.Text
 
                     try
                     {
-                        // Beware: Use our constant value instead of 'rentedBytes.Length' when creating
-                        // the Mem<byte> struct. The reason for this is that the array pool could've returned
-                        // a larger-than-expected array, but our worst-case expansion calculations
-                        // performed earlier didn't take that into account.
+                        int pendingReadDataPopulatedJustNow;
+                        bool isEofReached;
 
-                        int innerBytesReadJustNow = await _innerStream.ReadAsync(rentedBytes.AsMemory(0, DefaultReadByteBufferSize), cancellationToken).ConfigureAwait(false);
-                        bool isEofReached = (innerBytesReadJustNow == 0);
+                        do
+                        {
+                            // Beware: Use our constant value instead of 'rentedBytes.Length' when creating
+                            // the Mem<byte> struct. The reason for this is that the array pool could've returned
+                            // a larger-than-expected array, but our worst-case expansion calculations
+                            // performed earlier didn't take that into account.
 
-                        // convert bytes [inner] -> chars, then convert chars -> bytes [this]
+                            int innerBytesReadJustNow = await _innerStream.ReadAsync(rentedBytes.AsMemory(0, DefaultReadByteBufferSize), cancellationToken).ConfigureAwait(false);
+                            isEofReached = (innerBytesReadJustNow == 0);
 
-                        int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
-                        int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                            // Convert bytes [inner] -> chars, then convert chars -> bytes [this].
+                            // We can't return 0 to our caller until inner stream EOF has been reached. But if the
+                            // inner stream returns a non-empty but incomplete buffer, GetBytes may return 0 anyway
+                            // since it can't yet make forward progress on the input data. If this happens, we'll
+                            // loop so that we don't return 0 to our caller until we truly see inner stream EOF.
+
+                            int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
+                            pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                        } while (!isEofReached && pendingReadDataPopulatedJustNow == 0);
 
                         _readBufferOffset = 0;
                         _readBufferCount = pendingReadDataPopulatedJustNow;
@@ -428,7 +448,7 @@ namespace System.Text
             => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         public override void SetLength(long value)
-            => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
         [StackTraceHidden]
         private void ThrowIfDisposed()
@@ -443,9 +463,7 @@ namespace System.Text
         [StackTraceHidden]
         private void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(
-                objectName: GetType().Name,
-                message: SR.ObjectDisposed_StreamClosed);
+            ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
         }
 
         public override void Write(byte[] buffer, int offset, int count)

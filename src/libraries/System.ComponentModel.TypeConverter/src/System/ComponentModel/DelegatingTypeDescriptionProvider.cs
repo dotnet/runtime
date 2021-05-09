@@ -32,7 +32,11 @@ namespace System.ComponentModel
         /// data type. If the method is not interested in providing a substitute
         /// instance, it should call base.
         /// </summary>
-        public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+        public override object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type[] argTypes,
+            object[] args)
         {
             return Provider.CreateInstance(provider, objectType, argTypes, args);
         }

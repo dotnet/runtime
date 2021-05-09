@@ -1,10 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>Abstractions for dependency injection.
-
-Commonly Used Types:
-Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>
