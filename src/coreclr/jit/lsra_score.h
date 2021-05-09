@@ -32,7 +32,7 @@ REG_SEL_DEF(UNASSIGNED,         0x00100,    "UNASG")   // It is not currently as
 REG_SEL_DEF(COVERS_FULL,        0x00080,    "COFUL")   // It covers the full range of the interval from current position to the end.
 REG_SEL_DEF(BEST_FIT,           0x00040,    "BSFIT")   // The available range is the closest match to the full range of the interval.
 REG_SEL_DEF(IS_PREV_REG,        0x00020,    "PRVRG")   // This register was previously assigned to the interval.
-REG_SEL_DEF(REG_ORDER,          0x00010,    "ORDR ")   // Tie-breaker
+REG_SEL_DEF(REG_ORDER,          0x00010,    "ORDER")   // Tie-breaker
 
 // These are the original criteria for comparing registers that are in use.
 REG_SEL_DEF(SPILL_COST,         0x00008,    "SPILL")   // It has the lowest cost of all the candidates.

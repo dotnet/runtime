@@ -1138,7 +1138,7 @@ private:
 #ifdef DEBUG
     const char* getScoreName(RegisterScore score);
 #endif
-    regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));a
+    regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1377,6 +1377,8 @@ private:
                                  Interval*     interval     = nullptr,
                                  regNumber     reg          = REG_NA,
                                  BasicBlock*   currentBlock = nullptr);
+
+    void dumpHeuristicSpace(LsraDumpEvent event);
 
     void validateIntervals();
 #endif // DEBUG
