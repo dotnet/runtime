@@ -633,7 +633,6 @@ void EEStartupHelper()
     static ConfigDWORD breakOnEELoad;
     EX_TRY
     {
-        Thread* mainThread = NULL;
         g_fEEInit = true;
 
 #ifndef CROSSGEN_COMPILE
@@ -918,13 +917,13 @@ void EEStartupHelper()
         }
 
         // throws on error
-        mainThread = SetupMainThread();
+        SetupMainThread();
 
 #ifdef DEBUGGING_SUPPORTED
         // Notify debugger once the first thread is created to finish initialization.
         if (g_pDebugInterface != NULL)
         {
-            g_pDebugInterface->StartupPhase2(mainThread);
+            g_pDebugInterface->StartupPhase2(GetThread());
         }
 #endif
 

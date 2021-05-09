@@ -545,7 +545,7 @@ enum ThreadpoolThreadType
 // Public functions
 //
 //      Thread* GetThread()             - returns current Thread.
-//      Thread* SetupMainThread()       - creates the main Thread.
+//      void    SetupMainThread()       - creates the main Thread.
 //      Thread* SetupThreadNoThrow()    - creates a new Thread without throwing.
 //      Thread* SetupUnstartedThread()  - creates new unstarted Thread which
 //                                        (obviously) isn't in a TLS.
@@ -579,7 +579,7 @@ enum ThreadpoolThreadType
 //---------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------
-Thread* SetupMainThread();
+void    SetupMainThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 
 enum SetupUnstartedThreadFlags

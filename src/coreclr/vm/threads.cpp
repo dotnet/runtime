@@ -808,7 +808,7 @@ static Thread* SetupThreadWorker()
     return pThread;
 }
 
-Thread* SetupMainThread()
+void SetupMainThread()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -818,7 +818,7 @@ Thread* SetupMainThread()
     isCalled = true;
 #endif // DEBUG
 
-    return SetupThreadWorker();
+    (void)SetupThreadWorker();
 }
 
 //-------------------------------------------------------------------------
