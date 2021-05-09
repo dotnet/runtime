@@ -1379,8 +1379,6 @@ private:
                                  BasicBlock*   currentBlock = nullptr,
                                  RegisterScore registerScore = NONE);
 
-    void dumpHeuristicSpace(LsraDumpEvent event);
-
     void validateIntervals();
 #endif // DEBUG
 
