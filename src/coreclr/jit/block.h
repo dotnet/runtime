@@ -641,16 +641,17 @@ struct BasicBlock : private LIR::Range
 
     // Returns "true" if the block is empty. Empty here means there are no statement
     // trees *except* PHI definitions.
-    bool isEmpty();
+    bool isEmpty() const;
 
-    bool isValid();
+    bool isValid() const;
 
     // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPair();
+    bool isBBCallAlwaysPair() const;
+
     // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPairTail();
+    bool isBBCallAlwaysPairTail() const;
 
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
@@ -691,16 +692,16 @@ struct BasicBlock : private LIR::Range
     // instead of 2.
 
     // NumSucc: Returns the number of successors of "this".
-    unsigned NumSucc();
+    unsigned NumSucc() const;
     unsigned NumSucc(Compiler* comp);
 
     // GetSucc: Returns the "i"th successor. Requires (0 <= i < NumSucc()).
-    BasicBlock* GetSucc(unsigned i);
+    BasicBlock* GetSucc(unsigned i) const;
     BasicBlock* GetSucc(unsigned i, Compiler* comp);
 
-    BasicBlock* GetUniquePred(Compiler* comp);
+    BasicBlock* GetUniquePred(Compiler* comp) const;
 
-    BasicBlock* GetUniqueSucc();
+    BasicBlock* GetUniqueSucc() const;
 
     unsigned countOfInEdges() const
     {
@@ -837,8 +838,8 @@ struct BasicBlock : private LIR::Range
         return sameTryRegion(blk1, blk2) && sameHndRegion(blk1, blk2);
     }
 
-    bool hasEHBoundaryIn();
-    bool hasEHBoundaryOut();
+    bool hasEHBoundaryIn() const;
+    bool hasEHBoundaryOut() const;
 
 // Some non-zero value that will not collide with real tokens for bbCatchTyp
 #define BBCT_NONE 0x00000000
@@ -997,7 +998,7 @@ struct BasicBlock : private LIR::Range
     static size_t s_Count;
 #endif // MEASURE_BLOCK_SIZE
 
-    bool bbFallsThrough();
+    bool bbFallsThrough() const;
 
     // Our slop fraction is 1/128 of the block weight rounded off
     static weight_t GetSlopFraction(weight_t weightBlk)
@@ -1025,14 +1026,14 @@ struct BasicBlock : private LIR::Range
     unsigned bbID;
 #endif // DEBUG
 
-    ThisInitState bbThisOnEntry();
-    unsigned      bbStackDepthOnEntry();
+    ThisInitState bbThisOnEntry() const;
+    unsigned      bbStackDepthOnEntry() const;
     void bbSetStack(void* stackBuffer);
-    StackEntry* bbStackOnEntry();
+    StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
     // zero-based number for use as an array index.
-    unsigned bbInd()
+    unsigned bbInd() const
     {
         assert(bbNum > 0);
         return bbNum - 1;
@@ -1046,24 +1047,29 @@ struct BasicBlock : private LIR::Range
         return StatementList(firstStmt());
     }
 
-    GenTree* firstNode();
-    GenTree* lastNode();
+    StatementList NonPhiStatements() const
+    {
+        return StatementList(FirstNonPhiDef());
+    }
 
-    bool endsWithJmpMethod(Compiler* comp);
+    GenTree* firstNode() const;
+    GenTree* lastNode() const;
+
+    bool endsWithJmpMethod(Compiler* comp) const;
 
     bool endsWithTailCall(Compiler* comp,
                           bool      fastTailCallsOnly,
                           bool      tailCallsConvertibleToLoopOnly,
-                          GenTree** tailCall);
+                          GenTree** tailCall) const;
 
-    bool endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly = false);
+    bool endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly = false) const;
 
-    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall);
+    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const;
 
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) assignment).
-    Statement* FirstNonPhiDef();
-    Statement* FirstNonPhiDefOrCatchArgAsg();
+    Statement* FirstNonPhiDef() const;
+    Statement* FirstNonPhiDefOrCatchArgAsg() const;
 
     BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
@@ -1145,20 +1151,20 @@ struct BasicBlock : private LIR::Range
         Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
 
     void MakeLIR(GenTree* firstNode, GenTree* lastNode);
-    bool IsLIR();
+    bool IsLIR() const;
 
     void SetDominatedByExceptionalEntryFlag()
     {
         bbFlags |= BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY;
     }
 
-    bool IsDominatedByExceptionalEntryFlag()
+    bool IsDominatedByExceptionalEntryFlag() const
     {
         return (bbFlags & BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY) != 0;
     }
 
 #ifdef DEBUG
-    bool Contains(const GenTree* node)
+    bool Contains(const GenTree* node) const
     {
         assert(IsLIR());
         for (Iterator iter = begin(); iter != end(); ++iter)

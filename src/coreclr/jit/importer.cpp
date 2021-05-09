@@ -18491,12 +18491,12 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
     return;
 }
 
-ThisInitState BasicBlock::bbThisOnEntry()
+ThisInitState BasicBlock::bbThisOnEntry() const
 {
     return bbEntryState ? bbEntryState->thisInitialized : TIS_Bottom;
 }
 
-unsigned BasicBlock::bbStackDepthOnEntry()
+unsigned BasicBlock::bbStackDepthOnEntry() const
 {
     return (bbEntryState ? bbEntryState->esStackDepth : 0);
 }
@@ -18508,7 +18508,7 @@ void BasicBlock::bbSetStack(void* stackBuffer)
     bbEntryState->esStack = (StackEntry*)stackBuffer;
 }
 
-StackEntry* BasicBlock::bbStackOnEntry()
+StackEntry* BasicBlock::bbStackOnEntry() const
 {
     assert(bbEntryState);
     return bbEntryState->esStack;

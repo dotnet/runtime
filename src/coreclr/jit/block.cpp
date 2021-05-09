@@ -800,7 +800,7 @@ void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
     bbFlags |= BBF_IS_LIR;
 }
 
-bool BasicBlock::IsLIR()
+bool BasicBlock::IsLIR() const
 {
     assert(isValid());
     const bool isLIR = ((bbFlags & BBF_IS_LIR) != 0);
@@ -845,7 +845,7 @@ Statement* BasicBlock::lastStmt() const
 //------------------------------------------------------------------------
 // BasicBlock::firstNode: Returns the first node in the block.
 //
-GenTree* BasicBlock::firstNode()
+GenTree* BasicBlock::firstNode() const
 {
     return IsLIR() ? GetFirstLIRNode() : Compiler::fgGetFirstNode(firstStmt()->GetRootNode());
 }
@@ -853,7 +853,7 @@ GenTree* BasicBlock::firstNode()
 //------------------------------------------------------------------------
 // BasicBlock::lastNode: Returns the last node in the block.
 //
-GenTree* BasicBlock::lastNode()
+GenTree* BasicBlock::lastNode() const
 {
     return IsLIR() ? m_lastNode : lastStmt()->GetRootNode();
 }
@@ -873,7 +873,7 @@ GenTree* BasicBlock::lastNode()
 //    a backedge), we never want to consider it "unique" because the prolog is an
 //    implicit predecessor.
 
-BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler)
+BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 {
     if ((bbPreds == nullptr) || (bbPreds->flNext != nullptr) || (this == compiler->fgFirstBB))
     {
@@ -895,7 +895,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler)
 // Return Value:
 //    The unique successor of a block, or nullptr if there is no unique successor.
 
-BasicBlock* BasicBlock::GetUniqueSucc()
+BasicBlock* BasicBlock::GetUniqueSucc() const
 {
     if (bbJumpKind == BBJ_ALWAYS)
     {
@@ -933,7 +933,7 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
 //    True if block is empty, or contains only PHI assignments,
 //    or contains zero or more PHI assignments followed by NOPs.
 //
-bool BasicBlock::isEmpty()
+bool BasicBlock::isEmpty() const
 {
     if (!IsLIR())
     {
@@ -969,7 +969,7 @@ bool BasicBlock::isEmpty()
 // Return Value:
 //    True if it a valid basic block.
 //
-bool BasicBlock::isValid()
+bool BasicBlock::isValid() const
 {
     const bool isLIR = ((bbFlags & BBF_IS_LIR) != 0);
     if (isLIR)
@@ -984,7 +984,7 @@ bool BasicBlock::isValid()
     }
 }
 
-Statement* BasicBlock::FirstNonPhiDef()
+Statement* BasicBlock::FirstNonPhiDef() const
 {
     Statement* stmt = firstStmt();
     if (stmt == nullptr)
@@ -1005,7 +1005,7 @@ Statement* BasicBlock::FirstNonPhiDef()
     return stmt;
 }
 
-Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
+Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
 {
     Statement* stmt = FirstNonPhiDef();
     if (stmt == nullptr)
@@ -1026,11 +1026,10 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
  *  Can a BasicBlock be inserted after this without altering the flowgraph
  */
 
-bool BasicBlock::bbFallsThrough()
+bool BasicBlock::bbFallsThrough() const
 {
     switch (bbJumpKind)
     {
-
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
         case BBJ_EHFILTERRET:
@@ -1063,7 +1062,7 @@ bool BasicBlock::bbFallsThrough()
 // Return Value:
 //    Count of block successors.
 //
-unsigned BasicBlock::NumSucc()
+unsigned BasicBlock::NumSucc() const
 {
     switch (bbJumpKind)
     {
@@ -1107,7 +1106,7 @@ unsigned BasicBlock::NumSucc()
 // Return Value:
 //    Requested successor block
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i)
+BasicBlock* BasicBlock::GetSucc(unsigned i) const
 {
     assert(i < NumSucc()); // Index bounds check.
     switch (bbJumpKind)
@@ -1279,7 +1278,7 @@ void BasicBlock::InitVarSets(Compiler* comp)
 }
 
 // Returns true if the basic block ends with GT_JMP
-bool BasicBlock::endsWithJmpMethod(Compiler* comp)
+bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
 {
     if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && (bbFlags & BBF_HAS_JMP))
     {
@@ -1299,7 +1298,7 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp)
 //    comp              - Compiler instance
 //    fastTailCallsOnly - Only consider fast tail calls excluding tail calls via helper.
 //
-bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/)
+bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/) const
 {
     GenTree* tailCall                       = nullptr;
     bool     tailCallsConvertibleToLoopOnly = false;
@@ -1326,7 +1325,7 @@ bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*
 bool BasicBlock::endsWithTailCall(Compiler* comp,
                                   bool      fastTailCallsOnly,
                                   bool      tailCallsConvertibleToLoopOnly,
-                                  GenTree** tailCall)
+                                  GenTree** tailCall) const
 {
     assert(!fastTailCallsOnly || !tailCallsConvertibleToLoopOnly);
     *tailCall   = nullptr;
@@ -1393,7 +1392,7 @@ bool BasicBlock::endsWithTailCall(Compiler* comp,
 // Return Value:
 //    true if the block ends with a tail call convertible to loop.
 //
-bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall)
+bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const
 {
     bool fastTailCallsOnly              = false;
     bool tailCallsConvertibleToLoopOnly = true;
@@ -1522,7 +1521,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
 //------------------------------------------------------------------------
 // isBBCallAlwaysPair: Determine if this is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-
+//
 // Return Value:
 //    True iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
 //    -- a block corresponding to an exit from the try of a try/finally.
@@ -1540,7 +1539,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 //    "retless" BBJ_CALLFINALLY blocks due to a requirement to use the BBJ_ALWAYS for
 //    generating code.
 //
-bool BasicBlock::isBBCallAlwaysPair()
+bool BasicBlock::isBBCallAlwaysPair() const
 {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (this->bbJumpKind == BBJ_CALLFINALLY)
@@ -1576,7 +1575,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 // Notes:
 //    See notes on isBBCallAlwaysPair(), above.
 //
-bool BasicBlock::isBBCallAlwaysPairTail()
+bool BasicBlock::isBBCallAlwaysPairTail() const
 {
     return (bbPrev != nullptr) && bbPrev->isBBCallAlwaysPair();
 }
@@ -1597,7 +1596,7 @@ bool BasicBlock::isBBCallAlwaysPairTail()
 //    this block might be entered via flow that is not represented by an edge
 //    in the flowgraph.
 //
-bool BasicBlock::hasEHBoundaryIn()
+bool BasicBlock::hasEHBoundaryIn() const
 {
     bool returnVal = (bbCatchTyp != BBCT_NONE);
     if (!returnVal)
@@ -1621,7 +1620,7 @@ bool BasicBlock::hasEHBoundaryIn()
 //    live in registers if any successor is a normal flow edge. That's because the
 //    EH write-thru semantics ensure that we always have an up-to-date value on the stack.
 //
-bool BasicBlock::hasEHBoundaryOut()
+bool BasicBlock::hasEHBoundaryOut() const
 {
     bool returnVal = false;
     if (bbJumpKind == BBJ_EHFILTERRET)
