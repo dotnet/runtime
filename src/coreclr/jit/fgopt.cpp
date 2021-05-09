@@ -5952,7 +5952,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
             break;
     }
 
-    for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+    for (Statement* stmt : block->NonPhiStatements())
     {
         unsigned char cost = stmt->GetCostSz();
         costSz += cost;

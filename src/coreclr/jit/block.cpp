@@ -937,16 +937,12 @@ bool BasicBlock::isEmpty() const
 {
     if (!IsLIR())
     {
-        Statement* stmt = FirstNonPhiDef();
-
-        while (stmt != nullptr)
+        for (Statement* stmt : NonPhiStatements())
         {
             if (!stmt->GetRootNode()->OperIs(GT_NOP))
             {
                 return false;
             }
-
-            stmt = stmt->GetNextStmt();
         }
     }
     else

@@ -4246,7 +4246,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
     JITDUMP("\n*** %s local variables in block " FMT_BB " (weight=%s)\n", isRecompute ? "recomputing" : "marking",
             block->bbNum, refCntWtd2str(block->getBBWeight(this)));
 
-    for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+    for (Statement* stmt : block->NonPhiStatements())
     {
         MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
         DISPSTMT(stmt);

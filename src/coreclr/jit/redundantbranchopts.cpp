@@ -311,7 +311,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     Statement* const lastStmt = block->lastStmt();
 
-    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    for (Statement* stmt : block->NonPhiStatements())
     {
         GenTree* const tree = stmt->GetRootNode();
 

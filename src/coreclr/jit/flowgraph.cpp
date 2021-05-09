@@ -25,7 +25,7 @@
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
     bool blockMayNeedGCPoll = false;
-    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    for (Statement* stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
         {

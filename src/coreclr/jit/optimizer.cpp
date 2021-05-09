@@ -5442,7 +5442,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
         {
             noway_assert(beg);
 
-            for (Statement* stmt : StatementList(beg->FirstNonPhiDef()))
+            for (Statement* stmt : beg->NonPhiStatements())
             {
                 fgWalkTreePre(stmt->GetRootNodePointer(), optIsVarAssgCB, &desc);
 
@@ -6197,7 +6197,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         void HoistBlock(BasicBlock* block)
         {
-            for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+            for (Statement* stmt : block->NonPhiStatements())
             {
                 WalkTree(stmt->GetRootNodePointer(), nullptr);
                 assert(m_valueStack.TopRef().Node() == stmt->GetRootNode());
@@ -7084,7 +7084,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
     MemoryKindSet memoryHavoc = emptyMemoryKindSet;
 
     // Now iterate over the remaining statements, and their trees.
-    for (Statement* stmt : StatementList(blk->FirstNonPhiDef()))
+    for (Statement* stmt : blk->NonPhiStatements())
     {
         for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
         {
