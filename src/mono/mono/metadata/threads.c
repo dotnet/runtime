@@ -3931,10 +3931,11 @@ mono_thread_init_from_native (void)
 #if defined(HOST_DARWIN)
 	MonoInternalThread* thread = mono_thread_internal_current ();
 
+	g_assert (mono_defaults.autoreleasepool_class != NULL);
 	ERROR_DECL (error);
 	MONO_STATIC_POINTER_INIT (MonoMethod, create_autoreleasepool)
 
-		create_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "CreateAutoreleasePool", 0, 0, error);
+		create_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.autoreleasepool_class, "CreateAutoreleasePool", 0, 0, error);
 		mono_error_assert_ok (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, create_autoreleasepool)
@@ -3954,10 +3955,11 @@ mono_thread_cleanup_from_native (void)
 	if (!(thread->flags & MONO_THREAD_FLAG_CLEANUP_FROM_NATIVE))
 		return;
 
+	g_assert (mono_defaults.autoreleasepool_class != NULL);
 	ERROR_DECL (error);
 	MONO_STATIC_POINTER_INIT (MonoMethod, drain_autoreleasepool)
 
-		drain_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "DrainAutoreleasePool", 0, 0, error);
+		drain_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.autoreleasepool_class, "DrainAutoreleasePool", 0, 0, error);
 		mono_error_assert_ok (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, drain_autoreleasepool)

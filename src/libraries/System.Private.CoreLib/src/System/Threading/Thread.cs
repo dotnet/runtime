@@ -64,8 +64,8 @@ namespace System.Threading
                 _start = null!;
 
 #if FEATURE_NSAUTORELEASEPOOL
-                if (ThreadOSX.EnableAutoreleasePool)
-                    Thread.CreateAutoreleasePool();
+                if (AutoreleasePool.EnableAutoreleasePool)
+                    AutoreleasePool.CreateAutoreleasePool();
 #endif
 
                 if (start is ThreadStart threadStart)
@@ -86,8 +86,8 @@ namespace System.Threading
                 // There is no need to wrap this "clean up" code in a finally block since
                 // if an exception is thrown above, the process is going to terminate.
                 // Optimize for the most common case - no exceptions escape a thread.
-                if (ThreadOSX.EnableAutoreleasePool)
-                    Thread.DrainAutoreleasePool();
+                if (AutoreleasePool.EnableAutoreleasePool)
+                    AutoreleasePool.DrainAutoreleasePool();
 #endif
             }
 

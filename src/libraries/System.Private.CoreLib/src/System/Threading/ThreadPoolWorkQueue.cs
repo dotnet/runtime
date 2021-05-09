@@ -692,7 +692,7 @@ namespace System.Threading
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
 #if FEATURE_NSAUTORELEASEPOOL
-                    if (ThreadOSX.EnableAutoreleasePool)
+                    if (AutoreleasePool.EnableAutoreleasePool)
                     {
                         DispatchItemWithAutoreleasePool(workItem, currentThread);
                     }

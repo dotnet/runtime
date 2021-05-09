@@ -882,8 +882,9 @@ DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #ifdef FEATURE_NSAUTORELEASEPOOL
-DEFINE_METHOD(THREAD,               CREATEAUTORELEASEPOOL,          CreateAutoreleasePool,          SM_RetVoid)
-DEFINE_METHOD(THREAD,               DRAINAUTORELEASEPOOL,           DrainAutoreleasePool,           SM_RetVoid)
+DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
+DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePool,  SM_RetVoid)
+DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool,   SM_RetVoid)
 #endif // FEATURE_NSAUTORELEASEPOOL
 
 DEFINE_CLASS(IOCB_HELPER,              Threading,            _IOCompletionCallback)

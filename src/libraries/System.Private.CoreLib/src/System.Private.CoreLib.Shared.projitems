@@ -2033,7 +2033,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.OSX.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoreleasePool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" />
   </ItemGroup>
 </Project>
