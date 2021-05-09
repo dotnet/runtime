@@ -32,15 +32,15 @@ namespace System.IO
             }
             else
             {
-                Invalidate();
+                InvalidateCaches();
             }
         }
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {
             // Force an update so GetCreationTime is up-to-date.
-            Invalidate();
-            EnsureStatInitialized(path);
+            InvalidateCaches();
+            EnsureCachesInitialized(path);
 
             // Get the creation time here in case the modification time is less than it.
             var creationTime = GetCreationTime(path);
@@ -55,7 +55,7 @@ namespace System.IO
             }
             else
             {
-                Invalidate();
+                InvalidateCaches();
             }
         }
     }

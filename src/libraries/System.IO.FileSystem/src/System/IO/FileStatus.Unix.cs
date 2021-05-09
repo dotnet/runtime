@@ -300,7 +300,7 @@ namespace System.IO
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
             InvalidateCaches();
-            EnsureStatInitialized(path);
+            EnsureCachesInitialized(path);
             SetAccessOrWriteTimeImpl(path, time, isAccessTime);
             InvalidateCaches();
         }
