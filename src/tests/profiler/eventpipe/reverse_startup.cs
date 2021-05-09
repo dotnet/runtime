@@ -75,9 +75,9 @@ namespace ReverseStartupTests
                                 throw new Exception("Failed setting environment variable.");
                             }
 
-                            if (!client.SetEnvironmentVariable("ReverseServerTest_ClearMe", ""))
+                            if (!client.SetEnvironmentVariable("ReverseServerTest_ClearMe", null))
                             {
-                                throw new Exception("Failed setting environment variable.");
+                                throw new Exception("Failed clearing environment variable.");
                             }
 
                             string val;

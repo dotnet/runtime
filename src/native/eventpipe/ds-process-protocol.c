@@ -541,6 +541,40 @@ ep_on_error:
 }
 
 static
+uint16_t
+get_environment_variable_payload_get_size (ep_char16_t *payload)
+{
+    size_t size = sizeof(uint32_t);
+    size += (payload != NULL) ? (ep_rt_utf16_string_len (payload) + 1) * sizeof(ep_char16_t) : 0;
+
+    EP_ASSERT (size <= UINT16_MAX);
+    return (uint16_t)size;
+}
+
+static
+bool
+get_environment_variable_payload_flatten (
+    void *payload,
+    uint8_t **buffer,
+    uint16_t *size)
+{
+    ep_char16_t *value = (ep_char16_t *)payload;
+
+    EP_ASSERT (payload != NULL);
+    EP_ASSERT (buffer != NULL);
+    EP_ASSERT (*buffer != NULL);
+    EP_ASSERT (size != NULL);
+    EP_ASSERT (get_environment_variable_payload_get_size (value) == *size);
+
+    bool success = ds_ipc_message_try_write_string_utf16_t (buffer, size, value);
+
+    // Assert we've used the whole buffer we were given
+    EP_ASSERT(*size == 0);
+
+    return success;
+}
+
+static
 DiagnosticsGetEnvironmentVariablePayload *
 ds_get_environment_variable_payload_alloc ()
 {
@@ -614,36 +648,33 @@ process_protocol_helper_get_environment_variable (
 	}
 
 	// Reserve space for the header and the environment variable
-	bufferSize = sizeof(DiagnosticsIpcHeader) + (realLength * sizeof(ep_char16_t));
-	messageBuffer = ep_rt_byte_array_alloc (bufferSize);
-	if (!messageBuffer) {
+	bufferSize = (realLength * sizeof(ep_char16_t));
+	valueBuffer = (ep_char16_t *)ep_rt_byte_array_alloc (bufferSize);
+	if (!valueBuffer) {
 		ds_ipc_message_send_error(stream, DS_IPC_E_FAIL);
 		ep_raise_error ();
 	}
 
-	valueBuffer = (ep_char16_t *)(messageBuffer + sizeof(DiagnosticsIpcHeader));
 	ipc_result = ds_rt_get_environment_variable (payload, realLength, &realLength, valueBuffer);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
 	}
 
-	DiagnosticsIpcMessage responseMessage;
-	ds_ipc_message_init (&responseMessage);
-	responseMessage.header = *(ds_ipc_header_get_generic_success ());
-	responseMessage.data = messageBuffer;
-	responseMessage.size = (uint16_t)(realLength * sizeof(ep_char16_t));
-	responseMessage.header.size += bufferSize;
+    ep_raise_error_if_nok (ds_ipc_message_initialize_buffer (
+        message,
+        ds_ipc_header_get_generic_success (),
+        (void *)valueBuffer,
+        get_environment_variable_payload_get_size (valueBuffer),
+        get_environment_variable_payload_flatten));
 
-	memcpy(messageBuffer, &(responseMessage.header), sizeof(DiagnosticsIpcHeader));
-
-	ep_raise_error_if_nok (ds_ipc_message_send (&responseMessage, stream));
+    ep_raise_error_if_nok (ds_ipc_message_send (message, stream));
 
 	result = true;
 
 ep_on_exit:
 	ds_get_environment_variable_payload_free (payload);
-	ep_rt_byte_array_free (messageBuffer);
+	ep_rt_byte_array_free ((uint8_t *)valueBuffer);
     ds_ipc_stream_free (stream);
 	return result;
 

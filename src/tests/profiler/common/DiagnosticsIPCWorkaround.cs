@@ -96,25 +96,23 @@ namespace Profiler.Tests
                     return false;
                 }
 
-                val = Encoding.Unicode.GetString(response.Payload);
+                val = ReadString(response.Payload);
             }
 
             Console.WriteLine($"Finished sending GetEnvironmentVariable message value={val}.");
 
             return true;
-        }
+    }
 
         public bool SetEnvironmentVariable(string name, string val)
         {
-            val = String.Empty;
-
             MethodInfo setEnvironmentVariable = typeof(DiagnosticsClient).GetMethod("SetEnvironmentVariable", BindingFlags.Public);
             if (setEnvironmentVariable != null)
             {
                 throw new Exception("You updated DiagnosticsClient to a version that supports SetEnvironmentVariable, please remove this and use the real code.");
             }
 
-            Console.WriteLine($"Sending SetEnvironmentVariable message name={name} value={val}.");
+            Console.WriteLine($"Sending SetEnvironmentVariable message name={name} value={val ?? "NULL"}.");
             
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
@@ -140,6 +138,20 @@ namespace Profiler.Tests
             Console.WriteLine($"Finished sending SetEnvironmentVariable message.");
 
             return true;
+        }
+
+        private static string ReadString(byte[] buffer)
+        {
+            int index = 0;
+            // Length of the string of UTF-16 characters
+            int length = (int)BitConverter.ToUInt32(buffer, index);
+            index += sizeof(UInt32);
+
+            int size = (int)length * sizeof(char);
+            // The string contains an ending null character; remove it before returning the value
+            string value = Encoding.Unicode.GetString(buffer, index, size).Substring(0, length - 1);
+            index += size;
+            return value;
         }
     }
 }

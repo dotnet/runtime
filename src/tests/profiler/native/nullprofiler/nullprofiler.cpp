@@ -33,36 +33,51 @@ HRESULT NullProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
-    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_OverwriteMe"),
-                                                             bufferSize,
-                                                             &envVarLen,
-                                                             envVar))
-        || wcscmp(envVar, WCHAR("Overwritten")) != 0)
+    if (wcscmp(envVar, WCHAR("ReverseStartup")) == 0)
     {
-        wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
-        _failures++;
-        return hr;
-    }
+        if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_OverwriteMe"),
+                                                                 bufferSize,
+                                                                 &envVarLen,
+                                                                 envVar))
+            || wcscmp(envVar, WCHAR("Overwritten")) != 0)
+        {
+            wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
+            _failures++;
+            return hr;
+        }
 
-    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_ReadMe"),
-                                                             bufferSize,
-                                                             &envVarLen,
-                                                             envVar))
-        || wcscmp(envVar, WCHAR("Hello, friend!")) != 0)
-    {
-        wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
-        _failures++;
-        return hr;
-    }
+        if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_ReadMe"),
+                                                                 bufferSize,
+                                                                 &envVarLen,
+                                                                 envVar))
+            || wcscmp(envVar, WCHAR("Hello, friend!")) != 0)
+        {
+            wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
+            _failures++;
+            return hr;
+        }
 
-    hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_OverwriteMe"),
-                                                        bufferSize,
-                                                        &envVarLen,
-                                                        envVar);
-    // ENVVAR_NOT_FOUND hr
-    if (hr != 0x800000CB)
+        hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_ClearMe"),
+                                                            bufferSize,
+                                                            &envVarLen,
+                                                            envVar);
+        if (SUCCEEDED(hr))
+        {
+            wcout << L"ReverseServerTest_ClearMe was expected to be cleared, but we found it" << std::hex << hr << endl;
+            _failures++;
+            return E_FAIL;
+        }
+        // ERROR_ENVVAR_NOT_FOUND hr
+        else if (hr != 0x800700CB)
+        {
+            wcout << L"ReverseServerTest_ClearMe returned an HR other than ENVVAR_NOT_FOUND" << std::hex << hr << endl;
+            _failures++;
+            return E_FAIL;   
+        }
+    }
+    else
     {
-        wcout << L"ReverseServerTest_OverwriteMe was expected to be cleared, but we found it" << std::hex << hr << endl;
+        wcout << L"Unrecognized test name." << endl;
         _failures++;
         return E_FAIL;
     }
