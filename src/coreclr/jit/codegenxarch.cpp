@@ -6063,6 +6063,13 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else
     {
+        if (op1->isUsedFromReg() && op2->IsIntegralConst(-1) && targetReg != REG_NA)
+        {
+            emit->emitIns_R(INS_inc, emitTypeSize(tree), op1->GetRegNum());
+            inst_SETCC(GenCondition::FromIntegralRelop(tree), tree->TypeGet(), targetReg);
+            genProduceReg(tree);
+            return;
+        }
         emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
     }
 
