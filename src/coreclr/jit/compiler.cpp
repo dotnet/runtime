@@ -5107,7 +5107,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         compSizeEstimate  = 0;
         compCycleEstimate = 0;
-        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             for (Statement* stmt : block->Statements())
             {
@@ -5342,7 +5342,7 @@ void Compiler::ResetOptAnnotations()
     fgSsaPassesCompleted  = 0;
     fgVNPassesCompleted   = 0;
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
@@ -5371,7 +5371,7 @@ void Compiler::RecomputeLoopInfo()
     // Recompute reachability sets, dominators, and loops.
     optLoopCount   = 0;
     fgDomsComputed = false;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_LOOP_FLAGS;
     }
@@ -7366,7 +7366,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
 
     // Otherwise, iterate.
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
@@ -7494,7 +7494,7 @@ void Compiler::compCallArgStats()
 
     assert(fgStmtListThreaded);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
@@ -8919,14 +8919,13 @@ GenTree* dFindTree(GenTree* tree, unsigned id)
 
 GenTree* dFindTree(unsigned id)
 {
-    Compiler*   comp = JitTls::GetCompiler();
-    BasicBlock* block;
-    GenTree*    tree;
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  tree;
 
     dbTreeBlock = nullptr;
     dbTree      = nullptr;
 
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
@@ -8944,13 +8943,12 @@ GenTree* dFindTree(unsigned id)
 
 Statement* dFindStmt(unsigned id)
 {
-    Compiler*   comp = JitTls::GetCompiler();
-    BasicBlock* block;
+    Compiler* comp = JitTls::GetCompiler();
 
     dbStmt = nullptr;
 
     unsigned stmtId = 0;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* stmt : block->Statements())
         {

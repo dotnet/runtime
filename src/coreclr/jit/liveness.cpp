@@ -680,8 +680,7 @@ void Compiler::fgDispDebugScopes()
 {
     printf("\nDebug scopes:\n");
 
-    BasicBlock* block;
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         printf(FMT_BB ": ", block->bbNum);
         dumpConvertedVarSet(this, block->bbScope);
@@ -719,7 +718,7 @@ void Compiler::fgExtendDbgScopes()
     // Mark all tracked LocalVars live over their scope - walk the blocks
     // keeping track of the current life, and assign it to the blocks.
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // If we get to a funclet, reset the scope lists and start again, since the block
         // offsets will be out of order compared to the previous block.
@@ -772,8 +771,7 @@ void Compiler::fgExtendDbgScopes()
     // Mark all tracked LocalVars live over their scope - walk the blocks
     // keeping track of the current life, and assign it to the blocks.
 
-    BasicBlock* block;
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Find scopes becoming alive. If there is a gap in the instr
         // sequence, we need to process any scopes on those missing offsets.
@@ -915,7 +913,7 @@ void Compiler::fgExtendDbgLifetimes()
 
     VARSET_TP initVars(VarSetOps::MakeEmpty(this)); // Vars which are artificially made alive
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         VarSetOps::ClearD(this, initVars);
 
@@ -2559,12 +2557,11 @@ void Compiler::fgInterBlockLocalVarLiveness()
     // Variables involved in exception-handlers and finally blocks need
     // to be specially marked
     //
-    BasicBlock* block;
 
     VARSET_TP exceptVars(VarSetOps::MakeEmpty(this));  // vars live on entry to a handler
     VARSET_TP finallyVars(VarSetOps::MakeEmpty(this)); // vars live on exit of a 'finally' block
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->hasEHBoundaryIn())
         {
@@ -2641,7 +2638,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
      * Now fill in liveness info within each basic block - Backward DataFlow
      */
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Tell everyone what block we're working on */
 
@@ -2781,7 +2778,7 @@ void Compiler::fgDispBBLiveness(BasicBlock* block)
 
 void Compiler::fgDispBBLiveness()
 {
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         fgDispBBLiveness(block);
     }

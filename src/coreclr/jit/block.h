@@ -1202,6 +1202,54 @@ typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkVector> BlkToBl
 // Map from Block to Block.  Used for a variety of purposes.
 typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
 
+// BasicBlock iterator classes
+
+class BasicBlockIterator
+{
+    BasicBlock* m_block;
+
+public:
+    BasicBlockIterator(BasicBlock* block) : m_block(block)
+    {
+    }
+
+    BasicBlock* operator*() const
+    {
+        return m_block;
+    }
+
+    BasicBlockIterator& operator++()
+    {
+        m_block = m_block->bbNext;
+        return *this;
+    }
+
+    bool operator!=(const BasicBlockIterator& i) const
+    {
+        return m_block != i.m_block;
+    }
+};
+
+class SimpleBasicBlockList
+{
+    BasicBlock* m_begin;
+
+public:
+    SimpleBasicBlockList(BasicBlock* block) : m_begin(block)
+    {
+    }
+
+    BasicBlockIterator begin() const
+    {
+        return BasicBlockIterator(m_begin);
+    }
+
+    BasicBlockIterator end() const
+    {
+        return BasicBlockIterator(nullptr);
+    }
+};
+
 // BBswtDesc -- descriptor for a switch block
 //
 //  Things to know:

@@ -14,19 +14,15 @@
 #ifdef DEBUG
 void Compiler::fgPrintEdgeWeights()
 {
-    BasicBlock* bSrc;
-    BasicBlock* bDst;
-    flowList*   edge;
-
     // Print out all of the edge weights
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
             {
-                bSrc = edge->getBlock();
+                BasicBlock* bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -845,7 +841,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     unsigned  blockOrdinal = 1;
     unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
     memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         assert(block->bbNum < blkMapSize);
         blkMap[block->bbNum] = blockOrdinal++;
@@ -1093,7 +1089,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     //
     if (createDotFile)
     {
-        for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
+        for (BasicBlock* const bSource : Blocks())
         {
             if (constrained)
             {
@@ -1696,7 +1692,7 @@ void Compiler::fgDispReach()
     printf("BBnum  Reachable by \n");
     printf("------------------------------------------------\n");
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         printf(FMT_BB " : ", block->bbNum);
         BlockSetOps::Iter iter(this, block->bbReach);
@@ -2646,12 +2642,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     /* Check bbNum, bbRefs and bbPreds */
     // First, pick a traversal stamp, and label all the blocks with it.
     unsigned curTraversalStamp = unsigned(InterlockedIncrement((LONG*)&bbTraverseLabel));
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbTraversalStamp = curTraversalStamp;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
         {
@@ -3466,7 +3462,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     fgDebugCheckBlockLinks();
 
     // For each block check the links between the trees.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3560,7 +3556,7 @@ void Compiler::fgDebugCheckBlockLinks()
 {
     assert(fgFirstBB->bbPrev == nullptr);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbNext)
         {
@@ -3675,7 +3671,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
 {
     UniquenessCheckWalker walker(this);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3709,7 +3705,7 @@ void Compiler::fgDebugCheckLoopTable()
         assert(optLoopTable != nullptr);
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (optLoopCount == 0)
         {

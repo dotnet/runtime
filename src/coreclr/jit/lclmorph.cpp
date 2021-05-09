@@ -1212,7 +1212,7 @@ void Compiler::fgMarkAddressExposedLocals()
 
     LocalAddressVisitor visitor(this);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Make the current basic block address available globally
         compCurBB = block;

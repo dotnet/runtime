@@ -302,8 +302,7 @@ void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
 void Rationalizer::SanityCheck()
 {
     // TODO: assert(!IsLIR());
-    BasicBlock* block;
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* statement : block->Statements())
         {
@@ -933,7 +932,7 @@ PhaseStatus Rationalizer::DoPhase()
     comp->fgOrder   = Compiler::FGOrderLinear;
 
     RationalizeVisitor visitor(*this);
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         comp->compCurBB = block;
         m_block         = block;

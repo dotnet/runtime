@@ -659,7 +659,6 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
 void Compiler::fgInitBBLookup()
 {
     BasicBlock** dscBBptr;
-    BasicBlock*  tmpBBdesc;
 
     /* Allocate the basic block table */
 
@@ -667,9 +666,9 @@ void Compiler::fgInitBBLookup()
 
     /* Walk all the basic blocks, filling in the table */
 
-    for (tmpBBdesc = fgFirstBB; tmpBBdesc; tmpBBdesc = tmpBBdesc->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        *dscBBptr++ = tmpBBdesc;
+        *dscBBptr++ = block;
     }
 
     noway_assert(dscBBptr == fgBBs + fgBBcount);
@@ -1810,7 +1809,7 @@ void Compiler::fgLinkBasicBlocks()
 
     /* Walk all the basic blocks, filling in the target addresses */
 
-    for (BasicBlock* curBBdesc = fgFirstBB; curBBdesc; curBBdesc = curBBdesc->bbNext)
+    for (BasicBlock* const curBBdesc : Blocks())
     {
         switch (curBBdesc->bbJumpKind)
         {
@@ -2990,7 +2989,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
     EHblkDsc* HBtab;
 
-    for (BasicBlock* blk = fgFirstBB; blk; blk = blk->bbNext)
+    for (BasicBlock* const blk : Blocks())
     {
         if (blk->bbFlags & BBF_INTERNAL)
         {
@@ -4481,7 +4480,7 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered && fgComputePredsDone)
     {
-        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             block->ensurePredListOrder(this);
         }
@@ -4982,7 +4981,7 @@ bool Compiler::fgMightHaveLoop()
     BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
     BitVec       blocksSeen(BitVecOps::MakeEmpty(&blockVecTraits));
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 

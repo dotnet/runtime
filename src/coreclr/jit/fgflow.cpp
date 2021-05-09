@@ -499,8 +499,6 @@ void Compiler::fgComputeCheapPreds()
     noway_assert(!fgComputePredsDone); // We can't do this if we've got the full preds.
     noway_assert(fgFirstBB != nullptr);
 
-    BasicBlock* block;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -513,7 +511,7 @@ void Compiler::fgComputeCheapPreds()
     // Clear out the cheap preds lists.
     fgRemovePreds();
 
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -659,7 +657,7 @@ void Compiler::fgRemovePreds()
     // and are the same size. So, this function removes both.
     static_assert_no_msg(sizeof(((BasicBlock*)nullptr)->bbPreds) == sizeof(((BasicBlock*)nullptr)->bbCheapPreds));
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbPreds = nullptr;
     }
@@ -688,8 +686,6 @@ void Compiler::fgComputePreds()
 {
     noway_assert(fgFirstBB != nullptr);
 
-    BasicBlock* block;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -708,7 +704,7 @@ void Compiler::fgComputePreds()
 #endif // DEBUG
 
     // Reset everything pred related
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbPreds    = nullptr;
         block->bbLastPred = nullptr;
@@ -726,7 +722,7 @@ void Compiler::fgComputePreds()
         fgEntryBB->bbRefs = 1;
     }
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {

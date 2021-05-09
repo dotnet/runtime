@@ -6191,7 +6191,7 @@ void Compiler::fgValueNumber()
         {
             lvMemoryPerSsaData.GetSsaDefByIndex(i)->m_vnPair = noVnp;
         }
-        for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
+        for (BasicBlock* const blk : Blocks())
         {
             // Now iterate over the block's statements, and their trees.
             for (Statement* stmt : blk->NonPhiStatements())

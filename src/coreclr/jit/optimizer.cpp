@@ -69,7 +69,7 @@ void Compiler::optSetBlockWeights()
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Blocks that can't be reached via the first block are rarely executed */
         if (!fgReachable(fgFirstBB, block))
@@ -497,8 +497,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
             /* Check if the entry has other predecessors outside the loop
              * TODO: Replace this when predecessors are available */
 
-            BasicBlock* auxBlock;
-            for (auxBlock = fgFirstBB; auxBlock; auxBlock = auxBlock->bbNext)
+            for (BasicBlock* const auxBlock : Blocks())
             {
                 /* Ignore blocks in the loop */
 
@@ -1318,15 +1317,12 @@ void Compiler::optPrintLoopRecording(unsigned loopInd) const
 
 void Compiler::optCheckPreds()
 {
-    BasicBlock* block;
-    BasicBlock* blockPred;
-    flowList*   pred;
-
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (pred = block->bbPreds; pred; pred = pred->flNext)
+        for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
         {
             // make sure this pred is part of the BB list
+            BasicBlock* blockPred;
             for (blockPred = fgFirstBB; blockPred; blockPred = blockPred->bbNext)
             {
                 if (blockPred == pred->getBlock())
@@ -2389,7 +2385,7 @@ void Compiler::optFindNaturalLoops()
 
     LoopSearch search(this);
 
-    for (BasicBlock* head = fgFirstBB; head->bbNext; head = head->bbNext)
+    for (BasicBlock* head = fgFirstBB; head->bbNext != nullptr; head = head->bbNext)
     {
         BasicBlock* top = head->bbNext;
 
@@ -4602,7 +4598,7 @@ PhaseStatus Compiler::optInvertLoops()
     }
 
     bool madeChanges = false; // Assume no changes made
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Make sure the appropriate fields are initialized
         //
@@ -4697,15 +4693,11 @@ PhaseStatus Compiler::optFindLoops()
          * lastBottom - used when we have multiple back-edges to the same top
          */
 
-        flowList* pred;
-
-        BasicBlock* top;
-
-        for (top = fgFirstBB; top; top = top->bbNext)
+        for (BasicBlock* const top : Blocks())
         {
             BasicBlock* foundBottom = nullptr;
 
-            for (pred = top->bbPreds; pred; pred = pred->flNext)
+            for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
             {
                 /* Is this a loop candidate? - We look for "back edges" */
 
@@ -7840,7 +7832,7 @@ void Compiler::optOptimizeBools()
     {
         change = false;
 
-        for (BasicBlock* b1 = fgFirstBB; b1; b1 = b1->bbNext)
+        for (BasicBlock* const b1 : Blocks())
         {
             /* We're only interested in conditional jumps here */
 

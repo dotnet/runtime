@@ -220,9 +220,7 @@ void Compiler::fgComputeReachabilitySets()
     fgReachabilitySetsValid = false;
 #endif // DEBUG
 
-    BasicBlock* block;
-
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Initialize the per-block bbReach sets. It creates a new empty set,
         // because the block epoch could change since the previous initialization
@@ -241,7 +239,7 @@ void Compiler::fgComputeReachabilitySets()
     {
         change = false;
 
-        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             BlockSetOps::Assign(this, newReach, block->bbReach);
 
@@ -325,7 +323,7 @@ void Compiler::fgComputeEnterBlocksSet()
     // to the enter blocks is a bit of a compromise, because sometimes the blocks are already reachable,
     // and it messes up DFS ordering to have them marked as enter block. We should prevent the
     // creation of retless calls some other way.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_CALLFINALLY)
         {
@@ -380,12 +378,11 @@ bool Compiler::fgRemoveUnreachableBlocks()
     assert(!fgCheapPredsValid);
     assert(fgReachabilitySetsValid);
 
-    bool        hasLoops             = false;
-    bool        hasUnreachableBlocks = false;
-    BasicBlock* block;
+    bool hasLoops             = false;
+    bool hasUnreachableBlocks = false;
 
     /* Record unreachable blocks */
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Internal throw blocks are also reachable */
         if (fgIsThrowHlpBlk(block))
@@ -486,7 +483,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
     if (hasUnreachableBlocks)
     {
         // Now remove the unreachable blocks
-        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
         {
             //  If we mark the block with BBF_REMOVED then
             //  we need to call fgRemovedBlock() on it
@@ -541,7 +538,7 @@ void Compiler::fgComputeReachability()
     /* Create a list of all BBJ_RETURN blocks. The head of the list is 'fgReturnBlocks'. */
     fgReturnBlocks = nullptr;
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // If this is a BBJ_RETURN block, add it to our list of all BBJ_RETURN blocks. This list is only
         // used to find return blocks.
@@ -660,7 +657,7 @@ void Compiler::fgDfsInvPostOrder()
 
     // Call the flowgraph DFS traversal helper.
     unsigned postIndex = 1;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // If the block has no predecessors, and we haven't already visited it (because it's in fgEnterBlks but also
         // reachable from the first block), go ahead and traverse starting from this block.
@@ -699,15 +696,12 @@ void Compiler::fgDfsInvPostOrder()
 //
 BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 {
-    unsigned    j;
-    BasicBlock* block;
-
     BlockSet startNodes(BlockSetOps::MakeFull(this));
 
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         unsigned cSucc = block->NumSucc(this);
-        for (j = 0; j < cSucc; ++j)
+        for (unsigned j = 0; j < cSucc; ++j)
         {
             BasicBlock* succ = block->GetSucc(j, this);
             BlockSetOps::RemoveElemD(this, startNodes, succ->bbNum);
@@ -973,7 +967,7 @@ void Compiler::fgComputeDoms()
     // As stated before, once we have computed immediate dominance we need to clear
     // all the basic blocks whose predecessor list was set to flRoot.  This
     // reverts that and leaves the blocks the same as before.
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbPreds == &flRoot)
         {
@@ -1231,7 +1225,7 @@ BlockSet_ValRet_T Compiler::fgGetDominatorSet(BasicBlock* block)
 //
 void Compiler::fgInitBlockVarSets()
 {
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->InitVarSets(this);
     }
@@ -1999,7 +1993,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         // and we avoid most of the work if pred lists are already in order,
         // we'll just ensure everything is properly ordered.
         //
-        for (BasicBlock* checkBlock = fgFirstBB; checkBlock != nullptr; checkBlock = checkBlock->bbNext)
+        for (BasicBlock* const checkBlock : Blocks())
         {
             checkBlock->ensurePredListOrder(this);
         }
@@ -3730,7 +3724,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
     bool modified = false;
 
-    for (BasicBlock* block = fgFirstBB; block != NULL; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Lowering expands switches, so calling this method on lowered IR
         // does not make sense.
@@ -5888,7 +5882,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
     if (compRationalIRForm)
     {
-        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             LIR::AsRange(block).CheckLIR(this);
         }
@@ -5970,7 +5964,7 @@ unsigned Compiler::fgMeasureIR()
 {
     unsigned nodeCount = 0;
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (!block->IsLIR())
         {

@@ -80,7 +80,7 @@ public:
     {
         int count = 0;
 
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             count += TransformBlock(block);
         }
@@ -1273,7 +1273,7 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
     assert(!doesMethodHaveGuardedDevirtualization());
     assert(!doesMethodHaveExpRuntimeLookup());
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         for (Statement* stmt : block->Statements())
         {

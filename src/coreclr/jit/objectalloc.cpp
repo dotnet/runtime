@@ -213,9 +213,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
     }
 
-    BasicBlock* block;
-
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
@@ -340,9 +338,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
-    BasicBlock* block;
-
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
         const bool basicBlockHasNewObj       = (block->bbFlags & BBF_HAS_NEWOBJ) == BBF_HAS_NEWOBJ;
         const bool basicBlockHasBackwardJump = (block->bbFlags & BBF_BACKWARD_JUMP) == BBF_BACKWARD_JUMP;
@@ -917,9 +913,7 @@ void ObjectAllocator::RewriteUses()
         }
     };
 
-    BasicBlock* block;
-
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* stmt : block->Statements())
         {

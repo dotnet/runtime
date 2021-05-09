@@ -4818,7 +4818,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 {
     ASSERT_TP* jumpDestGen = fgAllocateTypeForEachBlk<ASSERT_TP>();
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         ASSERT_TP valueGen = BitVecOps::MakeEmpty(apTraits);
         GenTree*  jtrue    = nullptr;
@@ -4930,7 +4930,7 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 
     // Initially estimate the OUT sets to everything except killed expressions
     // Also set the IN sets to 1, so that we can perform the intersection.
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbAssertionIn      = BitVecOps::MakeCopy(apTraits, apValidFull);
         block->bbAssertionGen     = BitVecOps::MakeEmpty(apTraits);
@@ -5338,7 +5338,7 @@ void Compiler::optAssertionPropMain()
     noway_assert(optAssertionCount == 0);
 
     // First discover all value assignments and record them in the table.
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
 
@@ -5390,7 +5390,7 @@ void Compiler::optAssertionPropMain()
         // Zero out the bbAssertionIn values, as these can be referenced in RangeCheck::MergeAssertion
         // and this is sharedstate with the CSE phase: bbCseIn
         //
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
         }
@@ -5410,7 +5410,7 @@ void Compiler::optAssertionPropMain()
     AssertionPropFlowCallback ap(this, bbJtrueAssertionOut, jumpDestGen);
     flow.ForwardAnalysis(ap);
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Compute any implied non-Null assertions for block->bbAssertionIn
         optImpliedByTypeOfAssertions(block->bbAssertionIn);
@@ -5420,7 +5420,7 @@ void Compiler::optAssertionPropMain()
     if (verbose)
     {
         printf("\n");
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             printf("\n" FMT_BB, block->bbNum);
             printf(" valueIn  = %s", BitVecOps::ToString(apTraits, block->bbAssertionIn));
@@ -5438,7 +5438,7 @@ void Compiler::optAssertionPropMain()
     ASSERT_TP assertions = BitVecOps::MakeEmpty(apTraits);
 
     // Perform assertion propagation (and constant folding)
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BitVecOps::Assign(apTraits, assertions, block->bbAssertionIn);
 

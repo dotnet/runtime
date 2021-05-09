@@ -182,7 +182,7 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
-        for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
+        for (BasicBlock* const bb : Blocks())
         {
             if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
             {

@@ -89,7 +89,7 @@ void Compiler::fgResetForSsa()
         m_memorySsaMap[memoryKind] = nullptr;
     }
 
-    for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
+    for (BasicBlock* const blk : Blocks())
     {
         // Eliminate phis.
         for (MemoryKind memoryKind : allMemoryKinds())
@@ -1393,7 +1393,7 @@ void SsaBuilder::RenameVariables()
 
     // Initialize the memory ssa numbers for unreachable blocks. ValueNum expects
     // memory ssa numbers to have some intitial value.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         if (block->bbIDom == nullptr)
         {
@@ -1528,7 +1528,7 @@ void SsaBuilder::Build()
     // tree is built. The pre/post order numbers that were generated previously and used for loop
     // recognition are still being used by optPerformHoistExpr via fgCreateLoopPreHeader. That's rather
     // odd, considering that SetupBBRoot may have added a new block.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         block->bbIDom         = nullptr;
         block->bbPostOrderNum = 0;

@@ -91,7 +91,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     BasicBlock* block;
 
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
@@ -629,7 +629,7 @@ PhaseStatus Compiler::fgImport()
     // Note this includes (to some extent) the impact of importer folded
     // branches, provided the folded tree covered the entire block's IL.
     unsigned importedILSize = 0;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if ((block->bbFlags & BBF_IMPORTED) != 0)
         {
@@ -1395,8 +1395,6 @@ inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 
 void Compiler::fgLoopCallMark()
 {
-    BasicBlock* block;
-
     /* If we've already marked all the block, bail */
 
     if (fgLoopCallMarked)
@@ -1408,7 +1406,7 @@ void Compiler::fgLoopCallMark()
 
     /* Walk the blocks, looking for backward edges */
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -1849,7 +1847,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
 
     // non-exceptional cases
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -2091,7 +2089,7 @@ bool Compiler::fgMoreThanOneReturnBlock()
 {
     unsigned retCnt = 0;
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_RETURN)
         {
@@ -2920,7 +2918,7 @@ void Compiler::fgFindOperOrder()
     /* Walk the basic blocks and for each statement determine
      * the evaluation order, cost, FP levels, etc... */
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
         for (Statement* stmt : block->Statements())
@@ -2953,7 +2951,7 @@ void Compiler::fgSimpleLowering()
     unsigned outgoingArgSpaceSize = 0;
 #endif // FEATURE_FIXED_OUT_ARGS
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Walk the statement trees in this basic block.
         compCurBB = block; // Used in fgRngChkTarget.
@@ -4295,7 +4293,7 @@ void Compiler::fgSetBlockOrder()
     /* If we don't compute the doms, then we never mark blocks as loops. */
     if (fgDomsComputed)
     {
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             /* If this block is a loop header, mark it appropriately */
 
@@ -4310,11 +4308,7 @@ void Compiler::fgSetBlockOrder()
         /* If we don't have the dominators, use an abbreviated test for fully interruptible.  If there are
          * any back edges, check the source and destination blocks to see if they're GC Safe.  If not, then
          * go fully interruptible. */
-
-        /* XXX Mon 1/21/2008
-         * Wouldn't it be nice to have a block iterator that can do this loop?
-         */
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
 // true if the edge is forward, or if it is a back edge and either the source and dest are GC safe.
 #define EDGE_IS_GC_SAFE(src, dst)                                                                                      \
@@ -4363,7 +4357,7 @@ void Compiler::fgSetBlockOrder()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
 
 #if FEATURE_FASTTAILCALL

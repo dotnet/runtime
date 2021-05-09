@@ -1566,7 +1566,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // in case bits are left over from EH clauses being deleted.
 
     // Walk all blocks, and reset the target bits.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
@@ -1585,7 +1585,7 @@ void Compiler::fgAddFinallyTargetFlags()
         return;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->isBBCallAlwaysPair())
         {

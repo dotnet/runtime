@@ -352,7 +352,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
 #ifdef DEBUG
     // No label flags should be set before this.
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert((block->bbFlags & BBF_HAS_LABEL) == 0);
     }
@@ -372,7 +372,7 @@ void CodeGen::genMarkLabelsForCodegen()
         compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
     }
 
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -2675,7 +2675,7 @@ void CodeGen::genReportEH()
         }
         if (anyFinallys)
         {
-            for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+            for (BasicBlock* const block : compiler->Blocks())
             {
                 if (block->bbJumpKind == BBJ_CALLFINALLY)
                 {
@@ -3001,7 +3001,7 @@ void CodeGen::genReportEH()
     if (clonedFinallyCount > 0)
     {
         unsigned reportedClonedFinallyCount = 0;
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             if (block->bbJumpKind == BBJ_CALLFINALLY)
             {
@@ -10843,7 +10843,7 @@ void CodeGen::genIPmappingGen()
         //
         //It turns out that the only thing we really have to assert is that the first statement in each basic
         //block has an IL offset and appears in eeBoundaries.
-        for (BasicBlock * block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             Statement* stmt = block->firstStmt();
             if ((block->bbRefs > 1) && (stmt != nullptr))

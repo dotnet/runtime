@@ -4978,6 +4978,13 @@ public:
 
     void fgInterBlockLocalVarLiveness();
 
+    // Use to iterate over all the blocks in the function, e.g.:
+    //    for (BasicBlock* const block : compiler->Blocks()) ...
+    SimpleBasicBlockList Blocks() const
+    {
+        return SimpleBasicBlockList(fgFirstBB);
+    }
+
     // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
     // of "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
     // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
@@ -11469,16 +11476,6 @@ extern const BYTE genTypeAlignments[];
 extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];
 
-/*****************************************************************************/
-
-// foreach_block: An iterator over all blocks in the function.
-//    __compiler: the Compiler* object
-//    __block   : a BasicBlock*, already declared, that gets updated each iteration.
-
-#define foreach_block(__compiler, __block)                                                                             \
-    for ((__block) = (__compiler)->fgFirstBB; (__block); (__block) = (__block)->bbNext)
-
-/*****************************************************************************/
 /*****************************************************************************/
 
 #ifdef DEBUG

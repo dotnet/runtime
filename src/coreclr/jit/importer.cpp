@@ -18753,7 +18753,7 @@ void Compiler::impImport()
     }
 
     // Used in impImportBlockPending() for STRESS_CHK_REIMPORT
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
     }

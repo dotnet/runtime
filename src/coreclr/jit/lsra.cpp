@@ -962,7 +962,7 @@ void LinearScan::setBlockSequence()
                 //     connected (these are not removed)
                 //   - EH blocks
 
-                for (BasicBlock* seqBlock = compiler->fgFirstBB; seqBlock; seqBlock = seqBlock->bbNext)
+                for (BasicBlock* const seqBlock : compiler->Blocks())
                 {
                     if (!isBlockVisited(seqBlock))
                     {
@@ -983,7 +983,7 @@ void LinearScan::setBlockSequence()
 
 #ifdef DEBUG
     // Make sure that we've visited all the blocks.
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }
@@ -1395,9 +1395,7 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 //
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-    BasicBlock* block;
-
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->hasEHBoundaryIn())
         {
@@ -6943,7 +6941,7 @@ void LinearScan::resolveRegisters()
             printf("Has %sCritical Edges\n\n", hasCriticalEdges ? "" : "No ");
 
             printf("Prior to Resolution\n");
-            foreach_block(compiler, block)
+            for (BasicBlock* const block : compiler->Blocks())
             {
                 printf("\n" FMT_BB, block->bbNum);
                 if (block->hasEHBoundaryIn())
@@ -7855,8 +7853,6 @@ void LinearScan::resolveEdges()
         return;
     }
 
-    BasicBlock *block, *prevBlock = nullptr;
-
     // Handle all the critical edges first.
     // We will try to avoid resolution across critical edges in cases where all the critical-edge
     // targets of a block have the same home.  We will then split the edges only for the
@@ -7865,7 +7861,7 @@ void LinearScan::resolveEdges()
 
     if (hasCriticalEdges)
     {
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             if (block->bbNum > bbNumMaxBeforeResolution)
             {
@@ -7876,12 +7872,10 @@ void LinearScan::resolveEdges()
             {
                 handleOutgoingCriticalEdges(block);
             }
-            prevBlock = block;
         }
     }
 
-    prevBlock = nullptr;
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -7941,7 +7935,7 @@ void LinearScan::resolveEdges()
     // would only improve the debug case, and would clutter up the code somewhat.
     if (compiler->fgBBNumMax > bbNumMaxBeforeResolution)
     {
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             if (block->bbNum > bbNumMaxBeforeResolution)
             {
@@ -7998,7 +7992,7 @@ void LinearScan::resolveEdges()
 #ifdef DEBUG
     // Make sure the varToRegMaps match up on all edges.
     bool foundMismatch = false;
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->isEmpty() && block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -8680,7 +8674,7 @@ void LinearScan::dumpLsraStats(FILE* file)
         fprintf(file, "\n");
     }
 
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -8773,7 +8767,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
     }
 
     // blocks
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -10616,7 +10610,7 @@ void LinearScan::verifyFinalAllocation()
     // Now, verify the resolution blocks.
     // Currently these are nearly always at the end of the method, but that may not always be the case.
     // So, we'll go through all the BBs looking for blocks whose bbNum is greater than bbNumMaxBeforeResolution.
-    for (BasicBlock* currentBlock = compiler->fgFirstBB; currentBlock != nullptr; currentBlock = currentBlock->bbNext)
+    for (BasicBlock* const currentBlock : compiler->Blocks())
     {
         if (currentBlock->bbNum > bbNumMaxBeforeResolution)
         {

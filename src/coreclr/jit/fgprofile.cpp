@@ -131,9 +131,9 @@ void Compiler::fgApplyProfileScale()
             calleeWeight, scale);
     JITDUMP("Scaling inlinee blocks\n");
 
-    for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        bb->scaleBBWeight(scale);
+        block->scaleBBWeight(scale);
     }
 }
 
@@ -314,7 +314,7 @@ void BlockCountInstrumentor::Prepare(bool preImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         block->bbCountSchemaIndex = -1;
     }
@@ -1391,7 +1391,7 @@ void ClassProbeInstrumentor::Prepare(bool isPreImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         block->bbClassSchemaIndex = -1;
     }
@@ -1474,7 +1474,7 @@ void ClassProbeInstrumentor::SuppressProbes()
     SuppressProbesFunctor                    suppressProbes(cleanupCount);
     ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
 
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
         {
@@ -1589,7 +1589,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Walk the flow graph to build up the instrumentation schema.
     //
     Schema schema(getAllocator(CMK_Pgo));
-    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (fgCountInstrumentor->ShouldProcess(block))
         {
@@ -1670,7 +1670,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     // Add the instrumentation code
     //
-    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (fgCountInstrumentor->ShouldProcess(block))
         {
@@ -1852,7 +1852,7 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profil
 //
 void Compiler::fgIncorporateBlockCounts()
 {
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BasicBlock::weight_t profileWeight;
 
@@ -2172,7 +2172,7 @@ void EfficientEdgeCountReconstructor::Prepare()
 {
     // Create per-block info, and set up the key to block map.
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         m_keyToBlockMap.Set(BlockToKey(block), block);
         BlockInfo* const info = new (m_allocator) BlockInfo();
@@ -2536,7 +2536,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 
     // Set weight on all blocks.
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
@@ -3666,7 +3666,7 @@ void Compiler::fgDebugCheckProfileData()
 
     // Verify each profiled block.
     //
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (!block->hasProfileWeight())
         {

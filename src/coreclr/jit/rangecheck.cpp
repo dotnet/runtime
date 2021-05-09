@@ -1445,7 +1445,7 @@ Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData*
 void RangeCheck::MapMethodDefs()
 {
     // First, gather where all definitions occur in the program and store it in a map.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
@@ -1474,7 +1474,7 @@ void RangeCheck::OptimizeRangeChecks()
 #endif
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
