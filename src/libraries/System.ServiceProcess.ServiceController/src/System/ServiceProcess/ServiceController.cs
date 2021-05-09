@@ -917,6 +917,16 @@ namespace System.ServiceProcess
             Stop(true);
         }
 
+        /// <summary>
+        /// Stops the service and optionally any services that are dependent on this service.
+        /// </summary>
+        /// <remarks>
+        /// If any other services depend on this one, you need to either pass <c>true</c> for
+        /// <paramref name="stopDependentServices"/> or stop them manually before calling this method.
+        /// </remarks>
+        /// <param name="stopDependentServices">
+        /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
+        /// </param>
         public unsafe void Stop(bool stopDependentServices)
         {
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_STOP);
