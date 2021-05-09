@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
 {
-    internal static unsafe class MemoryHelper
+    internal static class MemoryHelper
     {
-        public static void FillMemory(byte* dest, byte fill, int count)
+        public static void FillStruct<T>(ref T destination, byte value) where T : unmanaged
         {
-            for (; count > 0; count--)
-            {
-                *dest = fill;
-                dest++;
-            }
+            Span<T> span = MemoryMarshal.CreateSpan(ref destination, 1);
+            MemoryMarshal.AsBytes(span).Fill(value);
         }
     }
 }

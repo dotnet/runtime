@@ -2755,8 +2755,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            fixed (CORINFO_EE_INFO* tmp = &pEEInfoOut)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_EE_INFO>());
+            MemoryHelper.FillMemory(ref pEEInfoOut, 0xcc);
 #endif
 
             int pointerSize = this.PointerSize;
