@@ -200,12 +200,26 @@ int32_t CryptoNative_EvpCipherSetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32
 
 int32_t CryptoNative_EvpCipherGetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+#if HAVE_OPENSSL_CHACHA20POLY1305
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tagLength, tag);
+#else
+    (void)ctx;
+    (void)tag;
+    (void)tagLength;
+    return 0;
+#endif
 }
 
 int32_t CryptoNative_EvpCipherSetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+#if HAVE_OPENSSL_CHACHA20POLY1305
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tagLength, tag);
+#else
+    (void)ctx;
+    (void)tag;
+    (void)tagLength;
+    return 0;
+#endif
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
