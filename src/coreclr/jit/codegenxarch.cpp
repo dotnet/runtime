@@ -6063,6 +6063,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else
     {
+        // "INC REG" instead of "CMP REG, 0xFFFFFFFF" (or just - if "CMP REG, -1")
         if (op1->isUsedFromReg() && op2->IsIntegralConst(-1) && targetReg != REG_NA)
         {
             emit->emitIns_R(INS_inc, emitTypeSize(tree), op1->GetRegNum());
