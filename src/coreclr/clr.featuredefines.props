@@ -36,7 +36,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
-        <FeatureNSAutoreleasePool>true</FeatureNSAutoreleasePool>
+        <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -48,7 +48,7 @@
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureNSAutoreleasePool)' == 'true'">$(DefineConstants);FEATURE_NSAUTORELEASEPOOL</DefineConstants>
+        <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>

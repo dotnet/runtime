@@ -2084,14 +2084,14 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_NSAUTORELEASEPOOL
+#ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
         DECLARE_ARGHOLDER_ARRAY(args, 0);
         CALL_MANAGED_METHOD_NORET(args);
     }
-#endif // FEATURE_NSAUTORELEASEPOOL
+#endif // FEATURE_OBJCMARSHAL
 
     pThread->m_managedInitializationPerformed = true;
 }
@@ -2110,14 +2110,14 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
     if (!pThread->m_managedInitializationPerformed)
         return;
 
-#ifdef FEATURE_NSAUTORELEASEPOOL
+#ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
         DECLARE_ARGHOLDER_ARRAY(args, 0);
         CALL_MANAGED_METHOD_NORET(args);
     }
-#endif // FEATURE_NSAUTORELEASEPOOL
+#endif // FEATURE_OBJCMARSHAL
 }
 
 HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags, DWORD* pThreadId)

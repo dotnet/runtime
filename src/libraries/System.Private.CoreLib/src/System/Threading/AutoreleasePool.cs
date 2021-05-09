@@ -42,6 +42,7 @@ namespace System.Threading
                 && s_AutoreleasePoolInstance != IntPtr.Zero)
             {
                 Interop.Sys.DrainAutoreleasePool(s_AutoreleasePoolInstance);
+                s_AutoreleasePoolInstance = IntPtr.Zero;
             }
         }
     }
