@@ -2927,11 +2927,11 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD ThisThreadID = GetThreadId();
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    // If the currently running thread is the thread that died and it is an STA thread, then we
+    // need to release all the RCW's in the current context. However, we cannot do this if we
+    // are in the middle of process detach.
     if (!IsAtProcessExit() && this == GetThreadNULLOk())
     {
-        // If the currently running thread is the thread that died and it is an STA thread, then we
-        // need to release all the RCW's in the current context. However, we cannot do this if we
-        // are in the middle of process detach.
         CleanupCOMState();
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
