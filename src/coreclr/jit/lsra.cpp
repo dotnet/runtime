@@ -10293,6 +10293,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_DEFUSE_CONFLICT:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("DUconflict ");
+            dumpHeuristicSpace(event);
             dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE1:
@@ -10365,11 +10366,13 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_DONE_KILL_GC_REFS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("Done       ");
+            dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_NO_GC_KILLS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("None       ");
+            dumpHeuristicSpace(event);
             break;
 
         // Block boundaries
@@ -10411,6 +10414,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_KEPT_ALLOCATION:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("Keep  %-4s ", getRegName(reg));
+            dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_COPY_REG:
@@ -10447,6 +10451,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_NO_REG_ALLOCATED:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("NoReg      ");
+            dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_RELOAD:
@@ -10459,11 +10464,13 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_SPECIAL_PUTARG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("PtArg %-4s ", getRegName(reg));
+            dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_UPPER_VECTOR_SAVE:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("UVSav %-4s ", getRegName(reg));
+            dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_UPPER_VECTOR_RESTORE:
@@ -10481,7 +10488,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_INCREMENT_RANGE_END:
         case LSRA_EVENT_LAST_USE:
         case LSRA_EVENT_LAST_USE_DELAYED:
-            dumpHeuristicSpace(event);
+            //dumpHeuristicSpace(event);
             break;
 
         default:
