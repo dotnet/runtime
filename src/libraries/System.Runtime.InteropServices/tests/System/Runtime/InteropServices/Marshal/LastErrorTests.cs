@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             int errorExpected = 123;
             Marshal.SetLastPInvokeError(errorExpected);
-            Assert.Equal(errorExpected, Marshal.GetLastPInvokeError());
+            Assert.Equal(errorExpected, Marshal.GetLastWin32Error());
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.NotEqual(systemError, pinvokeActual);
             Assert.Equal(pinvokeError, pinvokeActual);
 
-            int win32Actual = Marshal.GetLastPInvokeError();
+            int win32Actual = Marshal.GetLastWin32Error();
             Assert.NotEqual(systemError, win32Actual);
             Assert.Equal(pinvokeError, win32Actual);
         }
