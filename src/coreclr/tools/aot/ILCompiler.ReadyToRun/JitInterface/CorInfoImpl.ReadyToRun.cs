@@ -568,7 +568,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory(ref pLookup, 0xcc);
+            MemoryHelper.FillStruct(ref pLookup, 0xcc);
 #endif
 
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
@@ -1209,7 +1209,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory(ref *pResult, 0xcc);
+            MemoryHelper.FillStruct(ref *pResult, 0xcc);
 #endif
 
             Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
@@ -1384,7 +1384,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory(ref *pResult, 0xcc);
+            MemoryHelper.FillStruct(ref *pResult, 0xcc);
 #endif
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
@@ -2069,7 +2069,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory(ref pResult, 0xcc);
+            MemoryHelper.FillStruct(ref pResult, 0xcc);
 #endif
 
             bool runtimeLookup = false;

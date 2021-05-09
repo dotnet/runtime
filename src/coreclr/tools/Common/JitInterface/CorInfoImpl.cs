@@ -2755,7 +2755,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory(ref pEEInfoOut, 0xcc);
+            MemoryHelper.FillStruct(ref pEEInfoOut, 0xcc);
 #endif
 
             int pointerSize = this.PointerSize;
