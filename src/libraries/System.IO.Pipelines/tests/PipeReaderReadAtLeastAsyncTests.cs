@@ -143,5 +143,23 @@ namespace System.IO.Pipelines.Tests
         {
             return Assert.ThrowsAsync<OperationCanceledException>(async () => await PipeReader.ReadAtLeastAsync(0, new CancellationToken(true)));
         }
+
+        [Fact]
+        public async Task WriteAndCancellingPendingReadBeforeReadAtLeastAsync()
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            PipeWriter output = Pipe.Writer;
+            output.Write(bytes);
+            await output.FlushAsync();
+
+            PipeReader.CancelPendingRead();
+
+            ReadResult result = await PipeReader.ReadAtLeastAsync(1000);
+            ReadOnlySequence<byte> buffer = result.Buffer;
+
+            Assert.False(result.IsCompleted);
+            Assert.True(result.IsCanceled);
+            PipeReader.AdvanceTo(buffer.End);
+        }
     }
 }
