@@ -20,7 +20,7 @@ void Compiler::fgPrintEdgeWeights()
         if (bDst->bbPreds != nullptr)
         {
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
-            for (flowList* edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
                 BasicBlock* bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
@@ -985,8 +985,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 targetWeightDivisor = (double)bTarget->bbWeight;
             }
 
-            flowList* edge;
-            for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
+            for (flowList* const edge : bTarget->PredEdges())
             {
                 BasicBlock* bSource = edge->getBlock();
                 double      sourceWeightDivisor;
@@ -1080,6 +1079,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     fprintf(fgxFile, ">");
                     fprintf(fgxFile, "\n        </edge>");
                 }
+
+                ++edgeNum;
             }
         }
     }
@@ -2365,7 +2366,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
     }
 
     unsigned blockRefs = 0;
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         blockRefs += pred->flDupCount;
 

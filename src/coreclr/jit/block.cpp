@@ -163,10 +163,9 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         // Find the first block of the try.
         EHblkDsc*   ehblk    = ehGetDsc(tryIndex);
         BasicBlock* tryStart = ehblk->ebdTryBeg;
-        for (flowList* tryStartPreds = tryStart->bbPreds; tryStartPreds != nullptr;
-             tryStartPreds           = tryStartPreds->flNext)
+        for (BasicBlock* const tryStartPredBlock : tryStart->PredBlocks())
         {
-            res = new (this, CMK_FlowList) flowList(tryStartPreds->getBlock(), res);
+            res = new (this, CMK_FlowList) flowList(tryStartPredBlock, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -217,9 +216,9 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
 bool BasicBlock::checkPredListOrder()
 {
     unsigned lastBBNum = 0;
-    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : PredBlocks())
     {
-        const unsigned bbNum = pred->getBlock()->bbNum;
+        const unsigned bbNum = predBlock->bbNum;
         if (bbNum <= lastBBNum)
         {
             assert(bbNum != lastBBNum);
@@ -261,7 +260,7 @@ void BasicBlock::reorderPredList(Compiler* compiler)
     // Count number or entries.
     //
     int count = 0;
-    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : PredEdges())
     {
         count++;
     }
@@ -286,7 +285,7 @@ void BasicBlock::reorderPredList(Compiler* compiler)
 
     // Fill in the vector from the list.
     //
-    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : PredEdges())
     {
         sortVector->push_back(pred);
     }
@@ -516,7 +515,7 @@ void BasicBlock::dspFlags()
 unsigned BasicBlock::dspPreds()
 {
     unsigned count = 0;
-    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : PredEdges())
     {
         if (count != 0)
         {

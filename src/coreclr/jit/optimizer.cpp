@@ -168,19 +168,17 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
     /* Build list of backedges for block begBlk */
     flowList* backedgeList = nullptr;
 
-    for (flowList* pred = begBlk->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
         /* Is this a backedge? */
-        if (pred->getBlock()->bbNum >= begBlk->bbNum)
+        if (predBlock->bbNum >= begBlk->bbNum)
         {
-            flowList* flow = new (this, CMK_FlowList) flowList(pred->getBlock(), backedgeList);
+            backedgeList = new (this, CMK_FlowList) flowList(predBlock, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
             genFlowNodeSize += sizeof(flowList);
 #endif // MEASURE_BLOCK_SIZE
-
-            backedgeList = flow;
         }
     }
 
@@ -278,23 +276,20 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 
     noway_assert(!opts.MinOpts());
 
-    BasicBlock* curBlk;
-    unsigned    backEdgeCount = 0;
+    unsigned backEdgeCount = 0;
 
-    for (flowList* pred = begBlk->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
-        curBlk = pred->getBlock();
+        /* is this a backward edge? (from predBlock to begBlk) */
 
-        /* is this a backward edge? (from curBlk to begBlk) */
-
-        if (begBlk->bbNum > curBlk->bbNum)
+        if (begBlk->bbNum > predBlock->bbNum)
         {
             continue;
         }
 
         /* We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops */
 
-        if ((curBlk->bbJumpKind != BBJ_COND) && (curBlk->bbJumpKind != BBJ_ALWAYS))
+        if ((predBlock->bbJumpKind != BBJ_COND) && (predBlock->bbJumpKind != BBJ_ALWAYS))
         {
             continue;
         }
@@ -330,7 +325,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     }
 #endif
 
-    curBlk = begBlk;
+    BasicBlock* curBlk = begBlk;
     while (true)
     {
         noway_assert(curBlk);
@@ -1182,9 +1177,8 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
 
         // Make sure the "iterVar" initialization is never skipped,
         // i.e. every pred of ENTRY other than HEAD is in the loop.
-        for (flowList* predEdge = entry->bbPreds; predEdge; predEdge = predEdge->flNext)
+        for (BasicBlock* const predBlock : entry->PredBlocks())
         {
-            BasicBlock* predBlock = predEdge->getBlock();
             if ((predBlock != head) && !optLoopTable[loopInd].lpContains(predBlock))
             {
                 goto DONE_LOOP;
@@ -1319,33 +1313,33 @@ void Compiler::optCheckPreds()
 {
     for (BasicBlock* const block : Blocks())
     {
-        for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
             // make sure this pred is part of the BB list
-            BasicBlock* blockPred;
-            for (blockPred = fgFirstBB; blockPred; blockPred = blockPred->bbNext)
+            BasicBlock* bb;
+            for (bb = fgFirstBB; bb; bb = bb->bbNext)
             {
-                if (blockPred == pred->getBlock())
+                if (bb == predBlock)
                 {
                     break;
                 }
             }
-            noway_assert(blockPred);
-            switch (blockPred->bbJumpKind)
+            noway_assert(bb);
+            switch (bb->bbJumpKind)
             {
                 case BBJ_COND:
-                    if (blockPred->bbJumpDest == block)
+                    if (bb->bbJumpDest == block)
                     {
                         break;
                     }
                     FALLTHROUGH;
                 case BBJ_NONE:
-                    noway_assert(blockPred->bbNext == block);
+                    noway_assert(bb->bbNext == block);
                     break;
                 case BBJ_EHFILTERRET:
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    noway_assert(blockPred->bbJumpDest == block);
+                    noway_assert(bb->bbJumpDest == block);
                     break;
                 default:
                     break;
@@ -1820,18 +1814,16 @@ private:
             }
 
             // Add preds to the worklist, checking for side-entries.
-            for (flowList* predIter = block->bbPreds; predIter != nullptr; predIter = predIter->flNext)
+            for (BasicBlock* const predBlock : block->PredBlocks())
             {
-                BasicBlock* pred = predIter->getBlock();
-
-                unsigned int testNum = PositionNum(pred);
+                unsigned int testNum = PositionNum(predBlock);
 
                 if ((testNum < top->bbNum) || (testNum > bottom->bbNum))
                 {
                     // Pred is out of loop range
                     if (block == entry)
                     {
-                        if (pred == head)
+                        if (predBlock == head)
                         {
                             // This is the single entry we expect.
                             continue;
@@ -1839,9 +1831,9 @@ private:
                         // ENTRY has some pred other than head outside the loop.  If ENTRY does not
                         // dominate this pred, we'll consider this a side-entry and skip this loop;
                         // otherwise the loop is still valid and this may be a (flow-wise) back-edge
-                        // of an outer loop.  For the dominance test, if `pred` is a new block, use
+                        // of an outer loop.  For the dominance test, if `predBlock` is a new block, use
                         // its unique predecessor since the dominator tree has info for that.
-                        BasicBlock* effectivePred = (pred->bbNum > oldBlockMaxNum ? pred->bbPrev : pred);
+                        BasicBlock* effectivePred = (predBlock->bbNum > oldBlockMaxNum ? predBlock->bbPrev : predBlock);
                         if (comp->fgDominate(entry, effectivePred))
                         {
                             // Outer loop back-edge
@@ -1854,32 +1846,33 @@ private:
                 }
 
                 bool isFirstVisit;
-                if (pred == entry)
+                if (predBlock == entry)
                 {
                     // We have indeed found a cycle in the flow graph.
                     isFirstVisit = !foundCycle;
                     foundCycle   = true;
-                    assert(loopBlocks.IsMember(pred->bbNum));
+                    assert(loopBlocks.IsMember(predBlock->bbNum));
                 }
-                else if (loopBlocks.TestAndInsert(pred->bbNum))
+                else if (loopBlocks.TestAndInsert(predBlock->bbNum))
                 {
                     // Already visited this pred
                     isFirstVisit = false;
                 }
                 else
                 {
-                    // Add this pred to the worklist
-                    worklist.push_back(pred);
+                    // Add this predBlock to the worklist
+                    worklist.push_back(predBlock);
                     isFirstVisit = true;
                 }
 
-                if (isFirstVisit && (pred->bbNext != nullptr) && (PositionNum(pred->bbNext) == pred->bbNum))
+                if (isFirstVisit && (predBlock->bbNext != nullptr) &&
+                    (PositionNum(predBlock->bbNext) == predBlock->bbNum))
                 {
-                    // We've created a new block immediately after `pred` to
+                    // We've created a new block immediately after `predBlock` to
                     // reconnect what was fall-through.  Mark it as in-loop also;
                     // it needs to stay with `prev` and if it exits the loop we'd
                     // just need to re-create it if we tried to move it out.
-                    loopBlocks.Insert(pred->bbNext->bbNum);
+                    loopBlocks.Insert(predBlock->bbNext->bbNum);
                 }
             }
         }
@@ -2098,9 +2091,9 @@ private:
         // of an edge from the run of blocks being moved to `newMoveAfter` -- doing so would
         // introduce a new lexical back-edge, which could (maybe?) confuse the loop search
         // algorithm, and isn't desirable layout anyway.
-        for (flowList* predIter = newMoveAfter->bbPreds; predIter != nullptr; predIter = predIter->flNext)
+        for (BasicBlock* const predBlock : newMoveAfter->PredBlocks())
         {
-            unsigned int predNum = predIter->getBlock()->bbNum;
+            unsigned int predNum = predBlock->bbNum;
 
             if ((predNum >= top->bbNum) && (predNum <= bottom->bbNum) && !loopBlocks.IsMember(predNum))
             {
@@ -2168,9 +2161,8 @@ private:
         BasicBlock* nextLoopBlock = lastNonLoopBlock->bbNext;
         for (BasicBlock* testBlock = firstNonLoopBlock; testBlock != nextLoopBlock; testBlock = testBlock->bbNext)
         {
-            for (flowList* predIter = testBlock->bbPreds; predIter != nullptr; predIter = predIter->flNext)
+            for (BasicBlock* const testPred : testBlock->PredBlocks())
             {
-                BasicBlock*  testPred           = predIter->getBlock();
                 unsigned int predPosNum         = PositionNum(testPred);
                 unsigned int firstNonLoopPosNum = PositionNum(firstNonLoopBlock);
                 unsigned int lastNonLoopPosNum  = PositionNum(lastNonLoopBlock);
@@ -2397,9 +2389,9 @@ void Compiler::optFindNaturalLoops()
             continue;
         }
 
-        for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
+        for (BasicBlock* const predBlock : top->PredBlocks())
         {
-            if (search.FindLoop(head, top, pred->getBlock()))
+            if (search.FindLoop(head, top, predBlock))
             {
                 // Found a loop; record it and see if we've hit the limit.
                 bool recordedLoop = search.RecordLoop();
@@ -2855,10 +2847,8 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // This is ok, because after the first redirection, the topPredBlock branch target will no longer match the source
     // edge of the blockMap, so nothing will happen.
     bool firstPred = true;
-    for (flowList* topPred = t->bbPreds; topPred != nullptr; topPred = topPred->flNext)
+    for (BasicBlock* const topPredBlock : t->PredBlocks())
     {
-        BasicBlock* topPredBlock = topPred->getBlock();
-
         // Skip if topPredBlock is in the loop.
         // Note that this uses block number to detect membership in the loop. We are adding blocks during
         // canonicalization, and those block numbers will be new, and larger than previous blocks. However, we work
@@ -4467,10 +4457,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     unsigned loopFirstNum  = bNewCond->bbNext->bbNum;
     unsigned loopBottomNum = bTest->bbNum;
-    for (flowList* pred = bTest->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : bTest->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
-        unsigned    bNum      = predBlock->bbNum;
+        unsigned bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
         {
             // Looks like the predecessor is from within the potential loop; skip it.
@@ -4697,11 +4686,9 @@ PhaseStatus Compiler::optFindLoops()
         {
             BasicBlock* foundBottom = nullptr;
 
-            for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
+            for (BasicBlock* const bottom : top->PredBlocks())
             {
                 /* Is this a loop candidate? - We look for "back edges" */
-
-                BasicBlock* bottom = pred->getBlock();
 
                 /* is this a backward edge? (from BOTTOM to TOP) */
 
@@ -6843,10 +6830,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
     bool checkNestedLoops = false;
 
-    for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : top->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
-
         if (fgDominate(top, predBlock))
         {
             // note: if 'top' dominates predBlock, 'head' dominates predBlock too

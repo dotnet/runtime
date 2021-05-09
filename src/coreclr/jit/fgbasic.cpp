@@ -623,7 +623,7 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
 
     bool modified = false;
 
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         if (oldPred == pred->getBlock())
         {
@@ -4130,7 +4130,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(succBlock, block);
 
-        for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+        for (flowList* const pred : block->PredEdges())
         {
             BasicBlock* predBlock = pred->getBlock();
 

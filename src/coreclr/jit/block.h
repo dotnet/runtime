@@ -319,6 +319,89 @@ public:
     }
 };
 
+// Predecessor list iterators
+
+class PredEdgeIterator
+{
+    flowList* m_pred;
+
+public:
+    PredEdgeIterator(flowList* pred) : m_pred(pred)
+    {
+    }
+
+    flowList* operator*() const
+    {
+        return m_pred;
+    }
+
+    PredEdgeIterator& operator++();
+
+    bool operator!=(const PredEdgeIterator& i) const
+    {
+        return m_pred != i.m_pred;
+    }
+};
+
+class PredBlockIterator
+{
+    flowList* m_pred;
+
+public:
+    PredBlockIterator(flowList* pred) : m_pred(pred)
+    {
+    }
+
+    BasicBlock* operator*() const;
+
+    PredBlockIterator& operator++();
+
+    bool operator!=(const PredBlockIterator& i) const
+    {
+        return m_pred != i.m_pred;
+    }
+};
+
+class PredEdgeList
+{
+    flowList* m_begin;
+
+public:
+    PredEdgeList(flowList* pred) : m_begin(pred)
+    {
+    }
+
+    PredEdgeIterator begin() const
+    {
+        return PredEdgeIterator(m_begin);
+    }
+
+    PredEdgeIterator end() const
+    {
+        return PredEdgeIterator(nullptr);
+    }
+};
+
+class PredBlockList
+{
+    flowList* m_begin;
+
+public:
+    PredBlockList(flowList* pred) : m_begin(pred)
+    {
+    }
+
+    PredBlockIterator begin() const
+    {
+        return PredBlockIterator(m_begin);
+    }
+
+    PredBlockIterator end() const
+    {
+        return PredBlockIterator(nullptr);
+    }
+};
+
 //------------------------------------------------------------------------
 // BasicBlockFlags: a bitmask of flags for BasicBlock
 //
@@ -876,6 +959,16 @@ struct BasicBlock : private LIR::Range
         flowList*       bbPreds;      // ptr to list of predecessors
     };
 
+    PredEdgeList PredEdges() const
+    {
+        return PredEdgeList(bbPreds);
+    }
+
+    PredBlockList PredBlocks() const
+    {
+        return PredBlockList(bbPreds);
+    }
+
     // Pred list maintenance
     //
     bool checkPredListOrder();
@@ -1407,6 +1500,25 @@ public:
     {
     }
 };
+
+// Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and flowList)
+
+inline PredEdgeIterator& PredEdgeIterator::operator++()
+{
+    m_pred = m_pred->flNext;
+    return *this;
+}
+
+inline BasicBlock* PredBlockIterator::operator*() const
+{
+    return m_pred->getBlock();
+}
+
+inline PredBlockIterator& PredBlockIterator::operator++()
+{
+    m_pred = m_pred->flNext;
+    return *this;
+}
 
 // This enum represents a pre/post-visit action state to emulate a depth-first
 // spanning tree traversal of a tree or graph.

@@ -3222,7 +3222,6 @@ void Compiler::fgComputeEdgeWeights()
 
     BasicBlock*          bSrc;
     BasicBlock*          bDst;
-    flowList*            edge;
     BasicBlock::weight_t slop;
     unsigned             goodEdgeCountCurrent     = 0;
     unsigned             goodEdgeCountPrevious    = 0;
@@ -3247,7 +3246,7 @@ void Compiler::fgComputeEdgeWeights()
             bDstWeight -= fgCalledCount;
         }
 
-        for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+        for (flowList* const edge : bDst->PredEdges())
         {
             bool assignOK = true;
 
@@ -3327,7 +3326,7 @@ void Compiler::fgComputeEdgeWeights()
         JITDUMP("\n -- step 1 --\n");
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
         {
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
                 bool assignOK = true;
 
@@ -3432,11 +3431,8 @@ void Compiler::fgComputeEdgeWeights()
                 BasicBlock::weight_t maxEdgeWeightSum = 0;
 
                 // Calculate the sums of the minimum and maximum edge weights
-                for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+                for (flowList* const edge : bDst->PredEdges())
                 {
-                    // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->getBlock();
-
                     maxEdgeWeightSum += edge->edgeWeightMax();
                     minEdgeWeightSum += edge->edgeWeightMin();
                 }
@@ -3444,7 +3440,7 @@ void Compiler::fgComputeEdgeWeights()
                 // maxEdgeWeightSum is the sum of all flEdgeWeightMax values into bDst
                 // minEdgeWeightSum is the sum of all flEdgeWeightMin values into bDst
 
-                for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+                for (flowList* const edge : bDst->PredEdges())
                 {
                     bool assignOK = true;
 
@@ -3567,14 +3563,13 @@ EARLY_EXIT:;
 
     // See if any edge weight are expressed in [min..max] form
 
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
-                bSrc = edge->getBlock();
-                // This is the control flow edge (bSrc -> bDst)
+                // This is the control flow edge (edge->getBlock() -> bDst)
 
                 if (edge->edgeWeightMin() != edge->edgeWeightMax())
                 {
@@ -3801,7 +3796,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
     BasicBlock::weight_t       incomingWeightMax = 0;
     bool                       foundPreds        = false;
 
-    for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
+    for (flowList* const predEdge : block->PredEdges())
     {
         incomingWeightMin += predEdge->edgeWeightMin();
         incomingWeightMax += predEdge->edgeWeightMax();
@@ -3883,16 +3878,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     for (unsigned i = 0; i < numSuccs; i++)
     {
         BasicBlock* succBlock = block->GetSucc(i, this);
-        flowList*   succEdge  = nullptr;
-
-        for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
-        {
-            if (edge->getBlock() == block)
-            {
-                succEdge = edge;
-                break;
-            }
-        }
+        flowList*   succEdge  = fgGetPredForBlock(succBlock, block);
 
         if (succEdge == nullptr)
         {

@@ -4085,12 +4085,12 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
     assert(fgComputePredsDone);
     assert((block->bbFlags & BBF_FINALLY_TARGET) != 0);
 
-    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        if (pred->getBlock()->bbJumpKind == BBJ_ALWAYS && pred->getBlock()->bbJumpDest == block)
+        if (predBlock->bbJumpKind == BBJ_ALWAYS && predBlock->bbJumpDest == block)
         {
-            BasicBlock* pPrev = pred->getBlock()->bbPrev;
-            if (pPrev != NULL)
+            BasicBlock* pPrev = predBlock->bbPrev;
+            if (pPrev != nullptr)
             {
                 if (pPrev->bbJumpKind == BBJ_CALLFINALLY)
                 {
@@ -4238,12 +4238,8 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
-    flowList* pred;
-
-    for (pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
-
         if (fgIsIntraHandlerPred(predBlock, block))
         {
             // We have a predecessor that is not from our try region

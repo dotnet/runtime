@@ -3185,9 +3185,8 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* predBlock = pred->getBlock();
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
             // It's a jump from outside the handler; add it to the newHead preds list and remove

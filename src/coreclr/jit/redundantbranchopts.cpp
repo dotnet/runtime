@@ -389,9 +389,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     BasicBlock* const trueTarget        = block->bbJumpDest;
     BasicBlock* const falseTarget       = block->bbNext;
 
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* const predBlock = pred->getBlock();
         numPreds++;
 
         // Treat switch preds as ambiguous for now.
@@ -510,10 +509,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // flow directly by changing their jump targets to the appropriate successor,
     // provided it's a permissable flow in our EH model.
     //
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* const predBlock = pred->getBlock();
-
         if (predBlock->bbJumpKind == BBJ_SWITCH)
         {
             // Skip over switch preds, they will continue to flow to block.

@@ -48,9 +48,9 @@ bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
             return true;
         }
 
-        for (flowList* pred = b2->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : b2->PredBlocks())
         {
-            if (!fgDominate(b1, pred->getBlock()))
+            if (!fgDominate(b1, predBlock))
             {
                 return false;
             }
@@ -132,9 +132,9 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
             return true;
         }
 
-        for (flowList* pred = b2->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : b2->PredBlocks())
         {
-            if (fgReachable(b1, pred->getBlock()))
+            if (fgReachable(b1, predBlock))
             {
                 return true;
             }
@@ -245,10 +245,8 @@ void Compiler::fgComputeReachabilitySets()
 
             bool predGcSafe = (block->bbPreds != nullptr); // Do all of our predecessor blocks have a GC safe bit?
 
-            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+            for (BasicBlock* const predBlock : block->PredBlocks())
             {
-                BasicBlock* predBlock = pred->getBlock();
-
                 /* Union the predecessor's reachability set into newReach */
                 BlockSetOps::UnionD(this, newReach, predBlock->bbReach);
 
@@ -455,9 +453,8 @@ bool Compiler::fgRemoveUnreachableBlocks()
         // Set BBF_LOOP_HEAD if we have backwards branches to this block.
 
         unsigned blockNum = block->bbNum;
-        for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            BasicBlock* predBlock = pred->getBlock();
             if (blockNum <= predBlock->bbNum)
             {
                 if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
@@ -1562,9 +1559,9 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
-    for (flowList* pred = bNext->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : bNext->PredBlocks())
     {
-        if (pred->getBlock()->bbJumpKind == BBJ_SWITCH)
+        if (predBlock->bbJumpKind == BBJ_SWITCH)
         {
             return false;
         }
@@ -1622,13 +1619,13 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         JITDUMP("Second block has multiple incoming edges\n");
 
         assert(block->isEmpty());
-        for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
+        for (BasicBlock* const predBlock : bNext->PredBlocks())
         {
-            fgReplaceJumpTarget(pred->getBlock(), block, bNext);
+            fgReplaceJumpTarget(predBlock, block, bNext);
 
-            if (pred->getBlock() != block)
+            if (predBlock != block)
             {
-                fgAddRefPred(block, pred->getBlock());
+                fgAddRefPred(block, predBlock);
             }
         }
         bNext->bbPreds = nullptr;
@@ -2551,11 +2548,11 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     // EH regions. Is this a case where they can't be merged?
 
                     bool okToMerge = true; // assume it's ok
-                    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+                    for (BasicBlock* const predBlock : block->PredBlocks())
                     {
-                        if (pred->getBlock()->bbJumpKind == BBJ_EHCATCHRET)
+                        if (predBlock->bbJumpKind == BBJ_EHCATCHRET)
                         {
-                            assert(pred->getBlock()->bbJumpDest == block);
+                            assert(predBlock->bbJumpDest == block);
                             okToMerge = false; // we can't get rid of the empty block
                             break;
                         }
@@ -4081,10 +4078,10 @@ bool Compiler::fgExpandRarelyRunBlocks()
             bool rare = true;
 
             /* Make sure that block has at least one normal predecessor */
-            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+            for (BasicBlock* const predBlock : block->PredBlocks())
             {
                 /* Find the fall through predecessor, if any */
-                if (!pred->getBlock()->isRunRarely())
+                if (!predBlock->isRunRarely())
                 {
                     rare = false;
                     break;
@@ -4348,7 +4345,7 @@ bool Compiler::fgReorderBlocks()
                             noway_assert(edgeFromPrev != nullptr);
 
                             // Examine all of the other edges into bDest
-                            for (flowList* edge = bDest->bbPreds; edge != nullptr; edge = edge->flNext)
+                            for (flowList* const edge : bDest->PredEdges())
                             {
                                 if (edge != edgeFromPrev)
                                 {
@@ -4368,11 +4365,9 @@ bool Compiler::fgReorderBlocks()
                             //
 
                             // Examine all of the other edges into bDest
-                            for (flowList* edge = bDest->bbPreds; edge != nullptr; edge = edge->flNext)
+                            for (BasicBlock* const predBlock : bDest->PredBlocks())
                             {
-                                BasicBlock* bTemp = edge->getBlock();
-
-                                if ((bTemp != bPrev) && (bTemp->bbWeight >= bPrev->bbWeight))
+                                if ((predBlock != bPrev) && (predBlock->bbWeight >= bPrev->bbWeight))
                                 {
                                     moveDestUp = false;
                                     break;

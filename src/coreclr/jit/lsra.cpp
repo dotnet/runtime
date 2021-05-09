@@ -868,9 +868,8 @@ void LinearScan::setBlockSequence()
         }
 
         bool hasUniquePred = (block->GetUniquePred(compiler) != nullptr);
-        for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            BasicBlock* predBlock = pred->getBlock();
             if (!hasUniquePred)
             {
                 if (predBlock->NumSucc(compiler) > 1)
@@ -1098,10 +1097,9 @@ void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlo
 
     // Get predSet of block
     BlockSetOps::ClearD(compiler, predSet);
-    flowList* pred;
-    for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BlockSetOps::AddElemD(compiler, predSet, pred->getBlock()->bbNum);
+        BlockSetOps::AddElemD(compiler, predSet, predBlock->bbNum);
     }
 
     // If either a rarely run block or all its preds are already sequenced, use block's weight to sequence
@@ -2411,9 +2409,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                         }
                         else
                         {
-                            for (flowList* pred = otherBlock->bbPreds; pred != nullptr; pred = pred->flNext)
+                            for (BasicBlock* const otherPred : otherBlock->PredBlocks())
                             {
-                                BasicBlock* otherPred = pred->getBlock();
                                 if (otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum)
                                 {
                                     predBlock = otherPred;
@@ -2431,10 +2428,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         }
         else
         {
-            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+            for (BasicBlock* const candidatePredBlock : block->PredBlocks())
             {
-                BasicBlock* candidatePredBlock = pred->getBlock();
-
                 if (isBlockVisited(candidatePredBlock))
                 {
                     if ((predBlock == nullptr) || (predBlock->bbWeight < candidatePredBlock->bbWeight))
@@ -7999,9 +7994,8 @@ void LinearScan::resolveEdges()
             continue;
         }
         VarToRegMap toVarToRegMap = getInVarToRegMap(block->bbNum);
-        for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            BasicBlock*     predBlock       = pred->getBlock();
             VarToRegMap     fromVarToRegMap = getOutVarToRegMap(predBlock->bbNum);
             VarSetOps::Iter iter(compiler, block->bbLiveIn);
             unsigned        varIndex = 0;

@@ -1570,10 +1570,8 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambien
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     blockMap->Set(e, h2);
 
-    for (flowList* predEntry = e->bbPreds; predEntry != nullptr; predEntry = predEntry->flNext)
+    for (BasicBlock* const predBlock : e->PredBlocks())
     {
-        BasicBlock* predBlock = predEntry->getBlock();
-
         // Skip if predBlock is in the loop.
         if (t->bbNum <= predBlock->bbNum && predBlock->bbNum <= b->bbNum)
         {
@@ -1853,9 +1851,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
         JITDUMP(FMT_BB ":", newblk->bbNum);
-        for (flowList* pred = newblk->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : newblk->PredBlocks())
         {
-            JITDUMP(" " FMT_BB, pred->getBlock()->bbNum);
+            JITDUMP(" " FMT_BB, predBlock->bbNum);
         }
         JITDUMP("\n");
     }

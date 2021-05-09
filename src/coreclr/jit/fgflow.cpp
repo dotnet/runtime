@@ -29,9 +29,7 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
     assert(blockPred);
     assert(!fgCheapPredsValid);
 
-    flowList* pred;
-
-    for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         if (blockPred == pred->getBlock())
         {
