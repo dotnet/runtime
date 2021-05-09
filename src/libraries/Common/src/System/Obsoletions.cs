@@ -49,7 +49,7 @@ namespace System
         internal const string WebRequestMessage = "Use HttpClient instead.";
         internal const string WebRequestDiagId = "SYSLIB0014";
 
-        internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications.";
+        internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+.";
         internal const string DisablePrivateReflectionAttributeDiagId = "SYSLIB0015";
 
         internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
