@@ -4980,9 +4980,9 @@ public:
 
     // Use to iterate over all the blocks in the function, e.g.:
     //    for (BasicBlock* const block : compiler->Blocks()) ...
-    SimpleBasicBlockList Blocks() const
+    BasicBlockSimpleList Blocks() const
     {
-        return SimpleBasicBlockList(fgFirstBB);
+        return BasicBlockSimpleList(fgFirstBB);
     }
 
     // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
@@ -6485,6 +6485,16 @@ public:
             return lpFirst->bbNum <= lpTop->bbNum && lpTop->bbNum <= lpEntry->bbNum &&
                    lpEntry->bbNum <= lpBottom->bbNum &&
                    (lpHead->bbNum < lpTop->bbNum || lpHead->bbNum > lpBottom->bbNum);
+        }
+
+        // Use to iterate over all the blocks in the loop, e.g.:
+        //    for (BasicBlock* const block : LoopBlocks()) ...
+        // Currently, the loop blocks are expected to be in linear, lexical, `bbNext` order
+        // from `lpFirst` through `lpBottom`, inclusive. All blocks in this range are considered
+        // to be part of the loop.
+        BasicBlockRangeList LoopBlocks() const
+        {
+            return BasicBlockRangeList(lpFirst, lpBottom);
         }
     };
 

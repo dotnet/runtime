@@ -1314,9 +1314,8 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     // for the cloned loop (and its embedded EH regions).
     //
     // Also, count the number of return blocks within the loop for future use.
-    BasicBlock* stopAt       = loop.lpBottom->bbNext;
-    unsigned    loopRetCount = 0;
-    for (BasicBlock* blk = loop.lpFirst; blk != stopAt; blk = blk->bbNext)
+    unsigned loopRetCount = 0;
+    for (BasicBlock* const blk : loop.LoopBlocks())
     {
         if (blk->bbJumpKind == BBJ_RETURN)
         {
@@ -1747,7 +1746,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BasicBlock* newFirst = nullptr;
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
-    for (BasicBlock* blk = loop.lpFirst; blk != loop.lpBottom->bbNext; blk = blk->bbNext)
+    for (BasicBlock* const blk : loop.LoopBlocks())
     {
         BasicBlock* newBlk = fgNewBBafter(blk->bbJumpKind, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
@@ -1796,7 +1795,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // Now go through the new blocks, remapping their jump targets within the loop
     // and updating the preds lists.
-    for (BasicBlock* blk = loop.lpFirst; blk != loop.lpBottom->bbNext; blk = blk->bbNext)
+    for (BasicBlock* const blk : loop.LoopBlocks())
     {
         BasicBlock* newblk = nullptr;
         bool        b      = blockMap->Lookup(blk, &newblk);
@@ -1845,7 +1844,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 #ifdef DEBUG
     // Display the preds for the new blocks, after all the new blocks have been redirected.
     JITDUMP("Preds after loop copy:\n");
-    for (BasicBlock* blk = loop.lpFirst; blk != loop.lpBottom->bbNext; blk = blk->bbNext)
+    for (BasicBlock* const blk : loop.LoopBlocks())
     {
         BasicBlock* newblk = nullptr;
         bool        b      = blockMap->Lookup(blk, &newblk);
@@ -2309,18 +2308,12 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pT
 //
 bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* context)
 {
-    noway_assert(loopNum < optLoopCount);
+    JITDUMP("Checking loop " FMT_LP " for optimization candidates\n", loopNum);
 
-    LoopDsc* pLoop = &optLoopTable[loopNum];
-
-    BasicBlock* head = pLoop->lpHead;
-    BasicBlock* beg  = head->bbNext; // should this be pLoop->lpFirst or pLoop->lpTop instead?
-    BasicBlock* end  = pLoop->lpBottom;
-
-    JITDUMP("Checking blocks " FMT_BB ".." FMT_BB " for optimization candidates\n", beg->bbNum, end->bbNum);
+    const LoopDsc& loop = optLoopTable[loopNum];
 
     LoopCloneVisitorInfo info(context, loopNum, nullptr);
-    for (BasicBlock* block = beg; block != end->bbNext; block = block->bbNext)
+    for (BasicBlock* const block : loop.LoopBlocks())
     {
         compCurBB = block;
         for (Statement* stmt : block->Statements())

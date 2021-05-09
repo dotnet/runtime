@@ -496,7 +496,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
             {
                 /* Ignore blocks in the loop */
 
-                if (auxBlock->bbNum > loop.lpHead->bbNum && auxBlock->bbNum <= loop.lpBottom->bbNum)
+                if (loop.lpContains(auxBlock))
                 {
                     continue;
                 }
@@ -2488,16 +2488,9 @@ NO_MORE_LOOPS:
     // this -- the innermost loop labeling will be done last.
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
-        BasicBlock* first  = optLoopTable[loopInd].lpFirst;
-        BasicBlock* bottom = optLoopTable[loopInd].lpBottom;
-        for (BasicBlock* blk = first; blk != nullptr; blk = blk->bbNext)
+        for (BasicBlock* const blk : optLoopTable[loopInd].LoopBlocks())
         {
             blk->bbNatLoopNum = loopInd;
-            if (blk == bottom)
-            {
-                break;
-            }
-            assert(blk->bbNext != nullptr); // We should never reach nullptr.
         }
     }
 
@@ -5384,21 +5377,14 @@ bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
 /*****************************************************************************/
 int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds)
 {
-    LoopDsc* loop;
-
-    /* Get hold of the loop descriptor */
-
     noway_assert(lnum < optLoopCount);
-    loop = optLoopTable + lnum;
+    LoopDsc* loop = &optLoopTable[lnum];
 
     /* Do we already know what variables are assigned within this loop? */
 
     if (!(loop->lpFlags & LPFLG_ASGVARS_YES))
     {
         isVarAssgDsc desc;
-
-        BasicBlock* beg;
-        BasicBlock* end;
 
         /* Prepare the descriptor used by the tree walker call-back */
 
@@ -5414,14 +5400,9 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
 
         /* Now walk all the statements of the loop */
 
-        beg = loop->lpHead->bbNext;
-        end = loop->lpBottom;
-
-        for (/**/; /**/; beg = beg->bbNext)
+        for (BasicBlock* const block : loop->LoopBlocks())
         {
-            noway_assert(beg);
-
-            for (Statement* stmt : beg->NonPhiStatements())
+            for (Statement* stmt : block->NonPhiStatements())
             {
                 fgWalkTreePre(stmt->GetRootNodePointer(), optIsVarAssgCB, &desc);
 
@@ -5429,11 +5410,6 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
                 {
                     loop->lpFlags |= LPFLG_ASGVARS_INC;
                 }
-            }
-
-            if (beg == end)
-            {
-                break;
             }
         }
 
@@ -7005,9 +6981,8 @@ void Compiler::optComputeLoopSideEffects()
 void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 {
     assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
-    BasicBlock* botNext = optLoopTable[lnum].lpBottom->bbNext;
-    JITDUMP("optComputeLoopSideEffects botNext is " FMT_BB ", lnum is %d\n", botNext->bbNum, lnum);
-    for (BasicBlock* bbInLoop = optLoopTable[lnum].lpFirst; bbInLoop != botNext; bbInLoop = bbInLoop->bbNext)
+    JITDUMP("optComputeLoopSideEffects lnum is %d\n", lnum);
+    for (BasicBlock* const bbInLoop : optLoopTable[lnum].LoopBlocks())
     {
         if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
         {

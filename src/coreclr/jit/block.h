@@ -1323,12 +1323,14 @@ public:
     }
 };
 
-class SimpleBasicBlockList
+// BasicBlockSimpleList: Iterate of a lexically contigous range of BasicBlocks, starting at `begin` and
+// going to the end of the function.
+class BasicBlockSimpleList
 {
     BasicBlock* m_begin;
 
 public:
-    SimpleBasicBlockList(BasicBlock* block) : m_begin(block)
+    BasicBlockSimpleList(BasicBlock* begin) : m_begin(begin)
     {
     }
 
@@ -1385,6 +1387,31 @@ struct BBswtDesc
         assert(bbsHasDefault);
         assert(bbsCount > 0);
         return bbsDstTab[bbsCount - 1];
+    }
+};
+
+// BasicBlockRangeList: Iterate over a lexically contiguous range of BasicBlocks. `begin` and `end` are *inclusive* and
+// must be non-null.
+class BasicBlockRangeList
+{
+    BasicBlock* m_begin;
+    BasicBlock* m_end;
+
+public:
+    BasicBlockRangeList(BasicBlock* begin, BasicBlock* end) : m_begin(begin), m_end(end)
+    {
+        assert(begin != nullptr);
+        assert(end != nullptr);
+    }
+
+    BasicBlockIterator begin() const
+    {
+        return BasicBlockIterator(m_begin);
+    }
+
+    BasicBlockIterator end() const
+    {
+        return BasicBlockIterator(m_end->bbNext); // walk until we see the block *following* the `m_end` block
     }
 };
 
