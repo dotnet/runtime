@@ -60,7 +60,6 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
-    NI_System_Object_GetType,
     NI_System_Span_get_Item,
     NI_System_ReadOnlySpan_get_Item,
 

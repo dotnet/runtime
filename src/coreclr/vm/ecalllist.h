@@ -89,7 +89,7 @@ FCFuncEnd()
 
 
 FCFuncStart(gObjectFuncs)
-    FCFuncElement("GetType", ObjectNative::GetClass)
+    FCIntrinsic("GetType", ObjectNative::GetClass, CORINFO_INTRINSIC_Object_GetType)
 FCFuncEnd()
 
 FCFuncStart(gStringFuncs)
