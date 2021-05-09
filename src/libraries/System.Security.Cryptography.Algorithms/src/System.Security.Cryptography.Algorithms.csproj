@@ -590,7 +590,7 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Unix.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />

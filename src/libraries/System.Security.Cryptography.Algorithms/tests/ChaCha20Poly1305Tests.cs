@@ -447,6 +447,10 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 // The test queries the OS directly to ensure our version check is correct.
                 expectedIsSupported = CngUtility.IsAlgorithmSupported("CHACHA20_POLY1305");
             }
+            else if (PlatformDetection.IsOpenSslSupported && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1))
+            {
+                expectedIsSupported = true;
+            }
 
             Assert.Equal(expectedIsSupported, ChaCha20Poly1305.IsSupported);
         }

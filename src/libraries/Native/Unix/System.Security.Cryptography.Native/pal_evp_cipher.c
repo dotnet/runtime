@@ -198,6 +198,16 @@ int32_t CryptoNative_EvpCipherSetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, tagLength, tag);
 }
 
+int32_t CryptoNative_EvpCipherGetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tagLength, tag);
+}
+
+int32_t CryptoNative_EvpCipherSetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tagLength, tag);
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
 {
     return EVP_aes_128_ecb();
@@ -331,4 +341,20 @@ const EVP_CIPHER* CryptoNative_EvpRC2Ecb()
 const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
 {
     return EVP_rc2_cbc();
+}
+
+const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305()
+{
+#if HAVE_OPENSSL_CHACHA20POLY1305
+    if (API_EXISTS(EVP_chacha20_poly1305))
+    {
+        return EVP_chacha20_poly1305();
+    }
+    else
+    {
+        return NULL;
+    }
+#else
+    return NULL;
+#endif
 }
