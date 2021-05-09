@@ -147,6 +147,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
 #undef HAVE_OPENSSL_CHACHA20POLY1305
 #define HAVE_OPENSSL_CHACHA20POLY1305 1
 const EVP_CIPHER* EVP_chacha20_poly1305(void);
+#define EVP_CTRL_AEAD_GET_TAG 0x10
+#define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
 #define API_EXISTS(fn) (fn != NULL)
