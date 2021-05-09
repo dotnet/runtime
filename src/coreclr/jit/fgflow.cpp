@@ -694,7 +694,7 @@ void Compiler::fgComputePreds()
 
     // Check that the block numbers are increasing order.
     unsigned lastBBnum = fgFirstBB->bbNum;
-    for (BasicBlock* block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : BasicBlockSimpleList(fgFirstBB->bbNext))
     {
         assert(lastBBnum < block->bbNum);
         lastBBnum = block->bbNum;

@@ -1028,7 +1028,7 @@ DomTreeNode* Compiler::fgBuildDomTree()
 
     // Traverse the entire block list to build the dominator tree. Skip fgFirstBB
     // as it is always a root of the dominator forest.
-    for (BasicBlock* block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : BasicBlockSimpleList(fgFirstBB->bbNext))
     {
         BasicBlock* parent = block->bbIDom;
 

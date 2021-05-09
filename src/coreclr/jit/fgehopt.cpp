@@ -197,7 +197,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : BasicBlockSimpleList(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -349,7 +349,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
-        BasicBlock* const endHandlerBlock   = lastHandlerBlock->bbNext;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -474,7 +473,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // handler region (if any) won't change.
         //
         // Kind of overkill to loop here, but hey.
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : BasicBlockSimpleList(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -511,7 +510,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
         // Decrement nesting level of enclosed GT_END_LFINs.
-        for (BasicBlock* block = firstHandlerBlock; block != endHandlerBlock; block = block->bbNext)
+        for (BasicBlock* const block : BasicBlockRangeList(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
             {
@@ -1244,7 +1243,7 @@ PhaseStatus Compiler::fgCloneFinally()
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);
 
-            for (BasicBlock* block = firstBlock; block != lastBlock->bbNext; block = block->bbNext)
+            for (BasicBlock* const block : BasicBlockRangeList(firstBlock, lastBlock))
             {
                 if (block->hasProfileWeight())
                 {
@@ -1343,10 +1342,9 @@ void Compiler::fgDebugCheckTryFinallyExits()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() <= XTnum);
         assert(lastTryBlock->getTryIndex() <= XTnum);
-        BasicBlock* const afterTryBlock = lastTryBlock->bbNext;
-        BasicBlock* const finallyBlock  = isFinally ? HBtab->ebdHndBeg : nullptr;
+        BasicBlock* const finallyBlock = isFinally ? HBtab->ebdHndBeg : nullptr;
 
-        for (BasicBlock* block = firstTryBlock; block != afterTryBlock; block = block->bbNext)
+        for (BasicBlock* const block : BasicBlockRangeList(firstTryBlock, lastTryBlock))
         {
             // Only check the directly contained blocks.
             assert(block->hasTryIndex());

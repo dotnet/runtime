@@ -2158,8 +2158,7 @@ private:
     //
     bool CanTreatAsLoopBlocks(BasicBlock* firstNonLoopBlock, BasicBlock* lastNonLoopBlock)
     {
-        BasicBlock* nextLoopBlock = lastNonLoopBlock->bbNext;
-        for (BasicBlock* testBlock = firstNonLoopBlock; testBlock != nextLoopBlock; testBlock = testBlock->bbNext)
+        for (BasicBlock* const testBlock : BasicBlockRangeList(firstNonLoopBlock, lastNonLoopBlock))
         {
             for (BasicBlock* const testPred : testBlock->PredBlocks())
             {

@@ -2261,14 +2261,9 @@ void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
-    for (BasicBlock* block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* const block : BasicBlockRangeList(firstBlock, lastBlock))
     {
         fgDumpBlock(block);
-
-        if (block == lastBlock)
-        {
-            break;
-        }
     }
     printf("\n---------------------------------------------------------------------------------------------------------"
            "----------\n");
@@ -2565,7 +2560,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         // we find a potential 'hit' we check if the funclet we're looking at is
         // from the correct try region.
 
-        for (BasicBlock* bcall = comp->fgFirstFuncletBB; bcall != nullptr; bcall = bcall->bbNext)
+        for (BasicBlock* const bcall : BasicBlockSimpleList(comp->fgFirstFuncletBB))
         {
             if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
             {

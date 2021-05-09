@@ -2739,7 +2739,7 @@ void Compiler::fgAddInternal()
 
     // Visit the BBJ_RETURN blocks and merge as necessary.
 
-    for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->bbNext; block = block->bbNext)
+    for (BasicBlock* const block : BasicBlockRangeList(fgFirstBB, lastBlockBeforeGenReturns))
     {
         if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {

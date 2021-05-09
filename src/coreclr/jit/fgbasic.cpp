@@ -1780,7 +1780,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
 {
     noway_assert(targetBlock->bbNum <= sourceBlock->bbNum);
 
-    for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
+    for (BasicBlock* const block : BasicBlockRangeList(targetBlock, sourceBlock))
     {
         if (((block->bbFlags & BBF_BACKWARD_JUMP) == 0) && (block->bbJumpKind != BBJ_RETURN))
         {
@@ -3874,7 +3874,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     // can't cross the non-funclet/funclet region. And you can't unlink the first block
     // of the first funclet with this, either. (If that's necessary, it could be allowed
     // by updating fgFirstFuncletBB to bEnd->bbNext.)
-    for (BasicBlock* tempBB = bBeg; tempBB != bEnd->bbNext; tempBB = tempBB->bbNext)
+    for (BasicBlock* const tempBB : BasicBlockRangeList(bBeg, bEnd))
     {
         assert(tempBB != fgFirstFuncletBB);
     }
