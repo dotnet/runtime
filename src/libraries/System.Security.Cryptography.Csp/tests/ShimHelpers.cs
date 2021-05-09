@@ -77,6 +77,9 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TrySignDataCore",
                 "VerifyDataCore",
                 "VerifySignatureCore",
+                // CryptoServiceProviders will not get one-shot APIs as they are being deprecated
+                "TryEncryptEcbCore",
+                "TryDecryptEcbCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.
