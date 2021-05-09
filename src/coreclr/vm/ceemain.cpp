@@ -917,7 +917,7 @@ void EEStartupHelper()
         }
 
         // throws on error
-        SetupMainThread();
+        SetupThread();
 
 #ifdef DEBUGGING_SUPPORTED
         // Notify debugger once the first thread is created to finish initialization.

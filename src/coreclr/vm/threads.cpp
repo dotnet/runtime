@@ -631,7 +631,7 @@ static void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-static Thread* SetupThreadWorker()
+Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
@@ -808,19 +808,6 @@ static Thread* SetupThreadWorker()
     return pThread;
 }
 
-void SetupMainThread()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef DEBUG
-    static bool isCalled = false;
-    _ASSERTE(!isCalled);
-    isCalled = true;
-#endif // DEBUG
-
-    (void)SetupThreadWorker();
-}
-
 //-------------------------------------------------------------------------
 // Public function: SetupThreadNoThrow()
 // Creates Thread for current thread if not previously created.
@@ -844,7 +831,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 
     EX_TRY
     {
-        pThread = SetupThreadWorker();
+        pThread = SetupThread();
     }
     EX_CATCH
     {
