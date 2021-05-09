@@ -465,6 +465,11 @@ namespace System.IO.Compression
                         _inflater.SetInput(_buffer, 0, bytesRead);
                     }
 
+                    if (buffer.Length == 0)
+                    {
+                        return 0;
+                    }
+
                     // Finish inflating any bytes in the input buffer
                     int inflatedBytes = 0, bytesReadIteration = -1;
                     while (inflatedBytes < buffer.Length && bytesReadIteration != 0)
