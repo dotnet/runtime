@@ -1281,11 +1281,13 @@ void LinearScan::doLinearScan()
     DBEXEC(VERBOSE, lsraDumpIntervals("after buildIntervals"));
 
     initVarRegMaps();
+    compiler->verbose = true;
     allocateRegisters();
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
     resolveRegisters();
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
+    compiler->verbose = false;
 
     assert(blockSequencingDone); // Should do at least one traversal.
     assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
@@ -3010,6 +3012,9 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         {
             candidates = prevRegBit;
             found      = true;
+#ifdef DEBUG
+            *registerScore = THIS_ASSIGNED;
+#endif
         }
     }
 
@@ -3774,8 +3779,7 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     regNumber     allocatedReg  = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
     assert(allocatedReg != REG_NA);
 
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg));
-    JITDUMP("%s ", getScoreName(registerScore));
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
 
     // Now restore the old info
     currentInterval->relatedInterval = savedRelatedInterval;
@@ -6094,14 +6098,16 @@ void LinearScan::allocateRegisters()
                     if (currentInterval->isConstant && (currentRefPosition->treeNode != nullptr) &&
                         currentRefPosition->treeNode->IsReuseRegVal())
                     {
-                        dumpLsraAllocationEvent(LSRA_EVENT_REUSE_REG, currentInterval, assignedRegister, currentBlock);
+                        dumpLsraAllocationEvent(LSRA_EVENT_REUSE_REG, currentInterval, assignedRegister, currentBlock,
+                                                registerScore);
                     }
                     else
                     {
-                        dumpLsraAllocationEvent(LSRA_EVENT_ALLOC_REG, currentInterval, assignedRegister, currentBlock);
+                        dumpLsraAllocationEvent(LSRA_EVENT_ALLOC_REG, currentInterval, assignedRegister, currentBlock,
+                                                registerScore);
                     }
 
-                    printf("%s ", getScoreName(registerScore));
+                    //printf("%s ", getScoreName(registerScore));
                 }
             }
 #endif // DEBUG
@@ -10275,7 +10281,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
 void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
                                          Interval*     interval,
                                          regNumber     reg,
-                                         BasicBlock*   currentBlock)
+                                         BasicBlock*   currentBlock,
+                                         RegisterScore registerScore)
 {
     if (!(VERBOSE))
     {
@@ -10341,7 +10348,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_SPILL:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             assert(interval != nullptr && interval->assignedReg != nullptr);
-            printf("Spill %-4s ", getRegName(interval->assignedReg->regNum));
+            printf("Spill    %-4s ", getRegName(interval->assignedReg->regNum));
             dumpHeuristicSpace(event);
             dumpRegRecords();
             break;
@@ -10358,7 +10365,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             {
                 dumpRefPositionShort(activeRefPosition, currentBlock);
             }
-            printf((event == LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL) ? "Restr %-4s " : "SRstr %-4s ", getRegName(reg));
+            printf((event == LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL) ? "Restr    %-4s " : "SRstr    %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             dumpRegRecords();
             break;
@@ -10413,71 +10420,93 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_EXP_USE:
         case LSRA_EVENT_KEPT_ALLOCATION:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Keep  %-4s ", getRegName(reg));
+            printf("Keep     %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_COPY_REG:
             assert(interval != nullptr && interval->recentRefPosition != nullptr);
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Copy  %-4s ", getRegName(reg));
+            if (allocationPassComplete || (registerScore == 0))
+            {
+                printf("Copy     %-4s ", getRegName(reg));
+            }
+            else
+            {
+                printf("%-5s(C) %-4s ", getScoreName(registerScore), getRegName(reg));
+            }
+            
             dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_MOVE_REG:
             assert(interval != nullptr && interval->recentRefPosition != nullptr);
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Move  %-4s ", getRegName(reg));
+            printf("Move     %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             dumpRegRecords();
             break;
 
         case LSRA_EVENT_ALLOC_REG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Alloc %-4s ", getRegName(reg));
+            if (allocationPassComplete || (registerScore == 0))
+            {
+                printf("Alloc    %-4s ", getRegName(reg));
+            }
+            else
+            {
+                printf("%-5s(A) %-4s ", getScoreName(registerScore), getRegName(reg));
+            }
+            
             break;
 
         case LSRA_EVENT_REUSE_REG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Reuse %-4s ", getRegName(reg));
+            if (allocationPassComplete || (registerScore == 0))
+            {
+                printf("Reuse     %-4s ", getRegName(reg));
+            }
+            else
+            {
+                printf("%-5s(A) %-4s ", getScoreName(registerScore), getRegName(reg));
+            }
             break;
 
         case LSRA_EVENT_NO_ENTRY_REG_ALLOCATED:
             assert(interval != nullptr && interval->isLocalVar);
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("LoRef      ");
+            printf("LoRef         ");
             break;
 
         case LSRA_EVENT_NO_REG_ALLOCATED:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("NoReg      ");
+            printf("NoReg         ");
             dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_RELOAD:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("ReLod %-4s ", getRegName(reg));
+            printf("ReLod    %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             dumpRegRecords();
             break;
 
         case LSRA_EVENT_SPECIAL_PUTARG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("PtArg %-4s ", getRegName(reg));
+            printf("PtArg    %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_UPPER_VECTOR_SAVE:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("UVSav %-4s ", getRegName(reg));
+            printf("UVSav    %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             break;
 
         case LSRA_EVENT_UPPER_VECTOR_RESTORE:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("UVRes %-4s ", getRegName(reg));
+            printf("UVRes    %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
-            dumpRegRecords();
             break;
 
         // We currently don't dump anything for these events.
@@ -10492,7 +10521,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         default:
-            printf("????? %-4s ", getRegName(reg));
+            printf("?????    %-4s ", getRegName(reg));
             dumpHeuristicSpace(event);
             dumpRegRecords();
             break;
@@ -10569,13 +10598,11 @@ void LinearScan::dumpRegRecordHeader()
     sprintf_s(emptyRefPositionFormat, MAX_FORMAT_CHARS, "%%-%ds", shortRefPositionDumpWidth);
 
     // The width of the "allocation info"
-    //  - a 5-character allocation decision
+    //  - a 8-character allocation decision
     //  - a space
     //  - a 4-character register
     //  - a space
-    //  - a 5-character allocation heuristics
-    //  - a space
-    int allocationInfoWidth = 5 + 1 + 4 + 1 + 5 + 1;
+    int allocationInfoWidth = 8 + 1 + 4 + 1;
 
     // Next, determine the width of the legend for each row.  This includes:
     //  - a short RefPosition dump (shortRefPositionDumpWidth), which includes a space
@@ -10666,14 +10693,7 @@ void LinearScan::dumpRegRecordTitle()
     dumpRegRecordTitleLines();
 
     // Print out the legend for the RefPosition info
-    if (allocationPassComplete)
-    {
-        printf(legendFormat, "Loc ", "RP# ", "Name ", "Type  Action Reg  ");
-    }
-    else
-    {
-        printf(legendFormat, "Loc ", "RP# ", "Name ", "Type  Action Reg  Hrstc ");
-    }
+    printf(legendFormat, "Loc ", "RP# ", "Name ", "Type  Action    Reg  ");
 
     // Print out the register name column headers
     char columnFormatArray[MAX_FORMAT_CHARS];
@@ -10789,7 +10809,7 @@ void LinearScan::dumpNewBlock(BasicBlock* currentBlock, LsraLocation location)
     if (currentBlock == nullptr)
     {
         printf(regNameFormat, "END");
-        printf("              ");
+        printf("                 ");
         printf(regNameFormat, "");
     }
     else
@@ -10852,7 +10872,7 @@ void LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* curr
 //      dumps the extra space if the event is not the one for which heurisitics is used.
 void LinearScan::dumpHeuristicSpace(LsraDumpEvent event)
 {
-   /* if (allocationPassComplete)
+    /*if (allocationPassComplete)
     {
         return;
     }
@@ -11210,7 +11230,7 @@ void LinearScan::verifyFinalAllocation()
                     if (VERBOSE)
                     {
                         dumpEmptyRefPosition();
-                        printf("Move  %-4s ", getRegName(regRecord->regNum));
+                        printf("Move     %-4s ", getRegName(regRecord->regNum));
                     }
                 }
                 else
@@ -11240,11 +11260,11 @@ void LinearScan::verifyFinalAllocation()
                             dumpEmptyRefPosition();
                             if (currentRefPosition->writeThru)
                             {
-                                printf("WThru %-4s ", getRegName(spillReg));
+                                printf("WThru    %-4s ", getRegName(spillReg));
                             }
                             else
                             {
-                                printf("Spill %-4s ", getRegName(spillReg));
+                                printf("Spill    %-4s ", getRegName(spillReg));
                             }
                         }
                     }
@@ -11291,7 +11311,7 @@ void LinearScan::verifyFinalAllocation()
             case RefTypeDummyDef:
                 // Do nothing; these will be handled by the RefTypeBB.
                 DBEXEC(VERBOSE, dumpRefPositionShort(currentRefPosition, currentBlock));
-                DBEXEC(VERBOSE, printf("           "));
+                DBEXEC(VERBOSE, printf("              "));
                 break;
 
             case RefTypeInvalid:
@@ -11537,7 +11557,7 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
     {
         printf(shortRefPositionFormat, currentLocation, 0);
         dumpIntervalName(interval);
-        printf("  Move   ");
+        printf("  Move      ");
         printf("      %-4s ", getRegName(dstRegNum));
         dumpRegRecords();
     }

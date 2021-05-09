@@ -1376,7 +1376,8 @@ private:
     void dumpLsraAllocationEvent(LsraDumpEvent event,
                                  Interval*     interval     = nullptr,
                                  regNumber     reg          = REG_NA,
-                                 BasicBlock*   currentBlock = nullptr);
+                                 BasicBlock*   currentBlock = nullptr,
+                                 RegisterScore registerScore = NONE);
 
     void dumpHeuristicSpace(LsraDumpEvent event);
 
