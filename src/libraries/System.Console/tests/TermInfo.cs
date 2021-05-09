@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 
-[PlatformSpecific(~TestPlatforms.Browser)]
+[SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
 public class TermInfo
 {
     // Names of internal members accessed via reflection

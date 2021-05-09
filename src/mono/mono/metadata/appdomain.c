@@ -69,10 +69,7 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
-
-#ifdef ENABLE_PERFTRACING
-#include <eventpipe/ds-server.h>
-#endif
+#include <mono/metadata/components.h>
 
 #ifdef HOST_WIN32
 #include <direct.h>
@@ -281,10 +278,10 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	mono_thread_internal_attach (domain);
 
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
-	ds_server_init ();
-	ds_server_pause_for_diagnostics_monitor ();
-#endif
+	mono_component_diagnostics_server ()->init ();
+	mono_component_diagnostics_server ()->pause_for_diagnostics_monitor ();
+
+	mono_component_event_pipe ()->write_event_ee_startup_start ();
 
 	mono_type_initialization_init ();
 

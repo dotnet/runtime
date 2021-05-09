@@ -1141,7 +1141,7 @@ namespace System
                 thisIdx = replacementIdx + oldValueLength;
 
                 // Copy over newValue to replace the oldValue.
-                newValue.AsSpan().CopyTo(dstSpan.Slice(dstIdx));
+                newValue.CopyTo(dstSpan.Slice(dstIdx));
                 dstIdx += newValue.Length;
             }
 
@@ -1747,7 +1747,7 @@ namespace System
             Buffer.Memmove(
                 elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
                 destination: ref result._firstChar,
-                source: ref Unsafe.Add(ref _firstChar, startIndex));
+                source: ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */));
 
             return result;
         }

@@ -32,6 +32,15 @@ namespace Span
         const int BaseIterations = 10000000;
 #endif
 
+        // Seed for random set by environment variables
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         // Default length for arrays of mock input data
         const int DefaultLength = 1024;
 
@@ -98,7 +107,7 @@ namespace Span
         static int[] GetUnsortedData(int length)
         {
             int[] unsortedData = new int[length];
-            Random r = new Random(42);
+            Random r = new Random(Seed);
             for (int i = 0; i < unsortedData.Length; ++i)
             {
                 unsortedData[i] = r.Next();
@@ -1019,7 +1028,7 @@ namespace Span
         public static void TestSpanAsSpanStringCharWrapper(int length)
         {
             StringBuilder sb = new StringBuilder();
-            Random rand = new Random(42);
+            Random rand = new Random(Seed);
             char[] c = new char[1];
             for (int i = 0; i < length; i++)
             {

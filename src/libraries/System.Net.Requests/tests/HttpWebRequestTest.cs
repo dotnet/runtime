@@ -1066,6 +1066,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { request.ReadWriteTimeout = -10; });
         }
 
+        [OuterLoop("Uses timeout")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1085,7 +1086,7 @@ namespace System.Net.Tests
                 try
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ReadWriteTimeout = 10;
+                    request.ReadWriteTimeout = 100;
                     Exception e = await Assert.ThrowsAnyAsync<Exception>(async () =>
                     {
                         using WebResponse response = await GetResponseAsync(request);
@@ -1117,10 +1118,10 @@ namespace System.Net.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAsync();
-                        if (!forceTimeoutDuringHeaders)
-                        {
-                            await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nHello Wor");
-                        }
+
+                        // Make sure to send at least one byte, or the request retry logic in SocketsHttpHandler
+                        // will consider this a retryable request, since we never received any response.
+                        await connection.WriteStringAsync(forceTimeoutDuringHeaders ? "H" : "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nHello Wor");
                         await tcs.Task;
                     });
                 }

@@ -130,6 +130,31 @@ namespace System.Tests
             Assert.DoesNotContain(44, hs);
         }
 
+        public static IEnumerable<object[]> Next_IntInt_Next_IntInt_AllValuesAreWithinRange_MemberData() =>
+            from derived in new[] { false, true }
+            from seeded in new[] { false, true }
+            from (int min, int max) pair in new[]
+            {
+                (1, 2),
+                (-10, -3),
+                (0, int.MaxValue),
+                (-1, int.MaxValue),
+                (int.MinValue, 0),
+                (int.MinValue, int.MaxValue),
+            }
+            select new object[] { derived, seeded, pair.min, pair.max };
+
+        [Theory]
+        [MemberData(nameof(Next_IntInt_Next_IntInt_AllValuesAreWithinRange_MemberData))]
+        public void Next_IntInt_Next_IntInt_AllValuesAreWithinRange(bool derived, bool seeded, int min, int max)
+        {
+            Random r = Create(derived, seeded);
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.InRange(r.Next(min, max), min, max - 1);
+            }
+        }
+
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -176,6 +201,31 @@ namespace System.Tests
 
             Assert.DoesNotContain(41L, hs);
             Assert.DoesNotContain(44L, hs);
+        }
+
+        public static IEnumerable<object[]> Next_LongLong_Next_IntInt_AllValuesAreWithinRange_MemberData() =>
+            from derived in new[] { false, true }
+            from seeded in new[] { false, true }
+            from (long min, long max) pair in new[]
+            {
+                (1L, 2L),
+                (0L, long.MaxValue),
+                (2147483648, 2147483658),
+                (-1L, long.MaxValue),
+                (long.MinValue, 0L),
+                (long.MinValue, long.MaxValue),
+            }
+            select new object[] { derived, seeded, pair.min, pair.max };
+
+        [Theory]
+        [MemberData(nameof(Next_LongLong_Next_IntInt_AllValuesAreWithinRange_MemberData))]
+        public void Next_LongLong_Next_IntInt_AllValuesAreWithinRange(bool derived, bool seeded, long min, long max)
+        {
+            Random r = Create(derived, seeded);
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.InRange(r.NextInt64(min, max), min, max - 1);
+            }
         }
 
         [Theory]
@@ -502,7 +552,7 @@ namespace System.Tests
                 Assert.Equal(12, randOuter.Next(0, 42));
                 Assert.Equal(7234, randOuter.Next(42, 12345));
                 Assert.Equal(2147483642, randOuter.Next(int.MaxValue - 5, int.MaxValue));
-                Assert.Equal(1981894504, randOuter.Next(int.MinValue, int.MaxValue));
+                Assert.Equal(-1236260882, randOuter.Next(int.MinValue, int.MaxValue));
 
                 Assert.Equal(3644728249650840822, randOuter.NextInt64());
                 Assert.Equal(2809750975933744783, randOuter.NextInt64());

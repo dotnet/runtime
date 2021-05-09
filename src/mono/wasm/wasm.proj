@@ -226,7 +226,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles)"
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
   </Target>

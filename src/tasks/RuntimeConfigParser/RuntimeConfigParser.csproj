@@ -18,10 +18,11 @@
     <Compile Include="RuntimeConfigParser.cs" />
   </ItemGroup>
 
-  <Target Name="PublishBuilder"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
-
-  <Target Name="GetFilesToPackage" />
+  <!-- GetFilesToPackage assists to place `RuntimeConfigParser.dll` in a NuGet package in Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj for external use -->
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(AssemblyName).dll" TargetPath="tasks" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -406,11 +406,6 @@ public:
 
 /*****************************************************************************/
 
-#define FEATURE_VALNUM_CSE 1 // enable the Value Number CSE optimization logic
-
-// true if Value Number CSE is enabled
-#define FEATURE_ANYCSE FEATURE_VALNUM_CSE
-
 #define CSE_INTO_HANDLERS 0
 
 #define LARGE_EXPSET 1   // Track 64 or 32 assertions/copies/consts/rangechecks
@@ -895,6 +890,13 @@ T dspOffset(T o)
 }
 
 #endif // !defined(DEBUG)
+
+extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
+                                                      UINT32                                 countSchemaItems,
+                                                      BYTE*                                  pInstrumentationData,
+                                                      int32_t                                ilOffset,
+                                                      UINT32*                                pLikelihood,
+                                                      UINT32*                                pNumberOfClasses);
 
 /*****************************************************************************/
 #endif //_JIT_H_

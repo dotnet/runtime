@@ -367,7 +367,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)] // Android does not support AIA fetching
+        [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())
@@ -413,7 +413,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // macOS (10.14) will not load certificates with NumericString in their subject
         // if the 0x12 (NumericString) is changed to 0x13 (PrintableString) then the cert
         // import doesn't fail.
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         public static void VerifyNumericStringSubject()
         {
             X500DistinguishedName dn = new X500DistinguishedName(
@@ -559,7 +559,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS appears to just completely ignore min/max.
+        [SkipOnPlatform(TestPlatforms.OSX, "macOS appears to just completely ignore min/max.")]
         public static void NameConstraintViolation_PermittedTree_HasMin()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -575,9 +575,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        // Windows seems to skip over nonsense GeneralNames.
-        // Android will check for a match. Since the permitted name does match the subject alt name, it succeeds.
-        [PlatformSpecific(~(TestPlatforms.Windows | TestPlatforms.Android))]
+        [SkipOnPlatform(TestPlatforms.Windows, "Windows seems to skip over nonsense GeneralNames.")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android will check for a match. Since the permitted name does match the subject alt name, it succeeds.")]
         public static void NameConstraintViolation_InvalidGeneralNames()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -646,7 +645,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_RequireExplicitPolicy()
         {
             X509Extension[] intermediateExtensions = new []
@@ -703,7 +702,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Valid()
         {
             X509Extension[] intermediateExtensions = new []
@@ -734,7 +733,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Mismatch()
         {
             X509Extension[] intermediateExtensions = new []
@@ -769,7 +768,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_AnyPolicy()
         {
             X509Extension[] intermediateExtensions = new []
@@ -800,7 +799,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Mapped()
         {
             X509Extension[] intermediateExtensions = new []

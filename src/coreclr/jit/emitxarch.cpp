@@ -3094,7 +3094,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3152,7 +3152,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3688,10 +3688,19 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
                 break;
         }
 
-        id = emitNewInstrAmdCns(attr, offset, iconVal);
-        emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
-        id->idIns(ins);
-        sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        if (addr->isContained() && addr->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_I(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs(), iconVal);
+            return;
+        }
+        else
+        {
+            id = emitNewInstrAmdCns(attr, offset, iconVal);
+            emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
+            id->idIns(ins);
+            sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        }
     }
     else
     {
@@ -3743,6 +3752,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
+    }
+
+    if (addr->isContained() && addr->OperIsLocalAddr())
+    {
+        GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+        emitIns_S(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs());
+        return;
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);
@@ -5147,7 +5163,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -5206,7 +5222,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -6772,7 +6788,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(dst->bbFlags & BBF_HAS_LABEL);
         assert(instrCount == 0);
     }
     else
@@ -7889,13 +7905,13 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 /*****************************************************************************
  *
- *  Display an reloc value
- *  If we are formatting for an assembly listing don't print the hex value
+ *  Display a reloc value
+ *  If we are formatting for a diffable assembly listing don't print the hex value
  *  since it will prevent us from doing assembly diffs
  */
 void emitter::emitDispReloc(ssize_t value)
 {
-    if (emitComp->opts.disAsm)
+    if (emitComp->opts.disAsm && emitComp->opts.disDiffable)
     {
         printf("(reloc)");
     }
@@ -14890,16 +14906,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_sqrtsd:
         case INS_sqrtpd:
-        case INS_rcpps:
-        case INS_rcpss:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency += PERFSCORE_LATENCY_13C;
             break;
 
+        case INS_rcpps:
+        case INS_rcpss:
         case INS_rsqrtss:
         case INS_rsqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_12C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_roundpd:

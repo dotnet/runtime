@@ -74,6 +74,7 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 case FileType.Symbols:
                 case FileType.NativeBinary:
+                case FileType.Assembly:
                     return true;
 
                 default:

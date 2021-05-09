@@ -157,7 +157,13 @@ void
 mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind);
 
 void
+mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type);
+
+void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind);
+
+void
+mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type);
 
 #if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 G_EXTERN_C _Unwind_Reason_Code mono_debug_personality (int a, _Unwind_Action b,
