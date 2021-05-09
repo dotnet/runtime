@@ -47,7 +47,7 @@ namespace System.IO.MemoryMappedFiles
                 Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :
                 Interop.CreateFileMapping(new IntPtr(-1), ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (!handle.IsInvalid)
             {
                 if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS)
@@ -126,7 +126,7 @@ namespace System.IO.MemoryMappedFiles
                 else
                 {
                     handle.Dispose();
-                    int createErrorCode = Marshal.GetLastWin32Error();
+                    int createErrorCode = Marshal.GetLastPInvokeError();
                     if (createErrorCode != Interop.Errors.ERROR_ACCESS_DENIED)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(createErrorCode);
@@ -146,7 +146,7 @@ namespace System.IO.MemoryMappedFiles
                 else
                 {
                     handle.Dispose();
-                    int openErrorCode = Marshal.GetLastWin32Error();
+                    int openErrorCode = Marshal.GetLastPInvokeError();
                     if (openErrorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(openErrorCode);
