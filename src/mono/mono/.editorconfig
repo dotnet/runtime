@@ -14,8 +14,3 @@ curly_bracket_next_line = false
 spaces_around_operators = true
 spaces_around_brackets = outside
 
-[Makefile*]
-indent_style = tab
-
-[*.mk]
-indent_style = tab

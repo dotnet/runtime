@@ -18,7 +18,7 @@ namespace System.ComponentModel.DataAnnotations
     ///     It exists both to help performance as well as to abstract away the differences between
     ///     Reflection and TypeDescriptor.
     /// </remarks>
-    internal class ValidationAttributeStore
+    internal sealed class ValidationAttributeStore
     {
         private readonly Dictionary<Type, TypeStoreItem> _typeStoreItems = new Dictionary<Type, TypeStoreItem>();
 
@@ -32,6 +32,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
         /// <returns>The collection of validation attributes.  It could be empty.</returns>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
@@ -44,6 +45,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
         /// <returns>The display attribute instance, if present.</returns>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
@@ -56,6 +58,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The collection of validation attributes.  It could be empty.</returns>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
@@ -69,6 +72,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The display attribute instance, if present.</returns>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
@@ -82,6 +86,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The type of the specified property</returns>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal Type GetPropertyType(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
@@ -97,6 +102,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="validationContext">The <see cref="ValidationContext" /> to check.</param>
         /// <returns><c>true</c> when the <paramref name="validationContext" /> represents a property, <c>false</c> otherwise.</returns>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal bool IsPropertyContext(ValidationContext validationContext)
         {
             EnsureValidationContext(validationContext);
@@ -110,7 +116,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="type">The type whose store item is needed.  It cannot be null</param>
         /// <returns>The type store item.  It will not be null.</returns>
-        private TypeStoreItem GetTypeStoreItem(Type type)
+        private TypeStoreItem GetTypeStoreItem([DynamicallyAccessedMembers(TypeStoreItem.DynamicallyAccessedTypes)] Type type)
         {
             Debug.Assert(type != null);
 
@@ -143,9 +149,6 @@ namespace System.ComponentModel.DataAnnotations
         internal static bool IsPublic(PropertyInfo p) =>
             (p.GetMethod != null && p.GetMethod.IsPublic) || (p.SetMethod != null && p.SetMethod.IsPublic);
 
-        internal static bool IsStatic(PropertyInfo p) =>
-            (p.GetMethod != null && p.GetMethod.IsStatic) || (p.SetMethod != null && p.SetMethod.IsStatic);
-
         /// <summary>
         ///     Private abstract class for all store items
         /// </summary>
@@ -165,13 +168,16 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Private class to store data associated with a type
         /// </summary>
-        private class TypeStoreItem : StoreItem
+        private sealed class TypeStoreItem : StoreItem
         {
+            internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties;
+
             private readonly object _syncRoot = new object();
+            [DynamicallyAccessedMembers(DynamicallyAccessedTypes)]
             private readonly Type _type;
             private Dictionary<string, PropertyStoreItem>? _propertyStoreItems;
 
-            internal TypeStoreItem(Type type, IEnumerable<Attribute> attributes)
+            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedTypes)] Type type, IEnumerable<Attribute> attributes)
                 : base(attributes)
             {
                 _type = type;
@@ -231,7 +237,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Private class to store data associated with a property
         /// </summary>
-        private class PropertyStoreItem : StoreItem
+        private sealed class PropertyStoreItem : StoreItem
         {
             internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
                 : base(attributes)

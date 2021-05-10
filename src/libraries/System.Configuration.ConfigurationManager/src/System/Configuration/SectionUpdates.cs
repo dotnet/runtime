@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Configuration
 {
-    internal class SectionUpdates
+    internal sealed class SectionUpdates
     {
         private readonly Hashtable _groups;
         private readonly string _name;

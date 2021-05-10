@@ -10,19 +10,15 @@ namespace System.Reflection.Emit
     /// data member for AssemblyBuilder. Note that what ever data members added to
     /// this class cannot be accessed from the EE.
     /// </summary>
-    internal class AssemblyBuilderData
+    internal sealed class AssemblyBuilderData
     {
         public const int AssemblyDefToken = 0x20000001;
 
         public readonly List<ModuleBuilder> _moduleBuilderList;
         public readonly AssemblyBuilderAccess _access;
-        public MethodInfo? _entryPointMethod;
 
-        private readonly InternalAssemblyBuilder _assembly;
-
-        internal AssemblyBuilderData(InternalAssemblyBuilder assembly, AssemblyBuilderAccess access)
+        internal AssemblyBuilderData(AssemblyBuilderAccess access)
         {
-            _assembly = assembly;
             _access = access;
             _moduleBuilderList = new List<ModuleBuilder>();
         }

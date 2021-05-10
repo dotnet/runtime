@@ -1112,6 +1112,234 @@ namespace System
             return FormatCustomized(dateTime, format, dtfi, offset, result: null);
         }
 
+        internal static bool IsValidCustomDateFormat(ReadOnlySpan<char> format, bool throwOnError)
+        {
+            int i = 0;
+
+            while (i < format.Length)
+            {
+                switch (format[i])
+                {
+                    case '\\':
+                        if (i == format.Length - 1)
+                        {
+                            if (throwOnError)
+                            {
+                                throw new FormatException(SR.Format_InvalidString);
+                            }
+
+                            return false;
+                        }
+
+                        i += 2;
+                        break;
+
+                    case '\'':
+                    case '"':
+                        char quoteChar = format[i++];
+                        while (i < format.Length && format[i] != quoteChar)
+                        {
+                            i++;
+                        }
+
+                        if (i >= format.Length)
+                        {
+                            if (throwOnError)
+                            {
+                                throw new FormatException(SR.Format(SR.Format_BadQuote, quoteChar));
+                            }
+
+                            return false;
+                        }
+
+                        i++;
+                        break;
+
+                    case ':':
+                    case 't':
+                    case 'f':
+                    case 'F':
+                    case 'h':
+                    case 'H':
+                    case 'm':
+                    case 's':
+                    case 'z':
+                    case 'K':
+                        // reject non-date formats
+                        if (throwOnError)
+                        {
+                            throw new FormatException(SR.Format_InvalidString);
+                        }
+
+                        return false;
+
+                    default:
+                        i++;
+                        break;
+                }
+            }
+
+            return true;
+        }
+
+
+        internal static bool IsValidCustomTimeFormat(ReadOnlySpan<char> format, bool throwOnError)
+        {
+            int length = format.Length;
+            int i = 0;
+
+            while (i < length)
+            {
+                switch (format[i])
+                {
+                    case '\\':
+                        if (i == length - 1)
+                        {
+                            if (throwOnError)
+                            {
+                                throw new FormatException(SR.Format_InvalidString);
+                            }
+
+                            return false;
+                        }
+
+                        i += 2;
+                        break;
+
+                    case '\'':
+                    case '"':
+                        char quoteChar = format[i++];
+                        while (i < length && format[i] != quoteChar)
+                        {
+                            i++;
+                        }
+
+                        if (i >= length)
+                        {
+                            if (throwOnError)
+                            {
+                                throw new FormatException(SR.Format(SR.Format_BadQuote, quoteChar));
+                            }
+
+                            return false;
+                        }
+
+                        i++;
+                        break;
+
+                    case 'd':
+                    case 'M':
+                    case 'y':
+                    case '/':
+                    case 'z':
+                    case 'k':
+                        if (throwOnError)
+                        {
+                            throw new FormatException(SR.Format_InvalidString);
+                        }
+
+                        return false;
+
+                    default:
+                        i++;
+                        break;
+                }
+            }
+
+            return true;
+        }
+
+        //   012345678901234567890123456789012
+        //   ---------------------------------
+        //   05:30:45.7680000
+        internal static bool TryFormatTimeOnlyO(int hour, int minute, int second, long fraction, Span<char> destination)
+        {
+            if (destination.Length < 16)
+            {
+                return false;
+            }
+
+            WriteTwoDecimalDigits((uint)hour, destination, 0);
+            destination[2] = ':';
+            WriteTwoDecimalDigits((uint)minute, destination, 3);
+            destination[5] = ':';
+            WriteTwoDecimalDigits((uint)second, destination, 6);
+            destination[8] = '.';
+            WriteDigits((uint)fraction, destination.Slice(9, 7));
+
+            return true;
+        }
+
+        //   012345678901234567890123456789012
+        //   ---------------------------------
+        //   05:30:45
+        internal static bool TryFormatTimeOnlyR(int hour, int minute, int second, Span<char> destination)
+        {
+            if (destination.Length < 8)
+            {
+                return false;
+            }
+
+            WriteTwoDecimalDigits((uint)hour, destination, 0);
+            destination[2] = ':';
+            WriteTwoDecimalDigits((uint)minute, destination, 3);
+            destination[5] = ':';
+            WriteTwoDecimalDigits((uint)second, destination, 6);
+
+            return true;
+        }
+
+        // Roundtrippable format. One of
+        //   012345678901234567890123456789012
+        //   ---------------------------------
+        //   2017-06-12
+        internal static bool TryFormatDateOnlyO(int year, int month, int day, Span<char> destination)
+        {
+            if (destination.Length < 10)
+            {
+                return false;
+            }
+
+            WriteFourDecimalDigits((uint)year, destination, 0);
+            destination[4] = '-';
+            WriteTwoDecimalDigits((uint)month, destination, 5);
+            destination[7] = '-';
+            WriteTwoDecimalDigits((uint)day, destination, 8);
+            return true;
+        }
+
+        // Rfc1123
+        //   01234567890123456789012345678
+        //   -----------------------------
+        //   Tue, 03 Jan 2017
+        internal static bool TryFormatDateOnlyR(DayOfWeek dayOfWeek, int year, int month, int day, Span<char> destination)
+        {
+            if (destination.Length < 16)
+            {
+                return false;
+            }
+
+            string dayAbbrev = InvariantAbbreviatedDayNames[(int)dayOfWeek];
+            Debug.Assert(dayAbbrev.Length == 3);
+
+            string monthAbbrev = InvariantAbbreviatedMonthNames[month - 1];
+            Debug.Assert(monthAbbrev.Length == 3);
+
+            destination[0] = dayAbbrev[0];
+            destination[1] = dayAbbrev[1];
+            destination[2] = dayAbbrev[2];
+            destination[3] = ',';
+            destination[4] = ' ';
+            WriteTwoDecimalDigits((uint)day, destination, 5);
+            destination[7] = ' ';
+            destination[8] = monthAbbrev[0];
+            destination[9] = monthAbbrev[1];
+            destination[10] = monthAbbrev[2];
+            destination[11] = ' ';
+            WriteFourDecimalDigits((uint)year, destination, 12);
+            return true;
+        }
+
         // Roundtrippable format. One of
         //   012345678901234567890123456789012
         //   ---------------------------------
@@ -1208,9 +1436,7 @@ namespace System
         //   Tue, 03 Jan 2017 08:08:05 GMT
         private static bool TryFormatR(DateTime dateTime, TimeSpan offset, Span<char> destination, out int charsWritten)
         {
-            // Writing the check in this fashion elides all bounds checks on 'destination'
-            // for the remainder of the method.
-            if (28 >= (uint)destination.Length)
+            if (destination.Length <= 28)
             {
                 charsWritten = 0;
                 return false;

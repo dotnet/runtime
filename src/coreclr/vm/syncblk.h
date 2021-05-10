@@ -729,50 +729,29 @@ public:
 #endif // FEATURE_COMINTEROP
 
 #if !defined(DACCESS_COMPILE)
-    // set m_pUMEntryThunkOrInterceptStub if not already set - return true if not already set
+    // set m_pUMEntryThunk if not already set - return true if not already set
     bool SetUMEntryThunk(void* pUMEntryThunk)
     {
         WRAPPER_NO_CONTRACT;
-        return (FastInterlockCompareExchangePointer(&m_pUMEntryThunkOrInterceptStub,
+        return (FastInterlockCompareExchangePointer(&m_pUMEntryThunk,
                                                     pUMEntryThunk,
                                                     NULL) == NULL);
     }
 
-    // set m_pUMEntryThunkOrInterceptStub if not already set - return true if not already set
-    bool SetInterceptStub(Stub* pInterceptStub)
-    {
-        WRAPPER_NO_CONTRACT;
-        void *pPtr = (void *)((UINT_PTR)pInterceptStub | 1);
-        return (FastInterlockCompareExchangePointer(&m_pUMEntryThunkOrInterceptStub,
-                                                    pPtr,
-                                                    NULL) == NULL);
-    }
-
-    void FreeUMEntryThunkOrInterceptStub();
+    void FreeUMEntryThunk();
 
 #endif // DACCESS_COMPILE
 
     void* GetUMEntryThunk()
     {
         LIMITED_METHOD_CONTRACT;
-        return (((UINT_PTR)m_pUMEntryThunkOrInterceptStub & 1) ? NULL : m_pUMEntryThunkOrInterceptStub);
-    }
-
-    Stub* GetInterceptStub()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (((UINT_PTR)m_pUMEntryThunkOrInterceptStub & 1) ? (Stub *)((UINT_PTR)m_pUMEntryThunkOrInterceptStub & ~1) : NULL);
+        return m_pUMEntryThunk;
     }
 
 private:
     // If this is a delegate marshalled out to unmanaged code, this points
     // to the thunk generated for unmanaged code to call back on.
-    // If this is a delegate representing an unmanaged function pointer,
-    // this may point to a stub that intercepts calls to the unmng target.
-    // An example of an intercept call is pInvokeStackImbalance MDA.
-    // We differentiate between a thunk or intercept stub by setting the lowest
-    // bit if it is an intercept stub.
-    void*               m_pUMEntryThunkOrInterceptStub;
+    void*               m_pUMEntryThunk;
 
 #ifdef FEATURE_COMINTEROP
     // If this object is being exposed to COM, it will have an associated CCW object
@@ -818,7 +797,7 @@ public:
             {
                 map.SuppressRelease();
                 // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
-                m_managedObjectComWrapperLock.Init(CrstInteropData, CRST_UNSAFE_COOPGC);
+                m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
             }
 
             _ASSERTE(m_managedObjectComWrapperMap != NULL);
@@ -954,7 +933,7 @@ class SyncBlock
     // A 0 in this variable means no hash code has been set yet - this saves having
     // another flag to express this state, and it enables us to use a 32-bit interlocked
     // operation to set the hash code, on the other hand it means that hash codes
-    // can never be 0. ObjectNative::GetHashCode in COMObject.cpp makes sure to enforce this.
+    // can never be 0. ObjectNative::GetHashCode in objectnative.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
     // In some early version of VB when there were no arrays developers used to use BSTR as arrays

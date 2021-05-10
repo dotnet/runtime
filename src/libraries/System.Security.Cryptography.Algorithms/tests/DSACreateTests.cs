@@ -6,15 +6,29 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public static class DSACreateTests
     {
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
 
         [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(512)]
         [InlineData(960)]
+        public static void CreateWithKeysize_SmallKeys(int keySizeInBits)
+        {
+            using (DSA dsa = DSA.Create(keySizeInBits))
+            {
+                Assert.Equal(keySizeInBits, dsa.KeySize);
+
+                DSAParameters parameters = dsa.ExportParameters(false);
+                Assert.Equal(keySizeInBits, parameters.Y.Length << 3);
+                Assert.Equal(keySizeInBits, dsa.KeySize);
+            }
+        }
+
+        [ConditionalTheory(nameof(SupportsKeyGeneration))]
         [InlineData(1024)]
         public static void CreateWithKeysize(int keySizeInBits)
         {
@@ -29,6 +43,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalTheory(nameof(SupportsKeyGeneration), nameof(SupportsFips186_3))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(1088)]
         public static void CreateWithKeysize_BigKeys(int keySizeInBits)
         {

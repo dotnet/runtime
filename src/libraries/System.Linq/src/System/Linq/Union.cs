@@ -26,6 +26,47 @@ namespace System.Linq
             return first is UnionIterator<TSource> union && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
         }
 
+        public static IEnumerable<TSource> UnionBy<TSource, TKey>(this IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> keySelector) => UnionBy(first, second, keySelector, null);
+
+        public static IEnumerable<TSource> UnionBy<TSource, TKey>(this IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (first is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
+            }
+            if (second is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+            }
+            if (keySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            return UnionByIterator(first, second, keySelector, comparer);
+        }
+
+        private static IEnumerable<TSource> UnionByIterator<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            var set = new HashSet<TKey>(DefaultInternalSetCapacity, comparer);
+
+            foreach (TSource element in first)
+            {
+                if (set.Add(keySelector(element)))
+                {
+                    yield return element;
+                }
+            }
+
+            foreach (TSource element in second)
+            {
+                if (set.Add(keySelector(element)))
+                {
+                    yield return element;
+                }
+            }
+        }
+
         /// <summary>
         /// An iterator that yields distinct values from two or more <see cref="IEnumerable{TSource}"/>.
         /// </summary>
@@ -34,7 +75,7 @@ namespace System.Linq
         {
             internal readonly IEqualityComparer<TSource>? _comparer;
             private IEnumerator<TSource>? _enumerator;
-            private Set<TSource>? _set;
+            private HashSet<TSource>? _set;
 
             protected UnionIterator(IEqualityComparer<TSource>? comparer)
             {
@@ -68,7 +109,7 @@ namespace System.Linq
             {
                 Debug.Assert(_enumerator != null);
 
-                Set<TSource> set = new Set<TSource>(_comparer);
+                var set = new HashSet<TSource>(DefaultInternalSetCapacity, _comparer);
                 TSource element = _enumerator.Current;
                 set.Add(element);
                 _current = element;
@@ -80,7 +121,7 @@ namespace System.Linq
                 Debug.Assert(_enumerator != null);
                 Debug.Assert(_set != null);
 
-                Set<TSource> set = _set;
+                HashSet<TSource> set = _set;
 
                 while (_enumerator.MoveNext())
                 {

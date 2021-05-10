@@ -295,7 +295,7 @@ namespace System
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
                 if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
                 {
-                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchChars(p, strEnd, info.NegativeSign)) != null && (number.IsNegative = true))))
+                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
                     {
                         state |= StateSign;
                         p = next - 1;
@@ -324,6 +324,7 @@ namespace System
             int digCount = 0;
             int digEnd = 0;
             int maxDigCount = number.Digits.Length - 1;
+            int numberOfTrailingZeros = 0;
 
             while (true)
             {
@@ -335,10 +336,10 @@ namespace System
                     {
                         if (digCount < maxDigCount)
                         {
-                            number.Digits[digCount++] = (byte)(ch);
+                            number.Digits[digCount] = (byte)(ch);
                             if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
-                                digEnd = digCount;
+                                digEnd = digCount + 1;
                             }
                         }
                         else if (ch != '0')
@@ -357,6 +358,20 @@ namespace System
                         {
                             number.Scale++;
                         }
+
+                        if (digCount < maxDigCount)
+                        {
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part for floating point numbers, so we keep a count of the number of trailing zeros and update digCount later
+                            if (ch == '0')
+                            {
+                                numberOfTrailingZeros++;
+                            }
+                            else
+                            {
+                                numberOfTrailingZeros = 0;
+                            }
+                        }
+                        digCount++;
                         state |= StateNonZero;
                     }
                     else if ((state & StateDecimal) != 0)
@@ -393,7 +408,7 @@ namespace System
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                     }
-                    else if ((next = MatchChars(p, strEnd, info._negativeSign)) != null)
+                    else if ((next = MatchNegativeSignChars(p, strEnd, info)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                         negExp = true;
@@ -426,11 +441,25 @@ namespace System
                         ch = p < strEnd ? *p : '\0';
                     }
                 }
+
+                if (number.Kind == NumberBufferKind.FloatingPoint && !number.HasNonZeroTail)
+                {
+                    // Adjust the number buffer for trailing zeros
+                    int numberOfFractionalDigits = digEnd - number.Scale;
+                    if (numberOfFractionalDigits > 0)
+                    {
+                        numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
+                        Debug.Assert(numberOfTrailingZeros >= 0);
+                        number.DigitsCount = digEnd - numberOfTrailingZeros;
+                        number.Digits[number.DigitsCount] = (byte)('\0');
+                    }
+                }
+
                 while (true)
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchChars(p, strEnd, info.NegativeSign)) != null) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -554,6 +583,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    sign = -1;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -725,6 +762,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    sign = -1;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -969,6 +1014,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    overflow = true;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -1297,6 +1350,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    overflow = true;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -1725,6 +1786,8 @@ namespace System
             return ParsingStatus.OK;
         }
 
+        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
+
         internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
             byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
@@ -1768,8 +1831,8 @@ namespace System
                         return false;
                     }
                 }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                        valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                else if ((valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol)) ||
+                        (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol)))
                 {
                     result = double.NaN;
                 }
@@ -1840,6 +1903,11 @@ namespace System
                 {
                     result = Half.NaN;
                 }
+                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
                 else
                 {
                     result = (Half)0;
@@ -1907,6 +1975,11 @@ namespace System
                 {
                     result = float.NaN;
                 }
+                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = float.NaN;
+                }
                 else
                 {
                     result = 0;
@@ -1954,6 +2027,18 @@ namespace System
         }
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
+        {
+            char* ret = MatchChars(p, pEnd, info.NegativeSign);
+            if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
+            {
+                ret = p + 1;
+            }
+
+            return ret;
+        }
 
         private static unsafe char* MatchChars(char* p, char* pEnd, string value)
         {
@@ -2057,7 +2142,7 @@ namespace System
             }
             else
             {
-                ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
+                ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
                 result = BitConverter.Int64BitsToDouble((long)(bits));
             }
 
@@ -2079,7 +2164,7 @@ namespace System
             }
             else
             {
-                ushort bits = (ushort)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Half));
+                ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
                 result = new Half(bits);
             }
 
@@ -2101,7 +2186,7 @@ namespace System
             }
             else
             {
-                uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
+                uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
                 result = BitConverter.Int32BitsToSingle((int)(bits));
             }
 

@@ -33,6 +33,12 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 Assert.Equal(WebSocketState.Closed, cws.State);
                 Assert.Equal(exceptionMessage, ex.Message);
+
+                // Other operations throw after failed connect
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.ReceiveAsync(new byte[1], default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.SendAsync(new byte[1], WebSocketMessageType.Binary, true, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default));
             }
         }
 
@@ -52,7 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // CustomHeaders not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "CustomHeaders not supported on browser")]
         public async Task ConnectAsync_AddCustomHeaders_Success(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -114,7 +120,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cookies not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Cookies not supported on browser")]
         public async Task ConnectAsync_CookieHeaders_Success(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -220,8 +226,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var clientSocket = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy authorisation header.")]
-                    clientSocket.Options.SetRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential= AKIAXXXXXXXXXXXYSZA /20190301/us-east-2/neptune-db/aws4_request, SignedHeaders=host;x-amz-date, Signature=b8155de54d9faab00000000000000000000000000a07e0d7dda49902e4d9202");
+                    clientSocket.Options.SetRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential=PLACEHOLDER /20190301/us-east-2/neptune-db/aws4_request, SignedHeaders=host;x-amz-date, Signature=b8155de54d9faab00000000000000000000000000a07e0d7dda49902e4d9202");
                     await clientSocket.ConnectAsync(uri, cts.Token);
                 }
             }, server => server.AcceptConnectionAsync(async connection =>

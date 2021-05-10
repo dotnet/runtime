@@ -6,7 +6,7 @@ trigger:
   batch: false
   branches:
     include:
-    - master
+    - main
   paths:
     include:
     - src/coreclr/inc/jiteeversionguid.h
@@ -20,7 +20,7 @@ schedules:
   displayName: Sun at 9:00 AM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -41,6 +41,10 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
+      # libraries test build platforms
+      testBuildPlatforms:
+      - Linux_x64
+      - windows_x64
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -116,3 +120,67 @@ jobs:
       collectionType: pmi
       collectionName: tests
 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: pmi
+      collectionName: tests_libraries
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: crossgen2
+      collectionName: libraries
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    #TODO: Need special handling of running "benchmark build" from inside TMP folder on helix machine.
+    # - Linux_arm
+    # - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: run
+      collectionName: benchmarks

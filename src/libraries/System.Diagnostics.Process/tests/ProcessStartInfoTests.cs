@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.ComponentModel;
@@ -21,6 +22,7 @@ using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class ProcessStartInfoTests : ProcessTestBase
     {
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -456,8 +458,8 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            const string username = "testForDotnetRuntime", password = "PassWord123!!";
+            const string username = "testForDotnetRuntime";
+            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
 
             uint removalResult = Interop.NetUserDel(null, username);
             Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
@@ -472,8 +474,11 @@ namespace System.Diagnostics.Tests
             {
                 p = CreateProcessLong();
 
-                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                SetAccessControl(username, p.StartInfo.FileName, add: true);
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                }
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
@@ -500,10 +505,6 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
-
                 if (handle != null)
                     handle.Dispose();
 
@@ -513,6 +514,13 @@ namespace System.Diagnostics.Tests
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
+
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                }
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 

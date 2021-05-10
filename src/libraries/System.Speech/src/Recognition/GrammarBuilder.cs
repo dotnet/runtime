@@ -462,7 +462,7 @@ namespace System.Speech.Recognition
 
         #region Private Type
 
-        private class InternalGrammarBuilder : BuilderElements
+        private sealed class InternalGrammarBuilder : BuilderElements
         {
             #region Internal Methods
 

@@ -444,7 +444,7 @@ public:
                 if (cmp == 0)
                 {
                     delete (*mid);
-                    memcpy(mid,mid+1,(BYTE*)&m_Arr[m_ulOffset+m_ulCount]-(BYTE*)mid-1);
+                    memmove(mid,mid+1,(BYTE*)&m_Arr[m_ulOffset+m_ulCount]-(BYTE*)mid-1);
                     m_ulCount--;
                     return TRUE;
                 }

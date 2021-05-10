@@ -62,7 +62,7 @@ namespace System.Buffers
         public SequencePosition Start
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new SequencePosition(_startObject, _startInteger);
+            get => new SequencePosition(_startObject, GetIndex(_startInteger));
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace System.Buffers
         public SequencePosition End
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new SequencePosition(_endObject, _endInteger);
+            get => new SequencePosition(_endObject, GetIndex(_endInteger));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,8 +105,8 @@ namespace System.Buffers
 
             _startObject = startSegment;
             _endObject = endSegment;
-            _startInteger = ReadOnlySequence.SegmentToSequenceStart(startIndex);
-            _endInteger = ReadOnlySequence.SegmentToSequenceEnd(endIndex);
+            _startInteger = startIndex;
+            _endInteger = endIndex;
         }
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace System.Buffers
 
             _startObject = array;
             _endObject = array;
-            _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
+            _startInteger = 0;
             _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array.Length);
         }
 
@@ -135,7 +135,7 @@ namespace System.Buffers
 
             _startObject = array;
             _endObject = array;
-            _startInteger = ReadOnlySequence.ArrayToSequenceStart(start);
+            _startInteger = start;
             _endInteger = ReadOnlySequence.ArrayToSequenceEnd(start + length);
         }
 
@@ -150,7 +150,7 @@ namespace System.Buffers
                 _startObject = manager;
                 _endObject = manager;
                 _startInteger = ReadOnlySequence.MemoryManagerToSequenceStart(index);
-                _endInteger = ReadOnlySequence.MemoryManagerToSequenceEnd(length);
+                _endInteger = length;
             }
             else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
             {
@@ -158,7 +158,7 @@ namespace System.Buffers
                 int start = segment.Offset;
                 _startObject = array;
                 _endObject = array;
-                _startInteger = ReadOnlySequence.ArrayToSequenceStart(start);
+                _startInteger = start;
                 _endInteger = ReadOnlySequence.ArrayToSequenceEnd(start + segment.Count);
             }
             else if (typeof(T) == typeof(char))
@@ -224,7 +224,7 @@ namespace System.Buffers
 
                     begin = SeekMultiSegment(startSegment.Next!, endObject!, endIndex, start - currentLength, ExceptionArgument.start);
 
-                    int beginIndex = GetIndex(begin);
+                    int beginIndex = begin.GetInteger();
                     object beginObject = begin.GetObject()!;
 
                     if (beginObject != endObject)
@@ -275,7 +275,7 @@ namespace System.Buffers
             uint endIndex = (uint)GetIndex(_endInteger);
             object? endObject = _endObject;
 
-            uint sliceEndIndex = (uint)GetIndex(end);
+            uint sliceEndIndex = (uint)end.GetInteger();
             object? sliceEndObject = end.GetObject();
 
             if (sliceEndObject == null)
@@ -352,7 +352,7 @@ namespace System.Buffers
             object? endObject = _endObject;
 
             // Check start before length
-            uint sliceStartIndex = (uint)GetIndex(start);
+            uint sliceStartIndex = (uint)start.GetInteger();
             object? sliceStartObject = start.GetObject();
 
             if (sliceStartObject == null)
@@ -453,7 +453,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySequence<T> Slice(SequencePosition start, SequencePosition end)
         {
-            BoundsCheck((uint)GetIndex(start), start.GetObject(), (uint)GetIndex(end), end.GetObject());
+            BoundsCheck((uint)start.GetInteger(), start.GetObject(), (uint)end.GetInteger(), end.GetObject());
             return SliceImpl(start, end);
         }
 
@@ -495,7 +495,7 @@ namespace System.Buffers
                 ReadOnlySequence<T> localThis = this;
                 ReadOnlySequence<char> charSequence = Unsafe.As<ReadOnlySequence<T>, ReadOnlySequence<char>>(ref localThis);
 
-                if (SequenceMarshal.TryGetString(charSequence, out string? text, out int start, out int length))
+                if (charSequence.TryGetString(out string? text, out int start, out int length))
                 {
                     return text.Substring(start, length);
                 }
@@ -506,7 +506,7 @@ namespace System.Buffers
                 }
             }
 
-            return string.Format("System.Buffers.ReadOnlySequence<{0}>[{1}]", typeof(T).Name, Length);
+            return $"System.Buffers.ReadOnlySequence<{typeof(T).Name}>[{Length}]";
         }
 
         /// <summary>
@@ -540,7 +540,7 @@ namespace System.Buffers
             object? startObject = _startObject;
             object? endObject = _endObject;
 
-            uint positionIndex = (uint)GetIndex(position);
+            uint positionIndex = (uint)position.GetInteger();
 
             // if sequence object is null we suppose start segment
             if (positionIsNull)
@@ -660,33 +660,24 @@ namespace System.Buffers
 
     internal static class ReadOnlySequence
     {
+        /// <summary>
+        /// Flag that allows encoding the <see cref="ReadOnlySequence{T}.SequenceType"/>.
+        /// </summary>
+        /// <seealso cref="ReadOnlySequence{T}.GetSequenceType"/>
         public const int FlagBitMask = 1 << 31;
         public const int IndexBitMask = ~FlagBitMask;
 
-        public const int SegmentStartMask = 0;
-        public const int SegmentEndMask = 0;
-
-        public const int ArrayStartMask = 0;
         public const int ArrayEndMask = FlagBitMask;
 
         public const int MemoryManagerStartMask = FlagBitMask;
-        public const int MemoryManagerEndMask = 0;
 
         public const int StringStartMask = FlagBitMask;
         public const int StringEndMask = FlagBitMask;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int SegmentToSequenceStart(int startIndex) => startIndex | SegmentStartMask;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int SegmentToSequenceEnd(int endIndex) => endIndex | SegmentEndMask;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ArrayToSequenceStart(int startIndex) => startIndex | ArrayStartMask;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ArrayToSequenceEnd(int endIndex) => endIndex | ArrayEndMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int MemoryManagerToSequenceStart(int startIndex) => startIndex | MemoryManagerStartMask;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MemoryManagerToSequenceEnd(int endIndex) => endIndex | MemoryManagerEndMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int StringToSequenceStart(int startIndex) => startIndex | StringStartMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

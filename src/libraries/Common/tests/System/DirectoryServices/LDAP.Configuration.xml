@@ -1,0 +1,87 @@
+<Configuration>
+    <CommentThatAllowsDoubleHyphens>
+To enable the tests marked with [ConditionalFact(nameof(IsLdapConfigurationExist))], you need to setup an LDAP server and provide the needed server info here.
+
+To ship, we should test on both an Active Directory LDAP server, and at least one other server, as behaviors are a little different. However for local testing, it is easiest to connect to an OpenDJ LDAP server in a docker container (eg., in WSL2).
+
+OPENDJ SERVER
+=============
+
+    docker run -p 1389:1389 -e ROOT_USER_DN='cn=admin,dc=example,dc=com' -e BASE_DN='dc=example,dc=com' -e ROOT_PASSWORD=password  -d openidentityplatform/opendj
+
+test it with this command - it should return some results in WSL2
+
+    ldapsearch -h localhost -p 1389 -D 'cn=admin,dc=example,dc=com' -x -w password
+
+this command views the status
+
+    docker exec -it opendj01 /bin/bash /opt/opendj/bin/status -D 'cn=admin,dc=example,dc=com' -w password
+
+SLAPD OPENLDAP SERVER
+=====================
+
+    docker run -p:390:389 -e LDAP_DOMAIN=example.com -e LDAP_ROOTPASS=password -d nickstenning/slapd
+
+and to test and view status
+
+    ldapsearch -h localhost -p 390 -D 'cn=admin,dc=example,dc=com' -x -w password
+
+    docker exec -it slapd01 slapcat
+
+ACTIVE DIRECTORY
+================
+
+For Active Directory, it is necessary to set up a VM that is a Domain Controller. Typical settings look like this, depending on the values you choose during the setup wizard (observe the default port is different, and user is prefixed by the AD user domain):
+
+When running against Active Directory from a Windows client, you should not see any tests marked `[ConditionalFact(nameof(IsActiveDirectoryServer))]` skip. At the moment, that means that there are zero total skipped test cases when you run against Active Directory using tests on Windows.
+
+If you are running your AD server as a VM on the same machine that you are running WSL2, you must execute this command on the host to bridge the two Hyper-V networks so that it is visible from WSL2:
+
+        Get-NetIPInterface | where {$_.InterfaceAlias -eq 'vEthernet (WSL)' -or $_.InterfaceAlias -eq 'vEthernet (Default Switch)'} | Set-NetIPInterface -Forwarding Enabled
+
+The WSL2 VM should now be able to see the AD VM by IP address. To make it visible by host name, it's probably easiest to just add it to /etc/hosts.
+
+For the S.DS.AM and S.DS tests (which only run on Windows) to work successfully against AD, the test machine needs to be on the AD domain. It is easiest to have the test machine in a VM as well. Set the primary DNS server for the test machine to be the AD machine, join the machine to that domain, and log into it as a (the) domain user.
+
+To verify the AD connection from Linux, use either of these:
+
+    ldapsearch -h danmose-ldap -p 389 -D 'CN=Administrator,CN=Users,DC=danmose-domain,DC=com' -x -w $TESTPASSWORD
+    ldapsearch -h danmose-ldap -p 389 -D 'danmose-domain\Administrator' -x -w $TESTPASSWORD
+
+Note:
+    `Password` is read from the environment if it is surrounded by %, eg %TESTPASSWORD%
+
+    </CommentThatAllowsDoubleHyphens>
+
+    <!-- To choose a connection, set an environment variable LDAP_TEST_SERVER_INDEX
+         to the zero-based index, eg., 0, 1, or 2
+         If you don't set LDAP_TEST_SERVER_INDEX then tests that require a server
+         will skip.
+    -->
+
+    <Connection Name="OPENDJ SERVER">
+        <ServerName>localhost</ServerName>
+        <SearchDN>DC=example,DC=com</SearchDN>
+        <Port>1389</Port>
+        <User>cn=admin,dc=example,dc=com</User>
+        <Password>password</Password>
+        <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+    </Connection>
+    <Connection Name="SLAPD OPENLDAP SERVER">
+        <ServerName>localhost</ServerName>
+        <SearchDN>DC=example,DC=com</SearchDN>
+        <Port>390</Port>
+        <User>cn=admin,dc=example,dc=com</User>
+        <Password>password</Password>
+        <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+    </Connection>
+    <Connection Name="ACTIVE DIRECTORY SERVER">
+        <ServerName>danmose-ldap.danmose-domain.com</ServerName>
+        <SearchDN>DC=danmose-domain,DC=com</SearchDN>
+        <Port>389</Port>
+        <User>danmose-domain\Administrator</User>
+        <Password>%TESTPASSWORD%</Password>
+        <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+    </Connection>
+
+</Configuration>

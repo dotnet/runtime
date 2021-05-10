@@ -8,7 +8,7 @@ namespace System.Linq.Expressions.Compiler
 {
     // The part of the LambdaCompiler dealing with low level control flow
     // break, continue, return, exceptions, etc
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
         private LabelInfo EnsureLabel(LabelTarget node)
         {

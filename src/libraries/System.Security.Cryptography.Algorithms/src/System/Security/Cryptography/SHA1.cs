@@ -3,6 +3,7 @@
 
 using Internal.Cryptography;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -22,9 +23,10 @@ namespace System.Security.Cryptography
             HashSizeValue = HashSizeBits;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA1? Create(string hashName) => (SHA1?)CryptoConfig.CreateFromName(hashName);
 
         /// <summary>

@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class Stylesheet
+    internal sealed class Stylesheet
     {
         private readonly ArrayList _imports = new ArrayList();
         private Hashtable? _modeManagers;
@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.XsltOld
         private TemplateManager? _templates;
 
 
-        private class WhitespaceElement
+        private sealed class WhitespaceElement
         {
             private readonly int _key;
             private readonly double _priority;

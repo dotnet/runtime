@@ -15,7 +15,7 @@ namespace System.Xml
         Item = 2
     }
 
-    internal class StringHandle : IEquatable<StringHandle>
+    internal sealed class StringHandle : IEquatable<StringHandle>
     {
         private readonly XmlBufferReader _bufferReader;
         private StringHandleType _type;
@@ -226,7 +226,7 @@ namespace System.Xml
             return GetString() == _bufferReader.GetString(offset2, length2);
         }
 
-        public bool Equals(StringHandle? other)
+        public bool Equals([NotNullWhen(true)] StringHandle? other)
         {
             if (other is null)
                 return false;
@@ -275,7 +275,7 @@ namespace System.Xml
             else
                 return string.Compare(this.GetString(), that.GetString(), StringComparison.Ordinal);
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as StringHandle);
         }

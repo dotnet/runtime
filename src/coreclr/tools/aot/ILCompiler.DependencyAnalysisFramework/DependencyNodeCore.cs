@@ -124,6 +124,8 @@ namespace ILCompiler.DependencyAnalysisFramework
             get;
         }
 
+        public virtual int DependencyPhaseForDeferredStaticComputation { get; } = 0;
+
         public abstract IEnumerable<DependencyListEntry> GetStaticDependencies(DependencyContextType context);
 
         public abstract IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(DependencyContextType context);

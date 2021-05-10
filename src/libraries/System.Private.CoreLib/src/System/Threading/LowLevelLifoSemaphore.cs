@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -352,7 +353,7 @@ namespace System.Threading
             public static bool operator ==(Counts lhs, Counts rhs) => lhs._data == rhs._data;
             public static bool operator !=(Counts lhs, Counts rhs) => lhs._data != rhs._data;
 
-            public override bool Equals(object? obj) => obj is Counts counts && _data == counts._data;
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is Counts counts && _data == counts._data;
             public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
 

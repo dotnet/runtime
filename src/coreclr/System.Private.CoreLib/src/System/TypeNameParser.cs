@@ -14,7 +14,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
-    internal class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]

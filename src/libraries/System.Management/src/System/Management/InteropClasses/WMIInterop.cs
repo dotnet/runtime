@@ -464,7 +464,7 @@ namespace System.Management
         }
     }
 
-    internal class MarshalWbemObject : ICustomMarshaler
+    internal sealed class MarshalWbemObject : ICustomMarshaler
     {
         public static ICustomMarshaler GetInstance(string cookie)
         {
@@ -550,15 +550,6 @@ namespace System.Management
         [PreserveSig] int EndEnumeration_();
     }
 
-    [InterfaceTypeAttribute(0x0001)]
-    //[TypeLibTypeAttribute(0x0200)]
-    [GuidAttribute("DC12A687-737F-11CF-884D-00AA004B2E24")]
-    [ComImport]
-    internal interface IWbemLocator
-    {
-        [PreserveSig] int ConnectServer_([In][MarshalAs(UnmanagedType.BStr)] string strNetworkResource, [In][MarshalAs(UnmanagedType.BStr)] string strUser, [In]IntPtr strPassword, [In][MarshalAs(UnmanagedType.BStr)] string strLocale, [In] int lSecurityFlags, [In][MarshalAs(UnmanagedType.BStr)] string strAuthority, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices ppNamespace);
-    }
-
     [GuidAttribute("44ACA674-E8FC-11D0-A07C-00C04FB68820")]
     //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
@@ -607,37 +598,6 @@ namespace System.Management
         [PreserveSig] int ExecMethodAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr pInParams, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
     }
 
-    [InterfaceTypeAttribute(0x0001)]
-    //[TypeLibTypeAttribute(0x0200)]
-    [GuidAttribute("9556DC99-828C-11CF-A37E-00AA003240C7")]
-    [ComImport]
-    internal interface IWbemServices_Old
-    {
-        [PreserveSig] int OpenNamespace_([In][MarshalAs(UnmanagedType.BStr)] string strNamespace, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemServices ppWorkingNamespace, [In] IntPtr ppCallResult);
-        [PreserveSig] int CancelAsyncCall_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink);
-        [PreserveSig] int QueryObjectSink_([In] int lFlags, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemObjectSink ppResponseHandler);
-        [PreserveSig] int GetObject_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppObject, [In] IntPtr ppCallResult);
-        [PreserveSig] int GetObjectAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int PutClass_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int PutClassAsync_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pObject, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int DeleteClass_([In][MarshalAs(UnmanagedType.BStr)] string strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int DeleteClassAsync_([In][MarshalAs(UnmanagedType.BStr)] string strClass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int CreateClassEnum_([In][MarshalAs(UnmanagedType.BStr)] string strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
-        [PreserveSig] int CreateClassEnumAsync_([In][MarshalAs(UnmanagedType.BStr)] string strSuperclass, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int PutInstance_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int PutInstanceAsync_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInst, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int DeleteInstance_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In] IntPtr ppCallResult);
-        [PreserveSig] int DeleteInstanceAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int CreateInstanceEnum_([In][MarshalAs(UnmanagedType.BStr)] string strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
-        [PreserveSig] int CreateInstanceEnumAsync_([In][MarshalAs(UnmanagedType.BStr)] string strFilter, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int ExecQuery_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
-        [PreserveSig] int ExecQueryAsync_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int ExecNotificationQuery_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
-        [PreserveSig] int ExecNotificationQueryAsync_([In][MarshalAs(UnmanagedType.BStr)] string strQueryLanguage, [In][MarshalAs(UnmanagedType.BStr)] string strQuery, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-        [PreserveSig] int ExecMethod_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInParams, [In][Out][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal ppOutParams, [In] IntPtr ppCallResult);
-        [PreserveSig] int ExecMethodAsync_([In][MarshalAs(UnmanagedType.BStr)] string strObjectPath, [In][MarshalAs(UnmanagedType.BStr)] string strMethodName, [In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pInParams, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pResponseHandler);
-    }
-
     [GuidAttribute("44ACA675-E8FC-11D0-A07C-00C04FB68820")]
     //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
@@ -671,14 +631,6 @@ namespace System.Management
         [PreserveSig] int NextAsync_([In] uint uCount, [In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink);
         [PreserveSig] int Clone_([Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject ppEnum);
         [PreserveSig] int Skip_([In] int lTimeout, [In] uint nCount);
-    }
-
-    [InterfaceTypeAttribute(0x0001)]
-    [GuidAttribute("B7B31DF9-D515-11D3-A11C-00105A1F515A")]
-    [ComImport]
-    internal interface IWbemShutdown
-    {
-        [PreserveSig] int Shutdown_([In] int uReason, [In] uint uMaxMilliseconds, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx);
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -733,15 +685,6 @@ namespace System.Management
         [PreserveSig] int Unlock_([In] int lFlags);
     }
 
-    [GuidAttribute("1CFABA8C-1523-11D1-AD79-00C04FD8FDFF")]
-    //[TypeLibTypeAttribute(0x0200)]
-    [InterfaceTypeAttribute(0x0001)]
-    [ComImport]
-    internal interface IUnsecuredApartment
-    {
-        [PreserveSig] int CreateObjectStub_([In][MarshalAs(UnmanagedType.IUnknown)]  object pObject, [Out][MarshalAs(UnmanagedType.IUnknown)]  out object ppStub);
-    }
-
     [GuidAttribute("EB87E1BC-3233-11D2-AEC9-00C04FB68820")]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
@@ -758,87 +701,6 @@ namespace System.Management
     internal interface IWbemUnboundObjectSink
     {
         [PreserveSig] int IndicateToConsumer_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pLogicalConsumer, [In] int lNumObjects, [In][MarshalAs(UnmanagedType.Interface)]  ref IWbemClassObject_DoNotMarshal apObjects);
-    }
-
-    [InterfaceTypeAttribute(0x0001)]
-    [GuidAttribute("CE61E841-65BC-11D0-B6BD-00AA003240C7")]
-    //[TypeLibTypeAttribute(0x0200)]
-    [ComImport]
-    internal interface IWbemPropertyProvider
-    {
-        [PreserveSig] int GetProperty_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)] string strLocale, [In][MarshalAs(UnmanagedType.BStr)] string strClassMapping, [In][MarshalAs(UnmanagedType.BStr)] string strInstMapping, [In][MarshalAs(UnmanagedType.BStr)] string strPropMapping, [Out] out object pvValue);
-        [PreserveSig] int PutProperty_([In] int lFlags, [In][MarshalAs(UnmanagedType.BStr)] string strLocale, [In][MarshalAs(UnmanagedType.BStr)] string strClassMapping, [In][MarshalAs(UnmanagedType.BStr)] string strInstMapping, [In][MarshalAs(UnmanagedType.BStr)] string strPropMapping, [In] ref object pvValue);
-    }
-
-    [InterfaceTypeAttribute(0x0001)]
-    //[TypeLibTypeAttribute(0x0200)]
-    [GuidAttribute("E245105B-B06E-11D0-AD61-00C04FD8FDFF")]
-    [ComImport]
-    internal interface IWbemEventProvider
-    {
-        [PreserveSig] int ProvideEvents_([In][MarshalAs(UnmanagedType.Interface)]  IWbemObjectSink pSink, [In] int lFlags);
-    }
-
-    [GuidAttribute("580ACAF8-FA1C-11D0-AD72-00C04FD8FDFF")]
-    //[TypeLibTypeAttribute(0x0200)]
-    [InterfaceTypeAttribute(0x0001)]
-    [ComImport]
-    internal interface IWbemEventProviderQuerySink
-    {
-        [PreserveSig] int NewQuery_([In] uint dwId, [In][MarshalAs(UnmanagedType.LPWStr)] string wszQueryLanguage, [In][MarshalAs(UnmanagedType.LPWStr)] string wszQuery);
-        [PreserveSig] int CancelQuery_([In] uint dwId);
-    }
-
-    [InterfaceTypeAttribute(0x0001)]
-    //[TypeLibTypeAttribute(0x0200)]
-    [GuidAttribute("631F7D96-D993-11D2-B339-00105A1F4AAF")]
-    [ComImport]
-    internal interface IWbemEventProviderSecurity
-    {
-        [PreserveSig] int AccessCheck_([In][MarshalAs(UnmanagedType.LPWStr)] string wszQueryLanguage, [In][MarshalAs(UnmanagedType.LPWStr)] string wszQuery, [In] int lSidLength, [In] ref byte pSid);
-    }
-
-    [GuidAttribute("631F7D97-D993-11D2-B339-00105A1F4AAF")]
-    //[TypeLibTypeAttribute(0x0200)]
-    [InterfaceTypeAttribute(0x0001)]
-    [ComImport]
-    internal interface IWbemProviderIdentity
-    {
-        [PreserveSig] int SetRegistrationObject_([In] int lFlags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pProvReg);
-    }
-
-    [InterfaceTypeAttribute(0x0001)]
-    //[TypeLibTypeAttribute(0x0200)]
-    [GuidAttribute("E246107A-B06E-11D0-AD61-00C04FD8FDFF")]
-    [ComImport]
-    internal interface IWbemEventConsumerProvider
-    {
-        [PreserveSig] int FindConsumer_([In][MarshalAs(UnmanagedType.Interface)]  IWbemClassObject_DoNotMarshal pLogicalConsumer, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemUnboundObjectSink ppConsumer);
-    }
-
-    [GuidAttribute("1BE41571-91DD-11D1-AEB2-00C04FB68820")]
-    [InterfaceTypeAttribute(0x0001)]
-    [ComImport]
-    internal interface IWbemProviderInitSink
-    {
-        [PreserveSig] int SetStatus_([In] int lStatus, [In] int lFlags);
-    }
-
-    [GuidAttribute("1BE41572-91DD-11D1-AEB2-00C04FB68820")]
-    [InterfaceTypeAttribute(0x0001)]
-    [ComImport]
-    internal interface IWbemProviderInit
-    {
-        [PreserveSig] int Initialize_([In][MarshalAs(UnmanagedType.LPWStr)] string wszUser, [In] int lFlags, [In][MarshalAs(UnmanagedType.LPWStr)] string wszNamespace, [In][MarshalAs(UnmanagedType.LPWStr)] string wszLocale, [In][MarshalAs(UnmanagedType.Interface)]  IWbemServices pNamespace, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext pCtx, [In][MarshalAs(UnmanagedType.Interface)]  IWbemProviderInitSink pInitSink);
-    }
-
-    [InterfaceTypeAttribute(0x0001)]
-    [GuidAttribute("1005CBCF-E64F-4646-BCD3-3A089D8A84B4")]
-    [ComImport]
-    internal interface IWbemDecoupledRegistrar
-    {
-        [PreserveSig] int Register_([In] int flags, [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext context, [In][MarshalAs(UnmanagedType.LPWStr)] string user, [In][MarshalAs(UnmanagedType.LPWStr)] string locale, [In][MarshalAs(UnmanagedType.LPWStr)] string scope, [In][MarshalAs(UnmanagedType.LPWStr)] string registration, [In][MarshalAs(UnmanagedType.IUnknown)]  object unknown);
-        [PreserveSig] int UnRegister_();
     }
 
     [InterfaceTypeAttribute(0x0001)]
@@ -1279,28 +1141,11 @@ namespace System.Management
 
     #endregion
 
-    #region Co Classes
-    [ClassInterfaceAttribute((short)0x0000)]
-    [GuidAttribute("4590F811-1D3A-11D0-891F-00AA004B2E24")]
-    //[TypeLibTypeAttribute(0x0202)]
-    [ComImport]
-    internal class WbemLocator
-    {
-    }
-
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("674B6698-EE92-11D0-AD71-00C04FD8FDFF")]
     //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
     internal class WbemContext
-    {
-    }
-
-    [ClassInterfaceAttribute((short)0x0000)]
-    [GuidAttribute("49BD2028-1523-11D1-AD79-00C04FD8FDFF")]
-    //[TypeLibTypeAttribute(0x0002)]
-    [ComImport]
-    internal class UnsecuredApartment
     {
     }
 
@@ -1313,26 +1158,10 @@ namespace System.Management
     }
 
     [ClassInterfaceAttribute((short)0x0000)]
-    [GuidAttribute("6DAF9757-2E37-11D2-AEC9-00C04FB68820")]
-    //[TypeLibTypeAttribute(0x0002)]
-    [ComImport]
-    internal class MofCompiler
-    {
-    }
-
-    [ClassInterfaceAttribute((short)0x0000)]
     //[TypeLibTypeAttribute(0x0002)]
     [GuidAttribute("EB87E1BD-3233-11D2-AEC9-00C04FB68820")]
     [ComImport]
     internal class WbemStatusCodeText
-    {
-    }
-
-    [GuidAttribute("C49E32C6-BC8B-11D2-85D4-00105A1F8304")]
-    [ClassInterfaceAttribute((short)0x0000)]
-    //[TypeLibTypeAttribute(0x0002)]
-    [ComImport]
-    internal class WbemBackupRestore
     {
     }
 
@@ -1344,22 +1173,6 @@ namespace System.Management
     {
     }
 
-    [GuidAttribute("4CFC7932-0F9D-4BEF-9C32-8EA2A6B56FCB")]
-    //[TypeLibTypeAttribute(0x0002)]
-    [ClassInterfaceAttribute((short)0x0000)]
-    [ComImport]
-    internal class WbemDecoupledRegistrar
-    {
-    }
-
-    [GuidAttribute("F5F75737-2843-4F22-933D-C76A97CDA62F")]
-    //[TypeLibTypeAttribute(0x0002)]
-    [ClassInterfaceAttribute((short)0x0000)]
-    [ComImport]
-    internal class WbemDecoupledBasicEventProvider
-    {
-    }
-
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("CF4CC405-E2C5-4DDD-B3CE-5E7582D8C9FA")]
     //[TypeLibTypeAttribute(0x0202)]
@@ -1368,19 +1181,9 @@ namespace System.Management
     {
     }
 
-    [GuidAttribute("EAC8A024-21E2-4523-AD73-A71A0AA2F56A")]
-    [ClassInterfaceAttribute((short)0x0000)]
-    //[TypeLibTypeAttribute(0x0002)]
-    [ComImport]
-    internal class WbemQuery
+    internal static class MTAHelper
     {
-    }
-    #endregion
-
-    internal class MTAHelper
-    {
-
-        private class MTARequest
+        private sealed class MTARequest
         {
             public AutoResetEvent evtDone = new AutoResetEvent(false);
             public Type typeToCreate;
@@ -1592,7 +1395,7 @@ namespace System.Management
     ///     4. Delegate with parameter and return value.
     ///
     /// </summary>
-    internal class ThreadDispatch
+    internal sealed class ThreadDispatch
     {
         #region Private fields
         private Thread thread;

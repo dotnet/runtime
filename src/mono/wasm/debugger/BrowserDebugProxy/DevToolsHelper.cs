@@ -192,13 +192,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(var_ids)})");
         }
 
+        public static MonoCommands SetVariableValue(int scopeId, int index, string name, string newValue)
+        {
+            return new MonoCommands($"MONO.mono_wasm_set_variable_value({scopeId}, {index}, '{name}', '{newValue}')");
+        }
+
         public static MonoCommands EvaluateMemberAccess(int scopeId, string expr, params VarInfo[] vars)
         {
             var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
             return new MonoCommands($"MONO.mono_wasm_eval_member_access({scopeId}, {JsonConvert.SerializeObject(var_ids)}, '', '{expr}')");
         }
 
-        public static MonoCommands SetBreakpoint(string assemblyName, uint methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
+        public static MonoCommands SetBreakpoint(string assemblyName, int methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
 
         public static MonoCommands RemoveBreakpoint(int breakpointId) => new MonoCommands($"MONO.mono_wasm_remove_breakpoint({breakpointId})");
 
@@ -218,7 +223,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         BpNotFound = 100000,
     }
 
-    internal class MonoConstants
+    internal static class MonoConstants
     {
         public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
@@ -244,7 +249,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int RemoteId { get; set; }
         public BreakpointState State { get; set; }
         public string StackId { get; private set; }
-
+        public string Condition { get; private set; }
+        public bool ConditionAlreadyEvaluatedWithError { get; set; }
         public static bool TryParseId(string stackId, out int id)
         {
             id = -1;
@@ -254,11 +260,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return int.TryParse(stackId.Substring("dotnet:".Length), out id);
         }
 
-        public Breakpoint(string stackId, SourceLocation loc, BreakpointState state)
+        public Breakpoint(string stackId, SourceLocation loc, string condition, BreakpointState state)
         {
             this.StackId = stackId;
             this.Location = loc;
             this.State = state;
+            this.Condition = condition;
+            this.ConditionAlreadyEvaluatedWithError = false;
         }
     }
 

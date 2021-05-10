@@ -71,7 +71,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))
                 {
                     signatureBlob = new BlobVertex(signature);
-                    hashtableSection.Place(signatureBlob);
                     uniqueSignatures.Add(signature, signatureBlob);
                 }
 
@@ -80,7 +79,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (fixup != null && !uniqueFixups.TryGetValue(fixup, out fixupBlob))
                 {
                     fixupBlob = new BlobVertex(fixup);
-                    hashtableSection.Place(fixupBlob);
                     uniqueFixups.Add(fixup, fixupBlob);
                 }
 

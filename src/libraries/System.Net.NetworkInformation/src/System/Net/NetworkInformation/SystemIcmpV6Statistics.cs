@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
     }
 
     // ICMP statistics for Ipv6.
-    internal class SystemIcmpV6Statistics : IcmpV6Statistics
+    internal sealed class SystemIcmpV6Statistics : IcmpV6Statistics
     {
         private readonly Interop.IpHlpApi.MibIcmpInfoEx _stats;
 

@@ -86,10 +86,11 @@ public:
     void Terminate( BOOL signalProfiler = TRUE );
 
     static Assembly *Create(BaseDomain *pDomain, PEAssembly *pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
-    static Assembly *CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs *args);
+    static Assembly *CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args);
 
     MethodDesc *GetEntryPoint();
 
@@ -372,8 +373,6 @@ public:
         return GetManifestFile()->HashIdentity();
     }
 
-    BOOL IsDisabledPrivateReflection();
-
     //****************************************************************************************
     //
     // Uses the given token to load a module or another assembly. Returns the module in
@@ -427,7 +426,7 @@ public:
     void AddType(Module* pModule,
                  mdTypeDef cl);
     void AddExportedType(mdExportedType cl);
-    mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter = NULL, BOOL fUsePublicKeyToken = TRUE);
+    mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter);
 
     //****************************************************************************************
 
@@ -557,6 +556,12 @@ private:
     void CacheManifestFiles();
 
     void CacheFriendAssemblyInfo();
+#ifndef DACCESS_COMPILE
+    ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();
+#endif
+public:
+    void UpdateCachedFriendAssemblyInfo();
+private:
 
 
     PTR_BaseDomain        m_pDomain;        // Parent Domain
@@ -576,7 +581,6 @@ private:
 #endif // FEATURE_COLLECTIBLE_TYPES
     DWORD                 m_nextAvailableModuleIndex;
     PTR_LoaderAllocator   m_pLoaderAllocator;
-    DWORD                 m_isDisabledPrivateReflection;
 
 #ifdef FEATURE_COMINTEROP
     // If a TypeLib is ever required for this module, cache the pointer here.
@@ -608,14 +612,14 @@ typedef Assembly::ModuleIterator ModuleIterator;
 // FriendSecurityDescriptor contains information on which assemblies are friends of an assembly, as well as
 // which individual internals are visible to those friend assemblies.
 //
-
 class FriendAssemblyDescriptor
 {
+    friend class Assembly;
 public:
     ~FriendAssemblyDescriptor();
 
     static
-    FriendAssemblyDescriptor *CreateFriendAssemblyDescriptor(PEAssembly *pAssembly);
+    ReleaseHolder<FriendAssemblyDescriptor> CreateFriendAssemblyDescriptor(PEAssembly *pAssembly);
 
     //---------------------------------------------------------------------------------------
     //
@@ -653,12 +657,26 @@ public:
         return IsAssemblyOnList(pAccessedAssembly, m_subjectAssemblies);
     }
 
+    void AddRef()
+    {
+        InterlockedIncrement(&m_refCount);
+    }
+
+    void Release()
+    {
+        if (InterlockedDecrement(&m_refCount) == 0)
+        {
+            delete this;
+        }
+    }
+
 private:
     typedef AssemblySpec FriendAssemblyName_t;
     typedef NewHolder<AssemblySpec> FriendAssemblyNameHolder;
 
     ArrayList                  m_alFullAccessFriendAssemblies;      // Friend assemblies which have access to all internals
     ArrayList                  m_subjectAssemblies;                 // Subject assemblies which we will not perform access checks against
+    LONG                       m_refCount = 1;
 
     FriendAssemblyDescriptor();
 

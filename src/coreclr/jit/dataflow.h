@@ -16,7 +16,7 @@
 //  {
 //  public:
 //      void StartMerge(BasicBlock* block);
-//      void Merge(BasicBlock* block, BasicBlock* pred, flowList* preds);
+//      void Merge(BasicBlock* block, BasicBlock* pred, unsigned dupCount);
 //      bool EndMerge(BasicBlock* block);
 //  };
 #pragma once
@@ -61,7 +61,7 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
             flowList* preds = m_pCompiler->BlockPredsWithEH(block);
             for (flowList* pred = preds; pred; pred = pred->flNext)
             {
-                callback.Merge(block, pred->getBlock(), preds);
+                callback.Merge(block, pred->getBlock(), pred->flDupCount);
             }
         }
 

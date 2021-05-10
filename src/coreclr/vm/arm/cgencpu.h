@@ -95,15 +95,17 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 // Offset of pc register
 #define PC_REG_RELATIVE_OFFSET 4
 
+#define FLOAT_REGISTER_SIZE 4 // each register in FloatArgumentRegisters is 4 bytes.
+
 //**********************************************************************
 // Parameter size
 //**********************************************************************
 
-typedef INT32 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
-
-// !! This expression assumes STACK_ELEM_SIZE is a power of 2.
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+{
+    const unsigned stackSlotSize = 4;
+    return ALIGN_UP(parmSize, stackSlotSize);
+}
 
 //**********************************************************************
 // Frames

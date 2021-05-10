@@ -101,6 +101,8 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define X86RegFromAMD64Reg(extended_reg) \
             ((X86Reg)(((int)extended_reg) & X86_REGISTER_MASK))
 
+#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+
 // Why is the return value ARG_SLOT? On 64-bit systems, that is 64-bits
 // and much bigger than necessary for R4, requiring explicit downcasts.
 inline
@@ -145,11 +147,11 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-typedef INT64 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
-
-// !! This expression assumes STACK_ELEM_SIZE is a power of 2.
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+{
+    const unsigned stackSlotSize = 8;
+    return ALIGN_UP(parmSize, stackSlotSize);
+}
 
 //**********************************************************************
 // Frames

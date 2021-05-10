@@ -5,7 +5,7 @@ schedules:
   displayName: Sun, Tue, Thu at 11:00 PM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -17,6 +17,7 @@ jobs:
     platforms:
     - Linux_x64
     - Linux_arm64
+    - OSX_arm64
     - OSX_x64
     - windows_x64
     - windows_arm64
@@ -32,6 +33,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
+    - OSX_arm64
     - windows_x86
     - windows_x64
     jobParameters:
@@ -45,6 +47,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
     - windows_x86
     - windows_x64
@@ -73,6 +76,7 @@ jobs:
     platforms:
     - Linux_x64
     - Linux_arm64
+    - OSX_arm64
     - OSX_x64
     - windows_x64
     - windows_arm64
@@ -110,6 +114,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
+    - OSX_arm64
     - windows_x86
     - windows_x64
     jobParameters:
@@ -196,4 +201,20 @@ jobs:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
       targetos: Linux
+      targetarch: arm64
+
+# test target osx-arm64
+# verify that cross architecture targetting works
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+    buildConfig: Release
+    platforms:
+    - OSX_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      targetos: OSX
       targetarch: arm64

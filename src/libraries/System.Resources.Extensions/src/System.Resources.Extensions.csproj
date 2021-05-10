@@ -26,7 +26,12 @@
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" 
+             Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
@@ -55,6 +60,7 @@
     <WriteLinesToFile File="$(_packageTargetsFile)" Overwrite="true" Lines="$(_packageTargetsFileContent)" />
     <ItemGroup>
       <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="build/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
+      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="buildTransitive/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>
 </Project>

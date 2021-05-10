@@ -4,7 +4,7 @@
 namespace System.Net.NetworkInformation
 {
     // Represents an active TCP connection.
-    internal class SystemTcpConnectionInformation : TcpConnectionInformation
+    internal sealed class SystemTcpConnectionInformation : TcpConnectionInformation
     {
         private readonly IPEndPoint _localEndPoint;
         private readonly IPEndPoint _remoteEndPoint;

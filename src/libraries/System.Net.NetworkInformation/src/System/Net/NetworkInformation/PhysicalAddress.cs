@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
             return _hash;
         }
 
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             PhysicalAddress? address = comparand as PhysicalAddress;
             if (address == null)

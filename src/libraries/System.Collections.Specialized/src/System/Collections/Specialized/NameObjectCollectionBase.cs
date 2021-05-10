@@ -473,7 +473,7 @@ namespace System.Collections.Specialized
         // Simple entry class to allow substitution of values and indexed access to keys
         //
 
-        internal class NameObjectEntry
+        internal sealed class NameObjectEntry
         {
             internal NameObjectEntry(string? name, object? value)
             {
@@ -489,7 +489,7 @@ namespace System.Collections.Specialized
         // Enumerator over keys of NameObjectCollection
         //
 
-        internal class NameObjectKeysEnumerator : IEnumerator
+        internal sealed class NameObjectKeysEnumerator : IEnumerator
         {
             private int _pos;
             private readonly NameObjectCollectionBase _coll;

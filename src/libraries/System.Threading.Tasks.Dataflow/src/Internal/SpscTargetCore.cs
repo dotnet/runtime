@@ -140,7 +140,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 if (source == null) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
                 bool consumed;
-                messageValue = source.ConsumeMessage(messageHeader, _owningTarget, out consumed);
+                messageValue = source.ConsumeMessage(messageHeader, _owningTarget, out consumed)!;
                 if (!consumed) return DataflowMessageStatus.NotAvailable;
             }
 
@@ -203,7 +203,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             while (continueProcessing)
             {
                 continueProcessing = false;
-                TInput nextMessage = default(TInput);
+                TInput? nextMessage = default(TInput);
                 try
                 {
                     // While there are more messages to be processed, process each one.
@@ -253,7 +253,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         else
                         {
                             // Mark that we're exiting.
-                            Task? previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
+                            Task? previousConsumer = Interlocked.Exchange<Task?>(ref _activeConsumer, null);
                             Debug.Assert(previousConsumer != null && previousConsumer.Id == Task.CurrentId,
                                 "The running task should have been denoted as the active task.");
 
@@ -325,7 +325,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(_completionReserved, "Should only invoke once completion has been reserved.");
 
             // Dump any messages that might remain in the queue, which could happen if we completed due to exceptions.
-            TInput dumpedMessage;
+            TInput? dumpedMessage;
             while (_messages.TryDequeue(out dumpedMessage)) ;
 
             // Complete the completion task
@@ -377,8 +377,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayTarget = _owningTarget as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displayTarget != null ? displayTarget.Content : _owningTarget);
+                return $"Block=\"{(displayTarget != null ? displayTarget.Content : _owningTarget)}\"";
             }
         }
 

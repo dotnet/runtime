@@ -150,8 +150,6 @@
       System.IO.FileSystem.AccessControl;
       System.IO.Pipes.AccessControl;
       System.Security.AccessControl;
-      System.Security.Cryptography.Cng;
-      System.Security.Cryptography.OpenSsl;
       System.Security.Principal.Windows;
     </NetCoreAppLibraryNoReference>
   </PropertyGroup>
@@ -160,7 +158,4 @@
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
   </ItemGroup>
-  <PropertyGroup>
-    <IsAspNetCoreApp Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">true</IsAspNetCoreApp>
-  </PropertyGroup>
 </Project>

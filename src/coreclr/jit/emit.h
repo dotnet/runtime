@@ -190,6 +190,8 @@ public:
 
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
+    bool IsPreviousInsNum(emitter* emit) const;
+
 #ifdef DEBUG
     void Print(LONG compMethodID) const;
 #endif // DEBUG
@@ -1759,18 +1761,19 @@ private:
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;                                 // list of align instructions in current IG
-    unsigned        emitLastInnerLoopStartIgNum;                        // Start IG of last inner loop
-    unsigned        emitLastInnerLoopEndIgNum;                          // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum;                               // last IG that has align instruction
-    instrDescAlign* emitAlignList;                                      // list of local align instructions in method
-    instrDescAlign* emitAlignLast;                                      // last align instruction in method
-    unsigned getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize); // Get the smallest loop size
+    instrDescAlign* emitCurIGAlignList;          // list of align instructions in current IG
+    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
+    unsigned        emitLastInnerLoopEndIgNum;   // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum;        // last IG that has align instruction
+    instrDescAlign* emitAlignList;               // list of local align instructions in method
+    instrDescAlign* emitAlignLast;               // last align instruction in method
+    unsigned getLoopSize(insGroup* igLoopHeader,
+                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
     void emitLoopAlignment();
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool displayAlignmentDetails));
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
 #endif
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
@@ -1895,7 +1898,11 @@ private:
     // Sets the emitter's record of the currently live GC variables
     // and registers.  The "isFinallyTarget" parameter indicates that the current location is
     // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
-    void* emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget = FALSE);
+    void* emitAddLabel(VARSET_VALARG_TP GCvars,
+                       regMaskTP        gcrefRegs,
+                       regMaskTP        byrefRegs,
+                       bool isFinallyTarget = false DEBUG_ARG(unsigned bbNum = 0));
+
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
@@ -1943,7 +1950,7 @@ private:
     instrDescJmp* emitAllocInstrJmp()
     {
 #if EMITTER_STATS
-        emitTotalDescAlignCnt++;
+        emitTotalIDescJmpCnt++;
 #endif // EMITTER_STATS
         return (instrDescJmp*)emitAllocAnyInstr(sizeof(instrDescJmp), EA_1BYTE);
     }
@@ -2022,7 +2029,7 @@ private:
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
-        emitTotalIDescJmpCnt++;
+        emitTotalDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
     }

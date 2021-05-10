@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
     {
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 
-        private SafeEvpPKeyHandle() :
+        public SafeEvpPKeyHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

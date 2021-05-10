@@ -29,15 +29,30 @@ namespace System.DirectoryServices.Protocols
 
             int valueCount = 0;
             int error = 0;
+
+            // We can't use vararg on Unix and can't do ber_printf(tag), so we use ber_put_int(val, tag)
+            // and this local keeps tag value for the next element.
+            nuint tag = 0;
+            bool tagIsSet = false;
             for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
+                if (tagIsSet)
+                {
+                    tagIsSet = false;
+                }
+                else
+                {
+                    int lberTagDefaultInt = -1;
+                    nuint lberTagDefaultNuint = (nuint)lberTagDefaultInt;
+                    tag = lberTagDefaultNuint;
+                }
                 char fmt = format[formatCount];
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
                 {
                     // no argument needed
-                    error = BerPal.PrintEmptyArgument(berElement, new string(fmt, 1));
+                    error = BerPal.PrintEmptyArgument(berElement, new string(fmt, 1), tag);
                 }
-                else if (fmt == 't' || fmt == 'i' || fmt == 'e')
+                else if (fmt == 'i' || fmt == 'e')
                 {
                     if (valueCount >= value.Length)
                     {
@@ -54,7 +69,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (int)value[valueCount]);
+                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (int)value[valueCount], tag);
 
                     // increase the value count
                     valueCount++;
@@ -76,7 +91,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
+                    error = BerPal.PrintInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0, tag);
 
                     // increase the value count
                     valueCount++;
@@ -104,7 +119,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         tempValue = utf8Encoder.GetBytes((string)value[valueCount]);
                     }
-                    error = EncodingByteArrayHelper(berElement, tempValue, 'o');
+                    error = EncodingByteArrayHelper(berElement, tempValue, 'o', tag);
 
                     // increase the value count
                     valueCount++;
@@ -128,7 +143,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     byte[] tempValue = (byte[])value[valueCount];
-                    error = EncodingByteArrayHelper(berElement, tempValue, fmt);
+                    error = EncodingByteArrayHelper(berElement, tempValue, fmt, tag);
 
                     valueCount++;
                 }
@@ -164,11 +179,13 @@ namespace System.DirectoryServices.Protocols
                             {
                                 tempValues[i] = utf8Encoder.GetBytes(s);
                             }
+                            error = EncodingByteArrayHelper(berElement, tempValues[i], 'o', tag);
+                            if (error == -1)
+                            {
+                                break;
+                            }
                         }
                     }
-
-                    error = EncodingMultiByteArrayHelper(berElement, tempValues, 'V');
-
                     valueCount++;
                 }
                 else if (fmt == 'V')
@@ -191,8 +208,31 @@ namespace System.DirectoryServices.Protocols
 
                     byte[][] tempValue = (byte[][])value[valueCount];
 
-                    error = EncodingMultiByteArrayHelper(berElement, tempValue, fmt);
+                    error = EncodingMultiByteArrayHelper(berElement, tempValue, fmt, tag);
 
+                    valueCount++;
+                }
+                else if (fmt == 't')
+                {
+                    if (valueCount >= value.Length)
+                    {
+                        // we don't have enough argument for the format string
+                        Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
+                        throw new ArgumentException(SR.BerConverterNotMatch);
+                    }
+
+                    if (!(value[valueCount] is int))
+                    {
+                        // argument is wrong
+                        Debug.WriteLine("type should be int\n");
+                        throw new ArgumentException(SR.BerConverterNotMatch);
+                    }
+                    tag = (uint)(int)value[valueCount];
+                    tagIsSet = true;
+                    // It will set the tag on Windows and only check the tag on Unix.
+                    error = BerPal.PrintTag(berElement, new string(fmt, 1), tag);
+
+                    // increase the value count
                     valueCount++;
                 }
                 else
@@ -266,7 +306,7 @@ namespace System.DirectoryServices.Protocols
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
 
-            Debug.WriteLine("Begin decoding\n");
+            Debug.WriteLine("Begin decoding");
 
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);
             berval berValue = new berval();
@@ -423,7 +463,7 @@ namespace System.DirectoryServices.Protocols
             return decodeResult;
         }
 
-        private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt)
+        private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt, nuint tag)
         {
             int error = 0;
 
@@ -433,12 +473,12 @@ namespace System.DirectoryServices.Protocols
                 IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
-                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, (uint)tempValue.Length, tag);
             }
             else
             {
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(HGlobalMemHandle._dummyPointer);
-                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, 0);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, 0, tag);
             }
 
             return error;
@@ -479,7 +519,7 @@ namespace System.DirectoryServices.Protocols
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt)
+        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
             IntPtr tempPtr = IntPtr.Zero;
@@ -521,7 +561,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
-                error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray);
+                error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray, tag);
             }
             finally
             {

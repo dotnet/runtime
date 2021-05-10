@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class InputScopeManager
+    internal sealed class InputScopeManager
     {
         private InputScope? _scopeStack;
         private string _defaultNS = string.Empty;

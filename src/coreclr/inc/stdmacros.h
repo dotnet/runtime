@@ -185,17 +185,11 @@ inline size_t ALIGN_UP( size_t val, size_t alignment )
     _ASSERTE( result >= val );      // check for overflow
     return result;
 }
-inline void* ALIGN_UP( void* val, size_t alignment )
+
+template <typename T> inline T ALIGN_UP(T val, size_t alignment)
 {
     WRAPPER_NO_CONTRACT;
-
-    return (void*) ALIGN_UP( (size_t)val, alignment );
-}
-inline uint8_t* ALIGN_UP( uint8_t* val, size_t alignment )
-{
-    WRAPPER_NO_CONTRACT;
-
-    return (uint8_t*) ALIGN_UP( (size_t)val, alignment );
+    return (T)ALIGN_UP((size_t)val, alignment);
 }
 
 inline size_t ALIGN_DOWN( size_t val, size_t alignment )

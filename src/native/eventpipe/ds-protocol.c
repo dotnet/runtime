@@ -26,7 +26,7 @@ const DiagnosticsIpcHeader _ds_ipc_generic_error_header = {
 	(uint16_t)0x0000
 };
 
-static uint8_t _ds_ipc_advertise_cooike_v1 [EP_ACTIVITY_ID_SIZE] = { 0 };
+static uint8_t _ds_ipc_advertise_cooike_v1 [EP_GUID_SIZE] = { 0 };
 
 /*
  * Forward declares of all static functions.
@@ -72,7 +72,7 @@ ds_ipc_advertise_cookie_v1_get (void)
 void
 ds_ipc_advertise_cookie_v1_init (void)
 {
-	ep_rt_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_ACTIVITY_ID_SIZE);
+	ep_rt_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
 }
 
 /**
@@ -104,7 +104,7 @@ ds_icp_advertise_v1_send (DiagnosticsIpcStream *stream)
 	buffer++;
 
 	// fills buffer[1] and buffer[2]
-	memcpy (buffer, cookie, EP_ACTIVITY_ID_SIZE);
+	memcpy (buffer, cookie, EP_GUID_SIZE);
 	buffer +=2;
 
 	memcpy (buffer, &pid, sizeof (uint64_t));

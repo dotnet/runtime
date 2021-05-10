@@ -16,7 +16,6 @@ namespace System.Net.Sockets.Tests
     public class UnixDomainSocketTest
     {
         private readonly ITestOutputHelper _log;
-        private static Random _random = new Random();
 
         public UnixDomainSocketTest(ITestOutputHelper output)
         {
@@ -251,7 +250,7 @@ namespace System.Net.Sockets.Tests
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {
             var writeBuffer = new byte[writeBufferSize * iterations];
-            new Random().NextBytes(writeBuffer);
+            Random.Shared.NextBytes(writeBuffer);
             var readData = new MemoryStream();
 
             string path = GetRandomNonExistingFilePath();
@@ -296,7 +295,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 Assert.Equal(writeBuffer.Length, readData.Length);
-                Assert.Equal(writeBuffer, readData.ToArray());
+                AssertExtensions.SequenceEqual(writeBuffer, readData.ToArray());
             }
             finally
             {
@@ -317,7 +316,7 @@ namespace System.Net.Sockets.Tests
                 const int Iters = 25;
                 byte[] sendData = new byte[Iters];
                 byte[] receiveData = new byte[sendData.Length];
-                new Random().NextBytes(sendData);
+                Random.Shared.NextBytes(sendData);
 
                 string path = GetRandomNonExistingFilePath();
 
@@ -346,7 +345,7 @@ namespace System.Net.Sockets.Tests
                 }
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData.OrderBy(i => i), receiveData.OrderBy(i => i));
+                AssertExtensions.SequenceEqual(sendData.OrderBy(i => i).ToArray(), receiveData.OrderBy(i => i).ToArray());
             }
         }
 
@@ -359,7 +358,7 @@ namespace System.Net.Sockets.Tests
                 const int Iters = 2048;
                 byte[] sendData = new byte[Iters];
                 byte[] receiveData = new byte[sendData.Length];
-                new Random().NextBytes(sendData);
+                Random.Shared.NextBytes(sendData);
 
                 string path = GetRandomNonExistingFilePath();
 
@@ -384,7 +383,7 @@ namespace System.Net.Sockets.Tests
 
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData, receiveData);
+                AssertExtensions.SequenceEqual(sendData, receiveData);
             }
         }
 
@@ -464,6 +463,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Linux)] // Don't support abstract socket addresses.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void UnixDomainSocketEndPoint_UsingAbstractSocketAddressOnUnsupported_Throws()
         {
             // An abstract socket address starts with a zero byte.
@@ -498,7 +498,7 @@ namespace System.Net.Sockets.Tests
             do
             {
                 // get random name and append random number of characters to get variable name length.
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', _random.Next(1, 32)));
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', Random.Shared.Next(1, 32)));
             }
             while (File.Exists(result));
 

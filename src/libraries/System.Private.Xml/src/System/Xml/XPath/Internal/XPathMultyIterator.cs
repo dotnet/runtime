@@ -10,11 +10,11 @@ namespace MS.Internal.Xml.XPath
     using System.Globalization;
     using System.Collections;
 
-    internal class XPathMultyIterator : ResetableIterator
+    internal sealed class XPathMultyIterator : ResetableIterator
     {
-        protected ResetableIterator[] arr;
-        protected int firstNotEmpty;
-        protected int position;
+        private ResetableIterator[] arr;
+        private int firstNotEmpty;
+        private int position;
 
         public XPathMultyIterator(ArrayList inputArray)
         {

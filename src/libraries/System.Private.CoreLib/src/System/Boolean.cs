@@ -126,7 +126,7 @@ namespace System
         }
 
         // Determines whether two Boolean objects are equal.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             // If it's not a boolean, we're definitely not equal
             if (!(obj is bool))

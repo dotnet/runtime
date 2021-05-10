@@ -102,7 +102,7 @@ namespace System.Text
             this.decoderFallback = new DecoderUTF7Fallback();
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UTF7Encoding that)
             {
@@ -851,7 +851,7 @@ namespace System.Text
             // Maximum number of characters that this instance of this fallback could return
             public override int MaxCharCount => 1; // returns 1 char per bad byte
 
-            public override bool Equals(object? value) => value is DecoderUTF7Fallback;
+            public override bool Equals([NotNullWhen(true)] object? value) => value is DecoderUTF7Fallback;
 
             public override int GetHashCode() => 984;
         }

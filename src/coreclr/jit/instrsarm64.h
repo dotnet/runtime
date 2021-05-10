@@ -1194,6 +1194,12 @@ INST1(ldadda,      "ldadda",       LD|ST,  IF_LS_3E,  0xB8A00000)
 INST1(ldaddal,     "ldaddal",      LD|ST,  IF_LS_3E,  0xB8E00000)
                                    //  ldaddal  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 000000nnnnnttttt   B8E0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
+INST1(ldclral,     "ldclral",      LD|ST,  IF_LS_3E,  0xB8E01000)
+                                   //  ldclral  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 000100nnnnnttttt   B8E0 1000   Rm Rt Rn ARMv8.1 LSE Atomics
+
+INST1(ldsetal,     "ldsetal",      LD|ST,  IF_LS_3E,  0xB8E03000)
+                                   //  ldsetal  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 001100nnnnnttttt   B8E0 3000   Rm Rt Rn ARMv8.1 LSE Atomics
+
 INST1(ldaddl,      "ldaddl",       LD|ST,  IF_LS_3E,  0xB8600000)
                                    //  ldaddl   Rm, Rt, [Xn]        LS_3E  1X111000011mmmmm 000000nnnnnttttt   B860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
@@ -1571,6 +1577,9 @@ INST1(dmb,         "dmb",          0,      IF_SI_0B,  0xD50330BF)
 
 INST1(isb,         "isb",          0,      IF_SI_0B,  0xD50330DF)
                                    //  isb     barrierKind          SI_0B  1101010100000011 0011bbbb11011111   D503 30DF   imm4 - barrier kind
+
+INST1(dczva,       "dczva",        0,      IF_SR_1A,  0xD50B7420)
+                                   //  dc      zva,Rt               SR_1A  1101010100001011 01110100001ttttt   D50B 7420   Rt
 
 INST1(umov,        "umov",         0,      IF_DV_2B,  0x0E003C00)
                                    //  umov    Rd,Vn[]              DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]

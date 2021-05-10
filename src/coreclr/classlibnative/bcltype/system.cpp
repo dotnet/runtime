@@ -185,28 +185,18 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 #ifndef TARGET_UNIX
     CPUGroupInfo::EnsureInitialized();
 
-    if(CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+    if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
         processorCount = CPUGroupInfo::GetNumActiveProcessors();
     }
+    else
 #endif // !TARGET_UNIX
-    // Processor count will be 0 if CPU groups are disabled/not supported
-    if(processorCount == 0)
     {
-        SYSTEM_INFO systemInfo;
-        ZeroMemory(&systemInfo, sizeof(systemInfo));
-
-        GetSystemInfo(&systemInfo);
-
-        processorCount = systemInfo.dwNumberOfProcessors;
+        // This similar to GetSystemInfo() + dwNumberOfProcessors except:
+        // - GetCurrentProcessCpuCount() tries to take into account the processor affinity mask where applicable
+        // - GetCurrentProcessCpuCount() on Unixes tries to take into account cgroups CPU quota limits where applicable
+        processorCount = GetCurrentProcessCpuCount();
     }
-
-#ifdef TARGET_UNIX
-    uint32_t cpuLimit;
-
-    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < (uint32_t)processorCount)
-        processorCount = cpuLimit;
-#endif
 
     END_QCALL;
 

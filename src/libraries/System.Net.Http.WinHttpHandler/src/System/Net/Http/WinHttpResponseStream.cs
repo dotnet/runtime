@@ -16,11 +16,14 @@ namespace System.Net.Http
     {
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
+        private readonly HttpResponseMessage _responseMessage;
         private SafeWinHttpHandle _requestHandle;
+        private bool _readTrailingHeaders;
 
-        internal WinHttpResponseStream(SafeWinHttpHandle requestHandle, WinHttpRequestState state)
+        internal WinHttpResponseStream(SafeWinHttpHandle requestHandle, WinHttpRequestState state, HttpResponseMessage responseMessage)
         {
             _state = state;
+            _responseMessage = responseMessage;
             _requestHandle = requestHandle;
         }
 
@@ -126,6 +129,7 @@ namespace System.Net.Http
                     int bytesAvailable = await _state.LifecycleAwaitable;
                     if (bytesAvailable == 0)
                     {
+                        ReadResponseTrailers();
                         break;
                     }
                     Debug.Assert(bytesAvailable > 0);
@@ -142,12 +146,17 @@ namespace System.Net.Http
                     int bytesRead = await _state.LifecycleAwaitable;
                     if (bytesRead == 0)
                     {
+                        ReadResponseTrailers();
                         break;
                     }
                     Debug.Assert(bytesRead > 0);
 
                     // Write that data out to the output stream
+#if NETSTANDARD2_1
+                    await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+#else
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+#endif
                 }
             }
             finally
@@ -240,12 +249,48 @@ namespace System.Net.Http
                     }
                 }
 
-                return await _state.LifecycleAwaitable;
+                int bytesRead = await _state.LifecycleAwaitable;
+
+                if (bytesRead == 0)
+                {
+                    ReadResponseTrailers();
+                }
+
+                return bytesRead;
             }
             finally
             {
                 _state.AsyncReadInProgress = false;
                 ctr.Dispose();
+            }
+        }
+
+        private void ReadResponseTrailers()
+        {
+            // Only load response trailers if:
+            // 1. WINHTTP_QUERY_FLAG_TRAILERS is supported by the OS
+            // 2. HTTP/2 or later (WINHTTP_QUERY_FLAG_TRAILERS does not work with HTTP/1.1)
+            // 3. Response trailers not already loaded
+            if (!WinHttpTrailersHelper.OsSupportsTrailers || _responseMessage.Version < WinHttpHandler.HttpVersion20 || _readTrailingHeaders)
+            {
+                return;
+            }
+
+            _readTrailingHeaders = true;
+
+            var bufferLength = WinHttpResponseParser.GetResponseHeaderCharBufferLength(_requestHandle, isTrailingHeaders: true);
+
+            if (bufferLength != 0)
+            {
+                char[] trailersBuffer = ArrayPool<char>.Shared.Rent(bufferLength);
+                try
+                {
+                    WinHttpResponseParser.ParseResponseTrailers(_requestHandle, _responseMessage, trailersBuffer);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(trailersBuffer);
+                }
             }
         }
 

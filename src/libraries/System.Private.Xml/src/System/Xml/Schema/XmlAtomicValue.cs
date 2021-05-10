@@ -37,7 +37,7 @@ namespace System.Xml.Schema
             public DateTime dtVal;
         }
 
-        private class NamespacePrefixForQName : IXmlNamespaceResolver
+        private sealed class NamespacePrefixForQName : IXmlNamespaceResolver
         {
             public string prefix;
             public string ns;

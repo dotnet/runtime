@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class FormatterTests
     {
         [Fact]

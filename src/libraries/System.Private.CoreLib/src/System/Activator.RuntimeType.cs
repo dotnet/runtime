@@ -103,6 +103,8 @@ namespace System
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,
                                                            bool ignoreCase,

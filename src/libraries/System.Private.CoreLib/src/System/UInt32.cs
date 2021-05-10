@@ -13,7 +13,7 @@ namespace System
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct UInt32 : IComparable, IConvertible, IFormattable, IComparable<uint>, IEquatable<uint>, ISpanFormattable
+    public readonly struct UInt32 : IComparable, IConvertible, ISpanFormattable, IComparable<uint>, IEquatable<uint>
     {
         private readonly uint m_value; // Do not rename (binary serialization)
 
@@ -54,7 +54,7 @@ namespace System
             return 0;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is uint))
             {

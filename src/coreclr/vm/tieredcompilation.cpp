@@ -52,52 +52,22 @@
 
 #if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
 
-class TieredCompilationManager::AutoResetIsBackgroundWorkScheduled
-{
-private:
-    TieredCompilationManager *m_tieredCompilationManager;
-
-public:
-    AutoResetIsBackgroundWorkScheduled(TieredCompilationManager *tieredCompilationManager)
-        : m_tieredCompilationManager(tieredCompilationManager)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(tieredCompilationManager == nullptr || tieredCompilationManager->m_isBackgroundWorkScheduled);
-    }
-
-    ~AutoResetIsBackgroundWorkScheduled()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_tieredCompilationManager == nullptr)
-        {
-            return;
-        }
-
-        LockHolder tieredCompilationLockHolder;
-
-        _ASSERTE(m_tieredCompilationManager->m_isBackgroundWorkScheduled);
-        m_tieredCompilationManager->m_isBackgroundWorkScheduled = false;
-    }
-
-    void Cancel()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_tieredCompilationManager = nullptr;
-    }
-};
+CrstStatic TieredCompilationManager::s_lock;
+#ifdef _DEBUG
+Thread *TieredCompilationManager::s_backgroundWorkerThread = nullptr;
+#endif
+CLREvent TieredCompilationManager::s_backgroundWorkAvailableEvent;
+bool TieredCompilationManager::s_isBackgroundWorkerRunning = false;
+bool TieredCompilationManager::s_isBackgroundWorkerProcessingWork = false;
 
 // Called at AppDomain construction
 TieredCompilationManager::TieredCompilationManager() :
     m_countOfMethodsToOptimize(0),
     m_countOfNewMethodsCalledDuringDelay(0),
     m_methodsPendingCountingForTier1(nullptr),
-    m_tieringDelayTimerHandle(nullptr),
-    m_doBackgroundWorkTimerHandle(nullptr),
-    m_isBackgroundWorkScheduled(false),
     m_tier1CallCountingCandidateMethodRecentlyRecorded(false),
     m_isPendingCallCountingCompletion(false),
-    m_recentlyRequestedCallCountingCompletionAgain(false)
+    m_recentlyRequestedCallCountingCompletion(false)
 {
     WRAPPER_NO_CONTRACT;
     // On Unix, we can reach here before EEConfig is initialized, so defer config-based initialization to Init()
@@ -152,7 +122,14 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 
 void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMethodDesc)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
     _ASSERTE(g_pConfig->TieredCompilation_CallCountingDelayMs() != 0);
@@ -160,6 +137,7 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
     // An exception here (OOM) would mean that the method's calls would not be counted and it would not be promoted. A
     // consideration is that an attempt can be made to reset the code entry point on exception (which can also OOM). Doesn't
     // seem worth it, the exception is propagated and there are other cases where a method may not be promoted due to OOM.
+    bool createBackgroundWorker;
     {
         LockHolder tieredCompilationLockHolder;
 
@@ -187,54 +165,43 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
         m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Extract();
         _ASSERTE(!m_tier1CallCountingCandidateMethodRecentlyRecorded);
         _ASSERTE(IsTieringDelayActive());
+
+        // The thread is in a GC_NOTRIGGER scope here. If the background worker is already running, we can schedule it inside
+        // the same lock without triggering a GC.
+        createBackgroundWorker = !TryScheduleBackgroundWorkerWithoutGCTrigger_Locked();
     }
 
-    // Elsewhere, the tiered compilation lock is taken inside the code versioning lock. The code versioning lock is an unsafe
-    // any-GC-mode lock, so the tiering lock is also that type of lock. Inside that type of lock, there is an implicit
-    // GC_NOTRIGGER contract. So, the timer cannot be created inside the tiering lock since it may GC_TRIGGERS. At this point,
-    // this is the only thread that may attempt creating the timer. If creating the timer fails, let the exception propagate,
-    // but because the tiering lock was released above, first reset any recorded methods' code entry points and deactivate the
-    // tiering delay so that timer creation may be attempted again.
-    EX_TRY
+    if (createBackgroundWorker)
     {
-        NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder = new ThreadpoolMgr::TimerInfoContext();
-        timerContextHolder->TimerId = 0;
-
-        _ASSERTE(m_tieringDelayTimerHandle == nullptr);
-        if (!ThreadpoolMgr::CreateTimerQueueTimer(
-                &m_tieringDelayTimerHandle,
-                TieringDelayTimerCallback,
-                timerContextHolder,
-                g_pConfig->TieredCompilation_CallCountingDelayMs(),
-                (DWORD)-1 /* Period, non-repeating */,
-                0 /* flags */))
+        // Elsewhere, the tiered compilation lock is taken inside the code versioning lock. The code versioning lock is an
+        // unsafe any-GC-mode lock, so the tiering lock is also that type of lock. Inside that type of lock, there is an
+        // implicit GC_NOTRIGGER contract. So, a thread cannot be created inside the tiering lock since it may GC_TRIGGERS. At
+        // this point, this is the only thread that may attempt creating the background worker thread.
+        EX_TRY
         {
-            _ASSERTE(m_tieringDelayTimerHandle == nullptr);
-            ThrowOutOfMemory();
+            CreateBackgroundWorker();
         }
-
-        timerContextHolder.SuppressRelease(); // the timer context is automatically deleted by the timer infrastructure
-    }
-    EX_CATCH
-    {
-        // Since the tiering lock was released and reacquired, other methods may have been recorded in-between. Just deactivate
-        // the tiering delay. Any methods that have been recorded would not have their calls be counted and would not be
-        // promoted (due to the small window, there shouldn't be many of those). See consideration above in a similar exception
-        // case.
+        EX_CATCH
         {
-            LockHolder tieredCompilationLockHolder;
+            // Since the tiering lock was released and reacquired, other methods may have been recorded in-between. Just
+            // deactivate the tiering delay. Any methods that have been recorded would not have their calls be counted and
+            // would not be promoted (due to the small window, there shouldn't be many of those). See consideration above in a
+            // similar exception case.
+            {
+                LockHolder tieredCompilationLockHolder;
 
-            _ASSERTE(IsTieringDelayActive());
-            m_tier1CallCountingCandidateMethodRecentlyRecorded = false;
-            _ASSERTE(m_methodsPendingCountingForTier1 != nullptr);
-            delete m_methodsPendingCountingForTier1;
-            m_methodsPendingCountingForTier1 = nullptr;
-            _ASSERTE(!IsTieringDelayActive());
+                _ASSERTE(IsTieringDelayActive());
+                m_tier1CallCountingCandidateMethodRecentlyRecorded = false;
+                _ASSERTE(m_methodsPendingCountingForTier1 != nullptr);
+                delete m_methodsPendingCountingForTier1;
+                m_methodsPendingCountingForTier1 = nullptr;
+                _ASSERTE(!IsTieringDelayActive());
+            }
+
+            EX_RETHROW;
         }
-
-        EX_RETHROW;
+        EX_END_CATCH(RethrowTerminalExceptions);
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
 
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
     {
@@ -272,7 +239,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
 
 void TieredCompilationManager::AsyncPromoteToTier1(
     NativeCodeVersion tier0NativeCodeVersion,
-    bool *scheduleTieringBackgroundWorkRef)
+    bool *createTieringBackgroundWorkerRef)
 {
     CONTRACTL
     {
@@ -285,7 +252,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(!tier0NativeCodeVersion.IsNull());
     _ASSERTE(tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
-    _ASSERTE(scheduleTieringBackgroundWorkRef != nullptr);
+    _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
 
     NativeCodeVersion t1NativeCodeVersion;
     HRESULT hr;
@@ -306,12 +273,6 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
     // Insert the method into the optimization queue and trigger a thread to service
     // the queue if needed.
-    //
-    // Note an error here could affect concurrent threads running this
-    // code. Those threads will observe m_isBackgroundWorkScheduled == true and return,
-    // then QueueUserWorkItem fails on this thread resetting the field to false and leaves them
-    // unserviced. Synchronous retries appear unlikely to offer any material improvement
-    // and complicating the code to narrow an already rare error case isn't desirable.
     SListElem<NativeCodeVersion>* pMethodListItem = new SListElem<NativeCodeVersion>(t1NativeCodeVersion);
     {
         LockHolder tieredCompilationLockHolder;
@@ -323,19 +284,254 @@ void TieredCompilationManager::AsyncPromoteToTier1(
             pMethodDesc, pMethodDesc->m_pszDebugClassName, pMethodDesc->m_pszDebugMethodName,
             t1NativeCodeVersion.GetVersionId()));
 
-        if (m_isBackgroundWorkScheduled || IsTieringDelayActive())
+        // The thread is in a GC_NOTRIGGER scope here. If the background worker is already running, we can schedule it inside
+        // the same lock without triggering a GC.
+        if (TryScheduleBackgroundWorkerWithoutGCTrigger_Locked())
         {
             return;
         }
     }
 
-    // This function is called from a GC_NOTRIGGER scope and scheduling background work (creating a thread) may GC_TRIGGERS.
-    // The caller needs to schedule background work after leaving the GC_NOTRIGGER scope. The contract is that the caller must
-    // make an attempt to schedule background work in any normal path. In the event of an atypical exception (eg. OOM),
-    // background work may not be scheduled and would have to be tried again the next time some background work is queued.
-    if (!*scheduleTieringBackgroundWorkRef)
+    // This function is called from a GC_NOTRIGGER scope and creating the background worker (creating a thread) may GC_TRIGGERS.
+    // The caller needs to create the background worker after leaving the GC_NOTRIGGER scope. The contract is that the caller
+    // must make an attempt to create the background worker in any normal path. In the event of an atypical exception (eg. OOM),
+    // the background worker may not be created and would have to be tried again the next time some background work is queued.
+    *createTieringBackgroundWorkerRef = true;
+}
+
+bool TieredCompilationManager::TryScheduleBackgroundWorkerWithoutGCTrigger_Locked()
+{
+    CONTRACTL
     {
-        *scheduleTieringBackgroundWorkRef = true;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(IsLockOwnedByCurrentThread());
+
+    if (s_isBackgroundWorkerProcessingWork)
+    {
+        _ASSERTE(s_isBackgroundWorkerRunning);
+        return true;
+    }
+
+    if (s_isBackgroundWorkerRunning)
+    {
+        s_isBackgroundWorkerProcessingWork = true;
+        s_backgroundWorkAvailableEvent.Set();
+        return true;
+    }
+
+    s_isBackgroundWorkerRunning = true;
+    s_isBackgroundWorkerProcessingWork = true;
+    return false; // it's the caller's responsibility to call CreateBackgroundWorker() after leaving the GC_NOTRIGGER region
+}
+
+void TieredCompilationManager::CreateBackgroundWorker()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(!IsLockOwnedByCurrentThread());
+    _ASSERTE(s_isBackgroundWorkerRunning);
+    _ASSERTE(s_isBackgroundWorkerProcessingWork);
+    _ASSERTE(s_backgroundWorkerThread == nullptr);
+
+    EX_TRY
+    {
+        if (!s_backgroundWorkAvailableEvent.IsValid())
+        {
+            // An auto-reset event is used since it's a bit easier to manage and felt more natural in this case. It is also
+            // possible to use a manual-reset event instead, though there doesn't appear to be anything to gain from doing so.
+            s_backgroundWorkAvailableEvent.CreateAutoEvent(false);
+        }
+
+        Thread *newThread = SetupUnstartedThread();
+        _ASSERTE(newThread != nullptr);
+        INDEBUG(s_backgroundWorkerThread = newThread);
+    #ifdef FEATURE_COMINTEROP
+        newThread->SetApartment(Thread::AS_InMTA);
+    #endif
+        newThread->SetBackground(true);
+
+        if (!newThread->CreateNewThread(0, BackgroundWorkerBootstrapper0, newThread, W(".NET Tiered Compilation Worker")))
+        {
+            newThread->DecExternalCount(false);
+            ThrowOutOfMemory();
+        }
+
+        newThread->StartThread();
+    }
+    EX_CATCH
+    {
+        {
+            LockHolder tieredCompilationLockHolder;
+
+            s_isBackgroundWorkerProcessingWork = false;
+            s_isBackgroundWorkerRunning = false;
+            INDEBUG(s_backgroundWorkerThread = nullptr);
+        }
+
+        EX_RETHROW;
+    }
+    EX_END_CATCH(RethrowTerminalExceptions);
+}
+
+DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(args != nullptr);
+    Thread *thread = (Thread *)args;
+    _ASSERTE(s_backgroundWorkerThread == thread);
+
+    if (!thread->HasStarted())
+    {
+        LockHolder tieredCompilationLockHolder;
+
+        s_isBackgroundWorkerProcessingWork = false;
+        s_isBackgroundWorkerRunning = false;
+        INDEBUG(s_backgroundWorkerThread = nullptr);
+        return 0;
+    }
+
+    _ASSERTE(GetThread() == thread);
+    ManagedThreadBase::KickOff(BackgroundWorkerBootstrapper1, nullptr);
+
+    GCX_PREEMP_NO_DTOR();
+
+    DestroyThread(thread);
+    return 0;
+}
+
+void TieredCompilationManager::BackgroundWorkerBootstrapper1(LPVOID)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    GCX_PREEMP();
+    GetAppDomain()->GetTieredCompilationManager()->BackgroundWorkerStart();
+}
+
+void TieredCompilationManager::BackgroundWorkerStart()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(s_backgroundWorkAvailableEvent.IsValid());
+
+    DWORD timeoutMs = g_pConfig->TieredCompilation_BackgroundWorkerTimeoutMs();
+    DWORD delayMs = g_pConfig->TieredCompilation_CallCountingDelayMs();
+
+    int processorCount;
+#ifndef TARGET_UNIX
+    CPUGroupInfo::EnsureInitialized();
+    if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+    {
+        processorCount = CPUGroupInfo::GetNumActiveProcessors();
+    }
+    else
+#endif
+    {
+        processorCount = GetCurrentProcessCpuCount();
+    }
+    _ASSERTE(processorCount > 0);
+
+    LARGE_INTEGER li;
+    QueryPerformanceFrequency(&li);
+    UINT64 ticksPerS = li.QuadPart;
+    UINT64 maxWorkDurationTicks = ticksPerS * 50 / 1000; // 50 ms
+    UINT64 minWorkDurationTicks = min(ticksPerS * processorCount / 1000, maxWorkDurationTicks); // <proc count> ms (capped)
+    UINT64 workDurationTicks = minWorkDurationTicks;
+
+    while (true)
+    {
+        _ASSERTE(s_isBackgroundWorkerRunning);
+        _ASSERTE(s_isBackgroundWorkerProcessingWork);
+
+        if (IsTieringDelayActive())
+        {
+            do
+            {
+                ClrSleepEx(delayMs, false);
+            } while (!TryDeactivateTieringDelay());
+        }
+
+        // Don't want to perform background work as soon as it is scheduled if there is possibly more important work that could
+        // be done. Some operating systems may also give a thread woken by a signal higher priority temporarily, which on a
+        // CPU-limited environment may lead to rejitting a method as soon as it's promoted, effectively in the foreground.
+        ClrSleepEx(0, false);
+
+        if (IsTieringDelayActive())
+        {
+            continue;
+        }
+
+        if ((m_isPendingCallCountingCompletion || m_countOfMethodsToOptimize != 0) &&
+            !DoBackgroundWork(&workDurationTicks, minWorkDurationTicks, maxWorkDurationTicks))
+        {
+            // Background work was interrupted due to the tiering delay being activated
+            _ASSERTE(IsTieringDelayActive());
+            continue;
+        }
+
+        {
+            LockHolder tieredCompilationLockHolder;
+
+            if (IsTieringDelayActive() || m_isPendingCallCountingCompletion || m_countOfMethodsToOptimize != 0)
+            {
+                continue;
+            }
+
+            s_isBackgroundWorkerProcessingWork = false;
+        }
+
+        // Wait for the worker to be scheduled again
+        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false);
+        if (waitResult == WAIT_OBJECT_0)
+        {
+            continue;
+        }
+        _ASSERTE(waitResult == WAIT_TIMEOUT);
+
+        // The wait timed out, see if the worker can exit
+
+        LockHolder tieredCompilationLockHolder;
+
+        if (s_isBackgroundWorkerProcessingWork)
+        {
+            // The background worker got scheduled again just as the wait timed out. The event would have been signaled just
+            // after the wait had timed out, so reset it and continue processing work.
+            s_backgroundWorkAvailableEvent.Reset();
+            continue;
+        }
+
+        s_isBackgroundWorkerRunning = false;
+        INDEBUG(s_backgroundWorkerThread = nullptr);
+        return;
     }
 }
 
@@ -345,7 +541,7 @@ bool TieredCompilationManager::IsTieringDelayActive()
     return m_methodsPendingCountingForTier1 != nullptr;
 }
 
-void WINAPI TieredCompilationManager::TieringDelayTimerCallback(PVOID parameter, BOOLEAN timerFired)
+bool TieredCompilationManager::TryDeactivateTieringDelay()
 {
     CONTRACTL
     {
@@ -355,88 +551,33 @@ void WINAPI TieredCompilationManager::TieringDelayTimerCallback(PVOID parameter,
     }
     CONTRACTL_END;
 
-    _ASSERTE(timerFired);
+    _ASSERTE(GetThread() == s_backgroundWorkerThread);
 
-    GetAppDomain()->GetTieredCompilationManager()->DeactivateTieringDelay();
-}
-
-void TieredCompilationManager::DeactivateTieringDelay()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    HANDLE tieringDelayTimerHandle = nullptr;
     SArray<MethodDesc *> *methodsPendingCounting = nullptr;
     UINT32 countOfNewMethodsCalledDuringDelay = 0;
-    bool doBackgroundWork = false;
-    while (true)
     {
+        // It's possible for the timer to tick before it is recorded that the delay is in effect. This lock guarantees that
+        // the delay is in effect.
+        LockHolder tieredCompilationLockHolder;
+        _ASSERTE(IsTieringDelayActive());
+
+        if (m_tier1CallCountingCandidateMethodRecentlyRecorded)
         {
-            // It's possible for the timer to tick before it is recorded that the delay is in effect. This lock guarantees that
-            // the delay is in effect.
-            LockHolder tieredCompilationLockHolder;
-            _ASSERTE(IsTieringDelayActive());
-
-            tieringDelayTimerHandle = m_tieringDelayTimerHandle;
-            if (m_tier1CallCountingCandidateMethodRecentlyRecorded)
-            {
-                m_tier1CallCountingCandidateMethodRecentlyRecorded = false;
-            }
-            else
-            {
-                // Exchange information into locals inside the lock
-
-                methodsPendingCounting = m_methodsPendingCountingForTier1;
-                _ASSERTE(methodsPendingCounting != nullptr);
-                m_methodsPendingCountingForTier1 = nullptr;
-
-                _ASSERTE(tieringDelayTimerHandle == m_tieringDelayTimerHandle);
-                m_tieringDelayTimerHandle = nullptr;
-
-                countOfNewMethodsCalledDuringDelay = m_countOfNewMethodsCalledDuringDelay;
-                m_countOfNewMethodsCalledDuringDelay = 0;
-
-                _ASSERTE(!IsTieringDelayActive());
-
-                if (!m_isBackgroundWorkScheduled && (m_isPendingCallCountingCompletion || m_countOfMethodsToOptimize != 0))
-                {
-                    m_isBackgroundWorkScheduled = true;
-                    doBackgroundWork = true;
-                }
-
-                break;
-            }
+            m_tier1CallCountingCandidateMethodRecentlyRecorded = false;
+            return false;
         }
 
-        // Reschedule the timer if there has been recent tier 0 activity (when a new eligible method is called the first
-        // time) to further delay call counting
-        bool success = false;
-        EX_TRY
-        {
-            if (ThreadpoolMgr::ChangeTimerQueueTimer(
-                    tieringDelayTimerHandle,
-                    g_pConfig->TieredCompilation_CallCountingDelayMs(),
-                    (DWORD)-1 /* Period, non-repeating */))
-            {
-                success = true;
-            }
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
-        if (success)
-        {
-            return;
-        }
+        // Exchange information into locals inside the lock
+
+        methodsPendingCounting = m_methodsPendingCountingForTier1;
+        _ASSERTE(methodsPendingCounting != nullptr);
+        m_methodsPendingCountingForTier1 = nullptr;
+
+        countOfNewMethodsCalledDuringDelay = m_countOfNewMethodsCalledDuringDelay;
+        m_countOfNewMethodsCalledDuringDelay = 0;
+
+        _ASSERTE(!IsTieringDelayActive());
     }
-
-    AutoResetIsBackgroundWorkScheduled autoResetIsBackgroundWorkScheduled(doBackgroundWork ? this : nullptr);
 
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
     {
@@ -486,120 +627,10 @@ void TieredCompilationManager::DeactivateTieringDelay()
     }
 
     delete methodsPendingCounting;
-    ThreadpoolMgr::DeleteTimerQueueTimer(tieringDelayTimerHandle, nullptr);
-
-    if (doBackgroundWork)
-    {
-        autoResetIsBackgroundWorkScheduled.Cancel(); // the call below will take care of it
-        DoBackgroundWork();
-    }
+    return true;
 }
 
 void TieredCompilationManager::AsyncCompleteCallCounting()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    {
-        LockHolder tieredCompilationLockHolder;
-
-        if (m_recentlyRequestedCallCountingCompletionAgain)
-        {
-            _ASSERTE(m_isPendingCallCountingCompletion);
-        }
-        else if (m_isPendingCallCountingCompletion)
-        {
-            // A potentially large number of methods may reach the call count threshold at about the same time or in bursts.
-            // This field is used to coalesce a burst of pending completions, see the background work.
-            m_recentlyRequestedCallCountingCompletionAgain = true;
-        }
-        else
-        {
-            m_isPendingCallCountingCompletion = true;
-        }
-
-        if (m_isBackgroundWorkScheduled || IsTieringDelayActive())
-        {
-            return;
-        }
-        m_isBackgroundWorkScheduled = true;
-    }
-
-    AutoResetIsBackgroundWorkScheduled autoResetIsBackgroundWorkScheduled(this);
-    RequestBackgroundWork();
-    autoResetIsBackgroundWorkScheduled.Cancel();
-}
-
-void TieredCompilationManager::ScheduleBackgroundWork()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    {
-        LockHolder tieredCompilationLockHolder;
-
-        if (m_isBackgroundWorkScheduled ||
-            (!m_isPendingCallCountingCompletion && m_countOfMethodsToOptimize == 0) ||
-            IsTieringDelayActive())
-        {
-            return;
-        }
-        m_isBackgroundWorkScheduled = true;
-    }
-
-    AutoResetIsBackgroundWorkScheduled autoResetIsBackgroundWorkScheduled(this);
-    RequestBackgroundWork();
-    autoResetIsBackgroundWorkScheduled.Cancel();
-}
-
-void TieredCompilationManager::RequestBackgroundWork()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_isBackgroundWorkScheduled);
-
-    if (ThreadpoolMgr::UsePortableThreadPool())
-    {
-        // QueueUserWorkItem is not intended to be supported in this mode, and there are call sites of this function where
-        // managed code cannot be called instead to queue a work item. Use a timer with zero due time instead, which would on
-        // the timer thread call into managed code to queue a work item.
-
-        NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder = new ThreadpoolMgr::TimerInfoContext();
-        timerContextHolder->TimerId = 0;
-
-        _ASSERTE(m_doBackgroundWorkTimerHandle == nullptr);
-        if (!ThreadpoolMgr::CreateTimerQueueTimer(
-                &m_doBackgroundWorkTimerHandle,
-                DoBackgroundWorkTimerCallback,
-                timerContextHolder,
-                0 /* DueTime */,
-                (DWORD)-1 /* Period, non-repeating */,
-                0 /* Flags */))
-        {
-            _ASSERTE(m_doBackgroundWorkTimerHandle == nullptr);
-            ThrowOutOfMemory();
-        }
-
-        timerContextHolder.SuppressRelease(); // the timer context is automatically deleted by the timer infrastructure
-        return;
-    }
-
-    if (!ThreadpoolMgr::QueueUserWorkItem(StaticBackgroundWorkCallback, this, QUEUE_ONLY, TRUE))
-    {
-        ThrowOutOfMemory();
-    }
-}
-
-void WINAPI TieredCompilationManager::DoBackgroundWorkTimerCallback(PVOID parameter, BOOLEAN timerFired)
 {
     CONTRACTL
     {
@@ -609,44 +640,51 @@ void WINAPI TieredCompilationManager::DoBackgroundWorkTimerCallback(PVOID parame
     }
     CONTRACTL_END;
 
-    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
-    _ASSERTE(timerFired);
+    {
+        LockHolder tieredCompilationLockHolder;
 
-    TieredCompilationManager *pTieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
-    _ASSERTE(pTieredCompilationManager->m_doBackgroundWorkTimerHandle != nullptr);
-    ThreadpoolMgr::DeleteTimerQueueTimer(pTieredCompilationManager->m_doBackgroundWorkTimerHandle, nullptr);
-    pTieredCompilationManager->m_doBackgroundWorkTimerHandle = nullptr;
+        if (m_recentlyRequestedCallCountingCompletion)
+        {
+            _ASSERTE(m_isPendingCallCountingCompletion);
+        }
+        else
+        {
+            m_isPendingCallCountingCompletion = true;
 
-    pTieredCompilationManager->DoBackgroundWork();
-}
+            // A potentially large number of methods may reach the call count threshold at about the same time or in bursts.
+            // This field is used to coalesce a burst of pending completions, see the background work.
+            m_recentlyRequestedCallCountingCompletion = true;
+        }
 
-// This is the initial entrypoint for the background thread, called by
-// the threadpool.
-DWORD WINAPI TieredCompilationManager::StaticBackgroundWorkCallback(void *args)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+        // The thread is in a GC_NOTRIGGER scope here. If the background worker is already running, we can schedule it inside
+        // the same lock without triggering a GC.
+        if (TryScheduleBackgroundWorkerWithoutGCTrigger_Locked())
+        {
+            return;
+        }
+    }
 
-    TieredCompilationManager * pTieredCompilationManager = (TieredCompilationManager *)args;
-    pTieredCompilationManager->DoBackgroundWork();
-    return 0;
+    CreateBackgroundWorker(); // requires GC_TRIGGERS
 }
 
 //This method will process one or more methods from optimization queue
 // on a background thread. Each such method will be jitted with code
 // optimizations enabled and then installed as the active implementation
 // of the method entrypoint.
-void TieredCompilationManager::DoBackgroundWork()
+bool TieredCompilationManager::DoBackgroundWork(
+    UINT64 *workDurationTicksRef,
+    UINT64 minWorkDurationTicks,
+    UINT64 maxWorkDurationTicks)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_doBackgroundWorkTimerHandle == nullptr);
+    _ASSERTE(GetThread() == s_backgroundWorkerThread);
+    _ASSERTE(m_isPendingCallCountingCompletion || m_countOfMethodsToOptimize != 0);
+    _ASSERTE(workDurationTicksRef != nullptr);
+    _ASSERTE(minWorkDurationTicks <= maxWorkDurationTicks);
 
-    AutoResetIsBackgroundWorkScheduled autoResetIsBackgroundWorkScheduled(this);
-
-    // We need to be careful not to work for too long in a single invocation of this method or we could starve the thread pool
-    // and force it to create unnecessary additional threads. We will JIT for a minimum of this quantum, then schedule another
-    // work item to the thread pool and return this thread back to the pool.
-    const DWORD OptimizationQuantumMs = 50;
+    UINT64 workDurationTicks = *workDurationTicksRef;
+    _ASSERTE(workDurationTicks >= minWorkDurationTicks);
+    _ASSERTE(workDurationTicks <= maxWorkDurationTicks);
 
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
     {
@@ -658,10 +696,15 @@ void TieredCompilationManager::DoBackgroundWork()
         ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStart(countOfMethodsToOptimize);
     }
 
+    bool sendStopEvent = true;
     bool allMethodsJitted = false;
     UINT32 jittedMethodCount = 0;
-    DWORD startTickCount = GetTickCount();
-    while (true)
+    LARGE_INTEGER li;
+    QueryPerformanceCounter(&li);
+    UINT64 startTicks = li.QuadPart;
+    UINT64 previousTicks = startTicks;
+
+    do
     {
         bool completeCallCounting = false;
         NativeCodeVersion nativeCodeVersionToOptimize;
@@ -670,22 +713,20 @@ void TieredCompilationManager::DoBackgroundWork()
 
             if (IsTieringDelayActive())
             {
-                m_isBackgroundWorkScheduled = false;
-                autoResetIsBackgroundWorkScheduled.Cancel();
                 break;
             }
 
             bool wasPendingCallCountingCompletion = m_isPendingCallCountingCompletion;
             if (wasPendingCallCountingCompletion)
             {
-                if (m_recentlyRequestedCallCountingCompletionAgain)
+                if (m_recentlyRequestedCallCountingCompletion)
                 {
                     // A potentially large number of methods may reach the call count threshold at about the same time or in
                     // bursts. To coalesce a burst of pending completions a bit, if another method has reached the call count
                     // threshold since the last time it was checked here, don't complete call counting yet. Coalescing
                     // call counting completions a bit helps to avoid blocking foreground threads due to lock contention as
                     // methods are continuing to reach the call count threshold.
-                    m_recentlyRequestedCallCountingCompletionAgain = false;
+                    m_recentlyRequestedCallCountingCompletion = false;
                 }
                 else
                 {
@@ -705,13 +746,11 @@ void TieredCompilationManager::DoBackgroundWork()
                         // If call counting completions are pending and delayed above for coalescing, complete call counting
                         // now, as that will add more methods to be rejitted
                         m_isPendingCallCountingCompletion = false;
-                        _ASSERTE(!m_recentlyRequestedCallCountingCompletionAgain);
+                        _ASSERTE(!m_recentlyRequestedCallCountingCompletion);
                         completeCallCounting = true;
                     }
                     else
                     {
-                        m_isBackgroundWorkScheduled = false;
-                        autoResetIsBackgroundWorkScheduled.Cancel();
                         allMethodsJitted = true;
                         break;
                     }
@@ -733,43 +772,90 @@ void TieredCompilationManager::DoBackgroundWork()
                     GET_EXCEPTION()->GetHR());
             }
             EX_END_CATCH(RethrowTerminalExceptions);
+
+            continue;
         }
-        else
+
+        OptimizeMethod(nativeCodeVersionToOptimize);
+        ++jittedMethodCount;
+
+        // Yield the thread periodically to give preference to possibly more important work
+
+        QueryPerformanceCounter(&li);
+        UINT64 currentTicks = li.QuadPart;
+        if (currentTicks - startTicks < workDurationTicks)
         {
-            OptimizeMethod(nativeCodeVersionToOptimize);
-            ++jittedMethodCount;
+            previousTicks = currentTicks;
+            continue;
         }
-
-        // If we have been running for too long return the thread to the threadpool and queue another event
-        // This gives the threadpool a chance to service other requests on this thread before returning to
-        // this work.
-        DWORD currentTickCount = GetTickCount();
-        if (currentTickCount - startTickCount >= OptimizationQuantumMs)
+        if (currentTicks - previousTicks >= maxWorkDurationTicks)
         {
-            bool success = false;
-            EX_TRY
-            {
-                RequestBackgroundWork();
-                success = true;
-            }
-            EX_CATCH
-            {
-                STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
-                    "Exception in RequestBackgroundWork, hr=0x%x\n",
-                    GET_EXCEPTION()->GetHR());
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-            if (success)
-            {
-                autoResetIsBackgroundWorkScheduled.Cancel();
-                break;
-            }
-
-            startTickCount = currentTickCount;
+            // It's unlikely that one iteration above would have taken that long, more likely this thread got scheduled out for
+            // a while, in which case there is no need to yield again. Discount the time taken for the previous iteration and
+            // continue processing work.
+            startTicks += currentTicks - previousTicks;
+            previousTicks = currentTicks;
+            continue;
         }
-    }
 
-    if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
+        if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
+        {
+            UINT32 countOfMethodsToOptimize = m_countOfMethodsToOptimize;
+            if (m_isPendingCallCountingCompletion)
+            {
+                countOfMethodsToOptimize += CallCountingManager::GetCountOfCodeVersionsPendingCompletion();
+            }
+            ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(countOfMethodsToOptimize, jittedMethodCount);
+        }
+
+        UINT64 beforeSleepTicks = currentTicks;
+        ClrSleepEx(0, false);
+
+        QueryPerformanceCounter(&li);
+        currentTicks = li.QuadPart;
+
+        // Depending on how oversubscribed thread usage is on the system, the sleep may have caused this thread to not be
+        // scheduled for a long time. Yielding the thread too frequently may significantly slow down the background work, which
+        // may significantly delay how long it takes to reach steady-state performance. On the other hand, yielding the thread
+        // too infrequently may cause the background work to monopolize the available CPU resources and prevent more important
+        // foreground work from occurring. So the sleep duration is measured and for the next batch of background work, at least
+        // a portion of that measured duration is used (within the min and max to keep things sensible). Since the background
+        // work duration is capped to a maximum and since a long sleep delay is likely to repeat, to avoid going back to
+        // too-frequent yielding too quickly, the background work duration is decayed back to the minimum if the sleep duration
+        // becomes consistently short.
+        UINT64 newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
+        UINT64 decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
+        workDurationTicks = newWorkDurationTicks < decayedWorkDurationTicks ? decayedWorkDurationTicks : newWorkDurationTicks;
+        if (workDurationTicks < minWorkDurationTicks)
+        {
+            workDurationTicks = minWorkDurationTicks;
+        }
+        else if (workDurationTicks > maxWorkDurationTicks)
+        {
+            workDurationTicks = maxWorkDurationTicks;
+        }
+
+        if (IsTieringDelayActive())
+        {
+            sendStopEvent = false;
+            break;
+        }
+
+        if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
+        {
+            UINT32 countOfMethodsToOptimize = m_countOfMethodsToOptimize;
+            if (m_isPendingCallCountingCompletion)
+            {
+                countOfMethodsToOptimize += CallCountingManager::GetCountOfCodeVersionsPendingCompletion();
+            }
+            ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStart(countOfMethodsToOptimize);
+        }
+
+        jittedMethodCount = 0;
+        startTicks = previousTicks = currentTicks;
+    } while (!IsTieringDelayActive());
+
+    if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled() && sendStopEvent)
     {
         UINT32 countOfMethodsToOptimize = m_countOfMethodsToOptimize;
         if (m_isPendingCallCountingCompletion)
@@ -793,6 +879,9 @@ void TieredCompilationManager::DoBackgroundWork()
         }
         EX_END_CATCH(RethrowTerminalExceptions);
     }
+
+    *workDurationTicksRef = workDurationTicks;
+    return allMethodsJitted;
 }
 
 // Jit compiles and installs new optimized code for a method.
@@ -821,15 +910,9 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         PrepareCodeConfigBuffer configBuffer(nativeCodeVersion);
         PrepareCodeConfig *config = configBuffer.GetConfig();
 
-#if defined(TARGET_X86)
-        // Deferring X86 support until a need is observed or
-        // time permits investigation into all the potential issues.
-        // https://github.com/dotnet/runtime/issues/33582
-#else
         // This is a recompiling request which means the caller was
         // in COOP mode since the code already ran.
         _ASSERTE(!pMethod->HasUnmanagedCallersOnlyAttribute());
-#endif
         config->SetCallerGCMode(CallerGCMode::Coop);
         pCode = pMethod->PrepareCode(config);
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",
@@ -928,30 +1011,38 @@ NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 }
 
 //static
-CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeVersion)
+CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 {
-    LIMITED_METHOD_CONTRACT;
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(config != nullptr);
+    _ASSERTE(
+        !config->WasTieringDisabledBeforeJitting() ||
+        config->GetCodeVersion().GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
 
     CORJIT_FLAGS flags;
-    MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
-    if (!methodDesc->IsEligibleForTieredCompilation())
-    {
-#ifdef FEATURE_INTERPRETER
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
-#endif
-        return flags;
-    }
 
     // Determine the optimization tier for the default code version (slightly faster common path during startup compared to
     // below), and disable call counting and set the optimization tier if it's not going to be tier 0 (this is used in other
     // places for the default code version where necessary to avoid the extra expense of GetOptimizationTier()).
-    if (nativeCodeVersion.IsDefaultVersion())
+    NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
+    if (nativeCodeVersion.IsDefaultVersion() && !config->WasTieringDisabledBeforeJitting())
     {
+        MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
+        if (!methodDesc->IsEligibleForTieredCompilation())
+        {
+            _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
+        #ifdef FEATURE_INTERPRETER
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
+        #endif
+            return flags;
+        }
+
         NativeCodeVersion::OptimizationTier newOptimizationTier;
         if (!methodDesc->RequestedAggressiveOptimization())
         {
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+                _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
             }
@@ -1006,8 +1097,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeV
     }
     return flags;
 }
-
-CrstStatic TieredCompilationManager::s_lock;
 
 #ifdef _DEBUG
 bool TieredCompilationManager::IsLockOwnedByCurrentThread()

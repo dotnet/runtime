@@ -6,6 +6,19 @@ endif()
 
 project(mono)
 
+set(CMAKE_C_FLAGS_CHECKED "")
+set(CMAKE_CXX_FLAGS_CHECKED "")
+set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
+set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
+
+if(NOT MONO_LIB_NAME)
+  set(MONO_LIB_NAME "monosgen-2.0")
+endif()
+
+if(NOT MONO_SHARED_LIB_NAME)
+  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+endif()
+
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -38,6 +51,9 @@ function(process_enable_minimal)
   string(REPLACE "," ";" tmp1 "${ENABLE_MINIMAL}")
   foreach(arg ${tmp1})
     string(TOUPPER "${arg}" var1)
+	if("${DISABLE_${var1}}" STREQUAL "")
+	  message(FATAL_ERROR "Unknown DISABLE_ option DISABLE_${var1}.")
+	endif()
     set(DISABLE_${var1} 1 PARENT_SCOPE)
   endforeach(arg)
 endfunction()
@@ -46,52 +62,34 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-function(extract_mono_corlib_version)
-  file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac corlib_version_line REGEX ^MONO_CORLIB_VERSION=)
+#
+# This is the version of the corlib-runtime interface. When
+# making changes to this interface (by changing the layout
+# of classes the runtime knows about, changing icall signature or
+# semantics etc), change this variable.
+#
+# This must be unique relative to corlib interface and semantics.
+#
+# If you change corlib such that a runtime change is required, or
+# vice versa, change this string. Examples include removing icalls,
+# adding icalls, changing icall signatures, and changing type layouts
+# that both sides know.
+#
+# It is an arbitrary string and should be parsed as such.
+# A guid works and is encouraged.
+#
+# There is no ordering of corlib versions, no old or new,
+# an exact match is required between corlib and runtime.
+#
+# This line is parsed by other tools, it should remain in the format they expect.
+#
+set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-  if(corlib_version_line STREQUAL "")
-    message(FATAL_ERROR "Couldn't find MONO_CORLIB_VERSION from configure.ac")
-  endif()
-
-  string(REGEX REPLACE "MONO_CORLIB_VERSION=([0-9a-fA-F\-]+)" "\\1" corlib_version ${corlib_version_line})
-
-  if(corlib_version STREQUAL "")
-    message(FATAL_ERROR "Couldn't parse corlib version")
-  endif()
-
-  set(MONO_CORLIB_VERSION "\"${corlib_version}\"" PARENT_SCOPE)
-endfunction()
-
-extract_mono_corlib_version()
-
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mono.proj")
-  set(ENABLE_NETCORE 1)
-endif()
-
-if(ENABLE_NETCORE)
-  set(DISABLE_REMOTING 1)
-  set(DISABLE_REFLECTION_EMIT_SAVE 1)
-  set(DISABLE_APPDOMAINS 1)
-  set(DISABLE_SHADOW_COPY 1)
-  set(DISABLE_CLEANUP 1)
-  set(DISABLE_ASSEMBLY_REMAPPING 1)
-  set(DISABLE_SECURITY 1)
-  set(DISABLE_MDB 1)
-  set(DISABLE_COM 1)
-  set(DISABLE_GAC 1)
-  set(DISABLE_PERFCOUNTERS 1)
-  set(DISABLE_ATTACH 1)
-  set(DISABLE_CONFIG 1)
-  set(DISABLE_CFGDIR_CONFIG 1)
-  set(DISABLE_VERIFIER 1)
-else()
-  message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
-endif()
+set(DISABLE_MDB 1)
+set(DISABLE_COM 1)
+set(DISABLE_PERFCOUNTERS 1)
 
 # Dependencies between options
-if(DISABLE_ASSEMBLY_REMAPPING)
-  set(DISABLE_DESKTOP_LOADER 1)
-endif()
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
 endif()
@@ -111,8 +109,11 @@ if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Cla
   set(GCC 1)
 endif()
 
+if(DISABLE_INTERPRETER)
+  unset(ENABLE_METADATA_UPDATE)
+endif()
+
 add_definitions(-DHAVE_CONFIG_H)
-add_definitions(-DMONO_DLL_EXPORT)
 
 if(GCC)
   add_definitions(-g)  # TODO: should this really be on by default?
@@ -176,6 +177,7 @@ endif()
 ######################################
 
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
@@ -183,15 +185,24 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_OSX 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(HOST_MACCAT 1)
+  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
   set(HOST_IOS 1)
   if(CMAKE_SYSTEM_NAME STREQUAL "tvOS")
     set(HOST_TVOS 1)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
+    add_compile_options(-fembed-bitcode)
+    add_link_options(-fembed-bitcode)
   endif()
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
@@ -210,25 +221,29 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
   add_definitions(-D_THREAD_SAFE)
+  add_compile_options(-Wl,-z,now)
+  add_compile_options(-Wl,-z,relro)
+  add_compile_options(-Wl,-z,noexecstack)
   # The normal check fails because it uses --isystem <ndk root>/sysroot/usr/include
   set(HAVE_USR_INCLUDE_MALLOC_H 1)
   set(HOST_ANDROID 1)
   set(ANDROID_UNIFIED_HEADERS 1)
   set(ENABLE_MONODROID 1)
   set(DISABLE_EXECUTABLES 1)
-  set(GC_SUSPEND "hybrid")
   # Force some defines
   set(HAVE_SCHED_GETAFFINITY 0)
   set(HAVE_SCHED_SETAFFINITY 0)
   # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)
   # sys/random.h exists, but its not found
   set(HAVE_SYS_RANDOM_H 1)
+  set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -237,6 +252,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
+  set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W3)   # set warning level 3
   add_compile_options(/EHsc) # set exception handling behavior
@@ -264,9 +280,6 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
-  if (GC_SUSPEND STREQUAL "default")
-    set(GC_SUSPEND "hybrid")
-  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -458,21 +471,21 @@ if(LLVM_PREFIX)
     set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
 
     # llvm-config --system-libs
-    set(llvm_system_libs "-lz -lrt -ldl -lpthread -lm")
+    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
     # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs "-lLLVMOrcJIT -lLLVMJITLink -lLLVMMCJIT -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+    set(llvm_core_libs "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
 
     # Check codegen libs and add needed libraries.
     if("${llvm_codegen_libs}" STREQUAL "x86codegen")
       # llvm-config --libs x86codegen
-      set(llvm_extra "-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
       # llvm-config --libs armcodegen
-      set(llvm_extra "-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
       # llvm-config --libs aarch64codegen
-      set(llvm_extra "-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
     else()
       message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
     endif()
@@ -490,8 +503,10 @@ if(LLVM_PREFIX)
     endif()
     execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
+    separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
 
   if (${llvm_api_version} LESS 900)
@@ -512,23 +527,26 @@ endif()
 ######################################
 set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
-elseif(HOST_OSX)
+elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
-  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig")
+  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:${brew_prefix}/lib/pkgconfig:${brew_prefix}/opt/icu4c/lib/pkgconfig")
   pkg_check_modules(ICU icu-uc)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
 elseif(HOST_WASM)
-  #set(ICU_CFLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE")
-  set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
-elseif(HOST_IOS)
-  # FIXME:
+elseif(HOST_IOS OR HOST_MACCAT)
+  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(STATIC_ICU 1)
+  set(ICU_LIBS icuuc icui18n icudata)
 elseif(HOST_ANDROID)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
@@ -552,6 +570,20 @@ if (GC_SUSPEND STREQUAL "coop")
   set(ENABLE_COOP_SUSPEND 1)
 elseif(GC_SUSPEND STREQUAL "hybrid")
   set(ENABLE_HYBRID_SUSPEND 1)
+elseif(GC_SUSPEND STREQUAL "preemptive")
+elseif(GC_SUSPEND STREQUAL "default")
+  # set some kind of fallback default
+  if(TARGET_SYSTEM_NAME STREQUAL "watchOS")
+    set(ENABLE_COOP_SUSPEND 1)
+  elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
+    # use preemptive
+  elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
+    # use preemptive
+  else()
+    set(ENABLE_HYBRID_SUSPEND 1)
+  endif()
+else()
+  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid or preemptive")
 endif()
 
 ######################################
@@ -629,6 +661,18 @@ endif()
 ### End of debug build checks
 
 ######################################
+# COMPONENT BUILD CHECKS
+######################################
+if(DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+
+if(DISABLE_LINK_STATIC_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+### End of component build checks
+
+######################################
 # OTHER CHECKS
 ######################################
 if(HOST_WIN32)
@@ -642,6 +686,21 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+endif()
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+"#define RuntimeFileMajorVersion 42\n"
+"#define RuntimeFileMinorVersion 42\n"
+"#define RuntimeFileBuildVersion 42\n"
+"#define RuntimeFileRevisionVersion 42424\n"
+"#define RuntimeProductMajorVersion 6\n"
+"#define RuntimeProductMinorVersion 0\n"
+"#define RuntimeProductPatchVersion 0\n"
+)
+endif()
+
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
@@ -670,9 +729,17 @@ if(TARGET_IOS OR TARGET_ANDROID)
 else()
   set(DISABLE_DLLMAP 1)
 endif()
+if (TARGET_BROWSER)
+  # sys/errno.h exists, but just emits a warning and includes errno.h
+  unset(HAVE_SYS_ERRNO_H)
+endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
+  add_subdirectory(dlls/mscordbi)
+  add_subdirectory(dlls/dbgshim)
+endif()
 
 configure_file(cmake/config.h.in config.h)
 configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)  # TODO: eglib-config.h is not needed, we're using hardcoded eglib-config.hw

@@ -26,7 +26,9 @@ namespace SafeHandleTests
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
+                return 101;
             }
+
             return 100;
         }
     }

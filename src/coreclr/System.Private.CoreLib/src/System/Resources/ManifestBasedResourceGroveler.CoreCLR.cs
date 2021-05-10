@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace System.Resources
 {
-    internal partial class ManifestBasedResourceGroveler
+    internal sealed partial class ManifestBasedResourceGroveler
     {
         // Internal version of GetSatelliteAssembly that avoids throwing FileNotFoundException
         private static Assembly? InternalGetSatelliteAssembly(Assembly mainAssembly,

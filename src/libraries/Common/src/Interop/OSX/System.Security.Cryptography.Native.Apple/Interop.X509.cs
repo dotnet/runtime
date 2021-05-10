@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -332,7 +331,7 @@ internal static partial class Interop
             SafeSecKeyRefHandle key;
             int osStatus = AppleCryptoNative_X509CopyPrivateKeyFromIdentity(identity, out key);
 
-            SafeTemporaryKeychainHandle.TrackItem(key);
+            //SafeTemporaryKeychainHandle.TrackItem(key);
 
             if (osStatus != 0)
             {
@@ -355,7 +354,7 @@ internal static partial class Interop
             int osStatus;
             int ret = AppleCryptoNative_X509GetPublicKey(cert, out publicKey, out osStatus);
 
-            SafeTemporaryKeychainHandle.TrackItem(publicKey);
+            //SafeTemporaryKeychainHandle.TrackItem(publicKey);
 
             if (ret == 1)
             {

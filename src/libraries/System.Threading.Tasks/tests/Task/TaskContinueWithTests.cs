@@ -42,6 +42,7 @@ namespace System.Threading.Tasks.Tests
         // Stresses on multiple continuations from a single antecedent
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [SkipOnCoreClr("Test timing out: https://github.com/dotnet/runtime/issues/2271", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2271")]
         public static void RunContinueWithStressTestsNoState()
         {
             int numIterations = 3;
@@ -1400,7 +1401,7 @@ namespace System.Threading.Tasks.Tests
         {
             if (exception == null)
             {
-                Assert.True(false, string.Format(message + " (no exception thrown)")); ;
+                Assert.True(false, string.Format(message + " (no exception thrown)"));
             }
             else if (exception.GetType() != typeof(AggregateException))
             {

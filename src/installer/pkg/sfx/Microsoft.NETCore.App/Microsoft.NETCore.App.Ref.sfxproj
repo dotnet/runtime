@@ -6,6 +6,7 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-targeting-pack</ArchiveName>
     <InstallerName>dotnet-targeting-pack</InstallerName>
+    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
     <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
     <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
   </PropertyGroup>

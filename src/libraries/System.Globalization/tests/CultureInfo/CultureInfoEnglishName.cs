@@ -12,14 +12,14 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.EnglishName };
 
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotUsingLimitedCultures)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "fr-FR", "French (France)" };
             }
             else
             {
-                // Browser's ICU doesn't contain CultureInfo.EnglishName
+                // Mobile / Browser ICU doesn't contain CultureInfo.EnglishName
                 yield return new object[] { "en-US", "en (US)" };
                 yield return new object[] { "fr-FR", "fr (FR)" };
             }
@@ -27,6 +27,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(EnglishName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void EnglishName(string name, string expected)
         {
             CultureInfo myTestCulture = new CultureInfo(name);

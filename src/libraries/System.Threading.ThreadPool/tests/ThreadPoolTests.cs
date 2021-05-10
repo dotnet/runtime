@@ -709,7 +709,7 @@ namespace System.Threading.ThreadPools.Tests
                     verifyNameWorkItem = _ =>
                     {
                         Thread currentThread = Thread.CurrentThread;
-                        if (currentThread.Name != null)
+                        if (currentThread.Name == nameof(WorkerThreadStateResetTest))
                         {
                             failureMessage += $"Name was not reset: {currentThread.Name}{Environment.NewLine}";
                         }

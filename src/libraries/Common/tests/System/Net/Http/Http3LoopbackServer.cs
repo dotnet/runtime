@@ -24,18 +24,22 @@ namespace System.Net.Test.Common
         {
             options ??= new GenericLoopbackOptions();
 
-            _cert = Configuration.Certificates.GetSelfSigned13ServerCertificate();
+            _cert = Configuration.Certificates.GetServerCertificate();
 
             var sslOpts = new SslServerAuthenticationOptions
             {
                 EnabledSslProtocols = options.SslProtocols,
-                ApplicationProtocols = new List<SslApplicationProtocol> { new SslApplicationProtocol("h3-29") },
-                //ServerCertificate = _cert,
+                ApplicationProtocols = new List<SslApplicationProtocol>
+                {
+                    new SslApplicationProtocol("h3-31"),
+                    new SslApplicationProtocol("h3-30"),
+                    new SslApplicationProtocol("h3-29")
+                },
+                ServerCertificate = _cert,
                 ClientCertificateRequired = false
             };
 
             _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
-            _listener.Start();
         }
 
         public override void Dispose()
@@ -84,7 +88,7 @@ namespace System.Net.Test.Common
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)
         {
             using GenericLoopbackServer server = CreateServer(options);
-            await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
+            await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
 
         public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
@@ -93,10 +97,5 @@ namespace System.Net.Test.Common
             // This method is always unacceptable to call for HTTP/3.
             throw new NotImplementedException("HTTP/3 does not operate over a Socket.");
         }
-    }
-
-    public static class HttpVersion30
-    {
-        public static readonly Version Value = new Version(3, 0);
     }
 }

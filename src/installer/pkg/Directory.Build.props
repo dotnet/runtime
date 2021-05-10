@@ -19,17 +19,4 @@
   <ItemGroup>
     <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>
-
-  <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
-    <Error Condition="'$(HostPolicyVersion)'==''" Text="HostPolicyVersion is undefined" />
-    <Error Condition="'$(HostResolverVersion)'==''" Text="HostResolverVersion is undefined" />
-    <Error Condition="'$(HostVersion)'==''" Text="HostVersion is undefined" />
-    <Error Condition="'$(AppHostVersion)'==''" Text="AppHostVersion is undefined" />
-  </Target>
-
-  <Target Name="ValidatePreReleaseStrings" Condition="'$(StabilizePackageVersion)'!='true'">
-    <Error Condition="'$(PreReleaseVersionLabel)'==''" Text="PreReleaseVersionLabel is undefined" />
-    <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
-    <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
-  </Target>
 </Project>

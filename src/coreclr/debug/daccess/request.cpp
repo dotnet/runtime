@@ -23,6 +23,9 @@
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
 #include <interoplibabi.h>
+
+typedef DPTR(InteropLibInterface::ExternalObjectContextBase) PTR_ExternalObjectContext;
+typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapper;
 #endif // FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
@@ -2783,8 +2786,18 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
     detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
-    detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
-    detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
+    if (g_gcDacGlobals->saved_sweep_ephemeral_seg != nullptr)
+    {
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
+        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
+    }
+    else
+    {
+        // with regions, we don't have these variables anymore
+        // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)-1;
+        detailsData->saved_sweep_ephemeral_start = 0;
+    }
     detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
     detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_highest_address;
 
@@ -4130,7 +4143,8 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface);
+    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
+        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
@@ -4926,7 +4940,7 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
 
         if (refCount != NULL)
         {
-            *refCount = (int)pMOW->_refCount;
+            *refCount = (int)pMOW->RefCount;
         }
     }
     else
@@ -5011,7 +5025,7 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
     PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
     if (identity != NULL)
     {
-        *identity = PTR_CDADDR(pEOC->identity);
+        *identity = PTR_CDADDR(pEOC->Identity);
     }
 
     SOSDacLeave();

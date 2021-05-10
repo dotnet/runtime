@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+
+<assemblyIdentity
+  type="win32"
+  name="CoreShim.X"
+  version="1.0.0.0" />
+
+<file name="CoreShim.dll">
+  <!-- ConsumeNETServerTesting -->
+  <comClass
+    clsid="{DE4ACF53-5957-4D31-8BE2-EA6C80683246}"
+    threadingModel="Both" />
+</file>
+
+</assembly>

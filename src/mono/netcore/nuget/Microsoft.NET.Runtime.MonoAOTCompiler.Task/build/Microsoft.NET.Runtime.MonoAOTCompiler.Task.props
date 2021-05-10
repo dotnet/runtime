@@ -1,5 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <MonoAOTCompilerTaskAssemblyPath>$(MSBuildThisFileDirectory)..\tools\net5.0\MonoAOTCompiler.dll</MonoAOTCompilerTaskAssemblyPath>
-  </PropertyGroup>
-</Project>

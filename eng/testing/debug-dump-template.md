@@ -1,10 +1,6 @@
-# Get the dump
-
-Click the link to the dump on the `Helix Test Logs` tab in Azure DevOps. This is the same place you got these instructions from.
-
 # Get the Helix payload
 
-[Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols:
+[Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols (recommended version 0.6.4 or later):
 ```sh
 dotnet tool install --global runfo
 dotnet tool update --global runfo
@@ -18,6 +14,8 @@ runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %WOUTDIR%
 # assumes %LOUTDIR% does not exist
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %LOUTDIR%
 ```
+
+Any dump files published by helix will be downloaded.
 
 > NOTE: if the helix job is an internal job, you need to pass down a [helix authentication token](https://helix.dot.net/Account/Tokens) using the `--helix-token` argument.
 
@@ -55,6 +53,9 @@ dotnet sos install --architecture x64
 Install or update WinDbg if necessary ([external](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/debugger-download-tools), [internal](https://osgwiki.com/wiki/Installing_WinDbg)). If you don't have a recent WinDbg you may have to do `.update sos`.
 
 Open WinDbg and open the dump with `File>Open Dump`.
+```
+<win-path-to-dump>
+```
 
 ```
 !setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
@@ -76,7 +77,7 @@ dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
-dotnet-dump analyze <path-to-dump>
+dotnet-dump analyze <win-path-to-dump>
 ```
 Within dotnet-dump:
 ```sh
@@ -106,7 +107,7 @@ Install or update LLDB if necessary ([instructions here](https://github.com/dotn
 
 Load the dump:
 ```sh
-lldb --core <path-to-dmp> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
+lldb --core <lin-path-to-dump> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
 ```
 
 Within lldb:
@@ -129,7 +130,7 @@ dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
-dotnet-dump analyze <path-to-dump>
+dotnet-dump analyze <lin-path-to-dump>
 ```
 Within dotnet-dump:
 ```sh
@@ -140,7 +141,8 @@ setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 ---
 ## If it's a macOS dump
 
-Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps: you must use `lldb` for those. `dotnet-dump` can only analyze dumps created by `dotnet-dump` or `createdump`, by the runtime on crashes when the appropriate environment variables are set, or the [`blame-hang` setting of `dotnet test`](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-test).
+Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps yet: you must use `lldb` for those. As of .NET 6, createdump on macOS
+will start generating native Mach-O core files. dotnet-dump and ClrMD are still being worked on to handle these dumps.
 
 ---
 # Other Helpful Information

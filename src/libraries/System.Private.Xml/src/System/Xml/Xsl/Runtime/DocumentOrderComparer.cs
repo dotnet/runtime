@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.Runtime
     /// XmlNodeOrder.Unknown, a stable order between documents is maintained by an ordered list mapping each root node
     /// to an ordering index.
     /// </summary>
-    internal class DocumentOrderComparer : IComparer<XPathNavigator>
+    internal sealed class DocumentOrderComparer : IComparer<XPathNavigator>
     {
         private List<XPathNavigator> _roots;
 

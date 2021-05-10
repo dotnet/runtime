@@ -237,7 +237,7 @@ sub_ovf_carry: dest:i src1:1 src2:i len:28
 sub_ovf_un_carry: dest:i src1:1 src2:i len:12
 subcc: dest:i src1:i src2:i len:12
 tailcall: len:32 clob:c
-tailcall_reg: len:32 clob:c
+tailcall_reg: src1:b len:32 clob:c
 tailcall_membase: src1:b len:32 clob:c
 
 # Tailcall parameters are moved with one instruction per 256 bytes,

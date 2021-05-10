@@ -1,0 +1,110 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  name: ''
+  helixType: '(unspecified)'
+  container: ''
+  crossBuild: false
+  crossrootfsDir: ''
+  stagedBuild: false
+  strategy: ''
+  pool: ''
+
+  # arcade-specific parameters
+  condition: ''
+  continueOnError: false
+  dependsOn: ''
+  dependOnEvaluatePaths: false
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: /eng/common/templates/job/job.yml
+  parameters:
+
+    name: ${{ parameters.name }}
+    displayName: ${{ parameters.displayName }}
+    container: ${{ parameters.container }}
+    condition: ${{ parameters.condition }}
+    dependsOn:
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
+      - ${{ if ne(parameters.dependsOn, '') }}:
+        - ${{ parameters.dependsOn }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    continueOnError: ${{ parameters.continueOnError }}
+
+    # Send telemetry for all builds
+    enableTelemetry: true
+    helixRepo: 'dotnet/runtime'
+    helixType: ${{ parameters.helixType }}
+
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    enablePublishUsingPipelines: true
+
+    strategy: ${{ parameters.strategy }}
+
+    pool: ${{ parameters.pool }}
+
+    workspace:
+      clean: all
+
+    ${{ if eq(parameters.osGroup, 'Linux') }}:
+      agentOs: Ubuntu
+    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      agentOs: FreeBSD
+    ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
+      agentOs: MacOS
+    ${{ if eq(parameters.osGroup, 'windows') }}:
+      agentOs: windows
+
+    # Setting this results in the arcade job template including a step
+    # that gathers asset manifests and publishes them to pipeline
+    # storage. Only relevant for build jobs.
+    enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
+
+    variables:
+    - name: buildConfig
+      value: ${{ parameters.buildConfig }}
+
+    - name: archType
+      value: ${{ parameters.archType }}
+
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: official/dotnet/runtime/$(Build.SourceBranch)
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: pr/dotnet/runtime/$(Build.SourceBranch)
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: ci/dotnet/runtime/$(Build.SourceBranch)
+
+    - name: crossArg
+      value: ''
+    - ${{ if eq(parameters.crossBuild, true) }}:
+      - name: crossArg
+        value: '-cross'
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps:
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
+
+    - ${{ parameters.steps }}

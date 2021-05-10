@@ -21,7 +21,7 @@ namespace System.Xml
                              OnXmlDictionaryReaderClose? onClose);
     }
 
-    internal class XmlBinaryReader : XmlBaseReader, IXmlBinaryReaderInitializer
+    internal sealed class XmlBinaryReader : XmlBaseReader, IXmlBinaryReaderInitializer
     {
         private bool _isTextWithEndElement;
         private bool _buffered;

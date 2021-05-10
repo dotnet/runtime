@@ -175,7 +175,7 @@ public:
 
 protected:
     CQuickBytes     m_qbSigBuffer;
-    DWORD           m_nItems;
+    uint32_t        m_nItems;
     BYTE*           m_pbSigCursor;
     size_t          m_cbSig;
 
@@ -604,6 +604,7 @@ protected:
     void SetStubTargetReturnType(CorElementType typ);
     void SetStubTargetReturnType(LocalDesc* pLoc);
     void SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv);
+    void SetStubTargetCallingConv(CorInfoCallConvExtension callConv);
 
     bool ReturnOpcodePopsStack()
     {

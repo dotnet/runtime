@@ -254,8 +254,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.None, useNls ? 0 : -1 };
             yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.None, useNls ? 1 : -1 };
             yield return new object[] { new CultureInfo("de-DE").CompareInfo, "\u00DC", "UE", CompareOptions.None, -1 };
-            yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, useNls ? 0 : -1 };
-            yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, useNls ? 1 : -1 };
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, useNls ? 0 : -1 };
+                yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, useNls ? 1 : -1 };
+            }
         }
 
         // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
@@ -280,6 +283,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);

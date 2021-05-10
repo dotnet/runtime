@@ -3,7 +3,6 @@
 
 using System.Text;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Buffers;
 
@@ -153,20 +152,13 @@ namespace System
             // Otherwise, create a ValueStringBuilder to store the escaped data into,
             // append to it all of the noEscape chars we already iterated through,
             // escape the rest, and return the result as a string.
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
             vsb.Append(stringToEscape.AsSpan(0, i));
             EscapeStringToBuilder(stringToEscape.AsSpan(i), ref vsb, noEscape, checkExistingEscaped);
             return vsb.ToString();
         }
 
-        // forceX characters are always escaped if found
-        // destPos  - starting offset in dest for output, on return this will be an exclusive "end" in the output.
-        // In case "dest" has lack of space it will be reallocated by preserving the _whole_ content up to current destPos
-        // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
-        [return: NotNullIfNotNull("dest")]
-        internal static char[]? EscapeString(
-            ReadOnlySpan<char> stringToEscape,
-            char[]? dest, ref int destPos,
+        internal static unsafe void EscapeString(ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, char forceEscape1 = '\0', char forceEscape2 = '\0')
         {
             // Get the table of characters that do not need to be escaped.
@@ -193,35 +185,17 @@ namespace System
             for (; i < stringToEscape.Length && (c = stringToEscape[i]) <= 0x7F && noEscape[c]; i++) ;
             if (i == stringToEscape.Length)
             {
-                if (dest != null)
-                {
-                    EnsureCapacity(dest, destPos, stringToEscape.Length);
-                    stringToEscape.CopyTo(dest.AsSpan(destPos));
-                    destPos += stringToEscape.Length;
-                }
-
-                return dest;
+                dest.Append(stringToEscape);
             }
-
-            // Otherwise, create a ValueStringBuilder to store the escaped data into,
-            // append to it all of the noEscape chars we already iterated through, and
-            // escape the rest into the ValueStringBuilder.
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
-            vsb.Append(stringToEscape.Slice(0, i));
-            EscapeStringToBuilder(stringToEscape.Slice(i), ref vsb, noEscape, checkExistingEscaped);
-
-            // Finally update dest with the result.
-            EnsureCapacity(dest, destPos, vsb.Length);
-            vsb.TryCopyTo(dest.AsSpan(destPos), out int charsWritten);
-            destPos += charsWritten;
-            return dest;
-
-            static void EnsureCapacity(char[]? dest, int destSize, int requiredSize)
+            else
             {
-                if (dest == null || dest.Length - destSize < requiredSize)
-                {
-                    Array.Resize(ref dest, destSize + requiredSize + 120); // 120 == arbitrary minimum-empty space copied from previous implementation
-                }
+                dest.Append(stringToEscape.Slice(0, i));
+
+                // CS8350 & CS8352: We can't pass `noEscape` and `dest` as arguments together as that could leak the scope of the above stackalloc
+                // As a workaround, re-create the Span in a way that avoids analysis
+                ReadOnlySpan<bool> noEscapeCopy = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(noEscape), noEscape.Length);
+
+                EscapeStringToBuilder(stringToEscape.Slice(i), ref dest, noEscapeCopy, checkExistingEscaped);
             }
         }
 
@@ -340,6 +314,14 @@ namespace System
             fixed (char* pStr = input)
             {
                 UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
+            }
+        }
+        internal static unsafe void UnescapeString(ReadOnlySpan<char> input, ref ValueStringBuilder dest,
+           char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
+        {
+            fixed (char* pStr = &MemoryMarshal.GetReference(input))
+            {
+                UnescapeString(pStr, 0, input.Length, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
             }
         }
         internal static unsafe void UnescapeString(char* pStr, int start, int end, ref ValueStringBuilder dest,

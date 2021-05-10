@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/stackstring.hpp"
+#include "pal/signal.hpp"
 
 #include <errno.h>
 #if HAVE_POLL
@@ -1735,14 +1736,20 @@ public:
             TRACE("sem_wait(startup)\n");
 
             // Wait until the coreclr runtime (debuggee) starts up
-            if (sem_wait(m_startupSem) == 0)
+            while (sem_wait(m_startupSem) != 0)
             {
-                pe = InvokeStartupCallback();
-            }
-            else
-            {
+                if (EINTR == errno)
+                {
+                    TRACE("sem_wait() failed with EINTR; re-waiting");
+                    continue;
+                }
                 TRACE("sem_wait(startup) failed: errno is %d (%s)\n", errno, strerror(errno));
                 pe = GetSemError();
+            }
+
+            if (pe == NO_ERROR)
+            {
+                pe = InvokeStartupCallback();
             }
         }
 
@@ -1905,8 +1912,13 @@ PAL_NotifyRuntimeStarted()
     }
 
     // Now wait until the debugger's runtime startup notification is finished
-    if (sem_wait(continueSem) != 0)
+    while (sem_wait(continueSem) != 0)
     {
+        if (EINTR == errno)
+        {
+            TRACE("sem_wait() failed with EINTR; re-waiting");
+            continue;
+        }
         ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
         goto exit;
     }
@@ -3046,16 +3058,30 @@ Function
 
 (no return value)
 --*/
-__attribute__((destructor))
 VOID
-PROCNotifyProcessShutdown()
+PROCNotifyProcessShutdown(bool isExecutingOnAltStack)
 {
     // Call back into the coreclr to clean up the debugger transport pipes
     PSHUTDOWN_CALLBACK callback = InterlockedExchangePointer(&g_shutdownCallback, NULL);
     if (callback != NULL)
     {
-        callback();
+        callback(isExecutingOnAltStack);
     }
+}
+
+/*++
+Function
+  PROCNotifyProcessShutdownDestructor
+
+  Called at process exit, invokes process shutdown notification
+
+(no return value)
+--*/
+__attribute__((destructor))
+VOID
+PROCNotifyProcessShutdownDestructor()
+{
+    PROCNotifyProcessShutdown(/* isExecutingOnAltStack */ false);
 }
 
 /*++
@@ -3232,9 +3258,9 @@ PROCAbortInitialize()
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
+
         char* program = nullptr;
         char* pidarg = nullptr;
-
         if (!PROCBuildCreateDumpCommandLine((const char **)g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag))
         {
             return FALSE;
@@ -3333,6 +3359,9 @@ PROCAbort()
     PROCNotifyProcessShutdown();
 
     PROCCreateCrashDumpIfEnabled();
+
+    // Restore the SIGABORT handler to prevent recursion
+    SEHCleanupAbort();
 
     // Abort the process after waiting for the core dump to complete
     abort();
@@ -4156,7 +4185,7 @@ PROCGetProcessStatus(
             // have to try again. A second legitimate cause is ECHILD, which
             // happens if we're trying to retrieve the status of a currently-
             // running process that isn't a child of this process.
-            if(EINTR == errno)
+            if (EINTR == errno)
             {
                 TRACE("waitpid() failed with EINTR; re-waiting");
                 continue;

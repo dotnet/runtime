@@ -30,6 +30,7 @@
 #include "eventtrace.h"
 #include "invokeutil.h"
 #include "castcache.h"
+#include "encee.h"
 
 BOOL QCALLTYPE MdUtf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -668,7 +669,7 @@ FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pType
     BOOL retVal = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
     // <TODO>Check this approximation - we may be losing exact type information </TODO>
-    ApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
@@ -1716,22 +1717,7 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
     // Ensure the method is active so
     // the function pointer can be used.
     pMethod->EnsureActive();
-
-#if defined(TARGET_X86)
-    // Deferring X86 support until a need is observed or
-    // time permits investigation into all the potential issues.
-    // https://github.com/dotnet/runtime/issues/33582
-    if (pMethod->HasUnmanagedCallersOnlyAttribute())
-    {
-        funcPtr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMethod);
-    }
-    else
-    {
-        funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
-    }
-#else
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
-#endif
 
     END_QCALL;
 

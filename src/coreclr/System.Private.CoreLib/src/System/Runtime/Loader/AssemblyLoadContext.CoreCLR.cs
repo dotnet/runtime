@@ -19,7 +19,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
+        private static extern void LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void InternalSetProfileRoot(string directoryPath);

@@ -51,7 +51,7 @@ Testing P/Invoke has two aspects:
 
 ### Marshal API
 
-The Marshal API surface area testing is traditionally done via unit testing and far better suited in the [library test folder](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Runtime.InteropServices/tests). Cases where testing the API surface area requires native tests assets will be performed in the [coreclr test folder](https://github.com/dotnet/runtime/tree/master/src/tests/Interop) repo.
+The Marshal API surface area testing is traditionally done via unit testing and far better suited in the [library test folder](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/tests). Cases where testing the API surface area requires native tests assets will be performed in the [coreclr test folder](https://github.com/dotnet/runtime/tree/main/src/tests/Interop) repo.
 
 ### NativeLibrary
 

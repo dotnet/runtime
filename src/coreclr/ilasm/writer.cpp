@@ -34,15 +34,6 @@ HRESULT Assembler::InitMetaData()
     if (FAILED(hr))
         goto exit;
 
-    if(m_wzMetadataVersion)
-    {
-        VARIANT encOption;
-        BSTR    bstr;
-        V_VT(&encOption) = VT_BSTR;
-        V_BSTR(&encOption) = bstr = ::SysAllocString(m_wzMetadataVersion);
-        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &encOption);
-        ::SysFreeString(bstr);
-    }
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
@@ -331,13 +322,12 @@ HRESULT Assembler::CreateExportDirectory()
 
     IMAGE_EXPORT_DIRECTORY  exportDirIDD;
     DWORD                   exportDirDataSize;
-    BYTE                   *exportDirData;
     EATEntry               *pEATE;
     unsigned                i, L, ordBase = 0xFFFFFFFF, Ldllname;
     // get the DLL name from output file name
     char*                   pszDllName;
     Ldllname = (unsigned)wcslen(m_wzOutputFileName)*3+3;
-    char*                   szOutputFileName = new char[Ldllname];
+    NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
     memset(szOutputFileName,0,wcslen(m_wzOutputFileName)*3+3);
     WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
@@ -350,11 +340,11 @@ HRESULT Assembler::CreateExportDirectory()
     // Allocate buffer for tables
     for(i = 0, L=0; i < Nentries; i++) L += 1+(unsigned)strlen(m_EATList.PEEK(i)->szAlias);
     exportDirDataSize = Nentries*5*sizeof(WORD) + L + Ldllname;
-    exportDirData = new BYTE[exportDirDataSize];
+    NewArrayHolder<BYTE> exportDirData(new BYTE[exportDirDataSize]);
     memset(exportDirData,0,exportDirDataSize);
 
     // Export address table
-    DWORD*  pEAT = (DWORD*)exportDirData;
+    DWORD*  pEAT = (DWORD*)(BYTE*)exportDirData;
     // Name pointer table
     DWORD*  pNPT = pEAT + Nentries;
     // Ordinal table
@@ -365,7 +355,7 @@ HRESULT Assembler::CreateExportDirectory()
     char*   pDLLName = pENT + L;
 
     // sort the names/ordinals
-    char**  pAlias = new char*[Nentries];
+    NewArrayHolder<char*> pAlias(new char*[Nentries]);
     for(i = 0; i < Nentries; i++)
     {
         pEATE = m_EATList.PEEK(i);
@@ -483,8 +473,6 @@ HRESULT Assembler::CreateExportDirectory()
     // Copy the debug directory into the section.
     memcpy(de, &exportDirIDD, sizeof(IMAGE_EXPORT_DIRECTORY));
     memcpy(de + sizeof(IMAGE_EXPORT_DIRECTORY), exportDirData, exportDirDataSize);
-    delete [] pAlias;
-    delete [] exportDirData;
     return S_OK;
 }
 
@@ -874,8 +862,6 @@ HRESULT Assembler::DoLocalMemberRefFixups()
         int i;
         for(i = 0; (pMRF = m_LocalMemberRefFixupList.PEEK(i)) != NULL; i++)
         {
-            if(m_fENCMode && (!pMRF->m_fNew)) continue;
-
             switch(TypeFromToken(pMRF->tk))
             {
                 case 0x99000000: pList = &m_LocalMethodRefDList; break;
@@ -1046,6 +1032,9 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
         {
             goto exit;
         }
+
+        // Public-sign by default
+        m_dwComImageFlags |= COMIMAGE_FLAGS_STRONGNAMESIGNED;
     }
 
     if(bClock) bClock->cMDEmit2 = GetTickCount();
@@ -1399,32 +1388,23 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
         if (m_dwCeeFileFlags & ICEE_CREATE_MACHINE_I386)
             COR_SET_32BIT_REQUIRED(m_dwComImageFlags);
     }
-    if (m_fWindowsCE)
+
+    if (m_dwCeeFileFlags & ICEE_CREATE_MACHINE_ARM || m_fAppContainer)
     {
-        if (FAILED(hr=m_pCeeFileGen->SetSubsystem(m_pCeeFile, IMAGE_SUBSYSTEM_WINDOWS_CE_GUI, 2, 10))) goto exit;
-
-        if (FAILED(hr=m_pCeeFileGen->SetImageBase(m_pCeeFile, 0x10000))) goto exit;
+        // For AppContainer and ARM, you must have a minimum subsystem version of 6.02
+        m_wSSVersionMajor = (m_wSSVersionMajor < 6) ? 6 : m_wSSVersionMajor;
+        m_wSSVersionMinor = (m_wSSVersionMinor < 2 && m_wSSVersionMajor <= 6) ? 2 : m_wSSVersionMinor;
     }
-    else
-    {
-        if (m_dwCeeFileFlags & ICEE_CREATE_MACHINE_ARM || m_fAppContainer)
-        {
-            // For AppContainer and ARM, you must have a minimum subsystem version of 6.02
-            m_wSSVersionMajor = (m_wSSVersionMajor < 6) ? 6 : m_wSSVersionMajor;
-            m_wSSVersionMinor = (m_wSSVersionMinor < 2 && m_wSSVersionMajor <= 6) ? 2 : m_wSSVersionMinor;
 
-        }
+    // Default the subsystem, instead the user doesn't set it to GUI or CUI
+    if (m_dwSubsystem == (DWORD)-1)
+        // The default for ILAsm previously was CUI, so that should be the default behavior...
+        m_dwSubsystem = IMAGE_SUBSYSTEM_WINDOWS_CUI;
 
-        // Default the subsystem, instead the user doesn't set it to GUI or CUI
-        if (m_dwSubsystem == (DWORD)-1)
-            // The default for ILAsm previously was CUI, so that should be the default behavior...
-            m_dwSubsystem = IMAGE_SUBSYSTEM_WINDOWS_CUI;
-
-        if (FAILED(hr=m_pCeeFileGen->SetSubsystem(m_pCeeFile, m_dwSubsystem, m_wSSVersionMajor, m_wSSVersionMinor))) goto exit;
-    }
+    if (FAILED(hr=m_pCeeFileGen->SetSubsystem(m_pCeeFile, m_dwSubsystem, m_wSSVersionMajor, m_wSSVersionMinor))) goto exit;
 
     if (FAILED(hr=m_pCeeFileGen->ClearComImageFlags(m_pCeeFile, COMIMAGE_FLAGS_ILONLY))) goto exit;
-    if (FAILED(hr=m_pCeeFileGen->SetComImageFlags(m_pCeeFile, m_dwComImageFlags & ~COMIMAGE_FLAGS_STRONGNAMESIGNED))) goto exit;
+    if (FAILED(hr=m_pCeeFileGen->SetComImageFlags(m_pCeeFile, m_dwComImageFlags))) goto exit;
 
     if(m_dwFileAlignment)
     {
@@ -1602,18 +1582,6 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
             goto exit;
         }
     }
-    /*
-    if((m_wRTVmajor < 0xFFFF)&&(m_wRTVminor < 0xFFFF))
-    {
-        IMAGE_COR20_HEADER* pCorH;
-        if(FAILED(hr=m_pCeeFileGen->GetCorHeader(m_pCeeFile,&pCorH))) goto exit;
-        pCorH->MajorRuntimeVersion = VAL16(m_wRTVmajor);
-        pCorH->MinorRuntimeVersion = VAL16(m_wRTVminor);
-    }
-    */
-    // Generate the file -- moved to main
-    //if (FAILED(hr=m_pCeeFileGen->GenerateCeeFile(m_pCeeFile))) goto exit;
-
 
     hr = S_OK;
 

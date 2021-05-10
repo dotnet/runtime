@@ -134,7 +134,7 @@ namespace System
             }
         }
 
-        internal class RuntimeTypeCache
+        internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
 
@@ -203,7 +203,7 @@ namespace System
                 }
             }
 
-            private class MemberInfoCache<T> where T : MemberInfo
+            private sealed class MemberInfoCache<T> where T : MemberInfo
             {
                 #region Private Data Members
 
@@ -1939,18 +1939,18 @@ namespace System
         {
             RuntimeType[]? typeContext = null;
             RuntimeType[]? methodContext = null;
-            RuntimeType[] genericParamters;
+            RuntimeType[] genericParameters;
 
             if (definition is Type)
             {
                 RuntimeType genericTypeDefinition = (RuntimeType)definition;
-                genericParamters = genericTypeDefinition.GetGenericArgumentsInternal();
+                genericParameters = genericTypeDefinition.GetGenericArgumentsInternal();
                 typeContext = genericArguments;
             }
             else
             {
                 RuntimeMethodInfo genericMethodDefinition = (RuntimeMethodInfo)definition;
-                genericParamters = genericMethodDefinition.GetGenericArgumentsInternal();
+                genericParameters = genericMethodDefinition.GetGenericArgumentsInternal();
                 methodContext = genericArguments;
 
                 RuntimeType? declaringType = (RuntimeType?)genericMethodDefinition.DeclaringType;
@@ -1963,7 +1963,7 @@ namespace System
             for (int i = 0; i < genericArguments.Length; i++)
             {
                 Type genericArgument = genericArguments[i];
-                Type genericParameter = genericParamters[i];
+                Type genericParameter = genericParameters[i];
 
                 if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.GetTypeHandleInternal().GetTypeChecked(),
                     typeContext, methodContext, genericArgument.GetTypeHandleInternal().GetTypeChecked()))
@@ -2418,6 +2418,18 @@ namespace System
             return cache;
         }
 
+        internal void ClearCache()
+        {
+            // If there isn't a GCHandle yet, there's nothing more to do.
+            if (Volatile.Read(ref m_cache) == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // Set the GCHandle to null. The cache will be re-created next time it is needed.
+            GCHandle.InternalSet(m_cache, null);
+        }
+
         private string? GetDefaultMemberName()
         {
             return Cache.GetDefaultMemberName();
@@ -2611,7 +2623,7 @@ namespace System
             return GetNestedTypeCandidates(null, bindingAttr, false).ToArray();
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             ListBuilder<MethodInfo> methods = GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false);
@@ -2954,7 +2966,7 @@ namespace System
             return match;
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (name is null) throw new ArgumentNullException(nameof(name));
@@ -3668,6 +3680,11 @@ namespace System
             Type[] aArgsTypes,
             Type retType)
         {
+            if (!Marshal.IsBuiltInComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             Debug.Assert(
                 aArgs.Length == aArgsIsByRef.Length
                 && aArgs.Length == aArgsTypes.Length
@@ -3920,7 +3937,7 @@ namespace System.Reflection
     // reliable in the presence of asynchronous exceptions.
     internal struct CerHashtable<K, V> where K : class
     {
-        private class Table
+        private sealed class Table
         {
             // Note that m_keys and m_values arrays are immutable to allow lock-free reads. A new instance
             // of CerHashtable has to be allocated to grow the size of the hashtable.

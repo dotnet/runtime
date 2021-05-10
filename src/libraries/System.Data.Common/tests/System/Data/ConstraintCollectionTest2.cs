@@ -413,7 +413,7 @@ namespace System.Data.Tests
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             dt.Constraints.Add("UniqueConstraint", dt.Columns["ParentId"], true);
-            Assert.Equal(1, (double)dt.Constraints.Count); ;
+            Assert.Equal(1, (double)dt.Constraints.Count);
             Assert.Equal("UniqueConstraint", dt.Constraints[0].ConstraintName);
         }
 

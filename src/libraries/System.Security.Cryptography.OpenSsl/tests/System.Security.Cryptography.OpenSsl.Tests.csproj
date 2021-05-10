@@ -1,15 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <!-- ActiveIssue Apple Silicon No usable version of libssl was found
+        https://github.com/dotnet/runtime/issues/49083 -->
+    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="EcDsaOpenSslTests.cs" />
     <Compile Include="RSAOpenSslProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\CurveDef.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\CurveDef.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\EccTestBase.cs"
@@ -60,6 +66,7 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
+    <Compile Include="RC2Provider.cs" />
     <Compile Include="EcDiffieHellmanOpenSslProvider.cs" />
     <Compile Include="EcDiffieHellmanOpenSslTests.cs" />
     <Compile Include="EcDsaOpenSslProvider.cs" />

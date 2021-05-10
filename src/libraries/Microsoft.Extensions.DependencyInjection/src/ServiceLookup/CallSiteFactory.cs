@@ -12,11 +12,11 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class CallSiteFactory
+    internal sealed class CallSiteFactory
     {
         private const int DefaultSlot = 0;
         private readonly ServiceDescriptor[] _descriptors;
-        private readonly ConcurrentDictionary<Type, ServiceCallSite> _callSiteCache = new ConcurrentDictionary<Type, ServiceCallSite>();
+        private readonly ConcurrentDictionary<ServiceCacheKey, ServiceCallSite> _callSiteCache = new ConcurrentDictionary<ServiceCacheKey, ServiceCallSite>();
         private readonly Dictionary<Type, ServiceDescriptorCacheItem> _descriptorLookup = new Dictionary<Type, ServiceDescriptorCacheItem>();
 
         private readonly StackGuard _stackGuard;
@@ -40,14 +40,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     if (implementationType == null || !implementationType.IsGenericTypeDefinition)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, descriptor.ServiceType),
+                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, serviceType),
                             "descriptors");
                     }
 
                     if (implementationType.IsAbstract || implementationType.IsInterface)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
+                            SR.Format(SR.TypeCannotBeActivated, implementationType, serviceType));
+                    }
+
+                    if (serviceType.GetGenericArguments().Length != implementationType.GetGenericArguments().Length)
+                    {
+                        throw new ArgumentException(
+                            SR.Format(SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation, serviceType, implementationType), "descriptors");
                     }
                 }
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
@@ -60,18 +66,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         implementationType.IsInterface)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
+                            SR.Format(SR.TypeCannotBeActivated, implementationType, serviceType));
                     }
                 }
 
-                Type cacheKey = descriptor.ServiceType;
+                Type cacheKey = serviceType;
                 _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem cacheItem);
                 _descriptorLookup[cacheKey] = cacheItem.Add(descriptor);
             }
         }
 
         internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain) =>
-            _callSiteCache.TryGetValue(serviceType, out ServiceCallSite site) ? site :
+            _callSiteCache.TryGetValue(new ServiceCacheKey(serviceType, DefaultSlot), out ServiceCallSite site) ? site :
             CreateCallSite(serviceType, callSiteChain);
 
         internal ServiceCallSite GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
@@ -97,8 +103,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ServiceCallSite callSite = TryCreateExact(serviceType, callSiteChain) ??
                                        TryCreateOpenGeneric(serviceType, callSiteChain) ??
                                        TryCreateEnumerable(serviceType, callSiteChain);
-
-            _callSiteCache[serviceType] = callSite;
 
             return callSite;
         }
@@ -126,6 +130,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private ServiceCallSite TryCreateEnumerable(Type serviceType, CallSiteChain callSiteChain)
         {
+            ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, DefaultSlot);
+            if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
+            {
+                return serviceCallSite;
+            }
+
             try
             {
                 callSiteChain.Add(serviceType);
@@ -182,10 +192,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ResultCache resultCache = ResultCache.None;
                     if (cacheLocation == CallSiteResultCacheLocation.Scope || cacheLocation == CallSiteResultCacheLocation.Root)
                     {
-                        resultCache = new ResultCache(cacheLocation, new ServiceCacheKey(serviceType, DefaultSlot));
+                        resultCache = new ResultCache(cacheLocation, callSiteKey);
                     }
 
-                    return new IEnumerableCallSite(resultCache, itemType, callSites.ToArray());
+                    return _callSiteCache[callSiteKey] = new IEnumerableCallSite(resultCache, itemType, callSites.ToArray());
                 }
 
                 return null;
@@ -205,6 +215,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (serviceType == descriptor.ServiceType)
             {
+                ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, slot);
+                if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
+                {
+                    return serviceCallSite;
+                }
+
                 ServiceCallSite callSite;
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceType, slot);
                 if (descriptor.ImplementationInstance != null)
@@ -224,7 +240,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
 
-                return callSite;
+                return _callSiteCache[callSiteKey] = callSite;
             }
 
             return null;
@@ -235,6 +251,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (serviceType.IsConstructedGenericType &&
                 serviceType.GetGenericTypeDefinition() == descriptor.ServiceType)
             {
+                ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, slot);
+                if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
+                {
+                    return serviceCallSite;
+                }
+
                 Debug.Assert(descriptor.ImplementationType != null, "descriptor.ImplementationType != null");
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceType, slot);
                 Type closedType;
@@ -252,7 +274,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return null;
                 }
 
-                return CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
+                return _callSiteCache[callSiteKey] = CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
             }
 
             return null;
@@ -285,7 +307,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
 
                     parameterCallSites = CreateArgumentCallSites(
-                        serviceType,
                         implementationType,
                         callSiteChain,
                         parameters,
@@ -304,7 +325,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ParameterInfo[] parameters = constructors[i].GetParameters();
 
                     ServiceCallSite[] currentParameterCallSites = CreateArgumentCallSites(
-                        serviceType,
                         implementationType,
                         callSiteChain,
                         parameters,
@@ -324,19 +344,24 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                             if (bestConstructorParameterTypes == null)
                             {
-                                bestConstructorParameterTypes = new HashSet<Type>(
-                                    bestConstructor.GetParameters().Select(p => p.ParameterType));
+                                bestConstructorParameterTypes = new HashSet<Type>();
+                                foreach (ParameterInfo p in bestConstructor.GetParameters())
+                                {
+                                    bestConstructorParameterTypes.Add(p.ParameterType);
+                                }
                             }
 
-                            if (!bestConstructorParameterTypes.IsSupersetOf(parameters.Select(p => p.ParameterType)))
+                            foreach (ParameterInfo p in parameters)
                             {
-                                // Ambiguous match exception
-                                string message = string.Join(
-                                    Environment.NewLine,
-                                    SR.Format(SR.AmbiguousConstructorException, implementationType),
-                                    bestConstructor,
-                                    constructors[i]);
-                                throw new InvalidOperationException(message);
+                                if (!bestConstructorParameterTypes.Contains(p.ParameterType))
+                                {
+                                    // Ambiguous match exception
+                                    throw new InvalidOperationException(string.Join(
+                                        Environment.NewLine,
+                                        SR.Format(SR.AmbiguousConstructorException, implementationType),
+                                        bestConstructor,
+                                        constructors[i]));
+                                }
                             }
                         }
                     }
@@ -360,7 +385,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         private ServiceCallSite[] CreateArgumentCallSites(
-            Type serviceType,
             Type implementationType,
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
@@ -398,7 +422,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Add(Type type, ServiceCallSite serviceCallSite)
         {
-            _callSiteCache[type] = serviceCallSite;
+            _callSiteCache[new ServiceCacheKey(type, DefaultSlot)] = serviceCallSite;
         }
 
         private struct ServiceDescriptorCacheItem
@@ -457,7 +481,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 if (descriptor == _item)
                 {
-                    return 0;
+                    return Count - 1;
                 }
 
                 if (_items != null)
@@ -465,7 +489,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int index = _items.IndexOf(descriptor);
                     if (index != -1)
                     {
-                        return index + 1;
+                        return Count - index + 1;
                     }
                 }
 

@@ -111,6 +111,7 @@ IF_DEF(EN2Q, IS_NONE, NONE) // Instruction has 2 possible encoding types, type Q
 //   BR  :: Branches - Register
 //   SN  :: System - No Registers or Immediates
 //   SI  :: System - Immediate
+//   SR  :: System - Register
 //
 //   _   :: a separator char '_'
 //
@@ -225,6 +226,8 @@ IF_DEF(DV_4A,  IS_NONE, NONE) // DV_4A  .........X.mmmmm .aaaaannnnnddddd      V
 IF_DEF(SN_0A, IS_NONE, NONE) // SN_0A   ................ ................
 IF_DEF(SI_0A, IS_NONE, NONE) // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
 IF_DEF(SI_0B, IS_NONE, NONE) // SI_0B   ................ ....bbbb........               imm4 - barrier
+
+IF_DEF(SR_1A, IS_NONE, NONE) // SR_1A   ................ ...........ttttt      Rt       (dc zva)
 
 IF_DEF(INVALID, IS_NONE, NONE) //
 

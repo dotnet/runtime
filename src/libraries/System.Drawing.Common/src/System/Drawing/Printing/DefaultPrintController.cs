@@ -30,7 +30,7 @@ namespace System.Drawing.Printing
                 throw new InvalidPrinterException(document.PrinterSettings);
 
             _dc = document.PrinterSettings.CreateDeviceContext(_modeHandle);
-            SafeNativeMethods.DOCINFO info = new SafeNativeMethods.DOCINFO();
+            Interop.Gdi32.DOCINFO info = new Interop.Gdi32.DOCINFO();
             info.lpszDocName = document.DocumentName;
             if (document.PrinterSettings.PrintToFile)
                 info.lpszOutput = document.PrinterSettings.OutputPort; //This will be "FILE:"
@@ -39,7 +39,7 @@ namespace System.Drawing.Printing
             info.lpszDatatype = null;
             info.fwType = 0;
 
-            int result = SafeNativeMethods.StartDoc(new HandleRef(_dc, _dc.Hdc), info);
+            int result = Interop.Gdi32.StartDoc(new HandleRef(_dc, _dc.Hdc), info);
             if (result <= 0)
             {
                 int error = Marshal.GetLastWin32Error();
@@ -67,7 +67,7 @@ namespace System.Drawing.Printing
             IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, _modeHandle));
             try
             {
-                IntPtr result = SafeNativeMethods.ResetDC(new HandleRef(_dc, _dc.Hdc), new HandleRef(null, modePointer));
+                IntPtr result = Interop.Gdi32.ResetDC(new HandleRef(_dc, _dc.Hdc), new HandleRef(null, modePointer));
                 Debug.Assert(result == _dc.Hdc, "ResetDC didn't return the same handle I gave it");
             }
             finally
@@ -94,7 +94,7 @@ namespace System.Drawing.Printing
             }
 
 
-            int result2 = SafeNativeMethods.StartPage(new HandleRef(_dc, _dc.Hdc));
+            int result2 = Interop.Gdi32.StartPage(new HandleRef(_dc, _dc.Hdc));
             if (result2 <= 0)
                 throw new Win32Exception();
             return _graphics;
@@ -109,7 +109,7 @@ namespace System.Drawing.Printing
 
             try
             {
-                int result = SafeNativeMethods.EndPage(new HandleRef(_dc, _dc.Hdc));
+                int result = Interop.Gdi32.EndPage(new HandleRef(_dc, _dc.Hdc));
                 if (result <= 0)
                     throw new Win32Exception();
             }
@@ -132,7 +132,7 @@ namespace System.Drawing.Printing
             {
                 try
                 {
-                    int result = (e.Cancel) ? SafeNativeMethods.AbortDoc(new HandleRef(_dc, _dc.Hdc)) : SafeNativeMethods.EndDoc(new HandleRef(_dc, _dc.Hdc));
+                    int result = (e.Cancel) ? Interop.Gdi32.AbortDoc(new HandleRef(_dc, _dc.Hdc)) : Interop.Gdi32.EndDoc(new HandleRef(_dc, _dc.Hdc));
                     if (result <= 0)
                         throw new Win32Exception();
                 }

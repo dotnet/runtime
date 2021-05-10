@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         public const uint ERROR_SUCCESS = 0;
         public const uint ERROR_FILE_NOT_FOUND = 2;
@@ -69,6 +68,7 @@ internal partial class Interop
         public const uint WINHTTP_QUERY_STATUS_TEXT = 20;
         public const uint WINHTTP_QUERY_RAW_HEADERS = 21;
         public const uint WINHTTP_QUERY_RAW_HEADERS_CRLF = 22;
+        public const uint WINHTTP_QUERY_FLAG_TRAILERS = 0x02000000;
         public const uint WINHTTP_QUERY_CONTENT_ENCODING = 29;
         public const uint WINHTTP_QUERY_SET_COOKIE = 43;
         public const uint WINHTTP_QUERY_CUSTOM = 65535;
@@ -129,10 +129,10 @@ internal partial class Interop
         public const uint WINHTTP_AUTH_TARGET_PROXY = 0x00000001;
 
         public const uint WINHTTP_OPTION_USERNAME = 0x1000;
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PASSWORD = 0x1001;
         public const uint WINHTTP_OPTION_PROXY_USERNAME = 0x1002;
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PROXY_PASSWORD = 0x1003;
 
         public const uint WINHTTP_OPTION_SERVER_SPN_USED = 106;
@@ -165,6 +165,7 @@ internal partial class Interop
         public const uint WINHTTP_OPTION_WEB_SOCKET_SEND_BUFFER_SIZE = 123;
 
         public const uint WINHTTP_OPTION_TCP_KEEPALIVE = 152;
+        public const uint WINHTTP_OPTION_STREAM_ERROR_CODE = 159;
 
         public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
         {

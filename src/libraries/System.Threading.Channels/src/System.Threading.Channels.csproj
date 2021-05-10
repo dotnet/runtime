@@ -9,7 +9,8 @@
     <Compile Include="System\Collections\Generic\Deque.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('netstandard')) AND !$(TargetFramework.StartsWith('net4'))" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" Condition="$(TargetFramework.StartsWith('netstandard')) OR $(TargetFramework.StartsWith('net4'))" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard1.cs" Condition="$(TargetFramework.StartsWith('netstandard1.'))" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard2.cs" Condition="$(TargetFramework.StartsWith('netstandard2.')) OR $(TargetFramework.StartsWith('net4'))" />
     <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />

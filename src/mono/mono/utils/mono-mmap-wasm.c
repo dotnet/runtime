@@ -190,8 +190,6 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		mflags |= MAP_SHARED;
 	if (flags & MONO_MMAP_FIXED)
 		mflags |= MAP_FIXED;
-	if (flags & MONO_MMAP_32BIT)
-		mflags |= MAP_32BIT;
 
 	if (length == 0)
 		/* emscripten throws an exception on 0 length */

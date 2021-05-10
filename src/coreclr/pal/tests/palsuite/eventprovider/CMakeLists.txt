@@ -20,7 +20,8 @@ if(TARGET_UNIX)
     include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 endif(TARGET_UNIX)
 
-_add_executable(eventprovidertest
+add_executable_clr(eventprovidertest
+            EXCLUDE_FROM_ALL
             ${SOURCES}
             )
 set(EVENT_PROVIDER_DEPENDENCIES "")
@@ -39,4 +40,5 @@ endif(FEATURE_EVENT_TRACE)
 target_link_libraries(eventprovidertest  ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
 add_dependencies(eventprovidertest eventing_headers)
 
-_install (TARGETS eventprovidertest DESTINATION paltests/eventprovider)
+install (TARGETS eventprovidertest DESTINATION paltests/eventprovider COMPONENT paltests EXCLUDE_FROM_ALL)
+add_dependencies(paltests_install eventprovidertest)

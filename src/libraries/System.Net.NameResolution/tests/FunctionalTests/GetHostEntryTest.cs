@@ -21,6 +21,7 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+        
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]

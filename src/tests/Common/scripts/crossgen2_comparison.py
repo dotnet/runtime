@@ -400,7 +400,6 @@ g_Framework_Assemblies = [
     'System.Net.WebProxy.dll',
     'System.Net.WebSockets.Client.dll',
     'System.Net.WebSockets.dll',
-    'System.Net.WebSockets.WebSocketProtocol.dll',
     'System.Numerics.dll',
     'System.Numerics.Tensors.dll',
     'System.Numerics.Vectors.dll',

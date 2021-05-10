@@ -221,7 +221,7 @@ namespace System.Collections.Concurrent
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);
 
             _collection = collection;
-            _boundedCapacity = boundedCapacity; ;
+            _boundedCapacity = boundedCapacity;
             _isDisposed = false;
             _consumersCancellationTokenSource = new CancellationTokenSource();
             _producersCancellationTokenSource = new CancellationTokenSource();
@@ -1144,7 +1144,7 @@ namespace System.Collections.Concurrent
             }
 
             // Subtract the elapsed time from the current wait time
-            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds; ;
+            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds;
             if (currentWaitTimeout <= 0)
             {
                 return 0;

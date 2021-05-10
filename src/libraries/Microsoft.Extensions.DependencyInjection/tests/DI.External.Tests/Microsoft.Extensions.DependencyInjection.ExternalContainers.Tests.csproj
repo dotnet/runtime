@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
@@ -12,12 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\DI.Specification.Tests\**\*.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"/>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="4.0.0" />

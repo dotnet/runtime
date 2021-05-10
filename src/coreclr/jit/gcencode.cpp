@@ -1623,6 +1623,13 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #endif
 
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
+    if (compiler->opts.IsReversePInvoke())
+    {
+        assert(compiler->lvaReversePInvokeFrameVar != BAD_VAR_NUM);
+        int stkOffs              = compiler->lvaTable[compiler->lvaReversePInvokeFrameVar].GetStackOffset();
+        header->revPInvokeOffset = compiler->isFramePointerUsed() ? -stkOffs : stkOffs;
+        assert(header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+    }
 
     assert((compiler->compArgSize & 0x3) == 0);
 
@@ -1724,6 +1731,15 @@ size_t GCInfo::gcInfoBlockHdrSave(
             size += sz;
             dest += (sz & mask);
         }
+    }
+
+    if (header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+    {
+        assert(mask == 0 || state.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
+        unsigned offset = header->revPInvokeOffset;
+        unsigned sz     = encodeUnsigned(mask ? dest : NULL, offset);
+        size += sz;
+        dest += (sz & mask);
     }
 
     if (header->epilogCount)
@@ -3915,13 +3931,24 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
         int offset = 0;
 
+        // OSR can report the root method's frame slot, if that method reported context.
+        //
+        bool isOsrAndUsingRootFrameSlot = false;
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
-            offset                 = ppInfo->GenericContextArgOffset();
-            assert(offset != -1);
+            PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+
+            if (ppInfo->HasKeptAliveThis())
+            {
+                offset = ppInfo->GenericContextArgOffset();
+                assert(offset != -1);
+                isOsrAndUsingRootFrameSlot = true;
+            }
         }
-        else
+
+        // If not OSR, or OSR but newly reporting context, use the current frame offset.
+        //
+        if (!isOsrAndUsingRootFrameSlot)
         {
             offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
                                                            compiler->isFramePointerUsed());
@@ -4077,10 +4104,6 @@ void GCInfo::gcMakeRegPtrTable(
      *
      **************************************************************************
      */
-
-    unsigned count = 0;
-
-    int lastoffset = 0;
 
     /* Count&Write untracked locals and non-enregistered args */
 
@@ -4308,8 +4331,6 @@ void GCInfo::gcMakeRegPtrTable(
 
         for (regPtrDsc* genRegPtrTemp = gcRegPtrList; genRegPtrTemp != nullptr; genRegPtrTemp = genRegPtrTemp->rpdNext)
         {
-            int nextOffset = genRegPtrTemp->rpdOffs;
-
             if (genRegPtrTemp->rpdArg)
             {
                 if (genRegPtrTemp->rpdArgTypeGet() == rpdARG_KILL)

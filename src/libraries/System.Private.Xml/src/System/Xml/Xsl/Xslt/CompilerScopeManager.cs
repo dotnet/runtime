@@ -98,7 +98,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // returns true if ns decls was added to scope
-        public bool EnterScope(NsDecl? nsDecl)
+        public bool EnterScope([NotNullWhen(true)] NsDecl? nsDecl)
         {
             _lastScopes++;
 

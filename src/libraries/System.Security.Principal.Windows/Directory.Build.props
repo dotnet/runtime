@@ -2,7 +2,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides classes for retrieving the current Windows user and for interacting with Windows users and groups.
 
 Commonly Used Types:

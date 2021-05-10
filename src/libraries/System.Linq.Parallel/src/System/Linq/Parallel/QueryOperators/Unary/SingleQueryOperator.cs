@@ -93,7 +93,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the Single operation.
         //
 
-        private class SingleQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
+        private sealed class SingleQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private readonly Func<TSource, bool>? _predicate; // The optional predicate used during the search.

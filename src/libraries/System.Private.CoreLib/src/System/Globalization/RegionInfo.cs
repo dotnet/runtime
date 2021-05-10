@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
@@ -184,7 +185,7 @@ namespace System.Globalization
         /// RegionInfos are considered equal if and only if they have the same name
         /// (ie: en-US)
         /// </summary>
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             return value is RegionInfo otherRegion
                 && Name.Equals(otherRegion.Name);

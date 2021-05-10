@@ -1,13 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
 
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn),CA2007</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.7" />
-    <PackageReference Include="Mono.Cecil" Version="0.11.2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" />
   </ItemGroup>

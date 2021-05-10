@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public class CryptoConfig
+    public partial class CryptoConfig
     {
         private const string AssemblyName_Cng = "System.Security.Cryptography.Cng";
         private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
@@ -37,9 +37,6 @@ namespace System.Security.Cryptography
         private static volatile Dictionary<string, object>? s_defaultNameHT;
         private static readonly ConcurrentDictionary<string, Type> appNameHT = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, string> appOidHT = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        // .NET Core does not support AllowOnlyFipsAlgorithms
-        public static bool AllowOnlyFipsAlgorithms => false;
 
         private static Dictionary<string, string> DefaultOidHT
         {
@@ -122,7 +119,9 @@ namespace System.Security.Cryptography
                 Type HMACSHA256Type = typeof(System.Security.Cryptography.HMACSHA256);
                 Type HMACSHA384Type = typeof(System.Security.Cryptography.HMACSHA384);
                 Type HMACSHA512Type = typeof(System.Security.Cryptography.HMACSHA512);
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
                 Type RijndaelManagedType = typeof(System.Security.Cryptography.RijndaelManaged);
+#pragma warning restore SYSLIB0022
                 Type AesManagedType = typeof(System.Security.Cryptography.AesManaged);
                 Type SHA256DefaultType = typeof(System.Security.Cryptography.SHA256Managed);
                 Type SHA384DefaultType = typeof(System.Security.Cryptography.SHA384Managed);
@@ -295,6 +294,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void AddAlgorithm(Type algorithm, params string[] names)
         {
             if (algorithm == null)
@@ -445,12 +445,13 @@ namespace System.Security.Cryptography
             return retval;
         }
 
-        [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         public static object? CreateFromName(string name)
         {
             return CreateFromName(name, null);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void AddOID(string oid, params string[] names)
         {
             if (oid == null)
@@ -478,6 +479,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static string? MapNameToOID(string name)
         {
             if (name == null)
@@ -498,6 +500,7 @@ namespace System.Security.Cryptography
             return oidName;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static byte[] EncodeOID(string str)
         {
             if (str == null)

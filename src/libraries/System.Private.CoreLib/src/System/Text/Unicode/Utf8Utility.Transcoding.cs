@@ -882,7 +882,8 @@ namespace System.Text.Unicode
             // vector is only used in those code paths, we leave it uninitialized if SSE4.1
             // is not enabled.
 
-            Unsafe.SkipInit(out Vector128<short> nonAsciiUtf16DataMask);
+            Vector128<short> nonAsciiUtf16DataMask;
+
             if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
@@ -950,6 +951,10 @@ namespace System.Text.Unicode
                         Vector128<short> utf16Data;
                         for (i = 0; (uint)i < maxIters; i++)
                         {
+                            // The linker won't trim out nonAsciiUtf16DataMask unless this is in the loop.
+                            // Luckily, this is a nop and will be elided by the JIT
+                            Unsafe.SkipInit(out nonAsciiUtf16DataMask);
+
                             utf16Data = Unsafe.ReadUnaligned<Vector128<short>>(pInputBuffer);
 
                             if (AdvSimd.IsSupported)
@@ -1134,7 +1139,7 @@ namespace System.Text.Unicode
                     }
                     else
                     {
-                        pOutputBuffer[0] = (byte)(thisDWord >> 24); // extract [ AA 00 ## ## ]
+                        pOutputBuffer[0] = (byte)(thisDWord >> 16); // extract [ 00 AA ## ## ]
                     }
 
                     pInputBuffer++;

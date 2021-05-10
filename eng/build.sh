@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch                          Target platform: x86, x64, arm, armel, arm64 or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armel, arm64 or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -28,8 +28,8 @@ usage()
   echo "  --help (-h)                     Print help and exit."
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
-  echo "                                  Browser, NetBSD, illumos or Solaris."
+  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
+  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
@@ -78,6 +78,7 @@ usage()
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
+  echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -109,7 +110,7 @@ usage()
   echo ""
   echo "However, for this example, you need to already have ROOTFS_DIR set up."
   echo "Further information on this can be found here:"
-  echo "https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/linux-instructions.md"
+  echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/linux-instructions.md"
   echo ""
   echo "* Build Mono runtime for Linux x64 on Release configuration."
   echo "./build.sh mono -c release"
@@ -121,7 +122,7 @@ usage()
   echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
   echo ""
   echo ""
-  echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  echo "For more general information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 initDistroRid()
@@ -198,7 +199,7 @@ while [[ $# > 0 ]]; do
       fi
       ;;
 
-     -arch)
+     -arch|-a)
       if [ -z ${2+x} ]; then
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1
@@ -262,10 +263,16 @@ while [[ $# > 0 ]]; do
           os="FreeBSD" ;;
         osx)
           os="OSX" ;;
+        maccatalyst)
+          os="MacCatalyst" ;;
         tvos)
           os="tvOS" ;;
+        tvossimulator)
+          os="tvOSSimulator" ;;
         ios)
           os="iOS" ;;
+        iossimulator)
+          os="iOSSimulator" ;;
         android)
           os="Android" ;;
         browser)
@@ -276,7 +283,7 @@ while [[ $# > 0 ]]; do
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -436,6 +443,11 @@ while [[ $# > 0 ]]; do
           shift 1
         fi
       fi
+      ;;
+
+      -pgoinstrument)
+      arguments="$arguments /p:PgoInstrument=true"
+      shift 1
       ;;
 
       *)

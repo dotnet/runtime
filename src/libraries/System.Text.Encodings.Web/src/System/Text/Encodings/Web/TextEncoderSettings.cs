@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Text.Internal;
+using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 
 namespace System.Text.Encodings.Web
@@ -12,14 +12,13 @@ namespace System.Text.Encodings.Web
     /// </summary>
     public class TextEncoderSettings
     {
-        private readonly AllowedCharactersBitmap _allowedCharactersBitmap;
+        private AllowedBmpCodePointsBitmap _allowedCodePointsBitmap;
 
         /// <summary>
         /// Instantiates an empty filter (allows no code points through by default).
         /// </summary>
         public TextEncoderSettings()
         {
-            _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
         }
 
         /// <summary>
@@ -32,8 +31,7 @@ namespace System.Text.Encodings.Web
                 throw new ArgumentNullException(nameof(other));
             }
 
-            _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
-            AllowCodePoints(other.GetAllowedCodePoints());
+            _allowedCodePointsBitmap = other.GetAllowedCodePointsBitmap(); // copy byval
         }
 
         /// <summary>
@@ -46,7 +44,6 @@ namespace System.Text.Encodings.Web
             {
                 throw new ArgumentNullException(nameof(allowedRanges));
             }
-            _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
             AllowRanges(allowedRanges);
         }
 
@@ -55,7 +52,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void AllowCharacter(char character)
         {
-            _allowedCharactersBitmap.AllowCharacter(character);
+            _allowedCodePointsBitmap.AllowChar(character);
         }
 
         /// <summary>
@@ -70,7 +67,7 @@ namespace System.Text.Encodings.Web
 
             for (int i = 0; i < characters.Length; i++)
             {
-                _allowedCharactersBitmap.AllowCharacter(characters[i]);
+                _allowedCodePointsBitmap.AllowChar(characters[i]);
             }
         }
 
@@ -87,10 +84,9 @@ namespace System.Text.Encodings.Web
             foreach (var allowedCodePoint in codePoints)
             {
                 // If the code point can't be represented as a BMP character, skip it.
-                char codePointAsChar = (char)allowedCodePoint;
-                if (allowedCodePoint == codePointAsChar)
+                if (UnicodeUtility.IsBmpCodePoint((uint)allowedCodePoint))
                 {
-                    _allowedCharactersBitmap.AllowCharacter(codePointAsChar);
+                    _allowedCodePointsBitmap.AllowChar((char)allowedCodePoint);
                 }
             }
         }
@@ -109,7 +105,9 @@ namespace System.Text.Encodings.Web
             int rangeSize = range.Length;
             for (int i = 0; i < rangeSize; i++)
             {
-                _allowedCharactersBitmap.AllowCharacter((char)(firstCodePoint + i));
+                int codePoint = firstCodePoint + i;
+                UnicodeDebug.AssertIsBmpCodePoint((uint)codePoint); // UnicodeRange only supports BMP
+                _allowedCodePointsBitmap.AllowChar((char)codePoint);
             }
         }
 
@@ -134,7 +132,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void Clear()
         {
-            _allowedCharactersBitmap.Clear();
+            _allowedCodePointsBitmap = default;
         }
 
         /// <summary>
@@ -142,7 +140,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void ForbidCharacter(char character)
         {
-            _allowedCharactersBitmap.ForbidCharacter(character);
+            _allowedCodePointsBitmap.ForbidChar(character);
         }
 
         /// <summary>
@@ -157,7 +155,7 @@ namespace System.Text.Encodings.Web
 
             for (int i = 0; i < characters.Length; i++)
             {
-                _allowedCharactersBitmap.ForbidCharacter(characters[i]);
+                _allowedCodePointsBitmap.ForbidChar(characters[i]);
             }
         }
 
@@ -175,7 +173,9 @@ namespace System.Text.Encodings.Web
             int rangeSize = range.Length;
             for (int i = 0; i < rangeSize; i++)
             {
-                _allowedCharactersBitmap.ForbidCharacter((char)(firstCodePoint + i));
+                int codePoint = firstCodePoint + i;
+                UnicodeDebug.AssertIsBmpCodePoint((uint)codePoint); // UnicodeRange only supports BMP
+                _allowedCodePointsBitmap.ForbidChar((char)codePoint);
             }
         }
 
@@ -196,25 +196,42 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Retrieves the bitmap of allowed characters from this settings object.
-        /// The returned bitmap is a clone of the original bitmap to avoid unintentional modification.
-        /// </summary>
-        internal AllowedCharactersBitmap GetAllowedCharacters()
-        {
-            return _allowedCharactersBitmap.Clone();
-        }
-
-        /// <summary>
         /// Gets an enumeration of all allowed code points.
         /// </summary>
         public virtual IEnumerable<int> GetAllowedCodePoints()
         {
-            for (int i = 0; i < 0x10000; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
-                if (_allowedCharactersBitmap.IsCharacterAllowed((char)i))
+                if (_allowedCodePointsBitmap.IsCharAllowed((char)i))
                 {
                     yield return i;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the bitmap of allowed characters from this settings object.
+        /// The data is returned readonly byref.
+        /// </summary>
+        internal ref readonly AllowedBmpCodePointsBitmap GetAllowedCodePointsBitmap()
+        {
+            if (GetType() == typeof(TextEncoderSettings))
+            {
+                return ref _allowedCodePointsBitmap;
+            }
+            else
+            {
+                // Somebody may have overridden GetAllowedCodePoints, and we need to honor that.
+                // Fabricate a new bitmap and populate it from the virtual overrides.
+                StrongBox<AllowedBmpCodePointsBitmap> newBitmap = new StrongBox<AllowedBmpCodePointsBitmap>();
+                foreach (int allowedCodePoint in GetAllowedCodePoints())
+                {
+                    if ((uint)allowedCodePoint <= char.MaxValue)
+                    {
+                        newBitmap.Value.AllowChar((char)allowedCodePoint);
+                    }
+                }
+                return ref newBitmap.Value;
             }
         }
     }

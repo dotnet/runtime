@@ -67,6 +67,7 @@ namespace System.Text.Encodings.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Theory]
         [MemberData(nameof(Encoding_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
         public static void VerifyCodePageAttributes(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay,
                                             bool isBrowserSave, bool isMailNewsDisplay, bool isMailNewsSave, int windowsCodePage)
         {
@@ -84,6 +85,7 @@ namespace System.Text.Encodings.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Theory]
         [MemberData(nameof(Normalization_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
         public static void NormalizationTest(int codepage, bool normalized, bool normalizedC, bool normalizedD, bool normalizedKC, bool normalizedKD)
         {
             Encoding encoding = Encoding.GetEncoding(codepage);

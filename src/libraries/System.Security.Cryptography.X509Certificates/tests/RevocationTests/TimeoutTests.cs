@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
             {
-                TimeSpan delay = TimeSpan.FromSeconds(3);
+                TimeSpan delay = TimeSpan.FromSeconds(10);
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;

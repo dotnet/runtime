@@ -14,7 +14,7 @@ namespace System.Data.ProviderBase
 
     internal class WrappedIUnknown : SafeHandle
     {
-        internal WrappedIUnknown() : base(IntPtr.Zero, true)
+        public WrappedIUnknown() : base(IntPtr.Zero, true)
         {
         }
 

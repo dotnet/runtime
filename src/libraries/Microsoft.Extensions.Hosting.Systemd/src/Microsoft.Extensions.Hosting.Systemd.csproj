@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

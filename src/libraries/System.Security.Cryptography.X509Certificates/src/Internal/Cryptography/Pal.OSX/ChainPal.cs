@@ -611,6 +611,12 @@ namespace Internal.Cryptography.Pal
 
             SecTrustChainPal chainPal = new SecTrustChainPal();
 
+            // The allowNetwork controls all network activity for macOS chain building.
+            // There is no way to independently enable or disable online revocation checking
+            // and AIA fetching. If the caller specifies they want Online revocation checking,
+            // then we need to allow network operations (including AIA fetching.)
+            bool revocationRequiresNetwork = revocationMode != X509RevocationMode.NoCheck;
+
             try
             {
                 chainPal.OpenTrustHandle(
@@ -622,7 +628,7 @@ namespace Internal.Cryptography.Pal
 
                 chainPal.Execute(
                     verificationTime,
-                    !disableAia,
+                    allowNetwork: !disableAia || revocationRequiresNetwork,
                     applicationPolicy,
                     certificatePolicy,
                     revocationFlag);

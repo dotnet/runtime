@@ -11,12 +11,15 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 
 using ILCompiler.Reflection.ReadyToRun;
+using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 
 namespace R2RDump
 {
     class TextDumper : Dumper
     {
+        private const int GuidByteSize = 16;
+
         public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
             : base(r2r, writer, disassembler, options)
         {
@@ -87,7 +90,14 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName}");
+                        string dividerName = $@"Component Assembly [{assemblyIndex}]: {assemblyName}";
+                        if (_r2r.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection mvidSection))
+                        {
+                            int mvidOffset = _r2r.GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
+                            Guid mvid = new Guid(new ReadOnlySpan<byte>(_r2r.Image, mvidOffset, GuidByteSize));
+                            dividerName += $@" - MVID {mvid:b}";
+                        }
+                        WriteDivider(dividerName);
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
                         foreach (ReadyToRunSection section in NormalizedSections(assemblyHeader))
                         {
@@ -135,13 +145,48 @@ namespace R2RDump
             WriteDivider("R2R Methods");
             _writer.WriteLine($"{_r2r.Methods.Count()} methods");
             SkipLine();
+
+            HashSet<PgoInfoKey> pgoEntriesNotDumped = new HashSet<PgoInfoKey>();
+
+            if (_options.Pgo)
+            {
+                if (_r2r != null)
+                {
+                    foreach (PgoInfo info in _r2r.AllPgoInfos)
+                    {
+                        pgoEntriesNotDumped.Add(info.Key);
+                    }
+                }
+            }
             foreach (ReadyToRunMethod method in NormalizedMethods())
             {
                 TextWriter temp = _writer;
                 _writer = new StringWriter();
                 DumpMethod(method);
+                if (_options.Pgo && method.PgoInfo != null)
+                {
+                    pgoEntriesNotDumped.Remove(method.PgoInfo.Key);
+                }
                 temp.Write(_writer.ToString());
                 _writer = temp;
+            }
+
+            if (pgoEntriesNotDumped.Count > 0)
+            {
+                WriteDivider("Pgo entries without code");
+                _writer.WriteLine($"{pgoEntriesNotDumped.Count()} Pgo blobs");
+                IEnumerable<PgoInfoKey> pgoEntriesToDump = pgoEntriesNotDumped;
+                if (_options.Normalize)
+                {
+                    pgoEntriesToDump = pgoEntriesToDump.OrderBy((p) => p.SignatureString);
+                }
+                foreach (var entry in pgoEntriesToDump)
+                {
+                    WriteSubDivider();
+                    _writer.WriteLine(entry.SignatureString);
+                    _writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(entry.ComponentReader.MetadataReader, entry.MethodHandle):X8}");
+                    _writer.WriteLine(_r2r.GetPgoInfoByKey(entry));
+                }
             }
         }
 
@@ -165,6 +210,18 @@ namespace R2RDump
                 }
             }
             SkipLine();
+
+            if (_options.Pgo && method.PgoInfo != null)
+            {
+                _writer.WriteLine("PGO info:");
+                _writer.Write(method.PgoInfo);
+
+                if (_options.Raw)
+                {
+                    DumpBytes(method.PgoInfo.Offset, (uint)method.PgoInfo.Size, convertToOffset: false);
+                }
+                SkipLine();
+            }
 
             foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
             {
@@ -455,6 +512,18 @@ namespace R2RDump
                     string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
                     _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
                     break;
+                case ReadyToRunSectionType.ManifestAssemblyMvids:
+                    int mvidOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int mvidCount = section.Size / GuidByteSize;
+                    for (int mvidIndex = 0; mvidIndex < mvidCount; mvidIndex++)
+                    {
+                        Guid mvid = new Guid(new Span<byte>(_r2r.Image, mvidOffset + GuidByteSize * mvidIndex, GuidByteSize));
+                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, mvid);
+                    }
+                    break;
+                default:
+                    _writer.WriteLine("Unsupported section type {0}", section.Type);
+                    break;
             }
         }
 
@@ -476,6 +545,29 @@ namespace R2RDump
         internal override void DumpQueryCount(string q, string title, int count)
         {
             _writer.WriteLine(count + " result(s) for \"" + q + "\"");
+            SkipLine();
+        }
+
+        internal override void DumpFixupStats()
+        {
+            WriteDivider("Eager fixup counts across all methods");
+            
+            // Group all fixups across methods by fixup kind, and sum each category
+            var sortedFixupCounts = _r2r.Methods.Where(m => m.Fixups != null)
+                .SelectMany(m => m.Fixups)
+                .GroupBy(f => f.Signature.FixupKind)
+                .Select(group => new {
+                    FixupKind = group.Key,
+                    Count = group.Count()
+                }).OrderByDescending(x => x.Count);
+
+            Console.WriteLine($"                      Fixup | Count");
+            foreach (var fixupAndCount in sortedFixupCounts)
+            {
+                Console.WriteLine($"{fixupAndCount.FixupKind, 27} | {fixupAndCount.Count, 5}");
+            }
+            Console.WriteLine("-----------------------------------");
+            Console.WriteLine($"                      Total | {sortedFixupCounts.Sum(x => x.Count), 5}");
             SkipLine();
         }
     }

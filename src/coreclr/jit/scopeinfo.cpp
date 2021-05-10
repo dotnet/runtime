@@ -377,9 +377,6 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 
 #ifndef TARGET_64BIT
         case TYP_LONG:
-#if !CPU_HAS_FP_SUPPORT
-        case TYP_DOUBLE:
-#endif
             if (varDsc->GetOtherReg() != REG_STK)
             {
                 this->vlType            = VLT_REG_REG;
@@ -411,7 +408,6 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 
 #else // !TARGET_64BIT
 
-#if CPU_HAS_FP_SUPPORT
         case TYP_FLOAT:
         case TYP_DOUBLE:
             if (isFloatRegType(type))
@@ -420,7 +416,6 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
                 this->vlFPstk.vlfReg = varDsc->GetRegNum();
             }
             break;
-#endif // CPU_HAS_FP_SUPPORT
 
 #endif // !TARGET_64BIT
 
@@ -457,15 +452,15 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 //    Called for every psiScope in "psiScopeList" codegen.h
 CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed)
 {
-    var_types type = genActualType(varDsc->TypeGet());
-
     if (varDsc->lvIsInReg())
     {
-        siFillRegisterVarLoc(varDsc, type, baseReg, offset, isFramePointerUsed);
+        var_types regType = varDsc->GetActualRegisterType();
+        siFillRegisterVarLoc(varDsc, regType, baseReg, offset, isFramePointerUsed);
     }
     else
     {
-        siFillStackVarLoc(varDsc, type, baseReg, offset, isFramePointerUsed);
+        var_types stackType = genActualType(varDsc->TypeGet());
+        siFillStackVarLoc(varDsc, stackType, baseReg, offset, isFramePointerUsed);
     }
 }
 

@@ -22,10 +22,38 @@ namespace System
         private const string ZoneTabFileName = "zone.tab";
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
-        private const string FallbackCultureName = "en-US";
+
+        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
+        // (This list is not likely to change.)
+        private static readonly string[] s_UtcAliases = new[] {
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UCT",
+            "UTC",
+            "Universal",
+            "Zulu"
+        };
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
+            _id = id;
+
+            HasIanaId = true;
+
+            // Handle UTC and its aliases
+            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
+            {
+                _standardDisplayName = GetUtcStandardDisplayName();
+                _daylightDisplayName = _standardDisplayName;
+                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
+                _baseUtcOffset = TimeSpan.Zero;
+                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                return;
+            }
+
             TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
@@ -34,16 +62,14 @@ namespace System
             bool[] StandardTime;
             bool[] GmtTime;
             string? futureTransitionsPosixFormat;
+            string? standardAbbrevName = null;
+            string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime, out futureTransitionsPosixFormat);
 
-            _id = id;
-            _displayName = LocalId;
-            _baseUtcOffset = TimeSpan.Zero;
-
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
-            // NOTE: read the display strings from the tzfile now in case they can't be loaded later
+            // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
             // from the globalization data.
             DateTime utcNow = DateTime.UtcNow;
             for (int i = 0; i < dts.Length && dts[i] <= utcNow; i++)
@@ -52,11 +78,11 @@ namespace System
                 if (!transitionType[type].IsDst)
                 {
                     _baseUtcOffset = transitionType[type].UtcOffset;
-                    _standardDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
                 else
                 {
-                    _daylightDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
             }
 
@@ -69,28 +95,23 @@ namespace System
                     if (!transitionType[i].IsDst)
                     {
                         _baseUtcOffset = transitionType[i].UtcOffset;
-                        _standardDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                     else
                     {
-                        _daylightDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
             }
-            _displayName = _standardDisplayName;
 
-            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture, ref _displayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture, ref _standardDisplayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture, ref _daylightDisplayName);
+            // Set fallback values using abbreviations, base offset, and id
+            // These are expected in environments without time zone globalization data
+            _standardDisplayName = standardAbbrevName;
+            _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
+            _displayName = $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}";
 
-            if (_standardDisplayName == _displayName)
-            {
-                if (_baseUtcOffset >= TimeSpan.Zero)
-                    _displayName = $"(UTC+{_baseUtcOffset:hh\\:mm}) {_standardDisplayName}";
-                else
-                    _displayName = $"(UTC-{_baseUtcOffset:hh\\:mm}) {_standardDisplayName}";
-            }
+            // Try to populate the display names from the globalization data
+            TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -108,6 +129,17 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
+        // The TransitionTime fields are not used when AdjustmentRule.NoDaylightTransitions == true.
+        // However, there are some cases in the past where DST = true, and the daylight savings offset
+        // now equals what the current BaseUtcOffset is.  In that case, the AdjustmentRule.DaylightOffset
+        // is going to be TimeSpan.Zero.  But we still need to return 'true' from AdjustmentRule.HasDaylightSaving.
+        // To ensure we always return true from HasDaylightSaving, make a "special" dstStart that will make the logic
+        // in HasDaylightSaving return true.
+        private static readonly TransitionTime s_daylightRuleMarker = TransitionTime.CreateFixedDateRule(DateTime.MinValue.AddMilliseconds(2), 1, 1);
+
+        // Truncate the date and the time to Milliseconds precision
+        private static DateTime GetTimeOnlyInMillisecondsPrecision(DateTime input) => new DateTime((input.TimeOfDay.Ticks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond);
+
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
         /// </summary>
@@ -122,11 +154,20 @@ namespace System
             // as the rules now is public, we should fill it properly so the caller doesn't have to know how we use it internally
             // and can use it as it is used in Windows
 
-            AdjustmentRule[] rules = new AdjustmentRule[_adjustmentRules.Length];
+            List<AdjustmentRule> rulesList = new List<AdjustmentRule>(_adjustmentRules.Length);
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
-                AdjustmentRule? rule = _adjustmentRules[i];
+                AdjustmentRule rule = _adjustmentRules[i];
+
+                if (rule.NoDaylightTransitions &&
+                    rule.DaylightTransitionStart != s_daylightRuleMarker &&
+                    rule.DaylightDelta == TimeSpan.Zero && rule.BaseUtcOffsetDelta == TimeSpan.Zero)
+                {
+                    // This rule has no time transition, ignore it.
+                    continue;
+                }
+
                 DateTime start = rule.DateStart.Kind == DateTimeKind.Utc ?
                             // At the daylight start we didn't start the daylight saving yet then we convert to Local time
                             // by adding the _baseUtcOffset to the UTC time
@@ -138,13 +179,51 @@ namespace System
                             new DateTime(rule.DateEnd.Ticks + _baseUtcOffset.Ticks + rule.DaylightDelta.Ticks, DateTimeKind.Unspecified) :
                             rule.DateEnd;
 
-                TransitionTime startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
-                TransitionTime endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+                if (start.Year == end.Year || !rule.NoDaylightTransitions)
+                {
+                    // If the rule is covering only one year then the start and end transitions would occur in that year, we don't need to split the rule.
+                    // Also, rule.NoDaylightTransitions be false in case the rule was created from a POSIX time zone string and having a DST transition. We can represent this in one rule too
+                    TransitionTime startTransition = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day) : rule.DaylightTransitionStart;
+                    TransitionTime endTransition   = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day) : rule.DaylightTransitionEnd;
+                    rulesList.Add(AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+                }
+                else
+                {
+                    // For rules spanning more than one year. The time transition inside this rule would apply for the whole time spanning these years
+                    // and not for partial time of every year.
+                    // AdjustmentRule cannot express such rule using the DaylightTransitionStart and DaylightTransitionEnd because
+                    // the DaylightTransitionStart and DaylightTransitionEnd express the transition for every year.
+                    // We split the rule into more rules. The first rule will start from the start year of the original rule and ends at the end of the same year.
+                    // The second splitted rule would cover the middle range of the original rule and ranging from the year start+1 to
+                    // year end-1. The transition time in this rule would start from Jan 1st to end of December.
+                    // The last splitted rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
 
-                rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
+                    // Add the first rule.
+                    DateTime endForFirstRule = new DateTime(start.Year + 1, 1, 1).AddMilliseconds(-1); // At the end of the first year
+                    TransitionTime startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day);
+                    TransitionTime endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(endForFirstRule), endForFirstRule.Month, endForFirstRule.Day);
+                    rulesList.Add(AdjustmentRule.CreateAdjustmentRule(start.Date, endForFirstRule.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+
+                    // Check if there is range of years between the start and the end years
+                    if (end.Year - start.Year > 1)
+                    {
+                        // Add the middle rule.
+                        DateTime middleYearStart = new DateTime(start.Year + 1, 1, 1);
+                        DateTime middleYearEnd   = new DateTime(end.Year, 1, 1).AddMilliseconds(-1);
+                        startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(middleYearStart), middleYearStart.Month, middleYearStart.Day);
+                        endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(middleYearEnd), middleYearEnd.Month, middleYearEnd.Day);
+                        rulesList.Add(AdjustmentRule.CreateAdjustmentRule(middleYearStart.Date, middleYearEnd.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+                    }
+
+                    // Add the end rule.
+                    DateTime endYearStart = new DateTime(end.Year, 1, 1); // At the beginning of the last year
+                    startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(endYearStart), endYearStart.Month, endYearStart.Day);
+                    endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day);
+                    rulesList.Add(AdjustmentRule.CreateAdjustmentRule(endYearStart.Date, end.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+                }
             }
 
-            return rules;
+            return rulesList.ToArray();
         }
 
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
@@ -547,7 +626,7 @@ namespace System
                         {
                             int n = stream.Read(buffer, index, count);
                             if (n == 0)
-                                throw Error.GetEndOfFile();
+                                ThrowHelper.ThrowEndOfFileException();
 
                             int end = index + n;
                             for (; index < end; index++)
@@ -894,7 +973,7 @@ namespace System
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -921,7 +1000,7 @@ namespace System
                     // is going to be TimeSpan.Zero.  But we still need to return 'true' from AdjustmentRule.HasDaylightSaving.
                     // To ensure we always return true from HasDaylightSaving, make a "special" dstStart that will make the logic
                     // in HasDaylightSaving return true.
-                    dstStart = TransitionTime.CreateFixedDateRule(DateTime.MinValue.AddMilliseconds(2), 1, 1);
+                    dstStart = s_daylightRuleMarker;
                 }
                 else
                 {
@@ -937,7 +1016,7 @@ namespace System
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -974,7 +1053,7 @@ namespace System
                         noDaylightTransitions: true);
                 }
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -1032,7 +1111,7 @@ namespace System
         /// Creates an AdjustmentRule given the POSIX TZ environment variable string.
         /// </summary>
         /// <remarks>
-        /// See http://man7.org/linux/man-pages/man3/tzset.3.html for the format and semantics of this POSX string.
+        /// See http://man7.org/linux/man-pages/man3/tzset.3.html for the format and semantics of this POSIX string.
         /// </remarks>
         private static AdjustmentRule? TZif_CreateAdjustmentRuleForPosixFormat(string posixFormat, DateTime startTransitionDate, TimeSpan timeZoneBaseUtcOffset)
         {
@@ -1202,8 +1281,7 @@ namespace System
             {
                 if (date[0] != 'J')
                 {
-                    // should be n Julian day format which we don't support.
-                    //
+                    // should be n Julian day format.
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
                     // n would be a relative number from the beginning of the year. which should handle if the
@@ -1219,11 +1297,30 @@ namespace System
                     // 0                30 31              58 59              89      334            364
                     // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
                     //
-                    //
                     // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
                     // while in non leap year the rule will start at Mar 2.
                     //
-                    // If we need to support n format, we'll have to have a floating adjustment rule support this case.
+                    // This n Julian day format is very uncommon and mostly  used for convenience to specify dates like January 1st
+                    // which we can support without any major modification to the Adjustment rules. We'll support this rule  for day
+                    // numbers less than 59 (up to Feb 28). Otherwise we'll skip this POSIX rule.
+                    // We've never encountered any time zone file using this format for days beyond Feb 28.
+
+                    if (int.TryParse(date, out int julianDay) && julianDay < 59)
+                    {
+                        int d, m;
+                        if (julianDay <= 30) // January
+                        {
+                            m = 1;
+                            d = julianDay + 1;
+                        }
+                        else // February
+                        {
+                            m = 2;
+                            d = julianDay - 30;
+                        }
+
+                        return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), m, d);
+                    }
 
                     // Since we can't support this rule, return null to indicate to skip the POSIX rule.
                     return null;
@@ -1236,7 +1333,7 @@ namespace System
         }
 
         /// <summary>
-        /// Parses a string like Jn or n into month and day values.
+        /// Parses a string like Jn into month and day values.
         /// </summary>
         private static void TZif_ParseJulianDay(ReadOnlySpan<char> date, out int month, out int day)
         {
@@ -1694,6 +1791,20 @@ namespace System
             V2,
             V3,
             // when adding more versions, ensure all the logic using TZVersion is still correct
+        }
+
+        // Helper function for string array search. (LINQ is not available here.)
+        private static bool StringArrayContains(string value, string[] source, StringComparison comparison)
+        {
+            foreach (string s in source)
+            {
+                if (string.Equals(s, value, comparison))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

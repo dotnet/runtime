@@ -5,7 +5,11 @@
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration>Release</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
+
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>219</NoWarn>
+    <RunAnalyzers>false</RunAnalyzers>
 
     <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\publish</AppDir>
     <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>

@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-internal class Utils
+internal static class Utils
 {
     private static readonly object s_SyncObj = new object();
 
@@ -28,9 +28,10 @@ internal class Utils
         string? workingDir = null,
         bool ignoreErrors = false,
         bool silent = true,
-        MessageImportance outputMessageImportance=MessageImportance.High)
+        MessageImportance outputMessageImportance=MessageImportance.High,
+        MessageImportance debugMessageImportance=MessageImportance.High)
     {
-        LogInfo($"Running: {path} {args}");
+        LogInfo($"Running: {path} {args}", debugMessageImportance);
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
@@ -45,6 +46,8 @@ internal class Utils
 
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
+
+        LogInfo($"Using working directory: {workingDir ?? Environment.CurrentDirectory}", debugMessageImportance);
 
         if (envVars != null)
         {
@@ -68,7 +71,7 @@ internal class Utils
             {
                 if (!silent)
                 {
-                    LogError(e.Data);
+                    LogWarning(e.Data);
                     outputBuilder.AppendLine(e.Data);
                 }
                 errorBuilder.AppendLine(e.Data);
@@ -99,6 +102,7 @@ internal class Utils
         return outputBuilder.ToString().Trim('\r', '\n');
     }
 
+#if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
     {
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
@@ -115,6 +119,7 @@ internal class Utils
             File.Copy(file, Path.Combine(destDir, relativePath), true);
         }
     }
+#endif
 
     public static TaskLoggingHelper? Logger { get; set; }
 
@@ -122,6 +127,12 @@ internal class Utils
     {
         if (msg != null)
             Logger?.LogMessage(importance, msg);
+    }
+
+    public static void LogWarning(string? msg)
+    {
+        if (msg != null)
+            Logger?.LogWarning(msg);
     }
 
     public static void LogError(string? msg)

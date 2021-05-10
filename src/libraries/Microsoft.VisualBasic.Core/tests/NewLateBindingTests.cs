@@ -95,6 +95,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51834", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(LateCall_OptionalValues_Data))]
         public void LateCall_OptionalValues(string memberName, object[] arguments, Type[] typeArguments, string expectedValue)
         {

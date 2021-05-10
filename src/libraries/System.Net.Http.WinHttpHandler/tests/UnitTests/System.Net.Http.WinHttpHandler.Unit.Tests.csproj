@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <DefineConstants>UNITTEST</DefineConstants>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -84,6 +85,8 @@
              Link="ProductionCode\WinHttpResponseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTraceHelper.cs"
              Link="ProductionCode\WinHttpTraceHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTrailersHelper.cs"
+             Link="ProductionCode\WinHttpTrailersHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs"
              Link="ProductionCode\WinHttpTransportContext.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"

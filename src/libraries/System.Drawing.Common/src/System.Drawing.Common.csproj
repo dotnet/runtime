@@ -5,12 +5,14 @@
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS;FEATURE_SYSTEM_EVENTS</DefineConstants>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.0-windows;netcoreapp3.0-Unix;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.0-windows;netcoreapp3.0-Unix;netcoreapp3.0;net461;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemDrawingCommon_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <IncludeInternalObsoleteAttribute Condition="'$(TargetFramework)' != 'net461'">true</IncludeInternalObsoleteAttribute>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetFramework)' != 'net461'">SR.SystemDrawingCommon_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\Drawing\Bitmap.cs" />
@@ -27,9 +29,12 @@
     <Compile Include="System\Drawing\GraphicsUnit.cs" />
     <Compile Include="System\Drawing\IconConverter.cs" />
     <Compile Include="System\Drawing\Image.cs" />
+    <Compile Include="System\Drawing\ImageAnimator.cs" />
     <Compile Include="System\Drawing\ImageConverter.cs" />
     <Compile Include="System\Drawing\ImageFormatConverter.cs" />
+    <Compile Include="System\Drawing\ImageInfo.cs" />
     <Compile Include="System\Drawing\ImageType.cs" />
+    <Compile Include="System\Drawing\NumericsExtensions.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
@@ -115,7 +120,6 @@
     <Compile Include="System\Drawing\ClientUtils.cs" />
     <Compile Include="System\Drawing\Gdiplus.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
-    <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
     <Compile Include="System\Drawing\Brush.cs" />
     <Compile Include="System\Drawing\Font.cs" />
@@ -165,6 +169,8 @@
              Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
       <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
     </EmbeddedResource>
@@ -190,8 +196,6 @@
     <Compile Include="System\Drawing\GraphicsContext.cs" />
     <Compile Include="System\Drawing\Icon.Windows.cs" />
     <Compile Include="System\Drawing\Image.Windows.cs" />
-    <Compile Include="System\Drawing\ImageAnimator.Windows.cs" />
-    <Compile Include="System\Drawing\ImageInfo.cs" />
     <Compile Include="System\Drawing\Imaging\BitmapData.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
@@ -222,13 +226,19 @@
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Windows.cs" />
     <Compile Include="misc\DbgUtil.cs" />
     <Compile Include="misc\DpiHelper.cs" />
-    <Compile Include="misc\ExternDll.cs" />
     <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
     <Compile Include="misc\GDI\DeviceContext.cs" />
     <Compile Include="misc\GDI\DeviceContexts.cs" />
     <Compile Include="misc\GDI\DeviceContextType.cs" />
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
+    <Compile Include="Interop\Windows\Interop.Comdlg32.cs" />
+    <Compile Include="Interop\Windows\Interop.Gdi32.cs" />
+    <Compile Include="Interop\Windows\Interop.Kernel32.cs" />
+    <Compile Include="Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="Interop\Windows\Interop.Shell32.cs" />
+    <Compile Include="Interop\Windows\Interop.User32.cs" />
+    <Compile Include="Interop\Windows\Interop.Winspool.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -334,8 +344,6 @@
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
-    <Compile Include="System\Drawing\NativeStructs.Unix.cs" />
-    <Compile Include="System\Drawing\ImageAnimator.Unix.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />
     <Compile Include="System\Drawing\Region.Unix.cs" />
@@ -347,17 +355,13 @@
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Unix.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
     <Compile Include="System\Drawing\LibraryResolver.cs" />
-    <Compile Include="misc\ExternDll.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="Interop\Unix\Interop.Libraries.cs" />
     <EmbeddedResource Include="Resources\System\Drawing\Error.ico">
       <LogicalName>placeholder.ico</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />  
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
@@ -369,6 +373,7 @@
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

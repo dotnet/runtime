@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -167,7 +168,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Strongly-typed Equals that returns true if this type and "that" type are equivalent.
         /// </summary>
-        public bool Equals(XmlQueryType? that)
+        public bool Equals([NotNullWhen(true)] XmlQueryType? that)
         {
             if (that == null)
                 return false;
@@ -318,7 +319,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// True if "obj" is an XmlQueryType, and this type is the exact same static type.
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             XmlQueryType? that = obj as XmlQueryType;
 

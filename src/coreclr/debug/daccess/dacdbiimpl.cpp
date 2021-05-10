@@ -4253,6 +4253,16 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
     return hr;
 }
 
+bool DacDbiInterfaceImpl::MetadataUpdatesApplied()
+{
+    DD_ENTER_MAY_THROW;
+#ifdef EnC_SUPPORTED
+    return g_metadataUpdatesApplied;
+#else
+    return false;
+#endif
+}
+
 // Helper to intialize a TargetBuffer from a MemoryRange
 //
 // Arguments:
@@ -4775,6 +4785,17 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetThreadObject(VMPTR_Thread vmThread)
         vmObjHandle.SetDacTargetPtr(pThread->GetExposedObjectHandleForDebugger());
         return vmObjHandle;
     }
+}
+
+void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread, 
+                                             DacThreadAllocInfo* threadAllocInfo)
+{
+    DD_ENTER_MAY_THROW;
+
+    Thread * pThread = vmThread.GetDacPtr();
+    gc_alloc_context* allocContext = pThread->GetAllocContext();
+    threadAllocInfo->m_allocBytesSOH = (ULONG)(allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr));
+    threadAllocInfo->m_allocBytesUOH = (ULONG)allocContext->alloc_bytes_uoh;
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
@@ -6519,17 +6540,20 @@ HRESULT DacHeapWalker::NextSegment()
 
     do
     {
-        mCurrSeg++;
-        while (mCurrSeg >= mHeaps[mCurrHeap].SegmentCount)
+        do
         {
-            mCurrSeg = 0;
-            mCurrHeap++;
-
-            if (mCurrHeap >= mHeapCount)
+            mCurrSeg++;
+            while (mCurrSeg >= mHeaps[mCurrHeap].SegmentCount)
             {
-                return S_FALSE;
+                mCurrSeg = 0;
+                mCurrHeap++;
+
+                if (mCurrHeap >= mHeapCount)
+                {
+                    return S_FALSE;
+                }
             }
-        }
+        } while (mHeaps[mCurrHeap].Segments[mCurrSeg].Start >= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
@@ -6636,6 +6660,12 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
     mCurrHeap = 0;
     mCurrSeg = 0;
 
+    HRESULT hr = S_OK;
+
+    // it's possible the first segment is empty
+    if (mCurrObj >= mHeaps[0].Segments[0].End)
+        hr = MoveToNextObject();
+
     if (!mCache.ReadMT(mCurrObj, &mCurrMT))
         return E_FAIL;
 
@@ -6643,9 +6673,9 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
         return E_FAIL;
 
     if (mCurrObj < mStart || mCurrObj > mEnd)
-        MoveToNextObject();
+        hr = MoveToNextObject();
 
-    return S_OK;
+    return hr;
 }
 
 HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, CORDB_ADDRESS *pContaining, CORDB_ADDRESS *pNext)

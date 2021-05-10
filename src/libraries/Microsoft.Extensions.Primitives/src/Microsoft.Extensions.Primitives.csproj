@@ -6,6 +6,12 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
+    <PackageDescription>Primitives shared by framework extensions. Commonly used types include:
+
+Commonly Used Types:
+Microsoft.Extensions.Primitives.IChangeToken
+Microsoft.Extensions.Primitives.StringValues
+Microsoft.Extensions.Primitives.StringSegment</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +26,10 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                         $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+  <!-- NetCoreApp3.0 needs to use the same version of dependencies as .NETStandard. -->
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 

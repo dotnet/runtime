@@ -148,8 +148,7 @@ precompile_coreroot_fx()
     # processors available to a single process.
     local platform="$(uname)"
     if [[ "$platform" == "FreeBSD" ]]; then
-        output=("$(sysctl hw.ncpu)")
-        __NumProc="$((output[1] + 1))"
+        __NumProc=$(($(sysctl -n hw.ncpu)+1))
     elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
         __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
     elif [[ "$platform" == "Darwin" ]]; then
@@ -159,7 +158,7 @@ precompile_coreroot_fx()
     fi
 
     local outputDir="$__TestIntermediatesDir/crossgen.out"
-    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --large-bubble --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --release --nocleanup --target-arch $__BuildArch -dop $__NumProc  -m \"$CORE_ROOT/StandardOptimizationData.mibc\""
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
@@ -280,7 +279,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
-        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -582,7 +581,6 @@ __SkipRestorePackages=0
 __SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
-__LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
@@ -655,28 +653,22 @@ if [ "$__TargetOS" == "Android" ]; then
     build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
 fi
 
-__testNativeBinDir="$__IntermediatesDir"/tests
-
 if [[ "$__RunTests" -ne 0 ]]; then
 
     echo "Run Tests..."
 
-    nextCommand="$__TestDir/run.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir"
+    nextCommand="$__TestDir/run.sh --testRootDir=$__TestBinDir"
     echo "$nextCommand"
     eval $nextCommand
 
     echo "Tests run successful."
 else
-    echo "To run all tests use 'run.sh' where:"
-    echo "    testRootDir      = $__TestBinDir"
-    echo "    coreClrBinDir    = $__BinDir"
-    echo "    coreFxBinDir     = $CORE_ROOT"
-    echo "    testNativeBinDir = $__testNativeBinDir"
-    echo " -------------------------------------------------- "
-    echo " Example run.sh command"
+    echo "To run all the tests use:"
     echo ""
-    echo " src/tests/run.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
-    echo " -------------------------------------------------- "
-    echo "To run single test use the following command:"
+    echo "    src/tests/run.sh $__BuildType"
+    echo ""
+    echo "To run a single test use:"
+    echo ""
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
+    echo ""
 fi

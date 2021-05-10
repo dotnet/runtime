@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel
@@ -15,8 +15,9 @@ namespace System.ComponentModel
         /// This class contains all the reflection information for a
         /// given type.
         /// </summary>
-        private class ReflectedTypeData
+        private sealed class ReflectedTypeData
         {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             private readonly Type _type;
             private AttributeCollection _attributes;
             private EventDescriptorCollection _events;
@@ -26,7 +27,7 @@ namespace System.ComponentModel
             private Type[] _editorTypes;
             private int _editorCount;
 
-            internal ReflectedTypeData(Type type)
+            internal ReflectedTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
             {
                 _type = type;
             }
@@ -40,6 +41,8 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves custom attributes.
             /// </summary>
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
             internal AttributeCollection GetAttributes()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -79,70 +82,65 @@ namespace System.ComponentModel
                     // We append base class attributes to this array so when walking we will
                     // walk from Length - 1 to zero.
                     //
-                    Attribute[] attrArray = ReflectGetAttributes(_type);
+
+                    var attributes = new List<Attribute>(ReflectGetAttributes(_type));
                     Type baseType = _type.BaseType;
 
                     while (baseType != null && baseType != typeof(object))
                     {
-                        Attribute[] baseArray = ReflectGetAttributes(baseType);
-                        Attribute[] temp = new Attribute[attrArray.Length + baseArray.Length];
-                        Array.Copy(attrArray, temp, attrArray.Length);
-                        Array.Copy(baseArray, 0, temp, attrArray.Length, baseArray.Length);
-                        attrArray = temp;
+                        attributes.AddRange(ReflectGetAttributes(baseType));
                         baseType = baseType.BaseType;
                     }
 
                     // Next, walk the type's interfaces. We append these to
                     // the attribute array as well.
-                    int ifaceStartIdx = attrArray.Length;
+                    int ifaceStartIdx = attributes.Count;
                     Type[] interfaces = _type.GetInterfaces();
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
-                        Type iface = interfaces[idx];
-
                         // Only do this for public interfaces.
+                        Type iface = interfaces[idx];
                         if ((iface.Attributes & (TypeAttributes.Public | TypeAttributes.NestedPublic)) != 0)
                         {
                             // No need to pass an instance into GetTypeDescriptor here because, if someone provided a custom
                             // provider based on object, it already would have hit.
-                            AttributeCollection ifaceAttrs = TypeDescriptor.GetAttributes(iface);
-                            if (ifaceAttrs.Count > 0)
-                            {
-                                Attribute[] temp = new Attribute[attrArray.Length + ifaceAttrs.Count];
-                                Array.Copy(attrArray, temp, attrArray.Length);
-                                ifaceAttrs.CopyTo(temp, attrArray.Length);
-                                attrArray = temp;
-                            }
+                            attributes.AddRange(TypeDescriptor.GetAttributes(iface).Attributes);
                         }
                     }
 
-                    // Finally, put all these attributes in a dictionary and filter out the duplicates.
-                    OrderedDictionary attrDictionary = new OrderedDictionary(attrArray.Length);
-
-                    for (int idx = 0; idx < attrArray.Length; idx++)
+                    // Finally, filter out duplicates.
+                    if (attributes.Count != 0)
                     {
-                        bool addAttr = true;
-                        if (idx >= ifaceStartIdx)
+                        var filter = new HashSet<object>(attributes.Count);
+                        int next = 0;
+
+                        for (int idx = 0; idx < attributes.Count; idx++)
                         {
-                            for (int ifaceSkipIdx = 0; ifaceSkipIdx < s_skipInterfaceAttributeList.Length; ifaceSkipIdx++)
+                            Attribute attr = attributes[idx];
+
+                            bool addAttr = true;
+                            if (idx >= ifaceStartIdx)
                             {
-                                if (s_skipInterfaceAttributeList[ifaceSkipIdx].IsInstanceOfType(attrArray[idx]))
+                                for (int ifaceSkipIdx = 0; ifaceSkipIdx < s_skipInterfaceAttributeList.Length; ifaceSkipIdx++)
                                 {
-                                    addAttr = false;
-                                    break;
+                                    if (s_skipInterfaceAttributeList[ifaceSkipIdx].IsInstanceOfType(attr))
+                                    {
+                                        addAttr = false;
+                                        break;
+                                    }
                                 }
                             }
+
+                            if (addAttr && filter.Add(attr.TypeId))
+                            {
+                                attributes[next++] = attributes[idx];
+                            }
                         }
 
-                        if (addAttr && !attrDictionary.Contains(attrArray[idx].TypeId))
-                        {
-                            attrDictionary[attrArray[idx].TypeId] = attrArray[idx];
-                        }
+                        attributes.RemoveRange(next, attributes.Count - next);
                     }
 
-                    attrArray = new Attribute[attrDictionary.Count];
-                    attrDictionary.Values.CopyTo(attrArray, 0);
-                    _attributes = new AttributeCollection(attrArray);
+                    _attributes = new AttributeCollection(attributes.ToArray());
                 }
 
                 return _attributes;
@@ -174,6 +172,7 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
+            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
             internal TypeConverter GetConverter(object instance)
             {
                 TypeConverterAttribute typeAttr = null;
@@ -230,6 +229,7 @@ namespace System.ComponentModel
             /// Return the default event. The default event is determined by the
             /// presence of a DefaultEventAttribute on the class.
             /// </summary>
+            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
             internal EventDescriptor GetDefaultEvent(object instance)
             {
                 AttributeCollection attributes;
@@ -262,6 +262,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Return the default property.
             /// </summary>
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
             internal PropertyDescriptor GetDefaultProperty(object instance)
             {
                 AttributeCollection attributes;
@@ -294,6 +295,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the editor for the given base type.
             /// </summary>
+            [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
             internal object GetEditor(object instance, Type editorBaseType)
             {
                 EditorAttribute typeAttr;
@@ -448,6 +450,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the properties for this type.
             /// </summary>
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -484,7 +487,14 @@ namespace System.ComponentModel
             /// that this PropertyDescriptor came from is first checked,
             /// then a global Type.GetType is performed.
             /// </summary>
-            private Type GetTypeFromName(string typeName)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+                Justification = "Using the non-assembly qualified type name will still work.")]
+            private Type GetTypeFromName(
+                // this method doesn't create the type, but all callers are annotated with PublicConstructors,
+                // so use that value to ensure the Type will be preserved
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
             {
                 if (string.IsNullOrEmpty(typeName))
                 {

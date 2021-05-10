@@ -747,30 +747,6 @@ void PEFile::ConvertMDInternalToReadWrite()
     }
 }
 
-void PEFile::ConvertMetadataToRWForEnC()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // This should only ever be called on EnC capable files.
-    // One can check this using Module::IsEditAndContinueCapable().
-
-    // This should only be called if we're debugging, stopped, and on the helper thread.
-    _ASSERTE(CORDebuggerAttached());
-    _ASSERTE((g_pDebugInterface != NULL) && g_pDebugInterface->ThisIsHelperThread());
-    _ASSERTE((g_pDebugInterface != NULL) && g_pDebugInterface->IsStopped());
-
-    // Convert the metadata to RW for Edit and Continue, properly replacing the metadata import interface pointer and
-    // properly preserving the old importer. This will be called before the EnC system tries to apply a delta to the module's
-    // metadata. ConvertMDInternalToReadWrite() does that quite nicely for us.
-    ConvertMDInternalToReadWrite();
-}
-
 void PEFile::OpenMDImport_Unsafe()
 {
     CONTRACTL

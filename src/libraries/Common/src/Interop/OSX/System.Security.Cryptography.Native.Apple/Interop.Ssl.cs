@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -412,7 +411,7 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
-        internal SafeSslHandle()
+        public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

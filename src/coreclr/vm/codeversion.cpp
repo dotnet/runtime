@@ -1754,7 +1754,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
     #endif
 
         bool done = false;
-        bool scheduleTieringBackgroundWork = false;
+        bool createTieringBackgroundWorker = false;
         NativeCodeVersion newActiveVersion;
         do
         {
@@ -1816,10 +1816,10 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
                     }
                 #ifdef FEATURE_TIERED_COMPILATION
                     else if (
-                        !CallCountingManager::SetCodeEntryPoint(activeVersion, pCode, true, &scheduleTieringBackgroundWork))
+                        !CallCountingManager::SetCodeEntryPoint(activeVersion, pCode, true, &createTieringBackgroundWorker))
                     {
                         _ASSERTE(!g_pConfig->TieredCompilation_UseCallCountingStubs());
-                        _ASSERTE(!scheduleTieringBackgroundWork);
+                        _ASSERTE(!createTieringBackgroundWorker);
                         *doBackpatchRef = doPublish = false;
                     }
                 #endif
@@ -1842,19 +1842,19 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             {
                 _ASSERTE(doPublish);
                 _ASSERTE(!handleCallCounting);
-                _ASSERTE(!scheduleTieringBackgroundWork);
+                _ASSERTE(!createTieringBackgroundWorker);
 
                 // The code entry point is set before recording the method for call counting to avoid a race. Otherwise, the
                 // tiering delay may expire and enable call counting for the method before the entry point is set here, in which
                 // case calls to the method would not be counted anymore.
                 GetAppDomain()->GetTieredCompilationManager()->HandleCallCountingForFirstCall(pMethodDesc);
             }
-            else if (scheduleTieringBackgroundWork)
+            else if (createTieringBackgroundWorker)
             {
                 _ASSERTE(doPublish);
                 _ASSERTE(handleCallCounting);
                 _ASSERTE(!handleCallCountingForFirstCall);
-                GetAppDomain()->GetTieredCompilationManager()->ScheduleBackgroundWork(); // requires GC_TRIGGERS
+                TieredCompilationManager::CreateBackgroundWorker(); // requires GC_TRIGGERS
             }
         #endif
 

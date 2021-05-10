@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -29,6 +30,8 @@
              Link="Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
              Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>

@@ -6,6 +6,7 @@ escape_quote = $(subst ",\",$(1))
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
+GECKODRIVER?=$(HOME)/.geckodriver
 
 #
 # These variables are set by wasm.proj
@@ -22,6 +23,7 @@ SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 ENABLE_ES6?=false
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 ENABLE_METADATA_UPDATE?=false
+XHARNESS_BROWSER?=chrome
 
 all: build-native icu-files source-files header-files
 
@@ -31,9 +33,9 @@ all: build-native icu-files source-files header-files
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=2.0.11
+EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
 EMSDK_LOCAL_PATH=emsdk
-EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
+EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)
@@ -61,7 +63,7 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s USE_ZLIB=1  -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
+EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
 ifneq ($(ENABLE_ES6),false)
     EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
 endif
@@ -69,8 +71,8 @@ ifeq ($(ENABLE_METADATA_UPDATE),true)
     EMCC_FLAGS+=-DENABLE_METADATA_UPDATE=1
 endif
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
+EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
+EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2
 
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
@@ -115,7 +117,7 @@ $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
 $(NATIVE_BIN_DIR)/src/emcc-flags.txt: | $(NATIVE_BIN_DIR)/src Makefile
-	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1) -Oz" > $$@
+	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1)" > $$@
 
 $(NATIVE_BIN_DIR)/src/emcc-version.txt: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
 	$(EMCC) --version | head -1 > $$@
@@ -142,11 +144,12 @@ icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR
 source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
-header-files: runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(NATIVE_BIN_DIR)/include/wasm
+header-files: runtime/pinvoke.h | $(NATIVE_BIN_DIR)/include/wasm
 	cp $^ $(NATIVE_BIN_DIR)/include/wasm
 
 # Helper targets
 .PHONY: runtime
+.PHONY: build
 
 build:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
@@ -156,6 +159,10 @@ build-all:
 
 runtime:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.runtime+mono.wasmruntime+libs.native+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+# Rebuild only the mono runtime+cross compiler, don't build dotnet.wasm
+mono-runtime:
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.runtime+libs.native+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 corlib:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.corelib+mono.wasmruntime+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
@@ -170,27 +177,26 @@ build-tasks:
 	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks $(MSBUILD_ARGS)
 
 run-tests-v8-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) /p:JSEngine=V8 $(MSBUILD_ARGS)
+	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) /p:JSEngine=V8 $(MSBUILD_ARGS)
 run-tests-sm-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) /p:JSEngine=SpiderMonkey $(MSBUILD_ARGS)
+	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) /p:JSEngine=SpiderMonkey $(MSBUILD_ARGS)
 run-tests-jsc-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) /p:JSEngine=JavaScriptCore $(MSBUILD_ARGS)
+	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) /p:JSEngine=JavaScriptCore $(MSBUILD_ARGS)
 
 run-tests-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+run-build-tests:
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/tests/BuildWasmApps/Wasm.Build.Tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
-	PATH="$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND=test-browser $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		export LC_ALL=en_US.UTF-8; \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter FullyQualifiedName~$(TEST_FILTER); \
-		unset LC_ALL; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter FullyQualifiedName~$(TEST_FILTER) $(TEST_ARGS); \
 	else \
-		export LC_ALL=en_US.UTF-8; \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) $(TEST_ARGS); \
-		unset LC_ALL; \
 	fi
 
 build-dbg-proxy:

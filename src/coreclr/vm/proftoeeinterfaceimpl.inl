@@ -60,7 +60,6 @@ inline BOOL AreCallbackStateFlagsSet(DWORD dwFlags)
     }
 
     BOOL fRet;
-    BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     DWORD dwProfilerCallbackFullStateFlags = pThread->GetProfilerCallbackFullState();
     if (((dwProfilerCallbackFullStateFlags & COR_PRF_CALLBACKSTATE_FORCEGC_WAS_CALLED) != 0)
         || ((dwProfilerCallbackFullStateFlags & COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED) != 0))
@@ -71,7 +70,6 @@ inline BOOL AreCallbackStateFlagsSet(DWORD dwFlags)
     }
 
     fRet = ((dwProfilerCallbackFullStateFlags & dwFlags) == dwFlags);
-    END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     return fRet;
 }
 

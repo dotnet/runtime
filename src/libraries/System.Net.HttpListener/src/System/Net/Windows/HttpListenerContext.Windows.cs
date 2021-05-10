@@ -48,7 +48,7 @@ namespace System.Net
 
         internal ulong RequestId => Request.RequestId;
 
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol,
+        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval)
         {
@@ -62,7 +62,7 @@ namespace System.Net
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol,
+        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)

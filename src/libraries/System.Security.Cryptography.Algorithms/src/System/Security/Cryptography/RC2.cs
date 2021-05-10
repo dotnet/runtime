@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
@@ -27,6 +28,7 @@ namespace System.Security.Cryptography
             return new RC2Implementation();
         }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RC2? Create(string AlgName)
         {
             return (RC2?)CryptoConfig.CreateFromName(AlgName);

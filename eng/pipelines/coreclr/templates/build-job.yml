@@ -20,6 +20,7 @@ parameters:
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
+  pgoType: ''
 
 ### Product build
 jobs:
@@ -37,14 +38,25 @@ jobs:
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
-      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
+        parameters.runtimeVariant,
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.buildConfig,
+        parameters.pgoType) }}
+      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}',
+        parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup,
+        parameters.archType,
+        parameters.buildConfig,
+        parameters.pgoType) }}
     ${{ if eq(parameters.testGroup, 'clrTools') }}:
       name: ${{ format('coreclr_{0}_tools_unittests_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR {0} Tools Unit Tests {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -104,7 +116,7 @@ jobs:
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm')))), ne(parameters.pgoType, 'pgo')) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
@@ -118,13 +130,13 @@ jobs:
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrBuildPALTestsBuildArg
-        value: '-paltests '
+        value: '-component runtime -component alljits -component paltests '
 
-    - name: ninjaArg
+    - name: pgoInstrumentArg
       value: ''
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: ninjaArg
-        value: '-ninja'
+    - ${{ if eq(parameters.pgoType, 'PGO' )}}:
+      - name: pgoInstrumentArg
+        value: '-pgoinstrument '
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
@@ -163,7 +175,7 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -176,20 +188,20 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
@@ -264,7 +276,7 @@ jobs:
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.
-      - ${{ if ne(parameters.isOfficialBuild, true) }}:
+      - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(nativeTestArtifactRootFolderPath)
@@ -305,6 +317,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

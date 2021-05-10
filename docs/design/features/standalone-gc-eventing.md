@@ -186,7 +186,7 @@ Tools (specifically PerfView) will want to be enlightened about dynamic events f
 we want to make this experience nice is up to us, but we will most likely want to ship PerfView support for any dynamic event
 that we end up shipping with the CLR GC.
 
-[1]: https://github.com/dotnet/runtime/blob/master/src/coreclr/gc/env/etmdummy.h#L5-L57
+[1]: https://github.com/dotnet/runtime/blob/main/src/coreclr/gc/env/etmdummy.h#L5-L57
 
 ### Concrete Example: Porting a single known event to IGCToCLREventSink
 

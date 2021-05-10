@@ -24,6 +24,11 @@ Always succeeds.
 PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
+Returns the maximum size, in bytes, of an operation with the provided key.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey);
+
+/*
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when
 duplicating a private key context as part of duplicating the Pal object.
 

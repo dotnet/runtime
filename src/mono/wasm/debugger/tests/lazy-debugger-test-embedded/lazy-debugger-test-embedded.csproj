@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Library</OutputType>
-    <NoWarn>219</NoWarn>
-    <RunAnalyzers>false</RunAnalyzers>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 </Project>

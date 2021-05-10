@@ -86,7 +86,7 @@ Crst ArgBasedStubCache
 End
 
 Crst AssemblyLoader
-    AcquiredBefore DeadlockDetection UniqueStack
+    AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
 Crst AvailableClass
@@ -325,6 +325,10 @@ End
 
 Crst StubCache
     AcquiredBefore LoaderHeap
+End
+
+Crst ManagedObjectWrapperMap
+    AcquiredBefore HandleTable
 End
 
 Crst Module

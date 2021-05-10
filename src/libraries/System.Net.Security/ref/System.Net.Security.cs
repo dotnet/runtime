@@ -33,6 +33,7 @@ namespace System.Net.Security
         NoEncryption = 2,
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {
         public NegotiateStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
@@ -123,7 +124,7 @@ namespace System.Net.Security
         public SslApplicationProtocol(string protocol) { throw null; }
         public System.ReadOnlyMemory<byte> Protocol { get { throw null; } }
         public bool Equals(System.Net.Security.SslApplicationProtocol other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }
         public static bool operator !=(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }

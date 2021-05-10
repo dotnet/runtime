@@ -287,7 +287,7 @@ namespace System.Threading.Tasks.Dataflow
             // Try to receive the one item this block may have.
             // If we can, give back an array of one item. Otherwise,
             // give back null.
-            T item;
+            T? item;
             if (TryReceive(null, out item))
             {
                 items = new T[] { item };
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (consumeToAccept)
                 {
                     bool consumed;
-                    messageValue = source!.ConsumeMessage(messageHeader, this, out consumed);
+                    messageValue = source!.ConsumeMessage(messageHeader, this, out consumed)!;
                     if (!consumed) return DataflowMessageStatus.NotAvailable;
                 }
 
@@ -511,14 +511,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _dataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, HasValue={1}, Value={2}",
-                    Common.GetNameForDebugger(this, _dataflowBlockOptions), HasValue, Value);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _dataflowBlockOptions)}, HasValue={HasValue}, Value={Value}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 

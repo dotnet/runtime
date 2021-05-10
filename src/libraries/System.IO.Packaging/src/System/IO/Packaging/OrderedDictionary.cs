@@ -12,7 +12,7 @@ namespace System.IO.Packaging
     /// This is similar to <see cref="OrderedDictionary{TKey, TValue}"/>, but the items will not be sorted by a comparer but rather retain the
     /// order in which they were added while still retaining good lookup, insertion, and removal.
     /// </summary>
-    internal class OrderedDictionary<TKey, TValue> : IEnumerable<TValue> where TKey : notnull
+    internal sealed class OrderedDictionary<TKey, TValue> : IEnumerable<TValue> where TKey : notnull
     {
         private readonly Dictionary<TKey, LinkedListNode<TValue>> _dictionary;
         private readonly LinkedList<TValue> _order;

@@ -120,21 +120,6 @@ namespace System.Reflection.Internal.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34493", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public void FileStreamUnix()
-        {
-            try
-            {
-                FileStreamReadLightUp.readFileNotAvailable = true;
-                FileStream();
-            }
-            finally
-            {
-                FileStreamReadLightUp.readFileNotAvailable = false;
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34493", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FileStream()
         {
             string filePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

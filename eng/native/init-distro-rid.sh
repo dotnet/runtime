@@ -67,7 +67,7 @@ initNonPortableDistroRid()
             __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
             nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
         fi
-    elif getprop ro.product.system.model 2>&1 | grep -qi android; then
+    elif command -v getprop && getprop ro.product.system.model 2>&1 | grep -qi android; then
         __android_sdk_version=$(getprop ro.build.version.sdk)
         nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
     elif [ "$targetOs" = "illumos" ]; then
@@ -170,10 +170,16 @@ initDistroRidGlobal()
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
+            elif [ "$targetOs" = "MacCatalyst" ]; then
+                distroRid="maccatalyst-$buildArch"
             elif [ "$targetOs" = "tvOS" ]; then
                 distroRid="tvos-$buildArch"
+            elif [ "$targetOs" = "tvOSSimulator" ]; then
+                distroRid="tvossimulator-$buildArch"
             elif [ "$targetOs" = "iOS" ]; then
                 distroRid="ios-$buildArch"
+            elif [ "$targetOs" = "iOSSimulator" ]; then
+                distroRid="iossimulator-$buildArch"
             elif [ "$targetOs" = "Android" ]; then
                 distroRid="android-$buildArch"
             elif [ "$targetOs" = "Browser" ]; then

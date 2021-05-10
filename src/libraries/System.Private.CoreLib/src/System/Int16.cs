@@ -12,7 +12,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Int16 : IComparable, IConvertible, IFormattable, IComparable<short>, IEquatable<short>, ISpanFormattable
+    public readonly struct Int16 : IComparable, IConvertible, ISpanFormattable, IComparable<short>, IEquatable<short>
     {
         private readonly short m_value; // Do not rename (binary serialization)
 
@@ -45,7 +45,7 @@ namespace System
             return m_value - value;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is short))
             {

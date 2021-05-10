@@ -430,7 +430,7 @@ namespace System
             public static void DivRem(ref BigInteger lhs, ref BigInteger rhs, out BigInteger quo, out BigInteger rem)
             {
                 // This is modified from the libraries BigIntegerCalculator.DivRem.cs implementation:
-                // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
+                // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
 
                 Debug.Assert(!rhs.IsZero());
 

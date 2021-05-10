@@ -51,7 +51,6 @@
 #include <ucontext.h>
 
 #include <mono/arch/s390x/s390x-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
@@ -503,7 +502,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
 			 MonoJitInfo *ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, MonoLMF **lmf,
 			 host_mgreg_t **save_locations,
@@ -522,7 +521,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
-		host_mgreg_t regs[16];
+		host_mgreg_t regs[32];
 
 		if (ji->is_trampoline)
 			frame->type = FRAME_TYPE_TRAMPOLINE;
@@ -536,16 +535,18 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
 
-		memcpy(&regs, &ctx->uc_mcontext.gregs, sizeof(regs));
+		memcpy (&regs[0], &ctx->uc_mcontext.gregs, 16 * sizeof(host_mgreg_t));
+		memcpy (&regs[16], &ctx->uc_mcontext.fpregs.fprs, 16 * sizeof(host_mgreg_t));
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
 						   (guint8 *) ji->code_start + ji->code_size,
-						   ip, epilog ? &epilog : NULL, regs, 16, save_locations,
+						   ip, epilog ? &epilog : NULL, regs, 32, save_locations,
 						   MONO_MAX_IREGS, &cfa);
 
 		if (!success)
 			return FALSE;
 
-		memcpy (&new_ctx->uc_mcontext.gregs, &regs, sizeof(regs));
+		memcpy (&new_ctx->uc_mcontext.gregs, &regs[0], 16 * sizeof(host_mgreg_t));
+		memcpy (&new_ctx->uc_mcontext.fpregs.fprs, &regs[16], 16 * sizeof(host_mgreg_t));
 		MONO_CONTEXT_SET_IP(new_ctx, regs[14] - 2);
 		MONO_CONTEXT_SET_BP(new_ctx, regs[15]);
 		MONO_CONTEXT_SET_SP(new_ctx, regs[15]);
@@ -553,7 +554,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		return TRUE;
 	} else if (*lmf) {
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip);
 		if (!ji) {
 			if (!(*lmf)->method)
 				return FALSE;
@@ -582,7 +583,7 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 
@@ -630,7 +631,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		nullref = FALSE;
 
 	if (stack_ovf)
-		exc = mono_domain_get ()->stack_overflow_ex;
+		exc = mini_get_stack_overflow_ex ();
 
 	/*
 	 * Setup the call frame on the application stack so that control is
@@ -639,7 +640,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 * requires allocation on the stack, as this wouldn't be encoded in unwind
 	 * information for the caller frame.
 	 */
-	sp = (uintptr_t) (UCONTEXT_SP(uc));
+	sp = (uintptr_t) (UCONTEXT_REG_Rn(uc, 15));
 	sp = sp - S390_MINIMAL_STACK_SIZE;
 
 	mono_sigctx_to_monoctx (uc, uc_copy);

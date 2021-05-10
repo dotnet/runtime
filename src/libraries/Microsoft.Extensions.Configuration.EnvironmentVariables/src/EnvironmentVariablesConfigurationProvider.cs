@@ -42,52 +42,61 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (DictionaryEntry entry in envVariables)
+            IDictionaryEnumerator e = envVariables.GetEnumerator();
+            try
             {
-                string key = (string)entry.Key;
-                string provider = null;
-                string prefix;
+                while (e.MoveNext())
+                {
+                    DictionaryEntry entry = e.Entry;
+                    string key = (string)entry.Key;
+                    string provider = null;
+                    string prefix;
 
-                if (key.StartsWith(MySqlServerPrefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    prefix = MySqlServerPrefix;
-                    provider = "MySql.Data.MySqlClient";
-                }
-                else if (key.StartsWith(SqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    prefix = SqlAzureServerPrefix;
-                    provider = "System.Data.SqlClient";
-                }
-                else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    prefix = SqlServerPrefix;
-                    provider = "System.Data.SqlClient";
-                }
-                else if (key.StartsWith(CustomPrefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    prefix = CustomPrefix;
-                }
-                else if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    // This prevents the prefix from being normalized.
-                    // We can also do a fast path branch, I guess? No point in reallocating if the prefix is empty.
-                    key = NormalizeKey(key.Substring(_prefix.Length));
-                    data[key] = entry.Value as string;
+                    if (key.StartsWith(MySqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        prefix = MySqlServerPrefix;
+                        provider = "MySql.Data.MySqlClient";
+                    }
+                    else if (key.StartsWith(SqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        prefix = SqlAzureServerPrefix;
+                        provider = "System.Data.SqlClient";
+                    }
+                    else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        prefix = SqlServerPrefix;
+                        provider = "System.Data.SqlClient";
+                    }
+                    else if (key.StartsWith(CustomPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        prefix = CustomPrefix;
+                    }
+                    else if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // This prevents the prefix from being normalized.
+                        // We can also do a fast path branch, I guess? No point in reallocating if the prefix is empty.
+                        key = NormalizeKey(key.Substring(_prefix.Length));
+                        data[key] = entry.Value as string;
 
-                    continue;
-                }
-                else
-                {
-                    continue;
-                }
+                        continue;
+                    }
+                    else
+                    {
+                        continue;
+                    }
 
-                // Add the key-value pair for connection string, and optionally provider name
-                key = NormalizeKey(key.Substring(prefix.Length));
-                AddIfPrefixed(data, $"ConnectionStrings:{key}", (string)entry.Value);
-                if (provider != null)
-                {
-                    AddIfPrefixed(data, $"ConnectionStrings:{key}_ProviderName", provider);
+                    // Add the key-value pair for connection string, and optionally provider name
+                    key = NormalizeKey(key.Substring(prefix.Length));
+                    AddIfPrefixed(data, $"ConnectionStrings:{key}", (string)entry.Value);
+                    if (provider != null)
+                    {
+                        AddIfPrefixed(data, $"ConnectionStrings:{key}_ProviderName", provider);
+                    }
                 }
+            }
+            finally
+            {
+                (e as IDisposable)?.Dispose();
             }
 
             Data = data;

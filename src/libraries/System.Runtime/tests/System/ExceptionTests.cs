@@ -61,7 +61,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Exception_TargetSite_Jit()
+        public static void Exception_TargetSite()
         {
             bool caught = false;
 
@@ -77,6 +77,32 @@ namespace System.Tests
             }
 
             Assert.True(caught);
+        }
+        
+        static void RethrowException()
+        {
+            try
+            {
+                ThrowException();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [Fact]
+        public static void Exception_TargetSite_OtherMethod()
+        {
+            Exception ex = Assert.ThrowsAny<Exception>(() => ThrowException());
+            Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
+        }
+
+        [Fact]
+        public static void Exception_TargetSite_Rethrow()
+        {
+            Exception ex = Assert.ThrowsAny<Exception>(() => RethrowException());
+            Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
         }
 
         [Fact]
@@ -151,7 +177,15 @@ namespace System.Tests
         {
             try
             {
-                const string frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
+                string frameParserRegex;
+                if (PlatformDetection.IsLineNumbersSupported)
+                {
+                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
+                }
+                else
+                {
+                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)";
+                }
 
                 using (var sr = new StringReader(reportedCallStack))
                 {
@@ -162,8 +196,12 @@ namespace System.Tests
                     var match = Regex.Match(frame, frameParserRegex);
                     Assert.True(match.Success);
                     Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
-                    Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
-                    Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
+                    
+                    if (PlatformDetection.IsLineNumbersSupported)
+                    {
+                        Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
+                        Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
+                    }
                 }
             }
             catch

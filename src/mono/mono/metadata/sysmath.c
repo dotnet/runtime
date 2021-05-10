@@ -26,7 +26,6 @@
 
 #include <math.h>
 
-#include "number-ms.h"
 #include "utils/mono-compiler.h"
 #include "utils/mono-math.h"
 #include "icalls.h"
@@ -188,7 +187,6 @@ ves_icall_System_Math_Ceiling (gdouble v)
 	return ceil (v);
 }
 
-#if ENABLE_NETCORE
 gint32
 ves_icall_System_Math_ILogB (gdouble x)
 {
@@ -207,17 +205,10 @@ ves_icall_System_Math_Log2 (gdouble x)
 }
 
 gdouble
-ves_icall_System_Math_ScaleB (gdouble x, gint32 n)
-{
-	return scalbn (x, n);
-}
-
-gdouble
 ves_icall_System_Math_FusedMultiplyAdd (gdouble x, gdouble y, gdouble z)
 {
 	return fma (x, y, z);
 }
-#endif
 
 float
 ves_icall_System_MathF_Acos (float x)
@@ -357,7 +348,6 @@ ves_icall_System_MathF_ModF (float x, float *d)
 	return modff (x, d);
 }
 
-#if ENABLE_NETCORE
 gint32
 ves_icall_System_MathF_ILogB (float x)
 {
@@ -376,14 +366,7 @@ ves_icall_System_MathF_Log2 (float x)
 }
 
 float
-ves_icall_System_MathF_ScaleB (float x, gint32 n)
-{
-	return scalbnf (x, n);
-}
-
-float
 ves_icall_System_MathF_FusedMultiplyAdd (float x, float y, float z)
 {
 	return fmaf (x, y, z);
 }
-#endif

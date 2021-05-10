@@ -224,7 +224,7 @@ namespace System.Threading.Tasks
         // need to be accessed during the life cycle of a Task, so we don't want to instantiate them every time.  Once
         // one of these properties needs to be written, we will instantiate a ContingentProperties object and set
         // the appropriate property.
-        internal class ContingentProperties
+        internal sealed class ContingentProperties
         {
             // Additional context
 
@@ -2730,6 +2730,121 @@ namespace System.Threading.Tasks
             Debug.Assert((m_stateFlags & TASK_STATE_FAULTED) == 0, "Task.Wait() completing when in Faulted state.");
 
             return true;
+        }
+
+        /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public Task WaitAsync(CancellationToken cancellationToken) => WaitAsync(Timeout.UnsignedInfinite, cancellationToken);
+
+        /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes or when the specified timeout expires.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public Task WaitAsync(TimeSpan timeout) => WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), default);
+
+        /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public Task WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), cancellationToken);
+
+        private Task WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            if (IsCompleted || (!cancellationToken.CanBeCanceled && millisecondsTimeout == Timeout.UnsignedInfinite))
+            {
+                return this;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+
+            if (millisecondsTimeout == 0)
+            {
+                return FromException(new TimeoutException());
+            }
+
+            return new CancellationPromise<VoidTaskResult>(this, millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>Task that's completed when another task, timeout, or cancellation token triggers.</summary>
+        private protected sealed class CancellationPromise<TResult> : Task<TResult>, ITaskCompletionAction
+        {
+            /// <summary>The source task.  It's stored so that we can remove the continuation from it upon timeout or cancellation.</summary>
+            private readonly Task _task;
+            /// <summary>Cancellation registration used to unregister from the token source upon timeout or the task completing.</summary>
+            private readonly CancellationTokenRegistration _registration;
+            /// <summary>The timer used to implement the timeout.  It's stored so that it's rooted and so that we can dispose it upon cancellation or the task completing.</summary>
+            private readonly TimerQueueTimer? _timer;
+
+            internal CancellationPromise(Task source, uint millisecondsDelay, CancellationToken token)
+            {
+                Debug.Assert(source != null);
+                Debug.Assert(millisecondsDelay != 0);
+
+                // Register with the target task.
+                _task = source;
+                source.AddCompletionAction(this);
+
+                // Register with a timer if it's needed.
+                if (millisecondsDelay != Timeout.UnsignedInfinite)
+                {
+                    _timer = new TimerQueueTimer(static state =>
+                    {
+                        var thisRef = (CancellationPromise<TResult>)state!;
+                        if (thisRef.TrySetException(new TimeoutException()))
+                        {
+                            thisRef.Cleanup();
+                        }
+                    }, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                }
+
+                // Register with the cancellation token.
+                _registration = token.UnsafeRegister(static (state, cancellationToken) =>
+                {
+                    var thisRef = (CancellationPromise<TResult>)state!;
+                    if (thisRef.TrySetCanceled(cancellationToken))
+                    {
+                        thisRef.Cleanup();
+                    }
+                }, this);
+
+                // If one of the callbacks fired, it's possible they did so prior to our having registered the other callbacks,
+                // and thus cleanup may have missed those additional registrations.  Just in case, check here, and if we're
+                // already completed, unregister everything again.  Unregistration is idempotent and thread-safe.
+                if (IsCompleted)
+                {
+                    Cleanup();
+                }
+            }
+
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                Debug.Assert(completingTask.IsCompleted);
+
+                bool set = completingTask.Status switch
+                {
+                    TaskStatus.Canceled => TrySetCanceled(completingTask.CancellationToken, completingTask.GetCancellationExceptionDispatchInfo()),
+                    TaskStatus.Faulted => TrySetException(completingTask.GetExceptionDispatchInfos()),
+                    _ => completingTask is Task<TResult> taskTResult ? TrySetResult(taskTResult.Result) : TrySetResult(),
+                };
+
+                if (set)
+                {
+                    Cleanup();
+                }
+            }
+
+            private void Cleanup()
+            {
+                _registration.Dispose();
+                _timer?.Close();
+                _task.RemoveContinuation(this);
+            }
         }
 
         // Convenience method that wraps any scheduler exception in a TaskSchedulerException
@@ -5372,16 +5487,8 @@ namespace System.Threading.Tasks
         /// Canceled state.  Otherwise, the Task is completed in RanToCompletion state once the specified time
         /// delay has expired.
         /// </remarks>
-        public static Task Delay(TimeSpan delay, CancellationToken cancellationToken)
-        {
-            long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay, ExceptionResource.Task_Delay_InvalidDelay);
-            }
-
-            return Delay((uint)totalMilliseconds, cancellationToken);
-        }
+        public static Task Delay(TimeSpan delay, CancellationToken cancellationToken) =>
+            Delay(ValidateTimeout(delay, ExceptionArgument.delay), cancellationToken);
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5430,9 +5537,21 @@ namespace System.Threading.Tasks
             cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
             new DelayPromise(millisecondsDelay);
 
+        internal static uint ValidateTimeout(TimeSpan timeout, ExceptionArgument argument)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(argument, ExceptionResource.Task_InvalidTimerTimeSpan);
+            }
+
+            return (uint)totalMilliseconds;
+        }
+
         /// <summary>Task that also stores the completion closure and logic for Task.Delay implementation.</summary>
         private class DelayPromise : Task
         {
+            private static readonly TimerCallback s_timerCallback = TimerCallback;
             private readonly TimerQueueTimer? _timer;
 
             internal DelayPromise(uint millisecondsDelay)
@@ -5447,7 +5566,7 @@ namespace System.Threading.Tasks
 
                 if (millisecondsDelay != Timeout.UnsignedInfinite) // no need to create the timer if it's an infinite timeout
                 {
-                    _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
                     if (IsCompleted)
                     {
                         // Handle rare race condition where the timer fires prior to our having stored it into the field, in which case
@@ -5457,6 +5576,9 @@ namespace System.Threading.Tasks
                     }
                 }
             }
+
+            // Separated out into a named method to improve Timer diagnostics in a debugger
+            private static void TimerCallback(object? state) => ((DelayPromise)state!).CompleteTimedOut();
 
             private void CompleteTimedOut()
             {
@@ -6365,7 +6487,7 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal class SystemThreadingTasks_TaskDebugView
+    internal sealed class SystemThreadingTasks_TaskDebugView
     {
         private readonly Task m_task;
 
@@ -6489,7 +6611,7 @@ namespace System.Threading.Tasks
         PreferFairness = 0x01,
 
         /// <summary>
-        /// Specifies that a task will be a long-running, course-grained operation.  It provides
+        /// Specifies that a task will be a long-running, coarse-grained operation.  It provides
         /// a hint to the <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> that
         /// oversubscription may be warranted.
         /// </summary>

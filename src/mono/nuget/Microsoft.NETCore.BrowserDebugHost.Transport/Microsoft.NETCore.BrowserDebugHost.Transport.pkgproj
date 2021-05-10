@@ -1,0 +1,25 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <IsShipping>false</IsShipping>
+    <PackageDescription>Internal package for sharing BrowserDebugHost.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugProxy.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.CSharp.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Newtonsoft.Json.dll" />
+
+    <PackageFile Include="@(_browserDebugHostFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

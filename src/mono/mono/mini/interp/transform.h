@@ -9,10 +9,17 @@
 #define INTERP_INST_FLAG_SEQ_POINT_METHOD_EXIT 4
 #define INTERP_INST_FLAG_SEQ_POINT_NESTED_CALL 8
 #define INTERP_INST_FLAG_RECORD_CALL_PATCH 16
+#define INTERP_INST_FLAG_CALL 32
+// Flag used internally by the var offset allocator
+#define INTERP_INST_FLAG_ACTIVE_CALL 64
+// This instruction is protected by a clause
+#define INTERP_INST_FLAG_PROTECTED_NEWOBJ 128
 
 #define INTERP_LOCAL_FLAG_DEAD 1
 #define INTERP_LOCAL_FLAG_EXECUTION_STACK 2
 #define INTERP_LOCAL_FLAG_CALL_ARGS 4
+#define INTERP_LOCAL_FLAG_GLOBAL 8
+#define INTERP_LOCAL_FLAG_NO_CALL_ARGS 16
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
@@ -27,8 +34,6 @@ typedef struct
 	 * the stack a new local is created.
 	 */
 	int local;
-	/* The offset from the execution stack start where this is stored */
-	int offset;
 	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
 	int size;
 } StackInfo;
@@ -70,9 +75,10 @@ struct _InterpInst {
 	union {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
-		// We handle newobj poorly due to not having our own local offset allocator.
-		// We temporarily use this array to let cprop know the values of the newobj args.
-		int *newobj_reg_map;
+		// For call instructions, this represents an array of all call arg vars
+		// in the order they are pushed to the stack. This makes it easy to find
+		// all source vars for these types of opcodes. This is terminated with -1.
+		int *call_args;
 	} info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.
@@ -135,9 +141,16 @@ typedef struct {
 	int indirects;
 	int offset;
 	int size;
+	int live_start, live_end;
+	// index of first basic block where this var is used
+	int bb_index;
 	union {
-		// the offset from the start of the execution stack locals space
-		int stack_offset;
+		// If var is INTERP_LOCAL_FLAG_CALL_ARGS, this is the call instruction using it.
+		// Only used during var offset allocator
+		InterpInst *call;
+		// For local vars, this represents the instruction declaring it.
+		// Only used during super instruction pass.
+		InterpInst *def;
 	};
 } InterpLocal;
 
@@ -161,9 +174,10 @@ typedef struct
 	StackInfo *sp;
 	unsigned int max_stack_height;
 	unsigned int stack_capacity;
-	unsigned int max_stack_size;
-	unsigned int total_locals_size;
+	gint32 param_area_offset;
+	gint32 total_locals_size;
 	InterpLocal *locals;
+	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
 	unsigned int locals_size;
@@ -176,6 +190,7 @@ typedef struct
 	GHashTable *patchsite_hash;
 #endif
 	int *clause_indexes;
+	int *clause_vars;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;
@@ -192,6 +207,9 @@ typedef struct
 	GList *dont_inline;
 	int inline_depth;
 	int has_localloc : 1;
+	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
+	// bail out of inlining when having to generate certain opcodes (like call, throw).
+	int aggressive_inlining : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

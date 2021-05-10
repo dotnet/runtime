@@ -373,6 +373,8 @@ public:
     bool IsHFA() const;
     CorInfoHFAElemType GetHFAType() const;
 
+    bool IsFloatHfa() const;
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
 #endif // FEATURE_64BIT_ALIGNMENT

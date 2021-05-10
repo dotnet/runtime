@@ -338,7 +338,7 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
 
     BOOL fIsField = isCallConv(
-        MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)),
+        MetaSig::GetCallingConvention(Signature(pSig, cSig)),
         IMAGE_CEE_CS_CALLCONV_FIELD);
 
     if (fIsField)
@@ -462,7 +462,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
 
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
 
-    _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
+    _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
 
     // For array method signatures, the caller's signature contains "actual" types whereas the callee's signature has
     // formals (ELEMENT_TYPE_VAR 0 wherever the element type of the array occurs). So we need to pass in a substitution
@@ -532,7 +532,7 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
 
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
 
-    _ASSERTE(isCallConv(MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
+    _ASSERTE(isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
 
     FieldDesc * pFD = MemberLoader::FindField(pMT, szMember, pSig, cSig, pModule);
 
@@ -824,7 +824,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
     // Load the generic method instantiation
     THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
 
-    DWORD nGenericMethodArgs = 0;
+    uint32_t nGenericMethodArgs = 0;
     IfFailThrow(sp.GetData(&nGenericMethodArgs));
 
     DWORD cbAllocSize = 0;
@@ -835,7 +835,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
 
     TypeHandle *genericMethodArgs = reinterpret_cast<TypeHandle *>(qbGenericMethodArgs.AllocThrows(cbAllocSize));
 
-    for (DWORD i = 0; i < nGenericMethodArgs; i++)
+    for (uint32_t i = 0; i < nGenericMethodArgs; i++)
     {
         genericMethodArgs[i] = sp.GetTypeHandleThrowing(pModule, pTypeContext);
         _ASSERTE (!genericMethodArgs[i].IsNull());

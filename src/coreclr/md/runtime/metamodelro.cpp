@@ -206,7 +206,7 @@ CMiniMd::CommonEnumCustomAttributeByName(
 {
     HRESULT hr = S_OK;
     HRESULT hrRet = S_FALSE;    // Assume that we won't find any
-    ULONG   ridStart, ridEnd;   // Loop start and endpoints.
+    RID     ridStart, ridEnd;   // Loop start and endpoints.
 
     _ASSERTE(phEnum != NULL);
 
@@ -405,7 +405,7 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
     ULONG               cbData;
     CustomAttributeRec *pRec;
 
-    ULONG   ridStart, ridEnd;   // Loop start and endpoints.
+    RID   ridStart, ridEnd;   // Loop start and endpoints.
 
     // Get the list of custom values for the parent object.
 

@@ -102,6 +102,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ToUnorderedTest()
         {
             var sortedMap = Empty<int, GenericParameterHelper>().AddRange(Enumerable.Range(1, 100).Select(n => new KeyValuePair<int, GenericParameterHelper>(n, new GenericParameterHelper(n))));
@@ -456,6 +457,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50579", TestPlatforms.Android)]
         public void Indexer_KeyNotFoundException_ContainsKeyInMessage()
         {
             var map = ImmutableSortedDictionary.Create<string, string>()

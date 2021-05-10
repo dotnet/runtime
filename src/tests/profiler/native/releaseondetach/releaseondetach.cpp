@@ -3,32 +3,12 @@
 
 #include "releaseondetach.h"
 
-#ifdef WIN32
-#include <Windows.h>
-#else // WIN32
-#include <dlfcn.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-
-using std::string;
-using std::ifstream;
-using std::getline;
-
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
-#endif // __APPLE__
-#endif // WIN32
-
-ReleaseOnDetach *ReleaseOnDetach::Instance;
-
 ReleaseOnDetach::ReleaseOnDetach() :
     _dispenser(NULL),
     _failures(0),
-    _detachSucceeded(false),
-    _doneFlag(NULL)
+    _detachSucceeded(false)
 {
-    ReleaseOnDetach::Instance = this;
+
 }
 
 ReleaseOnDetach::~ReleaseOnDetach()
@@ -51,10 +31,7 @@ ReleaseOnDetach::~ReleaseOnDetach()
 
     fflush(stdout);
 
-    if (_doneFlag != NULL)
-    {
-        *_doneFlag = true;
-    }
+    NotifyManagedCodeViaCallback();
 }
 
 GUID ReleaseOnDetach::GetClsid()
@@ -113,16 +90,11 @@ HRESULT ReleaseOnDetach::ProfilerAttachComplete()
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
+HRESULT ReleaseOnDetach::ProfilerDetachSucceeded()
 {
     SHUTDOWNGUARD();
 
     printf("Profiler detach succeeded\n");
     _detachSucceeded = true;
     return S_OK;
-}
-
-extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(void *boolPtr)
-{
-    ReleaseOnDetach::Instance->SetBoolPtr(boolPtr);
 }

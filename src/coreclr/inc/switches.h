@@ -150,7 +150,7 @@
 // do not work reliably with conservative GC.
 #define FEATURE_CONSERVATIVE_GC 1
 
-#if (defined(TARGET_ARM) && !defined(ARM_SOFTFP)) || defined(TARGET_ARM64)
+#if (defined(TARGET_ARM) && (!defined(ARM_SOFTFP) || defined(CONFIGURABLE_ARM_ABI))) || defined(TARGET_ARM64)
 #define FEATURE_HFA
 #endif
 

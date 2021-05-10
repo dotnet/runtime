@@ -47,7 +47,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (RangeItemHeaderValue range in source._ranges)
                 {
-                    this.Ranges.Add((RangeItemHeaderValue)((ICloneable)range).Clone());
+                    this.Ranges.Add(new RangeItemHeaderValue(range));
                 }
             }
         }
@@ -81,7 +81,7 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             RangeHeaderValue? other = obj as RangeHeaderValue;
 

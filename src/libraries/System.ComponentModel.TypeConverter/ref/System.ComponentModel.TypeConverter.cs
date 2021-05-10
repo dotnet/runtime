@@ -38,7 +38,8 @@ namespace System.ComponentModel
         public AmbientValueAttribute(object value) { }
         public AmbientValueAttribute(float value) { }
         public AmbientValueAttribute(string value) { }
-        public AmbientValueAttribute(System.Type type, string value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        public AmbientValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string value) { }
         public object Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -47,6 +48,7 @@ namespace System.ComponentModel
     {
         public ArrayConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -58,15 +60,17 @@ namespace System.ComponentModel
         protected virtual System.Attribute[] Attributes { get { throw null; } }
         public int Count { get { throw null; } }
         public virtual System.Attribute this[int index] { get { throw null; } }
-        public virtual System.Attribute this[System.Type attributeType] { get { throw null; } }
+        public virtual System.Attribute this[[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type attributeType] { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public bool Contains(System.Attribute attribute) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public bool Contains(System.Attribute[] attributes) { throw null; }
         public void CopyTo(System.Array array, int index) { }
         public static System.ComponentModel.AttributeCollection FromExisting(System.ComponentModel.AttributeCollection existing, params System.Attribute[] newAttributes) { throw null; }
-        protected System.Attribute GetDefaultAttribute(System.Type attributeType) { throw null; }
+        protected System.Attribute GetDefaultAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type attributeType) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public bool Matches(System.Attribute attribute) { throw null; }
         public bool Matches(System.Attribute[] attributes) { throw null; }
@@ -75,10 +79,11 @@ namespace System.ComponentModel
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public partial class AttributeProviderAttribute : System.Attribute
     {
-        public AttributeProviderAttribute(string typeName) { }
-        public AttributeProviderAttribute(string typeName, string propertyName) { }
-        public AttributeProviderAttribute(System.Type type) { }
+        public AttributeProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] string typeName) { }
+        public AttributeProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] string typeName, string propertyName) { }
+        public AttributeProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type type) { }
         public string PropertyName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public string TypeName { get { throw null; } }
     }
     public abstract partial class BaseNumberConverter : System.ComponentModel.TypeConverter
@@ -116,9 +121,11 @@ namespace System.ComponentModel
         OneWay = 0,
         TwoWay = 1,
     }
-    public partial class BindingList<T> : System.Collections.ObjectModel.Collection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.ICancelAddNew, System.ComponentModel.IRaiseItemChangedEvents
+    public partial class BindingList<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] T> : System.Collections.ObjectModel.Collection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.ICancelAddNew, System.ComponentModel.IRaiseItemChangedEvents
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         public BindingList() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         public BindingList(System.Collections.Generic.IList<T> list) { }
         public bool AllowEdit { get { throw null; } set { } }
         public bool AllowNew { get { throw null; } set { } }
@@ -202,6 +209,7 @@ namespace System.ComponentModel
     {
         public CollectionConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -220,6 +228,7 @@ namespace System.ComponentModel
     public partial class ComponentConverter : System.ComponentModel.ReferenceConverter
     {
         public ComponentConverter(System.Type type) : base (default(System.Type)) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -233,7 +242,9 @@ namespace System.ComponentModel
     {
         public ComponentResourceManager() { }
         public ComponentResourceManager(System.Type t) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered.")]
         public void ApplyResources(object value, string objectName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered.")]
         public virtual void ApplyResources(object value, string objectName, System.Globalization.CultureInfo culture) { }
     }
     public partial class Container : System.ComponentModel.IContainer, System.IDisposable
@@ -241,6 +252,7 @@ namespace System.ComponentModel
         public Container() { }
         public virtual System.ComponentModel.ComponentCollection Components { get { throw null; } }
         public virtual void Add(System.ComponentModel.IComponent component) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of components in the container cannot be statically discovered to validate the name.")]
         public virtual void Add(System.ComponentModel.IComponent component, string name) { }
         protected virtual System.ComponentModel.ISite CreateSite(System.ComponentModel.IComponent component, string name) { throw null; }
         public void Dispose() { }
@@ -249,6 +261,7 @@ namespace System.ComponentModel
         protected virtual object GetService(System.Type service) { throw null; }
         public virtual void Remove(System.ComponentModel.IComponent component) { }
         protected void RemoveWithoutUnsiting(System.ComponentModel.IComponent component) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of components in the container cannot be statically discovered.")]
         protected virtual void ValidateName(System.ComponentModel.IComponent component, string name) { }
     }
     public abstract partial class ContainerFilterService
@@ -275,13 +288,20 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.AttributeCollection GetAttributes() { throw null; }
         public virtual string GetClassName() { throw null; }
         public virtual string GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public virtual System.ComponentModel.TypeConverter GetConverter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         public virtual System.ComponentModel.EventDescriptor GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual System.ComponentModel.PropertyDescriptor GetDefaultProperty() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         public virtual object GetEditor(System.Type editorBaseType) { throw null; }
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[] attributes) { throw null; }
         public virtual object GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
     }
@@ -400,8 +420,9 @@ namespace System.ComponentModel
     }
     public partial class EnumConverter : System.ComponentModel.TypeConverter
     {
-        public EnumConverter(System.Type type) { }
+        public EnumConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { }
         protected virtual System.Collections.IComparer Comparer { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected System.Type EnumType { get { throw null; } }
         protected System.ComponentModel.TypeConverter.StandardValuesCollection Values { get { throw null; } set { } }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType) { throw null; }
@@ -415,9 +436,9 @@ namespace System.ComponentModel
     }
     public abstract partial class EventDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
+        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
         public abstract System.Type ComponentType { get; }
         public abstract System.Type EventType { get; }
         public abstract bool IsMulticast { get; }
@@ -466,6 +487,7 @@ namespace System.ComponentModel
     public partial class ExpandableObjectConverter : System.ComponentModel.TypeConverter
     {
         public ExpandableObjectConverter() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -549,13 +571,20 @@ namespace System.ComponentModel
         System.ComponentModel.AttributeCollection GetAttributes();
         string GetClassName();
         string GetComponentName();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter GetConverter();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor GetDefaultEvent();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptor GetDefaultProperty();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object GetEditor(System.Type editorBaseType);
         System.ComponentModel.EventDescriptorCollection GetEvents();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[] attributes);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[] attributes);
         object GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd);
     }
@@ -613,8 +642,9 @@ namespace System.ComponentModel
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public partial class InstallerTypeAttribute : System.Attribute
     {
-        public InstallerTypeAttribute(string typeName) { }
-        public InstallerTypeAttribute(System.Type installerType) { }
+        public InstallerTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName) { }
+        public InstallerTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type installerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public virtual System.Type InstallerType { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -689,9 +719,9 @@ namespace System.ComponentModel
         public static System.ComponentModel.LicenseContext CurrentContext { get { throw null; } set { } }
         public static System.ComponentModel.LicenseUsageMode UsageMode { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
+        public static object CreateWithContext([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
+        public static object CreateWithContext([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
         public static bool IsLicensed(System.Type type) { throw null; }
         public static bool IsValid(System.Type type) { throw null; }
         public static bool IsValid(System.Type type, object instance, out System.ComponentModel.License license) { throw null; }
@@ -710,8 +740,9 @@ namespace System.ComponentModel
     {
         public static readonly System.ComponentModel.LicenseProviderAttribute Default;
         public LicenseProviderAttribute() { }
-        public LicenseProviderAttribute(string typeName) { }
-        public LicenseProviderAttribute(System.Type type) { }
+        public LicenseProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName) { }
+        public LicenseProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type LicenseProvider { get { throw null; } }
         public override object TypeId { get { throw null; } }
         public override bool Equals(object value) { throw null; }
@@ -833,6 +864,7 @@ namespace System.ComponentModel
         public virtual object GetService(System.Type service) { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
     public partial class MaskedTextProvider : System.ICloneable
     {
         public MaskedTextProvider(string mask) { }
@@ -953,8 +985,8 @@ namespace System.ComponentModel
         protected virtual System.ComponentModel.AttributeCollection CreateAttributeCollection() { throw null; }
         public override bool Equals(object obj) { throw null; }
         protected virtual void FillAttributes(System.Collections.IList attributeList) { }
-        protected static System.Reflection.MethodInfo FindMethod(System.Type componentClass, string name, System.Type[] args, System.Type returnType) { throw null; }
-        protected static System.Reflection.MethodInfo FindMethod(System.Type componentClass, string name, System.Type[] args, System.Type returnType, bool publicOnly) { throw null; }
+        protected static System.Reflection.MethodInfo FindMethod([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type componentClass, string name, System.Type[] args, System.Type returnType) { throw null; }
+        protected static System.Reflection.MethodInfo FindMethod([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type componentClass, string name, System.Type[] args, System.Type returnType, bool publicOnly) { throw null; }
         public override int GetHashCode() { throw null; }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { throw null; }
         [System.ObsoleteAttribute("This method has been deprecated. Use GetInvocationTarget instead. https://go.microsoft.com/fwlink/?linkid=14202")]
@@ -965,6 +997,7 @@ namespace System.ComponentModel
     {
         public MultilineStringConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -979,6 +1012,7 @@ namespace System.ComponentModel
     }
     public partial class NullableConverter : System.ComponentModel.TypeConverter
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The UnderlyingType cannot be statically discovered.")]
         public NullableConverter(System.Type type) { }
         public System.Type NullableType { get { throw null; } }
         public System.Type UnderlyingType { get { throw null; } }
@@ -989,6 +1023,7 @@ namespace System.ComponentModel
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
         public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
@@ -1011,11 +1046,11 @@ namespace System.ComponentModel
     }
     public abstract partial class PropertyDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
+        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
         public abstract System.Type ComponentType { get; }
-        public virtual System.ComponentModel.TypeConverter Converter { get { throw null; } }
+        public virtual System.ComponentModel.TypeConverter Converter { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")] get { throw null; } }
         public virtual bool IsLocalizable { get { throw null; } }
         public abstract bool IsReadOnly { get; }
         public abstract System.Type PropertyType { get; }
@@ -1023,17 +1058,24 @@ namespace System.ComponentModel
         public virtual bool SupportsChangeEvents { get { throw null; } }
         public virtual void AddValueChanged(object component, System.EventHandler handler) { }
         public abstract bool CanResetValue(object component);
-        protected object CreateInstance(System.Type type) { throw null; }
+        protected object CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public override bool Equals(object obj) { throw null; }
         protected override void FillAttributes(System.Collections.IList attributeList) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(System.Attribute[] filter) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance, System.Attribute[] filter) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed. PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual object GetEditor(System.Type editorBaseType) { throw null; }
         public override int GetHashCode() { throw null; }
         protected override object GetInvocationTarget(System.Type type, object instance) { throw null; }
-        protected System.Type GetTypeFromName(string typeName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Calls ComponentType.Assembly.GetType on the non-fully qualified typeName, which the trimmer cannot recognize.")]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        protected System.Type GetTypeFromName([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName) { throw null; }
         public abstract object GetValue(object component);
         protected internal System.EventHandler GetValueChangedHandler(object component) { throw null; }
         protected virtual void OnValueChanged(object component, System.EventArgs e) { }
@@ -1095,8 +1137,8 @@ namespace System.ComponentModel
     public partial class PropertyTabAttribute : System.Attribute
     {
         public PropertyTabAttribute() { }
-        public PropertyTabAttribute(string tabClassName) { }
-        public PropertyTabAttribute(string tabClassName, System.ComponentModel.PropertyTabScope tabScope) { }
+        public PropertyTabAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string tabClassName) { }
+        public PropertyTabAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string tabClassName, System.ComponentModel.PropertyTabScope tabScope) { }
         public PropertyTabAttribute(System.Type tabClass) { }
         public PropertyTabAttribute(System.Type tabClass, System.ComponentModel.PropertyTabScope tabScope) { }
         public System.Type[] TabClasses { get { throw null; } }
@@ -1105,6 +1147,7 @@ namespace System.ComponentModel
         public bool Equals(System.ComponentModel.PropertyTabAttribute other) { throw null; }
         public override bool Equals(object other) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Types referenced by tabClassNames may be trimmed.")]
         protected void InitializeArrays(string[] tabClassNames, System.ComponentModel.PropertyTabScope[] tabScopes) { }
         protected void InitializeArrays(System.Type[] tabClasses, System.ComponentModel.PropertyTabScope[] tabScopes) { }
     }
@@ -1118,9 +1161,10 @@ namespace System.ComponentModel
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class ProvidePropertyAttribute : System.Attribute
     {
-        public ProvidePropertyAttribute(string propertyName, string receiverTypeName) { }
-        public ProvidePropertyAttribute(string propertyName, System.Type receiverType) { }
+        public ProvidePropertyAttribute(string propertyName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string receiverTypeName) { }
+        public ProvidePropertyAttribute(string propertyName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type receiverType) { }
         public string PropertyName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string ReceiverTypeName { get { throw null; } }
         public override object TypeId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1214,9 +1258,11 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.ToolboxItemAttribute Default;
         public static readonly System.ComponentModel.ToolboxItemAttribute None;
         public ToolboxItemAttribute(bool defaultType) { }
-        public ToolboxItemAttribute(string toolboxItemTypeName) { }
-        public ToolboxItemAttribute(System.Type toolboxItemType) { }
+        public ToolboxItemAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string toolboxItemTypeName) { }
+        public ToolboxItemAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type toolboxItemType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type ToolboxItemType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ToolboxItemTypeName { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -1269,8 +1315,11 @@ namespace System.ComponentModel
         protected System.Exception GetConvertToException(object value, System.Type destinationType) { throw null; }
         public bool GetCreateInstanceSupported() { throw null; }
         public virtual bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetProperties(object value) { throw null; }
         public bool GetPropertiesSupported() { throw null; }
         public virtual bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
@@ -1285,8 +1334,8 @@ namespace System.ComponentModel
         protected System.ComponentModel.PropertyDescriptorCollection SortProperties(System.ComponentModel.PropertyDescriptorCollection props, string[] names) { throw null; }
         protected abstract partial class SimplePropertyDescriptor : System.ComponentModel.PropertyDescriptor
         {
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(System.ComponentModel.MemberDescriptor)) { }
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(System.ComponentModel.MemberDescriptor)) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(string), default(System.Attribute[])) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(string), default(System.Attribute[])) { }
             public override System.Type ComponentType { get { throw null; } }
             public override bool IsReadOnly { get { throw null; } }
             public override System.Type PropertyType { get { throw null; } }
@@ -1309,18 +1358,24 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
-        public virtual object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
+        public virtual object CreateInstance(System.IServiceProvider provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public virtual System.Collections.IDictionary GetCache(object instance) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
         protected internal virtual System.ComponentModel.IExtenderProvider[] GetExtenderProviders(object instance) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public virtual string GetFullComponentName(object component) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public System.Type GetReflectionType(object instance) { throw null; }
-        public System.Type GetReflectionType(System.Type objectType) { throw null; }
-        public virtual System.Type GetReflectionType(System.Type objectType, object instance) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        public System.Type GetReflectionType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type objectType) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        public virtual System.Type GetReflectionType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type objectType, object instance) { throw null; }
         public virtual System.Type GetRuntimeType(System.Type reflectionType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(object instance) { throw null; }
-        public System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType) { throw null; }
-        public virtual System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType, object instance) { throw null; }
+        public System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType) { throw null; }
+        public virtual System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object instance) { throw null; }
         public virtual bool IsSupportedType(System.Type type) { throw null; }
     }
     public sealed partial class TypeDescriptor
@@ -1337,6 +1392,7 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(System.Type type, params System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
         public static void AddEditorTable(System.Type editorBaseType, System.Collections.Hashtable table) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProvider(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
@@ -1348,65 +1404,100 @@ namespace System.ComponentModel
         public static void AddProviderTransparent(System.ComponentModel.TypeDescriptionProvider provider, System.Type type) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.Design.IDesigner CreateDesigner(System.ComponentModel.IComponent component, System.Type designerBaseType) { throw null; }
-        public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
-        public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
-        public static object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
-        public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
-        public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.EventDescriptor CreateEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.EventDescriptor CreateEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
+        public static object CreateInstance(System.IServiceProvider provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        public static System.ComponentModel.PropertyDescriptor CreateProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        public static System.ComponentModel.PropertyDescriptor CreateProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static object GetAssociation(System.Type type, object primary) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.AttributeCollection GetAttributes(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.AttributeCollection GetAttributes(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.AttributeCollection GetAttributes(System.Type componentType) { throw null; }
+        public static System.ComponentModel.AttributeCollection GetAttributes([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static string GetClassName(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static string GetClassName(object component, bool noCustomTypeDesc) { throw null; }
-        public static string GetClassName(System.Type componentType) { throw null; }
+        public static string GetClassName([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static string GetComponentName(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static string GetComponentName(object component, bool noCustomTypeDesc) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.TypeConverter GetConverter(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.TypeConverter GetConverter(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.TypeConverter GetConverter(System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        public static System.ComponentModel.TypeConverter GetConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.EventDescriptor GetDefaultEvent(System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+        public static System.ComponentModel.EventDescriptor GetDefaultEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        public static System.ComponentModel.PropertyDescriptor GetDefaultProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed. The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, System.Type editorBaseType) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed. The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, System.Type editorBaseType, bool noCustomTypeDesc) { throw null; }
-        public static object GetEditor(System.Type type, System.Type editorBaseType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        public static object GetEditor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, System.Type editorBaseType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, System.Attribute[] attributes, bool noCustomTypeDesc) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType) { throw null; }
-        public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType, System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.EventDescriptorCollection GetEvents([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        public static System.ComponentModel.EventDescriptorCollection GetEvents([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static string GetFullComponentName(object component) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, System.Attribute[] attributes, bool noCustomTypeDesc) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType) { throw null; }
-        public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType, System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(object instance) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(System.Type type) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public static System.Type GetReflectionType(object instance) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Type GetReflectionType(System.Type type) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        public static System.Type GetReflectionType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { throw null; }
         public static void Refresh(object component) { }
         public static void Refresh(System.Reflection.Assembly assembly) { }
         public static void Refresh(System.Reflection.Module module) { }
@@ -1553,7 +1644,9 @@ namespace System.ComponentModel.Design
         protected System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection CreateOptionCollection(System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection parent, string name, object value) { throw null; }
         protected virtual void PopulateOptionCollection(System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection options) { }
         protected virtual bool ShowDialog(System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection options, object optionObject) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The option value's Type cannot be statically discovered.")]
         object System.ComponentModel.Design.IDesignerOptionService.GetOptionValue(string pageName, string valueName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The option value's Type cannot be statically discovered.")]
         void System.ComponentModel.Design.IDesignerOptionService.SetOptionValue(string pageName, string valueName, object value) { }
         [System.ComponentModel.EditorAttribute("", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public sealed partial class DesignerOptionCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
@@ -1564,7 +1657,7 @@ namespace System.ComponentModel.Design
             public System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection this[string name] { get { throw null; } }
             public string Name { get { throw null; } }
             public System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection Parent { get { throw null; } }
-            public System.ComponentModel.PropertyDescriptorCollection Properties { get { throw null; } }
+            public System.ComponentModel.PropertyDescriptorCollection Properties { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of DesignerOptionCollection's value cannot be statically discovered.")] get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
             bool System.Collections.IList.IsFixedSize { get { throw null; } }
@@ -1747,7 +1840,9 @@ namespace System.ComponentModel.Design
     }
     public partial interface IDesignerOptionService
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The option value's Type cannot be statically discovered.")]
         object GetOptionValue(string pageName, string valueName);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The option value's Type cannot be statically discovered.")]
         void SetOptionValue(string pageName, string valueName, object value);
     }
     public partial interface IDictionaryService
@@ -1860,9 +1955,12 @@ namespace System.ComponentModel.Design
         System.Reflection.Assembly GetAssembly(System.Reflection.AssemblyName name);
         System.Reflection.Assembly GetAssembly(System.Reflection.AssemblyName name, bool throwOnError);
         string GetPathOfAssembly(System.Reflection.AssemblyName name);
-        System.Type GetType(string name);
-        System.Type GetType(string name, bool throwOnError);
-        System.Type GetType(string name, bool throwOnError, bool ignoreCase);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        System.Type GetType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        System.Type GetType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        System.Type GetType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError, bool ignoreCase);
         void ReferenceAssembly(System.Reflection.AssemblyName name);
     }
     public partial class MenuCommand
@@ -2175,6 +2273,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -2187,6 +2286,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -2199,6 +2299,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -2211,6 +2312,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }

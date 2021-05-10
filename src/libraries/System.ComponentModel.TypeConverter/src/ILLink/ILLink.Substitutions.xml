@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.ComponentModel.TypeConverter">
+    <type fullname="System.ComponentModel.Design.DesigntimeLicenseContextSerializer" feature="System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization" featurevalue="false">
+      <method signature="System.Boolean get_EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

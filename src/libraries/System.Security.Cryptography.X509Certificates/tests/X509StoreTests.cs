@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -94,9 +95,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // API not supported via OpenSSL
+        [PlatformSpecific(PlatformSupport.OpenSSL)] // API not supported via OpenSSL
         [Fact]
-        public static void Constructor_StoreHandle_Unix()
+        public static void Constructor_StoreHandle_OpenSSL()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {

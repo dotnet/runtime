@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public class HttpClient : HttpMessageInvoker
+    public partial class HttpClient : HttpMessageInvoker
     {
         #region Fields
 
@@ -127,7 +127,7 @@ namespace System.Net.Http
 
         #region Constructors
 
-        public HttpClient() : this(new HttpClientHandler())
+        public HttpClient() : this(CreateDefaultHandler())
         {
         }
 
@@ -455,13 +455,41 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
         {
-            // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
-
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
-            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, completionOption, async: false, cts, disposeCts, pendingRequestsCts, cancellationToken);
-            Debug.Assert(sendTask.IsCompleted);
-            return sendTask.GetAwaiter().GetResult();
+
+            bool telemetryStarted = StartSend(request);
+            bool responseContentTelemetryStarted = false;
+            HttpResponseMessage? response = null;
+            try
+            {
+                // Wait for the send request to complete, getting back the response.
+                response = base.Send(request, cts.Token);
+                ThrowForNullResponse(response);
+
+                // Buffer the response content if we've been asked to.
+                if (ShouldBufferResponse(completionOption, request))
+                {
+                    if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStart();
+                        responseContentTelemetryStarted = true;
+                    }
+
+                    response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
+                }
+
+                return response;
+            }
+            catch (Exception e)
+            {
+                HandleFailure(e, telemetryStarted, response, cts, cancellationToken, pendingRequestsCts);
+                throw;
+            }
+            finally
+            {
+                FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
+            }
         }
 
         public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request) =>
@@ -477,9 +505,47 @@ namespace System.Net.Http
         {
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.
             CheckRequestBeforeSend(request);
-
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
-            return SendAsyncCore(request, completionOption, async: true, cts, disposeCts, pendingRequestsCts, cancellationToken).AsTask();
+
+            return Core(request, completionOption, cts, disposeCts, pendingRequestsCts, cancellationToken);
+
+            async Task<HttpResponseMessage> Core(
+                HttpRequestMessage request, HttpCompletionOption completionOption,
+                CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+            {
+                bool telemetryStarted = StartSend(request);
+                bool responseContentTelemetryStarted = false;
+                HttpResponseMessage? response = null;
+                try
+                {
+                    // Wait for the send request to complete, getting back the response.
+                    response = await base.SendAsync(request, cts.Token).ConfigureAwait(false);
+                    ThrowForNullResponse(response);
+
+                    // Buffer the response content if we've been asked to.
+                    if (ShouldBufferResponse(completionOption, request))
+                    {
+                        if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+                        {
+                            HttpTelemetry.Log.ResponseContentStart();
+                            responseContentTelemetryStarted = true;
+                        }
+
+                        await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
+                    }
+
+                    return response;
+                }
+                catch (Exception e)
+                {
+                    HandleFailure(e, telemetryStarted, response, cts, originalCancellationToken, pendingRequestsCts);
+                    throw;
+                }
+                finally
+                {
+                    FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
+                }
+            }
         }
 
         private void CheckRequestBeforeSend(HttpRequestMessage request)
@@ -497,58 +563,6 @@ namespace System.Net.Http
             PrepareRequestMessage(request);
         }
 
-        private async ValueTask<HttpResponseMessage> SendAsyncCore(
-            HttpRequestMessage request, HttpCompletionOption completionOption,
-            bool async, CancellationTokenSource cts, bool disposeCts,
-            CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
-        {
-            bool telemetryStarted = StartSend(request);
-            bool responseContentTelemetryStarted = false;
-
-            HttpResponseMessage? response = null;
-            try
-            {
-                // Wait for the send request to complete, getting back the response.
-                response = async ?
-                    await base.SendAsync(request, cts.Token).ConfigureAwait(false) :
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser, safe to suppress
-                    base.Send(request, cts.Token);
-#pragma warning restore CA1416
-                ThrowForNullResponse(response);
-
-                // Buffer the response content if we've been asked to.
-                if (completionOption == HttpCompletionOption.ResponseContentRead &&
-                    !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
-                    {
-                        HttpTelemetry.Log.ResponseContentStart();
-                        responseContentTelemetryStarted = true;
-                    }
-
-                    if (async)
-                    {
-                        await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
-                    }
-                }
-
-                return response;
-            }
-            catch (Exception e)
-            {
-                HandleFailure(e, telemetryStarted, response, cts, originalCancellationToken, pendingRequestsCts);
-                throw;
-            }
-            finally
-            {
-                FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
-            }
-        }
-
         private static void ThrowForNullResponse([NotNull] HttpResponseMessage? response)
         {
             if (response is null)
@@ -556,6 +570,10 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_handler_noresponse);
             }
         }
+
+        private static bool ShouldBufferResponse(HttpCompletionOption completionOption, HttpRequestMessage request) =>
+            completionOption == HttpCompletionOption.ResponseContentRead &&
+            !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase);
 
         private void HandleFailure(Exception e, bool telemetryStarted, HttpResponseMessage? response, CancellationTokenSource cts, CancellationToken cancellationToken, CancellationTokenSource pendingRequestsCts)
         {
@@ -793,6 +811,16 @@ namespace System.Net.Http
             {
                 throw new ArgumentException(HttpUtilities.InvalidUriMessage, parameterName);
             }
+        }
+
+        private static bool IsNativeHandlerEnabled()
+        {
+            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
+            {
+                return false;
+            }
+
+            return isEnabled;
         }
 
         private Uri? CreateUri(string? uri) =>

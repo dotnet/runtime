@@ -11,6 +11,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedViewStream.
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedViewStreamTests : MemoryMappedFilesTestBase
     {
         /// <summary>
@@ -220,7 +221,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate that multiple accessors over the same map share data appropriately.
         /// </summary>
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation doesn't share data
+        [SkipOnPlatform(TestPlatforms.Browser, "the emscripten implementation doesn't share data")]
         public void ViewsShareData()
         {
             const int MapLength = 256;

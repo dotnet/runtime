@@ -9,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private SafeFileHandle() : this(ownsHandle: true)
+        public SafeFileHandle() : this(ownsHandle: true)
         {
         }
 

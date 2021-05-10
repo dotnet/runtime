@@ -16,18 +16,13 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
+#include "llvm-intrinsics-types.h"
+
 #ifdef HAVE_UNWIND_H
 #include <unwind.h>
 #endif
 
 G_BEGIN_DECLS
-
-typedef enum {
-#define INTRINS(id, llvm_id) INTRINS_ ## id,
-#define INTRINS_OVR(id, llvm_id) INTRINS_ ## id,
-#include "llvm-intrinsics.h"
-	INTRINS_NUM
-} IntrinsicId;
 
 /*
  * Keep in sync with the enum in utils/mono-memory-model.h.
@@ -63,6 +58,9 @@ mono_llvm_dump_value (LLVMValueRef value);
 
 void
 mono_llvm_dump_module (LLVMModuleRef module);
+
+void
+mono_llvm_dump_type (LLVMTypeRef type);
 
 LLVMValueRef
 mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
@@ -159,7 +157,13 @@ void
 mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind);
 
 void
+mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type);
+
+void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind);
+
+void
+mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type);
 
 #if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 G_EXTERN_C _Unwind_Reason_Code mono_debug_personality (int a, _Unwind_Action b,
@@ -212,6 +216,9 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id);
 
 LLVMValueRef
 mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes);
+
+unsigned int
+mono_llvm_get_prim_size_bits (LLVMTypeRef type);
 
 G_END_DECLS
 

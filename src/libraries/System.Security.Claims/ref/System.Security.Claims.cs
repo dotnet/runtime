@@ -210,6 +210,6 @@ namespace System.Security.Principal
     {
         public GenericPrincipal(System.Security.Principal.IIdentity identity, string[]? roles) { }
         public override System.Security.Principal.IIdentity Identity { get { throw null; } }
-        public override bool IsInRole(string? role) { throw null; }
+        public override bool IsInRole([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? role) { throw null; }
     }
 }

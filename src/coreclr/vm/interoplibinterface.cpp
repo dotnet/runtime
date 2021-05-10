@@ -18,13 +18,11 @@ using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 namespace
 {
     // This class is used to track the external object within the runtime.
-    struct ExternalObjectContext
+    struct ExternalObjectContext : public InteropLibInterface::ExternalObjectContextBase
     {
         static const DWORD InvalidSyncBlockIndex;
 
-        void* Identity;
         void* ThreadContext;
-        DWORD SyncBlockIndex;
         INT64 WrapperId;
 
         enum
@@ -128,10 +126,6 @@ namespace
             return Key(Identity, WrapperId);
         }
     };
-
-    // Identity is used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
-    static constexpr size_t DACIdentityOffset = 0;
-    static_assert(offsetof(ExternalObjectContext, Identity) == DACIdentityOffset, "Keep in sync with DAC interfaces");
 
     const DWORD ExternalObjectContext::InvalidSyncBlockIndex = 0; // See syncblk.h
 
@@ -699,6 +693,8 @@ namespace
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
+        STRESS_LOG4(LF_INTEROP, LL_INFO1000, "Get or Create EOC: (Identity: 0x%p) (Flags: %x) (Maybe: 0x%p) (ID: %lld)\n", identity, flags, OBJECTREFToObject(wrapperMaybe), wrapperId);
+
         gc.implRef = impl;
         gc.wrapperMaybeRef = wrapperMaybe;
 
@@ -716,10 +712,10 @@ namespace
             extObjCxt = cache->Find(cacheKey);
 
             // If is no object found in the cache, check if the object COM instance is actually the CCW
-            // representing a managed object. For the scenario of marshalling through a global instance,
-            // COM instances that are actually CCWs should be unwrapped to the original managed object
-            // to allow for round-tripping object -> COM instance -> object.
-            if (extObjCxt == NULL && scenario == ComWrappersScenario::MarshallingGlobalInstance)
+            // representing a managed object. If the user passed the Unwrap flag, COM instances that are
+            // actually CCWs should be unwrapped to the original managed object to allow for round
+            // tripping object -> COM instance -> object.
+            if (extObjCxt == NULL && (flags & CreateObjectFlags::CreateObjectFlags_Unwrap))
             {
                 // If the COM instance is a CCW that is not COM-activated, use the object of that wrapper object.
                 InteropLib::OBJECTHANDLE handleLocal;
@@ -730,6 +726,8 @@ namespace
                 }
             }
         }
+
+        STRESS_LOG2(LF_INTEROP, LL_INFO1000, "EOC: 0x%p or Handle: 0x%p\n", extObjCxt, handle);
 
         if (extObjCxt != NULL)
         {
@@ -800,6 +798,8 @@ namespace
                     extObjCxt = cache->FindOrAdd(cacheKey, resultHolder.GetContext());
                 }
 
+                STRESS_LOG2(LF_INTEROP, LL_INFO100, "EOC cache insert: 0x%p == 0x%p\n", extObjCxt, resultHolder.GetContext());
+
                 // If the returned context matches the new context it means the
                 // new context was inserted or a unique instance was requested.
                 if (extObjCxt == resultHolder.GetContext())
@@ -842,6 +842,8 @@ namespace
                 _ASSERTE(extObjCxt->IsActive());
             }
         }
+
+        STRESS_LOG3(LF_INTEROP, LL_INFO1000, "EOC: 0x%p, 0x%p => 0x%p\n", extObjCxt, identity, OBJECTREFToObject(gc.objRefMaybe));
 
         GCPROTECT_END();
 
@@ -1022,6 +1024,29 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         DestroyHandleCommon(static_cast<::OBJECTHANDLE>(handle), InstanceHandleType);
+    }
+
+    bool HasValidTarget(_In_ InteropLib::OBJECTHANDLE handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(handle != NULL);
+        }
+        CONTRACTL_END;
+
+        bool isValid = false;
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        {
+            // Switch to cooperative mode so the handle can be safely inspected.
+            GCX_COOP_THREAD_EXISTS(GET_THREAD());
+            isValid = ObjectFromHandle(objectHandle) != NULL;
+        }
+
+        return isValid;
     }
 
     bool GetGlobalPeggingState() noexcept
@@ -1308,6 +1333,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
     _In_ void* ext,
+    _In_opt_ void* innerMaybe,
     _In_ INT32 flags,
     _In_ QCall::ObjectHandleOnStack wrapperMaybe,
     _Inout_ QCall::ObjectHandleOnStack retValue)
@@ -1322,24 +1348,16 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
 
     HRESULT hr;
     IUnknown* externalComObject = reinterpret_cast<IUnknown*>(ext);
+    IUnknown* inner = reinterpret_cast<IUnknown*>(innerMaybe);
 
-    // Determine the true identity of the object
+    // Determine the true identity and inner of the object
     SafeComHolder<IUnknown> identity;
-    hr = InteropLib::Com::GetIdentityForCreateWrapperForExternal(
+    hr = InteropLib::Com::DetermineIdentityAndInnerForExternal(
         externalComObject,
         (CreateObjectFlags)flags,
-        &identity);
+        &identity,
+        &inner);
     _ASSERTE(hr == S_OK);
-
-    // Customized inners are only supported in aggregation with
-    // IReferenceTracker scenarios (e.g. WinRT).
-    IUnknown* inner = NULL;
-    if ((externalComObject != identity)
-        && (flags & CreateObjectFlags::CreateObjectFlags_TrackerObject)
-        && (flags & CreateObjectFlags::CreateObjectFlags_Aggregated))
-    {
-        inner = externalComObject;
-    }
 
     // Switch to Cooperative mode since object references
     // are being manipulated.
@@ -1480,6 +1498,13 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
     _Outptr_ void** wrapperRaw)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
@@ -1506,6 +1531,13 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     _In_ INT32 objFromComIPFlags,
     _Out_ OBJECTREF* objRef)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
@@ -1523,7 +1555,8 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     {
         GCX_COOP();
 
-        int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject;
+        // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
+        int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
         if ((objFromComIPFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
             flags |= CreateObjectFlags::CreateObjectFlags_UniqueInstance;
 

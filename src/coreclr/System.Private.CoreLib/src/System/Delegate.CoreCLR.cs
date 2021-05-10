@@ -57,7 +57,7 @@ namespace System
         // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        protected Delegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -93,7 +93,7 @@ namespace System
         }
 
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null || !InternalEqualTypes(this, obj))
                 return false;
@@ -258,7 +258,7 @@ namespace System
         }
 
         // V1 API.
-        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -417,8 +417,11 @@ namespace System
         //
         // internal implementation details (FCALLS and utilities)
         //
+
+        // BindToMethodName is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
+        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool BindToMethodName(object? target, [DynamicallyAccessedMembers(AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags);
+        private extern bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags);

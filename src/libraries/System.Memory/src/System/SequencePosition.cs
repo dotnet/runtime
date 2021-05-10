@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -46,7 +47,7 @@ namespace System
         /// <see cref="SequencePosition"/> equality does not guarantee that they point to the same location in <see cref="System.Buffers.ReadOnlySequence{T}" />
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj) => obj is SequencePosition other && this.Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is SequencePosition other && this.Equals(other);
 
         /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]

@@ -24,7 +24,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Double : IComparable, IConvertible, IFormattable, IComparable<double>, IEquatable<double>, ISpanFormattable
+    public readonly struct Double : IComparable, IConvertible, ISpanFormattable, IComparable<double>, IEquatable<double>
     {
         private readonly double m_value; // Do not rename (binary serialization)
 
@@ -197,7 +197,7 @@ namespace System
 
         // True if obj is another Double with the same value as the current instance.  This is
         // a method of object equality, that only returns true if obj is also a double.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is double))
             {

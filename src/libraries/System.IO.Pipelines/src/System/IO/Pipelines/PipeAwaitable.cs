@@ -14,9 +14,9 @@ namespace System.IO.Pipelines
         private AwaitableState _awaitableState;
         private Action<object?>? _completion;
         private object? _completionState;
+        // It's rare to have to capture custom context here
+        private SchedulingContext? _schedulingContext;
         private CancellationTokenRegistration _cancellationTokenRegistration;
-        private SynchronizationContext? _synchronizationContext;
-        private ExecutionContext? _executionContext;
 
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         private CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
@@ -32,8 +32,7 @@ namespace System.IO.Pipelines
             _completion = null;
             _completionState = null;
             _cancellationTokenRegistration = default;
-            _synchronizationContext = null;
-            _executionContext = null;
+            _schedulingContext = null;
 #if (NETSTANDARD2_0 || NETFRAMEWORK)
             _cancellationToken = CancellationToken.None;
 #endif
@@ -73,13 +72,13 @@ namespace System.IO.Pipelines
         {
             Action<object?>? currentCompletion = _completion;
             object? currentState = _completionState;
-            ExecutionContext? executionContext = _executionContext;
-            SynchronizationContext? synchronizationContext = _synchronizationContext;
+            SchedulingContext? schedulingContext = _schedulingContext;
+            ExecutionContext? executionContext = schedulingContext?.ExecutionContext;
+            SynchronizationContext? synchronizationContext = schedulingContext?.SynchronizationContext;
 
             _completion = null;
             _completionState = null;
-            _synchronizationContext = null;
-            _executionContext = null;
+            _schedulingContext = null;
 
             completionData = currentCompletion != null ?
                 new CompletionData(currentCompletion, currentState, executionContext, synchronizationContext) :
@@ -91,8 +90,7 @@ namespace System.IO.Pipelines
         {
             Debug.Assert(_completion == null);
             Debug.Assert(_completionState == null);
-            Debug.Assert(_synchronizationContext == null);
-            Debug.Assert(_executionContext == null);
+            Debug.Assert(_schedulingContext == null);
 
             _awaitableState &= ~AwaitableState.Completed;
         }
@@ -104,7 +102,7 @@ namespace System.IO.Pipelines
 
             if (IsCompleted || doubleCompletion)
             {
-                completionData = new CompletionData(continuation, state, _executionContext, _synchronizationContext);
+                completionData = new CompletionData(continuation, state, _schedulingContext?.ExecutionContext, _schedulingContext?.SynchronizationContext);
                 return;
             }
 
@@ -118,14 +116,16 @@ namespace System.IO.Pipelines
                 SynchronizationContext? sc = SynchronizationContext.Current;
                 if (sc != null && sc.GetType() != typeof(SynchronizationContext))
                 {
-                    _synchronizationContext = sc;
+                    _schedulingContext ??= new SchedulingContext();
+                    _schedulingContext.SynchronizationContext = sc;
                 }
             }
 
             // Capture the execution context
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)
             {
-                _executionContext = ExecutionContext.Capture();
+                _schedulingContext ??= new SchedulingContext();
+                _schedulingContext.ExecutionContext = ExecutionContext.Capture();
             }
         }
 
@@ -184,6 +184,12 @@ namespace System.IO.Pipelines
             // Marks that operation is canceled. Set in Cancel reset in ObserveCancellation (GetResult)
             Canceled = 4,
             UseSynchronizationContext = 8
+        }
+
+        private sealed class SchedulingContext
+        {
+            public SynchronizationContext? SynchronizationContext { get; set; }
+            public ExecutionContext? ExecutionContext { get; set; }
         }
     }
 }

@@ -174,7 +174,7 @@ namespace System.Diagnostics.SymbolStore
         private readonly int _dummyPrimitive;
         public SymbolToken(int val) { throw null; }
         public bool Equals(System.Diagnostics.SymbolStore.SymbolToken obj) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetToken() { throw null; }
         public static bool operator ==(System.Diagnostics.SymbolStore.SymbolToken a, System.Diagnostics.SymbolStore.SymbolToken b) { throw null; }

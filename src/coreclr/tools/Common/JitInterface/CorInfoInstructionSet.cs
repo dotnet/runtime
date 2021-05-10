@@ -28,14 +28,15 @@ namespace Internal.JitInterface
         ARM64_Atomics=9,
         ARM64_Vector64=10,
         ARM64_Vector128=11,
-        ARM64_ArmBase_Arm64=12,
-        ARM64_AdvSimd_Arm64=13,
-        ARM64_Aes_Arm64=14,
-        ARM64_Crc32_Arm64=15,
-        ARM64_Dp_Arm64=16,
-        ARM64_Rdm_Arm64=17,
-        ARM64_Sha1_Arm64=18,
-        ARM64_Sha256_Arm64=19,
+        ARM64_Dczva=12,
+        ARM64_ArmBase_Arm64=13,
+        ARM64_AdvSimd_Arm64=14,
+        ARM64_Aes_Arm64=15,
+        ARM64_Crc32_Arm64=16,
+        ARM64_Dp_Arm64=17,
+        ARM64_Rdm_Arm64=18,
+        ARM64_Sha1_Arm64=19,
+        ARM64_Sha256_Arm64=20,
         X64_X86Base=1,
         X64_SSE=2,
         X64_SSE2=3,
@@ -551,6 +552,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
+                    yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
                     break;
 
                 case TargetArchitecture.X64:

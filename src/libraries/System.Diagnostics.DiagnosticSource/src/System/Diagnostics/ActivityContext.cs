@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -95,7 +96,7 @@ namespace System.Diagnostics
 
         public bool Equals(ActivityContext value) =>  SpanId.Equals(value.SpanId) && TraceId.Equals(value.TraceId) && TraceFlags == value.TraceFlags && TraceState == value.TraceState && IsRemote == value.IsRemote;
 
-        public override bool Equals(object? obj) => (obj is ActivityContext context) ? Equals(context) : false;
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is ActivityContext context) ? Equals(context) : false;
         public static bool operator ==(ActivityContext left, ActivityContext right) => left.Equals(right);
         public static bool operator !=(ActivityContext left, ActivityContext right) => !(left == right);
     }

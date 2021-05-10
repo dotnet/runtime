@@ -1,37 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);net461</TargetFrameworks>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="*.cs" />
-    <Compile Include="BuildTools.Publish\**\*.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" />
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
-    <PackageReference Include="NuGet.Packaging" Version="$(RefOnlyNugetPackagingVersion)" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.7.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-    <PackageReference Include="System.Diagnostics.FileVersionInfo" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
     <Reference Include="Microsoft.Build.Framework" />
-    <Reference Include="Microsoft.Build.Tasks.v4.0" />
     <Reference Include="Microsoft.Build.Utilities.v4.0" />
     <Reference Include="Microsoft.Build" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.IO.Compression" />
   </ItemGroup>
 </Project>

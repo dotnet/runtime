@@ -39,6 +39,7 @@ namespace System.Net.Http
             private int _pendingWindowUpdate;
             private CreditWaiter? _creditWaiter;
             private int _availableCredit;
+            private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -349,11 +350,14 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                CreditWaiter? w = _creditWaiter;
-                if (w != null)
+                lock (_creditSyncObject)
                 {
-                    w.Dispose();
-                    _creditWaiter = null;
+                    CreditWaiter? waiter = _creditWaiter;
+                    if (waiter != null)
+                    {
+                        waiter.Dispose();
+                        _creditWaiter = null;
+                    }
                 }
             }
 
@@ -421,7 +425,7 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount)
             {
-                lock (SyncObject)
+                lock (_creditSyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
                     if (_availableCredit > 0 && _creditWaiter != null)
@@ -1219,7 +1223,7 @@ namespace System.Net.Http
                     while (buffer.Length > 0)
                     {
                         int sendSize = -1;
-                        lock (SyncObject)
+                        lock (_creditSyncObject)
                         {
                             if (_availableCredit > 0)
                             {

@@ -20,7 +20,7 @@
 #include "common.h"
 #endif
 
-#if defined(FEATURE_PERFTRACING) && defined(FEATURE_PERFTRACING_C_LIB)
+#if defined(FEATURE_PERFTRACING)
 #define ENABLE_PERFTRACING
 #endif
 

@@ -137,6 +137,60 @@ namespace DispatchProxyTests
         }
 
         [Fact]
+        public static void Create_Using_PrivateProxy()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_IHelloService>());
+        }
+
+        [Fact]
+        public static void Create_Using_PrivateProxyAndInternalService()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceService>());
+        }
+
+        [Fact]
+        public static void Create_Using_PrivateProxyAndInternalServiceWithExternalGenericArgument()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceWithNonPublicExternalGenericArgument>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalProxy()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceService, InternalInvokeProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_ExternalNonPublicService()
+        {
+            Assert.NotNull(DispatchProxy.Create<DispatchProxyTestDependency.TestType_IExternalNonPublicHiService, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalProxyWithExternalNonPublicBaseType()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_IHelloService, TestType_InternalProxyInternalBaseType>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalServiceImplementingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceImplementsNonPublicExternalType, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalServiceWithGenericArgumentBeingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceWithNonPublicExternalGenericArgument, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalProxyWithBaseTypeImplementingServiceWithgenericArgumentBeingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_IHelloService, TestType_InternalProxyImplementingInterfaceWithGenericArgumentBeingNonPublicExternalType>());
+        }
+
+        [Fact]
         public static void Invoke_Receives_Correct_MethodInfo_And_Arguments()
         {
             bool wasInvoked = false;
@@ -549,6 +603,7 @@ namespace DispatchProxyTests
             testRefOutInInvocation(p => p.Out(out _), null);
             testRefOutInInvocation(p => p.OutAttribute(value), "Hello");
             testRefOutInInvocation(p => p.Ref(ref value), "Hello");
+            testRefOutInInvocation(p => p.In(in value), "Hello");
         }
 
         private static void testRefOutInInvocation(Action<TestType_IOut_Ref> invocation, string expected)

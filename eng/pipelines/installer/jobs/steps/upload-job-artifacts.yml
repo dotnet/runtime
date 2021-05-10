@@ -3,6 +3,7 @@ parameters:
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   isOfficialBuild: false
+  pgoType: ''
 
 steps:
 # Upload build artifacts (packages) to pipeline only if official, to save storage space.
@@ -38,6 +39,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     targetPath: '$(Build.StagingDirectory)/BuildLogs'
-    artifactName: Installer-Logs-${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
+    artifactName: Installer-Logs-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()

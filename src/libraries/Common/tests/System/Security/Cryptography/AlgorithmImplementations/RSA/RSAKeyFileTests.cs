@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class RSAKeyFileTests
     {
-        public static bool Supports384BitPrivateKey { get; } = RSAFactory.Supports384PrivateKey;
+        public static bool Supports384BitPrivateKeyAndRC2 { get; } = RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
         public static bool SupportsLargeExponent { get; } = RSAFactory.SupportsLargeExponent;
 
         [Theory]
@@ -734,7 +735,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
                 TestData.RSA16384Params);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -760,11 +761,11 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
                 TestData.DiminishedDPParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
 MIIBrjBIBgkqhkiG9w0BBQ0wOzAeBgkqhkiG9w0BBQwwEQQIKZEFT76zCFECAggA
 AgEQMBkGCCqGSIb3DQMCMA0CAToECE1Yyzk6++IPBIIBYDDvaYLkET8eudcYLQMf
@@ -790,7 +791,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         [Fact]
         public static void ReadEncryptedDiminishedDP_EmptyPassword()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
 MIIBgTAbBgkqhkiG9w0BBQMwDgQIJtjMez/9Gg4CAggABIIBYElq9UOOphEPU3b7
 G/mV8M1uEdjigidMPih3b9IIJhrjMAEix2IjS+brFL7KRQgucpZZoaFU1utvkUHg
@@ -815,7 +816,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
         [Fact]
         public static void ReadEncryptedDiminishedDP_EmptyPasswordBytes()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
 MIIBgTAbBgkqhkiG9w0BBQMwDgQIJtjMez/9Gg4CAggABIIBYElq9UOOphEPU3b7
 G/mV8M1uEdjigidMPih3b9IIJhrjMAEix2IjS+brFL7KRQgucpZZoaFU1utvkUHg
@@ -837,7 +838,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(Supports384BitPrivateKey))]
+        [ConditionalFact(nameof(Supports384BitPrivateKeyAndRC2))]
         public static void ReadPbes1Rc2EncryptedRsa384()
         {
             // PbeWithSha1AndRC2CBC

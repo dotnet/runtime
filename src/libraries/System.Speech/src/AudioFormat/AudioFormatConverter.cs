@@ -284,7 +284,7 @@ namespace System.Speech.Internal
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private class WaveFormatEx
+        private sealed class WaveFormatEx
         {
             public ushort wFormatTag;
             public ushort nChannels;

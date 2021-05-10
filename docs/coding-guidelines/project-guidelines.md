@@ -26,7 +26,7 @@ The following are the properties associated with each build pivot
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
-- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/master/src/libraries/Microsoft.NETCore.Platforms) for more info.
+- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/main/src/libraries/Microsoft.NETCore.Platforms) for more info.
 
 ## Aggregate build properties
 Each project will define a set of supported TargetFrameworks
@@ -126,7 +126,7 @@ src\<Library Name>\tests - Contains the test code for a library
 ```
 
 ## ref
-Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all. Instructions on updating reference sources can be found [here](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/updating-ref-source.md).
+Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all. Instructions on updating reference sources can be found [here](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md).
 
 In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `TargetFrameworks` property. Ref projects should use `<ProjectReference>` for its dependencies.
 
@@ -141,6 +141,9 @@ In the src directory for a library there should be only **one** `.csproj` file t
 All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 
 Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net461`, `netcoreapp3.0`) should use ProjectReference items to reference dependencies.
+
+### src\ILLink
+Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).
 
 ### src output
 All src outputs are under

@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // ErrorHandling.h - Helpers & whatnot for using SEH for errors
@@ -42,8 +40,89 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const ch
             LogException(exCode, "SuperPMI assertion '%s' failed", #expr);                                             \
     } while (0)
 
+#define AssertMapExists(map, keymsg, ...)                                                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (map == nullptr)                                                                                            \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")" keymsg, ##__VA_ARGS__);  \
+    } while (0)
+
+#define AssertKeyExists(map, key, keymsg, ...)                                                                         \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (map->GetIndex(key) == -1)                                                                                  \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")" keymsg, ##__VA_ARGS__); \
+    } while (0)
+
+#define AssertMapAndKeyExist(map, key, keymsg, ...)                                                                    \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (map == nullptr)                                                                                            \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")" keymsg, ##__VA_ARGS__);  \
+        if (map->GetIndex(key) == -1)                                                                                  \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")" keymsg, ##__VA_ARGS__); \
+    } while (0)
+
+// clang doesn't allow for an empty __VA_ARGS__, so we need to pass something non-empty to `LogException`, below.
+
+#define AssertMapExistsNoMessage(map)                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (map == nullptr)                                                                                            \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")", "");                    \
+    } while (0)
+
+#define AssertKeyExistsNoMessage(map, key)                                                                             \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (map->GetIndex(key) == -1)                                                                                  \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")", "");\
+    } while (0)
+
+#define AssertMapAndKeyExistNoMessage(map, key)                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (map == nullptr)                                                                                            \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")", "");                    \
+        if (map->GetIndex(key) == -1)                                                                                  \
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")", "");\
+    } while (0)
+
 #define AssertMsg(expr, msg, ...) AssertCodeMsg(expr, EXCEPTIONCODE_ASSERT, msg, ##__VA_ARGS__)
 #define Assert(expr) AssertCode(expr, EXCEPTIONCODE_ASSERT)
+
+//
+// Functions and types used by PAL_TRY-related macros.
+//
+
+extern LONG FilterSuperPMIExceptions_CatchMC(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
+
+struct FilterSuperPMIExceptionsParam_CaptureException
+{
+    DWORD exceptionCode;
+    char* exceptionMessage; // 'new' memory passed from ThrowException()
+
+    FilterSuperPMIExceptionsParam_CaptureException()
+        : exceptionCode(0)
+        , exceptionMessage(nullptr)
+    {
+    }
+
+    // Note: this is called during an SEH filter; the data pointed to by PEXCEPTION_POINTERS is not valid after
+    // calling this function, so anything we want to safe must be copied.
+    // The exception message string is 'new' memory, allocated in the ThrowException() function.
+    void Initialize(PEXCEPTION_POINTERS pExceptionPointers)
+    {
+        exceptionCode    = pExceptionPointers->ExceptionRecord->ExceptionCode;
+        exceptionMessage = (pExceptionPointers->ExceptionRecord->NumberParameters != 1) ? nullptr : (char*)pExceptionPointers->ExceptionRecord->ExceptionInformation[0];
+    }
+};
+
+extern LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers,
+                                                                 LPVOID              lpvParam);
+extern LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
+
+extern bool RunWithErrorTrap(void (*function)(void*), void* param);
 
 class SpmiException
 {
@@ -52,8 +131,7 @@ private:
     char* exMessage;
 
 public:
-    SpmiException(PEXCEPTION_POINTERS exp);
-    SpmiException(DWORD exceptionCode, char* exceptionMessage);
+    SpmiException(FilterSuperPMIExceptionsParam_CaptureException* e);
 #if 0
     ~SpmiException();
 #endif
@@ -64,29 +142,5 @@ public:
     void ShowAndDeleteMessage();
     void DeleteMessage();
 };
-
-//
-// Functions and types used by PAL_TRY-related macros.
-//
-
-extern LONG FilterSuperPMIExceptions_CatchMC(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
-struct FilterSuperPMIExceptionsParam_CaptureException
-{
-    EXCEPTION_POINTERS exceptionPointers;
-    DWORD              exceptionCode;
-
-    FilterSuperPMIExceptionsParam_CaptureException() : exceptionCode(0)
-    {
-        exceptionPointers.ExceptionRecord = nullptr;
-        exceptionPointers.ContextRecord   = nullptr;
-    }
-};
-
-extern LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers,
-                                                                 LPVOID              lpvParam);
-extern LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
-extern bool RunWithErrorTrap(void (*function)(void*), void* param);
 
 #endif

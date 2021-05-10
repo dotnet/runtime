@@ -12,8 +12,9 @@ namespace System
         public BinaryData(object? jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null, System.Type? type = null) { }
         public BinaryData(System.ReadOnlyMemory<byte> data) { }
         public BinaryData(string data) { }
+        public static BinaryData Empty { get; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public static System.BinaryData FromBytes(byte[] data) { throw null; }
         public static System.BinaryData FromBytes(System.ReadOnlyMemory<byte> data) { throw null; }
         public static System.BinaryData FromObjectAsJson<T>(T jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }

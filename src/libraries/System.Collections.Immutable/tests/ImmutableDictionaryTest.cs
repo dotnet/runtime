@@ -25,6 +25,18 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void AddRangeShouldThrowOnNullKeyTest()
+        {
+            var items = new[] { new KeyValuePair<string, string>(null, "value") };
+
+            var map = Empty(StringComparer.Ordinal, StringComparer.Ordinal);
+            Assert.Throws<ArgumentNullException>(() => map.AddRange(items));
+
+            map = map.WithComparers(new BadHasher<string>());
+            Assert.Throws<ArgumentNullException>(() => map.AddRange(items));
+        }
+
+        [Fact]
         public void UnorderedChangeTest()
         {
             var map = Empty<string, string>(StringComparer.Ordinal)
@@ -57,6 +69,16 @@ namespace System.Collections.Immutable.Tests
                 .SetItem("A", 1);
             map = map.SetItem("a", 2);
             Assert.Equal("a", map.Keys.Single());
+        }
+
+        [Fact]
+        public void SetItemsThrowOnNullKey()
+        {
+            var map = Empty<string, int>().WithComparers(StringComparer.OrdinalIgnoreCase);
+            var items = new[] { new KeyValuePair<string, int>(null, 0) };
+            Assert.Throws<ArgumentNullException>(() => map.SetItems(items));
+            map = map.WithComparers(new BadHasher<string>());
+            Assert.Throws<ArgumentNullException>(() => map.SetItems(items));
         }
 
         /// <summary>
@@ -377,6 +399,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50579", TestPlatforms.Android)]
         public void Indexer_KeyNotFoundException_ContainsKeyInMessage()
         {
             var map = ImmutableDictionary.Create<string, string>()

@@ -64,7 +64,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeSslContextHandle : SafeHandle
     {
-        private SafeSslContextHandle()
+        public SafeSslContextHandle()
             : base(IntPtr.Zero, true)
         {
         }

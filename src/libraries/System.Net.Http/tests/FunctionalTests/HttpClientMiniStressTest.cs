@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion30;
+        protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
@@ -44,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_Mock : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http3_Mock(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion30;
+        protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
@@ -88,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
                     while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false)));
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
-                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
+                    await connection.WriteStringAsync(responseText).ConfigureAwait(false);
                     connection.Socket.Shutdown(SocketShutdown.Send);
                 });
 

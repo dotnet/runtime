@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Diagnostics.CodeAnalysis;
 
-    internal class BuilderInfo
+    internal sealed class BuilderInfo
     {
         private string? _name;
         private string _localName;

@@ -37,14 +37,14 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG           ridStartMethod;
-    ULONG           ridEndMethod;
-    ULONG           ridStartField;
-    ULONG           ridEndField;
-    ULONG           index;
-    ULONG           indexField;
+    RID             ridStartMethod;
+    RID             ridEndMethod;
+    RID             ridStartField;
+    RID             ridEndField;
+    RID             index;
+    RID             indexField;
     TypeDefRec      *pRec;
-    HENUMInternal   *pEnum = *ppmdEnum;
+    HENUMInternal   *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumMembers(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, cl, rMembers, cMax, pcTokens));
@@ -52,7 +52,7 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -95,13 +95,15 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMembers, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMembers, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumMembers);
 
@@ -126,13 +128,13 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
-    ULONG               index;
+    RID                 ridStart;
+    RID                 ridEnd;
+    RID                 index;
     TypeDefRec          *pRec;
     MethodRec           *pMethod;
     FieldRec            *pField;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
@@ -143,7 +145,7 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -214,13 +216,15 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMembers, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMembers, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumMembersWithName);
     END_ENTRYPOINT_NOTHROW;
@@ -243,10 +247,10 @@ STDMETHODIMP RegMeta::EnumMethods(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     TypeDefRec          *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumMethods(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rMethods, cMax, pcTokens));
@@ -256,7 +260,7 @@ STDMETHODIMP RegMeta::EnumMethods(
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -308,13 +312,15 @@ STDMETHODIMP RegMeta::EnumMethods(
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethods, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethods, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumMethods);
     END_ENTRYPOINT_NOTHROW;
@@ -341,12 +347,12 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
-    ULONG               index;
+    RID                 ridStart;
+    RID                 ridEnd;
+    RID                 index;
     TypeDefRec          *pRec;
     MethodRec           *pMethod;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
@@ -360,7 +366,7 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     LOCKREAD();
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -410,13 +416,15 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethods, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethods, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumMethodsWithName);
     END_ENTRYPOINT_NOTHROW;
@@ -442,10 +450,10 @@ RegMeta::EnumFields(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal **ppmdEnum = reinterpret_cast<HENUMInternal **>(phEnum);
-    ULONG           ridStart;
-    ULONG           ridEnd;
+    RID             ridStart;
+    RID             ridEnd;
     TypeDefRec     *pRec;
-    HENUMInternal  *pEnum = *ppmdEnum;
+    HENUMInternal  *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumFields(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rFields, cMax, pcTokens));
@@ -453,7 +461,7 @@ RegMeta::EnumFields(
     START_MD_PERF();
     LOCKREAD();
 
-    if (pEnum == NULL)
+    if (*ppmdEnum == NULL)
     {
         // instantiating a new ENUM
         CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -505,13 +513,15 @@ RegMeta::EnumFields(
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rFields, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rFields, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumFields);
     END_ENTRYPOINT_NOTHROW;
@@ -537,12 +547,12 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     ULONG               index;
     TypeDefRec          *pRec;
     FieldRec            *pField;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
@@ -555,7 +565,7 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -604,13 +614,15 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rFields, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rFields, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumFieldsWithName);
     END_ENTRYPOINT_NOTHROW;
@@ -634,10 +646,10 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     MethodRec           *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumParams(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, mb, rParams, cMax, pcTokens));
@@ -645,7 +657,7 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
     LOCKREAD();
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -674,13 +686,15 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rParams, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rParams, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumParams);
     END_ENTRYPOINT_NOTHROW;
@@ -708,7 +722,7 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
     ULONG               ridEnd;
     ULONG               index;
     MemberRefRec        *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumMemberRefs(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, tkParent, rMemberRefs, cMax, pcTokens));
@@ -718,7 +732,7 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -748,13 +762,15 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        *ppmdEnum = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMemberRefs, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMemberRefs, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumMemberRefs);
 
@@ -781,7 +797,7 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     MethodImplRec       *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
     HENUMInternal hEnum;
 
 
@@ -795,7 +811,7 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
 
     HENUMInternal::ZeroEnum(&hEnum);
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -824,13 +840,15 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethodBody, rMethodDecl, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethodBody, rMethodDecl, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
     HENUMInternal::ClearEnum(&hEnum);
 
     STOP_MD_PERF(EnumMethodImpls);
@@ -857,11 +875,11 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
-    ULONG               index;
+    RID                 ridStart;
+    RID                 ridEnd;
+    RID                 index;
     DeclSecurityRec     *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
     bool                fCompareParent = false;
     mdToken             typ = TypeFromToken(tk);
     mdToken             tkParent;
@@ -872,7 +890,7 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // Does this token type even have security?
         if (tk != 0 &&
@@ -943,13 +961,15 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rPermission, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rPermission, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumPermissionSets);
     END_ENTRYPOINT_NOTHROW;
@@ -1314,10 +1334,10 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart = 0;
-    ULONG               ridEnd = 0;
-    ULONG               ridMax = 0;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    RID                 ridStart = 0;
+    RID                 ridEnd = 0;
+    RID                 ridMax = 0;
+    HENUMInternal       *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumProperties(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rProperties, cMax, pcProperties));
@@ -1336,7 +1356,7 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -1391,13 +1411,15 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rProperties, pcProperties);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rProperties, pcProperties);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
 
     STOP_MD_PERF(EnumProperties);
@@ -1423,10 +1445,10 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG           ridStart = 0;
-    ULONG           ridEnd = 0;
-    ULONG           ridMax = 0;
-    HENUMInternal   *pEnum = *ppmdEnum;
+    RID             ridStart = 0;
+    RID             ridEnd = 0;
+    RID             ridMax = 0;
+    HENUMInternal   *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumEvents(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rEvents,  cMax, pcEvents));
@@ -1437,7 +1459,7 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -1492,14 +1514,15 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rEvents, pcEvents);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rEvents, pcEvents);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
-
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumEvents);
     END_ENTRYPOINT_NOTHROW;
@@ -1638,7 +1661,7 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     ULONG               ridEnd;
     ULONG               index;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnum = NULL;
     MethodSemanticsRec  *pRec;
 
     LOG((LOGMD, "MD RegMeta::EnumMethodSemantics(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -1648,7 +1671,7 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
     LOCKREAD();
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -1670,14 +1693,15 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rEventProp, pcEventProp);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rEventProp, pcEventProp);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
-
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumMethodSemantics);
     END_ENTRYPOINT_NOTHROW;
@@ -1794,9 +1818,9 @@ STDMETHODIMP RegMeta::GetClassLayout(
     if (rFieldOffset || pcFieldOffset)
     {
         ULONG       iFieldOffset = 0;
-        ULONG       ridFieldStart;
-        ULONG       ridFieldEnd;
-        ULONG       ridFieldLayout;
+        RID         ridFieldStart;
+        RID         ridFieldEnd;
+        RID         ridFieldLayout;
         ULONG       ulOffset;
         TypeDefRec  *pTypeDefRec;
         FieldLayoutRec *pLayout2Rec;
@@ -1955,7 +1979,7 @@ RegMeta::GetRVA(
     }
     else
     {   // FieldDef token or invalid type of token (not mdtMethodDef)
-        ULONG iRecord;
+        uint32_t iRecord;
 
         IfFailGo(pMiniMd->FindFieldRVAHelper(tk, &iRecord));
 
@@ -2293,12 +2317,12 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal ** ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG            iCountTypeDef;      // Count of TypeDefs.
-    ULONG            ulStart, ulEnd;     // Bounds of methods on a given TypeDef.
-    ULONG            index;              // For counting methods on a TypeDef.
-    ULONG            indexTypeDef;       // For counting TypeDefs.
+    uint32_t         iCountTypeDef;      // Count of TypeDefs.
+    uint32_t         ulStart, ulEnd;     // Bounds of methods on a given TypeDef.
+    uint32_t         index;              // For counting methods on a TypeDef.
+    uint32_t         indexTypeDef;       // For counting TypeDefs.
     bool             bIsInterface;       // Is a given TypeDef an interface?
-    HENUMInternal *  pEnum = *ppmdEnum; // Enum we're working with.
+    HENUMInternal *  pEnum = NULL; // Enum we're working with.
     CMiniMdRW *      pMiniMd = &(m_pStgdb->m_MiniMd);
 
     LOG((LOGMD, "MD RegMeta::EnumUnresolvedMethods(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -2310,7 +2334,7 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
     // same time. Ref to Def map may be calculated incorrectly.
     LOCKWRITE();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         MethodRec       *pMethodRec;
@@ -2403,13 +2427,15 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethods, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethods, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumUnresolvedMethods);
     END_ENTRYPOINT_NOTHROW;
@@ -2507,7 +2533,7 @@ STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     ImplMapRec * pRecord;
-    ULONG        iRecord;
+    uint32_t     iRecord;
 
     LOG((LOGMD, "MD RegMeta::GetPinvokeMap(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL));
@@ -2664,7 +2690,7 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal **ppEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    HENUMInternal  *pEnum = *ppEnum;
+    HENUMInternal  *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumUserStrings(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, rStrings, cmax, pcStrings));
@@ -2672,7 +2698,7 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if (pEnum == NULL)
+    if (*ppEnum == NULL)
     {
         // instantiating a new ENUM.
         CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -2712,14 +2738,15 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
 
         // set the output parameter.
         *ppEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer.
-    hr = HENUMInternal::EnumWithCount(pEnum, cmax, rStrings, pcStrings);
+    hr = HENUMInternal::EnumWithCount(*ppEnum, cmax, rStrings, pcStrings);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppEnum);
-
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumUserStrings);
     END_ENTRYPOINT_NOTHROW;
@@ -3468,7 +3495,7 @@ HRESULT RegMeta::GetNestedClassProps(   // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     NestedClassRec  *pRecord;
-    ULONG           iRecord;
+    uint32_t        iRecord;
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
 
 

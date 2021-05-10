@@ -3,9 +3,9 @@
 
 using System;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Crypt32
+    internal static partial class Crypt32
     {
         [Flags]
         internal enum CryptProtectDataFlags : int

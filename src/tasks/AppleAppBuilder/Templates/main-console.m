@@ -64,6 +64,14 @@ UITextView* logLabel;
 
 @end
 
+// called from C#
+void
+invoke_external_native_api (void (*callback)(void))
+{
+    if (callback)
+        callback();
+}
+
 // can be called from C# to update UI
 void
 mono_ios_set_summary (const char* value)

@@ -68,7 +68,7 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
         set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
@@ -100,4 +100,4 @@ add_library(System.IO.Compression.Native-Static
 
 set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

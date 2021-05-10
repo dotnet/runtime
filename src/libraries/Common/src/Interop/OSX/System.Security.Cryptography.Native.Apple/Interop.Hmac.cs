@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal sealed class SafeHmacHandle : SafeHandle
     {
-        internal SafeHmacHandle()
+        public SafeHmacHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

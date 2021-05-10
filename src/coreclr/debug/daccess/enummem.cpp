@@ -1459,7 +1459,7 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
         // And the MOW it points to
         TADDR mow = DACGetManagedObjectWrapperFromCCW(ccwPtr);
-        ReportMem(mow, sizeof(ManagedObjectWrapperDACInterface));
+        ReportMem(mow, sizeof(InteropLib::ABI::ManagedObjectWrapperLayout));
     }
 #endif
 #ifdef FEATURE_COMINTEROP

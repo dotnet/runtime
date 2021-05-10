@@ -4139,22 +4139,6 @@ ComMethodTable* ComCallWrapperTemplate::GetComMTForItf(MethodTable *pItfMT)
     RETURN NULL;
 }
 
-ComMethodTable* ComCallWrapperTemplate::GetComMTForIndex(ULONG ulItfIndex)
-{
-    CONTRACT (ComMethodTable*)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(ulItfIndex < m_cbInterfaces);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    ComMethodTable *pItfComMT = (ComMethodTable *)m_rgpIPtr[ulItfIndex] - 1;
-    RETURN pItfComMT;
-}
-
 ComMethodTable* ComCallWrapperTemplate::GetBasicComMT()
 {
     CONTRACT (ComMethodTable*)
@@ -4204,11 +4188,6 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
     CONTRACTL_END;
 
     if (m_flags & enum_IsSafeTypeForMarshalling)
-    {
-        return TRUE;
-    }
-
-    if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AllowDComReflection) != 0))
     {
         return TRUE;
     }

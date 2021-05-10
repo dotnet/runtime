@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -55,14 +56,14 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             Debug.Assert(_algorithm != null);
 
             return Equals(obj as CngAlgorithm);
         }
 
-        public bool Equals(CngAlgorithm? other)
+        public bool Equals([NotNullWhen(true)] CngAlgorithm? other)
         {
             if (other is null)
             {

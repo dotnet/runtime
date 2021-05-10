@@ -20,6 +20,7 @@ parameters:
   displayName: ''
   runtimeVariant: ''
   pool: ''
+  pgoType: ''
 
   packageDistroList:
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
@@ -38,8 +39,8 @@ parameters:
   platforms: []
 
 jobs:
-- job: ${{ format('installer_{0}_{1}_{2}_{3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('Installer Build and Test {0} {1} {2} {3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+- job: ${{ format('installer_{0}_{1}_{2}_{3}_{4}_', parameters.pgoType, parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ format('{0} Installer Build and Test {1} {2} {3} {4}', parameters.pgoType, parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
@@ -64,7 +65,8 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      eq(parameters.crossBuild, true)) }}
+      eq(parameters.crossBuild, true),
+      eq(parameters.pgoType, 'PGO')) }}
 
   - name: BuildAction
     value: -test
@@ -75,6 +77,12 @@ jobs:
 
   - name: SignType
     value: test
+
+  - name: pgoInstrumentArg
+    value: ''
+  - ${{ if eq(parameters.pgoType, 'PGO' )}}:
+    - name: pgoInstrumentArg
+      value: '-pgoinstrument '
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -116,6 +124,7 @@ jobs:
         build.cmd -subset host+packs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
+        $(pgoInstrumentArg)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
@@ -218,6 +227,7 @@ jobs:
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
+        $(pgoInstrumentArg)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OutputRidArg)
@@ -278,7 +288,7 @@ jobs:
         /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
         /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
     - name: RuntimeArtifactName
-      value: $(runtimeFlavorName)Product_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
+      value: $(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - name: liveLibrariesLegName
@@ -299,13 +309,14 @@ jobs:
     - evaluate_paths
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
+    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}{6}',
         parameters.runtimeFlavor,
         parameters.runtimeVariant,
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
-        parameters.liveRuntimeBuildConfig) }}
+        parameters.liveRuntimeBuildConfig,
+        parameters.pgoType) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
@@ -393,7 +404,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
         parameters:
-          filesToSign: 
+          filesToSign:
           - name: dotnet
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
@@ -405,7 +416,7 @@ jobs:
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h
@@ -461,6 +472,7 @@ jobs:
       runtimeVariant: ${{ parameters.runtimeVariant }}
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
+      pgoType: ${{ parameters.pgoType }}
 
   - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: set -x && df -h

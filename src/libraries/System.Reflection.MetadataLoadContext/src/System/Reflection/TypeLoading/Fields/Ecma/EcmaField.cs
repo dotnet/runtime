@@ -79,12 +79,10 @@ namespace System.Reflection.TypeLoading.Ecma
             if (disposedString != null)
                 return disposedString;
 
-            StringBuilder sb = new StringBuilder();
-            string typeString = FieldDefinition.DecodeSignature(EcmaSignatureTypeProviderForToString.Instance, TypeContext);
-            sb.Append(typeString);
-            sb.Append(' ');
-            sb.Append(Name);
-            return sb.ToString();
+            return
+                FieldDefinition.DecodeSignature(EcmaSignatureTypeProviderForToString.Instance, TypeContext) +
+                " " +
+                Name;
         }
 
         private MetadataReader Reader => _module.Reader;

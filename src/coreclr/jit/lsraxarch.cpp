@@ -45,10 +45,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    Interval* prefSrcInterval = nullptr;
     int       srcCount;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -449,6 +447,8 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
@@ -1086,7 +1086,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // there is an explicit thisPtr but it is redundant
 
     bool callHasFloatRegArgs = false;
-    bool isVarArgs           = call->IsVarargs();
 
     // First, determine internal registers.
     // We will need one for any float arguments to a varArgs call.
@@ -1721,11 +1720,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildModDiv(GenTree* tree)
 {
-    GenTree*     op1           = tree->gtGetOp1();
-    GenTree*     op2           = tree->gtGetOp2();
-    regMaskTP    dstCandidates = RBM_NONE;
-    RefPosition* internalDef   = nullptr;
-    int          srcCount      = 0;
+    GenTree*  op1           = tree->gtGetOp1();
+    GenTree*  op2           = tree->gtGetOp2();
+    regMaskTP dstCandidates = RBM_NONE;
+    int       srcCount      = 0;
 
     if (varTypeIsFloating(tree->TypeGet()))
     {
@@ -1822,17 +1820,10 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             internalFloatDef = buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
             break;
 
-#ifdef TARGET_X86
-        case NI_System_Math_Cos:
-        case NI_System_Math_Sin:
-            NYI_X86("Math intrinsics Cos and Sin");
-            break;
-#endif // TARGET_X86
-
-        case NI_System_Math_Sqrt:
-        case NI_System_Math_Round:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             break;
 
         default:
@@ -1883,7 +1874,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         // Only SIMDIntrinsicInit can be contained
         assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicInit);
     }
-    SetContainsAVXFlags(simdTree->gtSIMDSize);
+    SetContainsAVXFlags(simdTree->GetSimdSize());
     GenTree* op1      = simdTree->gtGetOp1();
     GenTree* op2      = simdTree->gtGetOp2();
     int      srcCount = 0;
@@ -1934,8 +1925,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicInitN:
         {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
+            var_types baseType = simdTree->GetSimdBaseType();
+            srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             buildInternalFloatRegisterDefForNode(simdTree);
             int initCount = 0;
@@ -1991,13 +1982,13 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                 {
                     (void)compiler->getSIMDInitTempVarNum();
                 }
-                else if (!varTypeIsFloating(simdTree->gtSIMDBaseType))
+                else if (!varTypeIsFloating(simdTree->GetSimdBaseType()))
                 {
                     bool needFloatTemp;
-                    if (varTypeIsSmallInt(simdTree->gtSIMDBaseType) &&
+                    if (varTypeIsSmallInt(simdTree->GetSimdBaseType()) &&
                         (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported))
                     {
-                        int byteShiftCnt = (int)op2->AsIntCon()->gtIconVal * genTypeSize(simdTree->gtSIMDBaseType);
+                        int byteShiftCnt = (int)op2->AsIntCon()->gtIconVal * genTypeSize(simdTree->GetSimdBaseType());
                         needFloatTemp    = (byteShiftCnt >= 16);
                     }
                     else
@@ -2016,7 +2007,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                 // generate a movzx/movsx. On x86, these require byteable registers. So figure out which
                 // cases will require this, so the non-byteable registers can be excluded.
 
-                var_types baseType = simdTree->gtSIMDBaseType;
+                var_types baseType = simdTree->GetSimdBaseType();
                 if (op2->IsCnsIntOrI() && varTypeIsSmallInt(baseType))
                 {
                     bool     ZeroOrSignExtnReqd = true;
@@ -2059,7 +2050,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicConvertToSingle:
-            if (simdTree->gtSIMDBaseType == TYP_UINT)
+            if (simdTree->GetSimdBaseType() == TYP_UINT)
             {
                 // We need an internal register different from targetReg.
                 setInternalRegsDelayFree = true;
@@ -2075,7 +2066,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicWidenLo:
         case SIMDIntrinsicWidenHi:
-            if (varTypeIsIntegral(simdTree->gtSIMDBaseType))
+            if (varTypeIsIntegral(simdTree->GetSimdBaseType()))
             {
                 // We need an internal register different from targetReg.
                 setInternalRegsDelayFree = true;
@@ -2100,14 +2091,15 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             setInternalRegsDelayFree = true;
             buildInternalFloatRegisterDefForNode(simdTree);
 #ifdef TARGET_X86
-            if (simdTree->gtSIMDBaseType == TYP_LONG)
+            if (simdTree->GetSimdBaseType() == TYP_LONG)
             {
                 buildInternalFloatRegisterDefForNode(simdTree);
                 buildInternalFloatRegisterDefForNode(simdTree);
             }
             else
 #endif
-                if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) || (simdTree->gtSIMDBaseType == TYP_ULONG))
+                if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) ||
+                    (simdTree->GetSimdBaseType() == TYP_ULONG))
             {
                 buildInternalFloatRegisterDefForNode(simdTree);
             }
@@ -2119,7 +2111,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We need an internal register different from targetReg.
             setInternalRegsDelayFree = true;
             buildInternalFloatRegisterDefForNode(simdTree);
-            if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) && (simdTree->gtSIMDBaseType != TYP_DOUBLE))
+            if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) && (simdTree->GetSimdBaseType() != TYP_DOUBLE))
             {
                 buildInternalFloatRegisterDefForNode(simdTree);
             }
@@ -2166,18 +2158,17 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    NamedIntrinsic         intrinsicId = intrinsicTree->gtHWIntrinsicId;
-    var_types              baseType    = intrinsicTree->gtSIMDBaseType;
-    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
+    NamedIntrinsic      intrinsicId = intrinsicTree->gtHWIntrinsicId;
+    var_types           baseType    = intrinsicTree->GetSimdBaseType();
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     // Set the AVX Flags if this instruction may use VEX encoding for SIMD operations.
     // Note that this may be true even if the ISA is not AVX (e.g. for platform-agnostic intrinsics
     // or non-AVX intrinsics that will use VEX encoding if it is available on the target).
     if (intrinsicTree->isSIMD())
     {
-        SetContainsAVXFlags(intrinsicTree->gtSIMDSize);
+        SetContainsAVXFlags(intrinsicTree->GetSimdSize());
     }
 
     GenTree* op1    = intrinsicTree->gtGetOp1();

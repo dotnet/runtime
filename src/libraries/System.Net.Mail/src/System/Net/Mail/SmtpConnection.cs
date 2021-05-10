@@ -17,7 +17,7 @@ using System.Threading;
 
 namespace System.Net.Mail
 {
-    internal partial class SmtpConnection
+    internal sealed partial class SmtpConnection
     {
         private static readonly ContextCallback s_AuthenticateCallback = new ContextCallback(AuthenticateCallback);
 
@@ -333,7 +333,7 @@ namespace System.Net.Mail
             context._result = context._module.Authenticate(null, context._credential, context._thisPtr, context._spn, context._token);
         }
 
-        private class AuthenticateCallbackContext
+        private sealed class AuthenticateCallbackContext
         {
             internal AuthenticateCallbackContext(SmtpConnection thisPtr, ISmtpAuthenticationModule module, NetworkCredential credential, string? spn, ChannelBinding? Token)
             {
@@ -374,7 +374,7 @@ namespace System.Net.Mail
             DataStopCommand.Send(this);
         }
 
-        private class ConnectAndHandshakeAsyncResult : LazyAsyncResult
+        private sealed class ConnectAndHandshakeAsyncResult : LazyAsyncResult
         {
             private string? _authResponse;
             private readonly SmtpConnection _connection;

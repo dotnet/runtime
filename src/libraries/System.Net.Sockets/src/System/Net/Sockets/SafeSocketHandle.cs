@@ -38,7 +38,7 @@ namespace System.Net.Sockets
             SetHandleAndValid(preexistingHandle);
         }
 
-        private SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
+        public SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
 
         internal bool OwnsHandle { get; }
 

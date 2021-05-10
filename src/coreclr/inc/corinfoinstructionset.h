@@ -27,14 +27,15 @@ enum CORINFO_InstructionSet
     InstructionSet_Atomics=9,
     InstructionSet_Vector64=10,
     InstructionSet_Vector128=11,
-    InstructionSet_ArmBase_Arm64=12,
-    InstructionSet_AdvSimd_Arm64=13,
-    InstructionSet_Aes_Arm64=14,
-    InstructionSet_Crc32_Arm64=15,
-    InstructionSet_Dp_Arm64=16,
-    InstructionSet_Rdm_Arm64=17,
-    InstructionSet_Sha1_Arm64=18,
-    InstructionSet_Sha256_Arm64=19,
+    InstructionSet_Dczva=12,
+    InstructionSet_ArmBase_Arm64=13,
+    InstructionSet_AdvSimd_Arm64=14,
+    InstructionSet_Aes_Arm64=15,
+    InstructionSet_Crc32_Arm64=16,
+    InstructionSet_Dp_Arm64=17,
+    InstructionSet_Rdm_Arm64=18,
+    InstructionSet_Sha1_Arm64=19,
+    InstructionSet_Sha256_Arm64=20,
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -457,6 +458,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Vector64";
         case InstructionSet_Vector128 :
             return "Vector128";
+        case InstructionSet_Dczva :
+            return "Dczva";
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :

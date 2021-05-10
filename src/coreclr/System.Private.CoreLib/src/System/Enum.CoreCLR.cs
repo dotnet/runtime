@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ namespace System
         private static extern void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern override bool Equals(object? obj);
+        public extern override bool Equals([NotNullWhen(true)] object? obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object InternalBoxEnum(RuntimeType enumType, long value);

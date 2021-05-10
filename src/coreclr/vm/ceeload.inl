@@ -453,20 +453,6 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #endif //DACCESS_COMPILE
 
-inline BOOL Module::IsEditAndContinueCapable()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    BOOL isEnCCapable = IsEditAndContinueCapable(m_pAssembly, m_file);
-
-    // for now, Module::IsReflection is equivalent to m_file->IsDynamic,
-    // which is checked by IsEditAndContinueCapable(m_pAssembly, m_file)
-    _ASSERTE(!isEnCCapable || (!this->IsReflection()));
-
-    return isEnCCapable;
-}
-
 FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule()
 {
     WRAPPER_NO_CONTRACT;

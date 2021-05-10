@@ -70,6 +70,7 @@ namespace System.IO.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public Task ReadFileOver2GBAsync()
         {
             string path = GetTestFilePath();

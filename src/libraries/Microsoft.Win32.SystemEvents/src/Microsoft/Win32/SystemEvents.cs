@@ -487,7 +487,7 @@ namespace Microsoft.Win32
                             s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
                             {
                                 IsBackground = true,
-                                Name = ".NET SystemEvents"
+                                Name = ".NET System Events"
                             };
                             s_windowThread.Start();
                             s_eventWindowReady.WaitOne();
@@ -668,9 +668,7 @@ namespace Microsoft.Win32
 
             IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
-            s_className = string.Format(
-                ".NET-BroadcastEventWindow.{0:x}.0",
-                AppDomain.CurrentDomain.GetHashCode());
+            s_className = $".NET-BroadcastEventWindow.{AppDomain.CurrentDomain.GetHashCode():x}.0";
 
             fixed (char* className = s_className)
             {
@@ -1312,7 +1310,7 @@ namespace Microsoft.Win32
         }
 
         // A class that helps fire events on the right thread.
-        private class SystemEventInvokeInfo
+        private sealed class SystemEventInvokeInfo
         {
             private readonly SynchronizationContext _syncContext; // the context that we'll use to fire against.
             private readonly Delegate _delegate;     // the delegate we'll fire.  This is a weak ref so we don't hold object in memory.

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -100,7 +101,7 @@ namespace System.ComponentModel
         /// Simple site implementation. We do some special processing to name the site, but
         /// that's about it.
         /// </summary>
-        private class Site : INestedSite
+        private sealed class Site : INestedSite
         {
             private string _name;
 
@@ -160,6 +161,7 @@ namespace System.ComponentModel
             public string Name
             {
                 get => _name;
+                [RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")]
                 set
                 {
                     if (value == null || _name == null || !value.Equals(_name))

@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace System.Composition.TypedParts.Discovery
 {
-    internal class ParameterImportSite
+    internal sealed class ParameterImportSite
     {
         private readonly ParameterInfo _pi;
 

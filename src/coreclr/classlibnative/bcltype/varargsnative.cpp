@@ -21,7 +21,7 @@
 // pointer to achieve such an alignment for the next argument on those platforms (otherwise it is a no-op).
 // NOTE: the debugger has its own implementation of this algorithm in Debug\DI\RsType.cpp, CordbType::RequiresAlign8()
 //       so if you change this implementation be sure to update the debugger's version as well.
-static void AdjustArgPtrForAlignment(VARARGS *pData, size_t cbArg)
+static void AdjustArgPtrForAlignment(VARARGS *pData, unsigned cbArg)
 {
 #ifdef TARGET_ARM
     // Only 64-bit primitives or value types with embedded 64-bit primitives are aligned on 64-bit boundaries.
@@ -70,10 +70,10 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     data->SigPtr    = data->ArgCookie->signature.CreateSigPointer();
 
     // Skip the calling convention, get the # of args and skip the return type.
-    ULONG callConv;
+    uint32_t callConv;
     IfFailThrow(data->SigPtr.GetCallingConvInfo(&callConv));
 
-    ULONG sigData;
+    uint32_t sigData;
     IfFailThrow(data->SigPtr.GetData(&sigData));
     data->RemainingArgs = sigData;
 
@@ -114,7 +114,9 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     // which is the start of the first fixed arg (arg1).
 
     // Always skip over the varargs_cookie.
-    data->ArgPtr += StackElemSize(sizeof(LPVOID));
+    const bool isValueType = false;
+    const bool isFloatHfa = false;
+    data->ArgPtr += StackElemSize(TARGET_POINTER_SIZE, isValueType, isFloatHfa);
 #endif
 }
 
@@ -138,9 +140,11 @@ void AdvanceArgPtr(VARARGS *data)
             break;
 
         SigTypeContext      typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-        SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext);
-        SIZE_T cbArg = StackElemSize(cbRaw);
-
+        TypeHandle thValueType;
+        const unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext, &thValueType);
+        const bool isValueType = (!thValueType.IsNull() && thValueType.IsValueType());
+        const bool isFloatHfa = false;
+        unsigned cbArg = StackElemSize(cbRaw, isValueType, isFloatHfa);
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         if (ArgIterator::IsVarArgPassedByRef(cbRaw))
             cbArg = sizeof(void*);
@@ -263,9 +267,11 @@ VarArgsNative::Init2,
             }
 
             SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-            SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
-            SIZE_T cbArg = StackElemSize(cbRaw);
-
+            TypeHandle thValueType;
+            unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
+            const bool isValueType = (!thValueType.IsNull() && thValueType.IsValueType());
+            const bool isFloatHfa = false;
+            unsigned cbArg = StackElemSize(cbRaw, isValueType, isFloatHfa);
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
             if (ArgIterator::IsVarArgPassedByRef(cbRaw))
                 cbArg = sizeof(void*);
@@ -401,7 +407,8 @@ FCIMPL3(void, VarArgsNative::GetNextArg2, VARARGS* _this, void * value, ReflectC
     TypeHandle typehandle = refType->GetType();
 
     _ASSERTE(_this != NULL);
-    UINT size = 0;
+    unsigned size = 0;
+    bool isValueType = false;
 
     CorElementType typ = typehandle.GetInternalCorElementType();
     if (CorTypeInfo::IsPrimitiveType(typ))
@@ -414,15 +421,15 @@ FCIMPL3(void, VarArgsNative::GetNextArg2, VARARGS* _this, void * value, ReflectC
     }
     else if (typ == ELEMENT_TYPE_VALUETYPE)
     {
+        isValueType = true;
         size = typehandle.AsMethodTable()->GetNativeSize();
     }
     else
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
-
-    size = StackElemSize(size);
-
+    const bool isFloatHfa = false;
+    size = StackElemSize(size, isValueType, isFloatHfa);
     AdjustArgPtrForAlignment(_this, size);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -472,9 +479,11 @@ VarArgsNative::GetNextArgHelper(
     _ASSERTE(data->RemainingArgs != 0);
 
     SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-    SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
-    SIZE_T cbArg = StackElemSize(cbRaw);
-
+    TypeHandle thValueType;
+    const unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
+    const bool isValueType = (!thValueType.IsNull() && thValueType.IsValueType());
+    const bool isFloatHfa = false;
+    unsigned cbArg = StackElemSize(cbRaw, isValueType, isFloatHfa);
     AdjustArgPtrForAlignment(data, cbArg);
 
     // Get a pointer to the beginning of the argument.

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class AuthenticationHelper
+    internal static partial class AuthenticationHelper
     {
         private const string BasicScheme = "Basic";
         private const string DigestScheme = "Digest";

@@ -10,7 +10,7 @@ namespace System.Speech.Internal.SrgsCompiler
     [DebuggerDisplay("Count #{Count}")]
     [DebuggerTypeProxy(typeof(ArcListDebugDisplay))]
 #endif
-    internal class ArcList : RedBlackList
+    internal class ArcList : RBList
     {
         #region Internal Methods
 
@@ -63,7 +63,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         // Used by the debugger display attribute
-        private class ArcListDebugDisplay
+        private sealed class ArcListDebugDisplay
         {
             public ArcListDebugDisplay(ArcList item)
             {

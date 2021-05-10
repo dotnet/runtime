@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 while (!cts.IsCancellationRequested)
                                 {
-                                    await connection.Writer.WriteAsync(new string('s', 16000));
+                                    await connection.WriteStringAsync(new string('s', 16000));
                                     await Task.Delay(1);
                                 }
                             }

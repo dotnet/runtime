@@ -181,7 +181,11 @@ typedef PTR_Object OBJECTREF;
 typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
-EXTERN_C Thread* STDCALL GetThread();
+Thread* GetThread();
+Thread* GetThreadNULLOk();
+
+EXTERN_C Thread* STDCALL GetThreadHelper();
+
 void SetThread(Thread*);
 
 // This is a mechanism by which macros can make the Thread pointer available to inner scopes
@@ -276,6 +280,18 @@ namespace Loader
         SafeLookup  //take no locks, no allocations
     } LoadFlag;
 }
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
+#elif !(defined(TARGET_WINDOWS) && defined(TARGET_X86)) // !(TARGET_WINDOWS && TARGET_AMD64) && !(TARGET_WINDOWS && TARGET_X86)
+inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
+{
+    // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
+    RtlRestoreContext(ContextRecord, NULL);
+}
+#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 // src/inc
 #include "utilcode.h"

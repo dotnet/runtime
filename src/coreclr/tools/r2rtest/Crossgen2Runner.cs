@@ -86,6 +86,12 @@ namespace R2RTest
             // Output
             yield return $"-o:{outputFileName}";
 
+            if (_options.Pdb)
+            {
+                yield return $"--pdb";
+                yield return $"--pdb-path:{Path.GetDirectoryName(outputFileName)}";
+            }
+
             if (_options.TargetArch != null)
             {
                 yield return $"--targetarch={_options.TargetArch}";
@@ -114,6 +120,15 @@ namespace R2RTest
             if (CompositeMode)
             {
                 yield return "--composite";
+            }
+
+            if (_options.MibcPath != null && _options.MibcPath.Length > 0)
+            {
+                yield return "--embed-pgo-data";
+                foreach (FileInfo mibc in _options.MibcPath)
+                {
+                    yield return $"-m:{mibc.FullName}";
+                }
             }
 
             if (!string.IsNullOrEmpty(Crossgen2RunnerOptions.CompositeRoot))

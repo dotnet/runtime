@@ -51,8 +51,8 @@ namespace System.Globalization.Tests
                         // Form D
                         VerifyConformanceInvariant(NormalizationForm.FormD, part0, part1, part2, part3, part4);
 
-                        // Browser's ICU doesn't support FormKC and FormKD
-                        if (PlatformDetection.IsNotBrowser)
+                        // Mobile / Browser ICU doesn't support FormKC and FormKD
+                        if (PlatformDetection.IsNotUsingLimitedCultures)
                         {
                             // Form KC
                             VerifyConformanceInvariant(NormalizationForm.FormKC, part0, part1, part2, part3, part4);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -45,6 +46,8 @@ namespace Internal.TypeSystem
             "ByReference`1",
         };
 
+        public static IEnumerable<string> WellKnownTypeNames => s_wellKnownTypeNames;
+
         private MetadataType[] _wellKnownTypes;
 
         public MetadataTypeSystemContext()
@@ -70,7 +73,7 @@ namespace Internal.TypeSystem
             {
                 // Require System.Object to be present as a minimal sanity check. 
                 // The set of required well-known types is not strictly defined since different .NET profiles implement different subsets.
-                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex], typeIndex == (int)WellKnownType.Object);
+                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex], typeIndex == (int)WellKnownType.Object ? NotFoundBehavior.Throw : NotFoundBehavior.ReturnNull);
                 if (type != null)
                 {
                     type.SetWellKnownType((WellKnownType)(typeIndex + 1));

@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
 #include "superpmi.h"
@@ -305,8 +303,8 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     PAL_TRY(Param*, pParam, &param)
     {
-        BYTE* NEntryBlock    = nullptr;
-        ULONG NCodeSizeBlock = 0;
+        uint8_t* NEntryBlock    = nullptr;
+        uint32_t NCodeSizeBlock = 0;
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags);
         if (pParam->collectThroughput)
@@ -322,18 +320,40 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         }
         if (jitResult == CORJIT_SKIPPED)
         {
-            // For altjit, treat SKIPPED as OK
-#ifdef TARGET_AMD64
-            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64)
+            SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
+            bool matchesTargetArch              = false;
+
+            switch (pParam->pThis->mc->repGetExpectedTargetArchitecture())
+            {
+                case IMAGE_FILE_MACHINE_AMD64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64);
+                    break;
+
+                case IMAGE_FILE_MACHINE_I386:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_X86);
+                    break;
+
+                case IMAGE_FILE_MACHINE_ARMNT:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM);
+                    break;
+
+                case IMAGE_FILE_MACHINE_ARM64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
+                    break;
+
+                default:
+                    LogError("Unknown target architecture");
+                break;
+            }
+
+            // If the target architecture doesn't match the expected target architecture
+            // then we have an altjit, so treat SKIPPED as OK to avoid counting the compilation as failed.
+
+            if (!matchesTargetArch)
             {
                 jitResult = CORJIT_OK;
             }
-#elif defined(TARGET_X86)
-            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM)
-            {
-                jitResult = CORJIT_OK;
-            }
-#endif
+
         }
         if (jitResult == CORJIT_OK)
         {
@@ -352,7 +372,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
         if (e.GetCode() == EXCEPTIONCODE_MC)
         {
@@ -383,8 +403,8 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
 void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 {
-    BYTE* NEntryBlock    = nullptr;
-    ULONG NCodeSizeBlock = 0;
+    uint8_t* NEntryBlock    = nullptr;
+    uint32_t NCodeSizeBlock = 0;
 
     int sampleSize = 10;
     // Save 2 smallest times. To help reduce noise, we will look at the closest pair of these.
@@ -505,7 +525,7 @@ bool JitInstance::callJitStartup(ICorJitHost* jithost)
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
         LogError("failed to call jitStartup.");
         e.ShowAndDeleteMessage();

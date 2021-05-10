@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "pal_icushim_internal.h"
@@ -34,7 +35,7 @@ void GlobalizationNative_ChangeCase(
     // compiler wasn't doing that optimization, and it results in an ~15-20% perf
     // improvement on longer strings.)
 
-    UBool isError = FALSE;
+    UBool isError = false;
     (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
@@ -46,7 +47,7 @@ void GlobalizationNative_ChangeCase(
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = u_toupper(srcCodepoint);
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            assert(isError == FALSE && srcIdx == dstIdx);
+            assert(isError == false && srcIdx == dstIdx);
         }
     }
     else
@@ -56,7 +57,7 @@ void GlobalizationNative_ChangeCase(
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = u_tolower(srcCodepoint);
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            assert(isError == FALSE && srcIdx == dstIdx);
+            assert(isError == false && srcIdx == dstIdx);
         }
     }
 }
@@ -74,7 +75,7 @@ void GlobalizationNative_ChangeCaseInvariant(
 {
     // See algorithmic comment in ChangeCase.
 
-    UBool isError = FALSE;
+    UBool isError = false;
     (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
@@ -89,7 +90,7 @@ void GlobalizationNative_ChangeCaseInvariant(
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0131) ? (UChar32)0x0131 : u_toupper(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            assert(isError == FALSE && srcIdx == dstIdx);
+            assert(isError == false && srcIdx == dstIdx);
         }
     }
     else
@@ -102,7 +103,7 @@ void GlobalizationNative_ChangeCaseInvariant(
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0130) ? (UChar32)0x0130 : u_tolower(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            assert(isError == FALSE && srcIdx == dstIdx);
+            assert(isError == false && srcIdx == dstIdx);
         }
     }
 }
@@ -119,7 +120,7 @@ void GlobalizationNative_ChangeCaseTurkish(
 {
     // See algorithmic comment in ChangeCase.
 
-    UBool isError = FALSE;
+    UBool isError = false;
     (void)isError; // only used for assert
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
@@ -133,7 +134,7 @@ void GlobalizationNative_ChangeCaseTurkish(
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0069) ? (UChar32)0x0130 : u_toupper(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            assert(isError == FALSE && srcIdx == dstIdx);
+            assert(isError == false && srcIdx == dstIdx);
         }
     }
     else
@@ -145,7 +146,7 @@ void GlobalizationNative_ChangeCaseTurkish(
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0049) ? (UChar32)0x0131 : u_tolower(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            assert(isError == FALSE && srcIdx == dstIdx);
+            assert(isError == false && srcIdx == dstIdx);
         }
     }
 }

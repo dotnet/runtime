@@ -22,7 +22,7 @@ namespace System.IO.Enumeration
         private string? _currentPath;
         private IntPtr _directoryHandle;
         private bool _lastEntryFound;
-        private Queue<string>? _pending;
+        private Queue<(string Path, int RemainingDepth)>? _pending;
 
         private Interop.Sys.DirectoryEntry _entry;
         private TResult? _current;
@@ -114,6 +114,7 @@ namespace System.IO.Enumeration
                         FileAttributes attributes = FileSystemEntry.Initialize(
                             ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
                         bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+                        bool isSymlink = (attributes & FileAttributes.ReparsePoint) != 0;
 
                         bool isSpecialDirectory = false;
                         if (isDirectory)
@@ -130,13 +131,12 @@ namespace System.IO.Enumeration
 
                         if (!isSpecialDirectory && _options.AttributesToSkip != 0)
                         {
-                            if ((_options.AttributesToSkip & FileAttributes.ReadOnly) != 0)
-                            {
-                                // ReadOnly is the only attribute that requires hitting entry.Attributes (which hits the disk)
-                                attributes = entry.Attributes;
-                            }
-
-                            if ((_options.AttributesToSkip & attributes) != 0)
+                            // entry.IsHidden and entry.IsReadOnly will hit the disk if the caches had not been
+                            // initialized yet and we could not soft-retrieve the attributes in Initialize
+                            if ((ShouldSkip(FileAttributes.Directory) && isDirectory) ||
+                                (ShouldSkip(FileAttributes.ReparsePoint) && isSymlink) ||
+                                (ShouldSkip(FileAttributes.Hidden) && entry.IsHidden) ||
+                                (ShouldSkip(FileAttributes.ReadOnly) && entry.IsReadOnly))
                             {
                                 continue;
                             }
@@ -144,12 +144,12 @@ namespace System.IO.Enumeration
 
                         if (isDirectory && !isSpecialDirectory)
                         {
-                            if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
+                            if (_options.RecurseSubdirectories && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
                             {
                                 // Recursion is on and the directory was accepted, Queue it
                                 if (_pending == null)
-                                    _pending = new Queue<string>();
-                                _pending.Enqueue(Path.Join(_currentPath, entry.FileName));
+                                    _pending = new Queue<(string Path, int RemainingDepth)>();
+                                _pending.Enqueue((Path.Join(_currentPath, entry.FileName), _remainingRecursionDepth - 1));
                             }
                         }
 
@@ -161,6 +161,8 @@ namespace System.IO.Enumeration
                     } while (true);
                 }
             }
+
+            bool ShouldSkip(FileAttributes attributeToSkip) => (_options.AttributesToSkip & attributeToSkip) != 0;
         }
 
         private unsafe void FindNextEntry()
@@ -215,7 +217,7 @@ namespace System.IO.Enumeration
                 if (_pending == null || _pending.Count == 0)
                     return false;
 
-                _currentPath = _pending.Dequeue();
+                (_currentPath, _remainingRecursionDepth) = _pending.Dequeue();
                 _directoryHandle = CreateDirectoryHandle(_currentPath, ignoreNotFound: true);
             }
 

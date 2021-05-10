@@ -59,7 +59,7 @@ uint32_t gcGenAnalysisBufferMB = 0;
 {
     LPCWSTR outputPath = nullptr;
     outputPath = GENAWARE_FILE_NAME;
-    NewHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders = nullptr;
+    NewArrayHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders;
     int providerCnt = 1;
     pProviders = new COR_PRF_EVENTPIPE_PROVIDER_CONFIG[providerCnt];
     const uint64_t GCHeapAndTypeNamesKeyword        = 0x00001000000; // This keyword is necessary for the type names

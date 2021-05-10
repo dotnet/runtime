@@ -124,6 +124,11 @@ namespace System.Net.Sockets.Tests
         public SendReceiveNonParallel_Task(ITestOutputHelper output) : base(output) { }
     }
 
+    public sealed class SendReceiveNonParallel_CancellableTask : SendReceiveNonParallel<SocketHelperCancellableTask>
+    {
+        public SendReceiveNonParallel_CancellableTask(ITestOutputHelper output) : base(output) { }
+    }
+
     public sealed class SendReceiveNonParallel_Eap : SendReceiveNonParallel<SocketHelperEap>
     {
         public SendReceiveNonParallel_Eap(ITestOutputHelper output) : base(output) { }

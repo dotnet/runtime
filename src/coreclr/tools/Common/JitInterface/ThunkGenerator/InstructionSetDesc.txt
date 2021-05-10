@@ -93,6 +93,7 @@ instructionset     ,ARM64 ,Sha256    ,        ,20 ,Sha256   ,sha2
 instructionset     ,ARM64 ,          ,Atomics ,21 ,Atomics  ,lse
 instructionset     ,ARM64 ,          ,        ,   ,Vector64 ,
 instructionset     ,ARM64 ,          ,        ,   ,Vector128,
+instructionset     ,ARM64 ,          ,        ,   ,Dczva    ,
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd

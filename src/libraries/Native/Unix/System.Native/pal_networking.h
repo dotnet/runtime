@@ -301,15 +301,7 @@ typedef struct
     uint32_t Padding;    // Pad out to 8-byte alignment
 } SocketEvent;
 
-PALEXPORT int32_t SystemNative_PlatformSupportsGetAddrInfoAsync(void);
-
 PALEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry);
-
-typedef void (*GetHostEntryForNameCallback)(HostEntry* entry, int status);
-PALEXPORT int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
-                                                        int32_t addressFamily,
-                                                        HostEntry* entry,
-                                                        GetHostEntryForNameCallback callback);
 
 PALEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
 

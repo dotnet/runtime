@@ -44,7 +44,7 @@ static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *
 
 
     static ConfigDWORD dbgForcePDBSymbols;
-    if(dbgForcePDBSymbols.val_DontUse_(W("DbgForcePDBSymbols"), 0) == 1)
+    if(dbgForcePDBSymbols.val(CLRConfig::INTERNAL_DbgForcePDBSymbols) == 1)
     {
         symFormatToUse = eSymbolFormatPDB;
     }
@@ -622,7 +622,7 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    ICeeGen * pGen = pRCW->GetCeeGen();
+    ICeeGenInternal * pGen = pRCW->GetCeeGen();
 
     ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
 
@@ -854,26 +854,18 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
 
     HRESULT hr = S_OK;
 
-    WCHAR wszBuffer[64];
-
     if (pModule->IsPEFile())
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != 0) {
                 retString.Set(fileName);
         } else {
-            hr = UtilLoadStringRC(IDS_EE_NAME_UNKNOWN, wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
-            if (FAILED(hr))
-                COMPlusThrowHR(hr);
-            retString.Set(wszBuffer);
+            retString.Set(W("<Unknown>"));
         }
     }
     else
     {
-        hr = UtilLoadStringRC(IDS_EE_NAME_INMEMORYMODULE, wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
-        if (FAILED(hr))
-            COMPlusThrowHR(hr);
-        retString.Set(wszBuffer);
+        retString.Set(W("<In Memory Module>"));
     }
 
     END_QCALL;

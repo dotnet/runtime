@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -67,7 +66,7 @@ internal static partial class Interop
             out SafeCFArrayHandle matches,
             out int pOSStatus);
 
-        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
+        private static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeHandle item)
         {
             bool addedRef = false;
 
@@ -85,6 +84,12 @@ internal static partial class Interop
                 }
             }
         }
+
+        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
+            => SecKeychainItemCopyKeychain((SafeHandle)item);
+
+        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeSecKeyRefHandle item)
+            => SecKeychainItemCopyKeychain((SafeHandle)item);
 
         internal static SafeKeychainHandle SecKeychainItemCopyKeychain(IntPtr item)
         {
@@ -292,7 +297,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal class SafeKeychainItemHandle : SafeHandle
     {
-        internal SafeKeychainItemHandle()
+        public SafeKeychainItemHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -310,7 +315,7 @@ namespace System.Security.Cryptography.Apple
 
     internal class SafeKeychainHandle : SafeHandle
     {
-        internal SafeKeychainHandle()
+        public SafeKeychainHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

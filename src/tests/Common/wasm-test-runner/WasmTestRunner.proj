@@ -16,7 +16,7 @@
 
   <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
-      <WasmMainAssemblyPath>$(TestAssembly)</WasmMainAssemblyPath>
+      <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
@@ -25,6 +25,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>

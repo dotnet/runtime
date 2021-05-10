@@ -7,15 +7,15 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Interop
 {
-    internal class SafeNativeMethods
+    internal static class SafeNativeMethods
     {
-        [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
+        [DllImport(global::Interop.Libraries.OleAut32, PreserveSig = false)]
         public static extern void VariantClear(IntPtr pObject);
 
-        [DllImport(ExternDll.Oleaut32)]
+        [DllImport(global::Interop.Libraries.OleAut32)]
         public static extern void VariantInit(IntPtr pObject);
 
-        [DllImport(ExternDll.Activeds)]
+        [DllImport(global::Interop.Libraries.Activeds)]
         public static extern bool FreeADsMem(IntPtr pVoid);
 
         public const int
@@ -25,11 +25,11 @@ namespace System.DirectoryServices.Interop
             ERROR_MORE_DATA = 234,
             ERROR_SUCCESS = 0;
 
-        [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
         public static extern unsafe int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
 
-        [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
-        public static extern int ADsSetLastError(int error, string errorString, string provider);
+        [DllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
+        public static extern int ADsSetLastError(int error, string? errorString, string? provider);
 
         public class EnumVariant
         {
@@ -93,7 +93,7 @@ namespace System.DirectoryServices.Interop
                         if (numRead[0] > 0)
                         {
 #pragma warning disable 612, 618
-                            _currentValue = Marshal.GetObjectForNativeVariant(addr);
+                            _currentValue = Marshal.GetObjectForNativeVariant(addr)!;
 #pragma warning restore 612, 618
                         }
                     }

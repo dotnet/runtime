@@ -719,7 +719,7 @@ namespace System.Security.Principal
 
 #region Inherited properties and methods
 
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return (this == o as SecurityIdentifier); // invokes operator==
         }
@@ -1108,7 +1108,7 @@ namespace System.Security.Principal
                             case SidNameUse.Alias:
                             case SidNameUse.Computer:
                             case SidNameUse.WellKnownGroup:
-                                string account = Marshal.PtrToStringUni(Ltn.Name.Buffer, Ltn.Name.Length / sizeof(char)); ;
+                                string account = Marshal.PtrToStringUni(Ltn.Name.Buffer, Ltn.Name.Length / sizeof(char));
                                 string domain = ReferencedDomains[Ltn.DomainIndex];
                                 Result.Add(new NTAccount(domain, account));
                                 break;

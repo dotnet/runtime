@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public void BasicTest_GetNetworkInterfaces_AtLeastOne()
         {
             Assert.NotEqual<int>(0, NetworkInterface.GetAllNetworkInterfaces().Length);
@@ -108,7 +109,7 @@ namespace System.Net.NetworkInformation.Tests
                 string id = nic.Id;
                 Assert.False(string.IsNullOrEmpty(id), "NetworkInterface.Id should not be null or empty.");
                 _log.WriteLine("ID: " + id);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
+                Assert.False(nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
                 _log.WriteLine("Speed: " + nic.Speed);
@@ -131,6 +132,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public void BasicTest_StaticLoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv4Support());
@@ -154,6 +156,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public void BasicTest_StaticLoopbackIndex_ExceptionIfV4NotSupported()
         {
             Assert.True(Capability.IPv4Support());
@@ -163,6 +166,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public void BasicTest_StaticIPv6LoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv6Support());
@@ -187,6 +191,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public void BasicTest_StaticIPv6LoopbackIndex_ExceptionIfV6NotSupported()
         {
             Assert.True(Capability.IPv6Support());
@@ -267,6 +272,7 @@ namespace System.Net.NetworkInformation.Tests
 
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/20029 and https://github.com/Microsoft/WSL/issues/3561
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public void BasicTest_GetIsNetworkAvailable_Success()
         {
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
@@ -274,9 +280,10 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~(TestPlatforms.OSX|TestPlatforms.FreeBSD))]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
