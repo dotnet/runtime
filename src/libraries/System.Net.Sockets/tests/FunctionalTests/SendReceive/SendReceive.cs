@@ -592,7 +592,7 @@ namespace System.Net.Sockets.Tests
                 {
                     for (int i = 0; i < 3; i++)
                     {
-                        // Zero byte send should be a no-op 
+                        // Zero byte send should be a no-op
                         int bytesSent = await SendAsync(client, new ArraySegment<byte>(Array.Empty<byte>()));
                         Assert.Equal(0, bytesSent);
 
@@ -646,6 +646,41 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(1, await ReceiveAsync(client, new ArraySegment<byte>(new byte[1])));
                         Assert.Equal(0, client.Available);
                     }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task Send_0ByteSendTo_Success()
+        {
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+                for (int i = 0; i < 3; i++)
+                {
+                    // Send empty packet then real data.
+                    int bytesSent = await SendToAsync(
+                        client, new ArraySegment<byte>(Array.Empty<byte>()), server.LocalEndPoint!);
+                    Assert.Equal(0, bytesSent);
+
+                    await SendToAsync(client, new byte[] { 99 }, server.LocalEndPoint);
+
+                    // Read empty packet
+                    byte[] buffer = new byte[10];
+                    SocketReceiveFromResult result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+
+                    Assert.Equal(0, result.ReceivedBytes);
+                    Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
+
+                    // Read real packet.
+                    result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+
+                    Assert.Equal(1, result.ReceivedBytes);
+                    Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
+                    Assert.Equal(99, buffer[0]);
                 }
             }
         }
@@ -961,6 +996,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory(Timeout = 40000)]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
         {
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
@@ -1201,7 +1237,7 @@ namespace System.Net.Sockets.Tests
                 {
                     for (int i = 0; i < 3; i++)
                     {
-                        // Zero byte send should be a no-op 
+                        // Zero byte send should be a no-op
                         int bytesSent = client.Send(ReadOnlySpan<byte>.Empty, SocketFlags.None);
                         Assert.Equal(0, bytesSent);
 
@@ -1215,6 +1251,41 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task Send_0ByteSendTo_Span_Success()
+        {
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+                for (int i = 0; i < 3; i++)
+                {
+                    // Send empty packet then real data.
+                    int bytesSent = client.SendTo(ReadOnlySpan<byte>.Empty, server.LocalEndPoint!);
+                    Assert.Equal(0, bytesSent);
+
+                    client.SendTo(new byte[] { 99 }, server.LocalEndPoint);
+
+                    // Read empty packet
+                    byte[] buffer = new byte[10];
+                    SocketReceiveFromResult result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+
+                    Assert.Equal(0, result.ReceivedBytes);
+                    Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
+
+                    // Read real packet.
+                    result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+
+                    Assert.Equal(1, result.ReceivedBytes);
+                    Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
+                    Assert.Equal(99, buffer[0]);
+                }
+            }
+        }
+
     }
 
     public sealed class SendReceive_SpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
@@ -1256,6 +1327,41 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(1, bytesReceived);
                         Assert.Equal(99, buffer[0]);
                     }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task Send_0ByteSendTo_Memory_Success()
+        {
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+                for (int i = 0; i < 3; i++)
+                {
+                    // Send empty packet then real data.
+                    int bytesSent = await client.SendToAsync(
+                        ReadOnlyMemory<byte>.Empty, SocketFlags.None, server.LocalEndPoint!);
+                    Assert.Equal(0, bytesSent);
+
+                    await client.SendToAsync(new byte[] { 99 }, SocketFlags.None, server.LocalEndPoint);
+
+                    // Read empty packet
+                    byte[] buffer = new byte[10];
+                    SocketReceiveFromResult result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+
+                    Assert.Equal(0, result.ReceivedBytes);
+                    Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
+
+                    // Read real packet.
+                    result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+
+                    Assert.Equal(1, result.ReceivedBytes);
+                    Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
+                    Assert.Equal(99, buffer[0]);
                 }
             }
         }

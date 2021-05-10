@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
+    <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

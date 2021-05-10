@@ -106,6 +106,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=\"unterminated", InvalidX500NameFragment)]
         // Non-ASCII values in an E field
         [InlineData("E=\u65E5\u672C\u8A9E", InvalidIA5StringFragment)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public static void InvalidInput(string input, string messageFragment)
         {
             CryptographicException exception =

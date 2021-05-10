@@ -9073,20 +9073,17 @@ HRESULT ProfToEEInterfaceImpl::SetupThreadForReJIT()
 {
     LIMITED_METHOD_CONTRACT;
 
-    HRESULT hr = S_OK;
-    EX_TRY
+    Thread* pThread = GetThreadNULLOk();
+    if (pThread == NULL)
     {
-        if (GetThreadNULLOk() == NULL)
-        {
-            SetupThread();
-        }
-
-        Thread *pThread = GetThreadNULLOk();
-        pThread->SetProfilerCallbackStateFlags(COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED);
+        HRESULT hr = S_OK;
+        pThread = SetupThreadNoThrow(&hr);
+        if (pThread == NULL)
+            return hr;
     }
-    EX_CATCH_HRESULT(hr);
 
-    return hr;
+    pThread->SetProfilerCallbackStateFlags(COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::RequestReJIT(ULONG       cFunctions,   // in

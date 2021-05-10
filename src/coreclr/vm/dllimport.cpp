@@ -2548,6 +2548,22 @@ namespace
         _ASSERTE(*nlt == nltAnsi || *nlt == nltUnicode);
         return S_OK;
     }
+
+    HRESULT ParseCallingConventionFromAttributeConstructor(_Inout_ CustomAttributeParser& ca, _Out_ CorInfoCallConvExtension* callConv)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(callConv != NULL);
+
+        CaArg callConvArg;
+        callConvArg.InitEnum(SERIALIZATION_TYPE_I4, (ULONG)0);
+        HRESULT hr = ParseKnownCaArgs(ca, &callConvArg, 1);
+        if (FAILED(hr))
+            return hr;
+
+        *callConv = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(callConvArg.val.u4 << 8));
+        return S_OK;
+    }
+
 }
 
 void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
@@ -2568,7 +2584,6 @@ void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
     SetThrowOnUnmappableChar (FALSE);
     SetLinkFlags (nlfNone);
     SetCharSet (nltAnsi);
-    m_error = 0;
 
     // assembly/type level m_bestFit & m_bThrowOnUnmappableChar
     BOOL bBestFit;
@@ -2610,14 +2625,17 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMD));
+    }
+    CONTRACTL_END;
 
     DllImportInit(pMD, pLibName, pEntryPointName);
-
-    ReportErrors();
 }
 
-PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOnError)
+PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -2642,20 +2660,16 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
     // System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute
     BYTE* pData = NULL;
     LONG cData = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
+    CorInfoCallConvExtension callConv = CallConvWinApiSentinel;
 
     hr = pMT->GetCustomAttribute(
         WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
-    IfFailThrow(hr);
+    IfFailGo(hr);
     if (cData != 0)
     {
         CustomAttributeParser ca(pData, cData);
 
-        CaArg args[1];
-        args[0].InitEnum(SERIALIZATION_TYPE_I4, (ULONG)m_callConv);
-
-        IfFailGo(ParseKnownCaArgs(ca, args, lengthof(args)));
-        callConv = (CorPinvokeMap)(args[0].val.u4 << 8);
+        IfFailGo(ParseCallingConventionFromAttributeConstructor(ca, &callConv));
 
         enum UnmanagedFunctionPointerNamedArgs
         {
@@ -2684,18 +2698,15 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
             SetLinkFlags ((CorNativeLinkFlags)(nlfLastError | GetLinkFlags()));
     }
 
-    InitCallConv(GetCallConvValueForPInvokeCallConv(callConv), pMD->IsVarArg());
+    InitCallConv(callConv, pMD->IsVarArg());
 
 ErrExit:
     if (FAILED(hr))
-        SetError(IDS_EE_NDIRECT_BADNATL);
-
-    if (throwOnError)
-        ReportErrors();
+        ThrowError(IDS_EE_NDIRECT_BADNATL);
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    Signature sig, Module* pModule)
+    _In_ const Signature& sig, _In_ Module* pModule)
 {
     CONTRACTL
     {
@@ -2709,8 +2720,6 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     m_sig = sig;
     SetIsStatic(!(MetaSig::GetCallingConvention(sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv(CallConvWinApiSentinel, FALSE);
-
-    ReportErrors();
 }
 
 void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName, _Outptr_opt_ LPCUTF8 *ppEntryPointName)
@@ -2738,16 +2747,6 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     mdModuleRef modref = mdModuleRefNil;
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
-#if !defined(CROSSGEN_COMPILE) // IJW
-        // The guessing heuristic has been broken with NGen for a long time since we stopped loading
-        // images at NGen time using full LoadLibrary. The DLL references are not resolved correctly
-        // without full LoadLibrary.
-        //
-        // Disable the heuristic consistently during NGen so that it does not kick in by accident.
-        if (!IsCompilationProcess())
-            BestGuessNDirectDefaults(pMD);
-#endif
-
         InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
         return;
     }
@@ -2761,8 +2760,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     {
         if (FAILED(pInternalImport->GetModuleRefProps(modref, ppLibName)))
         {
-            SetError(IDS_CLASSLOAD_BADFORMAT);
-            return;
+            ThrowError(IDS_CLASSLOAD_BADFORMAT);
         }
     }
 
@@ -2809,14 +2807,10 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
             break;
     }
 
-    if (SUCCEEDED(RemapLinkType(nlt, &nlt)))
-    {
-        SetCharSet(nlt);
-    }
-    else
-    {
-        SetError(IDS_EE_NDIRECT_BADNATL);
-    }
+    if (FAILED(RemapLinkType(nlt, &nlt)))
+        ThrowError(IDS_EE_NDIRECT_BADNATL);
+
+    SetCharSet(nlt);
 }
 
 #if !defined(CROSSGEN_COMPILE) // IJW
@@ -2920,43 +2914,6 @@ DWORD STDMETHODCALLTYPE FalseGetLastError()
     return GetThread()->m_dwLastError;
 }
 
-void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pMD->IsNDirect())
-        return;
-
-    NDirectMethodDesc* pMDD = (NDirectMethodDesc*)pMD;
-
-    if (!pMDD->IsEarlyBound())
-        return;
-
-    LPVOID pTarget = NULL;
-
-    // NOTE: If we get inside this block, and this is a call to GetLastError,
-    //  then InitEarlyBoundNDirectTarget has not been run yet.
-    if (pMDD->NDirectTargetIsImportThunk())
-    {
-        // Get the unmanaged callsite.
-        pTarget = (LPVOID)pMDD->GetModule()->GetInternalPInvokeTarget(pMDD->GetRVA());
-
-        // If this is a call to GetLastError, then we haven't overwritten m_pNativeNDirectTarget yet.
-        if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)pTarget))
-            pTarget = (BYTE*)FalseGetLastError;
-    }
-    else
-    {
-        pTarget = pMDD->GetNativeNDirectTarget();
-    }
-}
-
 #endif // !CROSSGEN_COMPILE
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
@@ -2973,8 +2930,8 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
     if (FAILED(hr))
     {
-        // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
-        SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
+        // Use an error message specific to P/Invokes or UnmanagedFunction for bad format.
+        ThrowError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
 
     CorInfoCallConvExtension sigCallConv = builder.GetCurrentCallConv();
@@ -2984,7 +2941,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     // If no calling convention is provided, then use the default calling convention for the platform.
 
     if (callConv != CallConvWinApiSentinel && sigCallConv != CallConvWinApiSentinel && callConv != sigCallConv)
-        SetError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
+        ThrowError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
 
     if (callConv == CallConvWinApiSentinel && sigCallConv == CallConvWinApiSentinel)
         m_callConv = GetDefaultCallConv(bIsVarArg);
@@ -2994,25 +2951,82 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
         m_callConv = sigCallConv;
 
     if (bIsVarArg && m_callConv != CorInfoCallConvExtension::C)
-        SetError(IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV);
+        ThrowError(IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV);
 
     _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
-void PInvokeStaticSigInfo::ReportErrors()
+void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(errorResourceID != 0);
     }
     CONTRACTL_END;
 
-    if (m_error != 0)
-        COMPlusThrow(kTypeLoadException, m_error);
+    COMPlusThrow(kTypeLoadException, errorResourceID);
 }
 
+CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMD != NULL);
+        PRECONDITION(pMD->IsNDirect());
+    }
+    CONTRACTL_END;
+
+    // This method intentionally does not check that any calling convention specified through
+    // attributes match that in the signature. We just return once a non-sentinel calling
+    // convention is found.
+    CorInfoCallConvExtension callConv;
+    MethodTable* pMT = pMD->GetMethodTable();
+    if (pMT->IsDelegate())
+    {
+        // System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute
+        BYTE* pData = NULL;
+        LONG cData = 0;
+        HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
+        if (hr == S_OK)
+        {
+            _ASSERTE(cData > 0);
+            CustomAttributeParser ca(pData, cData);
+            hr = ParseCallingConventionFromAttributeConstructor(ca, &callConv);
+            if (SUCCEEDED(hr) && callConv != CallConvWinApiSentinel)
+                return callConv;
+        }
+    }
+    else
+    {
+        // P/Invoke metadata
+        IMDInternalImport* pInternalImport = pMD->GetMDImport();
+        CorPinvokeMap mappingFlags = pmMaxValue;
+        HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
+        if (SUCCEEDED(hr))
+        {
+            callConv = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask));
+            if (callConv != CallConvWinApiSentinel)
+                return callConv;
+        }
+    }
+
+    const Signature& sig = pMD->GetSignature();
+    Module* module = pMD->GetModule();
+
+    // modopts
+    CallConvBuilder builder;
+    UINT errorResID;
+    (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
+    callConv = builder.GetCurrentCallConv();
+    if (callConv != CallConvWinApiSentinel)
+        return callConv;
+
+    return GetDefaultCallConv(pMD->IsVarArg());
+}
 
 //---------------------------------------------------------
 // Does a class or method have a NAT_L CustomAttribute?
@@ -4172,7 +4186,7 @@ static void CreateNDirectStubAccessMetadata(
 
 namespace
 {
-    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_z_ LPCUTF8 libName, _In_z_ LPCUTF8 entryPointName)
+    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_opt_z_ LPCUTF8 libName, _In_opt_z_ LPCUTF8 entryPointName)
     {
         CONTRACTL
         {

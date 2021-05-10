@@ -2252,6 +2252,7 @@ bool        affinity_config_specified_p = false;
 
 #ifdef USE_REGIONS
 region_allocator global_region_allocator;
+uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -10677,19 +10678,32 @@ int gc_heap::object_gennum_plan (uint8_t* o)
 #endif //_MSC_VER && TARGET_X86
 
 #ifdef USE_REGIONS
+void get_initial_region(int gen, int hn, uint8_t** region_start, uint8_t** region_end)
+{
+    *region_start = initial_regions[hn][gen][0];
+    *region_end = initial_regions[hn][gen][1];
+}
+
 bool gc_heap::initial_make_soh_regions (gc_heap* hp)
 {
     uint8_t* region_start;
     uint8_t* region_end;
+    uint32_t hn = 0;
+#ifdef MULTIPLE_HEAPS
+    hn = hp->heap_number;
+#endif //MULTIPLE_HEAPS
 
     for (int i = max_generation; i >= 0; i--)
     {
-        if (!global_region_allocator.allocate_basic_region (&region_start, &region_end))
-            return false;
+        get_initial_region(i, hn, &region_start, &region_end);
 
         size_t region_size = region_end - region_start;
 
         heap_segment* current_region = make_heap_segment (region_start, region_size, hp, i);
+        if (current_region == nullptr)
+        {
+            return false;
+        }
         uint8_t* gen_start = heap_segment_mem (current_region);
         make_generation (i, current_region, gen_start);
 
@@ -10716,13 +10730,19 @@ bool gc_heap::initial_make_uoh_regions (int gen, gc_heap* hp)
 {
     uint8_t* region_start;
     uint8_t* region_end;
+    uint32_t hn = 0;
+#ifdef MULTIPLE_HEAPS
+    hn = hp->heap_number;
+#endif //MULTIPLE_HEAPS
 
-    // REGIONS TODO: allocate POH regions on the right
-    if (!global_region_allocator.allocate_large_region (&region_start, &region_end, allocate_forward))
-        return false;
+    get_initial_region(gen, hn, &region_start, &region_end);
 
     size_t region_size = region_end - region_start;
     heap_segment* uoh_region = make_heap_segment (region_start, region_size, hp, gen);
+    if (uoh_region == nullptr)
+    {
+        return false;
+    }
     uoh_region->flags |= 
         (gen == loh_generation) ? heap_segment_flags_loh : heap_segment_flags_poh;
     uint8_t* gen_start = heap_segment_mem (uoh_region);
@@ -11791,6 +11811,42 @@ size_t gc_heap::get_segment_size_hard_limit (uint32_t* num_heaps, bool should_ad
     return aligned_seg_size;
 }
 
+#ifdef USE_REGIONS
+bool allocate_initial_regions(int number_of_heaps)
+{
+    initial_regions = new (nothrow) uint8_t*[number_of_heaps][total_generation_count][2];
+    if (initial_regions == nullptr)
+    {
+        return false;
+    }
+    for (int i = 0; i < number_of_heaps; i++)
+    {
+        bool succeed = global_region_allocator.allocate_large_region(
+            &initial_regions[i][poh_generation][0],
+            &initial_regions[i][poh_generation][1], allocate_forward);
+        assert(succeed);
+    }
+    for (int i = 0; i < number_of_heaps; i++)
+    {
+        for (int gen = max_generation; gen >= 0; gen--)
+        {
+            bool succeed = global_region_allocator.allocate_basic_region(
+                &initial_regions[i][gen][0],
+                &initial_regions[i][gen][1]);
+            assert(succeed);
+        }
+    }
+    for (int i = 0; i < number_of_heaps; i++)
+    {
+        bool succeed = global_region_allocator.allocate_large_region(
+            &initial_regions[i][loh_generation][0],
+            &initial_regions[i][loh_generation][1], allocate_forward);
+        assert(succeed);
+    }
+    return true;
+}
+#endif
+
 HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                 size_t loh_segment_size,
                                 size_t poh_segment_size
@@ -11935,6 +11991,8 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         if (!global_region_allocator.init (reserve_range, (reserve_range + reserve_size), 
                                            ((size_t)1 << min_segment_size_shr), 
                                            &g_gc_lowest_address, &g_gc_highest_address))
+            return E_OUTOFMEMORY;
+        if (!allocate_initial_regions(number_of_heaps))
             return E_OUTOFMEMORY;
     }
     else
@@ -41511,7 +41569,12 @@ HRESULT GCHeap::Initialize()
 #else
     hr = Init (0);
 #endif //MULTIPLE_HEAPS
-
+#ifdef USE_REGIONS
+    if (initial_regions)
+    {
+        delete[] initial_regions;
+    }
+#endif //USE_REGIONS
     if (hr == S_OK)
     {
         GCScan::GcRuntimeStructuresValid (TRUE);

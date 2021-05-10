@@ -741,7 +741,7 @@ namespace System.Text.Json
 
         public static void AssertContentsAgainstJsonNet(string expectedValue, string value, bool skipSpecialRules)
         {
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules));
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules), ignoreLineEndingDifferences: true);
         }
 
         public static void AssertContentsNotEqualAgainstJsonNet(string expectedValue, string value, bool skipSpecialRules)

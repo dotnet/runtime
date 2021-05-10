@@ -20,6 +20,12 @@
     <RunScriptHost Condition="'$(TargetOS)' != 'windows'">$(RunScriptHostDir)dotnet</RunScriptHost>
   </PropertyGroup>
 
+  <!-- For both tests.mobile.targets and tests.wasm.targets -->
+  <PropertyGroup>
+    <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</MonoAotCrossCompilerPath>
+    <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
 

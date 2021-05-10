@@ -64,13 +64,34 @@ free_ilgen (MonoMethodBuilder *mb)
 		g_free (l->data);
 	}
 	g_list_free (mb->locals_list);
-	if (!mb->dynamic) {
+	if (!mb->dynamic)
 		g_free (mb->method);
-		if (!mb->no_dup_name)
-			g_free (mb->name);
-		g_free (mb->code);
-	}
+	if (!mb->no_dup_name)
+		g_free (mb->name);
+	g_free (mb->code);
 	g_free (mb);
+}
+
+static gpointer
+mb_alloc0 (MonoMethodBuilder *mb, int size)
+{
+	if (mb->dynamic)
+		return g_malloc0 (size);
+	else if (mb->mem_manager)
+		return mono_mem_manager_alloc0 (mb->mem_manager, size);
+	else
+		return mono_image_alloc0 (m_class_get_image (mb->method->klass), size);
+}
+
+static char*
+mb_strdup (MonoMethodBuilder *mb, const char *s)
+{
+	if (mb->dynamic)
+		return g_strdup (s);
+	else if (mb->mem_manager)
+		return mono_mem_manager_strdup (mb->mem_manager, s);
+	else
+		return mono_image_strdup (m_class_get_image (mb->method->klass), s);
 }
 
 static MonoMethod *
@@ -88,41 +109,34 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	image = m_class_get_image (mb->method->klass);
 
 	if (mb->dynamic) {
+		/* Allocated in reflection_methodbuilder_to_mono_method () */
 		method = mb->method;
-		mw = (MonoMethodWrapper*)method;
-
-		method->name = mb->name;
-		method->dynamic = TRUE;
-
-		mw->header = header = (MonoMethodHeader *) 
-			g_malloc0 (MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
-
-		header->code = mb->code;
-
-		for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
-			header->locals [i] = (MonoType*)l->data;
-		}
-	} else
-	{
-		/* Realloc the method info into a mempool */
-
-		method = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodWrapper));
+	} else {
+		method = (MonoMethod *)mb_alloc0 (mb, sizeof (MonoMethodWrapper));
 		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
-		mw = (MonoMethodWrapper*) method;
+	}
+	mw = (MonoMethodWrapper*) method;
+	mw->mem_manager = mb->mem_manager;
+	if (mb->no_dup_name)
+		method->name = mb->name;
+	else
+		method->name = mb_strdup (mb, mb->name);
+	method->dynamic = mb->dynamic;
+	mw->header = header = (MonoMethodHeader *)
+		mb_alloc0 (mb, MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
+	header->code = (const unsigned char *)mb_alloc0 (mb, mb->pos);
+	memcpy ((char*)header->code, mb->code, mb->pos);
 
-		if (mb->no_dup_name)
-			method->name = mb->name;
-		else
-			method->name = mono_image_strdup (image, mb->name);
-
-		mw->header = header = (MonoMethodHeader *) 
-			mono_image_alloc0 (image, MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
-
-		header->code = (const unsigned char *)mono_image_alloc (image, mb->pos);
-		memcpy ((char*)header->code, mb->code, mb->pos);
-
-		for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
-			header->locals [i] = (MonoType*)l->data;
+	for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
+		MonoType *type = (MonoType*)l->data;
+		if (mb->mem_manager) {
+			/* Allocated in mono_mb_add_local () */
+			int size = mono_sizeof_type (type);
+			header->locals [i] = mono_mem_manager_alloc0 (mb->mem_manager, size);
+			memcpy (header->locals [i], type, size);
+			g_free (type);
+		} else {
+			header->locals [i] = type;
 		}
 	}
 
@@ -157,10 +171,7 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 		GList *tmp;
 		void **data;
 		l = g_list_reverse ((GList *)mw->method_data);
-		if (method_is_dynamic (method))
-			data = (void **)g_malloc (sizeof (gpointer) * (i + 1));
-		else
-			data = (void **)mono_image_alloc (image, sizeof (gpointer) * (i + 1));
+		data = (void **)mb_alloc0 (mb, sizeof (gpointer) * (i + 1));
 		/* store the size in the first element */
 		data [0] = GUINT_TO_POINTER (i);
 		i = 1;
@@ -186,9 +197,11 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 #endif
 
 	if (mb->param_names) {
-		char **param_names = (char **)mono_image_alloc0 (image, signature->param_count * sizeof (gpointer));
+		char **param_names = (char **)mb_alloc0 (mb, signature->param_count * sizeof (gpointer));
 		for (i = 0; i < signature->param_count; ++i)
-			param_names [i] = mono_image_strdup (image, mb->param_names [i]);
+			param_names [i] = mb_strdup (mb, mb->param_names [i]);
+
+		// FIXME: Mem managers
 
 		mono_image_lock (image);
 		if (!image->wrapper_param_names)

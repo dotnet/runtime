@@ -268,11 +268,11 @@ DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array_
 /*
 * DiagnosticsProfiler.
 */
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+#ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
 static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
@@ -285,7 +285,7 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	// Certain actions are only allowable during attach, and this flag is how we track it.
 	ClrFlsSetThreadType (ThreadType_ProfAPI_Attach);
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 	EX_TRY {
 		hr = ProfilingAPIUtility::LoadProfilerForAttach (reinterpret_cast<const CLSID *>(ds_attach_profiler_command_payload_get_profiler_guid_cref (payload)),
 			reinterpret_cast<LPCWSTR>(ds_attach_profiler_command_payload_get_profiler_path (payload)),
@@ -301,6 +301,24 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	return hr;
 }
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
+
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	HRESULT hr = S_OK;
+	EX_TRY {
+		memcpy(&(g_profControlBlock.clsStoredProfilerGuid), reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)), sizeof(CLSID));
+		g_profControlBlock.sStoredProfilerPath.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
+		g_profControlBlock.fIsStoredProfilerRegistered = TRUE;
+	}
+	EX_CATCH_HRESULT (hr);
+
+	return hr;
+}
+#endif // PROFILING_SUPPORTED
 
 /*
 * DiagnosticServer.
