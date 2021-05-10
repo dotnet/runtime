@@ -969,13 +969,16 @@ namespace System.Numerics
                                   stackalloc uint[size]
                                   : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
                 bits.Clear();
-                if (trivialValue && trivialExponent)
+                if (trivialValue)
                 {
-                    BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), modulus._bits!, bits);
-                }
-                else if (trivialValue)
-                {
-                    BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits!, modulus._bits!, bits);
+                    if (trivialExponent)
+                    {
+                        BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), modulus._bits!, bits);
+                    }
+                    else
+                    {
+                        BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits!, modulus._bits!, bits);
+                    }
                 }
                 else if (trivialExponent)
                 {
