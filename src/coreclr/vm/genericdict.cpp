@@ -1396,7 +1396,7 @@ Dictionary::PopulateEntry(
                 // In such case we would need to box the value type before we can dispatch to the implementation.
                 // This would require us to make a "boxing stub". For now we leave the boxing stubs unimplemented.
                 // It's not clear if anyone would need them and the implementation complexity is not worth it at this time.
-                if (pResolvedMD->IsStatic() && !pResolvedMD->GetMethodTable()->IsValueType() && constraintType.GetMethodTable()->IsValueType())
+                if (!pResolvedMD->GetMethodTable()->IsValueType() && constraintType.GetMethodTable()->IsValueType())
                 {
                     SString assemblyName;
 
