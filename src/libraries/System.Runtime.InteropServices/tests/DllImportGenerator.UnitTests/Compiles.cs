@@ -179,6 +179,11 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshallingNativeTypePinnable };
             yield return new[] { CodeSnippets.CustomStructMarshallingMarshalUsingParametersAndModifiers };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElement };
+
+            // Escaped C# keyword identifiers
+            yield return new[] { CodeSnippets.ByValueParameterWithName("Method", "@event") };
+            yield return new[] { CodeSnippets.ByValueParameterWithName("Method", "@var") };
+            yield return new[] { CodeSnippets.ByValueParameterWithName("@params", "i") };
         }
 
         [Theory]

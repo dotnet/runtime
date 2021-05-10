@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -88,7 +88,7 @@ namespace Microsoft.Interop
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = paramSymbol.Type,
-                InstanceIdentifier = paramSymbol.Name,
+                InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
                 RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
                 MarshallingAttributeInfo = marshallingInfo,
