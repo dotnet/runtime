@@ -279,6 +279,9 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
     noway_assert(block != nullptr);
     noway_assert(blockPred != nullptr);
 
+    assert(block->countOfInEdges() > 0);
+    block->bbRefs--;
+
     // Do nothing if we haven't calculated the predecessor list yet.
     // Yes, this does happen.
     // For example the predecessor lists haven't been created yet when we do fgMorph.
@@ -287,9 +290,6 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
     {
         return nullptr;
     }
-
-    assert(block->countOfInEdges() > 0);
-    block->bbRefs--;
 
     assert(!fgCheapPredsValid);
 
