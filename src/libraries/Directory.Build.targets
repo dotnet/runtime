@@ -318,15 +318,15 @@
          set to their location in the package.  IsSymbol metadata will be set to distinguish symbols. -->
     <MSBuild Projects="@(AnalyzerReference)"
              Targets="GetAnalyzerPackFiles">
-      <Output TaskParameter="TargetOutputs" ItemName="_AnalyzerFiles" />
+      <Output TaskParameter="TargetOutputs" ItemName="_AnalyzerFile" />
     </MSBuild>
 
     <ItemGroup>
-      <Content Include="@(_AnalyzerFiles)" Pack="True" Condition="!%(_AnalyzerFiles.IsSymbol)" />
+      <Content Include="@(_AnalyzerFile)" Pack="True" Condition="!%(_AnalyzerFile.IsSymbol)" />
       <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).           
            Pack does honor TargetPath and does Path.Combine("lib/%(TargetFramework)", "%(TargetPath)"),
            so a rooted path value for TargetPath will override lib. -->
-      <_TargetPathsToSymbols Include="@(_AnalyzerFiles)" TargetPath="/%(_AnalyzerFiles.PackagePath)" Condition="%(_AnalyzerFiles.IsSymbol)" />
+      <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
     </ItemGroup>
   </Target>
 

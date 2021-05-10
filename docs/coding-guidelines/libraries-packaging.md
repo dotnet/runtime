@@ -8,11 +8,11 @@ To add a library to  the .NETCore shared framework, that library's `AssemblyName
 
 The library should have both a `ref` and `src` project.  It's reference assembly will be included in the ref-pack for the Microsoft.NETCore.App shared framework, and it's implementation assembly will be included in the runtime pack.
 
-Including a library in the shared framework only includes the latest framework builds of that library (`$(NetCoreAppCurrent)`).  If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package).  If a library ships both in the shared frameork and a nuget package, it may decide to exclude it's latest `$(NetCoreAppCurrent)` build from the package.  This can be done by setting `ExcludeCurrentNetCoreAppFromPackage` to true.  Libraries should take care when doing this to ensure that whatever asset in the package that would apply to `$(NetCoreAppCurrent)` is functionally equivalent to that which it replaces from the shared framework, to avoid breaking applications which reference a newer package than the shared framework.
+Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best.  If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package).  If a library ships both in the shared framework and a nuget package, it may decide to exclude it's latest `$(NetCoreAppCurrent)` build from the package.  This can be done by setting `ExcludeCurrentNetCoreAppFromPackage` to true.  Libraries should take care when doing this to ensure that whatever asset in the package that would apply to `$(NetCoreAppCurrent)` is functionally equivalent to that which it replaces from the shared framework, to avoid breaking applications which reference a newer package than the shared framework.  If possible, it's prefferable to avoid this by choosing to target frameworks which can both ship in the package and shared framework.
 
 If a library should be excluded from the ref-pack and not visible to customers targeting that shared framework, the library may be included in the `NetCoreAppLibraryNoReference` property in [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props).
 
-Libraries included in the shared framework should ensure their closure is also included in the shared framework.  This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
+Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework.  This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 
 Removing a library from the shared framework is a breaking change and should be avoided.
 
@@ -26,9 +26,9 @@ This package represents the set of libraries which are produced in dotnet/runtim
 
 To add a library to  the ASP.NETCore shared framework, that library should set the `IsAspNetCoreApp` property for it's `ref` and `src` project.  This is typically done in the library's `Directory.Build.props`, for example https://github.com/dotnet/runtime/blob/98ac23212e6017c615e7e855e676fc43c8e44cb8/src/libraries/Microsoft.Extensions.Logging.Abstractions/Directory.Build.props#L4.
 
-Libraries included in this transport package should be closure complete with respect to both ASP.NETCore shared framework and the .NETCore shared framework.  TODO: validate this when building the transport package.
+Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the ASP.NETCore shared framework or the .NETCore shared framework.  This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
 
-Removing a library from this transport package is a breaking change and should be avoided. 
+Removing a library from this transport package is a breaking change and should be avoided.
 
 ## NuGet package
 
@@ -85,7 +85,7 @@ Build props and targets may be needed in NuGet packages.  To define these, autho
 Some packages may wish to include a companion analyzer or source-generator with their library.  Analyzers are much different from normal library contributors: their dependencies shouldn't be treated as nuget package dependencies, their TargetFramework isn't applicable to the project they are consumed in (since they run in the compiler).  To facilitate this, we've defined some common infrastructure for packaging Analyzers.
 
 To add include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer
-```xml 
+```xml
   <ItemGroup> 
     <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" />
   </ItemGroup>
