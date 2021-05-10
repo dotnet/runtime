@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mail;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -17,7 +12,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Properties_ReadValues_MatchExpectation()
         {
-            HttpHeaderParser parser = GenericHeaderParser.MailAddressParser;
+            HttpHeaderParser parser = GenericHeaderParser.GetMailAddressParser();
             Assert.False(parser.SupportsMultipleValues);
             Assert.Null(parser.Comparer);
         }
@@ -54,7 +49,7 @@ namespace System.Net.Http.Tests
         private void CheckValidParsedValue(string input, int startIndex, string expectedResult,
             int expectedIndex)
         {
-            HttpHeaderParser parser = GenericHeaderParser.MailAddressParser;
+            HttpHeaderParser parser = GenericHeaderParser.GetMailAddressParser();
             object result = null;
             Assert.True(parser.TryParseValue(input, null, ref startIndex, out result),
                 string.Format("TryParse returned false: {0}", input));
@@ -64,7 +59,7 @@ namespace System.Net.Http.Tests
 
         private void CheckInvalidParsedValue(string input, int startIndex)
         {
-            HttpHeaderParser parser = GenericHeaderParser.MailAddressParser;
+            HttpHeaderParser parser = GenericHeaderParser.GetMailAddressParser();
             object result = null;
             int newIndex = startIndex;
             Assert.False(parser.TryParseValue(input, null, ref newIndex, out result),

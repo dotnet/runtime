@@ -6,5 +6,8 @@
     <type fullname="System.Net.Http.HttpClient">
       <method signature="System.Boolean IsNativeHandlerEnabled()" body="stub" value="true" feature="System.Net.Http.UseNativeHttpHandler" featurevalue="true" />
     </type>
+    <type fullname="System.Net.Http.Headers.KnownHeaders">
+      <method signature="System.Boolean get_MinimalHeaderValidation()" body="stub" value="true" feature="System.Net.Http.MinimalHeaderValidation" featurevalue="true" />
+    </type>
   </assembly>
 </linker>

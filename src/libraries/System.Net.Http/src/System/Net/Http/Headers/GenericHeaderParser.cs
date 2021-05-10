@@ -18,7 +18,6 @@ namespace System.Net.Http.Headers
         internal static readonly GenericHeaderParser MultipleValueNameValueWithParametersParser = new GenericHeaderParser(true, NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
         internal static readonly GenericHeaderParser SingleValueNameValueParser = new GenericHeaderParser(false, ParseNameValue);
         internal static readonly GenericHeaderParser MultipleValueNameValueParser = new GenericHeaderParser(true, ParseNameValue);
-        internal static readonly GenericHeaderParser MailAddressParser = new GenericHeaderParser(false, ParseMailAddress);
         internal static readonly GenericHeaderParser SingleValueProductParser = new GenericHeaderParser(false, ParseProduct);
         internal static readonly GenericHeaderParser MultipleValueProductParser = new GenericHeaderParser(true, ParseProduct);
         internal static readonly GenericHeaderParser RangeConditionParser = new GenericHeaderParser(false, RangeConditionHeaderValue.GetRangeConditionLength);
@@ -36,6 +35,9 @@ namespace System.Net.Http.Headers
         internal static readonly GenericHeaderParser MultipleValueViaParser = new GenericHeaderParser(true, ViaHeaderValue.GetViaLength);
         internal static readonly GenericHeaderParser SingleValueWarningParser = new GenericHeaderParser(false, WarningHeaderValue.GetWarningLength);
         internal static readonly GenericHeaderParser MultipleValueWarningParser = new GenericHeaderParser(true, WarningHeaderValue.GetWarningLength);
+
+        // These parsers are not cached in a static field, so they can be trimmed when not needed
+        internal static GenericHeaderParser GetMailAddressParser() => new GenericHeaderParser(false, ParseMailAddress);
 
         #endregion
 

@@ -9,6 +9,9 @@ namespace System.Net.Http.Headers
 {
     internal static class KnownHeaders
     {
+        private static bool MinimalHeaderValidation { get; } =
+            AppContext.TryGetSwitch("System.Net.Http.MinimalHeaderValidation", out bool minimalHeaderValidation) ? minimalHeaderValidation : false;
+
         // If you add a new entry here, you need to add it to TryGetKnownHeader below as well.
 
         public static readonly KnownHeader PseudoStatus = new KnownHeader(":status", HttpHeaderType.Response, parser: null);
@@ -26,7 +29,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader AccessControlMaxAge = new KnownHeader("Access-Control-Max-Age");
         public static readonly KnownHeader Age = new KnownHeader("Age", HttpHeaderType.Response | HttpHeaderType.NonTrailing, TimeSpanHeaderParser.Parser, null, H2StaticTable.Age, H3StaticTable.Age0);
         public static readonly KnownHeader Allow = new KnownHeader("Allow", HttpHeaderType.Content, GenericHeaderParser.TokenListParser, null, H2StaticTable.Allow);
-        public static readonly KnownHeader AltSvc = new KnownHeader("Alt-Svc", HttpHeaderType.Response, AltSvcHeaderParser.Parser, http3StaticTableIndex: H3StaticTable.AltSvcClear);
+        public static readonly KnownHeader AltSvc = new KnownHeader("Alt-Svc", HttpHeaderType.Response, MinimalHeaderValidation ? null : AltSvcHeaderParser.Parser, http3StaticTableIndex: H3StaticTable.AltSvcClear);
         public static readonly KnownHeader AltUsed = new KnownHeader("Alt-Used", HttpHeaderType.Request, parser: null);
         public static readonly KnownHeader Authorization = new KnownHeader("Authorization", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.SingleValueAuthenticationParser, null, H2StaticTable.Authorization, H3StaticTable.Authorization);
         public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", HttpHeaderType.General | HttpHeaderType.NonTrailing, CacheControlHeaderParser.Parser, new string[] { "must-revalidate", "no-cache", "no-store", "no-transform", "private", "proxy-revalidate", "public" }, H2StaticTable.CacheControl, H3StaticTable.CacheControlMaxAge0);
@@ -47,7 +50,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Expect = new KnownHeader("Expect", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueWithParametersParser, new string[] { "100-continue" }, H2StaticTable.Expect);
         public static readonly KnownHeader ExpectCT = new KnownHeader("Expect-CT");
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Expires);
-        public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser, null, H2StaticTable.From);
+        public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, MinimalHeaderValidation ? null : GenericHeaderParser.GetMailAddressParser(), null, H2StaticTable.From);
         public static readonly KnownHeader GrpcEncoding = new KnownHeader("grpc-encoding", HttpHeaderType.Custom, null, new string[] { "identity", "gzip", "deflate" });
         public static readonly KnownHeader GrpcMessage = new KnownHeader("grpc-message");
         public static readonly KnownHeader GrpcStatus = new KnownHeader("grpc-status", HttpHeaderType.Custom, null, new string[] { "0" });
