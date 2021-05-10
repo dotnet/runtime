@@ -17,11 +17,11 @@ namespace System.Reflection.Metadata
     [ConditionalClass(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
     public class ApplyUpdateTest
     {
-
         [Fact]
         void StaticMethodBodyUpdate()
         {
-            ApplyUpdateUtil.TestCase(static () => {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
                 var assm = typeof (ApplyUpdate.Test.MethodBody1).Assembly;
 
                 var r = ApplyUpdate.Test.MethodBody1.StaticMethod1();
@@ -38,6 +38,5 @@ namespace System.Reflection.Metadata
                 Assert.Equal ("NEWEST STRING", r);
             });
         }
-        
     }
 }

@@ -8,15 +8,12 @@ using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Reflection.Metadata
 {
-
     public class ApplyUpdateUtil {
         internal const string DotNetModifiableAssembliesSwitch = "DOTNET_MODIFIABLE_ASSEMBLIES";
         internal const string DotNetModifiableAssembliesValue = "debug";
 
-
         [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
         public class NoParallelTests { }
-
 
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
         ///
@@ -74,7 +71,7 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new ();
+        private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();
 
         internal static void ApplyUpdate (System.Reflection.Assembly assm)
         {
@@ -115,11 +112,14 @@ namespace System.Reflection.Metadata
         public static void TestCase(Action testBody,
                                     RemoteInvokeOptions options = null)
         {
-            if (UseRemoteExecutor) {
+            if (UseRemoteExecutor)
+            {
                 Console.Error.WriteLine ($"Running test using RemoteExecutor");
                 AddRemoteInvokeOptions(ref options);
                 RemoteExecutor.Invoke(testBody, options).Dispose();
-            } else {
+            }
+            else
+            {
                 Console.Error.WriteLine($"Running test using direct invoke");
                 testBody();
             }
