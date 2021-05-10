@@ -17,7 +17,6 @@ namespace System.Numerics
         private const int kcbitUint = 32;
         private const int kcbitUlong = 64;
         private const int DecimalScaleFactorMask = 0x00FF0000;
-        private const int DecimalSignMask = unchecked((int)0x80000000);
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
@@ -213,6 +212,7 @@ namespace System.Numerics
 
             Debug.Assert(bits.Length == 4 && (bits[3] & DecimalScaleFactorMask) == 0);
 
+            const int signMask = unchecked((int)kuMaskHighBit);
             int size = 3;
             while (size > 0 && bits[size - 1] == 0)
                 size--;
@@ -225,7 +225,7 @@ namespace System.Numerics
                 // bits[0] is the absolute value of this decimal
                 // if bits[0] < 0 then it is too large to be packed into _sign
                 _sign = bits[0];
-                _sign *= ((bits[3] & DecimalSignMask) != 0) ? -1 : +1;
+                _sign *= ((bits[3] & signMask) != 0) ? -1 : +1;
                 _bits = null;
             }
             else
@@ -241,7 +241,7 @@ namespace System.Numerics
                         _bits[2] = (uint)bits[2];
                 }
 
-                _sign = ((bits[3] & DecimalSignMask) != 0) ? -1 : +1;
+                _sign = ((bits[3] & signMask) != 0) ? -1 : +1;
             }
             AssertValid();
         }
