@@ -652,6 +652,16 @@ namespace System.IO.Strategies
                     // hot path #1: the write buffer is empty and buffering would not be beneficial
                     if (_writePos == 0 && buffer.Length >= _bufferSize)
                     {
+                        // The fact that Strategy can be wrapped by BufferedFileStreamStrategy
+                        // is transparent to every Strategy implementation. It means, that
+                        // every Strategy must work fine no matter if buffering is enabled or not.
+                        // In case of AsyncWindowsFileStreamStrategy.WriteAsync,
+                        // it updates it's private position BEFORE it enqueues the IO request.
+                        // This combined with the fact that BufferedFileStreamStrategy state
+                        // is not modified here, allows us to NOT await the call
+                        // and release the lock BEFORE the IO request completes.
+                        // It improves the performance of common scenario, where buffering is enabled (default)
+                        // but the user provides buffers larger (or equal) to the internal buffer size.
                         return _strategy.WriteAsync(buffer, cancellationToken);
                     }
                     else if (_bufferSize - _writePos >= buffer.Length)
