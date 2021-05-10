@@ -38,6 +38,7 @@ namespace System.Net.Http
 
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
+        private readonly RttEstimator? _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
@@ -137,6 +138,7 @@ namespace System.Net.Http
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
+            _rttEstimator = _pool.Settings.FakeRtt != null ? new RttEstimator(_pool.Settings.FakeRtt.Value) : null;
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 

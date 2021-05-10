@@ -353,6 +353,7 @@ namespace System.Net.Http
     {
         public SocketsHttpHandler() { }
         public static bool IsSupported { get { throw null; } }
+        public TimeSpan? FakeRtt { get { throw null; } set { } }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
         public System.TimeSpan ConnectTimeout { get { throw null; } set { } }

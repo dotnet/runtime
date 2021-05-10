@@ -54,6 +54,12 @@ namespace System.Net.Http
             }
         }
 
+        public TimeSpan? FakeRtt
+        {
+            get => _settings.FakeRtt;
+            set => _settings.FakeRtt = value;
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

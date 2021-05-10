@@ -24,6 +24,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public TimeSpan? FakeRtt
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

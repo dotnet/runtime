@@ -193,5 +193,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
+
+        internal TimeSpan? FakeRtt { get; set; }
     }
 }

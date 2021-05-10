@@ -29,18 +29,19 @@ namespace System.Net.Http.Functional.Tests
         public LargeFileBenchmark(ITestOutputHelper output)
         {
             _output = output;
-            _listener = new LogHttpEventListener(output);
+            //_listener = new LogHttpEventListener(output);
+            _listener = null;
         }
 
-        public void Dispose() => _listener.Dispose();
+        public void Dispose() => _listener?.Dispose();
 
         [Theory]
-        [InlineData("172.19.78.199")]
+        //[InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
         public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, 5);
 
         [Theory]
-        [InlineData("172.19.78.199")]
+        //[InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
         public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 5);
 

@@ -8,17 +8,17 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private sealed class Http2StreamWindowManager
+        private class Http2StreamWindowManager
         {
             private const int StreamWindowSize = DefaultInitialStreamWindowSize;
 
             // See comment on ConnectionWindowThreshold.
             private const int StreamWindowThreshold = StreamWindowSize / WindowUpdateRatio;
 
-            private int _pendingWindowUpdate;
+            protected int _pendingWindowUpdate;
 
-            private readonly Http2Connection _connection;
-            private readonly Http2Stream _stream;
+            protected readonly Http2Connection _connection;
+            protected readonly Http2Stream _stream;
 
             public Http2StreamWindowManager(Http2Connection connection, Http2Stream stream)
             {
@@ -26,7 +26,7 @@ namespace System.Net.Http
                 _stream = stream;
             }
 
-            public void AdjustWindow(int bytesConsumed)
+            public virtual void AdjustWindow(int bytesConsumed)
             {
                 Debug.Assert(bytesConsumed > 0);
                 Debug.Assert(_pendingWindowUpdate < StreamWindowThreshold);
@@ -49,6 +49,23 @@ namespace System.Net.Http
 
                 Task sendWindowUpdateTask = _connection.SendWindowUpdateAsync(_stream.StreamId, windowUpdateSize);
                 _connection.LogExceptions(sendWindowUpdateTask);
+            }
+        }
+
+        private class DynamicHttp2StreamWindowManager : Http2StreamWindowManager
+        {
+            public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
+                : base(connection, stream)
+            {
+            }
+        }
+
+        private class RttEstimator
+        {
+            public TimeSpan Rtt { get; }
+            public RttEstimator(TimeSpan fakeRtt)
+            {
+                Rtt = fakeRtt;
             }
         }
     }
