@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 _applicationLifetime.StopApplication();
 
                 IList<Exception> exceptions = new List<Exception>();
-                if (_hostedServices.Count != 0) // Started?
+                if (_hostedServices.Count > 0) // Started?
                 {
                     foreach (IHostedService hostedService in _hostedServices.Reverse())
                     {
