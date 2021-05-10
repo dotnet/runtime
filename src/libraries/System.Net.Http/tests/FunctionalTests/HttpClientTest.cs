@@ -53,7 +53,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Download20_Dynamic(string hostName)
         {
             _listener.Enabled = true;
-            _listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize");
+            _listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync");
 
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {

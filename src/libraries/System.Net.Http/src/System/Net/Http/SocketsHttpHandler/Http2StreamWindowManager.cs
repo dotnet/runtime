@@ -63,7 +63,7 @@ namespace System.Net.Http
         {
             private DateTime _lastWindowUpdate = DateTime.Now;
 
-            private const long Magic = 10_000;
+            private const long Magic = 1;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
