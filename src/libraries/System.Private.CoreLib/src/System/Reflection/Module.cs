@@ -192,7 +192,7 @@ namespace System.Reflection
 
         internal virtual Attribute? GetCustomAttribute(Type attributeType, bool inherit)
         {
-            // Returns an Attribute of base class/inteface attributeType on the Module or null if none exists.
+            // Returns an Attribute of base class/interface attributeType on the Module or null if none exists.
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = Attribute.GetCustomAttributes(this, attributeType, inherit);
 
