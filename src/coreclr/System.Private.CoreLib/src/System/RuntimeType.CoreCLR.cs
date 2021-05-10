@@ -822,7 +822,7 @@ namespace System
                         declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
                     }
                     #endregion
-                    
+
                     return list.ToArray();
                 }
 
