@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": "${WorkloadVersion}",
   "workloads": {
     "microsoft-net-runtime-browser-native": {
       "description": "Browser Runtime native performance tools",
