@@ -822,35 +822,7 @@ namespace System
                         declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
                     }
                     #endregion
-
-                    #region Populate Literal Fields on Interfaces
-                    if (ReflectedType.IsGenericParameter)
-                    {
-                        Type[] interfaces = ReflectedType.BaseType!.GetInterfaces();
-
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            // Populate literal fields defined on any of the interfaces implemented by the declaring type
-                            PopulateLiteralFields(filter, (RuntimeType)interfaces[i], ref list);
-                            PopulateRtFields(filter, (RuntimeType)interfaces[i], ref list);
-                        }
-                    }
-                    else
-                    {
-                        Type[]? interfaces = RuntimeTypeHandle.GetInterfaces(ReflectedType);
-
-                        if (interfaces != null)
-                        {
-                            for (int i = 0; i < interfaces.Length; i++)
-                            {
-                                // Populate literal fields defined on any of the interfaces implemented by the declaring type
-                                PopulateLiteralFields(filter, (RuntimeType)interfaces[i], ref list);
-                                PopulateRtFields(filter, (RuntimeType)interfaces[i], ref list);
-                            }
-                        }
-                    }
-                    #endregion
-
+                    
                     return list.ToArray();
                 }
 
