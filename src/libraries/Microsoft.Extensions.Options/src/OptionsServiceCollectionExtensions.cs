@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     "The trimmer will keep the interface and thus all of its implementations in that case. " +
                     "The call to GetInterfaces may return less results in trimmed apps, but it will " +
                     "include the interfaces this method looks for if they should be there.")]
-            static Type[] GetInterfacesOnType (Type t)
+            static Type[] GetInterfacesOnType(Type t)
                 => t.GetInterfaces();
         }
 
