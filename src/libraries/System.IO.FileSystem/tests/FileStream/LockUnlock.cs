@@ -38,7 +38,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void LockUnlock_Unsupported_OSX()
         {
             string path = GetTestFilePath();
