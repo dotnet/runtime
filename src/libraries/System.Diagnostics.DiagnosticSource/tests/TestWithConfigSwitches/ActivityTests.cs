@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37073", TestPlatforms.Android)]
     public class ActivityTests : IDisposable
     {
         [Fact]

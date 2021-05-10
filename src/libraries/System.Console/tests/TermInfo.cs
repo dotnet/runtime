@@ -8,6 +8,7 @@ using System.Reflection;
 using Xunit;
 
 [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
 public class TermInfo
 {
     // Names of internal members accessed via reflection
