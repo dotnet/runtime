@@ -371,15 +371,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken()
-        {
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
-
-            Assert.Throws<OperationCanceledException>(() => Pipe.Reader.ReadAtLeastAsync(0, cancellationTokenSource.Token));
-        }
-
-        [Fact]
         public async Task ReadAsyncWithNewCancellationTokenNotAffectedByPrevious()
         {
             await Pipe.Writer.WriteAsync(new byte[] { 0 });
@@ -437,29 +428,6 @@ namespace System.IO.Pipelines.Tests
             buffer.First.Span.CopyTo(array);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(array));
             Pipe.Reader.AdvanceTo(buffer.End, buffer.End);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WriteAndCancellingPendingReadBeforeReadAtLeastAsync(bool baseImplementation)
-        {
-            var reader = baseImplementation ? new BasePipeReader(Pipe.Reader) : Pipe.Reader;
-
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
-            PipeWriter output = Pipe.Writer;
-            output.Write(bytes);
-            await output.FlushAsync();
-
-            reader.CancelPendingRead();
-
-            ReadResult result = await reader.ReadAtLeastAsync(1000);
-            ReadOnlySequence<byte> buffer = result.Buffer;
-
-            Assert.False(result.IsCompleted);
-            Assert.True(result.IsCanceled);
-            Assert.Equal("Hello World", Encoding.ASCII.GetString(buffer.ToArray()));
-            reader.AdvanceTo(buffer.End);
         }
 
         [Fact]
