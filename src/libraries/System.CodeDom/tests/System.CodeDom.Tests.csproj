@@ -110,6 +110,7 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+    <Compile Include="System\CodeDom\LineEndingsHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\src\System.CodeDom.csproj" />
