@@ -1793,9 +1793,6 @@ public:
     // thread, or throw.
     BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
 
-private:
-    bool m_managedInitializationPerformed;
-public:
     // Functions used to perform initialization and cleanup on a managed thread
     // that would normally occur if the thread was stated when the runtime was
     // fully initialized and ready to run.

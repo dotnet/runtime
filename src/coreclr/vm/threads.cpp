@@ -1519,8 +1519,6 @@ Thread::Thread()
     m_pRCWStack = new RCWStackHeader();
 #endif
 
-    m_managedInitializationPerformed = false;
-
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
@@ -2092,8 +2090,6 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
         CALL_MANAGED_METHOD_NORET(args);
     }
 #endif // FEATURE_OBJCMARSHAL
-
-    pThread->m_managedInitializationPerformed = true;
 }
 
 void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
@@ -2106,9 +2102,6 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
         PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
-
-    if (!pThread->m_managedInitializationPerformed)
-        return;
 
 #ifdef FEATURE_OBJCMARSHAL
     {
