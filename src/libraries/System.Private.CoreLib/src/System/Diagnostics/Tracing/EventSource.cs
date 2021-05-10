@@ -172,6 +172,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Resources;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1692,127 +1693,178 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes);
         }
 
-        private static unsafe object? DecodeObject(Type dataType, ref EventSource.EventData* data)
+        private static unsafe void DecodeObjects(object?[] decodedObjects, ParameterInfo[] parameters, EventData* data)
         {
-            // TODO FIX : We use reflection which in turn uses EventSource, right now we carefully avoid
-            // the recursion, but can we do this in a robust way?
+            for (int i = 0; i < decodedObjects.Length; i++, data++)
+            {
+                IntPtr dataPointer = data->DataPointer;
+                Type dataType = parameters[i].ParameterType;
+                object? decoded;
 
-            IntPtr dataPointer = data->DataPointer;
-            // advance to next EventData in array
-            ++data;
-
-            Again:
-            if (dataType == typeof(IntPtr))
-            {
-                return *((IntPtr*)dataPointer);
-            }
-            else if (dataType == typeof(int))
-            {
-                return *((int*)dataPointer);
-            }
-            else if (dataType == typeof(uint))
-            {
-                return *((uint*)dataPointer);
-            }
-            else if (dataType == typeof(long))
-            {
-                return *((long*)dataPointer);
-            }
-            else if (dataType == typeof(ulong))
-            {
-                return *((ulong*)dataPointer);
-            }
-            else if (dataType == typeof(byte))
-            {
-                return *((byte*)dataPointer);
-            }
-            else if (dataType == typeof(sbyte))
-            {
-                return *((sbyte*)dataPointer);
-            }
-            else if (dataType == typeof(short))
-            {
-                return *((short*)dataPointer);
-            }
-            else if (dataType == typeof(ushort))
-            {
-                return *((ushort*)dataPointer);
-            }
-            else if (dataType == typeof(float))
-            {
-                return *((float*)dataPointer);
-            }
-            else if (dataType == typeof(double))
-            {
-                return *((double*)dataPointer);
-            }
-            else if (dataType == typeof(decimal))
-            {
-                return *((decimal*)dataPointer);
-            }
-            else if (dataType == typeof(bool))
-            {
-                // The manifest defines a bool as a 32bit type (WIN32 BOOL), not 1 bit as CLR Does.
-                return *((int*)dataPointer) == 1;
-            }
-            else if (dataType == typeof(Guid))
-            {
-                return *((Guid*)dataPointer);
-            }
-            else if (dataType == typeof(char))
-            {
-                return *((char*)dataPointer);
-            }
-            else if (dataType == typeof(DateTime))
-            {
-                long dateTimeTicks = *((long*)dataPointer);
-                return DateTime.FromFileTimeUtc(dateTimeTicks);
-            }
-            else if (dataType == typeof(byte[]))
-            {
-                // byte[] are written to EventData* as an int followed by a blob
-                int cbSize = *((int*)dataPointer);
-                byte[] blob = new byte[cbSize];
-                dataPointer = data->DataPointer;
-                data++;
-                for (int i = 0; i < cbSize; ++i)
-                    blob[i] = *((byte*)(dataPointer + i));
-                return blob;
-            }
-            else if (dataType == typeof(byte*))
-            {
-                // TODO: how do we want to handle this? For now we ignore it...
-                return null;
-            }
-            else
-            {
-                if (dataType.IsEnum)
+                if (dataType == typeof(string))
                 {
-                    dataType = Enum.GetUnderlyingType(dataType);
+                    goto String;
+                }
+                else if (dataType == typeof(int))
+                {
+                    Debug.Assert(data->Size == 4);
+                    decoded = *(int*)dataPointer;
+                }
+                else
+                {
+                    TypeCode typeCode = Type.GetTypeCode(dataType);
+                    int size = data->Size;
 
-                    // Enums less than 4 bytes in size should be treated as int.
-                    switch (Type.GetTypeCode(dataType))
+                    if (size == 4)
                     {
-                        case TypeCode.Byte:
-                        case TypeCode.SByte:
-                        case TypeCode.Int16:
-                        case TypeCode.UInt16:
-                            dataType = typeof(int);
-                            break;
+                        if ((uint)(typeCode - TypeCode.SByte) <= TypeCode.Int32 - TypeCode.SByte)
+                        {
+                            Debug.Assert(dataType.IsEnum);
+                            // Enums less than 4 bytes in size should be treated as int.
+                            decoded = *(int*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.UInt32)
+                        {
+                            decoded = *(uint*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Single)
+                        {
+                            decoded = *(float*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Boolean)
+                        {
+                            // The manifest defines a bool as a 32bit type (WIN32 BOOL), not 1 bit as CLR Does.
+                            decoded = *(int*)dataPointer == 1;
+                        }
+                        else if (dataType == typeof(byte[]))
+                        {
+                            // byte[] are written to EventData* as an int followed by a blob
+                            Debug.Assert(*(int*)dataPointer == (data + 1)->Size);
+                            data++;
+                            dataPointer = data->DataPointer;
+                            goto BytePtr;
+                        }
+                        else if (IntPtr.Size == 4 && dataType == typeof(IntPtr))
+                        {
+                            decoded = *(IntPtr*)dataPointer;
+                        }
+                        else
+                        {
+                            goto Unknown;
+                        }
                     }
-                    goto Again;
+                    else if (size <= 2)
+                    {
+                        Debug.Assert(!dataType.IsEnum);
+                        if (typeCode == TypeCode.Byte)
+                        {
+                            Debug.Assert(size == 1);
+                            decoded = *(byte*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.SByte)
+                        {
+                            Debug.Assert(size == 1);
+                            decoded = *(sbyte*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Int16)
+                        {
+                            Debug.Assert(size == 2);
+                            decoded = *(short*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.UInt16)
+                        {
+                            Debug.Assert(size == 2);
+                            decoded = *(ushort*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Char)
+                        {
+                            Debug.Assert(size == 2);
+                            decoded = *(char*)dataPointer;
+                        }
+                        else
+                        {
+                            goto Unknown;
+                        }
+                    }
+                    else if (size == 8)
+                    {
+                        if (typeCode == TypeCode.Int64)
+                        {
+                            decoded = *(long*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.UInt64)
+                        {
+                            decoded = *(ulong*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Double)
+                        {
+                            decoded = *(double*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.DateTime)
+                        {
+                            decoded = *(DateTime*)dataPointer;
+                        }
+                        else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
+                        {
+                            decoded = *(IntPtr*)dataPointer;
+                        }
+                        else
+                        {
+                            goto Unknown;
+                        }
+                    }
+                    else if (typeCode == TypeCode.Decimal)
+                    {
+                        Debug.Assert(size == 16);
+                        decoded = *(decimal*)dataPointer;
+                    }
+                    else if (dataType == typeof(Guid))
+                    {
+                        Debug.Assert(size == 16);
+                        decoded = *(Guid*)dataPointer;
+                    }
+                    else
+                    {
+                        goto Unknown;
+                    }
                 }
 
-                // Everything else is marshaled as a string.
-                // ETW strings are NULL-terminated, so marshal everything up to the first
-                // null in the string.
-                if (dataPointer == IntPtr.Zero)
+                goto Store;
+
+            Unknown:
+                if (dataType != typeof(byte*))
                 {
-                    return null;
+                    // Everything else is marshaled as a string.
+                    goto String;
                 }
 
-                return new string((char*)dataPointer);
+            BytePtr:
+                var blob = new byte[data->Size];
+                Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                decoded = blob;
+                goto Store;
+
+            String:
+                // ETW strings are NULL-terminated, so marshal everything up to the first null in the string.
+                AssertValidString(data);
+                decoded = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+
+            Store:
+                decodedObjects[i] = decoded;
             }
+        }
+
+        [Conditional("DEBUG")]
+        private static unsafe void AssertValidString(EventData* data)
+        {
+            Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
+            char* charPointer = (char*)data->DataPointer;
+            int charLength = data->Size / 2 - 1;
+            for (int i = 0; i < charLength; i++)
+            {
+                Debug.Assert(*(charPointer + i) != 0, "String may not contain null chars");
+            }
+            Debug.Assert(*(charPointer + charLength) == 0, "String must be null terminated");
         }
 
         // Finds the Dispatcher (which holds the filtering state), for a given dispatcher for the current
@@ -2029,8 +2081,7 @@ namespace System.Diagnostics.Tracing
                 ReportOutOfBandMessage(SR.Format(SR.EventSource_EventParametersMismatch, eventId, eventDataCount, metadata.Parameters.Length));
             }
 
-            object?[]? args;
-
+            object?[] args;
             if (eventDataCount == 0)
             {
                 args = Array.Empty<object>();
@@ -2038,11 +2089,28 @@ namespace System.Diagnostics.Tracing
             else
             {
                 ParameterInfo[] parameters = metadata.Parameters;
-                args = new object[Math.Min(eventDataCount, parameters.Length)];
-                EventSource.EventData* dataPtr = data;
-                for (int i = 0; i < args.Length; i++)
+                args = new object?[Math.Min(eventDataCount, parameters.Length)];
+
+                if (metadata.AllParametersAreString)
                 {
-                    args[i] = DecodeObject(parameters[i].ParameterType, ref dataPtr);
+                    for (int i = 0; i < args.Length; i++, data++)
+                    {
+                        AssertValidString(data);
+                        IntPtr dataPointer = data->DataPointer;
+                        args[i] = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+                    }
+                }
+                else if (metadata.AllParametersAreInt32)
+                {
+                    for (int i = 0; i < args.Length; i++, data++)
+                    {
+                        Debug.Assert(data->Size == 4);
+                        args[i] = *(int*)data->DataPointer;
+                    }
+                }
+                else
+                {
+                    DecodeObjects(args, parameters, data);
                 }
             }
 
@@ -2428,6 +2496,8 @@ namespace System.Diagnostics.Tracing
             public string? Message;                  // If the event has a message associated with it, this is it.
             public ParameterInfo[] Parameters;      // TODO can we remove?
             public int EventListenerParameterCount;
+            public bool AllParametersAreString;
+            public bool AllParametersAreInt32;
 
             public TraceLoggingEventTypes? TraceLoggingEventTypes;
             public EventActivityOptions ActivityOptions;
@@ -3390,7 +3460,9 @@ namespace System.Diagnostics.Tracing
                 eventData = newValues;
             }
 
-            eventData[eventAttribute.EventId].Descriptor = new EventDescriptor(
+            ref EventMetadata metadata = ref eventData[eventAttribute.EventId];
+
+            metadata.Descriptor = new EventDescriptor(
                     eventAttribute.EventId,
                     eventAttribute.Version,
 #if FEATURE_MANAGED_ETW_CHANNELS
@@ -3403,26 +3475,49 @@ namespace System.Diagnostics.Tracing
                     (int)eventAttribute.Task,
                     unchecked((long)((ulong)eventAttribute.Keywords | SessionMask.All.ToEventKeywords())));
 
-            eventData[eventAttribute.EventId].Tags = eventAttribute.Tags;
-            eventData[eventAttribute.EventId].Name = eventName;
-            eventData[eventAttribute.EventId].Parameters = eventParameters;
-            eventData[eventAttribute.EventId].Message = eventAttribute.Message;
-            eventData[eventAttribute.EventId].ActivityOptions = eventAttribute.ActivityOptions;
-            eventData[eventAttribute.EventId].HasRelatedActivityID = hasRelatedActivityID;
-            eventData[eventAttribute.EventId].EventHandle = IntPtr.Zero;
+            metadata.Tags = eventAttribute.Tags;
+            metadata.Name = eventName;
+            metadata.Parameters = eventParameters;
+            metadata.Message = eventAttribute.Message;
+            metadata.ActivityOptions = eventAttribute.ActivityOptions;
+            metadata.HasRelatedActivityID = hasRelatedActivityID;
+            metadata.EventHandle = IntPtr.Zero;
 
             // We represent a byte[] with 2 EventData entries: an integer denoting the length and a blob of bytes in the data pointer.
             // This causes a spurious warning because eventDataCount is off by one for the byte[] case.
             // When writing to EventListeners, we want to check that the number of parameters is correct against the byte[] case.
             int eventListenerParameterCount = eventParameters.Length;
+            bool allParametersAreInt32 = true;
+            bool allParametersAreString = true;
+
             foreach (ParameterInfo parameter in eventParameters)
             {
-                if (parameter.ParameterType == typeof(byte[]))
+                Type dataType = parameter.ParameterType;
+                if (dataType == typeof(string))
                 {
-                    eventListenerParameterCount++;
+                    allParametersAreInt32 = false;
+                }
+                else if (dataType == typeof(int) ||
+                    (dataType.IsEnum && Type.GetTypeCode(dataType.GetEnumUnderlyingType()) <= TypeCode.UInt32))
+                {
+                    // Int32 or an enum with a 1/2/4 byte backing type
+                    allParametersAreString = false;
+                }
+                else
+                {
+                    if (dataType == typeof(byte[]))
+                    {
+                        eventListenerParameterCount++;
+                    }
+
+                    allParametersAreInt32 = false;
+                    allParametersAreString = false;
                 }
             }
-            eventData[eventAttribute.EventId].EventListenerParameterCount = eventListenerParameterCount;
+
+            metadata.AllParametersAreInt32 = allParametersAreInt32;
+            metadata.AllParametersAreString = allParametersAreString;
+            metadata.EventListenerParameterCount = eventListenerParameterCount;
         }
 
         // Helper used by code:CreateManifestAndDescriptors that trims the m_eventData array to the correct

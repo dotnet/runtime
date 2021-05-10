@@ -350,7 +350,7 @@ namespace System.Text.Json.Serialization.Tests
                     {
                         JsonSerializer.Serialize(writer, input, type, options);
                     }
-                    Assert.Equal(expected, Encoding.UTF8.GetString(stream.ToArray()));
+                    Assert.Equal(expected, Encoding.UTF8.GetString(stream.ToArray()), ignoreLineEndingDifferences: true);
                 }
             }
         }

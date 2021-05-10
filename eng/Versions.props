@@ -74,6 +74,7 @@
     <MicrosoftNETCoreILAsmVersion>6.0.0-preview.5.21253.1</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
     <StyleCopAnalyzersVersion>1.2.0-beta.304</StyleCopAnalyzersVersion>
+    <SystemAppContextVersion>4.3.0</SystemAppContextVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>
@@ -81,6 +82,7 @@
     <SystemDataSqlClientVersion>4.8.1</SystemDataSqlClientVersion>
     <SystemDiagnosticsContractsVersion>4.3.0</SystemDiagnosticsContractsVersion>
     <SystemDiagnosticsDebugVersion>4.3.0</SystemDiagnosticsDebugVersion>
+    <SystemDiagnosticsToolsVersion>4.3.0</SystemDiagnosticsToolsVersion>
     <SystemDiagnosticsTracingVersion>4.3.0</SystemDiagnosticsTracingVersion>
     <SystemDynamicRuntimeVersion>4.3.0</SystemDynamicRuntimeVersion>
     <SystemLinqExpressionsVersion>4.3.0</SystemLinqExpressionsVersion>
@@ -88,6 +90,7 @@
     <SystemNetHttpVersion>4.3.4</SystemNetHttpVersion>
     <SystemNetPrimitivesVersion>4.3.1</SystemNetPrimitivesVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
+    <SystemReflectionVersion>4.3.0</SystemReflectionVersion>
     <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
     <SystemResourcesResourceManagerVersion>4.3.0</SystemResourcesResourceManagerVersion>
     <SystemRuntimeVersion>4.3.1</SystemRuntimeVersion>
@@ -156,7 +159,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.5.21255.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.5.21257.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.5.21253.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
