@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly HostOptions _options;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
-        private readonly ICollection<IHostedService> _hostedServices = new List<IHostedService>();
+        private readonly List<IHostedService> _hostedServices = new List<IHostedService>();
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
