@@ -515,7 +515,7 @@ namespace System.Numerics
         private BigInteger(Span<uint> value)
         {
             int dwordCount = value.Length;
-            bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & 0x80000000) == 0x80000000);
+            bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & kuMaskHighBit) == kuMaskHighBit);
 
             // Try to conserve space as much as possible by checking for wasted leading span entries
             while (dwordCount > 0 && value[dwordCount - 1] == 0) dwordCount--;
