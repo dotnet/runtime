@@ -63,6 +63,11 @@ namespace System.Threading
                 Delegate start = _start;
                 _start = null!;
 
+#if FEATURE_OBJCMARSHAL
+                if (AutoreleasePool.EnableAutoreleasePool)
+                    AutoreleasePool.CreateAutoreleasePool();
+#endif
+
                 if (start is ThreadStart threadStart)
                 {
                     threadStart();
@@ -76,6 +81,14 @@ namespace System.Threading
 
                     parameterizedThreadStart(startArg);
                 }
+
+#if FEATURE_OBJCMARSHAL
+                // There is no need to wrap this "clean up" code in a finally block since
+                // if an exception is thrown above, the process is going to terminate.
+                // Optimize for the most common case - no exceptions escape a thread.
+                if (AutoreleasePool.EnableAutoreleasePool)
+                    AutoreleasePool.DrainAutoreleasePool();
+#endif
             }
 
             private void InitializeCulture()

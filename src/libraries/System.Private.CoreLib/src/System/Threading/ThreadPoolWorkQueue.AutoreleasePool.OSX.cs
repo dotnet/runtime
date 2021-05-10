@@ -6,12 +6,6 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    public static partial class ThreadPool
-    {
-        internal static bool EnableDispatchAutoreleasePool { get; } =
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableDispatchAutoreleasePool", false);
-    }
-
     internal sealed partial class ThreadPoolWorkQueue
     {
         [MethodImpl(MethodImplOptions.NoInlining)]

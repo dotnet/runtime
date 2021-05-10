@@ -1400,7 +1400,7 @@ namespace
 
         EX_TRY
         {
-            args.Thread = SetupUnstartedThread(FALSE);
+            args.Thread = SetupUnstartedThread(SUTF_ThreadStoreLockAlreadyTaken);
         }
         EX_CATCH
         {
@@ -1421,7 +1421,7 @@ namespace
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial(true);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
-            args->HasStarted = !!args->Thread->HasStarted(false);
+            args->HasStarted = !!args->Thread->HasStarted();
 
             Thread* thread = args->Thread;
             auto threadStart = args->ThreadStart;
@@ -1446,7 +1446,7 @@ namespace
             return false;
         }
 
-        args.Thread->SetBackground(TRUE, FALSE);
+        args.Thread->SetBackground(TRUE);
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop

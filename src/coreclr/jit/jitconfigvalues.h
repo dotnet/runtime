@@ -211,6 +211,8 @@ CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0) // 0 == no loop regions; 
 CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't constrain to mostly linear layout;
                                                                    // non-zero == force mostly lexical block
                                                                    // linear layout
+CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block with bbNum; 1 == display with both
+                                                           // bbNum and bbID
 
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
