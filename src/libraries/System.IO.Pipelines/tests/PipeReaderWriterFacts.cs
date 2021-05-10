@@ -220,6 +220,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task AdvanceAfterCompleteThrows()
         {
             await _pipe.Writer.WriteAsync(new byte[1]);
@@ -710,6 +711,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task DoubleAsyncReadThrows()
         {
             ValueTask<ReadResult> readTask1 = _pipe.Reader.ReadAsync();
@@ -746,6 +748,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task AdvanceWithoutReadThrows()
         {
             await _pipe.Writer.WriteAsync(new byte[3]);
