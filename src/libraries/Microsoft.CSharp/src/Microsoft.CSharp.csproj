@@ -10,7 +10,7 @@
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Common.xml" />
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
     <ILLinkDescriptorsXmls Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
   </ItemGroup>
   <ItemGroup>
