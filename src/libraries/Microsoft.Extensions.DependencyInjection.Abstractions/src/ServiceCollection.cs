@@ -35,6 +35,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (_serviceTypes.TryGetValue(previous.ServiceType, out List<ServiceDescriptor> items))
                 {
                     items.Remove(previous);
+
+                    if (items.Count == 0)
+                    {
+                        _serviceTypes.Remove(previous.ServiceType);
+                    }
                 }
 
                 // Add the new entry to the map
@@ -73,6 +78,12 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             items.Remove(item);
+
+            if (items.Count == 0)
+            {
+                _serviceTypes.Remove(item.ServiceType);
+            }
+
             return _descriptors.Remove(item);
         }
 
@@ -118,6 +129,11 @@ namespace Microsoft.Extensions.DependencyInjection
             if (_serviceTypes.TryGetValue(item.ServiceType, out List<ServiceDescriptor> items))
             {
                 items.Remove(item);
+
+                if (items.Count == 0)
+                {
+                    _serviceTypes.Remove(item.ServiceType);
+                }
             }
 
             _descriptors.RemoveAt(index);

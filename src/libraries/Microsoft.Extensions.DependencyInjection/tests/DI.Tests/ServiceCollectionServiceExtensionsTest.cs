@@ -497,6 +497,77 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.False(collection.Contains(aDescriptor));
         }
 
+        [Fact]
+        public void AddRemoveTryAdd()
+        {
+            var aDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(A), ServiceLifetime.Transient);
+            var bDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(B), ServiceLifetime.Transient);
+
+            var collection = new ServiceCollection
+            {
+                aDescriptor
+            };
+
+            Assert.True(collection.Remove(aDescriptor));
+            Assert.False(collection.Remove(aDescriptor));
+
+            Assert.Empty(collection);
+            Assert.False(collection.Contains(aDescriptor));
+
+            collection.TryAdd(bDescriptor);
+
+            Assert.Equal(new[] { bDescriptor }, collection);
+            Assert.True(collection.Contains(bDescriptor));
+        }
+
+        [Fact]
+        public void AddRemoveAtTryAdd()
+        {
+            var aDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(A), ServiceLifetime.Transient);
+            var bDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(B), ServiceLifetime.Transient);
+
+            var collection = new ServiceCollection
+            {
+                aDescriptor
+            };
+
+            collection.RemoveAt(0);
+
+            Assert.Empty(collection);
+            Assert.False(collection.Contains(aDescriptor));
+
+            collection.TryAdd(bDescriptor);
+
+            Assert.Equal(new[] { bDescriptor }, collection);
+            Assert.True(collection.Contains(bDescriptor));
+        }
+
+        [Fact]
+        public void IndexerTryAdd()
+        {
+            var aDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(A), ServiceLifetime.Transient);
+            var bDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(B), ServiceLifetime.Transient);
+            var cDescriptor = new ServiceDescriptor(typeof(C), typeof(C), ServiceLifetime.Transient);
+
+            var collection = new ServiceCollection
+            {
+                aDescriptor
+            };
+
+            // Remove A add C
+            collection[0] = cDescriptor;
+
+            Assert.Equal(new[] { cDescriptor }, collection);
+            Assert.False(collection.Contains(aDescriptor));
+            Assert.True(collection.Contains(cDescriptor));
+
+            // Add B
+            collection.TryAdd(bDescriptor);
+
+            Assert.Equal(new[] { cDescriptor, bDescriptor }, collection);
+            Assert.True(collection.Contains(bDescriptor));
+        }
+
         class A : IFakeService { }
         class B : IFakeService { }
         class C : IFakeService { }
