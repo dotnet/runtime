@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
@@ -31,34 +32,41 @@ namespace System.Net.Sockets.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [OuterLoop]
+        //[OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Sockets", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                    listener.RunWithCallback(events.Enqueue, () =>
+                    await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
-                        new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
-                        new NetworkStreamTest().Timeout_Roundtrips().GetAwaiter().GetResult();
+                        await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true);
+                        await new NetworkStreamTest().Timeout_Roundtrips();
                     });
+
+                    var errors = events.Where(e => e.EventId == 0).ToArray();
+                    if (errors.Length > 0)
+                    {
+                        throw new AggregateException(errors.Select(e => new Exception($"{e.Message} {string.Join(',', e.Payload)}")));
+                    }
+
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
