@@ -594,12 +594,18 @@ namespace System.Drawing
         public static System.Drawing.Graphics FromHwndInternal(System.IntPtr hwnd) { throw null; }
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#if !NETFRAMEWORK
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+#endif
         [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetContextInfo() { throw null; }
+#if !NETFRAMEWORK
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+#endif
         public void GetContextInfo(out PointF offset) { throw null; }
+#if !NETFRAMEWORK
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+#endif
         public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
         public static System.IntPtr GetHalftonePalette() { throw null; }
         public System.IntPtr GetHdc() { throw null; }

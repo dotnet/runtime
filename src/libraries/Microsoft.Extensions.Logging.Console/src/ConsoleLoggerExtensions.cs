@@ -13,7 +13,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
+#if !NETFRAMEWORK
     [UnsupportedOSPlatform("browser")]
+#endif
     public static class ConsoleLoggerExtensions
     {
         /// <summary>
@@ -156,7 +158,9 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
+#if !NETFRAMEWORK
     [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class ConsoleLoggerFormatterConfigureOptions<TFormatter, TOptions> : ConfigureFromConfigurationOptions<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter
@@ -167,7 +171,9 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
+#if !NETFRAMEWORK
     [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions> : ConfigurationChangeTokenSource<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter

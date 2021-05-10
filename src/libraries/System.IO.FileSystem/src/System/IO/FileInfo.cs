@@ -183,10 +183,14 @@ namespace System.IO
             return new FileInfo(destinationFileName);
         }
 
+#if !NETFRAMEWORK
         [SupportedOSPlatform("windows")]
+#endif
         public void Decrypt() => File.Decrypt(FullPath);
 
+#if !NETFRAMEWORK
         [SupportedOSPlatform("windows")]
+#endif
         public void Encrypt() => File.Encrypt(FullPath);
     }
 }

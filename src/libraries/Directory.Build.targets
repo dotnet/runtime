@@ -240,8 +240,8 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
-  <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
-       System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
+  <!-- If a project targets .NET Core downlevel from net5.0 but uses the platform support attributes, then we
+       include the System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
 
        If a project has specified assembly-level SupportedOSPlatforms or UnsupportedOSPlatforms,
        we can infer the need without having IncludePlatformAttributes set. -->
@@ -249,7 +249,7 @@
     <IncludePlatformAttributes Condition="'$(IncludePlatformAttributes)' == '' and ('$(SupportedOSPlatforms)' != '' or '$(UnsupportedOSPlatforms)' != '')">true</IncludePlatformAttributes>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
   </ItemGroup>
 

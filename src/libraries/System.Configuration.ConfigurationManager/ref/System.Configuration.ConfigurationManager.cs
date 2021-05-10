@@ -607,7 +607,9 @@ namespace System.Configuration
         protected virtual string ValueAttributeName { get { throw null; } }
         public virtual object Create(object parent, object context, System.Xml.XmlNode section) { throw null; }
     }
+#if !NETFRAMEWORK
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+#endif
     public sealed partial class DpapiProtectedConfigurationProvider : System.Configuration.ProtectedConfigurationProvider
     {
         public DpapiProtectedConfigurationProvider() { }

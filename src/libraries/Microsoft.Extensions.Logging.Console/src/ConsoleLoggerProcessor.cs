@@ -8,7 +8,9 @@ using System.Threading;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+#if !NETFRAMEWORK
     [UnsupportedOSPlatform("browser")]
+#endif
     internal class ConsoleLoggerProcessor : IDisposable
     {
         private const int _maxQueuedMessages = 1024;

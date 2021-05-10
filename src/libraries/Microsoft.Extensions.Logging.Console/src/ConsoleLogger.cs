@@ -8,7 +8,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+#if !NETFRAMEWORK
     [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class ConsoleLogger : ILogger
     {
         private readonly string _name;

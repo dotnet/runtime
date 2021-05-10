@@ -13,7 +13,9 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// A provider of <see cref="ConsoleLogger"/> instances.
     /// </summary>
+#if !NETFRAMEWORK
     [UnsupportedOSPlatform("browser")]
+#endif
     [ProviderAlias("Console")]
     public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {

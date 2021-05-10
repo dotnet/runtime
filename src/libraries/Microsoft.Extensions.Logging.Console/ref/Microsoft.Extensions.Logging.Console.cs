@@ -6,7 +6,9 @@
 
 namespace Microsoft.Extensions.Logging
 {
+#if !NETFRAMEWORK
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     public static partial class ConsoleLoggerExtensions
     {
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
@@ -64,7 +66,9 @@ namespace Microsoft.Extensions.Logging.Console
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Please use ConsoleFormatterOptions.UseUtcTimestamp instead.", false)]
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }
+#if !NETFRAMEWORK
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     [Microsoft.Extensions.Logging.ProviderAliasAttribute("Console")]
     public partial class ConsoleLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {

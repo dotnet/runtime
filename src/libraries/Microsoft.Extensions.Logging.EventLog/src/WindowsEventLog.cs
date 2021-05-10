@@ -8,7 +8,9 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
+#if !NETFRAMEWORK
     [SupportedOSPlatform("windows")]
+#endif
     internal sealed class WindowsEventLog : IEventLog
     {
         // https://msdn.microsoft.com/EN-US/library/windows/desktop/aa363679.aspx
