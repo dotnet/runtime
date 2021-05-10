@@ -6,8 +6,8 @@ namespace Mono.Linker.Tests.Cases.Extensibility
 #if !NETCOREAPP
 	[IgnoreTestCase ("Specific to the illink build")]
 #endif
-	[SetupCompileBefore ("MyDispatcher.dll", new[] { "Dependencies/MyDispatcher.cs", "Dependencies/CustomSubStepFields.cs" }, new[] { "illink.dll", "Mono.Cecil.dll", "netstandard.dll" })]
-	[SetupLinkerArgument ("--custom-step", "-MarkStep:MyDispatcher,MyDispatcher.dll")]
+	[SetupCompileBefore ("MyDispatcherFields.dll", new[] { "Dependencies/MyDispatcher.cs", "Dependencies/CustomSubStepFields.cs" }, new[] { "illink.dll", "Mono.Cecil.dll", "netstandard.dll" })]
+	[SetupLinkerArgument ("--custom-step", "-MarkStep:MyDispatcher,MyDispatcherFields.dll")]
 	public class SubStepDispatcherFields
 	{
 		public static void Main ()

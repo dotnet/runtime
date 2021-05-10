@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Xml.XPath;
 using Mono.Cecil;
@@ -807,8 +808,11 @@ namespace Mono.Linker
 		{
 			if (Path.IsPathRooted (arg)) {
 				var assemblyPath = Path.GetFullPath (arg);
-				if (File.Exists (assemblyPath))
-					return Assembly.Load (File.ReadAllBytes (assemblyPath));
+				if (File.Exists (assemblyPath)) {
+					// The CLR will return the already-loaded assembly if the same path is requested multiple times
+					// (or even if a different path specifies the "same" assembly, based on the MVID).
+					return AssemblyLoadContext.Default.LoadFromAssemblyPath (assemblyPath);
+				}
 				context.LogError ($"The assembly '{arg}' specified for '--custom-step' option could not be found", 1022);
 			} else
 				context.LogError ($"The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified", 1023);
