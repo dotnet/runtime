@@ -138,6 +138,16 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
+        internal override ValueTask<int> WaitForAvailableUnirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<int>(1);
+        }
+
+        internal override ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<int>(1);
+        }
+
         internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
         {
             long streamId;

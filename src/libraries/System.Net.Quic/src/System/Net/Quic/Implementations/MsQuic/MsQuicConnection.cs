@@ -323,6 +323,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
+        internal override async ValueTask<int> WaitForAvailableUnirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            return 0;
+        }
+
+        internal override async ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            return 0;
+        }
+
         internal override async ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();

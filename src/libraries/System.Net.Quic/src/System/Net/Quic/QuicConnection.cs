@@ -68,6 +68,18 @@ namespace System.Net.Quic
         public ValueTask ConnectAsync(CancellationToken cancellationToken = default) => _provider.ConnectAsync(cancellationToken);
 
         /// <summary>
+        /// Waits for available unidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
+        /// </summary>
+        /// <returns></returns>
+        public ValueTask<int> WaitForAvailableUnirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableUnirectionalStreamsAsync(cancellationToken);
+
+        /// <summary>
+        /// Waits for available bidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
+        /// </summary>
+        /// <returns></returns>
+        public ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
+
+        /// <summary>
         /// Create an outbound unidirectional stream.
         /// </summary>
         /// <returns></returns>
