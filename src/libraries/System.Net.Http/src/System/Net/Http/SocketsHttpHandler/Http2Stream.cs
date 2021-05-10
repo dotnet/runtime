@@ -85,16 +85,10 @@ namespace System.Net.Http
 
             private int _headerBudgetRemaining;
 
-            private const int StreamWindowSize = DefaultInitialStreamWindowSize;
-
-            // See comment on ConnectionWindowThreshold.
-            private const int StreamWindowThreshold = StreamWindowSize / WindowUpdateRatio;
-
             public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
                 _connection = connection;
-                Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
 
                 _requestCompletionState = StreamCompletionState.InProgress;
                 _responseCompletionState = StreamCompletionState.InProgress;
@@ -811,7 +805,7 @@ namespace System.Net.Http
                             break;
                     }
 
-                    if (_responseBuffer.ActiveMemory.Length + buffer.Length > StreamWindowSize)
+                    if (_responseBuffer.ActiveMemory.Length + buffer.Length > _windowManager.StreamWindowSize)
                     {
                         // Window size exceeded.
                         ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);

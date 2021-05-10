@@ -8,12 +8,15 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
+        private const int StreamWindowUpdateRatio = 8;
+        private const int InitialStreamWindowSize = 65535;
+
         private class Http2StreamWindowManager
         {
-            private const int StreamWindowSize = DefaultInitialStreamWindowSize;
+            internal int StreamWindowSize => InitialStreamWindowSize;
 
             // See comment on ConnectionWindowThreshold.
-            private const int StreamWindowThreshold = StreamWindowSize / WindowUpdateRatio;
+            internal int StreamWindowThreshold => StreamWindowSize / StreamWindowUpdateRatio;
 
             protected int _pendingWindowUpdate;
 
@@ -24,6 +27,8 @@ namespace System.Net.Http
             {
                 _connection = connection;
                 _stream = stream;
+
+                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
             }
 
             public virtual void AdjustWindow(int bytesConsumed)

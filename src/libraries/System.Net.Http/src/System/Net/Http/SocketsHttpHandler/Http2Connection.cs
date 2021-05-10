@@ -86,8 +86,6 @@ namespace System.Net.Http
         // higher values may violate the protocol, and lead to overflows,
         // when the server (or an intermediate proxy) sens a very high connection WINDOW_UPDATE increment.
         private const int DefaultInitialConnectionWindowSize = 65535;
-        private const int DefaultInitialStreamWindowSize = 4 * 65535;
-        private const int WindowUpdateRatio = 8;
 
         // We don't really care about limiting control flow at the connection level.
         // We limit it per stream, and the user controls how many streams are created.
@@ -143,7 +141,7 @@ namespace System.Net.Http
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
-            _initialWindowSize = DefaultInitialStreamWindowSize;
+            _initialWindowSize = DefaultInitialConnectionWindowSize;
 
             _maxConcurrentStreams = InitialMaxConcurrentStreams;
             _pendingWindowUpdate = 0;
@@ -197,7 +195,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
                 _outgoingBuffer.Commit(2);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, DefaultInitialStreamWindowSize);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, InitialStreamWindowSize);
                 _outgoingBuffer.Commit(4);
 #else
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
@@ -209,7 +207,7 @@ namespace System.Net.Http
 #endif
 
                 // Send initial connection-level WINDOW_UPDATE
-                uint windowUpdateAmount = ConnectionWindowSize - DefaultInitialStreamWindowSize;
+                uint windowUpdateAmount = ConnectionWindowSize - InitialStreamWindowSize;
                 if (NetEventSource.Log.IsEnabled()) Trace($"Initial connection-level WINDOW_UPDATE, windowUpdateAmount={windowUpdateAmount}");
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
