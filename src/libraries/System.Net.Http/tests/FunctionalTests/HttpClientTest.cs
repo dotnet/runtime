@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -45,9 +46,22 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("10.194.114.94")]
         public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 5);
 
-        private async Task TestHandler(string info, string hostName, bool http2, int lengthMb)
+        [Theory]
+        //[InlineData("172.19.78.199")]
+        [InlineData("10.194.114.94")]
+        public async Task Download20_Dynamic(string hostName)
         {
-            using var client = new HttpClient();
+            SocketsHttpHandler handler = new SocketsHttpHandler()
+            {
+                FakeRtt = await EstimateRttAsync(hostName)
+            };
+            await TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 5, handler);
+        }
+
+        private async Task TestHandler(string info, string hostName, bool http2, int lengthMb, HttpMessageHandler handler = null)
+        {
+            handler ??= new SocketsHttpHandler();
+            using var client = new HttpClient(handler, true);
             var message = GenerateRequestMessage(hostName, http2, lengthMb);
             _output.WriteLine($"{info} / {lengthMb} MB from {hostName}");
             Stopwatch sw = Stopwatch.StartNew();
@@ -56,6 +70,27 @@ namespace System.Net.Http.Functional.Tests
 
             _output.WriteLine($"{info}: {response.StatusCode} in {elapsedMs} ms");
         }
+
+        private async Task<TimeSpan> EstimateRttAsync(string hostName)
+        {
+            IPAddress addr;
+            if (!IPAddress.TryParse(hostName, out addr))
+            {
+                addr = (await Dns.GetHostAddressesAsync(hostName)).FirstOrDefault(e => e.AddressFamily == AddressFamily.InterNetwork);
+            }
+
+            Ping ping = new Ping();
+
+            // warmup:
+            await ping.SendPingAsync(addr);
+
+            PingReply reply1 = await ping.SendPingAsync(addr);
+            PingReply reply2 = await ping.SendPingAsync(addr);
+            TimeSpan rtt = new TimeSpan(reply1.RoundtripTime + reply2.RoundtripTime) / 2;
+            _output.WriteLine($"Estimated RTT: {rtt.TotalMilliseconds} ms");
+            return rtt;
+        }
+
 
         static HttpRequestMessage GenerateRequestMessage(string hostName, bool http2, double lengthMb = 5)
         {
