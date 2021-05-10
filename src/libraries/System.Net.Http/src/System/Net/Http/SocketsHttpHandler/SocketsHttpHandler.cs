@@ -56,8 +56,8 @@ namespace System.Net.Http
 
         public TimeSpan? FakeRtt
         {
-            get => _settings.FakeRtt;
-            set => _settings.FakeRtt = value;
+            get => _settings._fakeRtt;
+            set => _settings._fakeRtt = value;
         }
 
         [AllowNull]

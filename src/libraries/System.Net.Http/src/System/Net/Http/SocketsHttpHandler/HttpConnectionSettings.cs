@@ -67,6 +67,8 @@ namespace System.Net.Http
 
         internal IDictionary<string, object?>? _properties;
 
+        internal TimeSpan? _fakeRtt;
+
         public HttpConnectionSettings()
         {
             bool allowHttp2 = AllowHttp2;
@@ -119,7 +121,8 @@ namespace System.Net.Http
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
-                _plaintextStreamFilter = _plaintextStreamFilter
+                _plaintextStreamFilter = _plaintextStreamFilter,
+                _fakeRtt = _fakeRtt
             };
 
             // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
@@ -193,7 +196,5 @@ namespace System.Net.Http
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
-
-        internal TimeSpan? FakeRtt { get; set; }
     }
 }

@@ -30,35 +30,39 @@ namespace System.Net.Http.Functional.Tests
         public LargeFileBenchmark(ITestOutputHelper output)
         {
             _output = output;
-            //_listener = new LogHttpEventListener(output);
-            _listener = null;
+            _listener = new LogHttpEventListener(output);
         }
 
         public void Dispose() => _listener?.Dispose();
 
-        [Theory]
-        //[InlineData("172.19.78.199")]
-        [InlineData("10.194.114.94")]
-        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, 5);
+        private const double LengthMb = 5;
 
         [Theory]
         //[InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
-        public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 5);
+        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, LengthMb);
+
+        [Theory]
+        //[InlineData("172.19.78.199")]
+        [InlineData("10.194.114.94")]
+        public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb);
 
         [Theory]
         //[InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
         public async Task Download20_Dynamic(string hostName)
         {
+            _listener.Enabled = true;
+            _listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize");
+
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
                 FakeRtt = await EstimateRttAsync(hostName)
             };
-            await TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 5, handler);
+            await TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb, handler);
         }
 
-        private async Task TestHandler(string info, string hostName, bool http2, int lengthMb, HttpMessageHandler handler = null)
+        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, HttpMessageHandler handler = null)
         {
             handler ??= new SocketsHttpHandler();
             using var client = new HttpClient(handler, true);
@@ -1499,6 +1503,9 @@ namespace System.Net.Http.Functional.Tests
             _stopProcessing = new CancellationTokenSource();
         }
 
+        public bool Enabled { get; set; }
+        public Predicate<string> Filter { get; set; } = _ => true;
+
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
             if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http")
@@ -1515,7 +1522,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await foreach (string message in _messagesChannel.Reader.ReadAllAsync(_stopProcessing.Token))
                 {
-                    _log.WriteLine(message);
+                    if (Filter(message)) _log.WriteLine(message);
                 }
             }
             catch (OperationCanceledException)
@@ -1526,6 +1533,8 @@ namespace System.Net.Http.Functional.Tests
 
         protected override async void OnEventWritten(EventWrittenEventArgs eventData)
         {
+            if (!Enabled) return;
+
             var sb = new StringBuilder().Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
             for (int i = 0; i < eventData.Payload?.Count; i++)
             {

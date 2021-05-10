@@ -98,8 +98,10 @@ namespace System.Net.Http
                 _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
                 _windowManager = connection._rttEstimator != null ?
-                    new Http2StreamWindowManager(connection, this) :
-                    new DynamicHttp2StreamWindowManager(connection, this);
+                    new DynamicHttp2StreamWindowManager(connection, this) :
+                    new Http2StreamWindowManager(connection, this);
+
+                Trace($"_windowManager: {_windowManager.GetType().Name}");
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
