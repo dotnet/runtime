@@ -36,7 +36,7 @@ namespace System.Net.Http
             private HttpResponseHeaders? _trailers;
 
             private MultiArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
-            private int _pendingWindowUpdate;
+            private Http2StreamWindowManager _windowManager;
             private CreditWaiter? _creditWaiter;
             private int _availableCredit;
             private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
@@ -103,7 +103,7 @@ namespace System.Net.Http
 
                 _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
-                _pendingWindowUpdate = 0;
+                _windowManager = new Http2StreamWindowManager(connection, this);
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
                 if (_request.Content == null)
@@ -149,6 +149,8 @@ namespace System.Net.Http
             public int StreamId { get; private set; }
 
             public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
+
+            public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -1014,30 +1016,6 @@ namespace System.Net.Http
                 }
             }
 
-            private void ExtendWindow(int amount)
-            {
-                Debug.Assert(amount > 0);
-                Debug.Assert(_pendingWindowUpdate < StreamWindowThreshold);
-
-                if (_responseProtocolState != ResponseProtocolState.ExpectingData)
-                {
-                    // We are not expecting any more data (because we've either completed or aborted).
-                    // So no need to send any more WINDOW_UPDATEs.
-                    return;
-                }
-
-                _pendingWindowUpdate += amount;
-                if (_pendingWindowUpdate < StreamWindowThreshold)
-                {
-                    return;
-                }
-
-                int windowUpdateSize = _pendingWindowUpdate;
-                _pendingWindowUpdate = 0;
-
-                _connection.LogExceptions(_connection.SendWindowUpdateAsync(StreamId, windowUpdateSize));
-            }
-
             private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer, bool partOfSyncRead = false)
             {
                 Debug.Assert(buffer.Length > 0);
@@ -1090,7 +1068,7 @@ namespace System.Net.Http
 
                 if (bytesRead != 0)
                 {
-                    ExtendWindow(bytesRead);
+                    _windowManager.AdjustWindow(bytesRead);
                 }
                 else
                 {
@@ -1119,7 +1097,7 @@ namespace System.Net.Http
 
                 if (bytesRead != 0)
                 {
-                    ExtendWindow(bytesRead);
+                    _windowManager.AdjustWindow(bytesRead);
                 }
                 else
                 {
@@ -1149,7 +1127,7 @@ namespace System.Net.Http
 
                         if (bytesRead != 0)
                         {
-                            ExtendWindow(bytesRead);
+                            _windowManager.AdjustWindow(bytesRead);
                             destination.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
                         }
                         else
@@ -1185,7 +1163,7 @@ namespace System.Net.Http
 
                         if (bytesRead != 0)
                         {
-                            ExtendWindow(bytesRead);
+                            _windowManager.AdjustWindow(bytesRead);
                             await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                         }
                         else
