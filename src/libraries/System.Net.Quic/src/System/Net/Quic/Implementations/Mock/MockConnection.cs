@@ -138,7 +138,7 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
-        internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync()
+        internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
         {
             long streamId;
             lock (_syncObject)
@@ -150,7 +150,7 @@ namespace System.Net.Quic.Implementations.Mock
             return new ValueTask<QuicStreamProvider>(OpenStream(streamId, false));
         }
 
-        internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync()
+        internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
         {
             long streamId;
             lock (_syncObject)

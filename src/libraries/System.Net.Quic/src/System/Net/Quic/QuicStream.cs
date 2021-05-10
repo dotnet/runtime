@@ -99,6 +99,8 @@ namespace System.Net.Quic
 
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
 
+        public ValueTask StartCompleted(CancellationToken cancellationToken = default) => _provider.StartCompleted(cancellationToken);
+
         public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
 
         public ValueTask ShutdownCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownCompleted(cancellationToken);

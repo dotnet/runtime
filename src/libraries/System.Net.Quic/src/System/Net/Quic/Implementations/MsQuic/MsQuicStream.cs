@@ -114,7 +114,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
-                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.ASYNC);
+                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.IMMEDIATE);
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
             catch
@@ -175,6 +175,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
+
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             HandleWriteCompletedState();
@@ -191,21 +192,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             HandleWriteCompletedState();
         }
 
-        private async ValueTask<CancellationTokenRegistration> HandleWriteStartState(CancellationToken cancellationToken)
+        private async ValueTask<CancellationTokenRegistration> HandleStartState(CancellationToken cancellationToken)
         {
-            if (!_canWrite)
-            {
-                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
-            }
-
-            lock (_state)
-            {
-                if (_state.SendState == SendState.Aborted)
-                {
-                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
-                }
-            }
-
             CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
@@ -234,6 +222,23 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             return registration;
+        }
+
+        private ValueTask<CancellationTokenRegistration> HandleWriteStartState(CancellationToken cancellationToken)
+        {
+            if (!_canWrite)
+            {
+                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            }
+
+            lock (_state)
+            {
+                if (_state.SendState == SendState.Aborted)
+                {
+                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
+                }
+            }
+            return HandleStartState(cancellationToken);
         }
 
         private void HandleWriteCompletedState()
@@ -380,6 +385,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
+        }
+
+        internal async override ValueTask StartCompleted(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            using CancellationTokenRegistration registration = await HandleStartState(cancellationToken).ConfigureAwait(false);
         }
 
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
@@ -536,7 +548,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Stream has started.
                     // Will only be done for outbound streams (inbound streams have already started)
                     case QUIC_STREAM_EVENT_TYPE.START_COMPLETE:
-                        return HandleStartComplete(state);
+                        return HandleEventStartComplete(state);
                     // Received data on the stream
                     case QUIC_STREAM_EVENT_TYPE.RECEIVE:
                         return HandleEventRecv(state, ref evt);
@@ -619,7 +631,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private static uint HandleStartComplete(State state)
+        private static uint HandleEventStartComplete(State state)
         {
             bool shouldComplete = false;
             lock (state)

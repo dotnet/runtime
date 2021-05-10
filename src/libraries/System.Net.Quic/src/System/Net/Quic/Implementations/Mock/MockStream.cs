@@ -170,6 +170,13 @@ namespace System.Net.Quic.Implementations.Mock
             WriteStreamBuffer?.EndWrite();
         }
 
+        internal override ValueTask StartCompleted(CancellationToken cancellationToken = default)
+        {
+            CheckDisposed();
+
+            return default;
+        }
+
 
         internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {

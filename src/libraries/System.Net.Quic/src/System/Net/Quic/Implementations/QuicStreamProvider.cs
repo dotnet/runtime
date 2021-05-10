@@ -37,6 +37,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default);
 
+        internal abstract ValueTask StartCompleted(CancellationToken cancellationToken = default);
+
         internal abstract ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default);
 
         internal abstract ValueTask ShutdownCompleted(CancellationToken cancellationToken = default);

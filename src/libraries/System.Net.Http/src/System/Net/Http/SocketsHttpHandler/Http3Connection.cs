@@ -199,7 +199,7 @@ namespace System.Net.Http
             {
                 if (_connection != null)
                 {
-                    quicStream = await _connection.OpenBidirectionalStreamAsync().ConfigureAwait(false);
+                    quicStream = await _connection.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
                 }
                 lock (SyncObj)
                 {

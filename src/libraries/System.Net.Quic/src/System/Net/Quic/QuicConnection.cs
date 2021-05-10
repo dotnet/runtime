@@ -71,13 +71,13 @@ namespace System.Net.Quic
         /// Create an outbound unidirectional stream.
         /// </summary>
         /// <returns></returns>
-        public async ValueTask<QuicStream> OpenUnidirectionalStreamAsync() => new QuicStream(await _provider.OpenUnidirectionalStreamAsync().ConfigureAwait(false));
+        public async ValueTask<QuicStream> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default) => new QuicStream(await _provider.OpenUnidirectionalStreamAsync(cancellationToken).ConfigureAwait(false));
 
         /// <summary>
         /// Create an outbound bidirectional stream.
         /// </summary>
         /// <returns></returns>
-        public async ValueTask<QuicStream> OpenBidirectionalStreamAsync() => new QuicStream(await _provider.OpenBidirectionalStreamAsync().ConfigureAwait(false));
+        public async ValueTask<QuicStream> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default) => new QuicStream(await _provider.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false));
 
         /// <summary>
         /// Accept an incoming stream.
