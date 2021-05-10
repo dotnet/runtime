@@ -10,6 +10,10 @@ namespace System.Numerics.Tensors.Tests
 {
     public class TensorTests : TensorTestsBase
     {
+        private const string CompiledNewline = @"
+";
+        public static readonly bool s_ignoreNewlines = !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);
+
         [Theory()]
         [MemberData(nameof(GetSingleTensorConstructors))]
         public void ConstructTensorFromArrayRank1(TensorConstructor tensorConstructor)
@@ -2161,9 +2165,9 @@ namespace System.Numerics.Tensors.Tests
     }
 }";
 
-            Assert.Equal(expected, tensor.GetArrayString());
+            Assert.Equal(expected, tensor.GetArrayString(), ignoreLineEndingDifferences: s_ignoreNewlines);
 
-            var expectedNoSpace = expected.Replace(Environment.NewLine, "").Replace(" ", "");
+            var expectedNoSpace = expected.Replace(CompiledNewline, "").Replace(" ", "");
             Assert.Equal(expectedNoSpace, tensor.GetArrayString(false));
         }
 
