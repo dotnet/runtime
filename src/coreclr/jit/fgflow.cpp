@@ -279,7 +279,7 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
     noway_assert(block != nullptr);
     noway_assert(blockPred != nullptr);
 
-    assert(block->countOfInEdges() > 0);
+    noway_assert(block->countOfInEdges() > 0);
     block->bbRefs--;
 
     // Do nothing if we haven't calculated the predecessor list yet.
