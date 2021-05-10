@@ -455,14 +455,12 @@ process_protocol_helper_resume_runtime_startup (
 	return result;
 }
 
-static
 DiagnosticsSetEnvironmentVariablePayload *
-ds_set_environment_variable_payload_alloc ()
+ds_set_environment_variable_payload_alloc (void)
 {
 	return ep_rt_object_alloc (DiagnosticsSetEnvironmentVariablePayload);
 }
 
-static
 void
 ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload)
 {
@@ -520,7 +518,7 @@ process_protocol_helper_set_environment_variable (
 	}
 
 	ds_ipc_result_t ipc_result;
-	ipc_result = ds_rt_set_environment_variable (payload);
+	ipc_result = ds_rt_set_environment_variable (payload->name, payload->value);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
@@ -574,9 +572,8 @@ get_environment_variable_payload_flatten (
     return success;
 }
 
-static
 DiagnosticsGetEnvironmentVariablePayload *
-ds_get_environment_variable_payload_alloc ()
+ds_get_environment_variable_payload_alloc (void)
 {
 	return ep_rt_object_alloc (DiagnosticsGetEnvironmentVariablePayload);
 }
@@ -630,7 +627,6 @@ process_protocol_helper_get_environment_variable (
 		return false;
 
 	ep_char16_t *valueBuffer = NULL;
-	uint8_t *messageBuffer = NULL;
 	uint32_t bufferSize = 0;
 	uint32_t realLength;
     bool result = false;
@@ -641,7 +637,7 @@ process_protocol_helper_get_environment_variable (
 	}
 
 	ds_ipc_result_t ipc_result;
-	ipc_result = ds_rt_get_environment_variable (payload, 0, &realLength, NULL);
+	ipc_result = ds_rt_get_environment_variable (payload->name, 0, &realLength, NULL);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
@@ -655,7 +651,7 @@ process_protocol_helper_get_environment_variable (
 		ep_raise_error ();
 	}
 
-	ipc_result = ds_rt_get_environment_variable (payload, realLength, &realLength, valueBuffer);
+	ipc_result = ds_rt_get_environment_variable (payload->name, realLength, &realLength, valueBuffer);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();

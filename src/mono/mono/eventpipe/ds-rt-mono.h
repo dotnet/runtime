@@ -6,7 +6,6 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-mono.h"
-#include "ds-process-protocol.h"
 #include <mono/utils/mono-logger-internals.h>
 
 #undef DS_LOG_ALWAYS_0
@@ -251,10 +250,10 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 
 static
 uint32_t
-ds_rt_set_environment_variable (DiagnosticsSetEnvironmentVariablePayload *payload)
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	gchar *nameNarrow = u16to8 (payload->name);
-	gchar *valueNarrow = u16to8 (payload->value);
+	gchar *nameNarrow = ep_rt_utf16_to_utf8_string (name, ep_rt_utf16_string_len (name));
+	gchar *valueNarrow = ep_rt_utf16_to_utf8_string (value, ep_rt_utf16_string_len (value));
 
 	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
 
@@ -266,16 +265,16 @@ ds_rt_set_environment_variable (DiagnosticsSetEnvironmentVariablePayload *payloa
 
 static
 uint32_t
-ds_rt_get_environment_variable (DiagnosticsGetEnvironmentVariablePayload *payload,
+ds_rt_get_environment_variable (const ep_char16_t *name,
 								uint32_t valueBufferLength,
 								uint32_t *valueLengthOut,
 								ep_char16_t *valueBuffer)
 {
-	gchar *nameNarrow = u16to8 (payload->name);
+	gchar *nameNarrow = ep_rt_utf16_to_utf8_string (name, ep_rt_utf16_string_len (name));
 	gchar *valueNarrow = g_getenv(nameNarrow);
 
 	uint32_t valueLength = strlen(valueNarrow);
-	if (valueLength > valueBufferLength && valueBuffer != NULL);
+	if (valueLength > valueBufferLength && valueBuffer != NULL)
 	{
 		g_free (nameNarrow);
 		g_free (valueNarrow);

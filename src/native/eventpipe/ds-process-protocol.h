@@ -109,7 +109,7 @@ struct _DiagnosticsSetEnvironmentVariablePayload {
 #endif
 
 DiagnosticsSetEnvironmentVariablePayload *
-ds_set_environment_variable_payload_alloc ();
+ds_set_environment_variable_payload_alloc (void);
 
 void
 ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload);
@@ -135,7 +135,7 @@ struct _DiagnosticsGetEnvironmentVariablePayload {
 #endif
 
 DiagnosticsGetEnvironmentVariablePayload *
-ds_get_environment_variable_payload_alloc ();
+ds_get_environment_variable_payload_alloc (void);
 
 void
 ds_get_environment_variable_payload_free (DiagnosticsGetEnvironmentVariablePayload *payload);

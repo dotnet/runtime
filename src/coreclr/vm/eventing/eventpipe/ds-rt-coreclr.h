@@ -323,20 +323,20 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 
 static
 uint32_t
-ds_rt_set_environment_variable (DiagnosticsSetEnvironmentVariablePayload *payload)
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(payload->name), reinterpret_cast<LPCWSTR>(payload->value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
 static
 uint32_t
-ds_rt_get_environment_variable (DiagnosticsGetEnvironmentVariablePayload *payload,
+ds_rt_get_environment_variable (const ep_char16_t *name,
 								uint32_t valueBufferLength,
 								uint32_t *valueLengthOut,
 								ep_char16_t *valueBuffer)
 {
 	HRESULT hr = S_OK;
-    uint32_t trueLen = GetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(payload->name), reinterpret_cast<LPWSTR>(valueBuffer), valueBufferLength);
+    uint32_t trueLen = GetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPWSTR>(valueBuffer), valueBufferLength);
     if (trueLen == 0)
     {
         hr = HRESULT_FROM_WIN32(GetLastError());

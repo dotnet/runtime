@@ -68,7 +68,7 @@ HRESULT NullProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
             return E_FAIL;
         }
         // ERROR_ENVVAR_NOT_FOUND hr
-        else if (hr != 0x800700CB)
+        else if (hr != (HRESULT)0x800700CB)
         {
             wcout << L"ReverseServerTest_ClearMe returned an HR other than ENVVAR_NOT_FOUND" << std::hex << hr << endl;
             _failures++;
