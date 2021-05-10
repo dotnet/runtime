@@ -449,7 +449,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
             else if (PlatformDetection.IsOSX || PlatformDetection.IsOpenSslSupported)
             {
-                const int OpenSslChaChaMinimumVersion = 0x1010100F;
+                const int OpenSslChaChaMinimumVersion = 0x1010000F;
                 expectedIsSupported = SafeEvpPKeyHandle.OpenSslVersion >= OpenSslChaChaMinimumVersion;
             }
 
