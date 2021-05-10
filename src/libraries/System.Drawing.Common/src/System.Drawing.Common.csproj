@@ -29,8 +29,10 @@
     <Compile Include="System\Drawing\GraphicsUnit.cs" />
     <Compile Include="System\Drawing\IconConverter.cs" />
     <Compile Include="System\Drawing\Image.cs" />
+    <Compile Include="System\Drawing\ImageAnimator.cs" />
     <Compile Include="System\Drawing\ImageConverter.cs" />
     <Compile Include="System\Drawing\ImageFormatConverter.cs" />
+    <Compile Include="System\Drawing\ImageInfo.cs" />
     <Compile Include="System\Drawing\ImageType.cs" />
     <Compile Include="System\Drawing\NumericsExtensions.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
@@ -194,8 +196,6 @@
     <Compile Include="System\Drawing\GraphicsContext.cs" />
     <Compile Include="System\Drawing\Icon.Windows.cs" />
     <Compile Include="System\Drawing\Image.Windows.cs" />
-    <Compile Include="System\Drawing\ImageAnimator.Windows.cs" />
-    <Compile Include="System\Drawing\ImageInfo.cs" />
     <Compile Include="System\Drawing\Imaging\BitmapData.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
@@ -344,7 +344,6 @@
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
-    <Compile Include="System\Drawing\ImageAnimator.Unix.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />
     <Compile Include="System\Drawing\Region.Unix.cs" />

@@ -98,7 +98,6 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47591", TestPlatforms.Android)]
         public void TryGetAddrInfo_ExternalHost(bool justAddresses)
         {
             string hostName = "microsoft.com";

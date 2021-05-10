@@ -27,7 +27,7 @@ namespace System.IO.Pipes.Tests
                 return true;
             }
 
-            return TryHandleGetImpersonationUserNameError(handle, Marshal.GetLastWin32Error(), UserNameMaxLength, userName, out impersonationUserName);
+            return TryHandleGetImpersonationUserNameError(handle, Marshal.GetLastPInvokeError(), UserNameMaxLength, userName, out impersonationUserName);
         }
 
         internal static unsafe bool TryGetNumberOfServerInstances(SafePipeHandle handle, out uint numberOfServerInstances)

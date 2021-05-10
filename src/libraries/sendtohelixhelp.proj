@@ -25,7 +25,7 @@
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">01:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android')">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android')">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:00:00</_workItemTimeout>
@@ -70,7 +70,7 @@
     <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
@@ -164,6 +164,14 @@
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
   </ItemGroup>
 
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <XHarnessAppBundleToTest>
+      <Targets>maccatalyst</Targets>
+      <TestTimeout>$(_workItemTimeout)</TestTimeout>
+      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+    </XHarnessAppBundleToTest>
+  </ItemDefinitionGroup>
+
   <ItemDefinitionGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <XHarnessAppBundleToTest>
       <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
@@ -200,7 +208,7 @@
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
 
-  <Target Name="BuildHelixWorkItems">
+  <Target Name="BuildHelixWorkItems" DependsOnTargets="StageEmSdkForHelix">
 
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
@@ -211,20 +219,21 @@
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <AppleTestTarget Condition="'$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvOSSimulator'">tvos-simulator</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvOS'">tvos-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst</AppleTestTarget>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <!-- Create work items for test apps -->
       <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <Targets>$(AppleTestTarget)</Targets>
       </XHarnessAppBundleToTest>
       <!-- Create work items for run-only apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
@@ -256,6 +265,11 @@
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</MonoAotCrossCompilerPath>
+      <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+    </PropertyGroup>
+
     <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
@@ -275,9 +289,10 @@
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator'">
+    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
@@ -315,9 +330,28 @@
     </ItemGroup>
 
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
-    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
+    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
 
+  </Target>
+
+  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
+       attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
+       payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
+  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
+    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
+           Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
+
+    <PropertyGroup>
+      <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
+    <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
 
   <Target Name="PrintHelixQueues">

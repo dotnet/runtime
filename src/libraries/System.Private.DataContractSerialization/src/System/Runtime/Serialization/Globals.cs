@@ -3,15 +3,15 @@
 
 using System;
 using System.ComponentModel;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -173,6 +173,28 @@ namespace System.Runtime.Serialization
                 if (s_typeOfDateTimeOffsetAdapter == null)
                     s_typeOfDateTimeOffsetAdapter = typeof(DateTimeOffsetAdapter);
                 return s_typeOfDateTimeOffsetAdapter;
+            }
+        }
+
+        private static Type? s_typeOfMemoryStream;
+        internal static Type TypeOfMemoryStream
+        {
+            get
+            {
+                if (s_typeOfMemoryStream == null)
+                    s_typeOfMemoryStream = typeof(MemoryStream);
+                return s_typeOfMemoryStream;
+            }
+        }
+
+        private static Type? s_typeOfMemoryStreamAdapter;
+        internal static Type TypeOfMemoryStreamAdapter
+        {
+            get
+            {
+                if (s_typeOfMemoryStreamAdapter == null)
+                    s_typeOfMemoryStreamAdapter = typeof(MemoryStreamAdapter);
+                return s_typeOfMemoryStreamAdapter;
             }
         }
 

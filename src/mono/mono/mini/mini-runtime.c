@@ -1429,11 +1429,11 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		if (method && method->dynamic) {
 			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
-			MonoMemoryManager *mem_manager = m_method_get_mem_manager (method);
+			MonoMemoryManager *method_mem_manager = method ? m_method_get_mem_manager (method) : mem_manager;
 			if (mono_aot_only) {
-				jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_alloc (method_mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				jump_table = (void **)mono_mem_manager_code_reserve (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_code_reserve (method_mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 		}
 
@@ -2921,10 +2921,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
 	info->use_interp = use_interp;
-	if (mono_llvm_only && method->string_ctor)
-		info->sig = mono_marshal_get_string_ctor_signature (method);
-	else
-		info->sig = mono_method_signature_internal (method);
+	info->sig = mono_method_signature_internal (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	(void)invoke;
@@ -3016,7 +3013,13 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 	}
 
 	if (!info->dyn_call_info) {
-		if (mono_llvm_only) {
+		/*
+		 * Can't use the normal llvmonly code for string ctors since the gsharedvt out wrapper passes
+		 * an extra arg, which the string ctor methods don't have, which causes signature mismatches
+		 * on wasm. Instead, call string ctors normally using a direct runtime invoke wrapper
+		 * which is AOTed for each ctor.
+		 */
+		if (mono_llvm_only && !method->string_ctor) {
 #ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
 			g_assert_not_reached ();
 #endif
@@ -3058,6 +3061,8 @@ exit:
 	g_free (info);
 	return ret;
 }
+
+static GENERATE_GET_CLASS_WITH_CACHE (nullbyrefreturn_ex, "Mono", "NullByRefReturnException");
 
 static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
@@ -3127,11 +3132,29 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
+	if (sig->ret->byref) {
+		if (*(gpointer*)retval == NULL) {
+			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
+			MonoObject *ex = mono_object_new_checked (klass, error);
+			mono_error_assert_ok (error);
+			mono_error_set_exception_instance (error, (MonoException*)ex);
+			return NULL;
+		}
+	}
+
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (info->ret_box_class)
-			return mono_value_box_checked (info->ret_box_class, retval, error);
-		else
-			return *(MonoObject**)retval;
+		if (info->ret_box_class) {
+			if (sig->ret->byref) {
+				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
+			} else {
+				return mono_value_box_checked (info->ret_box_class, retval, error);
+			}
+		} else {
+			if (sig->ret->byref)
+				return **(MonoObject***)retval;
+			else
+				return *(MonoObject**)retval;
+		}
 	} else {
 		return NULL;
 	}
@@ -3331,7 +3354,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	if (info->use_interp) {
 		result = mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
 		return_val_if_nok (error, NULL);
-	} else if (mono_llvm_only) {
+	} else if (mono_llvm_only && !method->string_ctor) {
 		result = mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
 		if (!is_ok (error))
 			return NULL;

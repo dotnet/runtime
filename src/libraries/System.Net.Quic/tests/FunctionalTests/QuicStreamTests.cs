@@ -173,7 +173,7 @@ namespace System.Net.Quic.Tests
             await clientConnection.CloseAsync(0);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Fact]
         public async Task LargeDataSentAndReceived()
         {
@@ -348,7 +348,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, bytesRead);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Theory]
         [MemberData(nameof(ReadWrite_Random_Success_Data))]
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
