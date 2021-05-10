@@ -411,7 +411,7 @@ namespace System.Numerics
 
                 if (isNegative)
                 {
-                    NumericsHelpers.MakeTwosComplement(val); // Mutates val
+                    NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
 
                     // Pack _bits to remove any wasted space after the twos complement
                     int len = val.Length - 1;
@@ -560,7 +560,7 @@ namespace System.Numerics
             }
 
             // Finally handle the more complex cases where we must transform the input into sign magnitude
-            NumericsHelpers.MakeTwosComplement(value); // mutates val
+            NumericsHelpers.DangerousMakeTwosComplement(value); // mutates val
 
             // Pack _bits to remove any wasted space after the twos complement
             int len = value.Length;
@@ -1512,7 +1512,7 @@ namespace System.Numerics
                 buffer = buffer.Slice(0, _bits.Length + 1);
                 if (_sign == -1)
                 {
-                    NumericsHelpers.MakeTwosComplement(buffer[..^1]);  // Mutates dwords
+                    NumericsHelpers.DangerousMakeTwosComplement(buffer[..^1]);  // Mutates dwords
                     highDWord = uint.MaxValue;
                 }
                 else
@@ -2197,7 +2197,7 @@ namespace System.Numerics
                     result = MinusOne;
                     goto exit;
                 }
-                NumericsHelpers.MakeTwosComplement(xd); // Mutates xd
+                NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
             }
 
             uint[]? zdFromPool = null;
@@ -2231,7 +2231,7 @@ namespace System.Numerics
             }
             if (negx)
             {
-                NumericsHelpers.MakeTwosComplement(zd); // Mutates zd
+                NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
             }
             result = new BigInteger(zd, negx);
 

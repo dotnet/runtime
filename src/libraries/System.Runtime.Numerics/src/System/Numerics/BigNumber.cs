@@ -412,7 +412,7 @@ namespace System.Numerics
 
             int[]? arrayFromPool = null;
 
-            Span<uint> bitsBuffer = (blockCount <= BigInteger.StackallocUInt32Limit)
+            Span<uint> bitsBuffer = (blockCount <= BigIntegerCalculator.StackAllocThreshold)
                 ? stackalloc uint[blockCount]
                 : MemoryMarshal.Cast<int, uint>((arrayFromPool = ArrayPool<int>.Shared.Rent(blockCount)).AsSpan(0, blockCount));
 
@@ -496,7 +496,7 @@ namespace System.Numerics
 
         private static bool NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
-            Span<uint> stackBuffer = stackalloc uint[BigInteger.StackallocUInt32Limit];
+            Span<uint> stackBuffer = stackalloc uint[BigIntegerCalculator.StackAllocThreshold];
             Span<uint> currentBuffer = stackBuffer;
             int currentBufferSize = 0;
             int[]? arrayFromPool = null;

@@ -11,7 +11,7 @@ namespace System.Numerics
 #else
         internal const
 #endif
-        int StackAllocThreshold = 256;
+        int StackAllocThreshold = 64;
 
         public static int Compare(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {

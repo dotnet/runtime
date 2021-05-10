@@ -104,8 +104,9 @@ namespace System.Numerics
             return du.dbl;
         }
 
-        // Do an in-place two's complement.
-        public static void MakeTwosComplement(Span<uint> d)
+        // Do an in-place two's complement. "Dangerous" because it causes
+        // a mutation and needs to be used with care for immutable types.
+        public static void DangerousMakeTwosComplement(Span<uint> d)
         {
             if (d.Length > 0)
             {
