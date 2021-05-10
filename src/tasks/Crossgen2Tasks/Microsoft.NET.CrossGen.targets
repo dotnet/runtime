@@ -353,7 +353,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       and do not replace them. IL PDBs are still required for debugging. Native PDBs emitted by the R2R compiler are
       only used for profiling purposes.
       -->
-      <ResolvedFileToPublish Remove="%(_ReadyToRunImplementationAssemblies.Identity)" Condition="'$(PublishReadyToRunComposite)' == 'true' and '%(_ReadyToRunImplementationAssemblies.IsNative)'==''"/>
+      <ResolvedFileToPublish Remove="@(_ReadyToRunCompositeBuildInput)" />
       <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList)" />
       <ResolvedFileToPublish Include="@(_ReadyToRunFilesToPublish)" />
     </ItemGroup>
@@ -406,13 +406,16 @@ Copyright (c) .NET Foundation. All rights reserved.
                                      EmitSymbols="$(PublishReadyToRunEmitSymbols)"
                                      IncludeSymbolsInSingleFile="$(IncludeSymbolsInSingleFile)"
                                      ReadyToRunUseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
-                                     Crossgen2Composite="$(PublishReadyToRunComposite)">
+                                     Crossgen2Composite="$(PublishReadyToRunComposite)"
+                                     PublishReadyToRunCompositeExclusions="@(PublishReadyToRunCompositeExclusions)">
 
       <Output TaskParameter="ReadyToRunCompileList" ItemName="_ReadyToRunCompileList" />
       <Output TaskParameter="ReadyToRunSymbolsCompileList" ItemName="_ReadyToRunSymbolsCompileList" />
 
       <Output TaskParameter="ReadyToRunFilesToPublish" ItemName="_ReadyToRunFilesToPublish" />
       <Output TaskParameter="ReadyToRunAssembliesToReference" ItemName="_ReadyToRunAssembliesToReference" />
+      <Output TaskParameter="ReadyToRunCompositeBuildReferences" ItemName="_ReadyToRunCompositeBuildReferences" />
+      <Output TaskParameter="ReadyToRunCompositeBuildInput" ItemName="_ReadyToRunCompositeBuildInput" />
 
     </PrepareForReadyToRunCompilation>
   </Target>
@@ -442,17 +445,18 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="RunReadyToRunCompiler" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
   <Target Name="_CreateR2RImages"
           Inputs="@(_ReadyToRunCompileList)"
-          Outputs="%(_ReadyToRunCompileList.OutputR2RImage)">
+          Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage)">
 
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
                            Crossgen2Tool="@(Crossgen2Tool)"
                            UseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
-                           Crossgen2Composite="$(PublishReadyToRunComposite)"
                            Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
                            CompilationEntry="@(_ReadyToRunCompileList)"
-                           ContinueOnError="ErrorAndContinue">
+                           ContinueOnError="ErrorAndContinue"
+                           ReadyToRunCompositeBuildReferences="@(_ReadyToRunCompositeBuildReferences)"
+                           ReadyToRunCompositeBuildInput="@(_ReadyToRunCompositeBuildInput)">
       <Output TaskParameter="ExitCode" PropertyName="_ReadyToRunCompilerExitCode" />
       <Output TaskParameter="WarningsDetected" PropertyName="_ReadyToRunWarningsDetected" />
     </RunReadyToRunCompiler>

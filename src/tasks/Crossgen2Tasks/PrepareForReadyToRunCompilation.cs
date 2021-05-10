@@ -30,6 +30,8 @@ namespace Microsoft.NET.Build.Tasks
         [Required]
         public bool IncludeSymbolsInSingleFile { get; set; }
 
+        public string[] PublishReadyToRunCompositeExclusions { get; set; }
+
         public ITaskItem CrossgenTool { get; set; }
         public ITaskItem Crossgen2Tool { get; set; }
 
@@ -48,12 +50,20 @@ namespace Microsoft.NET.Build.Tasks
         [Output]
         public ITaskItem[] ReadyToRunAssembliesToReference => _r2rReferences.ToArray();
 
+        [Output]
+        public ITaskItem[] ReadyToRunCompositeBuildReferences => _r2rCompositeReferences.ToArray();
+
+        [Output]
+        public ITaskItem[] ReadyToRunCompositeBuildInput => _r2rCompositeInput.ToArray();
+
         private bool _crossgen2IsVersion5;
 
         private List<ITaskItem> _compileList = new List<ITaskItem>();
         private List<ITaskItem> _symbolsCompileList = new List<ITaskItem>();
         private List<ITaskItem> _r2rFiles = new List<ITaskItem>();
         private List<ITaskItem> _r2rReferences = new List<ITaskItem>();
+        private List<ITaskItem> _r2rCompositeReferences = new List<ITaskItem>();
+        private List<ITaskItem> _r2rCompositeInput = new List<ITaskItem>();
 
         protected override void ExecuteCore()
         {
@@ -76,7 +86,7 @@ namespace Microsoft.NET.Build.Tasks
                 !string.IsNullOrEmpty(diaSymReaderPath) && File.Exists(diaSymReaderPath);
 
             // Process input lists of files
-            ProcessInputFileList(Assemblies, _compileList, _symbolsCompileList, _r2rFiles, _r2rReferences, hasValidDiaSymReaderLib);
+            ProcessInputFileList(Assemblies, _compileList, _symbolsCompileList, _r2rFiles, _r2rReferences, _r2rCompositeReferences, _r2rCompositeInput, hasValidDiaSymReaderLib);
         }
 
         private void ProcessInputFileList(
@@ -85,6 +95,8 @@ namespace Microsoft.NET.Build.Tasks
             List<ITaskItem> symbolsCompilationList,
             List<ITaskItem> r2rFilesPublishList,
             List<ITaskItem> r2rReferenceList,
+            List<ITaskItem> r2rCompositeReferenceList,
+            List<ITaskItem> r2rCompositeInputList,
             bool hasValidDiaSymReaderLib)
         {
             if (inputFiles == null)
@@ -92,22 +104,26 @@ namespace Microsoft.NET.Build.Tasks
                 return;
             }
 
-            // TODO: ExcludeList for composite mode
             var exclusionSet = ExcludeList == null || Crossgen2Composite ? null : new HashSet<string>(ExcludeList, StringComparer.OrdinalIgnoreCase);
+            var compositeExclusionSet = PublishReadyToRunCompositeExclusions == null || !Crossgen2Composite ? null : new HashSet<string>(PublishReadyToRunCompositeExclusions, StringComparer.OrdinalIgnoreCase);
             bool publishedCompositeImage = false;
 
             foreach (var file in inputFiles)
             {
-                var eligibility = GetInputFileEligibility(file, exclusionSet);
+                var eligibility = GetInputFileEligibility(file, Crossgen2Composite, exclusionSet, compositeExclusionSet);
 
-                if (eligibility == Eligibility.None)
+                if (eligibility.NoEligibility)
                 {
                     continue;
                 }
 
-                r2rReferenceList.Add(file);
+                if (eligibility.IsReference)
+                    r2rReferenceList.Add(file);
 
-                if (!Crossgen2Composite && (eligibility == Eligibility.ReferenceOnly))
+                if (eligibility.IsReference && !eligibility.ReferenceHiddenFromCompositeBuild && !eligibility.Compile)
+                    r2rCompositeReferenceList.Add(file);
+
+                if (!eligibility.Compile)
                 {
                     continue;
                 }
@@ -142,7 +158,7 @@ namespace Microsoft.NET.Build.Tasks
                     }
                 }
 
-                if (!Crossgen2Composite)
+                if (eligibility.CompileSeparately)
                 {
                     // This TaskItem is the IL->R2R entry, for an input assembly that needs to be compiled into a R2R image. This will be used as
                     // an input to the ReadyToRunCompiler task
@@ -151,16 +167,20 @@ namespace Microsoft.NET.Build.Tasks
                     if (outputPDBImage != null && ReadyToRunUseCrossgen2 && !_crossgen2IsVersion5)
                     {
                         r2rCompilationEntry.SetMetadata(MetadataKeys.EmitSymbols, "true");
-                        r2rCompilationEntry.SetMetadata(MetadataKeys.OutputPDBImage, Path.GetDirectoryName(outputPDBImage));
+                        r2rCompilationEntry.SetMetadata(MetadataKeys.OutputPDBImage, outputPDBImage);
                     }
                     r2rCompilationEntry.RemoveMetadata(MetadataKeys.OriginalItemSpec);
                     imageCompilationList.Add(r2rCompilationEntry);
                 }
-                else if (file.ItemSpec == MainAssembly.ItemSpec)
+                else if (eligibility.CompileIntoCompositeImage)
                 {
-                    // Create a TaskItem for <MainAssembly>.r2r.dll
-                    publishedCompositeImage = true;
-                    CreateAndPublishCompositeImage(file, compositeDllWithUniqueName: false);
+                    r2rCompositeInputList.Add(file);
+                    if (file.ItemSpec == MainAssembly.ItemSpec)
+                    {
+                        // Create a TaskItem for <MainAssembly>.r2r.dll
+                        publishedCompositeImage = true;
+                        CreateAndPublishCompositeImage(file, compositeDllWithUniqueName: false);
+                    }
                 }
 
                 // This TaskItem corresponds to the output R2R image. It is equivalent to the input TaskItem, only the ItemSpec for it points to the new path
@@ -174,7 +194,7 @@ namespace Microsoft.NET.Build.Tasks
                 // unless an explicit PublishReadyToRunEmitSymbols flag is enabled by the app developer. There is also another way to profile that the runtime supports, which does
                 // not rely on the native PDBs/Map files, so creating them is really an opt-in option, typically used by advanced users.
                 // For debugging, only the IL PDBs are required.
-                if (!Crossgen2Composite && outputPDBImage != null)
+                if (eligibility.CompileSeparately && outputPDBImage != null)
                 {
                     if (!ReadyToRunUseCrossgen2 || _crossgen2IsVersion5)
                     {
@@ -216,6 +236,7 @@ namespace Microsoft.NET.Build.Tasks
 
                 TaskItem r2rCompilationEntry = new TaskItem(file);
                 r2rCompilationEntry.SetMetadata(MetadataKeys.OutputR2RImage, compositeR2RImage);
+                r2rCompilationEntry.SetMetadata(MetadataKeys.CreateCompositeImage, "true");
                 r2rCompilationEntry.RemoveMetadata(MetadataKeys.OriginalItemSpec);
                 if (compositeDllWithUniqueName)
                     r2rCompilationEntry.SetMetadata(MetadataKeys.CompositeImageWithoutSource, "true");
@@ -238,7 +259,7 @@ namespace Microsoft.NET.Build.Tasks
                     if (compositePDBImage != null && ReadyToRunUseCrossgen2 && !_crossgen2IsVersion5)
                     {
                         r2rCompilationEntry.SetMetadata(MetadataKeys.EmitSymbols, "true");
-                        r2rCompilationEntry.SetMetadata(MetadataKeys.OutputPDBImage, Path.GetDirectoryName(compositePDBImage));
+                        r2rCompilationEntry.SetMetadata(MetadataKeys.OutputPDBImage, compositePDBImage);
 
                         // Publish composite PDB file
                         TaskItem r2rSymbolsFileToPublish = new TaskItem(file);
@@ -265,14 +286,71 @@ namespace Microsoft.NET.Build.Tasks
             }
         }
 
-        private enum Eligibility
+        private struct Eligibility
         {
-            None,
-            ReferenceOnly,
-            CompileAndReference
+            [Flags]
+            private enum EligibilityEnum
+            {
+                None = 0,
+                Reference = 1,
+                HideReferenceFromComposite = 2,
+                CompileSeparately = 4,
+                CompileIntoCompositeImage = 8,
+            }
+
+            private readonly EligibilityEnum _flags;
+
+            public static Eligibility None => new Eligibility(EligibilityEnum.None);
+
+            public bool NoEligibility => _flags == EligibilityEnum.None;
+            public bool IsReference => (_flags & EligibilityEnum.Reference) == EligibilityEnum.Reference;
+            public bool ReferenceHiddenFromCompositeBuild => (_flags & EligibilityEnum.HideReferenceFromComposite) == EligibilityEnum.HideReferenceFromComposite;
+            public bool CompileIntoCompositeImage => (_flags & EligibilityEnum.CompileIntoCompositeImage) == EligibilityEnum.CompileIntoCompositeImage;
+            public bool CompileSeparately => (_flags & EligibilityEnum.CompileSeparately) == EligibilityEnum.CompileSeparately;
+            public bool Compile => CompileIntoCompositeImage || CompileSeparately;
+
+            private Eligibility(EligibilityEnum flags)
+            {
+                _flags = flags;
+            }
+
+            public static Eligibility CreateReferenceEligibility(bool hideFromCompositeBuilds)
+            {
+                if (hideFromCompositeBuilds)
+                    return new Eligibility(EligibilityEnum.Reference | EligibilityEnum.HideReferenceFromComposite);
+                else
+                    return new Eligibility(EligibilityEnum.Reference);
+            }
+
+            public static Eligibility CreateCompileEligibility(bool doNotBuildIntoComposite)
+            {
+                if (doNotBuildIntoComposite)
+                    return new Eligibility(EligibilityEnum.Reference | EligibilityEnum.HideReferenceFromComposite | EligibilityEnum.CompileSeparately);
+                else
+                    return new Eligibility(EligibilityEnum.Reference | EligibilityEnum.CompileIntoCompositeImage);
+            }
         };
 
-        private static Eligibility GetInputFileEligibility(ITaskItem file, HashSet<string> exclusionSet)
+        private static bool IsNonCompositeReadyToRunImage(PEReader peReader)
+        {
+            if (peReader.PEHeaders == null)
+                return false;
+
+            if (peReader.PEHeaders.CorHeader == null)
+                return false;
+
+            if ((peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+            {
+                // This is likely a composite image, but those can't be re-r2r'd
+                return false;
+            }
+            else
+            {
+                return peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory.Size != 0;
+            }
+        }
+
+        private static Eligibility GetInputFileEligibility(ITaskItem file, bool compositeCompile, HashSet<string> exclusionSet, HashSet<string> r2rCompositeExclusionSet)
         {
             // Check to see if this is a valid ILOnly image that we can compile
             using (FileStream fs = new FileStream(file.ItemSpec, FileMode.Open, FileAccess.Read))
@@ -298,28 +376,47 @@ namespace Microsoft.NET.Build.Tasks
                             return Eligibility.None;
                         }
 
+                        bool excludeFromR2R = (exclusionSet != null && exclusionSet.Contains(Path.GetFileName(file.ItemSpec)));
+                        bool excludeFromComposite = (r2rCompositeExclusionSet != null && r2rCompositeExclusionSet.Contains(Path.GetFileName(file.ItemSpec))) || excludeFromR2R;
+
                         if ((pereader.PEHeaders.CorHeader.Flags & CorFlags.ILOnly) != CorFlags.ILOnly)
                         {
-                            return Eligibility.ReferenceOnly;
+                            // This can happen due to C++/CLI binaries or due to previously R2R compiled binaries.
+
+                            if (!IsNonCompositeReadyToRunImage(pereader))
+                            {
+                                // For C++/CLI always treat as only a reference
+                                return Eligibility.CreateReferenceEligibility(excludeFromComposite);
+                            }
+                            else
+                            {
+                                // If previously compiled as R2R, treat as reference if this would be compiled seperately
+                                if (!compositeCompile || excludeFromComposite)
+                                {
+                                    return Eligibility.CreateReferenceEligibility(excludeFromComposite);
+                                }
+                            }
                         }
 
                         if (file.HasMetadataValue(MetadataKeys.ReferenceOnly, "true"))
                         {
-                            return Eligibility.ReferenceOnly;
+                            return Eligibility.CreateReferenceEligibility(excludeFromComposite);
                         }
 
-                        if (exclusionSet != null && exclusionSet.Contains(Path.GetFileName(file.ItemSpec)))
+                        if (excludeFromR2R)
                         {
-                            return Eligibility.ReferenceOnly;
+                            return Eligibility.CreateReferenceEligibility(excludeFromComposite);
                         }
 
                         // save these most expensive checks for last. We don't want to scan all references for IL code
                         if (ReferencesWinMD(mdReader) || !HasILCode(pereader, mdReader))
                         {
-                            return Eligibility.ReferenceOnly;
+                            // Forwarder assemblies are not separately compiled via R2R, but when performing composite compilation, they are included in the bundle
+                            if (excludeFromComposite || !compositeCompile)
+                                return Eligibility.CreateReferenceEligibility(excludeFromComposite);
                         }
 
-                        return Eligibility.CompileAndReference;
+                        return Eligibility.CreateCompileEligibility(!compositeCompile || excludeFromComposite);
                     }
                 }
                 catch (BadImageFormatException)
