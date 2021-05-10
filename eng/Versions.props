@@ -169,7 +169,7 @@
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.21253.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21253.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- Experimental -->
-    <MicrosoftInteropDllImportGeneratorVersion>1.0.0-alpha.21257.2</MicrosoftInteropDllImportGeneratorVersion>
+    <MicrosoftInteropDllImportGeneratorVersion>1.0.0-alpha.21258.2</MicrosoftInteropDllImportGeneratorVersion>
   </PropertyGroup>
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
