@@ -10339,6 +10339,11 @@ namespace System.Runtime.Versioning
         private protected OSPlatformAttribute(string platformName) { }
         public string PlatformName { get; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
+    {
+        public RequiresPreviewFeaturesAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceConsumptionAttribute : System.Attribute
