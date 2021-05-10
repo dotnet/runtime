@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void FrameworkHiveSelection_GlobalHiveWithBetterMatch()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Multiple hives are only supported on Windows.
                 return;
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void FrameworkHiveSelection_MainHiveWithBetterMatch()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Multiple hives are only supported on Windows.
                 return;
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void FrameworkHiveSelection_CurrentDirectoryIsIgnored()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Multiple hives are only supported on Windows.
                 return;

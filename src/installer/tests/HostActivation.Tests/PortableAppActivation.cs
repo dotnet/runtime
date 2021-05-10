@@ -460,7 +460,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [InlineData(false)]
         public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // GUI app host is only supported on Windows.
                 return;
@@ -523,7 +523,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void AppHost_GUI_NoCustomErrorWriter_FrameworkMissing_ErrorReportedInDialog()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 return;
             }
@@ -566,7 +566,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void AppHost_GUI_FrameworkDependent_DisabledGUIErrors_DialogNotShown()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // GUI app host is only supported on Windows.
                 return;

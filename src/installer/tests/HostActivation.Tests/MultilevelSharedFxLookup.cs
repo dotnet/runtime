@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void SharedMultilevelFxLookup_Must_Verify_Folders_in_the_Correct_Order()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Multi-level lookup is only supported on Windows.
                 return;
@@ -248,7 +248,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void SharedMultilevelFxLookup_Must_Not_Roll_Forward_If_Framework_Version_Is_Specified_Through_Argument()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Multi-level lookup is only supported on Windows.
                 return;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -188,7 +189,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData("{0} ", false)]
         public void GetHostFxrPath_InstallLocationFile(string value, bool shouldPass)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // This test targets the install_location config file which is only used on Linux and macOS.
                 return;

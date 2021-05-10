@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void MuxerRunsPortableAppWithoutWindowsOsShims()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Manifests are only supported on Windows OSes.
                 return;
@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void FrameworkDependent_DLL_LongPath_Succeeds()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 return;
             }

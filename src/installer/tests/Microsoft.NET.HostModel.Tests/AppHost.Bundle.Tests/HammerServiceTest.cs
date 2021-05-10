@@ -23,7 +23,7 @@ namespace AppHost.Bundle.Tests
         [Fact]
         private void SingleFile_Apps_Are_Serviced()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // On Windows, the hammer servicing location is %ProgramFiles%\coreservicing.
                 // Since writing to this location requires administrative privilege, we do not run the test on Windows.

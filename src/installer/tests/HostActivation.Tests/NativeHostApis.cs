@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostfxr_get_available_sdks_with_multilevel_lookup()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // multilevel lookup is not supported on non-Windows
                 return;
@@ -324,7 +324,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_with_dotnet_root()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Only Windows supports multi-level lookup.
                 return;
@@ -408,7 +408,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // Only Windows supports multi-level lookup.
                 return;
@@ -558,7 +558,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnsureRestored()
                     .PublishProject();
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     BreadcrumbLocation = Path.Combine(
                         PortableAppWithExceptionFixture.TestProject.OutputDirectory,

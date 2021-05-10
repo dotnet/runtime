@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
@@ -27,7 +28,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData(10, false)]
         public void ActivateClass(int count, bool synchronous)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // COM activation is only supported on Windows
                 return;
@@ -55,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void ActivateClass_IgnoreAppLocalHostFxr()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // COM activation is only supported on Windows
                 return;
@@ -88,7 +89,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void ActivateClass_ValidateIErrorInfoResult()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // COM activation is only supported on Windows
                 return;
@@ -123,7 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void LoadTypeLibraries()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 // COM activation is only supported on Windows
                 return;
@@ -165,7 +166,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     // COM activation is only supported on Windows
                     return;

@@ -27,7 +27,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -55,7 +55,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -90,7 +90,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var symlinkRelativePath = string.Empty;
@@ -119,7 +119,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.FrameworkDependentAppFixture_Published
@@ -144,7 +144,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_app_directory_behind_symlink()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -168,7 +168,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_dotnet_behind_symlink()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -192,7 +192,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -216,7 +216,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_app_directory_behind_symlink_and_use_dotnet_run()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -243,7 +243,7 @@ namespace Microsoft.NET.HostModel.Tests
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
             // If enabled, this tests will need to set the console code page to output unicode characters:
             // Command.Create("chcp 65001").Execute();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Localized

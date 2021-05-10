@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Process Process { get; }
 
         // Priority order of runnable suffixes to look for and run
-        private static readonly string[] RunnableSuffixes = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+        private static readonly string[] RunnableSuffixes = OperatingSystem.IsWindows()
                                                          ? new string[] { ".exe", ".cmd", ".bat" }
                                                          : new string[] { string.Empty };
 
@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         private static bool ShouldUseCmd(string executable)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 var extension = Path.GetExtension(executable);
                 if (!string.IsNullOrEmpty(extension))
@@ -249,7 +249,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command WithUserProfile(string userprofile)
         {
             string userDir;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 userDir = "USERPROFILE";
             }
