@@ -67,6 +67,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50570", TestPlatforms.Android)]
         public void Debug_WriteLineNull_IndentsEmptyStringProperly()
         {
@@ -209,6 +210,7 @@ namespace System.Diagnostics.Tests
         [InlineData(-1, 0)]
         [InlineData(0, 0)]
         [InlineData(1, 1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50570", TestPlatforms.Android)]
         public void IndentLevel_Set_GetReturnsExpected(int indentLevel, int expectedIndentLevel)
         {

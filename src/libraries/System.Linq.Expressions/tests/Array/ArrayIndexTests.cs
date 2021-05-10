@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ActiveIssue("", TestPlatforms.tvOS)]
     public static class ArrayIndexTests
     {
         #region Boolean tests

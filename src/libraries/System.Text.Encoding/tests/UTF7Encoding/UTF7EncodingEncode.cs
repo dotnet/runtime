@@ -61,6 +61,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encode_Basic_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
         public void Encode_Basic(string source, int index, int count, byte[] expected)
         {
