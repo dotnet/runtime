@@ -24,25 +24,28 @@ namespace System
         // Gets the character at a specified position.
         //
         [IndexerName("Chars")]
-        public extern char this[int index]
+        public char this[int index]
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            get
+            {
+                if ((uint)index >= (ui nt)_stringLength)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                return Unsafe.Add(ref _firstChar, (nint)(uint)index /* force zero-extension */);
+            }
         }
 
         // Gets the length of this string
         //
-        // This is a EE implemented function so that the JIT can recognise it specially
+        // This is an intrinsic function so that the JIT can recognise it specially
         // and eliminate checks on character fetches in a loop like:
         //        for(int i = 0; i < str.Length; i++) str[i]
         // The actual code generated for this will be one instruction and will be inlined.
         //
-        public extern int Length
+        public int Length
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            get => checked((int)Unsafe.As<RawArrayData>(this).Length);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
