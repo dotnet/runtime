@@ -25,6 +25,7 @@
     <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferUtil.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
+    <Compile Include="System\LineEndingsHelper.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
     <Compile Include="System\AssemblyPathHelper.cs" />
