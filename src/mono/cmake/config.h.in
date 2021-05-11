@@ -303,7 +303,7 @@
 #cmakedefine DISABLE_REFLECTION_EMIT 1
 
 /* Disable support debug logging */
-// #cmakedefine DISABLE_LOGGING 1
+#cmakedefine DISABLE_LOGGING 1
 
 /* Disable COM support */
 #cmakedefine DISABLE_COM 1
