@@ -338,6 +338,7 @@ namespace System
 
                     const int MaxUshortLength = 5;
                     bool success = _port.TryFormat(vsb.AppendSpan(MaxUshortLength), out int charsWritten);
+                    Debug.Assert(success);
                     vsb.Length -= MaxUshortLength - charsWritten;
                 }
             }
