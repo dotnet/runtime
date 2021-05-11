@@ -10,23 +10,6 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-    Target = "M:System.Net.Http.Json.HttpContentJsonExtensions.<ReadFromJsonAsyncCore>d__3.MoveNext()",
-    Scope = "member",
-    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-    Target = "M:System.Net.Http.Json.HttpContentJsonExtensions.<ReadFromJsonAsyncCore>d__3.MoveNext()",
-    Scope = "member",
-    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-    Target = "M:System.Net.Http.Json.HttpContentJsonExtensions.<ReadFromJsonAsyncCore>d__4`1.MoveNext()",
-    Scope = "member",
-    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-    Target = "M:System.Net.Http.Json.HttpContentJsonExtensions.<ReadFromJsonAsyncCore>d__4`1.MoveNext()",
-    Scope = "member",
-    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-
 namespace System.Net.Http.Json
 {
     public static partial class HttpContentJsonExtensions
@@ -64,8 +47,15 @@ namespace System.Net.Http.Json
         {
             using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                return await DeserializeAsyncHelper(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+            static ValueTask<object?> DeserializeAsyncHelper(Stream contentStream, Type returnType, JsonSerializerOptions? options, CancellationToken cancellationToken)
+                => JsonSerializer.DeserializeAsync(contentStream, returnType, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
@@ -73,9 +63,16 @@ namespace System.Net.Http.Json
         {
             using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
             {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                return await DeserializeAsyncHelper<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+        private static ValueTask<TValue?> DeserializeAsyncHelper<TValue>(Stream contentStream, JsonSerializerOptions? options, CancellationToken cancellationToken)
+            => JsonSerializer.DeserializeAsync<TValue>(contentStream, options, cancellationToken);
 
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
