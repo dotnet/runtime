@@ -824,6 +824,18 @@ var MonoSupportLib = {
 			MONO.commands_received = buffer_obj;
 		},
 
+		mono_wasm_invoke_method_debugger_agent: function (command_parameters)
+		{
+			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
+			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
+			let res_ok = this._c_fn_table.mono_wasm_invoke_method_debugger_agent_wrapper (dataHeap.byteOffset, command_parameters.length);
+			let res = MONO.commands_received;
+			MONO.commands_received = null;
+			if (res_ok) {
+				return { res_ok, res };
+			}
+		},
+
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
@@ -1270,9 +1282,7 @@ var MonoSupportLib = {
 			return setter_res;
 		},
 
-		_create_proxy_from_object_id: function (objectId) {
-			const details = this.mono_wasm_get_details(objectId);
-
+		_create_proxy_from_object_id: function (objectId, details) {
 			if (objectId.startsWith ('dotnet:array:'))
 				return details.map (p => p.value);
 
@@ -1284,7 +1294,7 @@ var MonoSupportLib = {
 
 					Object.defineProperty (proxy,
 							prop.name,
-							{ get () { return MONO._invoke_getter (objectId, prop.name); } }
+							{ get () { return MONO.mono_wasm_invoke_method_debugger_agent (prop.get); } }
 					);
 				} else {
 					proxy [prop.name] = prop.value;
@@ -1302,6 +1312,7 @@ var MonoSupportLib = {
 				throw new Error (`"arguments" should be an array, but was ${request.arguments}`);
 
 			const objId = request.objectId;
+			const details = request.details;
 			let proxy;
 
 			if (objId.startsWith ('dotnet:cfo_res:')) {
@@ -1310,7 +1321,7 @@ var MonoSupportLib = {
 				else
 					throw new Error (`Unknown object id ${objId}`);
 			} else {
-				proxy = this._create_proxy_from_object_id (objId);
+				proxy = this._create_proxy_from_object_id (objId, details);
 			}
 
 			const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
@@ -1320,8 +1331,13 @@ var MonoSupportLib = {
 			if (fn_res === undefined)
 				return { type: "undefined" };
 
-			if (fn_res === null || (fn_res.subtype === 'null' && fn_res.value === undefined))
+			if (fn_res.res.value !== undefined ) {
 				return fn_res;
+			}
+
+			if (fn_res === null || (fn_res.subtype === 'null' && fn_res.value === undefined)) {
+				return fn_res;
+			}
 
 			// primitive type
 			if (Object (fn_res) !== fn_res)
@@ -1430,8 +1446,9 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          	'bool', [ 'number', 'number', 'number']);
 			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     	'bool', [ 'number', 'number']);
 			this._register_c_fn     ('mono_wasm_set_value_on_object',     	'bool', [ 'number', 'string', 'string' ]);
-			this._register_c_fn     ('mono_wasm_set_variable_on_frame',   	'bool', [ 'number', 'number', 'string', 'string']);
-			this._register_c_fn     ('mono_wasm_send_dbg_command',			'bool', [ 'number', 'number', 'number', 'number', 'number']);
+			this._register_c_fn     ('mono_wasm_set_variable_on_frame',   	'bool', [ 'number', 'number', 'string', 'string' ]);
+			this._register_c_fn     ('mono_wasm_send_dbg_command',			'bool', [ 'number', 'number', 'number', 'number', 'number' ]);
+			this._register_c_fn     ('mono_wasm_invoke_method_debugger_agent', 			'bool', [ 'number', 'number' ]);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;

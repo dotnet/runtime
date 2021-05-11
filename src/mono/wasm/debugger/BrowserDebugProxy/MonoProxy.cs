@@ -478,11 +478,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
 
-                        Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                        JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;
+                        if (objectId.Scheme == "valuetype")
+                            args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
 
-                        if (res.IsOk && res_value_type == JTokenType.Object || res_value_type == JTokenType.Object)
-                            res = Result.OkFromObject(new { result = res.Value["result"]["value"] });
+                        Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                        byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
+                        var ret_debugger_cmd = new MemoryStream(newBytes);
+                        var ret_debugger_cmd_reader = new BinaryReader(ret_debugger_cmd);
+                        ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                        var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "seila", token);
+                        /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
+                        res = Result.OkFromObject(new { result = obj["value"]});
 
                         SendResponse(id, res, token);
                         return true;
@@ -518,7 +524,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 return await GetScopeProperties(id, int.Parse(objectId.Value), token);
             }
-
+            if (objectId.Scheme == "valuetype")
+            {
+                var ret = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), token);
+                Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                return res2;
+            }
             Result res = await SendMonoCommand(id, MonoCommands.GetDetails(objectId, args), token);
             if (res.IsErr)
                 return res;
@@ -999,7 +1010,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<DebugStore> LoadStore(SessionId sessionId, CancellationToken token)
+        internal async Task<DebugStore> LoadStore(SessionId sessionId, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
 
@@ -1044,6 +1055,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 Log("verbose", $"Failed to clear breakpoints");
             }
+
+            await sdbHelper.SetProtocolVersion(sessionId, token);
 
             DebugStore store = await LoadStore(sessionId, token);
 

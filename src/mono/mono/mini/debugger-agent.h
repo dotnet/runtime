@@ -14,6 +14,28 @@
 // 2. debug_log parameters changed from MonoString* to MonoStringHandle
 // 3. debug_log parameters changed from MonoStringHandle back to MonoString*
 
+typedef struct _InvokeData InvokeData;
+
+struct _InvokeData
+{
+	int id;
+	int flags;
+	guint8 *p;
+	guint8 *endp;
+	/* This is the context which needs to be restored after the invoke */
+	MonoContext ctx;
+	gboolean has_ctx;
+	/*
+	 * If this is set, invoke this method with the arguments given by ARGS.
+	 */
+	MonoMethod *method;
+	gpointer *args;
+	guint32 suspend_count;
+	int nmethods;
+
+	InvokeData *last_invoke;
+};
+
 typedef struct {
 	const char *name;
 	void (*connect) (const char *address);
@@ -74,5 +96,11 @@ mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext
 
 void
 mono_wasm_save_thread_context (void);
+
+DebuggerTlsData*
+mono_wasm_get_tls (void);
+
+MdbgProtErrorCode
+mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
 
 #endif

@@ -52,6 +52,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attach
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_value_on_object (int object_id, const char* name, const char* value);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_method_debugger_agent (guint8* data, unsigned int size);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -788,6 +789,12 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
+			if (!obj) {
+				char *class_name = mono_type_full_name (type);
+				mono_wasm_add_func_var (class_name, NULL, 0);
+				g_free (class_name);
+				return TRUE;
+			}
 			MonoClass *klass = type->data.klass;
 
 			if (m_class_is_valuetype (mono_object_class (obj))) {
@@ -1650,6 +1657,27 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean 
+mono_wasm_invoke_method_debugger_agent (guint8* data, unsigned int size)
+{
+	MdbgProtBuffer buf;
+	buffer_init (&buf, 128);
+	InvokeData invoke_data;
+	memset(&invoke_data, 0, sizeof(InvokeData));
+	invoke_data.endp = data + size;
+	DebuggerTlsData* tls = mono_wasm_get_tls();
+
+	MdbgProtErrorCode error = mono_do_invoke_method(tls, &buf, &invoke_data, data, &data);
+	if (error != 0)
+		printf("error - mono_wasm_invoke_method_debugger_agent - %d\n", error);
+	EM_ASM ({
+		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2);
+	}, -1, buf.buf, buf.p-buf.buf);
+
+	buffer_free (&buf);
+	return TRUE;
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean 
 mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
 	MdbgProtBuffer buf;
@@ -1668,7 +1696,6 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 static gboolean 
 receive_debugger_agent_message (void *data, int len)
 {
-	PRINT_DEBUG_MSG (1, "receive_debugger_agent_message - %d\n", len);
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received (-1, $0, $1);
 	}, data, len);

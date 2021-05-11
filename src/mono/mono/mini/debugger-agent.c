@@ -144,28 +144,6 @@ typedef struct {
 	gboolean using_icordbg;
 } AgentConfig;
 
-typedef struct _InvokeData InvokeData;
-
-struct _InvokeData
-{
-	int id;
-	int flags;
-	guint8 *p;
-	guint8 *endp;
-	/* This is the context which needs to be restored after the invoke */
-	MonoContext ctx;
-	gboolean has_ctx;
-	/*
-	 * If this is set, invoke this method with the arguments given by ARGS.
-	 */
-	MonoMethod *method;
-	gpointer *args;
-	guint32 suspend_count;
-	int nmethods;
-
-	InvokeData *last_invoke;
-};
-
 struct _DebuggerTlsData {
 	MonoThreadUnwindState context;
 
@@ -2001,7 +1979,6 @@ static int
 buffer_add_ptr_id (Buffer *buf, MonoDomain *domain, IdType type, gpointer val)
 {
 	int id = get_id (domain, type, val);
-
 	buffer_add_id (buf, id);
 	return id;
 }
@@ -2197,6 +2174,12 @@ mono_wasm_save_thread_context (void)
 {
 	debugger_wasm_thread.really_suspended = TRUE;
 	mono_thread_state_init_from_current (&debugger_wasm_thread.context);
+}
+
+DebuggerTlsData*
+mono_wasm_get_tls (void) 
+{
+	return &debugger_wasm_thread;
 }
 #endif
 
@@ -5263,9 +5246,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	ErrorCode err;
 
 	is_enum = decode_byte (buf, &buf, limit);
-	/* Enums are sent as a normal vtype */
-	if (is_enum)
-		return ERR_NOT_IMPLEMENTED;
+
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (err != ERR_NONE)
 		return err;
@@ -5454,7 +5435,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 				int objid = decode_objid (buf, &buf, limit);
 				ErrorCode err;
 				MonoObject *obj;
@@ -5493,8 +5474,6 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				*/
 				buf2 = buf;
 				is_enum = decode_byte (buf, &buf, limit);
-				if (is_enum)
-					return ERR_NOT_IMPLEMENTED;
 				klass = decode_typeid (buf, &buf, limit, &d, &err);
 				if (err != ERR_NONE)
 					return err;
@@ -5954,8 +5933,8 @@ add_thread (gpointer key, gpointer value, gpointer user_data)
 }
 
 
-static ErrorCode
-do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp)
+ErrorCode
+mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp)
 {
 	ERROR_DECL (error);
 	guint8 *end = invoke->endp;
@@ -6022,7 +6001,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 					return err;
 			}
 	} else {
-		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+		if (!(m->flags & METHOD_ATTRIBUTE_STATIC) || (m->flags & METHOD_ATTRIBUTE_STATIC && !CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 			err = decode_value(m_class_get_byval_arg(m->klass), domain, this_buf, p, &p, end, FALSE);
 			if (err != ERR_NONE)
 				return err;
@@ -6277,7 +6256,7 @@ invoke_method (void)
 		if (err) {
 			/* Fail the other invokes as well */
 		} else {
-			err = do_invoke_method (tls, &buf, invoke, p, &p);
+			err = mono_do_invoke_method (tls, &buf, invoke, p, &p);
 		}
 
 		if (tls->abort_requested) {
@@ -7812,7 +7791,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		buffer_add_string (buf, m_class_get_name_space (klass));
 		buffer_add_string (buf, m_class_get_name (klass));
 		// FIXME: byref
-		name = mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
+		
+		MonoTypeNameFormat format = MONO_TYPE_NAME_FORMAT_FULL_NAME;
+		if (CHECK_PROTOCOL_VERSION(2, 61))
+			format = (MonoTypeNameFormat) decode_int (p, &p, end);
+		name = mono_type_get_name_full (m_class_get_byval_arg (klass), format);
 		buffer_add_string (buf, name);
 		g_free (name);
 		buffer_add_assemblyid (buf, domain, m_class_get_image (klass)->assembly);

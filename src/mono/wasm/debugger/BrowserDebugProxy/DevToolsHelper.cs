@@ -182,12 +182,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetDetails(DotnetObjectId objectId, JToken args = null) => new MonoCommands($"MONO.mono_wasm_get_details ('{objectId}', {(args ?? "{ }")})");
 
-        public static MonoCommands GetScopeVariables(int scopeId, params VarInfo[] vars)
-        {
-            var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
-            return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(var_ids)})");
-        }
-
         public static MonoCommands SetVariableValue(int scopeId, int index, string name, string newValue)
         {
             return new MonoCommands($"MONO.mono_wasm_set_variable_value({scopeId}, {index}, '{name}', '{newValue}')");
@@ -202,6 +196,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands SendDebuggerAgentCommand(int id, int command_set, int command, string command_parameters)
         {
             return new MonoCommands($"MONO.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
+        }
+
+        public static MonoCommands InvokeMethod(string command_parameters)
+        {
+            return new MonoCommands($"MONO.mono_wasm_invoke_method_debugger_agent ('{command_parameters}')");
         }
 
         public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"MONO.mono_wasm_release_object('{objectId}')");
