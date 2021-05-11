@@ -1812,7 +1812,7 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
             bool doubleWeight = lvIsTemp;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            // and, for the time being, implict byref params
+            // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 

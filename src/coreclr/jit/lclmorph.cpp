@@ -375,7 +375,7 @@ public:
 #endif // DEBUG
     }
 
-    // Morph promoted struct fields and count implict byref argument occurrences.
+    // Morph promoted struct fields and count implicit byref argument occurrences.
     // Also create and push the value produced by the visited node. This is done here
     // rather than in PostOrderVisit because it makes it easy to handle nodes with an
     // arbitrary number of operands - just pop values until the value corresponding
@@ -834,7 +834,7 @@ private:
 
         if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
         {
-            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
             // they require additional changes in subsequent phases.
             return;
         }
@@ -924,7 +924,7 @@ private:
 
         if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
         {
-            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
             // they require additional changes in subsequent phases
             // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
             return;
@@ -1130,7 +1130,7 @@ private:
         }
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implict by-ref V%02d\n",
+        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implicit by-ref V%02d\n",
                 varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
         varDsc->incLvRefCnt(1, RCS_EARLY);
 
@@ -1185,7 +1185,7 @@ private:
         if (isArgToCall)
         {
             JITDUMP("LocalAddressVisitor incrementing weighted ref count from %d to %d"
-                    " for implict by-ref V%02d arg passed to call\n",
+                    " for implicit by-ref V%02d arg passed to call\n",
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);
         }
