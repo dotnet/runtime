@@ -8329,8 +8329,10 @@ MethodTableBuilder::HandleExplicitLayout(
     UINT instanceSliceSize = 0;
     DWORD firstObjectOverlapOffset = ((DWORD)(-1));
 
+    UINT instanceSliceAlignment = (bmtGCSeries->numSeries != 0 ? TARGET_POINTER_SIZE : 1);
 
     UINT i;
+    UINT valueClassCacheIndex = (UINT)-1;
     for (i = 0; i < bmtMetaData->cFields; i++)
     {
         FieldDesc *pFD = bmtMFDescs->ppFieldDescList[i];
@@ -8339,8 +8341,30 @@ MethodTableBuilder::HandleExplicitLayout(
             continue;
         }
 
+        ++valueClassCacheIndex;
+
+        UINT32 fieldSize;
+        UINT32 fieldAlignment;
+        CorElementType fieldCorElemType = pFD->GetFieldType();
+        if (!EEClassLayoutInfo::TryGetPrimitiveFieldSizeAndAlignment(fieldCorElemType, &fieldSize, &fieldAlignment))
+        {
+            if (fieldCorElemType == ELEMENT_TYPE_VALUETYPE)
+            {
+                MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
+                UINT32 instanceFieldBytes = pByValueMT->GetNumInstanceFieldBytes();
+                fieldSize = instanceFieldBytes;
+                fieldAlignment = TARGET_POINTER_SIZE;
+#ifdef FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->RequiresAlign8())
+                {
+                    fieldAlignment = 8;
+                }
+#endif // FEATURE_64BIT_ALIGNMENT
+            }
+        }
+
         UINT fieldExtent = 0;
-        if (!ClrSafeInt<UINT>::addition(pFD->GetOffset_NoLogging(), GetFieldSize(pFD), fieldExtent))
+        if (!ClrSafeInt<UINT>::addition(pFD->GetOffset_NoLogging(), fieldSize, fieldExtent))
         {
             BuildMethodTableThrowException(COR_E_OVERFLOW);
         }
@@ -8348,6 +8372,11 @@ MethodTableBuilder::HandleExplicitLayout(
         if (fieldExtent > instanceSliceSize)
         {
             instanceSliceSize = fieldExtent;
+        }
+        
+        if (fieldAlignment > instanceSliceAlignment)
+        {
+            instanceSliceAlignment = fieldAlignment;
         }
     }
 
@@ -8381,7 +8410,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
     ExplicitClassTrust explicitClassTrust;
 
-    UINT valueClassCacheIndex = ((UINT)(-1));
+    valueClassCacheIndex = ((UINT)(-1));
     UINT badOffset = 0;
     FieldDesc * pFD = NULL;
     for (i = 0; i < bmtMetaData->cFields; i++)
@@ -8560,15 +8589,6 @@ MethodTableBuilder::HandleExplicitLayout(
         SetHasOverLayedFields();
     }
 
-    if (IsBlittable() || IsManagedSequential())
-    {
-        // Bug 849333: We shouldn't update "bmtFP->NumInstanceFieldBytes"
-        // for Blittable/ManagedSequential types.  As this will break backward compatiblity
-        // for the size of types that return true for HasExplicitFieldOffsetLayout()
-        //
-        return;
-    }
-
     FindPointerSeriesExplicit(instanceSliceSize, pFieldLayout);
 
     // Fixup the offset to include parent as current offsets are relative to instance slice
@@ -8577,16 +8597,15 @@ MethodTableBuilder::HandleExplicitLayout(
 
     // Instance fields start right after the parent
     S_UINT32 dwInstanceSliceOffset = S_UINT32(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0);
-    if (bmtGCSeries->numSeries != 0)
-    {
-        dwInstanceSliceOffset.AlignUp(TARGET_POINTER_SIZE);
-    }
+    dwInstanceSliceOffset.AlignUp(instanceSliceAlignment);
     if (dwInstanceSliceOffset.IsOverflow())
     {
         // addition overflow or cast truncation
         BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
     }
 
+    S_UINT32 numInstanceFieldBytesUnaligned = dwInstanceSliceOffset + S_UINT32(instanceSliceSize);
+    instanceSliceSize = ALIGN_UP(instanceSliceSize, instanceSliceAlignment);
     S_UINT32 numInstanceFieldBytes = dwInstanceSliceOffset + S_UINT32(instanceSliceSize);
 
     if (IsValueClass())
@@ -8600,7 +8619,7 @@ MethodTableBuilder::HandleExplicitLayout(
         if (clstotalsize != 0)
         {
             // size must be large enough to accomodate layout. If not, we use the layout size instead.
-            if (!numInstanceFieldBytes.IsOverflow() && clstotalsize >= numInstanceFieldBytes.Value())
+            if (!numInstanceFieldBytesUnaligned.IsOverflow() && clstotalsize >= numInstanceFieldBytesUnaligned.Value())
             {
                 numInstanceFieldBytes = S_UINT32(clstotalsize);
             }

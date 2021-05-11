@@ -1519,8 +1519,8 @@ internal class Program
         }
 
         {
-            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15 {sizeof(ExplicitlySizedStructExplicitSizeTooSmall)} != 0x15");
-            if (sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15)
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x18 {sizeof(ExplicitlySizedStructExplicitSizeTooSmall)} != 0x18");
+            if (sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x18)
                 return false;
             
             ExplicitlySizedStructExplicitSizeTooSmall str4 = new ExplicitlySizedStructExplicitSizeTooSmall();

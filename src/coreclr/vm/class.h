@@ -438,6 +438,11 @@ class EEClassLayoutInfo
             return m_cbPackingSize;
         }
 
+        static BOOL TryGetPrimitiveFieldSizeAndAlignment(
+            CorElementType corElemType,
+            /* out */ UINT32 *size,
+            /* out */ UINT32 *alignment);
+
     private:
         void SetIsBlittable(BOOL isBlittable)
         {

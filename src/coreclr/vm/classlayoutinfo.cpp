@@ -236,42 +236,9 @@ namespace
     //=======================================================================
     BOOL CheckIfDisqualifiedFromManagedSequential(CorElementType corElemType, MetaSig& fsig, RawFieldPlacementInfo* pManagedPlacementInfo)
     {
-        pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
-        pManagedPlacementInfo->m_size = TARGET_POINTER_SIZE;
-        // This type may qualify for ManagedSequential. Collect managed size and alignment info.
-        if (CorTypeInfo::IsPrimitiveType(corElemType))
+        if (EEClassLayoutInfo::TryGetPrimitiveFieldSizeAndAlignment(corElemType,
+            &pManagedPlacementInfo->m_alignment, &pManagedPlacementInfo->m_size))
         {
-            // Safe cast - no primitive type is larger than 4gb!
-            pManagedPlacementInfo->m_size = ((UINT32)CorTypeInfo::Size(corElemType));
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            switch (corElemType)
-            {
-                // The System V ABI for i386 defines different packing for these types.
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            case ELEMENT_TYPE_R8:
-            {
-                pManagedPlacementInfo->m_alignment = 4;
-                break;
-            }
-
-            default:
-            {
-                pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
-                break;
-            }
-            }
-#else // TARGET_X86 && UNIX_X86_ABI
-            pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
-#endif
-
-            return FALSE;
-        }
-        else if (corElemType == ELEMENT_TYPE_PTR)
-        {
-            pManagedPlacementInfo->m_size = TARGET_POINTER_SIZE;
-            pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
-
             return FALSE;
         }
         else if (corElemType == ELEMENT_TYPE_VALUETYPE)
@@ -538,6 +505,61 @@ namespace
 }
 
 //=======================================================================
+// This function calculates the side and alignment information for primitive
+// fields. The function returns TRUE when it succeeds i.e. when it managed
+// to resolve the primitive type.
+//=======================================================================
+BOOL EEClassLayoutInfo::TryGetPrimitiveFieldSizeAndAlignment(CorElementType corElemType, /* out */ UINT32 *size, /* out */ UINT32 *alignment)
+{
+    CONTRACTL
+    {
+        PRECONDITION(CheckPointer(size));
+        PRECONDITION(CheckPointer(alignment));
+    }
+    CONTRACTL_END;
+
+    *alignment = TARGET_POINTER_SIZE;
+    *size = TARGET_POINTER_SIZE;
+    if (CorTypeInfo::IsPrimitiveType(corElemType))
+    {
+        // Safe cast - no primitive type is larger than 4gb!
+        *size = ((UINT32)CorTypeInfo::Size(corElemType));
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
+        switch (corElemType)
+        {
+            // The System V ABI for i386 defines different packing for these types.
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R8:
+        {
+            *alignment = 4;
+            break;
+        }
+
+        default:
+        {
+            *alignment = size;
+            break;
+        }
+        }
+#else // TARGET_X86 && UNIX_X86_ABI
+        *alignment = *size;
+#endif
+
+        return TRUE;
+    }
+    else if (corElemType == ELEMENT_TYPE_PTR)
+    {
+        *size = TARGET_POINTER_SIZE;
+        *alignment = TARGET_POINTER_SIZE;
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+//=======================================================================
 // Called from the clsloader to load up and summarize the field metadata
 // for layout classes.
 //
@@ -690,7 +712,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
 
     BYTE parentManagedAlignmentRequirement = 0;
-    if (pParentMT && (pParentMT->IsManagedSequential() || (pParentMT->GetClass()->HasExplicitFieldOffsetLayout() && pParentMT->IsBlittable())))
+    if (pParentMT && (pParentMT->IsManagedSequential() || pParentMT->GetClass()->HasExplicitFieldOffsetLayout()))
     {
         parentManagedAlignmentRequirement = pParentLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
     }

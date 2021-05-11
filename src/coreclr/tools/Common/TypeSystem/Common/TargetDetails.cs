@@ -252,8 +252,15 @@ namespace Internal.TypeSystem
         /// </summary>
         public LayoutInt GetWellKnownTypeAlignment(DefType type)
         {
-            // Size == Alignment for all platforms.
-            return GetWellKnownTypeSize(type);
+            // Size == Alignment on 64-bit platforms, arm32 and Windows x86; on Unix x86, Alignment of 8-byte primitives is 4.
+            LayoutInt typeSize = GetWellKnownTypeSize(type);
+            if (Architecture == TargetArchitecture.X86 && OperatingSystem != TargetOS.Windows)
+            {
+                // Per https://github.com/dotnet/runtime/blob/b08a97afb8270511c39fe26d37038877bb63a09b/src/coreclr/vm/classlayoutinfo.cpp#L254
+                // 8-byte types have alignment 4 on UNIX x86.
+                typeSize = LayoutInt.Min(typeSize, LayoutPointerSize);
+            }
+            return typeSize;
         }
 
         /// <summary>
