@@ -44,7 +44,6 @@ target_link_libraries(System.Security.Cryptography.Native.Android
     -llog
 )
 
-# TODO: Use "System.Security.Cryptography.Native.Android" name (will require a lot of csproj changes here and there)
 set_target_properties(System.Security.Cryptography.Native.Android PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
 
