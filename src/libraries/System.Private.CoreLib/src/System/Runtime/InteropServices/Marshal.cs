@@ -605,6 +605,19 @@ namespace System.Runtime.InteropServices
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
+// CoreCLR has a different implementation for Windows only
+#if !CORECLR || !TARGET_WINDOWS
+        public static IntPtr GetHINSTANCE(Module m)
+        {
+            if (m is null)
+            {
+                throw new ArgumentNullException(nameof(m));
+            }
+
+            return (IntPtr)(-1);
+        }
+#endif
+
         /// <summary>
         /// Converts the HRESULT to a CLR exception.
         /// </summary>
@@ -1160,7 +1173,7 @@ namespace System.Runtime.InteropServices
 
         public static int GetHRForLastWin32Error()
         {
-            int dwLastError = GetLastWin32Error();
+            int dwLastError = GetLastPInvokeError();
             if ((dwLastError & 0x80000000) == 0x80000000)
             {
                 return dwLastError;
@@ -1265,6 +1278,11 @@ namespace System.Runtime.InteropServices
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
             safeHandle.SetHandle(handle);
+        }
+
+        public static int GetLastWin32Error()
+        {
+            return GetLastPInvokeError();
         }
     }
 }

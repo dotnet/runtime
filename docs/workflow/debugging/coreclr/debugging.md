@@ -18,12 +18,12 @@ Debugging CoreCLR on Windows
 2. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 3. Bring up the properties page for the INSTALL project
 4. Select Configuration Properties->Debugging from the left side tree control
-5. Set Command=`$(SolutionDir)\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`
+5. Set Command=`$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`
     1. This points to the folder where the built runtime binaries are present.
 6. Set Command Arguments=`<managed app you wish to run>` (e.g. HelloWorld.dll)
-7. Set Working Directory=`$(SolutionDir)\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`
+7. Set Working Directory=`$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`
     1. This points to the folder containing CoreCLR binaries.
-8. Set Environment=`CORE_LIBRARIES=$(SolutionDir)\..\..\..\bin\runtime\<current tfm>-windows-$(Configuration)-$(Platform)`,
+8. Set Environment=`CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<current tfm>-windows-$(Configuration)-$(Platform)`,
     where '\<current tfm\>' is the target framework of current branch, for example `netcoreapp3.1` `net5.0`.
     1. This points to the folder containing core libraries except `System.Private.CoreLib`.
     2. This step can be skipped if you are debugging CLR tests that references only `System.Private.CoreLib`.

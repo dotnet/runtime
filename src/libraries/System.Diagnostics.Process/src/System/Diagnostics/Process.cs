@@ -260,6 +260,8 @@ namespace System.Diagnostics
         /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MaxWorkingSet
         {
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get
             {
                 EnsureWorkingSetLimits();
@@ -280,6 +282,8 @@ namespace System.Diagnostics
         /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MinWorkingSet
         {
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get
             {
                 EnsureWorkingSetLimits();

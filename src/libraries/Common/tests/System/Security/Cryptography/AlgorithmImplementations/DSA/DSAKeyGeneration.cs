@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public partial class DSAKeyGeneration
     {
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
@@ -24,12 +24,14 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50580", TestPlatforms.Android)]
         public static void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration), nameof(HasSecondMinSize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50580", TestPlatforms.Android)]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));

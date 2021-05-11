@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonValueConverter : JsonConverter<JsonValue>
+    internal sealed class JsonValueConverter : JsonConverter<JsonValue>
     {
         public override void Write(Utf8JsonWriter writer, JsonValue value, JsonSerializerOptions options)
         {

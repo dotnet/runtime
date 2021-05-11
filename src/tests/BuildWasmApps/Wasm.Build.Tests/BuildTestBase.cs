@@ -268,7 +268,8 @@ namespace Wasm.Build.Tests
                                   bool? dotnetWasmFromRuntimePack = null,
                                   bool hasIcudt = true,
                                   bool useCache = true,
-                                  bool expectSuccess = true)
+                                  bool expectSuccess = true,
+                                  bool createProject = true)
         {
             if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
@@ -282,12 +283,20 @@ namespace Wasm.Build.Tests
                 return (_projectDir, "FIXME");
             }
 
-            InitPaths(id);
-            InitProjectDir(_projectDir);
-            initProject?.Invoke();
+            if (createProject)
+            {
+                InitPaths(id);
+                InitProjectDir(_projectDir);
+                initProject?.Invoke();
 
-            File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-            File.Copy(Path.Combine(AppContext.BaseDirectory, "runtime-test.js"), Path.Combine(_projectDir, "runtime-test.js"));
+                File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "runtime-test.js"), Path.Combine(_projectDir, "runtime-test.js"));
+            }
+            else if (_projectDir is null)
+            {
+                throw new Exception("_projectDir should be set, to use createProject=false");
+            }
+
 
             StringBuilder sb = new();
             sb.Append("publish");

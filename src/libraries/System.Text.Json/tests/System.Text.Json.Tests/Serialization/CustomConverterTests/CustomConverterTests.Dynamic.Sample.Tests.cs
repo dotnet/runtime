@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Tests
 
             double dbl = (double)obj;
 #if !BUILDING_INBOX_LIBRARY
-            string temp = dbl.ToString();
+            string temp = dbl.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // The reader uses "G17" format which causes temp to be 4.2000000000000002 in this case.
             dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);
 #endif

@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static partial class JsonNodeTests
     {

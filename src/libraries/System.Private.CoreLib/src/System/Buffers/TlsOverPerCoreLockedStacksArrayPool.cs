@@ -173,7 +173,7 @@ namespace System.Buffers
                 // Clear the array if the user requests.
                 if (clearArray)
                 {
-                    Array.Clear(array, 0, array.Length);
+                    Array.Clear(array);
                 }
 
                 // Check to see if the buffer is the correct size for this bucket
@@ -274,7 +274,7 @@ namespace System.Buffers
                     foreach (KeyValuePair<T[]?[], object?> tlsBuckets in s_allTlsBuckets)
                     {
                         T[]?[] buckets = tlsBuckets.Key;
-                        Array.Clear(buckets, 0, buckets.Length);
+                        Array.Clear(buckets);
                     }
                 }
             }

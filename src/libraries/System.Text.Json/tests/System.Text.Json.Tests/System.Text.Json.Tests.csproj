@@ -2,12 +2,16 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Suppress warning 'JsonSerializerOptions.IgnoreNullValues' is obsolete. -->
-    <NoWarn>CS0618</NoWarn>
+    <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+
+    <!-- these tests depend on the pdb files -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants> 
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
@@ -113,8 +117,20 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
-    <Compile Include="Serialization\MetadataServicesTests\MetadataServicesTests.cs" />
-    <Compile Include="Serialization\MetadataServicesTests\MetadataServicesTests.Options.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\DateTimeOffset.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\Dictionary.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\HighLowTemps.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\Int32.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\JsonContext.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\JsonContext.GetJsonTypeInfo.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\List.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\String.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\StringArray.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonContext\WeatherForecastWithPOCOs.cs" />
+    <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
+    <Compile Include="Serialization\MetadataTests\MetadataTests.JsonMetadataServices.cs" />
+    <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
+    <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
     <Compile Include="Serialization\NullableTests.cs" />
@@ -173,7 +189,7 @@
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Compile Include="Serialization\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
