@@ -339,19 +339,10 @@ namespace System.IO
             {
                 string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
 
-                // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
-                Interop.Sys.FileStatus status = default(Interop.Sys.FileStatus);
-                if ((Interop.Sys.LStat(fullPath, out status) == 0) &&
-                    ((status.Mode & (uint)Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK))
-                {
-                    return;
-                }
-
                 // Add a watch for the full path.  If the path is already being watched, this will return
-                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW
-                // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
-                // files (which don't exist in Windows)
-                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._watchFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
+                // the existing descriptor.  This works even in the case of a rename. We also add the 
+                // EXCL_UNLINK flag to keep parity with Windows where we don't pickup unlinked files (which don't exist in Windows).
+                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._watchFilters | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
                 if (wd == -1)
                 {
                     // If we get an error when trying to add the watch, don't let that tear down processing.  Instead,
