@@ -977,7 +977,8 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 
         LclVarDsc* varDsc = &lvaTable[varNum];
 
-        if (varDsc->lvStackByref || varDsc->lvVerTypeInfo.IsThisPtr())
+        if (varDsc->lvStackByref ||
+            (varDsc->lvVerTypeInfo.IsThisPtr() && !varDsc->lvVerTypeInfo.IsUninitialisedObjRef()))
         {
             return false;
         }
