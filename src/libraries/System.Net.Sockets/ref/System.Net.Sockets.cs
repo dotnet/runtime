@@ -292,7 +292,7 @@ namespace System.Net.Sockets
         [System.ObsoleteAttribute("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static bool SupportsIPv6 { get { throw null; } }
         public short Ttl { get { throw null; } set { } }
-        [System.ObsoleteAttribute("This property has no effect in .NET Core")]
+        [System.ObsoleteAttribute("This property has no effect in .NET 5+ and .NET Core.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO { get { throw null; } set { } }
         public System.Net.Sockets.Socket Accept() { throw null; }
@@ -503,7 +503,7 @@ namespace System.Net.Sockets
         NonBlocking = 1,
         Connected = 2,
         Listening = 4,
-        [System.ObsoleteAttribute("This flag has no effect in .NET Core")]
+        [System.ObsoleteAttribute("This flag has no effect in .NET 5+ and .NET Core.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         UseOnlyOverlappedIO = 8,
     }

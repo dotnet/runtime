@@ -13,7 +13,7 @@ namespace System.Net.Sockets
         //disconnect doesn't update getpeername to return a failure.
         Connected = 0x2,
         Listening = 0x4,
-        [Obsolete("This flag has no effect in .NET Core")]
+        [Obsolete("This flag has no effect in .NET 5+ and .NET Core.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         UseOnlyOverlappedIO = 0x8,
     }

@@ -416,7 +416,7 @@ namespace System.Net.Sockets
         // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
         // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
         // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
-        [Obsolete("This property has no effect in .NET Core")]
+        [Obsolete("This property has no effect in .NET 5+ and .NET Core.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO
         {
