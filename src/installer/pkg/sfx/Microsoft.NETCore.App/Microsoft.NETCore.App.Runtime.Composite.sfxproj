@@ -14,7 +14,8 @@
     <VSInsertionShortComponentName>NetCore.SharedFramework.Composite</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(PgoInstrument)' != ''"">true</SkipBuild>
+    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
 
   <ItemGroup>
