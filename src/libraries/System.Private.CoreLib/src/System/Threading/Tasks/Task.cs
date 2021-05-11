@@ -2973,14 +2973,30 @@ namespace System.Threading.Tasks
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44622
                     if (infiniteWait)
                     {
-                        returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
+                        ThreadPool.NotifyThreadBlocked();
+                        try
+                        {
+                            returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
+                        }
+                        finally
+                        {
+                            ThreadPool.NotifyThreadUnblocked();
+                        }
                     }
                     else
                     {
                         uint elapsedTimeTicks = ((uint)Environment.TickCount) - startTimeTicks;
                         if (elapsedTimeTicks < millisecondsTimeout)
                         {
-                            returnValue = mres.Wait((int)(millisecondsTimeout - elapsedTimeTicks), cancellationToken);
+                            ThreadPool.NotifyThreadBlocked();
+                            try
+                            {
+                                returnValue = mres.Wait((int)(millisecondsTimeout - elapsedTimeTicks), cancellationToken);
+                            }
+                            finally
+                            {
+                                ThreadPool.NotifyThreadUnblocked();
+                            }
                         }
                     }
 #pragma warning restore CA1416
