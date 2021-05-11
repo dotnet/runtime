@@ -109,7 +109,9 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
@@ -249,13 +251,6 @@
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
   </ItemGroup>
-  <!-- These classes are only used for FeatureCominterop, but they are referenced by tests
-       in order to allow tests to be built on all platforms, these classes are included for all
-       platforms, but throw PlatformNotSupported() for unsupported platforms -->
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
   </ItemGroup>
@@ -272,6 +267,7 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
       <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
     </Compile>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
     <Compile Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
@@ -286,6 +282,9 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ExpandoToDispatchExMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\TypeToTypeInfoMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCominterop)' != 'true'">
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />

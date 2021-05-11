@@ -4571,6 +4571,7 @@ namespace System
         public virtual System.Type MakePointerType() { throw null; }
         public static bool operator ==(System.Type? left, System.Type? right) { throw null; }
         public static bool operator !=(System.Type? left, System.Type? right) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw null; }
         public override string ToString() { throw null; }
     }
@@ -6082,6 +6083,7 @@ namespace System.Diagnostics.CodeAnalysis
         NonPublicProperties = 1024,
         PublicEvents = 2048,
         NonPublicEvents = 4096,
+        Interfaces = 8192,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class DynamicDependencyAttribute : System.Attribute
@@ -7944,10 +7946,13 @@ namespace System.Reflection
         public static System.Reflection.Assembly? LoadWithPartialName(string partialName) { throw null; }
         public static bool operator ==(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
         public static bool operator !=(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly ReflectionOnlyLoad(string assemblyString) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw null; }
         public override string ToString() { throw null; }
@@ -8067,6 +8072,7 @@ namespace System.Reflection
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
+        [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0017", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.StrongNameKeyPair? KeyPair { get { throw null; } set { } }
         public string? Name { get { throw null; } set { } }
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
@@ -8914,6 +8920,7 @@ namespace System.Reflection
         public static System.Collections.Generic.IEnumerable<System.Reflection.PropertyInfo> GetRuntimeProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] this System.Type type) { throw null; }
         public static System.Reflection.PropertyInfo? GetRuntimeProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] this System.Type type, string name) { throw null; }
     }
+    [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0017", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class StrongNameKeyPair : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public StrongNameKeyPair(byte[] keyPairArray) { }
@@ -10327,20 +10334,15 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName? left, System.Runtime.Versioning.FrameworkName? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
-    {
-        public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
-    }
     public abstract class OSPlatformAttribute : System.Attribute
     {
         private protected OSPlatformAttribute(string platformName) { }
         public string PlatformName { get; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
     {
-        public UnsupportedOSPlatformAttribute(string platformName) : base(platformName) { }
+        public RequiresPreviewFeaturesAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
@@ -10369,6 +10371,16 @@ namespace System.Runtime.Versioning
         Private = 16,
         Assembly = 32,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    {
+        public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
+    public sealed class SupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    {
+        public SupportedOSPlatformGuardAttribute(string platformName) : base(platformName) { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetFrameworkAttribute : System.Attribute
     {
@@ -10380,6 +10392,16 @@ namespace System.Runtime.Versioning
     public sealed class TargetPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public TargetPlatformAttribute(string platformName) : base(platformName) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    {
+        public UnsupportedOSPlatformAttribute(string platformName) : base(platformName) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field |System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
+    public sealed class UnsupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    {
+        public UnsupportedOSPlatformGuardAttribute(string platformName) : base(platformName) { }
     }
     public static partial class VersioningHelper
     {
@@ -10962,7 +10984,9 @@ namespace System.Text
     {
         FormC = 1,
         FormD = 2,
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         FormKC = 5,
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         FormKD = 6,
     }
     public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.ISpanFormattable

@@ -44,6 +44,9 @@ namespace InteropLibImports
     // Delete Object instance handle.
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
+    // Check if Object instance handle still points at an Object.
+    bool HasValidTarget(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
+
     // Get the current global pegging state.
     bool GetGlobalPeggingState() noexcept;
 

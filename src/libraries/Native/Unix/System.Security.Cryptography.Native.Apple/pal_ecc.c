@@ -3,44 +3,38 @@
 
 #include "pal_ecc.h"
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
-int32_t AppleCryptoNative_EccGenerateKey(
-    int32_t keySizeBits, SecKeychainRef tempKeychain, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
+int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
+                                         SecKeyRef* pPublicKey,
+                                         SecKeyRef* pPrivateKey,
+                                         CFErrorRef* pErrorOut)
 {
     if (pPublicKey != NULL)
         *pPublicKey = NULL;
     if (pPrivateKey != NULL)
         *pPrivateKey = NULL;
 
-    if (pPublicKey == NULL || pPrivateKey == NULL || pOSStatus == NULL)
+    if (pPublicKey == NULL || pPrivateKey == NULL || pErrorOut == NULL)
         return kErrorBadInput;
 
+    int32_t ret = kErrorSeeError;
     CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 3, &kCFTypeDictionaryKeyCallBacks, NULL);
-
     CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
-    OSStatus status;
 
     if (attributes != NULL && cfKeySizeValue != NULL)
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
-        CFDictionaryAddValue(attributes, kSecUseKeychain, tempKeychain);
 
-        status = SecKeyGeneratePair(attributes, pPublicKey, pPrivateKey);
-
-        if (status == noErr)
+        *pPrivateKey = SecKeyCreateRandomKey(attributes, pErrorOut);
+        if (*pPrivateKey != NULL)
         {
-            status = ExportImportKey(pPublicKey, kSecItemTypePublicKey);
-        }
-
-        if (status == noErr)
-        {
-            status = ExportImportKey(pPrivateKey, kSecItemTypePrivateKey);
+            *pPublicKey = SecKeyCopyPublicKey(*pPrivateKey);
+            ret = 1;
         }
     }
     else
     {
-        status = errSecAllocate;
+        ret = errSecAllocate;
     }
 
     if (attributes != NULL)
@@ -48,10 +42,8 @@ int32_t AppleCryptoNative_EccGenerateKey(
     if (cfKeySizeValue != NULL)
         CFRelease(cfKeySizeValue);
 
-    *pOSStatus = status;
-    return status == noErr;
+    return ret;
 }
-#endif
 
 uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
 {

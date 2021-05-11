@@ -381,7 +381,7 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(jsonLoadError)
                     .Build();
             }
-            catch (Exception e)
+            catch (InvalidDataException e)
             {
                 Assert.Equal(e, jsonError);
             }
@@ -409,7 +409,7 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (Exception e)
+            catch (InvalidDataException e)
             {
                 Assert.Equal(e, error);
             }
@@ -438,10 +438,11 @@ IniKey1=IniValue2");
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (FormatException e)
+            catch (InvalidDataException e)
             {
                 Assert.Equal(e, error);
             }
+
             Assert.NotNull(provider);
         }
 
@@ -820,6 +821,7 @@ IniKey1=IniValue2");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50866", TestPlatforms.Android)]
         public void LoadIncorrectJsonFile_ThrowException()
         {
             var json = @"{
@@ -831,8 +833,8 @@ IniKey1=IniValue2");
             }";
             _fileSystem.WriteFile(_jsonFile, json);
 
-            var exception = Assert.Throws<FormatException>(() => CreateBuilder().AddJsonFile(_jsonFile).Build());
-            Assert.Contains("Could not parse the JSON file.", exception.Message);
+            var exception = Assert.Throws<InvalidDataException>(() => CreateBuilder().AddJsonFile(_jsonFile).Build());
+            Assert.Contains("Could not parse the JSON file.", exception.InnerException.Message);
         }
 
         [Fact]

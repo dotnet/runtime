@@ -914,20 +914,21 @@ namespace System.Xml.Serialization
         protected void WriteAttribute(string localName, string? ns, string? value)
         {
             if (value == null) return;
-            if (localName == "xmlns" || localName.StartsWith("xmlns:", StringComparison.Ordinal))
-            {
-                ;
-            }
-            else
+
+            if (localName != "xmlns" && !localName.StartsWith("xmlns:", StringComparison.Ordinal))
             {
                 int colon = localName.IndexOf(':');
+
                 if (colon < 0)
                 {
                     if (ns == XmlReservedNs.NsXml)
                     {
                         string? prefix = _w.LookupPrefix(ns);
+
                         if (prefix == null || prefix.Length == 0)
+                        {
                             prefix = "xml";
+                        }
                         _w.WriteAttributeString(prefix, localName, ns, value);
                     }
                     else
@@ -946,20 +947,21 @@ namespace System.Xml.Serialization
         protected void WriteAttribute(string localName, string ns, byte[]? value)
         {
             if (value == null) return;
-            if (localName == "xmlns" || localName.StartsWith("xmlns:", StringComparison.Ordinal))
-            {
-                ;
-            }
-            else
+
+            if (localName != "xmlns" && !localName.StartsWith("xmlns:", StringComparison.Ordinal))
             {
                 int colon = localName.IndexOf(':');
+
                 if (colon < 0)
                 {
                     if (ns == XmlReservedNs.NsXml)
                     {
                         string? prefix = _w.LookupPrefix(ns);
+
                         if (prefix == null || prefix.Length == 0)
+                        {
                             prefix = "xml";
+                        }
                         _w.WriteStartAttribute("xml", localName, ns);
                     }
                     else
@@ -972,6 +974,7 @@ namespace System.Xml.Serialization
                     string? prefix = _w.LookupPrefix(ns);
                     _w.WriteStartAttribute(prefix, localName.Substring(colon + 1), ns);
                 }
+
                 XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
                 _w.WriteEndAttribute();
             }
@@ -1434,7 +1437,7 @@ namespace System.Xml.Serialization
             {
                 return _aliasBase + (++_tempNamespacePrefix);
             }
-            while (_usedPrefixes.Contains(++_tempNamespacePrefix)) {; }
+            while (_usedPrefixes.Contains(++_tempNamespacePrefix)) { }
             return _aliasBase + _tempNamespacePrefix;
         }
 

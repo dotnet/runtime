@@ -154,12 +154,14 @@ internal partial class VectorTest
         if (VectorRelopTest<sbyte>.VectorRelOp(-2, -3) != Pass) returnVal = Fail;
         if (VectorRelopTest<uint>.VectorRelOp(3u, 2u) != Pass) returnVal = Fail;
         if (VectorRelopTest<ulong>.VectorRelOp(3ul, 2ul) != Pass) returnVal = Fail;
+        if (VectorRelopTest<nint>.VectorRelOp(3, 2) != Pass) returnVal = Fail;
+        if (VectorRelopTest<nuint>.VectorRelOp(3u, 2u) != Pass) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
 
         // ConditionalSelect, LessThanOrEqual and GreaterThanOrEqual are defined
         // on the Vector type, so the overloads can't be distinguished.
-        // 
+        //
         if (!jitLog.Check("System.Numerics.Vector:ConditionalSelect(struct,struct,struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:LessThanOrEqual(struct,struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:GreaterThanOrEqual(struct,struct):struct")) returnVal = Fail;
@@ -273,6 +275,28 @@ internal partial class VectorTest
         // in the library by GetOneValue and GetZeroValue, respectively.
         if (!jitLog.Check("GetOneValue", "UInt64")) returnVal = Fail;
         if (!jitLog.Check("GetZeroValue", "UInt64")) returnVal = Fail;
+
+        if (!jitLog.Check("Equals", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("LessThan", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("GreaterThan", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("op_BitwiseAnd", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("op_ExclusiveOr", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("GreaterThan", "IntPtr")) returnVal = Fail;
+        // This relies on an implementation detail - i.e. that the One and Zero property are implemented
+        // in the library by GetOneValue and GetZeroValue, respectively.
+        if (!jitLog.Check("GetOneValue", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("GetZeroValue", "IntPtr")) returnVal = Fail;
+
+        if (!jitLog.Check("Equals", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("LessThan", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("GreaterThan", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("op_BitwiseAnd", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("op_ExclusiveOr", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("GreaterThan", "UIntPtr")) returnVal = Fail;
+        // This relies on an implementation detail - i.e. that the One and Zero property are implemented
+        // in the library by GetOneValue and GetZeroValue, respectively.
+        if (!jitLog.Check("GetOneValue", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("GetZeroValue", "UIntPtr")) returnVal = Fail;
 
         jitLog.Dispose();
 

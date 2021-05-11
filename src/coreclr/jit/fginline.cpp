@@ -881,8 +881,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
-    inlineInfo.profileScaleState      = InlineInfo::ProfileScaleState::UNDETERMINED;
-    inlineInfo.profileScaleFactor     = 0.0;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -1274,10 +1272,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // Set the try and handler index and fix the jump types of inlinee's blocks.
     //
-
-    bool inheritWeight;
-    inheritWeight = true; // The firstBB does inherit the weight from the iciBlock
-
     for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
         noway_assert(!block->hasTryIndex());
@@ -1299,48 +1293,20 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         if (block->bbJumpKind == BBJ_RETURN)
         {
-            inheritWeight = true; // A return block does inherit the weight from the iciBlock
             noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
             if (block->bbNext)
             {
+                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                        bottomBlock->bbNum);
                 block->bbJumpKind = BBJ_ALWAYS;
                 block->bbJumpDest = bottomBlock;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
-                           bottomBlock->bbNum);
-                }
-#endif // DEBUG
             }
             else
             {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                }
-#endif // DEBUG
+                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
                 block->bbJumpKind = BBJ_NONE;
             }
         }
-
-        // Update profile weight for callee blocks, if we didn't do it already.
-        if (pInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
-        {
-            continue;
-        }
-
-        // If we were unable to compute a scale for some reason, then
-        // try to do something plausible. Entry/exit blocks match call
-        // site, internal blocks scaled by half; all rare blocks left alone.
-        //
-        if (!block->isRunRarely())
-        {
-            block->inheritWeightPercentage(iciBlock, inheritWeight ? 100 : 50);
-        }
-
-        inheritWeight = false;
     }
 
     // Insert inlinee's blocks into inliner's block list.
@@ -1377,7 +1343,6 @@ _Done:
     compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
-    compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
@@ -1431,6 +1396,15 @@ _Done:
                 InlineeCompiler->optMethodFlags, optMethodFlags);
     }
 #endif
+
+    // If an inlinee needs GS cookie we need to make sure that the cookie will not be allocated at zero stack offset.
+    // Note that if the root method needs GS cookie then this has already been taken care of.
+    if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
+    {
+        setNeedsGSSecurityCookie();
+        const unsigned dummy   = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+        lvaTable[dummy].lvType = TYP_INT;
+    }
 
     // If there is non-NULL return, replace the GT_CALL with its return value expression,
     // so later it will be picked up by the GT_RET_EXPR node.

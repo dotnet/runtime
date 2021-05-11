@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
@@ -8,6 +8,7 @@
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn />
     <Nullable>enable</Nullable>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -46,20 +47,22 @@
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArray.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArray.IList.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Dynamic.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Operators.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Parse.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.To.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.IDictionary.cs" />
-    <Compile Include="System\Text\Json\Node\JsonValue.cs" />
-    <Compile Include="System\Text\Json\Node\JsonValueOfT.cs" />
-    <Compile Include="System\Text\Json\Node\MetaDynamic.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.Dynamic.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.Operators.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.Parse.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.To.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNodeOptions.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.Dynamic.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.ValueCollection.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
+    <Compile Include="System\Text\Json\Nodes\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -172,6 +175,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonDefaultNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Helpers.cs" />
@@ -254,11 +258,13 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\TypeExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>

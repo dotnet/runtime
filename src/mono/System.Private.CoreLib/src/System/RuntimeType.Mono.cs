@@ -153,14 +153,14 @@ namespace System
         #region Internal
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
+        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, reflectionOnly, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark, false);
         }
 
         private static void SplitName(string? fullname, out string? name, out string? ns)

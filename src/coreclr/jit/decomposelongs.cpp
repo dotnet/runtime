@@ -1687,8 +1687,8 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     assert(oper == GT_SIMD);
 
     GenTreeSIMD* simdTree = tree->AsSIMD();
-    var_types    baseType = simdTree->gtSIMDBaseType;
-    unsigned     simdSize = simdTree->gtSIMDSize;
+    var_types    baseType = simdTree->GetSimdBaseType();
+    unsigned     simdSize = simdTree->GetSimdSize();
 
     assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicGetItem);
     assert(varTypeIsLong(baseType));
@@ -1743,8 +1743,8 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
         Range().InsertBefore(simdTree, simdTmpVar1, indexTmpVar1, two1, indexTimesTwo1);
     }
 
-    GenTree* loResult =
-        m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar1, indexTimesTwo1, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+    GenTree* loResult = m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar1, indexTimesTwo1, SIMDIntrinsicGetItem,
+                                                  CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(simdTree, loResult);
 
     // Create:
@@ -1769,8 +1769,8 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
         Range().InsertBefore(simdTree, one, indexTimesTwoPlusOne);
     }
 
-    GenTree* hiResult =
-        m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+    GenTree* hiResult = m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne, SIMDIntrinsicGetItem,
+                                                  CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(simdTree, hiResult);
 
     // Done with the original tree; remove it.

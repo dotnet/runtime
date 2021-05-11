@@ -5,14 +5,17 @@
 
   <PropertyGroup>
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">linux</MonoLLVMHostOS>
-    <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">osx.10.12</MonoLLVMHostOS>
+    <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true' AND '$(BuildArchitecture)' != 'arm64'">osx.10.12</MonoLLVMHostOS>
+    <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true' AND '$(BuildArchitecture)' == 'arm64'">osx.11.0</MonoLLVMHostOS>
     <MonoLLVMHostOS Condition="'$(OS)' == 'Windows_NT'">win</MonoLLVMHostOS>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'osx.10.12'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
+    <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'osx.11.0'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx.10.12'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
+    <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx.11.0'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
   </PropertyGroup>
 
   <!-- On Linux, we need to treat the target arch as the host arch, i.e. treat arm64 Linux as a desktop platform -->

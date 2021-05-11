@@ -164,7 +164,7 @@ namespace XmlCoreTest.Common
                 //Extender
                 addCharRange(new char[] { '\u00B7', '\u00B7' }); addCharRange(new char[] { '\u02D0', '\u02D0' }); addCharRange(new char[] { '\u02D1', '\u02D1' }); addCharRange(new char[] { '\u0387', '\u0387' }); addCharRange(new char[] { '\u0640', '\u0640' }); addCharRange(new char[] { '\u0E46', '\u0E46' }); addCharRange(new char[] { '\u0EC6', '\u0EC6' }); addCharRange(new char[] { '\u3005', '\u3005' });
                 addCharRange(new char[] { '\u3031', '\u3035' }); addCharRange(new char[] { '\u309D', '\u309E' }); addCharRange(new char[] { '\u30FC', '\u30FE' });
-            };
+            }
             // Same thing as NameStartChar but no ':' character
             CurrentCharType = CharType.NCNameStartChar;// ranges
             {

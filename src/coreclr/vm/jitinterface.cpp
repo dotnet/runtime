@@ -24,7 +24,7 @@
 #include "float.h"      // for isnan
 #include "dbginterface.h"
 #include "dllimport.h"
-#include "dllimportcallback.h"
+#include "callconvbuilder.hpp"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
 #include "corprof.h"
@@ -4383,6 +4383,12 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
         break;
     case ELEMENT_TYPE_R8:
         result = CORINFO_TYPE_DOUBLE;
+        break;
+    case ELEMENT_TYPE_I:
+        result = CORINFO_TYPE_NATIVEINT;
+        break;
+    case ELEMENT_TYPE_U:
+        result = CORINFO_TYPE_NATIVEUINT;
         break;
 
     default:
@@ -9901,21 +9907,21 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorInfoCallConvExtension callConvMaybe;
+            CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
+            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
 
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
-            if (hr == S_OK)
+            CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
+            if (callConvLocal == CallConvBuilder::UnsetValue)
             {
-                return callConvMaybe;
+                callConvLocal = CallConv::GetDefaultUnmanagedCallingConvention();
             }
-            else
-            {
-                return MetaSig::GetDefaultUnmanagedCallingConvention();
-            }
+
+            *pSuppressGCTransition = builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
+            return callConvLocal;
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
             return CorInfoCallConvExtension::C;
@@ -9948,8 +9954,7 @@ namespace
                     *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
                 }
 
-                PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                return sigInfo.GetCallConv();
+                return NDirect::GetCallingConvention_IgnoreErrors(pMD);
             }
             else
             {
@@ -9958,7 +9963,7 @@ namespace
                 return CorInfoCallConvExtension::Managed;
 #else
                 CorInfoCallConvExtension unmanagedCallConv;
-                if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
+                if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
@@ -9966,7 +9971,7 @@ namespace
                     }
                     return unmanagedCallConv;
                 }
-                return MetaSig::GetDefaultUnmanagedCallingConvention();
+                return CallConv::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }

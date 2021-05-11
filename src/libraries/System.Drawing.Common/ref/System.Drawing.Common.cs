@@ -418,7 +418,6 @@ namespace System.Drawing
         public int TextContrast { get { throw null; } set { } }
         public System.Drawing.Text.TextRenderingHint TextRenderingHint { get { throw null; } set { } }
         public System.Drawing.Drawing2D.Matrix Transform { get { throw null; } set { } }
-        public System.Numerics.Matrix3x2 TransformElements { get { throw null; } set { } }
         public System.Drawing.RectangleF VisibleClipBounds { get { throw null; } }
         public void AddMetafileComment(byte[] data) { }
         public System.Drawing.Drawing2D.GraphicsContainer BeginContainer() { throw null; }
@@ -1660,9 +1659,7 @@ namespace System.Drawing.Drawing2D
         public Matrix(System.Drawing.Rectangle rect, System.Drawing.Point[] plgpts) { }
         public Matrix(System.Drawing.RectangleF rect, System.Drawing.PointF[] plgpts) { }
         public Matrix(float m11, float m12, float m21, float m22, float dx, float dy) { }
-        public Matrix(System.Numerics.Matrix3x2 matrix) { }
         public float[] Elements { get { throw null; } }
-        public System.Numerics.Matrix3x2 MatrixElements { get { throw null; } set { } }
         public bool IsIdentity { get { throw null; } }
         public bool IsInvertible { get { throw null; } }
         public float OffsetX { get { throw null; } }
