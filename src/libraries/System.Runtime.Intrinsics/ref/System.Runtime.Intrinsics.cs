@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Intrinsics
 {
@@ -3370,6 +3371,7 @@ namespace System.Runtime.Intrinsics.X86
     }
 
     [System.CLSCompliantAttribute(false)]
+    [RequiresPreviewFeatures]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
     {
         internal AvxVnni() { }
