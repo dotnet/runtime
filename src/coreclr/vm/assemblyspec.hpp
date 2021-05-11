@@ -15,7 +15,6 @@
 #ifndef _ASSEMBLYSPEC_H
 #define _ASSEMBLYSPEC_H
 #include "hash.h"
-#include "memorypool.h"
 #include "assemblyspecbase.h"
 #include "domainfile.h"
 #include "holder.h"
@@ -28,10 +27,6 @@ enum FileLoadLevel;
 class AssemblySpec  : public BaseAssemblySpec
 {
   private:
-
-    friend class AppDomain;
-    friend class AssemblyNameNative;
-
     AppDomain       *m_pAppDomain;
     DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
@@ -243,12 +238,6 @@ class AssemblySpec  : public BaseAssemblySpec
             _ASSERTE(!"Unexpected content type.");
             return E_UNEXPECTED;
         }
-    }
-
-    inline BOOL CanUseWithBindingCache() const
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return HasUniqueIdentity();
     }
 };
 
@@ -531,56 +520,6 @@ class AssemblySpecBindingCache
 #endif // !defined(DACCESS_COMPILE)
 
     static BOOL CompareSpecs(UPTR u1, UPTR u2);
-};
-
-#define INITIAL_DOMAIN_ASSEMBLY_CACHE_SIZE 17
-class DomainAssemblyCache
-{
-    struct AssemblyEntry {
-        AssemblySpec spec;
-        LPVOID       pData[2];     // Can be an Assembly, PEAssembly, or an Unmanaged DLL
-
-        DWORD Hash()
-        {
-            WRAPPER_NO_CONTRACT;
-            return spec.Hash();
-        }
-    };
-
-    PtrHashMap  m_Table;
-    AppDomain*  m_pDomain;
-
-public:
-
-    static BOOL CompareBindingSpec(UPTR spec1, UPTR spec2);
-
-    void InitializeTable(AppDomain* pDomain, CrstBase *pCrst)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(pDomain);
-        m_pDomain = pDomain;
-
-        LockOwner lock = {pCrst, IsOwnerOfCrst};
-        m_Table.Init(INITIAL_DOMAIN_ASSEMBLY_CACHE_SIZE, &CompareBindingSpec, true, &lock);
-    }
-
-    AssemblyEntry* LookupEntry(AssemblySpec* pSpec);
-
-    LPVOID  LookupEntry(AssemblySpec* pSpec, UINT index)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(index < 2);
-        AssemblyEntry* ptr = LookupEntry(pSpec);
-        if(ptr == NULL)
-            return NULL;
-        else
-            return ptr->pData[index];
-    }
-
-    VOID InsertEntry(AssemblySpec* pSpec, LPVOID pData1, LPVOID pData2 = NULL);
-
-private:
-
 };
 
 #endif

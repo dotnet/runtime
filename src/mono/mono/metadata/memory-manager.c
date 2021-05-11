@@ -179,6 +179,8 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 
 	mono_coop_mutex_destroy (&memory_manager->lock);
 
+	// FIXME: Free generics caches
+
 	if (debug_unload) {
 		mono_mempool_invalidate (memory_manager->_mp);
 		mono_code_manager_invalidate (memory_manager->code_mp);
@@ -528,7 +530,13 @@ mono_mem_manager_get_generic (MonoImage **images, int nimages)
 MonoMemoryManager*
 mono_mem_manager_merge (MonoMemoryManager *mm1, MonoMemoryManager *mm2)
 {
-	MonoAssemblyLoadContext **alcs = g_newa (MonoAssemblyLoadContext*, mm1->n_alcs + mm2->n_alcs);
+	MonoAssemblyLoadContext **alcs;
+
+	// Common case
+	if (mm1 == mm2)
+		return mm1;
+
+	alcs = g_newa (MonoAssemblyLoadContext*, mm1->n_alcs + mm2->n_alcs);
 
 	memcpy (alcs, mm1->alcs, sizeof (MonoAssemblyLoadContext*) * mm1->n_alcs);
 

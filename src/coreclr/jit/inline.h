@@ -529,7 +529,9 @@ struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
+    CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     unsigned              likelihood;
+    bool                  requiresInstMethodTableArg;
 };
 
 // InlineCandidateInfo provides basic information about a particular
@@ -630,17 +632,6 @@ struct InlineInfo
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
     Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
-
-    // Profile support
-    enum class ProfileScaleState
-    {
-        UNDETERMINED,
-        KNOWN,
-        UNAVAILABLE
-    };
-
-    ProfileScaleState profileScaleState;
-    double            profileScaleFactor;
 };
 
 // InlineContext tracks the inline history in a method.

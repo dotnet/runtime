@@ -37,6 +37,7 @@
                                            CortypeFilePath="$(_CortypeFilePath)"
                                            RexcepFilePath="$(_RexcepFilePath)"
                                            ILLinkTrimXmlFilePath="$(_ILLinkDescriptorsIntermediatePath)"
+                                           DefineConstants="$(DefineConstants);FOR_ILLINK"
                                            RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </Target>
 

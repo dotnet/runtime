@@ -36,6 +36,15 @@ struct deps_entry_t
         count
     };
 
+    enum search_options : uint32_t
+    {
+        none = 0x0,
+        look_in_base = 0x1,     // Search entry as a relative path
+        look_in_bundle = 0x2,   // Look for entry within the single-file bundle
+        is_servicing = 0x4,     // Whether the base directory is the core-servicing directory
+        file_existence = 0x8,   // Check for entry file existence
+    };
+
     static const std::array<const pal::char_t*, deps_entry_t::asset_types::count> s_known_asset_types;
 
     pal::string_t deps_file;
@@ -52,18 +61,19 @@ struct deps_entry_t
     bool is_rid_specific;
 
     // Given a "base" dir, yield the file path within this directory or single-file bundle.
-    bool to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str, bool& found_in_bundle) const;
+    bool to_dir_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options, bool& found_in_bundle) const;
 
     // Given a "base" dir, yield the relative path in the package layout or servicing directory.
-    bool to_rel_path(const pal::string_t& base, bool look_in_bundle, bool is_servicing, pal::string_t* str) const;
+    bool to_rel_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const;
 
     // Given a "base" dir, yield the relative path with package name/version in the package layout or servicing location.
-    bool to_full_path(const pal::string_t& base, bool is_servicing, pal::string_t* str) const;
+    bool to_full_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const;
 
 private:
     // Given a "base" dir, yield the filepath within this directory or relative to this directory based on "look_in_base"
+    // flag in "search_options".
     // Returns a path within the single-file bundle, or a file on disk,
-    bool to_path(const pal::string_t& base, const pal::string_t& ietf_code, bool look_in_base, bool look_in_bundle, bool is_servicing, pal::string_t* str, bool & found_in_bundle) const;
+    bool to_path(const pal::string_t& base, const pal::string_t& ietf_code, pal::string_t* str, uint32_t search_options, bool & found_in_bundle) const;
 
 };
 

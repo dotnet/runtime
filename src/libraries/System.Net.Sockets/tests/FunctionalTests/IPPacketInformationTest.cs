@@ -24,6 +24,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void Equals_NonDefaultValue_Success()
         {
             IPPacketInformation packetInfo = GetNonDefaultIPPacketInformation();
@@ -41,6 +42,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void GetHashCode_NonDefaultValue_Succes()
         {
             IPPacketInformation packetInfo = GetNonDefaultIPPacketInformation();

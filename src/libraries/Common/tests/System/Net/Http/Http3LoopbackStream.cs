@@ -227,6 +227,7 @@ namespace System.Net.Test.Common
             if (isFinal)
             {
                 await ShutdownSendAsync().ConfigureAwait(false);
+                await _stream.ShutdownCompleted().ConfigureAwait(false);
                 Dispose();
             }
         }

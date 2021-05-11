@@ -422,6 +422,10 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestRuntimes.Mono)]
         [InlineData(GCLatencyMode.Batch)]
         [InlineData(GCLatencyMode.Interactive)]
+        // LowLatency does not roundtrip for server GC
+        // [InlineData(GCLatencyMode.LowLatency)]
+        // SustainedLowLatency does not roundtrip without background GC
+        // [InlineData(GCLatencyMode.SustainedLowLatency)]
         public static void LatencyRoundtrips(GCLatencyMode value)
         {
             GCLatencyMode orig = GCSettings.LatencyMode;
@@ -436,13 +440,6 @@ namespace System.Tests
                 Assert.Equal(orig, GCSettings.LatencyMode);
             }
         }
-
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(TestPlatforms.Windows)] //Concurrent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
-        [InlineData(GCLatencyMode.LowLatency)]
-        [InlineData(GCLatencyMode.SustainedLowLatency)]
-        public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);
     }
 
     public class GCExtendedTests

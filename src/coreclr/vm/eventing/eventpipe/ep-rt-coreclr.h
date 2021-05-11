@@ -1219,6 +1219,15 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 	return static_cast<int64_t>(InterlockedDecrement64 ((volatile LONG64 *)(value)));
 }
 
+static
+inline
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -1253,6 +1262,14 @@ ep_rt_init (void)
 		}
 #endif
 	}
+}
+
+static
+inline
+void
+ep_rt_init_finish (void)
+{
+	STATIC_CONTRACT_NOTHROW;
 }
 
 static
@@ -2728,12 +2745,8 @@ ep_rt_thread_setup (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	EX_TRY
-	{
-		SetupThread ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	Thread* thread_handle = SetupThreadNoThrow ();
+	EP_ASSERT (thread_handle != NULL);
 }
 
 static

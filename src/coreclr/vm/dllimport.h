@@ -15,10 +15,10 @@ struct PInvokeStaticSigInfo;
 struct StubSigDesc
 {
 public:
-    StubSigDesc(MethodDesc * pMD, PInvokeStaticSigInfo* pSigInfo = NULL);
-    StubSigDesc(MethodDesc*  pMD, Signature sig, Module* m_pModule);
-    StubSigDesc(MethodTable* pMT, Signature sig, Module* m_pModule);
-    StubSigDesc(std::nullptr_t, Signature sig, Module* m_pModule);
+    StubSigDesc(MethodDesc* pMD);
+    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* m_pModule);
+    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* m_pModule);
+    StubSigDesc(const Signature& sig, Module* m_pModule);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -56,6 +56,15 @@ public:
 class NDirect
 {
 public:
+    // Get the calling convention for a method by checking:
+    //   - For delegates: UnmanagedFunctionPointer attribute
+    //   - For non-delegates: P/Invoke metadata
+    //   - Any modopts encoded in the method signature
+    // If no calling convention is specified, the default calling convention is returned
+    // This function ignores any errors when reading attributes/metadata, treating them as
+    // if no calling convention was specified through that mechanism.
+    static CorInfoCallConvExtension GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD);
+
     //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
     //
@@ -71,7 +80,9 @@ public:
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
         _In_opt_ Module* pModule = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
-    static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo);
+
+    static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
+    static void InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
     static MethodDesc* CreateCLRToNativeILStub(
                     StubSigDesc*             pSigDesc,
@@ -294,82 +305,22 @@ enum ETW_IL_STUB_FLAGS
 struct PInvokeStaticSigInfo
 {
 public:
-    enum ThrowOnError { THROW_ON_ERROR = TRUE, NO_THROW_ON_ERROR = FALSE };
-
-public:
     PInvokeStaticSigInfo() { LIMITED_METHOD_CONTRACT; }
 
-    PInvokeStaticSigInfo(Signature sig, Module* pModule);
+    PInvokeStaticSigInfo(_In_ const Signature& sig, _In_ Module* pModule);
 
-    PInvokeStaticSigInfo(MethodDesc* pMdDelegate, ThrowOnError throwOnError = THROW_ON_ERROR);
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMdDelegate);
 
-    PInvokeStaticSigInfo(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
-
-public:
-    void ReportErrors();
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
 
 private:
+    void ThrowError(WORD errorResourceID);
     void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
-    void DllImportInit(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
+    void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
     void PreInit(Module* pModule, MethodTable *pClass);
     void PreInit(MethodDesc* pMD);
-    void SetError(WORD error) { if (!m_error) m_error = error; }
-    void BestGuessNDirectDefaults(MethodDesc* pMD);
-
-public:
-    DWORD GetStubFlags()
-    {
-        WRAPPER_NO_CONTRACT;
-        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) |
-               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
-               (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
-    }
-    Module* GetModule() { LIMITED_METHOD_CONTRACT; return m_pModule; }
-    BOOL IsStatic() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
-    void SetIsStatic (BOOL isStatic)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (isStatic)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_STATIC;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC;
-    }
-    BOOL GetThrowOnUnmappableChar() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
-    void SetThrowOnUnmappableChar (BOOL throwOnUnmappableChar)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (throwOnUnmappableChar)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
-    }
-    BOOL GetBestFitMapping() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
-    void SetBestFitMapping (BOOL bestFit)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (bestFit)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
-    }
-    BOOL IsDelegateInterop() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
-    void SetIsDelegateInterop (BOOL delegateInterop)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (delegateInterop)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
-    }
-    CorInfoCallConvExtension GetCallConv() { LIMITED_METHOD_CONTRACT; return m_callConv; }
-    Signature GetSignature() { LIMITED_METHOD_CONTRACT; return m_sig; }
 
 private:
-    Module* m_pModule;
-    Signature m_sig;
-    CorInfoCallConvExtension m_callConv;
-    WORD m_error;
-
     enum
     {
         PINVOKE_STATIC_SIGINFO_IS_STATIC = 0x0001,
@@ -385,11 +336,58 @@ private:
     };
     #define COR_NATIVE_LINK_TYPE_SHIFT 3 // Keep in synch with above mask
     #define COR_NATIVE_LINK_FLAGS_SHIFT 6  // Keep in synch with above mask
-    WORD m_wFlags;
 
-  public:
-    CorNativeLinkType GetCharSet() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
-    CorNativeLinkFlags GetLinkFlags() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
+public: // getters
+    DWORD GetStubFlags() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) |
+               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
+               (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
+    }
+    Module* GetModule() const { LIMITED_METHOD_CONTRACT; return m_pModule; }
+    BOOL IsStatic() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
+    BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
+    BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
+    BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
+    CorInfoCallConvExtension GetCallConv() const { LIMITED_METHOD_CONTRACT; return m_callConv; }
+    Signature GetSignature() const { LIMITED_METHOD_CONTRACT; return m_sig; }
+    CorNativeLinkType GetCharSet() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
+    CorNativeLinkFlags GetLinkFlags() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
+
+private: // setters
+    void SetIsStatic(BOOL isStatic)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (isStatic)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_STATIC;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC;
+    }
+    void SetThrowOnUnmappableChar(BOOL throwOnUnmappableChar)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (throwOnUnmappableChar)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
+    }
+    void SetBestFitMapping(BOOL bestFit)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (bestFit)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
+    }
+    void SetIsDelegateInterop(BOOL delegateInterop)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (delegateInterop)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
+    }
     void SetCharSet(CorNativeLinkType linktype)
     {
         LIMITED_METHOD_CONTRACT;
@@ -408,6 +406,12 @@ private:
         // Then set the given value
         m_wFlags |= (linkflags << COR_NATIVE_LINK_FLAGS_SHIFT);
     }
+
+private:
+    Module* m_pModule;
+    Signature m_sig;
+    CorInfoCallConvExtension m_callConv;
+    WORD m_wFlags;
 };
 
 

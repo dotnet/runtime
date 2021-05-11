@@ -1138,16 +1138,6 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     return pgoResults->m_hr;
 }
 
-CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
-    CORINFO_METHOD_HANDLE ftnHnd,
-    CORINFO_CLASS_HANDLE  baseHnd,
-    UINT32                ilOffset,
-    UINT32*               pLikelihood,
-    UINT32*               pNumberOfClasses)
-{
-    return NULL;
-}
-
 void ZapInfo::allocMem(
     uint32_t            hotCodeSize,    /* IN */
     uint32_t            coldCodeSize,   /* IN */
@@ -1587,7 +1577,10 @@ CORINFO_CLASS_HANDLE ZapInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
 
     if (IsReadyToRunCompilation())
     {
-        _ASSERTE(!"embedClassHandle");
+        // This is supported by crossgen2
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun: embedding class handle not supported\n"));
+
         ThrowHR(E_NOTIMPL);
     }
 

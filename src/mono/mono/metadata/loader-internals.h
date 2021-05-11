@@ -120,6 +120,8 @@ struct _MonoAssemblyLoadContext {
 	MonoCoopMutex pinvoke_lock;
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
+	// The managed name, owned by this structure
+	char *name;
 };
 
 struct _MonoMemoryManager {
@@ -278,7 +280,7 @@ mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 MonoAssembly*
 mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
-GPtrArray*
+MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
 
 MONO_API void

@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Drawing.Common, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.BitmapSelector.DoesAssemblyHaveCustomAttribute(System.Reflection.Assembly,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.FontConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.FontConverter.GetProperties(System.ComponentModel.ITypeDescriptorContext,System.Object,System.Attribute[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.ImageConverter.GetProperties(System.ComponentModel.ITypeDescriptorContext,System.Object,System.Attribute[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.Printing.MarginsConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.Printing.MarginsConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.FontConverter.GetProperties(System.ComponentModel.ITypeDescriptorContext,System.Object,System.Attribute[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.ImageConverter.GetProperties(System.ComponentModel.ITypeDescriptorContext,System.Object,System.Attribute[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.Icon.OleCreatePictureIndirect(System.Drawing.Icon.PICTDESC,System.Guid@,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateBitmapFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateBitmapFromStreamICM(Interop.Ole32.IStream,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateMetafileFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromStream(Interop.Ole32.IStream,System.IntPtr)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipLoadImageFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipLoadImageFromStreamICM(Interop.Ole32.IStream,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipRecordMetafileStream(Interop.Ole32.IStream,System.IntPtr,System.Drawing.Imaging.EmfType,System.Drawing.RectangleF@,System.Drawing.Imaging.MetafileFrameUnit,System.String,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipRecordMetafileStream(Interop.Ole32.IStream,System.IntPtr,System.Drawing.Imaging.EmfType,System.IntPtr,System.Drawing.Imaging.MetafileFrameUnit,System.String,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipRecordMetafileStreamI(Interop.Ole32.IStream,System.IntPtr,System.Drawing.Imaging.EmfType,System.Drawing.Rectangle@,System.Drawing.Imaging.MetafileFrameUnit,System.String,System.IntPtr@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipSaveImageToStream(System.Runtime.InteropServices.HandleRef,Interop.Ole32.IStream,System.Guid@,System.Runtime.InteropServices.HandleRef)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.MacSupport.GetHwndDelegate</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.MacSupport.GetHwndDelegate</property>
+    </attribute>
+  </assembly>
+</linker>
