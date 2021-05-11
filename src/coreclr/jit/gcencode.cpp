@@ -4792,7 +4792,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    StackSlotIdKey sskey(genStackPtr->rpdPtrArg, FALSE,
+    StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
     GcSlotId varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
@@ -4840,7 +4840,7 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
         assert(genRegPtrTemp->rpdGCtypeGet() != GCT_NONE);
         assert(genRegPtrTemp->rpdArgTypeGet() == rpdARG_PUSH);
 
-        StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, FALSE,
+        StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
         GcSlotId varSlotId;
         bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);

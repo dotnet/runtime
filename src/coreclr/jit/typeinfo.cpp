@@ -77,7 +77,7 @@ bool Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool
     if (VERBOSE && tiVerificationNeeded)
     {
         printf(TI_DUMP_PADDING);
-        printf((mergeable == TRUE) ? "Merge successful" : "Couldn't merge types");
+        printf(mergeable ? "Merge successful" : "Couldn't merge types");
         if (*changed)
         {
             assert(mergeable);
@@ -98,12 +98,12 @@ static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, co
 
     if (!child.IsByRef())
     {
-        return FALSE;
+        return false;
     }
 
     if (child.IsReadonlyByRef() && !parent.IsReadonlyByRef())
     {
-        return FALSE;
+        return false;
     }
 
     // Byrefs are compatible if the underlying types are equivalent
@@ -112,7 +112,7 @@ static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, co
 
     if (typeInfo::AreEquivalent(childTarget, parentTarget))
     {
-        return TRUE;
+        return true;
     }
 
     // Make sure that both types have a valid m_cls
@@ -122,7 +122,7 @@ static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, co
         return CompHnd->areTypesEquivalent(childTarget.GetClassHandle(), parentTarget.GetClassHandle());
     }
 
-    return FALSE;
+    return false;
 }
 
 /*****************************************************************************
@@ -345,7 +345,7 @@ bool typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
         {
             *pDest   = *pSrc;
             *changed = true;
-            return TRUE;
+            return true;
         }
         goto FAIL;
     }
@@ -353,7 +353,7 @@ bool typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
     {
         if (pSrc->IsType(TI_STRUCT) && CompHnd->areTypesEquivalent(pDest->GetClassHandle(), pSrc->GetClassHandle()))
         {
-            return TRUE;
+            return true;
         }
         goto FAIL;
     }

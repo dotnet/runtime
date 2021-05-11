@@ -351,14 +351,14 @@ public:
     // Get an iterator to the first key in the table.
     KeyIterator Begin() const
     {
-        KeyIterator i(this, TRUE);
+        KeyIterator i(this, true);
         return i;
     }
 
     // Get an iterator following the last key in the table.
     KeyIterator End() const
     {
-        return KeyIterator(this, FALSE);
+        return KeyIterator(this, false);
     }
 
     // Get the number of keys currently stored in the table.

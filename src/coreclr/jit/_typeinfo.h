@@ -668,11 +668,11 @@ public:
             (m_cls && GetType() != TI_REF && GetType() != TI_METHOD &&
              GetType() != TI_ERROR)) // necessary because if byref bit is set, we return TI_ERROR)
         {
-            return TRUE;
+            return true;
         }
         else
         {
-            return FALSE;
+            return false;
         }
     }
 

@@ -2714,7 +2714,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt    = FALSE;
+    copiedForGenericsCtxt    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.

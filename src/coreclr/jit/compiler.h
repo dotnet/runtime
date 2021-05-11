@@ -4162,14 +4162,14 @@ public:
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               bool*                   pRuntimeLookup    = nullptr,
-                              bool                    mustRestoreHandle = FALSE,
-                              bool                    importParent      = FALSE);
+                              bool                    mustRestoreHandle = false,
+                              bool                    importParent      = false);
 
     GenTree* impParentClassTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                          bool*                   pRuntimeLookup    = nullptr,
-                                         bool                    mustRestoreHandle = FALSE)
+                                         bool                    mustRestoreHandle = false)
     {
-        return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, TRUE);
+        return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
     }
 
     GenTree* impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -10123,7 +10123,7 @@ public:
     void verInitCurrentState();
     void verResetCurrentState(BasicBlock* block, EntryState* currentState);
 
-    // Merges the current verification state into the entry state of "block", return FALSE if that merge fails,
+    // Merges the current verification state into the entry state of "block", return false if that merge fails,
     // TRUE if it succeeds.  Further sets "*changed" to true if this changes the entry state of "block".
     bool verMergeEntryStates(BasicBlock* block, bool* changed);
 
@@ -10174,7 +10174,7 @@ public:
                         const CORINFO_FIELD_INFO& fieldInfo,
                         const typeInfo*           tiThis,
                         bool                      mutator,
-                        bool                      allowPlainStructAsThis = FALSE);
+                        bool                      allowPlainStructAsThis = false);
     void verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsigned opcode);
     void verVerifyThisPtrInitialised();
     bool verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);

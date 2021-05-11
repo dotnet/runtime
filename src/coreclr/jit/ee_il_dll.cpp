@@ -1020,8 +1020,8 @@ void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwind
 #ifdef DEBUG
     if (verbose)
     {
-        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "TRUE" : "FALSE",
-               isColdCode ? "TRUE" : "FALSE", unwindSize);
+        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
+               isColdCode ? "true" : "false", unwindSize);
     }
 #endif // DEBUG
 

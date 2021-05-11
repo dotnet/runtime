@@ -565,7 +565,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
             assert(JITtype2varType(sigInfo.retType) == info.compRetType); // Else shouldn't have a ret buff.
 
             info.compRetBuffDefStack =
-                (info.compCompHnd->isStructRequiringStackAllocRetBuf(sigInfo.retTypeClass) == TRUE);
+                (info.compCompHnd->isStructRequiringStackAllocRetBuf(sigInfo.retTypeClass));
             if (info.compRetBuffDefStack)
             {
                 // If we're assured that the ret buff argument points into a callers stack, we will type it as
