@@ -806,7 +806,7 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), startIndex);
+            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)startIndex);
             var span = new Span<T>(ref first, count);
             span.Fill(value);
         }
