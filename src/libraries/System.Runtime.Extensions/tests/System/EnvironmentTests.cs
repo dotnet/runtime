@@ -475,7 +475,7 @@ namespace System.Tests
             FileAttributes attributes = GetFileAttributesW(path);
             if (attributes == (FileAttributes)(-1))
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 Assert.False(true, $"error {error} getting attributes for {path}");
             }
 

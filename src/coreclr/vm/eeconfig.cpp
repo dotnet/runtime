@@ -683,7 +683,7 @@ HRESULT EEConfig::sync()
         bLogCCWRefCountChange = true;
 
     fEnableRCWCleanupOnSTAShutdown = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableRCWCleanupOnSTAShutdown) != 0);
-    m_fBuiltInCOMInteropSupported = Configuration::GetKnobBooleanValue(W("System.Runtime.InteropServices.Marshal.IsComSupported"), true);
+    m_fBuiltInCOMInteropSupported = Configuration::GetKnobBooleanValue(W("System.Runtime.InteropServices.BuiltInComInterop.IsSupported"), true);
 #endif // FEATURE_COMINTEROP
 
 #ifdef _DEBUG

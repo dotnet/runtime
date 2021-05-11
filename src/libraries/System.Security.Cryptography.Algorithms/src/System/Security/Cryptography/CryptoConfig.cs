@@ -119,7 +119,9 @@ namespace System.Security.Cryptography
                 Type HMACSHA256Type = typeof(System.Security.Cryptography.HMACSHA256);
                 Type HMACSHA384Type = typeof(System.Security.Cryptography.HMACSHA384);
                 Type HMACSHA512Type = typeof(System.Security.Cryptography.HMACSHA512);
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
                 Type RijndaelManagedType = typeof(System.Security.Cryptography.RijndaelManaged);
+#pragma warning restore SYSLIB0022
                 Type AesManagedType = typeof(System.Security.Cryptography.AesManaged);
                 Type SHA256DefaultType = typeof(System.Security.Cryptography.SHA256Managed);
                 Type SHA384DefaultType = typeof(System.Security.Cryptography.SHA384Managed);

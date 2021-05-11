@@ -316,10 +316,19 @@ namespace System.Text.Json.Serialization
             }
 
             bool ignoreCyclesPopReference = false;
+
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
+                ConverterStrategy != ConverterStrategy.Value &&
                 !IsValueType && !IsNull(value))
             {
+                // Custom (user) converters shall not track references
+                //  it is responsibility of the user to break cycles in case there's any
+                //  if we compare against Preserve, objects don't get preserved when a custom converter exists
+                //  given that the custom converter executes prior to the preserve logic.
+                Debug.Assert(IsInternalConverter);
                 Debug.Assert(value != null);
+
                 ReferenceResolver resolver = state.ReferenceResolver;
 
                 // Write null to break reference cycles.
@@ -331,11 +340,9 @@ namespace System.Text.Json.Serialization
 
                 // For boxed reference types: do not push when boxed in order to avoid false positives
                 //   when we run the ContainsReferenceForCycleDetection check for the converter of the unboxed value.
-                if (!CanBePolymorphic)
-                {
-                    resolver.PushReferenceForCycleDetection(value);
-                    ignoreCyclesPopReference = true;
-                }
+                Debug.Assert(!CanBePolymorphic);
+                resolver.PushReferenceForCycleDetection(value);
+                ignoreCyclesPopReference = true;
             }
 
             if (CanBePolymorphic)
@@ -447,7 +454,7 @@ namespace System.Text.Json.Serialization
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.
-                Debug.Assert(TypeToConvert == typeof(Node.JsonObject));
+                Debug.Assert(TypeToConvert == typeof(Nodes.JsonObject));
                 return TryWrite(writer, value, options, ref state);
             }
 

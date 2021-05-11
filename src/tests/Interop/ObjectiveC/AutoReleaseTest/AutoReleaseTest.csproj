@@ -5,6 +5,9 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Threading.Thread.EnableAutoreleasePool" Value="true" Trim="true" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
