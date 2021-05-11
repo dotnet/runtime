@@ -3062,8 +3062,8 @@ MethodTableBuilder::EnumerateClassMethods()
 
             // Check the appearance of covariant and contravariant in the method signature
             // Note that variance is only supported for interfaces, and these rules are not
-            // checked for static methods as they cannot be called variantly.
-            if ((bmtGenerics->pVarianceInfo != NULL) && !IsMdStatic(dwMemberAttrs))
+            // checked for non-virtual static methods as they cannot be called variantly.
+            if ((bmtGenerics->pVarianceInfo != NULL) && (IsMdVirtual(dwMemberAttrs) || !IsMdStatic(dwMemberAttrs)))
             {
                 SigPointer sp(pMemberSignature, cMemberSignature);
                 uint32_t callConv;
