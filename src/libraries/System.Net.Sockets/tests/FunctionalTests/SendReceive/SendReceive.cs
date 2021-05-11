@@ -994,7 +994,7 @@ namespace System.Net.Sockets.Tests
             { false, true, false },
         };
 
-        [Theory(Timeout = 40000)]
+        [Theory]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
