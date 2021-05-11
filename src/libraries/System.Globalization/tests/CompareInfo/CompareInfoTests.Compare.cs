@@ -283,6 +283,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);

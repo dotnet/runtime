@@ -391,7 +391,7 @@ void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries) override;
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries) override;
 
 void setBoundaries(
           CORINFO_METHOD_HANDLE ftn,

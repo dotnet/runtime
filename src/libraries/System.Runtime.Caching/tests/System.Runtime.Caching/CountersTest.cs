@@ -77,9 +77,9 @@ namespace MonoTests.System.Runtime.Caching
             var events = new ConcurrentQueue<EventWrittenEventArgs>();
             using (var listener = new TestEventListener("System.Runtime.Caching." + cacheName, EventLevel.Verbose, eventCounterInterval: 0.1d))
             {
-                // Yup. This Task.Delay() is ugly. There actually isn't a way to simply 'poll' the
-                // 'polling' counters. This is how System.Net.Http tests their polling counters too.
-                await listener.RunWithCallbackAsync(events.Enqueue, async () => await Task.Delay(200));
+                // Following the example from System.Net.Http's telemetry test where they are also
+                // trying to "poll" some PollingCounters.
+                await listener.RunWithCallbackAsync(events.Enqueue, async () => await WaitForEventCountersAsync(events));
             }
 
             Dictionary<string, double[]> eventCounters = events
@@ -133,5 +133,29 @@ namespace MonoTests.System.Runtime.Caching
 
             return counters;
         }
+
+#if NETCOREAPP3_1_OR_GREATER
+        private static async Task WaitForEventCountersAsync(ConcurrentQueue<EventWrittenEventArgs> events)
+        {
+            DateTime startTime = DateTime.UtcNow;
+            int startCount = events.Count;
+            int numberOfDistinctCounters = 6;
+
+            while (events.Skip(startCount).Where(e => e.EventName == "EventCounters").Select(e => GetCounterName(e)).Distinct().Count() != numberOfDistinctCounters)
+            {
+                if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                    throw new TimeoutException($"Timed out waiting for EventCounters");
+
+                await Task.Delay(100);
+            }
+
+            static string GetCounterName(EventWrittenEventArgs e)
+            {
+                var dictionary = (IDictionary<string, object>)e.Payload.Single();
+
+                return (string)dictionary["Name"];
+            }
+        }
+#endif
     }
 }

@@ -28562,7 +28562,11 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
         region_index, heap_segment_mem (region), survived, 
         ((survived == heap_segment_survived (region)) ? "same as" : "diff from"),
         heap_segment_survived (region)));
+#ifdef MULTIPLE_HEAPS
+    assert (survived <= heap_segment_survived (region));
+#else
     assert (survived == heap_segment_survived (region));
+#endif //MULTIPLE_HEAPS
 #endif //_DEBUG
 
     assert (last_marked_obj_end);

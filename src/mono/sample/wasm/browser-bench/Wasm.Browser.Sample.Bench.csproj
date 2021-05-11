@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Browser.Sample.Bench.csproj</_SampleProject>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+</Project>

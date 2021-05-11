@@ -1088,6 +1088,21 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation()
+        {
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<A>()
+                                .BuildServiceProvider();
+
+            var singleton = sp.GetRequiredService<A>();
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Same(singleton, sp.GetRequiredService<A>());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+        }
+
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
             var types = new Type[]

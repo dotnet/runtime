@@ -93,6 +93,9 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.Versioning.TargetPlatformAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- System.ComponentModel -->
     <type fullname="System.ComponentModel.EditorBrowsableAttribute">
