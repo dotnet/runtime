@@ -92,7 +92,7 @@ bool Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool
     return mergeable;
 }
 
-static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, const typeInfo& parent)
+static bool tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, const typeInfo& parent)
 {
     assert(parent.IsByRef());
 
