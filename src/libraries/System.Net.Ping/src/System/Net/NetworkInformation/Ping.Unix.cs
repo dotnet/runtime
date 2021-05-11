@@ -17,6 +17,7 @@ namespace System.Net.NetworkInformation
     {
         private static bool SendIpHeader => false;
         private static bool NeedsConnect => OperatingSystem.IsLinux();
+        private static bool SuppressDualMode => false;
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
