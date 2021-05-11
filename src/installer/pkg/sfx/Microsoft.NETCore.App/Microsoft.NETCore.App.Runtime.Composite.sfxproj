@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Composite.r2r.dll" IsNative="true" />
+    <PublishReadyToRunCompositeExclusions Include="System.Reflection.Metadata.dll" />
+    <PublishReadyToRunCompositeExclusions Include="System.Collections.Immutable.dll" />
   </ItemGroup>
 
  <ItemGroup>
@@ -48,9 +50,6 @@
       <FilesToPackage2 Include="@(FilesToPackage)" />
       <FilesToPackage2 Remove="%(FilesToPackage2.Identity)" Condition="'%(Filename)%(Extension)' == 'Microsoft.NETCore.App.Composite.r2r.dll'" />
     </ItemGroup>
-
-    <Message Text="FilesToPackage @(FilesToPackage)" Importance="high"/>
-    <Message Text="FilesToPackage2 @(FilesToPackage2)" Importance="high"/>
 
     <CreateFrameworkListFile
       Files="@(FilesToPackage2)"
