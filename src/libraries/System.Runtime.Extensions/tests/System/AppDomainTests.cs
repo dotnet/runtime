@@ -238,7 +238,7 @@ namespace System.Tests
             Assert.Equal(AppDomain.CurrentDomain.ApplyPolicy(entryAssembly), entryAssembly);
         }
 
-#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and will throw PlatformNotSupportedException.
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and throws an exception.
         [Fact]
         public void CreateDomainNonNetfx()
         {
@@ -346,7 +346,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and will throw PlatformNotSupportedException.
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and throws an exception.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Unload()
         {
