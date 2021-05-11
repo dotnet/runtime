@@ -45,7 +45,7 @@ namespace System
         public int Length
         {
             [Intrinsic]
-            get => checked((int)Unsafe.As<RawArrayData>(this).Length);
+            get => _stringLength;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
