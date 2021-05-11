@@ -490,6 +490,7 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 #endif // ndef (__clang__ || __GNUC__)
 #endif
 
+// Indexes passed to `ARGS_NON_NULL` are 1-based
 #if defined (__clang__) || defined (__GNUC__)
 #define ARGS_NON_NULL(...) __attribute__((nonnull (__VA_ARGS__)))
 #else

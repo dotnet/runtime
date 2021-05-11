@@ -34,29 +34,33 @@ EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*
 #pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
 {
-    if (r)
+    if (r == NULL)
     {
-        int count = --r->refCount;
-        if (count == 0)
-        {
-            JNIEnv* env = GetJNIEnv();
-            if (r->keyPair != NULL)
-            {
-                // Destroy the private key data.
-                jobject privateKey = (*env)->CallObjectMethod(env, r->keyPair, g_keyPairGetPrivateMethod);
-                if (privateKey && (*env)->IsInstanceOf(env, privateKey, g_DestroyableClass))
-                {
-                    (*env)->CallVoidMethod(env, privateKey, g_destroy);
-                    ReleaseLRef(env, privateKey);
-                    (void)TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
-                }
-            }
+        return;
+    }
 
-            ReleaseGRef(env, r->keyPair);
-            ReleaseGRef(env, r->curveParameters);
-            free(r);
+    int count = --r->refCount;
+    if (count != 0)
+    {
+        return;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+    if (r->keyPair != NULL)
+    {
+        // Destroy the private key data.
+        jobject privateKey = (*env)->CallObjectMethod(env, r->keyPair, g_keyPairGetPrivateMethod);
+        if (privateKey && (*env)->IsInstanceOf(env, privateKey, g_DestroyableClass))
+        {
+            (*env)->CallVoidMethod(env, privateKey, g_destroy);
+            ReleaseLRef(env, privateKey);
+            (void)TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
         }
     }
+
+    ReleaseGRef(env, r->keyPair);
+    ReleaseGRef(env, r->curveParameters);
+    free(r);
 }
 
 int32_t AndroidCryptoNative_EcKeyUpRef(EC_KEY* r)

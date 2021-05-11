@@ -83,6 +83,29 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaVerify")]
         private static extern int DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
 
+        private struct AndroidDSAParameters : IDisposable
+        {
+            public SafeBignumHandle? p_bn;
+            public SafeBignumHandle? q_bn;
+            public SafeBignumHandle? g_bn;
+            public SafeBignumHandle? y_bn;
+            public SafeBignumHandle? x_bn;
+            public int p_cb;
+            public int q_cb;
+            public int g_cb;
+            public int y_cb;
+            public int x_cb;
+
+            public void Dispose()
+            {
+                p_bn?.Dispose();
+                q_bn?.Dispose();
+                g_bn?.Dispose();
+                y_bn?.Dispose();
+                x_bn?.Dispose();
+            }
+        };
+
         internal static DSAParameters ExportDsaParameters(SafeDsaHandle key, bool includePrivateParameters)
         {
             Debug.Assert(
@@ -94,47 +117,33 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            SafeBignumHandle p_bn, q_bn, g_bn, y_bn, x_bn;
-            int    p_cb, q_cb, g_cb, y_cb, x_cb;
+            AndroidDSAParameters parameters = default;
 
-            if (!GetDsaParameters(key,
-                out p_bn, out p_cb,
-                out q_bn, out q_cb,
-                out g_bn, out g_cb,
-                out y_bn, out y_cb,
-                out x_bn, out x_cb))
+            if (!GetDsaParameters(key, out parameters))
             {
-                p_bn.Dispose();
-                q_bn.Dispose();
-                g_bn.Dispose();
-                y_bn.Dispose();
-                x_bn.Dispose();
+                parameters.Dispose();
                 throw new CryptographicException();
             }
 
-            using (p_bn)
-            using (q_bn)
-            using (g_bn)
-            using (y_bn)
-            using (x_bn)
+            using (parameters)
             {
                 // Match Windows semantics where p, g and y have same length
-                int pgy_cb = GetMax(p_cb, g_cb, y_cb);
+                int pgy_cb = GetMax(parameters.p_cb, parameters.g_cb, parameters.y_cb);
 
                 // Match Windows semantics where q and x have same length
-                int qx_cb = GetMax(q_cb, x_cb);
+                int qx_cb = GetMax(parameters.q_cb, parameters.x_cb);
 
                 DSAParameters dsaParameters = new DSAParameters
                 {
-                    P = Crypto.ExtractBignum(p_bn, pgy_cb)!,
-                    Q = Crypto.ExtractBignum(q_bn, qx_cb)!,
-                    G = Crypto.ExtractBignum(g_bn, pgy_cb)!,
-                    Y = Crypto.ExtractBignum(y_bn, pgy_cb)!,
+                    P = Crypto.ExtractBignum(parameters.p_bn, pgy_cb)!,
+                    Q = Crypto.ExtractBignum(parameters.q_bn, qx_cb)!,
+                    G = Crypto.ExtractBignum(parameters.g_bn, pgy_cb)!,
+                    Y = Crypto.ExtractBignum(parameters.y_bn, pgy_cb)!,
                 };
 
                 if (includePrivateParameters)
                 {
-                    dsaParameters.X = Crypto.ExtractBignum(x_bn, qx_cb);
+                    dsaParameters.X = Crypto.ExtractBignum(parameters.x_bn, qx_cb);
                 }
 
                 return dsaParameters;
@@ -143,13 +152,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_GetDsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetDsaParameters(
-            SafeDsaHandle key,
-            out SafeBignumHandle p, out int p_cb,
-            out SafeBignumHandle q, out int q_cb,
-            out SafeBignumHandle g, out int g_cb,
-            out SafeBignumHandle y, out int y_cb,
-            out SafeBignumHandle x, out int x_cb);
+        private static extern bool GetDsaParameters(SafeDsaHandle key, out AndroidDSAParameters parameters);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaKeyCreateByExplicitParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]

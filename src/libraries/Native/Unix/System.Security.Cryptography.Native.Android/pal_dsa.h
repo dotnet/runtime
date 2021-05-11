@@ -51,18 +51,26 @@ AndroidCryptoNative_DsaVerify(
     uint8_t* signature,
     int32_t signatureLength);
 
+typedef struct
+{
+    jobject p_bn;
+    jobject q_bn;
+    jobject g_bn;
+    jobject y_bn;
+    jobject x_bn;
+    int32_t p_cb;
+    int32_t q_cb;
+    int32_t g_cb;
+    int32_t y_cb;
+    int32_t x_cb;
+} AndroidDSAParameters;
+
 /*
 Gets all the parameters from the DSA instance.
 
 Returns 1 upon success, otherwise 0.
 */
-PALEXPORT int32_t AndroidCryptoNative_GetDsaParameters(
-    jobject dsa,
-    jobject* p, int32_t* pLength,
-    jobject* q, int32_t* qLength,
-    jobject* g, int32_t* gLength,
-    jobject* y, int32_t* yLength,
-    jobject* x, int32_t* xLength);
+PALEXPORT int32_t AndroidCryptoNative_GetDsaParameters(jobject dsa, AndroidDSAParameters *parameters);
 
 /*
 Sets all the parameters on the DSA instance.

@@ -102,53 +102,55 @@ namespace System.Security.Cryptography
             string oid = !string.IsNullOrEmpty(parameters.Curve.Oid.Value) ?
                 parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName!;
 
-            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByKeyParameters(
-                oid,
-                parameters.Q.X, parameters.Q.X?.Length ?? 0,
-                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
-                parameters.D, parameters.D == null ? 0 : parameters.D.Length);
+            var androidParameters = new Interop.AndroidCrypto.AndroidECKeyArrayParameters
+            {
+                qx = parameters.Q.X,
+                qy = parameters.Q.Y,
+                d = parameters.D,
+                qx_length = parameters.Q.X?.Length ?? 0,
+                qy_length = parameters.Q.Y?.Length ?? 0,
+                d_length = parameters.D == null ? 0 : parameters.D.Length,
+            };
+
+            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByKeyParameters(oid, ref androidParameters);
+
+            return key;
+        }
+
+        private static SafeEcKeyHandle ImportCurveParametersCommon (ECParameters parameters, byte[]? p, int pLength)
+        {
+            var androidParameters = new Interop.AndroidCrypto.AndroidECKeyExplicitParameters
+            {
+                qx = parameters.Q.X, qx_length = parameters.Q.X?.Length ?? 0,
+                qy = parameters.Q.Y, qy_length = parameters.Q.Y?.Length ?? 0,
+                d = parameters.D, d_length = parameters.D == null ? 0 : parameters.D.Length,
+                p = p, p_length = pLength,
+                a = parameters.Curve.A!, a_length = parameters.Curve.A!.Length,
+                b = parameters.Curve.B!, b_length = parameters.Curve.B!.Length,
+                gx = parameters.Curve.G.X!, gx_length = parameters.Curve.G.X!.Length,
+                gy = parameters.Curve.G.Y!, gy_length = parameters.Curve.G.Y!.Length,
+                order = parameters.Curve.Order!, order_length = parameters.Curve.Order!.Length,
+                cofactor = parameters.Curve.Cofactor, cofactor_length = parameters.Curve.Cofactor!.Length,
+                seed = parameters.Curve.Seed, seed_length = parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length
+            };
+
+            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByExplicitParameters(parameters.Curve.CurveType, ref androidParameters);
 
             return key;
         }
 
         private static SafeEcKeyHandle ImportPrimeCurveParameters(ECParameters parameters)
         {
-            Debug.Assert(parameters.Curve.IsPrime);
-            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByExplicitParameters(
-                parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X?.Length ?? 0,
-                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
-                parameters.D, parameters.D == null ? 0 : parameters.D.Length,
-                parameters.Curve.Prime!, parameters.Curve.Prime!.Length,
-                parameters.Curve.A!, parameters.Curve.A!.Length,
-                parameters.Curve.B!, parameters.Curve.B!.Length,
-                parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
-                parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
-                parameters.Curve.Order!, parameters.Curve.Order!.Length,
-                parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
-                parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
-
-            return key;
+            if (!parameters.Curve.IsPrime)
+                throw new ArgumentException ("Curve must be Prime", nameof(parameters));
+            return ImportCurveParametersCommon (parameters, parameters.Curve.Prime!, parameters.Curve.Prime!.Length);
         }
 
         private static SafeEcKeyHandle ImportCharacteristic2CurveParameters(ECParameters parameters)
         {
-            Debug.Assert(parameters.Curve.IsCharacteristic2);
-            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByExplicitParameters(
-                parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X?.Length ?? 0,
-                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
-                parameters.D, parameters.D == null ? 0 : parameters.D.Length,
-                parameters.Curve.Polynomial!, parameters.Curve.Polynomial!.Length,
-                parameters.Curve.A!, parameters.Curve.A!.Length,
-                parameters.Curve.B!, parameters.Curve.B!.Length,
-                parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
-                parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
-                parameters.Curve.Order!, parameters.Curve.Order!.Length,
-                parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
-                parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
-
-            return key;
+            if (!parameters.Curve.IsCharacteristic2)
+                throw new ArgumentException ("Curve must be Characteristic2", nameof(parameters));
+            return ImportCurveParametersCommon (parameters, parameters.Curve.Polynomial!, parameters.Curve.Polynomial!.Length);
         }
 
         private static void CheckInvalidKey(SafeEcKeyHandle key)

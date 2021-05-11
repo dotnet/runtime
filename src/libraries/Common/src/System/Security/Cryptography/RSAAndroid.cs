@@ -390,26 +390,21 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
+                var androidParameters = new Interop.AndroidCrypto.AndroidSetRsaParametersData
+                {
+                    n = parameters.Modulus, n_length = parameters.Modulus != null ? parameters.Modulus.Length : 0,
+                    e = parameters.Exponent, e_length = parameters.Exponent != null ? parameters.Exponent.Length : 0,
+                    d = parameters.D, d_length = parameters.D != null ? parameters.D.Length : 0,
+                    p = parameters.P, p_length = parameters.P != null ? parameters.P.Length : 0,
+                    dmp1 = parameters.DP, dmp1_length = parameters.DP != null ? parameters.DP.Length : 0,
+                    q = parameters.Q, q_length = parameters.Q != null ? parameters.Q.Length : 0,
+                    dmq1 = parameters.DQ, dmq1_length = parameters.DQ != null ? parameters.DQ.Length : 0,
+                    iqmp = parameters.InverseQ, iqmp_length = parameters.InverseQ != null ? parameters.InverseQ.Length : 0
+                };
+
                 try
                 {
-                    if (!Interop.AndroidCrypto.SetRsaParameters(
-                        key,
-                        parameters.Modulus,
-                        parameters.Modulus != null ? parameters.Modulus.Length : 0,
-                        parameters.Exponent,
-                        parameters.Exponent != null ? parameters.Exponent.Length : 0,
-                        parameters.D,
-                        parameters.D != null ? parameters.D.Length : 0,
-                        parameters.P,
-                        parameters.P != null ? parameters.P.Length : 0,
-                        parameters.DP,
-                        parameters.DP != null ? parameters.DP.Length : 0,
-                        parameters.Q,
-                        parameters.Q != null ? parameters.Q.Length : 0,
-                        parameters.DQ,
-                        parameters.DQ != null ? parameters.DQ.Length : 0,
-                        parameters.InverseQ,
-                        parameters.InverseQ != null ? parameters.InverseQ.Length : 0))
+                    if (!Interop.AndroidCrypto.SetRsaParameters(key, ref androidParameters))
                     {
                         throw new CryptographicException();
                     }

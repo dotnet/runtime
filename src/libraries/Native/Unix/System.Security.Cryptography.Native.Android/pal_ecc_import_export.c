@@ -10,19 +10,10 @@
 
 int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                         int32_t includePrivate,
-                                        jobject* qx,
-                                        int32_t* cbQx,
-                                        jobject* qy,
-                                        int32_t* cbQy,
-                                        jobject* d,
-                                        int32_t* cbD)
+                                        AndroidECKeyParameters *parameters)
 {
-    abort_if_invalid_pointer_argument (qx);
-    abort_if_invalid_pointer_argument (cbQx);
-    abort_if_invalid_pointer_argument (qy);
-    abort_if_invalid_pointer_argument (cbQy);
-    abort_if_invalid_pointer_argument (d);
-    abort_if_invalid_pointer_argument (cbD);
+    abort_if_invalid_pointer_argument(key);
+    abort_if_invalid_pointer_argument(parameters);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -39,25 +30,25 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
     (*env)->DeleteLocalRef(env, Q);
 
     // Success; assign variables
-    *qx = ToGRef(env, xBn);
-    *cbQx = AndroidCryptoNative_GetBigNumBytes(*qx);
+    parameters->qx_bn = ToGRef(env, xBn);
+    parameters->qx_cb = AndroidCryptoNative_GetBigNumBytes(parameters->qx_bn);
     xBn = NULL;
-    *qy = ToGRef(env, yBn);
-    *cbQy = AndroidCryptoNative_GetBigNumBytes(*qy);
+    parameters->qy_bn = ToGRef(env, yBn);
+    parameters->qy_cb = AndroidCryptoNative_GetBigNumBytes(parameters->qy_bn);
     yBn = NULL;
-    if (*cbQx == FAIL || *cbQy == FAIL)
+    if (parameters->qx_cb == FAIL || parameters->qy_cb == FAIL)
+    {
         goto error;
+    }
 
     if (includePrivate)
     {
-        abort_if_invalid_pointer_argument (d);
-
         jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
 
         if (!privateKey)
         {
-            *d = NULL;
-            *cbD = 0;
+            parameters->d_bn = NULL;
+            parameters->d_cb = 0;
             goto error;
         }
 
@@ -65,77 +56,48 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
 
         (*env)->DeleteLocalRef(env, privateKey);
 
-        *d = ToGRef(env, dBn);
-        *cbD = AndroidCryptoNative_GetBigNumBytes(*d);
-        if (*cbD == FAIL)
+        parameters->d_bn = ToGRef(env, dBn);
+        parameters->d_cb = AndroidCryptoNative_GetBigNumBytes(parameters->d_bn);
+        if (parameters->d_cb == FAIL)
             goto error;
     }
     else
     {
-        if (d)
-            *d = NULL;
-
-        if (cbD)
-            *cbD = 0;
+        parameters->d_bn = NULL;
+        parameters->d_cb = 0;
     }
 
     return SUCCESS;
 
 error:
-    *cbQx = *cbQy = 0;
-    *qx = *qy = 0;
-    if (d)
-        *d = NULL;
-    if (cbD)
-        *cbD = 0;
+    parameters->qx_cb = parameters->qy_cb = 0;
+    parameters->qx_bn = parameters->qy_bn = NULL;
+    parameters->d_bn = NULL;
+    parameters->d_cb = 0;
+
     return FAIL;
 }
 
 int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
                                           int32_t includePrivate,
                                           ECCurveType* curveType,
-                                          jobject* qx,
-                                          int32_t* cbQx,
-                                          jobject* qy,
-                                          int32_t* cbQy,
-                                          jobject* d,
-                                          int32_t* cbD,
-                                          jobject* p,
-                                          int32_t* cbP,
-                                          jobject* a,
-                                          int32_t* cbA,
-                                          jobject* b,
-                                          int32_t* cbB,
-                                          jobject* gx,
-                                          int32_t* cbGx,
-                                          jobject* gy,
-                                          int32_t* cbGy,
-                                          jobject* order,
-                                          int32_t* cbOrder,
-                                          jobject* cofactor,
-                                          int32_t* cbCofactor,
-                                          jobject* seed,
-                                          int32_t* cbSeed)
+                                          AndroidECCurveParameters* parameters)
 {
-    abort_if_invalid_pointer_argument (p);
-    abort_if_invalid_pointer_argument (cbP);
-    abort_if_invalid_pointer_argument (a);
-    abort_if_invalid_pointer_argument (cbA);
-    abort_if_invalid_pointer_argument (b);
-    abort_if_invalid_pointer_argument (cbB);
-    abort_if_invalid_pointer_argument (gx);
-    abort_if_invalid_pointer_argument (cbGx);
-    abort_if_invalid_pointer_argument (gy);
-    abort_if_invalid_pointer_argument (cbGy);
-    abort_if_invalid_pointer_argument (order);
-    abort_if_invalid_pointer_argument (cbOrder);
-    abort_if_invalid_pointer_argument (cofactor);
-    abort_if_invalid_pointer_argument (cbCofactor);
-    abort_if_invalid_pointer_argument (seed);
-    abort_if_invalid_pointer_argument (cbSeed);
+    abort_if_invalid_pointer_argument(key);
+    abort_if_invalid_pointer_argument(curveType);
+    abort_if_invalid_pointer_argument(parameters);
+
+    AndroidECKeyParameters public_parameters;
 
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
-    int32_t rc = AndroidCryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    //int32_t rc = AndroidCryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    int32_t rc = AndroidCryptoNative_GetECKeyParameters(key, includePrivate, &public_parameters);
+    parameters->qx_bn = public_parameters.qx_bn;
+    parameters->qy_bn = public_parameters.qy_bn;
+    parameters->d_bn = public_parameters.d_bn;
+    parameters->qx_cb = public_parameters.qx_cb;
+    parameters->qy_cb = public_parameters.qy_cb;
+    parameters->d_cb = public_parameters.d_cb;
 
     JNIEnv* env = GetJNIEnv();
 
@@ -186,30 +148,30 @@ int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
     {
         bn[SEED] = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, loc[seedArray]);
 
-        *seed = ToGRef(env, bn[SEED]);
-        *cbSeed = AndroidCryptoNative_GetBigNumBytes(*seed);
+        parameters->seed_bn = ToGRef(env, bn[SEED]);
+        parameters->seed_cb = AndroidCryptoNative_GetBigNumBytes(parameters->seed_bn);
     }
     else
     {
-        *seed = NULL;
-        *cbSeed = 0;
+        parameters->seed_bn = NULL;
+        parameters->seed_cb = 0;
     }
 
     // Success; assign variables
-    *gx = ToGRef(env, bn[X]);
-    *cbGx = AndroidCryptoNative_GetBigNumBytes(*gx);
-    *gy = ToGRef(env, bn[Y]);
-    *cbGy = AndroidCryptoNative_GetBigNumBytes(*gy);
-    *p = ToGRef(env, bn[P]);
-    *cbP = AndroidCryptoNative_GetBigNumBytes(*p);
-    *a = ToGRef(env, bn[A]);
-    *cbA = AndroidCryptoNative_GetBigNumBytes(*a);
-    *b = ToGRef(env, bn[B]);
-    *cbB = AndroidCryptoNative_GetBigNumBytes(*b);
-    *order = ToGRef(env, bn[ORDER]);
-    *cbOrder = AndroidCryptoNative_GetBigNumBytes(*order);
-    *cofactor = ToGRef(env, bn[COFACTOR]);
-    *cbCofactor = AndroidCryptoNative_GetBigNumBytes(*cofactor);
+    parameters->gx_bn = ToGRef(env, bn[X]);
+    parameters->gx_cb = AndroidCryptoNative_GetBigNumBytes(parameters->gx_bn);
+    parameters->gy_bn = ToGRef(env, bn[Y]);
+    parameters->gy_cb = AndroidCryptoNative_GetBigNumBytes(parameters->gy_bn);
+    parameters->p_bn = ToGRef(env, bn[P]);
+    parameters->p_cb = AndroidCryptoNative_GetBigNumBytes(parameters->p_bn);
+    parameters->a_bn = ToGRef(env, bn[A]);
+    parameters->a_cb = AndroidCryptoNative_GetBigNumBytes(parameters->a_bn);
+    parameters->b_bn = ToGRef(env, bn[B]);
+    parameters->b_cb = AndroidCryptoNative_GetBigNumBytes(parameters->b_bn);
+    parameters->order_bn = ToGRef(env, bn[ORDER]);
+    parameters->order_cb = AndroidCryptoNative_GetBigNumBytes(parameters->order_bn);
+    parameters->cofactor_bn = ToGRef(env, bn[COFACTOR]);
+    parameters->cofactor_cb = AndroidCryptoNative_GetBigNumBytes(parameters->cofactor_bn);
 
     rc = SUCCESS;
 
@@ -217,30 +179,33 @@ int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
 
 error:
     // Clear out variables from AndroidCryptoNative_GetECKeyParameters
-    *cbQx = *cbQy = 0;
-    ReleaseGRef(env, *qx);
-    ReleaseGRef(env, *qy);
-    *qx = *qy = NULL;
-    if (d)
+    parameters->qx_cb = parameters->qy_cb = 0;
+    ReleaseGRef(env, parameters->qx_bn);
+    ReleaseGRef(env, parameters->qy_bn);
+    parameters->qx_bn = parameters->qy_bn = NULL;
+    if (parameters->d_bn)
     {
-        ReleaseGRef(env, *d);
-        *d = NULL;
+        ReleaseGRef(env, parameters->d_bn);
+        parameters->d_bn = NULL;
     }
-    if (cbD)
-        *cbD = 0;
+    parameters->d_cb = 0;
 
     // Clear our out variables
     *curveType = Unspecified;
-    *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-    ReleaseGRef(env, *p);
-    ReleaseGRef(env, *a);
-    ReleaseGRef(env, *b);
-    ReleaseGRef(env, *gx);
-    ReleaseGRef(env, *gy);
-    ReleaseGRef(env, *order);
-    ReleaseGRef(env, *cofactor);
-    ReleaseGRef(env, *seed);
-    *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
+    parameters->p_cb = parameters->a_cb = parameters->b_cb =
+    parameters->gx_cb = parameters->gy_cb = parameters->order_cb =
+    parameters->cofactor_cb = parameters->seed_cb = 0;
+    ReleaseGRef(env, parameters->p_bn);
+    ReleaseGRef(env, parameters->a_bn);
+    ReleaseGRef(env, parameters->b_bn);
+    ReleaseGRef(env, parameters->gx_bn);
+    ReleaseGRef(env, parameters->gy_bn);
+    ReleaseGRef(env, parameters->order_bn);
+    ReleaseGRef(env, parameters->cofactor_bn);
+    ReleaseGRef(env, parameters->seed_bn);
+    parameters->p_bn = parameters->a_bn = parameters->b_bn =
+    parameters->gx_bn = parameters->gy_bn = parameters->order_bn =
+    parameters->cofactor_bn = parameters->seed_bn = NULL;
 
     // Clear local BigInteger instances. On success, these are converted to global
     // references for the out variables, so the local release is only on error.
@@ -336,14 +301,10 @@ cleanup:
 
 int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                 const char* oid,
-                                                uint8_t* qx,
-                                                int32_t qxLength,
-                                                uint8_t* qy,
-                                                int32_t qyLength,
-                                                uint8_t* d,
-                                                int32_t dLength)
+                                                AndroidECKeyArrayParameters* parameters)
 {
     abort_if_invalid_pointer_argument (key);
+    abort_if_invalid_pointer_argument (parameters);
 
     *key = NULL;
 
@@ -360,7 +321,15 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     // Release the reference to the generated key pair. We're going to make our own with the explicit keys.
     ReleaseGRef(env, (*key)->keyPair);
     (*key)->keyPair =
-        AndroidCryptoNative_CreateKeyPairFromCurveParameters((*key)->curveParameters, qx, qxLength, qy, qyLength, d, dLength);
+        AndroidCryptoNative_CreateKeyPairFromCurveParameters(
+            (*key)->curveParameters,
+            parameters->qx,
+            parameters->qx_length,
+            parameters->qy,
+            parameters->qy_length,
+            parameters->d,
+            parameters->d_length
+        );
 
     if ((*key)->keyPair == NULL)
     {
@@ -396,37 +365,9 @@ ARGS_NON_NULL_ALL static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, j
     return (*env)->CallIntMethod(env, bigInteger, g_intValueMethod);
 }
 
-EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
-                                                     uint8_t* qx,
-                                                     int32_t qxLength,
-                                                     uint8_t* qy,
-                                                     int32_t qyLength,
-                                                     uint8_t* d,
-                                                     int32_t dLength,
-                                                     uint8_t* p,
-                                                     int32_t pLength,
-                                                     uint8_t* a,
-                                                     int32_t aLength,
-                                                     uint8_t* b,
-                                                     int32_t bLength,
-                                                     uint8_t* gx,
-                                                     int32_t gxLength,
-                                                     uint8_t* gy,
-                                                     int32_t gyLength,
-                                                     uint8_t* order,
-                                                     int32_t orderLength,
-                                                     uint8_t* cofactor,
-                                                     int32_t cofactorLength,
-                                                     uint8_t* seed,
-                                                     int32_t seedLength)
+EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType, AndroidECKeyExplicitParameters* parameters)
 {
-    abort_if_invalid_pointer_argument (p);
-    abort_if_invalid_pointer_argument (a);
-    abort_if_invalid_pointer_argument (b);
-    abort_if_invalid_pointer_argument (gx);
-    abort_if_invalid_pointer_argument (gy);
-    abort_if_invalid_pointer_argument (order);
-    abort_if_invalid_pointer_argument (cofactor);
+    abort_if_invalid_pointer_argument (parameters);
 
     // qx, qy, d and seed are optional
 
@@ -445,7 +386,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
         return NULL;
     }
 
-    bn[P] = AndroidCryptoNative_BigNumFromBinary(p, pLength);
+    bn[P] = AndroidCryptoNative_BigNumFromBinary(parameters->p, parameters->p_length);
 
     // At this point we should use 'goto error' since we allocated objects or memory
 
@@ -461,14 +402,14 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
         {
             int test = 1 << localBitIndex;
 
-            if ((p[0] & test) == test)
+            if ((parameters->p[0] & test) == test)
             {
-                if ((INT32_MAX - localBitIndex) / 8 < (pLength - 1))
+                if ((INT32_MAX - localBitIndex) / 8 < (parameters->p_length - 1))
                 {
                     // We'll overflow if we try to calculate m.
                     goto error;
                 }
-                m = 8 * (pLength - 1) + localBitIndex;
+                m = 8 * (parameters->p_length - 1) + localBitIndex;
             }
         }
 
@@ -481,13 +422,13 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
-    bn[A] = AndroidCryptoNative_BigNumFromBinary(a, aLength);
-    bn[B] = AndroidCryptoNative_BigNumFromBinary(b, bLength);
+    bn[A] = AndroidCryptoNative_BigNumFromBinary(parameters->a, parameters->a_length);
+    bn[B] = AndroidCryptoNative_BigNumFromBinary(parameters->b, parameters->b_length);
 
-    if (seed && seedLength > 0)
+    if (parameters->seed != NULL && parameters->seed_length > 0)
     {
-        loc[seedArray] = make_java_byte_array(env, seedLength);
-        (*env)->SetByteArrayRegion(env, loc[seedArray], 0, seedLength, (jbyte*)seed);
+        loc[seedArray] = make_java_byte_array(env, parameters->seed_length);
+        (*env)->SetByteArrayRegion(env, loc[seedArray], 0, parameters->seed_length, (jbyte*)parameters->seed);
         loc[group] = (*env)->NewObject(env, g_EllipticCurveClass, g_EllipticCurveCtorWithSeed, loc[field], bn[A], bn[B], loc[seedArray]);
     }
     else
@@ -496,15 +437,15 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     }
 
     // Set generator, order and cofactor
-    bn[GX] = AndroidCryptoNative_BigNumFromBinary(gx, gxLength);
-    bn[GY] = AndroidCryptoNative_BigNumFromBinary(gy, gyLength);
+    bn[GX] = AndroidCryptoNative_BigNumFromBinary(parameters->gx, parameters->gx_length);
+    bn[GY] = AndroidCryptoNative_BigNumFromBinary(parameters->gy, parameters->gy_length);
     loc[G] = (*env)->NewObject(env, g_ECPointClass, g_ECPointCtor, bn[GX], bn[GY]);
 
-    bn[ORDER] = AndroidCryptoNative_BigNumFromBinary(order, orderLength);
+    bn[ORDER] = AndroidCryptoNative_BigNumFromBinary(parameters->order, parameters->order_length);
 
     // Java ECC doesn't support BigInteger-based cofactor. It uses positive 32-bit integers.
     // So, convert the cofactor to a positive 32-bit integer with overflow protection.
-    bn[COFACTOR] = AndroidCryptoNative_BigNumFromBinary(cofactor, cofactorLength);
+    bn[COFACTOR] = AndroidCryptoNative_BigNumFromBinary(parameters->cofactor, parameters->cofactor_length);
     int cofactorInt = ConvertBigIntegerToPositiveInt32(env, bn[COFACTOR]);
 
     if (cofactorInt == -1)
@@ -515,10 +456,18 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
 
     loc[paramSpec] = (*env)->NewObject(env, g_ECParameterSpecClass, g_ECParameterSpecCtor, loc[group], loc[G], bn[ORDER], cofactorInt);
 
-    if ((qx && qy) || d)
+    if ((parameters->qx != NULL && parameters->qy != NULL) || parameters->d != NULL)
     {
         // If we have explicit key parameters, use those.
-        keyPair = AndroidCryptoNative_CreateKeyPairFromCurveParameters(loc[paramSpec], qx, qxLength, qy, qyLength, d, dLength);
+        keyPair = AndroidCryptoNative_CreateKeyPairFromCurveParameters(
+            loc[paramSpec],
+            parameters->qx,
+            parameters->qx_length,
+            parameters->qy,
+            parameters->qy_length,
+            parameters->d,
+            parameters->d_length
+        );
     }
     else
     {

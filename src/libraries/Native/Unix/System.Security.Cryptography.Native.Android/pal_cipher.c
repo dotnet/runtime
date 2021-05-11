@@ -334,12 +334,12 @@ int32_t AndroidCryptoNative_CipherSetNonceLength(CipherCtx* ctx, int32_t ivLengt
 
 void AndroidCryptoNative_CipherDestroy(CipherCtx* ctx)
 {
-    if (ctx)
-    {
-        JNIEnv* env = GetJNIEnv();
-        ReleaseGRef(env, ctx->cipher);
-        free(ctx->key);
-        free(ctx->iv);
-        free(ctx);
-    }
+    if (!ctx)
+        return;
+
+    JNIEnv* env = GetJNIEnv();
+    ReleaseGRef(env, ctx->cipher);
+    free(ctx->key);
+    free(ctx->iv);
+    free(ctx);
 }

@@ -91,6 +91,30 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_RsaGenerateKeyEx")]
         internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits);
 
+        private struct AndroidGetRsaParametersData : IDisposable
+        {
+            public SafeBignumHandle? n;
+            public SafeBignumHandle? e;
+            public SafeBignumHandle? d;
+            public SafeBignumHandle? p;
+            public SafeBignumHandle? dmp1;
+            public SafeBignumHandle? q;
+            public SafeBignumHandle? dmq1;
+            public SafeBignumHandle? iqmp;
+
+            public void Dispose()
+            {
+                n?.Dispose();
+                e?.Dispose();
+                d?.Dispose();
+                p?.Dispose();
+                dmp1?.Dispose();
+                q?.Dispose();
+                dmq1?.Dispose();
+                iqmp?.Dispose();
+            }
+        }
+
         internal static RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
             Debug.Assert(
@@ -102,36 +126,14 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            SafeBignumHandle n, e, d, p, dmp1, q, dmq1, iqmp;
-            if (!GetRsaParameters(key,
-                out n,
-                out e,
-                out d,
-                out p,
-                out dmp1,
-                out q,
-                out dmq1,
-                out iqmp))
+            AndroidGetRsaParametersData androidParameters = default;
+            if (!GetRsaParameters(key, out androidParameters))
             {
-                n.Dispose();
-                e.Dispose();
-                d.Dispose();
-                p.Dispose();
-                dmp1.Dispose();
-                q.Dispose();
-                dmq1.Dispose();
-                iqmp.Dispose();
+                androidParameters.Dispose();
                 throw new CryptographicException();
             }
 
-            using (n)
-            using (e)
-            using (d)
-            using (p)
-            using (dmp1)
-            using (q)
-            using (dmq1)
-            using (iqmp)
+            using (androidParameters)
             {
                 int modulusSize = RsaSize(key);
 
@@ -141,18 +143,18 @@ internal static partial class Interop
 
                 RSAParameters rsaParameters = new RSAParameters
                 {
-                    Modulus = Crypto.ExtractBignum(n, modulusSize)!,
-                    Exponent = Crypto.ExtractBignum(e, 0)!,
+                    Modulus = Crypto.ExtractBignum(androidParameters.n, modulusSize)!,
+                    Exponent = Crypto.ExtractBignum(androidParameters.e, 0)!,
                 };
 
                 if (includePrivateParameters)
                 {
-                    rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
-                    rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
-                    rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
-                    rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
-                    rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
-                    rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
+                    rsaParameters.D = Crypto.ExtractBignum(androidParameters.d, modulusSize);
+                    rsaParameters.P = Crypto.ExtractBignum(androidParameters.p, halfModulus);
+                    rsaParameters.DP = Crypto.ExtractBignum(androidParameters.dmp1, halfModulus);
+                    rsaParameters.Q = Crypto.ExtractBignum(androidParameters.q, halfModulus);
+                    rsaParameters.DQ = Crypto.ExtractBignum(androidParameters.dmq1, halfModulus);
+                    rsaParameters.InverseQ = Crypto.ExtractBignum(androidParameters.iqmp, halfModulus);
                 }
 
                 return rsaParameters;
@@ -161,37 +163,31 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_GetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetRsaParameters(
-            SafeRsaHandle key,
-            out SafeBignumHandle n,
-            out SafeBignumHandle e,
-            out SafeBignumHandle d,
-            out SafeBignumHandle p,
-            out SafeBignumHandle dmp1,
-            out SafeBignumHandle q,
-            out SafeBignumHandle dmq1,
-            out SafeBignumHandle iqmp);
+        private static extern bool GetRsaParameters(SafeRsaHandle key, out AndroidGetRsaParametersData parameters);
+
+        internal struct AndroidSetRsaParametersData
+        {
+            public byte[]? n;
+            public byte[]? e;
+            public byte[]? d;
+            public byte[]? p;
+            public byte[]? dmp1;
+            public byte[]? q;
+            public byte[]? dmq1;
+            public byte[]? iqmp;
+            public int n_length;
+            public int e_length;
+            public int d_length;
+            public int p_length;
+            public int dmp1_length;
+            public int q_length;
+            public int dmq1_length;
+            public int iqmp_length;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool SetRsaParameters(
-            SafeRsaHandle key,
-            byte[]? n,
-            int nLength,
-            byte[]? e,
-            int eLength,
-            byte[]? d,
-            int dLength,
-            byte[]? p,
-            int pLength,
-            byte[]? dmp1,
-            int dmp1Length,
-            byte[]? q,
-            int qLength,
-            byte[]? dmq1,
-            int dmq1Length,
-            byte[]? iqmp,
-            int iqmpLength);
+        internal static extern bool SetRsaParameters(SafeRsaHandle key, ref AndroidSetRsaParametersData parameters);
 
         internal enum RsaPadding : int
         {

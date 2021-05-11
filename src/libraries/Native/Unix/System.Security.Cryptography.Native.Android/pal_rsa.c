@@ -8,7 +8,7 @@
 
 #define RSA_FAIL -1
 
-PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
+RSA* AndroidCryptoNative_RsaCreate()
 {
     RSA* rsa = xcalloc(1, sizeof(RSA));
     atomic_init(&rsa->refCount, 1);
@@ -18,7 +18,7 @@ PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
 #pragma clang diagnostic push
 // There's no way to specify explicit memory ordering for increment/decrement with C atomics.
 #pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-PALEXPORT int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa)
+int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa)
 {
     if (!rsa)
         return FAIL;
@@ -26,23 +26,27 @@ PALEXPORT int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa)
     return SUCCESS;
 }
 
-PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
+void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 {
-    if (rsa)
+    if (rsa == NULL)
     {
-        rsa->refCount--;
-        if (rsa->refCount == 0)
-        {
-            JNIEnv* env = GetJNIEnv();
-            ReleaseGRef(env, rsa->privateKey);
-            ReleaseGRef(env, rsa->publicKey);
-            free(rsa);
-        }
+        return;
     }
+
+    rsa->refCount--;
+    if (rsa->refCount != 0)
+    {
+        return;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+    ReleaseGRef(env, rsa->privateKey);
+    ReleaseGRef(env, rsa->publicKey);
+    free(rsa);
 }
 #pragma clang diagnostic pop
 
-PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     abort_if_invalid_pointer_argument (from);
     abort_if_invalid_pointer_argument (to);
@@ -83,7 +87,7 @@ cleanup:
     return ret;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -129,14 +133,14 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
     return (int32_t)decryptedBytesLen;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
+int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
 {
     if (!rsa)
         return FAIL;
     return rsa->keyWidthInBits / 8;
 }
 
-PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len)
+RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len)
 {
     if (!buf || len <= 0)
     {
@@ -172,7 +176,7 @@ PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, i
     return rsa;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
+int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -213,7 +217,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* fr
     return (int32_t)encryptedBytesLen;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
+int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -250,7 +254,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
     return (int32_t)decryptedBytesLen;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
+int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
 {
     if (!rsa)
         return FAIL;
@@ -276,33 +280,12 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
-    jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp)
+int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa, AndroidGetRsaParametersData* parameters)
 {
-    if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
-    {
-        assert(false);
+    abort_if_invalid_pointer_argument(rsa);
+    abort_if_invalid_pointer_argument(parameters);
 
-        // since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (n)
-            *n = NULL;
-        if (e)
-            *e = NULL;
-        if (d)
-            *d = NULL;
-        if (p)
-            *p = NULL;
-        if (dmp1)
-            *dmp1 = NULL;
-        if (q)
-            *q = NULL;
-        if (dmq1)
-            *dmq1 = NULL;
-        if (iqmp)
-            *iqmp = NULL;
-
-        return FAIL;
-    }
+    memset(parameters, 0, sizeof(AndroidGetRsaParametersData));
 
     JNIEnv* env = GetJNIEnv();
     jobject privateKey = rsa->privateKey;
@@ -310,25 +293,19 @@ PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
 
     if (privateKey)
     {
-        *e = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPubExpField));
-        *n = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyModulusField));
-        *d = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrivExpField));
-        *p = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimePField));
-        *q = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeQField));
-        *dmp1 = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeExpPField));
-        *dmq1 = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeExpQField));
-        *iqmp = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyCrtCoefField));
+        parameters->e = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPubExpField));
+        parameters->n = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyModulusField));
+        parameters->d = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrivExpField));
+        parameters->p = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimePField));
+        parameters->q = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeQField));
+        parameters->dmp1 = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeExpPField));
+        parameters->dmq1 = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeExpQField));
+        parameters->iqmp = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyCrtCoefField));
     }
     else if (publicKey)
     {
-        *e = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAPublicKeyGetPubExpMethod));
-        *n = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAKeyGetModulus));
-        *d = NULL;
-        *p = NULL;
-        *q = NULL;
-        *dmp1 = NULL;
-        *dmq1 = NULL;
-        *iqmp = NULL;
+        parameters->e = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAPublicKeyGetPubExpMethod));
+        parameters->n = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAKeyGetModulus));
     }
     else
     {
@@ -338,35 +315,34 @@ PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
-    uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength,
-    uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength,
-    uint8_t* dmq1, int32_t dmq1Length, uint8_t* iqmp, int32_t iqmpLength)
+int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa, AndroidSetRsaParametersData* parameters)
 {
     if (!rsa)
         return FAIL;
+
+    abort_if_invalid_pointer_argument(parameters);
 
     JNIEnv* env = GetJNIEnv();
     INIT_LOCALS(bn, N, E, D, P, Q, DMP1, DMQ1, IQMP);
     INIT_LOCALS(loc, algName, keyFactory, rsaPubKeySpec, rsaPrivateKeySpec);
 
-    bn[N] = AndroidCryptoNative_BigNumFromBinary(n, nLength);
-    bn[E] = AndroidCryptoNative_BigNumFromBinary(e, eLength);
+    bn[N] = AndroidCryptoNative_BigNumFromBinary(parameters->n, parameters->n_length);
+    bn[E] = AndroidCryptoNative_BigNumFromBinary(parameters->e, parameters->e_length);
 
-    rsa->keyWidthInBits = nLength * 8;
+    rsa->keyWidthInBits = parameters->n_length * 8;
 
     loc[algName] = make_java_string(env, "RSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
 
-    if (dLength > 0)
+    if (parameters->d_length > 0)
     {
         // private key section
-        bn[D] = AndroidCryptoNative_BigNumFromBinary(d, dLength);
-        bn[P] = AndroidCryptoNative_BigNumFromBinary(p, pLength);
-        bn[Q] = AndroidCryptoNative_BigNumFromBinary(q, qLength);
-        bn[DMP1] = AndroidCryptoNative_BigNumFromBinary(dmp1, dmp1Length);
-        bn[DMQ1] = AndroidCryptoNative_BigNumFromBinary(dmq1, dmq1Length);
-        bn[IQMP] = AndroidCryptoNative_BigNumFromBinary(iqmp, iqmpLength);
+        bn[D] = AndroidCryptoNative_BigNumFromBinary(parameters->d, parameters->d_length);
+        bn[P] = AndroidCryptoNative_BigNumFromBinary(parameters->p, parameters->p_length);
+        bn[Q] = AndroidCryptoNative_BigNumFromBinary(parameters->q, parameters->q_length);
+        bn[DMP1] = AndroidCryptoNative_BigNumFromBinary(parameters->dmp1, parameters->dmp1_length);
+        bn[DMQ1] = AndroidCryptoNative_BigNumFromBinary(parameters->dmq1, parameters->dmq1_length);
+        bn[IQMP] = AndroidCryptoNative_BigNumFromBinary(parameters->iqmp, parameters->iqmp_length);
 
         loc[rsaPrivateKeySpec] = (*env)->NewObject(env, g_RSAPrivateCrtKeySpecClass, g_RSAPrivateCrtKeySpecCtor,
             bn[N], bn[E], bn[D], bn[P], bn[Q], bn[DMP1], bn[DMQ1], bn[IQMP]);

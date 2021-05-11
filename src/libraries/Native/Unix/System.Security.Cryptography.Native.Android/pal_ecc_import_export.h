@@ -17,17 +17,83 @@ typedef enum
     Characteristic2 = 4
 } ECCurveType;
 
+typedef struct
+{
+    jobject qx_bn;
+    jobject qy_bn;
+    jobject d_bn;
+    int32_t qx_cb;
+    int32_t qy_cb;
+    int32_t d_cb;
+} AndroidECKeyParameters;
+
+typedef struct
+{
+    jobject qx_bn;
+    jobject qy_bn;
+    jobject p_bn;
+    jobject a_bn;
+    jobject b_bn;
+    jobject gx_bn;
+    jobject gy_bn;
+    jobject order_bn;
+    jobject cofactor_bn;
+    jobject seed_bn;
+    jobject d_bn;
+    int32_t qx_cb;
+    int32_t qy_cb;
+    int32_t p_cb;
+    int32_t a_cb;
+    int32_t b_cb;
+    int32_t gx_cb;
+    int32_t gy_cb;
+    int32_t order_cb;
+    int32_t cofactor_cb;
+    int32_t seed_cb;
+    int32_t d_cb;
+} AndroidECCurveParameters;
+
+typedef struct
+{
+    uint8_t* qx;
+    uint8_t* qy;
+    uint8_t* d;
+    int32_t qx_length;
+    int32_t qy_length;
+    int32_t d_length;
+} AndroidECKeyArrayParameters;
+
+typedef struct
+{
+    uint8_t* qx;
+    uint8_t* qy;
+    uint8_t* d;
+    uint8_t* p;
+    uint8_t* a;
+    uint8_t* b;
+    uint8_t* gx;
+    uint8_t* gy;
+    uint8_t* order;
+    uint8_t* cofactor;
+    uint8_t* seed;
+    int32_t qx_length;
+    int32_t qy_length;
+    int32_t d_length;
+    int32_t p_length;
+    int32_t a_length;
+    int32_t b_length;
+    int32_t gx_length;
+    int32_t gy_length;
+    int32_t order_length;
+    int32_t cofactor_length;
+    int32_t seed_length;
+} AndroidECKeyExplicitParameters;
 /*
 Returns the ECC key parameters.
 */
 PALEXPORT int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                                   int32_t includePrivate,
-                                                  jobject* qx,
-                                                  int32_t* cbQx,
-                                                  jobject* qy,
-                                                  int32_t* cbQy,
-                                                  jobject* d,
-                                                  int32_t* cbD);
+                                                  AndroidECKeyParameters *parameters);
 
 /*
 Returns the ECC key and curve parameters.
@@ -35,28 +101,7 @@ Returns the ECC key and curve parameters.
 PALEXPORT int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
                                                     int32_t includePrivate,
                                                     ECCurveType* curveType,
-                                                    jobject* qx,
-                                                    int32_t* cbx,
-                                                    jobject* qy,
-                                                    int32_t* cby,
-                                                    jobject* d,
-                                                    int32_t* cbd,
-                                                    jobject* p,
-                                                    int32_t* cbP,
-                                                    jobject* a,
-                                                    int32_t* cbA,
-                                                    jobject* b,
-                                                    int32_t* cbB,
-                                                    jobject* gx,
-                                                    int32_t* cbGx,
-                                                    jobject* gy,
-                                                    int32_t* cbGy,
-                                                    jobject* order,
-                                                    int32_t* cbOrder,
-                                                    jobject* cofactor,
-                                                    int32_t* cbCofactor,
-                                                    jobject* seed,
-                                                    int32_t* cbSeed);
+                                                    AndroidECCurveParameters* parameters);
 
 /*
 Creates the new EC_KEY instance using the curve oid (friendly name or value) and public key parameters.
@@ -64,36 +109,9 @@ Returns 1 upon success, -1 if oid was not found, otherwise 0.
 */
 PALEXPORT int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                           const char* oid,
-                                                          uint8_t* qx,
-                                                          int32_t qxLength,
-                                                          uint8_t* qy,
-                                                          int32_t qyLength,
-                                                          uint8_t* d,
-                                                          int32_t dLength);
+                                                          AndroidECKeyArrayParameters* parameters);
 
 /*
 Returns the new EC_KEY instance using the explicit parameters.
 */
-PALEXPORT EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
-                                                               uint8_t* qx,
-                                                               int32_t qxLength,
-                                                               uint8_t* qy,
-                                                               int32_t qyLength,
-                                                               uint8_t* d,
-                                                               int32_t dLength,
-                                                               uint8_t* p,
-                                                               int32_t pLength,
-                                                               uint8_t* a,
-                                                               int32_t aLength,
-                                                               uint8_t* b,
-                                                               int32_t bLength,
-                                                               uint8_t* gx,
-                                                               int32_t gxLength,
-                                                               uint8_t* gy,
-                                                               int32_t gyLength,
-                                                               uint8_t* order,
-                                                               int32_t nLength,
-                                                               uint8_t* cofactor,
-                                                               int32_t hLength,
-                                                               uint8_t* seed,
-                                                               int32_t sLength);
+PALEXPORT EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType, AndroidECKeyExplicitParameters* parameters);

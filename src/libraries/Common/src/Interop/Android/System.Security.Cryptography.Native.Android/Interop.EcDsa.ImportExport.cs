@@ -10,22 +10,28 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        internal struct AndroidECKeyArrayParameters
+        {
+            public byte[]? qx;
+            public byte[]? qy;
+            public byte[]? d;
+            public int qx_length;
+            public int qy_length;
+            public int d_length;
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
         private static extern int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
-            byte[]? qx, int qxLength,
-            byte[]? qy, int qyLength,
-            byte[]? d, int dLength);
+            ref AndroidECKeyArrayParameters parameters);
 
         internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
             string oid,
-            byte[]? qx, int qxLength,
-            byte[]? qy, int qyLength,
-            byte[]? d, int dLength)
+            ref AndroidECKeyArrayParameters parameters)
         {
             SafeEcKeyHandle key;
-            int rc = EcKeyCreateByKeyParameters(out key, oid, qx, qxLength, qy, qyLength, d, dLength);
+            int rc = EcKeyCreateByKeyParameters(out key, oid, ref parameters);
             if (rc == -1)
             {
                 key?.Dispose();
@@ -35,20 +41,35 @@ internal static partial class Interop
             return key;
         }
 
+        internal struct AndroidECKeyExplicitParameters
+        {
+            public byte[]? qx;
+            public byte[]? qy;
+            public byte[]? d;
+            public byte[]? p;
+            public byte[]? a;
+            public byte[]? b;
+            public byte[]? gx;
+            public byte[]? gy;
+            public byte[]? order;
+            public byte[]? cofactor;
+            public byte[]? seed;
+            public int qx_length;
+            public int qy_length;
+            public int d_length;
+            public int p_length;
+            public int a_length;
+            public int b_length;
+            public int gx_length;
+            public int gy_length;
+            public int order_length;
+            public int cofactor_length;
+            public int seed_length;
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
         internal static extern SafeEcKeyHandle EcKeyCreateByExplicitParameters(
-            ECCurve.ECCurveType curveType,
-            byte[]? qx, int qxLength,
-            byte[]? qy, int qyLength,
-            byte[]? d, int dLength,
-            byte[] p, int pLength,
-            byte[] a, int aLength,
-            byte[] b, int bLength,
-            byte[] gx, int gxLength,
-            byte[] gy, int gyLength,
-            byte[] order, int nLength,
-            byte[]? cofactor, int cofactorLength,
-            byte[]? seed, int seedLength);
+            ECCurve.ECCurveType curveType, ref AndroidECKeyExplicitParameters parameters);
 
         internal static SafeEcKeyHandle EcKeyCreateByExplicitCurve(ECCurve curve)
         {
@@ -66,19 +87,23 @@ internal static partial class Interop
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
 
+            var androidParameters = new AndroidECKeyExplicitParameters
+            {
+                qx = null, qx_length = 0,
+                qy = null, qy_length = 0,
+                d = null, d_length = 0,
+                p = p, p_length = p.Length,
+                a = curve.A, a_length = curve.A!.Length,
+                b = curve.B, b_length = curve.B!.Length,
+                gx = curve.G.X, gx_length = curve.G.X!.Length,
+                gy = curve.G.Y, gy_length = curve.G.Y!.Length,
+                order = curve.Order, order_length = curve.Order!.Length,
+                cofactor = curve.Cofactor, cofactor_length = curve.Cofactor!.Length,
+                seed = curve.Seed, seed_length = curve.Seed == null ? 0 : curve.Seed.Length
+            };
+
             SafeEcKeyHandle key = EcKeyCreateByExplicitParameters(
-                curve.CurveType,
-                null, 0,
-                null, 0,
-                null, 0,
-                p, p.Length,
-                curve.A!, curve.A!.Length,
-                curve.B!, curve.B!.Length,
-                curve.G.X!, curve.G.X!.Length,
-                curve.G.Y!, curve.G.Y!.Length,
-                curve.Order!, curve.Order!.Length,
-                curve.Cofactor, curve.Cofactor!.Length,
-                curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
+                curve.CurveType, ref androidParameters);
 
             if (key == null || key.IsInvalid)
             {
@@ -90,33 +115,42 @@ internal static partial class Interop
             return key;
         }
 
+        internal struct AndroidECKeyParameters : IDisposable
+        {
+            public SafeBignumHandle? qx_bn;
+            public SafeBignumHandle? qy_bn;
+            public SafeBignumHandle? d_bn;
+            public int qx_cb;
+            public int qy_cb;
+            public int d_cb;
+
+            public void Dispose()
+            {
+                qx_bn?.Dispose();
+                qy_bn?.Dispose();
+                d_bn?.Dispose();
+            }
+        }
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int AndroidCryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
-            out SafeBignumHandle qx_bn, out int x_cb,
-            out SafeBignumHandle qy_bn, out int y_cb,
-            out SafeBignumHandle d_bn, out int d_cb);
+            [MarshalAs(UnmanagedType.U4)] bool includePrivate,
+            out AndroidECKeyParameters parameters);
 
         internal static ECParameters GetECKeyParameters(
             SafeEcKeyHandle key,
             bool includePrivate)
         {
-            SafeBignumHandle qx_bn, qy_bn, d_bn;
-            int qx_cb, qy_cb, d_cb;
+            AndroidECKeyParameters androidParameters = default;
             ECParameters parameters = default;
 
             int rc = AndroidCryptoNative_GetECKeyParameters(
                 key,
                 includePrivate,
-                out qx_bn, out qx_cb,
-                out qy_bn, out qy_cb,
-                out d_bn, out d_cb);
+                out androidParameters);
 
-            using (qx_bn)
-            using (qy_bn)
-            using (d_bn)
+            using (androidParameters)
             {
                 if (rc == -1)
                 {
@@ -130,23 +164,64 @@ internal static partial class Interop
                 // Match Windows semantics where qx, qy, and d have same length
                 int keySizeBits = EcKeyGetSize(key);
                 int expectedSize = (keySizeBits + 7) / 8;
-                int cbKey = GetMax(qx_cb, qy_cb, d_cb);
+                int cbKey = GetMax(androidParameters.qx_cb, androidParameters.qy_cb, androidParameters.d_cb);
 
                 Debug.Assert(
                     cbKey <= expectedSize,
-                    $"Expected output size was {expectedSize}, which a parameter exceeded. qx={qx_cb}, qy={qy_cb}, d={d_cb}");
+                    $"Expected output size was {expectedSize}, which a parameter exceeded. qx={androidParameters.qx_cb}, qy={androidParameters.qy_cb}, d={androidParameters.d_cb}");
 
                 cbKey = GetMax(cbKey, expectedSize);
 
                 parameters.Q = new ECPoint
                 {
-                    X = Crypto.ExtractBignum(qx_bn, cbKey),
-                    Y = Crypto.ExtractBignum(qy_bn, cbKey)
+                    X = Crypto.ExtractBignum(androidParameters.qx_bn, cbKey),
+                    Y = Crypto.ExtractBignum(androidParameters.qy_bn, cbKey)
                 };
-                parameters.D = d_cb == 0 ? null : Crypto.ExtractBignum(d_bn, cbKey);
+                parameters.D = androidParameters.d_cb == 0 ? null : Crypto.ExtractBignum(androidParameters.d_bn, cbKey);
             }
 
             return parameters;
+        }
+
+        private struct AndroidECCurveParameters : IDisposable
+        {
+            public SafeBignumHandle? qx_bn;
+            public SafeBignumHandle? qy_bn;
+            public SafeBignumHandle? p_bn;
+            public SafeBignumHandle? a_bn;
+            public SafeBignumHandle? b_bn;
+            public SafeBignumHandle? gx_bn;
+            public SafeBignumHandle? gy_bn;
+            public SafeBignumHandle? order_bn;
+            public SafeBignumHandle? cofactor_bn;
+            public SafeBignumHandle? seed_bn;
+            public SafeBignumHandle? d_bn;
+            public int qx_cb;
+            public int qy_cb;
+            public int p_cb;
+            public int a_cb;
+            public int b_cb;
+            public int gx_cb;
+            public int gy_cb;
+            public int order_cb;
+            public int cofactor_cb;
+            public int seed_cb;
+            public int d_cb;
+
+            public void Dispose()
+            {
+                qx_bn?.Dispose();
+                qy_bn?.Dispose();
+                p_bn?.Dispose();
+                a_bn?.Dispose();
+                b_bn?.Dispose();
+                gx_bn?.Dispose();
+                gy_bn?.Dispose();
+                order_bn?.Dispose();
+                cofactor_bn?.Dispose();
+                seed_bn?.Dispose();
+                d_bn?.Dispose();
+            }
         }
 
         [DllImport(Libraries.CryptoNative)]
@@ -154,53 +229,22 @@ internal static partial class Interop
             SafeEcKeyHandle key,
             bool includePrivate,
             out ECCurve.ECCurveType curveType,
-            out SafeBignumHandle qx, out int x_cb,
-            out SafeBignumHandle qy, out int y_cb,
-            out SafeBignumHandle d, out int d_cb,
-            out SafeBignumHandle p, out int P_cb,
-            out SafeBignumHandle a, out int A_cb,
-            out SafeBignumHandle b, out int B_cb,
-            out SafeBignumHandle gx, out int Gx_cb,
-            out SafeBignumHandle gy, out int Gy_cb,
-            out SafeBignumHandle order, out int order_cb,
-            out SafeBignumHandle cofactor, out int cofactor_cb,
-            out SafeBignumHandle seed, out int seed_cb);
+            out AndroidECCurveParameters parameters);
 
         internal static ECParameters GetECCurveParameters(
             SafeEcKeyHandle key,
             bool includePrivate)
         {
             ECCurve.ECCurveType curveType;
-            SafeBignumHandle qx_bn, qy_bn, p_bn, a_bn, b_bn, gx_bn, gy_bn, order_bn, cofactor_bn, seed_bn, d_bn;
-            int qx_cb, qy_cb, p_cb, a_cb, b_cb, gx_cb, gy_cb, order_cb, cofactor_cb, seed_cb, d_cb;
+            AndroidECCurveParameters androidParameters = default;
 
             int rc = AndroidCryptoNative_GetECCurveParameters(
                 key,
                 includePrivate,
                 out curveType,
-                out qx_bn, out qx_cb,
-                out qy_bn, out qy_cb,
-                out d_bn, out d_cb,
-                out p_bn, out p_cb,
-                out a_bn, out a_cb,
-                out b_bn, out b_cb,
-                out gx_bn, out gx_cb,
-                out gy_bn, out gy_cb,
-                out order_bn, out order_cb,
-                out cofactor_bn, out cofactor_cb,
-                out seed_bn, out seed_cb);
+                out androidParameters);
 
-            using (qx_bn)
-            using (qy_bn)
-            using (p_bn)
-            using (a_bn)
-            using (b_bn)
-            using (gx_bn)
-            using (gy_bn)
-            using (order_bn)
-            using (cofactor_bn)
-            using (seed_bn)
-            using (d_bn)
+            using (androidParameters)
             {
                 if (rc == -1)
                 {
@@ -217,51 +261,51 @@ internal static partial class Interop
                 {
                     // Match Windows semantics where a,b,gx,gy,qx,qy have same length
                     // Treat length of m separately as it is not tied to other fields for Char2 (Char2 not supported by Windows)
-                    cbFieldLength = GetMax(new[] { a_cb, b_cb, gx_cb, gy_cb, qx_cb, qy_cb });
-                    pFieldLength = p_cb;
+                    cbFieldLength = GetMax(new[] { androidParameters.a_cb, androidParameters.b_cb, androidParameters.gx_cb, androidParameters.gy_cb, androidParameters.qx_cb, androidParameters.qy_cb });
+                    pFieldLength = androidParameters.p_cb;
                 }
                 else
                 {
                     // Match Windows semantics where p,a,b,gx,gy,qx,qy have same length
-                    cbFieldLength = GetMax(new[] { p_cb, a_cb, b_cb, gx_cb, gy_cb, qx_cb, qy_cb });
+                    cbFieldLength = GetMax(new[] { androidParameters.p_cb, androidParameters.a_cb, androidParameters.b_cb, androidParameters.gx_cb, androidParameters.gy_cb, androidParameters.qx_cb, androidParameters.qy_cb });
                     pFieldLength = cbFieldLength;
                 }
 
                 // Match Windows semantics where order and d have same length
-                int cbSubgroupOrder = GetMax(order_cb, d_cb);
+                int cbSubgroupOrder = GetMax(androidParameters.order_cb, androidParameters.d_cb);
 
                 // Copy values to ECParameters
                 ECParameters parameters = default;
                 parameters.Q = new ECPoint
                 {
-                    X = Crypto.ExtractBignum(qx_bn, cbFieldLength),
-                    Y = Crypto.ExtractBignum(qy_bn, cbFieldLength)
+                    X = Crypto.ExtractBignum(androidParameters.qx_bn, cbFieldLength),
+                    Y = Crypto.ExtractBignum(androidParameters.qy_bn, cbFieldLength)
                 };
-                parameters.D = d_cb == 0 ? null : Crypto.ExtractBignum(d_bn, cbSubgroupOrder);
+                parameters.D = androidParameters.d_cb == 0 ? null : Crypto.ExtractBignum(androidParameters.d_bn, cbSubgroupOrder);
 
                 var curve = parameters.Curve;
                 curve.CurveType = curveType;
-                curve.A = Crypto.ExtractBignum(a_bn, cbFieldLength)!;
-                curve.B = Crypto.ExtractBignum(b_bn, cbFieldLength)!;
+                curve.A = Crypto.ExtractBignum(androidParameters.a_bn, cbFieldLength)!;
+                curve.B = Crypto.ExtractBignum(androidParameters.b_bn, cbFieldLength)!;
                 curve.G = new ECPoint
                 {
-                    X = Crypto.ExtractBignum(gx_bn, cbFieldLength),
-                    Y = Crypto.ExtractBignum(gy_bn, cbFieldLength)
+                    X = Crypto.ExtractBignum(androidParameters.gx_bn, cbFieldLength),
+                    Y = Crypto.ExtractBignum(androidParameters.gy_bn, cbFieldLength)
                 };
-                curve.Order = Crypto.ExtractBignum(order_bn, cbSubgroupOrder)!;
+                curve.Order = Crypto.ExtractBignum(androidParameters.order_bn, cbSubgroupOrder)!;
 
                 if (curveType == ECCurve.ECCurveType.Characteristic2)
                 {
-                    curve.Polynomial = Crypto.ExtractBignum(p_bn, pFieldLength)!;
+                    curve.Polynomial = Crypto.ExtractBignum(androidParameters.p_bn, pFieldLength)!;
                 }
                 else
                 {
-                    curve.Prime = Crypto.ExtractBignum(p_bn, pFieldLength)!;
+                    curve.Prime = Crypto.ExtractBignum(androidParameters.p_bn, pFieldLength)!;
                 }
 
                 // Optional parameters
-                curve.Cofactor = cofactor_cb == 0 ? null : Crypto.ExtractBignum(cofactor_bn, cofactor_cb);
-                curve.Seed = seed_cb == 0 ? null : Crypto.ExtractBignum(seed_bn, seed_cb);
+                curve.Cofactor = androidParameters.cofactor_cb == 0 ? null : Crypto.ExtractBignum(androidParameters.cofactor_bn, androidParameters.cofactor_cb);
+                curve.Seed = androidParameters.seed_cb == 0 ? null : Crypto.ExtractBignum(androidParameters.seed_bn, androidParameters.seed_cb);
 
                 parameters.Curve = curve;
                 return parameters;
