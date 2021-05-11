@@ -5533,13 +5533,15 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
     }
     emitCmpHandle->allocMem(emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs, emitTotalColdCodeSize, 0,
-                            xcptnsCount, allocMemFlag, (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock, (void**)&coldCodeBlockRW, (void**)&consBlock, (void**)&consBlockRW);
+                            xcptnsCount, allocMemFlag, (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock,
+                            (void**)&coldCodeBlockRW, (void**)&consBlock, (void**)&consBlockRW);
 
     consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
 
 #else
     emitCmpHandle->allocMem(emitTotalHotCodeSize, emitTotalColdCodeSize, emitConsDsc.dsdOffs, xcptnsCount, allocMemFlag,
-                            (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock, (void**)&coldCodeBlockRW, (void**)&consBlock, (void**)&consBlockRW);
+                            (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock, (void**)&coldCodeBlockRW,
+                            (void**)&consBlock, (void**)&consBlockRW);
 #endif
 
 #ifdef DEBUG
@@ -5764,7 +5766,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     /* Issue all instruction groups in order */
-    cp = codeBlock;
+    cp              = codeBlock;
     writeableOffset = codeBlockRW - codeBlock;
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
@@ -5782,7 +5784,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             assert(emitCurCodeOffs(cp) == emitTotalHotCodeSize);
 
             assert(coldCodeBlock);
-            cp = coldCodeBlock;
+            cp              = coldCodeBlock;
             writeableOffset = coldCodeBlockRW - coldCodeBlock;
 #ifdef DEBUG
             if (emitComp->opts.disAsm || emitComp->verbose)

@@ -9455,7 +9455,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 #endif
 
     BYTE* dstRW = dst + writeableOffset;
-    dstRW = emitOutputNOP(dstRW, paddingToAdd);
+    dstRW       = emitOutputNOP(dstRW, paddingToAdd);
     return dstRW - writeableOffset;
 }
 
@@ -12778,8 +12778,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (ins == INS_nop)
             {
                 BYTE* dstRW = dst + writeableOffset;
-                dstRW = emitOutputNOP(dstRW, id->idCodeSize());
-                dst = dstRW - writeableOffset;
+                dstRW       = emitOutputNOP(dstRW, id->idCodeSize());
+                dst         = dstRW - writeableOffset;
                 break;
             }
 
@@ -13902,8 +13902,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
             BYTE* dstRW = dst + writeableOffset;
-            dstRW = emitOutputNOP(dstRW, diff);
-            dst = dstRW - writeableOffset;
+            dstRW       = emitOutputNOP(dstRW, diff);
+            dst         = dstRW - writeableOffset;
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }
