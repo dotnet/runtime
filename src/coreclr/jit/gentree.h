@@ -1923,7 +1923,7 @@ public:
     // yields an address into a local
     GenTreeLclVarCommon* IsLocalAddrExpr();
 
-    // Determine if this tree represents the value of an entire implict byref parameter,
+    // Determine if this tree represents the value of an entire implicit byref parameter,
     // and if so return the tree for the parameter.
     GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
 

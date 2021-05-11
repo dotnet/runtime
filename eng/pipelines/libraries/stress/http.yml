@@ -96,6 +96,13 @@ jobs:
     displayName: Run HttpStress - HTTP 2.0
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
+    # Firewall is disabled for HTTP 1.1 runs.
+    # See: https://github.com/dotnet/runtime/issues/50854
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
+    name: disableFirewall
+    displayName: Disable Firewall
+
   - powershell: |
       cd '$(httpStressProject)'
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
@@ -103,3 +110,8 @@ jobs:
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
+    name: enableFirewall
+    displayName: Enable Firewall

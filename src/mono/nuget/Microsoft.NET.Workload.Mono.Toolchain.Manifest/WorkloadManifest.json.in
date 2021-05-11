@@ -17,6 +17,7 @@
       "abstract": true,
       "description": "Android Mono Runtime and AOT Workload",
       "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.android-arm",
         "Microsoft.NETCore.App.Runtime.Mono.android-arm64",
@@ -31,6 +32,7 @@
       "abstract": true,
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm64",
@@ -47,6 +49,7 @@
       "abstract": true,
       "description": "tvOS Mono Runtime and AOT Workload",
       "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.tvos-x64",
