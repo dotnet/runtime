@@ -441,6 +441,7 @@ namespace System.Reflection.Emit
 
         //stuff that throws
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException();

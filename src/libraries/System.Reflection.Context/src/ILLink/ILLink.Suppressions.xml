@@ -475,5 +475,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterfaces</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
   </assembly>
 </linker>

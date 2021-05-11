@@ -409,5 +409,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterfaces</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
   </assembly>
 </linker>
