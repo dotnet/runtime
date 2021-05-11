@@ -33,19 +33,6 @@ namespace System.Buffers.Text
 
         #region UTF-8 Helper methods
 
-        /// <summary>
-        /// Fills a buffer with the ASCII character '0' (0x30).
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void FillWithAsciiZeros(Span<byte> buffer)
-        {
-            // This is a faster implementation of Span<T>.Fill().
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = (byte)'0';
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDigits(ulong value, Span<byte> buffer)
         {

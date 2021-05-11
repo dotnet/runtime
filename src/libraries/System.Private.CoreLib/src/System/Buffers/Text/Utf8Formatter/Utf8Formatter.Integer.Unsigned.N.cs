@@ -48,7 +48,7 @@ namespace System.Buffers.Text
             if (trailingZeroCount > 0)
             {
                 destination[digitCount + commaCount] = Utf8Constants.Period;
-                FormattingHelpers.FillWithAsciiZeros(destination.Slice(digitCount + commaCount + 1, trailingZeroCount));
+                destination.Slice(digitCount + commaCount + 1, trailingZeroCount).Fill((byte)'0');
             }
 
             return true;
