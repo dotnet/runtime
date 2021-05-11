@@ -1840,7 +1840,10 @@ namespace System.Diagnostics.Tracing
 
             BytePtr:
                 var blob = new byte[data->Size];
-                Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                if (blob.Length != 0)
+                {
+                    Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                }
                 decoded = blob;
                 goto Store;
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -18,7 +19,7 @@ namespace BasicEventSourceTests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
-        public void Test_WriteEvent_ArgsBasicTypes()
+        public unsafe void Test_WriteEvent_ArgsBasicTypes()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
 
@@ -108,7 +109,33 @@ namespace BasicEventSourceTests
                     log.EventWithByteArray(arr);
                     Assert.Equal(52, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
-                    Assert.Equal(arr.Length, ((byte[])LoudListener.t_lastEvent.Payload[0]).Length);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    arr = new byte[20];
+                    log.EventWithByteArrayCustom(arr);
+                    Assert.Equal(53, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    arr = new byte[0];
+                    log.EventWithByteArrayCustom(arr);
+                    Assert.Equal(53, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    arr = new byte[20];
+                    fixed (byte* arrPtr = arr)
+                    {
+                        log.EventWithBytePointer(arrPtr, arr.Length);
+                    }
+                    Assert.Equal(54, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithBytePointer((byte*)IntPtr.Zero, 0);
+                    Assert.Equal(54, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
 
                     #endregion
 
