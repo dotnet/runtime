@@ -315,12 +315,12 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
       <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
       <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
       <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
       <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
       <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
       <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
