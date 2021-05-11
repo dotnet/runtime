@@ -15,7 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    // Test cases for DuplicateAndClose, Socket(socketInformation), Socket(socketInformation),
+    // Test cases for DuplicateAndClose, Socket(socketInformation), Socket.UseOnlyOverlappedIO,
     // and asynchronous IO behavior for duplicate sockets.
     // Since the constructor Socket(socketInformation) is strongly coupled
     // with the rest of the duplication logic, it's being tested here instead of CreateSocketTests.
