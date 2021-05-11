@@ -351,7 +351,7 @@ namespace Tracing.Tests.Common
         public string Commandline;
         public string OS;
         public string Arch;
-        public string ManagedEntrypointAssemblyPath;
+        public string ManagedEntrypointAssemblyName;
         public string ClrProductVersion;
 
         public static ProcessInfo2 TryParse(byte[] buf)
@@ -379,7 +379,7 @@ namespace Tracing.Tests.Common
             info.Commandline = ParseString(ref start, ref end);
             info.OS = ParseString(ref start, ref end);
             info.Arch = ParseString(ref start, ref end);
-            info.ManagedEntrypointAssemblyPath = ParseString(ref start, ref end);
+            info.ManagedEntrypointAssemblyName = ParseString(ref start, ref end);
             info.ClrProductVersion = ParseString(ref start, ref end);
 
             return info;

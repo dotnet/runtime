@@ -11304,19 +11304,12 @@ static bool GetBasename(LPCWSTR _src, __out_ecount(dstlen) __out_z LPWSTR _dst, 
 }
 
 static LPCWSTR s_pCommandLine = NULL;
-static LPCWSTR s_pEntrypointAssemblyPath = NULL;
 
 // Retrieve the full command line for the current process.
 LPCWSTR GetManagedCommandLine()
 {
     LIMITED_METHOD_CONTRACT;
     return s_pCommandLine;
-}
-
-LPCWSTR GetManagedEntrypointAssemblyPath()
-{
-    LIMITED_METHOD_CONTRACT;
-    return s_pEntrypointAssemblyPath;
 }
 
 LPCWSTR GetCommandLineForDiagnostics()
