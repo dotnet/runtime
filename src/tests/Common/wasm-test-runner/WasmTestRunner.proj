@@ -8,7 +8,7 @@
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(TestBinDir)/publish/</AppDir>
+    <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <PackageRID>browser-wasm</PackageRID>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
     <IsWasmProject>true</IsWasmProject>
@@ -28,9 +28,10 @@
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
-      <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+      <WasmResolveAssembliesBeforeBuild>false</WasmResolveAssembliesBeforeBuild>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
+      <AssemblySearchPaths>$(TestBinDir)/publish</AssemblySearchPaths>
     </PropertyGroup>
 
     <Message Text="!!!naricc_debug!!!: WasmTestRunner: TestBinDir: $(TestBinDir): Corelib: $(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" Importance="high" />

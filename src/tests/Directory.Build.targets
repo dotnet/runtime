@@ -415,7 +415,13 @@
       <ItemGroup>
         <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
         <TrimmerRootAssembly Include="System.Private.Corelib" />
+        <TrimmerRootAssembly Include="mscorlib" />
       </ItemGroup>
+
+      <PropertyGroup>      
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <PublishTrimmed>true</PublishTrimmed>
+      </PropertyGroup>
 
       <Message Text="!!!naricc_debug!!! PublishAfterBuild: $(MSBuildProjectFullPath) priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
       <MSBuild Targets="Publish"
