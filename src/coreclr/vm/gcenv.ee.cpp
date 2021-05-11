@@ -49,6 +49,24 @@ VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr
     SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(scanProc, lp1, lp2);
 }
 
+void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef VERIFY_HEAP
+    // Validate byrefs pinned by IL stubs since the last GC.
+    StubHelpers::ProcessByrefValidationList();
+#endif // VERIFY_HEAP
+
+    if (!is_concurrent)
+        Interop::OnBeforeGCScanRoots();
+}
+
 //EE can perform post stack scanning action, while the
 // user threads are still suspended
 VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
@@ -66,6 +84,9 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     // the RCW cache from resurrecting them.
     ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
+
+    if (!sc->concurrent)
+        Interop::OnAfterGCScanRoots();
 }
 
 /*
@@ -307,20 +328,6 @@ void GCToEEInterface::GcDone(int condemned)
     Interop::OnGCFinished(condemned);
 }
 
-void GCToEEInterface::RefCountedHandleCallbacksBefore()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_OBJCMARSHAL
-    ObjCMarshalNative::BeforeRefCountedHandlePromoteCallbacks();
-#endif // FEATURE_OBJCMARSHAL
-}
-
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
     CONTRACTL
@@ -352,36 +359,6 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 
     return false;
-}
-
-void GCToEEInterface::RefCountedHandleCallbacksAfter()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_OBJCMARSHAL
-    ObjCMarshalNative::AfterRefCountedHandlePromoteCallbacks();
-#endif // FEATURE_OBJCMARSHAL
-
-}
-
-void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef VERIFY_HEAP
-    // Validate byrefs pinned by IL stubs since the last GC.
-    StubHelpers::ProcessByrefValidationList();
-#endif // VERIFY_HEAP
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)

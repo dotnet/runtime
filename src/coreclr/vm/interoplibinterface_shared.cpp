@@ -114,3 +114,31 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
 #endif // FEATURE_COMWRAPPERS
     }
 }
+
+void Interop::OnBeforeGCScanRoots()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_OBJCMARSHAL
+    ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+#endif // FEATURE_OBJCMARSHAL
+}
+
+void Interop::OnAfterGCScanRoots()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_OBJCMARSHAL
+    ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+#endif // FEATURE_OBJCMARSHAL
+}

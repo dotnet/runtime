@@ -158,8 +158,8 @@ public: // Exceptions
         _Outptr_ void** context);
 
 public: // GC interaction
-    static void BeforeRefCountedHandlePromoteCallbacks();
-    static void AfterRefCountedHandlePromoteCallbacks();
+    static void BeforeRefCountedHandleCallbacks();
+    static void AfterRefCountedHandleCallbacks();
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
@@ -180,11 +180,14 @@ public:
         _In_ OBJECTHANDLE throwable,
         _Outptr_ void** context);
 
-    // Notify when GC started
+    // Notify started/finished when GC is running.
     static void OnGCStarted(_In_ int nCondemnedGeneration);
-
-    // Notify when GC finished
     static void OnGCFinished(_In_ int nCondemnedGeneration);
+
+    // Notify before/after when GC is scanning roots.
+    // Present assumption is that calls will never be nested.
+    static void OnBeforeGCScanRoots();
+    static void OnAfterGCScanRoots();
 };
 
 #endif // _INTEROPLIBINTERFACE_H_

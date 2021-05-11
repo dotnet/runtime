@@ -42,16 +42,16 @@ inline void GCToEEInterface::GcStartWork(int condemned, int max_gen)
     g_theGCToCLR->GcStartWork(condemned, max_gen);
 }
 
+inline void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->BeforeGcScanRoots(condemned, is_bgc, is_concurrent);
+}
+
 inline void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
 {
     assert(g_theGCToCLR != nullptr);
     g_theGCToCLR->AfterGcScanRoots(condemned, max_gen, sc);
-}
-
-inline void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->GcBeforeBGCSweepWork();
 }
 
 inline void GCToEEInterface::GcDone(int condemned)
@@ -60,22 +60,10 @@ inline void GCToEEInterface::GcDone(int condemned)
     g_theGCToCLR->GcDone(condemned);
 }
 
-inline void GCToEEInterface::RefCountedHandleCallbacksBefore()
-{
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->RefCountedHandleCallbacksBefore();
-}
-
 inline bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
     assert(g_theGCToCLR != nullptr);
     return g_theGCToCLR->RefCountedHandleCallbacks(pObject);
-}
-
-inline void GCToEEInterface::RefCountedHandleCallbacksAfter()
-{
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->RefCountedHandleCallbacksAfter();
 }
 
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)

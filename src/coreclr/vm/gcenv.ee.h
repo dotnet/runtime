@@ -33,12 +33,10 @@ public:
     void RestartEE(bool bFinishedGC);
     void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
     void GcStartWork(int condemned, int max_gen);
+    void BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent);
     void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc);
-    void GcBeforeBGCSweepWork();
     void GcDone(int condemned);
-    void RefCountedHandleCallbacksBefore();
     bool RefCountedHandleCallbacks(Object * pObject);
-    void RefCountedHandleCallbacksAfter();
     void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
     void SyncBlockCacheDemote(int max_gen);
     void SyncBlockCachePromotionsGranted(int max_gen);

@@ -197,32 +197,24 @@ public:
     virtual
     void GcStartWork(int condemned, int max_gen) = 0;
 
+    // Callback from the GC informing the EE that the scanning of roots is about
+    // to begin.
+    virtual
+    void BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent) = 0;
+
     // Callback from the GC informing the EE that it has completed the managed stack
     // scan. User threads are still suspended at this point.
     virtual
     void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc) = 0;
 
-    // Callback from the GC informing the EE that the background sweep phase of a BGC is
-    // about to begin.
-    virtual
-    void GcBeforeBGCSweepWork() = 0;
-
     // Callback from the GC informing the EE that a GC has completed.
     virtual
     void GcDone(int condemned) = 0;
-
-    // Called before calling RefCountedHandleCallbacks() on RefCounted handles.
-    virtual
-    void RefCountedHandleCallbacksBefore() = 0;
 
     // Predicate for the GC to query whether or not a given refcounted handle should
     // be promoted.
     virtual
     bool RefCountedHandleCallbacks(Object * pObject) = 0;
-
-    // Called after calling RefCountedHandleCallbacks() on RefCounted handles.
-    virtual
-    void RefCountedHandleCallbacksAfter() = 0;
 
     // Performs a weak pointer scan of the sync block cache.
     virtual
