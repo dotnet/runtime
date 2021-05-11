@@ -238,14 +238,14 @@ namespace System.Tests
             Assert.Equal(AppDomain.CurrentDomain.ApplyPolicy(entryAssembly), entryAssembly);
         }
 
-#pragma warning disable SYSLIB0021 // Creating and unloading AppDomains is not supported. 
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and will throw PlatformNotSupportedException.
         [Fact]
         public void CreateDomainNonNetfx()
         {
             AssertExtensions.Throws<ArgumentNullException>("friendlyName", () => { AppDomain.CreateDomain(null); });
             Assert.Throws<PlatformNotSupportedException>(() => { AppDomain.CreateDomain("test"); });
         }
-#pragma warning restore SYSLIB0021
+#pragma warning restore SYSLIB0024
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecuteAssemblyByName()
@@ -346,7 +346,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-#pragma warning disable SYSLIB0021 // Creating and unloading AppDomains is not supported. 
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and will throw PlatformNotSupportedException.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Unload()
         {
@@ -355,7 +355,7 @@ namespace System.Tests
                 Assert.Throws<CannotUnloadAppDomainException>(() => { AppDomain.Unload(AppDomain.CurrentDomain); });
             }).Dispose();
         }
-#pragma warning restore SYSLIB0021
+#pragma warning restore SYSLIB0024
 
         [Fact]
         public void Load()
