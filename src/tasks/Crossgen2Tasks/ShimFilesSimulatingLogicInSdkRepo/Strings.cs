@@ -19,5 +19,7 @@ namespace Microsoft.NET.Build.Tasks
         public static string MissingOutputR2RImageFileName = "MissingOutputR2RImageFileName";
         public static string CrossgenToolMissingInPDBCompilationMode = "CrossgenToolMissingInPDBCompilationMode";
         public static string CrossgenToolExecutableNotFound = "CrossgenToolExecutableNotFound";
+        public static string ReadyToRunNoValidRuntimePackageError = "ReadyToRunNoValidRuntimePackageError";
+        public static string ReadyToRunTargetNotSupportedError = "ReadyToRunTargetNotSupportedError";
     }
 }

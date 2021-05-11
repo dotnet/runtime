@@ -11,10 +11,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <!-- For .NET 6 and higher, default to using Crossgen2 in non-composite mode -->
     <Crossgen2TasksOverriden>true</Crossgen2TasksOverriden>
   </PropertyGroup>
 
   <UsingTask TaskName="PrepareForReadyToRunCompilation" AssemblyFile="$(MSBuildThisFileDirectory)Crossgen2Tasks.dll" />
+  <UsingTask TaskName="ResolveReadyToRunCompilers" AssemblyFile="$(MSBuildThisFileDirectory)Crossgen2Tasks.dll" />
   <UsingTask TaskName="RunReadyToRunCompiler" AssemblyFile="$(MSBuildThisFileDirectory)Crossgen2Tasks.dll" />
 </Project>
