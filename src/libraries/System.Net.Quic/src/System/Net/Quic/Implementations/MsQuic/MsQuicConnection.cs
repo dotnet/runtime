@@ -51,6 +51,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            public readonly ResettableCompletionSource<int> NewUnidirectionalStreamsAvailableTcs = new ResettableCompletionSource<int>();
+            public readonly ResettableCompletionSource<int> NewBidirectionalStreamsAvailableTcs = new ResettableCompletionSource<int>();
+
             public bool Connected;
             public long AbortErrorCode = -1;
 
@@ -196,6 +199,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventStreamsAvailable(State state, ref ConnectionEvent connectionEvent)
         {
+            if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
+            {
+                state.NewUnidirectionalStreamsAvailableTcs.Complete(connectionEvent.Data.StreamsAvailable.UniDirectionalCount);
+            }
+            if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
+            {
+                state.NewBidirectionalStreamsAvailableTcs.Complete(connectionEvent.Data.StreamsAvailable.BiDirectionalCount);
+            }
+
             return MsQuicStatusCodes.Success;
         }
 
@@ -323,16 +335,26 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        internal override async ValueTask<int> WaitForAvailableUnirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask<int> WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-            return 0;
+            int availableCount = GetRemoteAvailableUnidirectionalStreamCount();
+            if (availableCount > 0)
+            {
+                return new ValueTask<int>(availableCount);
+            }
+
+            return _state.NewUnidirectionalStreamsAvailableTcs.GetValueTask();
         }
 
-        internal override async ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-            return 0;
+            int availableCount = GetRemoteAvailableBidirectionalStreamCount();
+            if (availableCount > 0)
+            {
+                return new ValueTask<int>(availableCount);
+            }
+
+            return _state.NewBidirectionalStreamsAvailableTcs.GetValueTask();
         }
 
         internal override async ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
@@ -353,12 +375,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        internal override long GetRemoteAvailableUnidirectionalStreamCount()
+        internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
-        internal override long GetRemoteAvailableBidirectionalStreamCount()
+        internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }

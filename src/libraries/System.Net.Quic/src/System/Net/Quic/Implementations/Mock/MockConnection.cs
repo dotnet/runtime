@@ -138,7 +138,7 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
-        internal override ValueTask<int> WaitForAvailableUnirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask<int> WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
             return new ValueTask<int>(1);
         }
@@ -187,9 +187,9 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(streamState, true);
         }
 
-        internal override long GetRemoteAvailableUnidirectionalStreamCount() => long.MaxValue;
+        internal override int GetRemoteAvailableUnidirectionalStreamCount() => int.MaxValue;
 
-        internal override long GetRemoteAvailableBidirectionalStreamCount() => long.MaxValue;
+        internal override int GetRemoteAvailableBidirectionalStreamCount() => int.MaxValue;
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {

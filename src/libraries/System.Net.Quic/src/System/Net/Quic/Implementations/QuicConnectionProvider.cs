@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask ConnectAsync(CancellationToken cancellationToken = default);
 
-        internal abstract ValueTask<int> WaitForAvailableUnirectionalStreamsAsync(CancellationToken cancellationToken = default);
+        internal abstract ValueTask<int> WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default);
 
         internal abstract ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default);
 
@@ -24,9 +24,9 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default);
 
-        internal abstract long GetRemoteAvailableUnidirectionalStreamCount();
+        internal abstract int GetRemoteAvailableUnidirectionalStreamCount();
 
-        internal abstract long GetRemoteAvailableBidirectionalStreamCount();
+        internal abstract int GetRemoteAvailableBidirectionalStreamCount();
 
         internal abstract ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default);
 
