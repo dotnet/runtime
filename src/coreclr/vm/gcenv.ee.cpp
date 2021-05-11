@@ -1704,3 +1704,8 @@ void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const Stre
 {
     StressLog::LogMsg(level, facility, msg);
 }
+
+uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return ::GetCurrentProcessCpuCount();
+}

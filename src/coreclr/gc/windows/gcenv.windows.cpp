@@ -63,14 +63,10 @@ struct CPU_Group_Info
 };
 
 static bool g_fEnableGCCPUGroups;
-static bool g_fUseAllCPUGroups;
 static bool g_fHadSingleProcessorAtStartup;
 static DWORD  g_nGroups;
 static DWORD g_nProcessors;
 static CPU_Group_Info *g_CPUGroupInfoArray;
-
-// The cached number of CPUs available for the current process.
-static DWORD g_nCurrentProcessCpuCount = 0;
 
 void InitNumaNodeInfo()
 {
@@ -243,7 +239,6 @@ bool InitCPUGroupInfoRange()
 void InitCPUGroupInfo()
 {
     g_fEnableGCCPUGroups = false;
-    g_fUseAllCPUGroups = false;
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     if (!GCConfig::GetGCCpuGroup())
@@ -256,11 +251,7 @@ void InitCPUGroupInfo()
         return;
 
     // only enable CPU groups if more than one group exists
-    if (g_nGroups > 1)
-    {
-        g_fEnableGCCPUGroups = true;
-        g_fUseAllCPUGroups = GCConfig::GetUseAllCpuGroups();
-    }
+    g_fEnableGCCPUGroups = g_nGroups > 1;
 #endif // TARGET_AMD64 || TARGET_ARM64
 
     // Determine if the process is affinitized to a single processor (or if the system has a single processor)
@@ -956,68 +947,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     }
 
     return &g_processAffinitySet;
-}
-
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    if (g_nCurrentProcessCpuCount > 0)
-        return g_nCurrentProcessCpuCount;
-
-    DWORD count;
-
-    // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity.
-
-    int64_t configValue = GCConfig::GetProcessorCount();
-
-    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
-    {
-        count = (DWORD)configValue;
-    }
-    else
-    {
-        // Are we allowed to use all CPU groups?
-        if (g_fUseAllCPUGroups)
-        {
-            count = g_nProcessors;
-        }
-        else
-        {
-            DWORD_PTR pmask, smask;
-
-            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-            {
-                count = 1;
-            }
-            else
-            {
-                pmask &= smask;
-                count = 0;
-
-                while (pmask)
-                {
-                    pmask &= (pmask - 1);
-                    count++;
-                }
-
-                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-                // than 64 processors, which would leave us with a count of 0.  Since the GC
-                // expects there to be at least one processor to run on (and thus at least one
-                // heap), we'll return 64 here if count is 0, since there are likely a ton of
-                // processors available in that case.
-                if (count == 0)
-                    count = 64;
-            }
-        }
-    }
-
-    _ASSERTE(count > 0);
-    g_nCurrentProcessCpuCount = count;
-
-    return count;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.

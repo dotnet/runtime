@@ -140,9 +140,6 @@ public:
 // GC thread function prototype
 typedef void (*GCThreadFunction)(void* param);
 
-// The maximum processor count value that may be set by the environment
-#define MAX_PROCESSOR_COUNT 0xffff
-
 #ifdef HOST_64BIT
 // Right now we support maximum 1024 procs - meaning that we will create at most
 // that many GC threads and GC heaps.
@@ -390,11 +387,6 @@ public:
     // Return:
     //  Size of the cache
     static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
-
-    // Get number of processors assigned to the current process
-    // Return:
-    //  The number of processors
-    static uint32_t GetCurrentProcessCpuCount();
 
     // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:

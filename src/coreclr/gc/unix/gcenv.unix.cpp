@@ -18,10 +18,8 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
-#include "gcenv.ee.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
-#include "gcconfig.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -171,9 +169,6 @@ FOR_ALL_NUMA_FUNCTIONS
 
 // The cached total number of CPUs that can be used in the OS.
 static uint32_t g_totalCpuCount = 0;
-
-// The cached number of CPUs available for the current process.
-static uint32_t g_currentProcessCpuCount = 0;
 
 //
 // Helper membarrier function
@@ -416,8 +411,6 @@ bool GCToOSInterface::Initialize()
 
 #if HAVE_SCHED_GETAFFINITY
 
-    uint32_t processAffinityCpuCount = 0;
-
     cpu_set_t cpuSet;
     int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
 
@@ -427,7 +420,6 @@ bool GCToOSInterface::Initialize()
         {
             if (CPU_ISSET(i, &cpuSet))
             {
-                processAffinityCpuCount++;
                 g_processAffinitySet.Add(i);
             }
         }
@@ -441,37 +433,12 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    uint32_t processAffinityCpuCount = g_totalCpuCount;
-
     for (size_t i = 0; i < g_totalCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
 
 #endif // HAVE_SCHED_GETAFFINITY
-
-    // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota.
-
-    uint32_t processCpuCount;
-    int64_t configValue = GCConfig::GetProcessorCount();
-
-    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
-    {
-        processCpuCount = (uint32_t)configValue;
-    }
-    else
-    {
-        processCpuCount = processAffinityCpuCount;
-
-        uint32_t cpuLimit;
-        if (GetCpuLimit(&cpuLimit) && cpuLimit < processCpuCount)
-        {
-            processCpuCount = cpuLimit;
-        }
-    }
-
-    g_currentProcessCpuCount = processCpuCount;
 
     NUMASupportInitialize();
 
@@ -1137,14 +1104,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     }
 
     return &g_processAffinitySet;
-}
-
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    return g_currentProcessCpuCount;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.

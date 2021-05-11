@@ -40325,7 +40325,7 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    g_num_active_processors = GCToOSInterface::GetCurrentProcessCpuCount();
+    g_num_active_processors = GCToEEInterface::GetCurrentProcessCpuCount();
 
     if (nhp_from_config)
     {
