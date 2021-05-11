@@ -34,6 +34,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50639")]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteExecutor.Invoke(() =>
