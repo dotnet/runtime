@@ -6516,7 +6516,7 @@ protected:
     // loop nested in "loopInd" that shares the same head as "loopInd".
     void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
-    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap);
+    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool updatePreds = false);
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
@@ -6560,7 +6560,7 @@ protected:
 
     static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
 
-    void optInvertWhileLoop(BasicBlock* block);
+    bool optInvertWhileLoop(BasicBlock* block);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
@@ -7427,7 +7427,7 @@ public:
     bool optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* context);
     static fgWalkPreFn optCanOptimizeByLoopCloningVisitor;
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
-    void optObtainLoopCloningOpts(LoopCloneContext* context);
+    bool optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
 
     bool optLoopCloningEnabled();
@@ -9475,10 +9475,13 @@ public:
         BOOL hasCircularMethodConstraints;
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
+
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
         double      compPerfScore;
+        int         compMethodSuperPMIIndex; // useful when debugging under SuperPMI
+
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)

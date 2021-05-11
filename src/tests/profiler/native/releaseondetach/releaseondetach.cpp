@@ -3,20 +3,12 @@
 
 #include "releaseondetach.h"
 
-#include <thread>
-
-using std::thread;
-
-ReleaseOnDetach *ReleaseOnDetach::Instance;
-
 ReleaseOnDetach::ReleaseOnDetach() :
     _dispenser(NULL),
     _failures(0),
-    _detachSucceeded(false),
-    _callback(NULL),
-    _callbackSet()
+    _detachSucceeded(false)
 {
-    ReleaseOnDetach::Instance = this;
+
 }
 
 ReleaseOnDetach::~ReleaseOnDetach()
@@ -39,20 +31,7 @@ ReleaseOnDetach::~ReleaseOnDetach()
 
     fflush(stdout);
 
-
-    _callbackSet.Wait();
-
-
-    thread callbackThread([&]()
-    {
-        // The destructor will be called from the profiler detach thread, which causes
-        // some crst order asserts if we call back in to managed code. Spin up
-        // a new thread to avoid that.
-        pCorProfilerInfo->InitializeCurrentThread();
-        _callback();
-    });
-
-    callbackThread.join();
+    NotifyManagedCodeViaCallback();
 }
 
 GUID ReleaseOnDetach::GetClsid()
@@ -118,16 +97,4 @@ HRESULT ReleaseOnDetach::ProfilerDetachSucceeded()
     printf("Profiler detach succeeded\n");
     _detachSucceeded = true;
     return S_OK;
-}
-
-void ReleaseOnDetach::SetCallback(ProfilerCallback callback)
-{
-    assert(callback != NULL);
-    _callback = callback;
-    _callbackSet.Signal();
-}
-
-extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback callback)
-{
-    ReleaseOnDetach::Instance->SetCallback(callback);
 }

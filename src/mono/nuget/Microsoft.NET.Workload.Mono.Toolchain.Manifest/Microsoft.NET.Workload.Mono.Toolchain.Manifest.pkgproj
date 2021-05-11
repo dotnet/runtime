@@ -1,0 +1,43 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Internal toolchain package not meant for direct consumption. Please do not reference directly.</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <!-- Override the id to include the sdk band as per the workload installer spec -->
+    <PropertyGroup>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.Manifest-$(SdkBandVersion)</Id>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
+      <PackageFile Include="WorkloadManifest.targets" TargetPath="data" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Running this target ensures we have the fully evaluated PackageVersion -->
+  <Target Name="_WriteManifestValues" AfterTargets="CalculatePackageVersion">
+    <PropertyGroup>
+      <PackagePathVersion>PackageVersion=$(PackageVersion);</PackagePathVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.json.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestPath)" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

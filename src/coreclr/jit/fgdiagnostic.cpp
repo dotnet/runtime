@@ -609,6 +609,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
 //      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
 //                                     mostly lexical block linear layout.
+//      COMPlus_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
 bool Compiler::fgDumpFlowGraph(Phases phase)
 {
@@ -623,11 +624,13 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     // avoid asserts.
     const bool includeLoops = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
     const bool constrained  = JitConfig.JitDumpFgConstrained() != 0;
+    const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
 #else  // !DEBUG
     const bool createDotFile = true;
     const bool includeEH     = false;
     const bool includeLoops  = false;
     const bool constrained   = true;
+    const bool useBlockId    = false;
 #endif // !DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
@@ -741,7 +744,94 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB, block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"", block->bbNum);
+
+            if (useBlockId)
+            {
+                fprintf(fgxFile, "%s", block->dspToString());
+            }
+            else
+            {
+                fprintf(fgxFile, FMT_BB, block->bbNum);
+            }
+
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                fprintf(fgxFile, "\\n");
+
+                // Include a line with the basics of the branch condition, if possible.
+                // Find the loop termination test at the bottom of the loop.
+                Statement* condStmt = block->lastStmt();
+                if (condStmt != nullptr)
+                {
+                    GenTree* const condTree = condStmt->GetRootNode();
+                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    GenTree* const compareTree = condTree->AsOp()->gtOp1;
+                    if (compareTree->OperIsCompare())
+                    {
+                        // Want to generate something like:
+                        //   V01 <= 7
+                        //   V01 > V02
+
+                        const char* opName = GenTree::OpName(compareTree->OperGet());
+                        // Make it look nicer if we can
+                        switch (compareTree->OperGet())
+                        {
+                            case GT_EQ:
+                                opName = "==";
+                                break;
+                            case GT_NE:
+                                opName = "!=";
+                                break;
+                            case GT_LT:
+                                opName = "<";
+                                break;
+                            case GT_LE:
+                                opName = "<=";
+                                break;
+                            case GT_GE:
+                                opName = ">=";
+                                break;
+                            case GT_GT:
+                                opName = ">";
+                                break;
+                            default:
+                                break;
+                        }
+
+                        auto displayOperand = [&](GenTree* const tree) {
+                            if (tree->IsCnsIntOrI())
+                            {
+                                fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+                            }
+                            else if (tree->IsCnsFltOrDbl())
+                            {
+                                fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+                            }
+                            else if (tree->IsLocal())
+                            {
+                                fprintf(fgxFile, "V%02u", tree->AsLclVarCommon()->GetLclNum());
+                            }
+                            else
+                            {
+                                fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
+                            }
+                        };
+
+                        GenTree* const lhs = compareTree->AsOp()->gtOp1;
+                        GenTree* const rhs = compareTree->AsOp()->gtOp2;
+
+                        displayOperand(lhs);
+                        fprintf(fgxFile, " %s ", opName);
+                        displayOperand(rhs);
+                    }
+                    else
+                    {
+                        // !OperIsCompare
+                        fprintf(fgxFile, "[%s]", GenTree::OpName(compareTree->OperGet()));
+                    }
+                }
+            }
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())

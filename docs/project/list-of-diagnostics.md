@@ -26,6 +26,11 @@ The acceptance criteria for adding an obsoletion includes:
     * An MSBuild property can be added to the project's first `<PropertyGroup>` to achieve this easily
     * Example: `<IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>`
     * This will need to be specified in both the `src` and `ref` projects
+* If the library contains types that are forwarded within a generated shim
+    * Errors will be received when running `build libs`, with obsoletion errors in `src/libraries/shims/generated` files
+    * This is resolved by adding the obsoletion's diagnostic id to the `<NoWarn>` property for partial facade assemblies
+    * That property is found in `src/libraries/Directory.Build.targets`
+    * Search for the "Ignore Obsolete errors within the generated shims that type-forward types" comment and add the appropriate diagnostic id to the comment and the `<NoWarn>` property (other SYSLIB diagnostics already exist there)
 * Apply the `breaking-change` label to the PR that introduces the obsoletion
     * A bot will automatically apply the `needs-breaking-change-doc-created` label when the `breaking-change` label is detected
 * Follow up with the breaking change process to communicate and document the breaking change
@@ -70,6 +75,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0018`__ | ReflectionOnly loading is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException. |
 |  __`SYSLIB0020`__ | JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull. |
+|  __`SYSLIB0022`__ | The Rijndael and RijndaelManaged types are obsolete. Use Aes instead. |
+|  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead. |
 
 ## Analyzer Warnings
 

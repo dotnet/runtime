@@ -9954,8 +9954,7 @@ namespace
                     *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
                 }
 
-                PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                return sigInfo.GetCallConv();
+                return NDirect::GetCallingConvention_IgnoreErrors(pMD);
             }
             else
             {

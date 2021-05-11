@@ -12,6 +12,7 @@
 #ifndef __MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__
 #define __MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__
 
+#include <mono/utils/mono-forward.h>
 #include <mono/utils/mono-publib.h>
 
 typedef MonoGCHandle MonoAssemblyLoadContextGCHandle;
@@ -37,5 +38,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 
 MONO_API MonoBundledSatelliteAssembly *
 mono_create_new_bundled_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size);
+
+typedef void * (*PInvokeOverrideFn) (const char *libraryName, const char *entrypointName);
 
 #endif /*__MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__*/
