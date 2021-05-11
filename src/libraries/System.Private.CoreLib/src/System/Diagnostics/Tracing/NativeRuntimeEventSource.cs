@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tracing
                 Payload = new ReadOnlyCollection<object?>(decodedPayloadFields)
             };
 
-            DispatchToAllListeners((int)eventID, eventCallbackArgs);
+            DispatchToAllListeners(eventCallbackArgs);
         }
 #endif // FEATURE_PERFTRACING
     }

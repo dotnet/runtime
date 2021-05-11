@@ -1977,7 +1977,7 @@ namespace System.Diagnostics.Tracing
                             Payload = new ReadOnlyCollection<object?>(args)
                         };
 
-                        DispatchToAllListeners(eventId, eventCallbackArgs);
+                        DispatchToAllListeners(eventCallbackArgs);
                     }
                 }
                 catch (Exception ex)
@@ -2085,11 +2085,12 @@ namespace System.Diagnostics.Tracing
                 eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(args);
             }
 
-            DispatchToAllListeners(eventCallbackArgs.EventId, eventCallbackArgs);
+            DispatchToAllListeners(eventCallbackArgs);
         }
 
-        internal unsafe void DispatchToAllListeners(int eventId, EventWrittenEventArgs eventCallbackArgs)
+        internal unsafe void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
         {
+            int eventId = eventCallbackArgs.EventId;
             Exception? lastThrownException = null;
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {

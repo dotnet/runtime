@@ -761,7 +761,7 @@ namespace System.Diagnostics.Tracing
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
             }
 
-            DispatchToAllListeners(-1, eventCallbackArgs);
+            DispatchToAllListeners(eventCallbackArgs);
         }
 
 #if ES_BUILD_STANDALONE
