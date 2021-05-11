@@ -135,6 +135,10 @@ static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload);
 
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload);
+
 /*
 * DiagnosticServer.
 */

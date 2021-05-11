@@ -609,6 +609,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
 //      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
 //                                     mostly lexical block linear layout.
+//      COMPlus_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
 bool Compiler::fgDumpFlowGraph(Phases phase)
 {
@@ -617,14 +618,19 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
 #ifdef DEBUG
     const bool createDotFile = JitConfig.JitDumpFgDot() != 0;
-    const bool includeEH     = JitConfig.JitDumpFgEH() != 0;
-    const bool includeLoops  = JitConfig.JitDumpFgLoops() != 0;
-    const bool constrained   = JitConfig.JitDumpFgConstrained() != 0;
+    const bool includeEH     = (JitConfig.JitDumpFgEH() != 0) && !compIsForInlining();
+    // The loop table is not well maintained after the optimization phases, but there is no single point at which
+    // it is declared invalid. For now, refuse to add loop information starting at the rationalize phase, to
+    // avoid asserts.
+    const bool includeLoops = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
+    const bool constrained  = JitConfig.JitDumpFgConstrained() != 0;
+    const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
 #else  // !DEBUG
     const bool createDotFile = true;
     const bool includeEH     = false;
     const bool includeLoops  = false;
     const bool constrained   = true;
+    const bool useBlockId    = false;
 #endif // !DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
@@ -632,6 +638,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         return false;
     }
+
+    JITDUMP("Dumping flow graph after phase %s\n", PhaseNames[phase]);
 
     bool        validWeights  = fgHaveValidEdgeWeights;
     double      weightDivisor = (double)BasicBlock::getCalledCount(this);
@@ -654,7 +662,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     if (createDotFile)
     {
         fprintf(fgxFile, "digraph FlowGraph {\n");
-        fprintf(fgxFile, "    graph [label = \"%s\\nafter\\n%s\"];\n", info.compMethodName, PhaseNames[phase]);
+        fprintf(fgxFile, "    graph [label = \"%s%s\\nafter\\n%s\"];\n", info.compMethodName,
+                compIsForInlining() ? "\\n(inlinee)" : "", PhaseNames[phase]);
         fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
@@ -707,16 +716,122 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, ">");
     }
 
+    // In some cases, we want to change the display based on whether an edge is lexically backwards, forwards,
+    // or lexical successor. Also, for the region tree, using the lexical order is useful for determining where
+    // to insert in the tree, to determine nesting. We'd like to use the bbNum to do this. However, we don't
+    // want to renumber the blocks. So, create a mapping of bbNum to ordinal, and compare block order by
+    // comparing the mapped ordinals instead.
+    //
+    // For inlinees, the max block number of the inliner is used, so we need to allocate the block map based on
+    // that size, even though it means allocating a block map possibly much bigger than what's required for just
+    // the inlinee blocks.
+
+    unsigned  blkMapSize   = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax);
+    unsigned  blockOrdinal = 1;
+    unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
+    memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        assert(block->bbNum < blkMapSize);
+        blkMap[block->bbNum] = blockOrdinal++;
+    }
+
     static const char* kindImage[] = {"EHFINALLYRET", "EHFILTERRET", "EHCATCHRET",  "THROW", "RETURN", "NONE",
                                       "ALWAYS",       "LEAVE",       "CALLFINALLY", "COND",  "SWITCH"};
 
     BasicBlock* block;
-    unsigned    blockOrdinal;
     for (block = fgFirstBB, blockOrdinal = 1; block != nullptr; block = block->bbNext, blockOrdinal++)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB, block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"", block->bbNum);
+
+            if (useBlockId)
+            {
+                fprintf(fgxFile, "%s", block->dspToString());
+            }
+            else
+            {
+                fprintf(fgxFile, FMT_BB, block->bbNum);
+            }
+
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                fprintf(fgxFile, "\\n");
+
+                // Include a line with the basics of the branch condition, if possible.
+                // Find the loop termination test at the bottom of the loop.
+                Statement* condStmt = block->lastStmt();
+                if (condStmt != nullptr)
+                {
+                    GenTree* const condTree = condStmt->GetRootNode();
+                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    GenTree* const compareTree = condTree->AsOp()->gtOp1;
+                    if (compareTree->OperIsCompare())
+                    {
+                        // Want to generate something like:
+                        //   V01 <= 7
+                        //   V01 > V02
+
+                        const char* opName = GenTree::OpName(compareTree->OperGet());
+                        // Make it look nicer if we can
+                        switch (compareTree->OperGet())
+                        {
+                            case GT_EQ:
+                                opName = "==";
+                                break;
+                            case GT_NE:
+                                opName = "!=";
+                                break;
+                            case GT_LT:
+                                opName = "<";
+                                break;
+                            case GT_LE:
+                                opName = "<=";
+                                break;
+                            case GT_GE:
+                                opName = ">=";
+                                break;
+                            case GT_GT:
+                                opName = ">";
+                                break;
+                            default:
+                                break;
+                        }
+
+                        auto displayOperand = [&](GenTree* const tree) {
+                            if (tree->IsCnsIntOrI())
+                            {
+                                fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+                            }
+                            else if (tree->IsCnsFltOrDbl())
+                            {
+                                fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+                            }
+                            else if (tree->IsLocal())
+                            {
+                                fprintf(fgxFile, "V%02u", tree->AsLclVarCommon()->GetLclNum());
+                            }
+                            else
+                            {
+                                fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
+                            }
+                        };
+
+                        GenTree* const lhs = compareTree->AsOp()->gtOp1;
+                        GenTree* const rhs = compareTree->AsOp()->gtOp2;
+
+                        displayOperand(lhs);
+                        fprintf(fgxFile, " %s ", opName);
+                        displayOperand(rhs);
+                    }
+                    else
+                    {
+                        // !OperIsCompare
+                        fprintf(fgxFile, "[%s]", GenTree::OpName(compareTree->OperGet()));
+                    }
+                }
+            }
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())
@@ -840,13 +955,13 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     const char* sep = "";
 
-                    if (bSource->bbNum > bTarget->bbNum)
+                    if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                     {
                         // Lexical backedge
                         fprintf(fgxFile, " [color=green");
                         sep = ", ";
                     }
-                    else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                    else if ((blkMap[bSource->bbNum] + 1) == blkMap[bTarget->bbNum])
                     {
                         // Lexical successor
                         fprintf(fgxFile, " [color=blue, weight=20");
@@ -953,12 +1068,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             {
                 BasicBlock* const bTarget = bSource->GetSucc(i);
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
-                if (bSource->bbNum > bTarget->bbNum)
+                if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                 {
                     // Lexical backedge
                     fprintf(fgxFile, " [color=green]\n");
                 }
-                else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                else if ((blkMap[bSource->bbNum] + 1) == blkMap[bTarget->bbNum])
                 {
                     // Lexical successor
                     fprintf(fgxFile, " [color=blue]\n");
@@ -1027,24 +1142,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 };
 
             public:
-                RegionGraph(Compiler* comp) : m_comp(comp), m_rgnRoot(nullptr)
+                RegionGraph(Compiler* comp, unsigned* blkMap, unsigned blkMapSize)
+                    : m_comp(comp), m_rgnRoot(nullptr), m_blkMap(blkMap), m_blkMapSize(blkMapSize)
                 {
                     // Create a root region that encompasses the whole function.
-                    // We don't want to renumber the blocks, but it's useful to have a sequential number
-                    // representing the lexical block order so we know where to insert a block range
-                    // in the region tree. To do this, create a mapping of bbNum to ordinal, and compare
-                    // block order by comparing the mapped ordinals.
-
                     m_rgnRoot =
                         new (m_comp, CMK_DebugOnly) Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
-
-                    unsigned bbOrdinal = 0;
-                    m_blkMap           = new (m_comp, CMK_DebugOnly) unsigned[comp->fgBBNumMax + 1];
-                    memset(m_blkMap, 0, sizeof(unsigned) * (comp->fgBBNumMax + 1));
-                    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
-                    {
-                        m_blkMap[block->bbNum] = bbOrdinal++;
-                    }
                 }
 
                 //------------------------------------------------------------------------
@@ -1087,6 +1190,24 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
                         unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
 
+                        // Consider the following cases, where each "x" is a block in the range:
+                        //    xxxxxxx      // current 'child' range; we're comparing against this
+                        //    xxxxxxx      // (1) same range; could be considered child or parent
+                        //  xxxxxxxxx      // (2) parent range, shares last block
+                        //    xxxxxxxxx    // (3) parent range, shares first block
+                        //  xxxxxxxxxxx    // (4) fully overlapping parent range
+                        // xx              // (5) non-overlapping preceding sibling range
+                        //            xx   // (6) non-overlapping following sibling range
+                        //      xxx        // (7) child range
+                        //    xxx          // (8) child range, shares same start block
+                        //    x            // (9) single-block child range, shares same start block
+                        //        xxx      // (10) child range, shares same end block
+                        //          x      // (11) single-block child range, shares same end block
+                        //  xxxxxxx        // illegal: overlapping ranges
+                        //  xxx            // illegal: overlapping ranges (shared child start block and new end block)
+                        //      xxxxxxx    // illegal: overlapping ranges
+                        //          xxx    // illegal: overlapping ranges (shared child end block and new start block)
+
                         // Assert the child is properly nested within the parent.
                         // Note that if regions have the same start and end, you can't tell which is nested within the
                         // other, though it shouldn't matter.
@@ -1095,6 +1216,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         assert(childEndOrdinal <= curEndOrdinal);
 
                         // Should the new region be before this child?
+                        // Case (5).
                         if (newEndOrdinal < childStartOrdinal)
                         {
                             // Insert before this child.
@@ -1102,14 +1224,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                             *lastChildPtr     = newRgn;
                             break;
                         }
-                        else if (newEndOrdinal <= childEndOrdinal)
+                        else if ((newStartOrdinal >= childStartOrdinal) && (newEndOrdinal <= childEndOrdinal))
                         {
                             // Insert as a child of this child.
-                            // Need to recurse to walk the child's children list to see where
-                            // it belongs.
-
-                            // It better be properly nested.
-                            assert(newStartOrdinal >= childStartOrdinal);
+                            // Need to recurse to walk the child's children list to see where it belongs.
+                            // Case (1), (7), (8), (9), (10), (11).
 
                             curStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
                             curEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
@@ -1122,6 +1241,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         else if (newStartOrdinal <= childStartOrdinal)
                         {
                             // The new region is a parent of one or more of the existing children.
+                            // Case (2), (3), (4).
+
                             // Find all the children it encompasses.
                             Region** lastEndChildPtr = &child->m_rgnNext;
                             Region*  endChild        = child->m_rgnNext;
@@ -1154,6 +1275,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         }
 
                         // Else, look for next child.
+                        // Case (6).
 
                         lastChildPtr = &child->m_rgnNext;
                         child        = child->m_rgnNext;
@@ -1216,15 +1338,80 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 //------------------------------------------------------------------------
                 // Dump: dump the entire region graph
                 //
-                // Arguments:
-                //    stmt  - the statement to dump;
-                //    bbNum - the basic block number to dump.
-                //
                 void Dump()
                 {
                     printf("Region graph:\n");
                     DumpRegionNode(m_rgnRoot, 0);
                     printf("\n");
+                }
+
+                //------------------------------------------------------------------------
+                // VerifyNode: verify the region graph rooted at `rgn`.
+                //
+                // Arguments:
+                //    rgn  - the node (and its children) to check.
+                //
+                void Verify(Region* rgn)
+                {
+                    // The region needs to be a non-overlapping parent to all its children.
+                    // The children need to be non-overlapping, and in increasing order.
+
+                    unsigned rgnStartOrdinal = m_blkMap[rgn->m_bbStart->bbNum];
+                    unsigned rgnEndOrdinal   = m_blkMap[rgn->m_bbEnd->bbNum];
+                    assert(rgnStartOrdinal <= rgnEndOrdinal);
+
+                    Region* child     = rgn->m_rgnChild;
+                    Region* lastChild = nullptr;
+                    if (child != nullptr)
+                    {
+                        unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                        unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+                        assert(childStartOrdinal <= childEndOrdinal);
+                        assert(rgnStartOrdinal <= childStartOrdinal);
+
+                        while (true)
+                        {
+                            Verify(child);
+
+                            lastChild                      = child;
+                            unsigned lastChildStartOrdinal = childStartOrdinal;
+                            unsigned lastChildEndOrdinal   = childEndOrdinal;
+
+                            child = child->m_rgnNext;
+                            if (child == nullptr)
+                            {
+                                break;
+                            }
+
+                            childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                            childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+                            assert(childStartOrdinal <= childEndOrdinal);
+
+                            // The children can't overlap; they can't share any blocks.
+                            assert(lastChildEndOrdinal < childStartOrdinal);
+                        }
+
+                        // The parent region must fully include the last child.
+                        assert(childEndOrdinal <= rgnEndOrdinal);
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // Verify: verify the region graph satisfies proper nesting, and other legality rules.
+                //
+                void Verify()
+                {
+                    assert(m_comp != nullptr);
+                    assert(m_blkMap != nullptr);
+                    for (unsigned i = 0; i < m_blkMapSize; i++)
+                    {
+                        assert(m_blkMap[i] < m_blkMapSize);
+                    }
+
+                    // The root region has no siblings.
+                    assert(m_rgnRoot != nullptr);
+                    assert(m_rgnRoot->m_rgnNext == nullptr);
+                    Verify(m_rgnRoot);
                 }
 
 #endif // DEBUG
@@ -1349,11 +1536,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 Compiler* m_comp;
                 Region*   m_rgnRoot;
                 unsigned* m_blkMap;
+                unsigned  m_blkMapSize;
             };
 
             // Define the region graph object. We'll add regions to this, then output the graph.
 
-            RegionGraph rgnGraph(this);
+            RegionGraph rgnGraph(this, blkMap, blkMapSize);
 
             // Add the EH regions to the region graph. An EH region consists of a region for the
             // `try`, a region for the handler, and, for filter/filter-handlers, a region for the
@@ -1405,6 +1593,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
                 {
                     const LoopDsc& loop = optLoopTable[loopNum];
+                    if (loop.lpFlags & LPFLG_REMOVED)
+                    {
+                        continue;
+                    }
                     sprintf_s(name, sizeof(name), FMT_LP, loopNum);
                     rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpFirst, loop.lpBottom);
                 }
@@ -1412,6 +1604,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
             // All the regions have been added. Now, output them.
             DBEXEC(verbose, rgnGraph.Dump());
+            INDEBUG(rgnGraph.Verify());
             rgnGraph.Output(fgxFile);
         }
     }
@@ -2071,7 +2264,7 @@ private:
     bool CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehTryDsc);
     bool CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc);
     bool CheckJump(BasicBlock* blockPred, BasicBlock* block);
-    bool CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block);
+    bool CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block);
 
 private:
     Compiler* comp;
@@ -2130,7 +2323,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         assert(CheckJump(blockPred, block));
     }
 
-    // Make sure preds are in increasting BBnum order
+    // Make sure preds are in increasing BBnum order
     //
     assert(block->checkPredListOrder());
 
@@ -2232,7 +2425,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             return true;
 
         case BBJ_EHFINALLYRET:
-            assert(CheckEHFinalyRet(blockPred, block));
+            assert(CheckEHFinallyRet(blockPred, block));
             return true;
 
         case BBJ_THROW:
@@ -2265,9 +2458,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     return false;
 }
 
-bool BBPredsChecker::CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block)
+bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 {
-
     // If the current block is a successor to a BBJ_EHFINALLYRET (return from finally),
     // then the lexically previous block should be a call to the same finally.
     // Verify all of that.

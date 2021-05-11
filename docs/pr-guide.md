@@ -20,7 +20,7 @@ If during the code review process a merge conflict occurs the area owner is resp
 
 ## Merging Pull Requests
 
-Anyone with write access can merge a pull request manually or by setting the [auto-merge](/labels/auto-merge) label when it satisfies all of the following conditions:
+Anyone with write access can merge a pull request manually or by setting the [auto-merge](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/automatically-merging-a-pull-request) label when it satisfies all of the following conditions:
 
 * The PR has been approved by at least one reviewer and any other objections are addressed.
     * You can request another review from the original reviewer.

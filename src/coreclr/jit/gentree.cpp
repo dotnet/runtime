@@ -5845,6 +5845,7 @@ var_types GenTreeLclVar::GetFieldTypeByIndex(Compiler* compiler, unsigned idx)
     assert(IsMultiReg());
     LclVarDsc* varDsc      = compiler->lvaGetDesc(GetLclNum());
     LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + idx);
+    assert(fieldVarDsc->TypeGet() != TYP_STRUCT); // Don't expect struct fields.
     return fieldVarDsc->TypeGet();
 }
 
@@ -6758,6 +6759,20 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
         }
     }
     dst->gtFlags |= GTF_DONT_CSE;
+
+#if defined(FEATURE_SIMD) && !defined(TARGET_X86)
+    // TODO-CQ: x86 Windows supports multi-reg returns but not SIMD multi-reg returns
+
+    if (varTypeIsSIMD(dst->gtType))
+    {
+        // We want to track SIMD assignments as being intrinsics since they
+        // are functionally SIMD `mov` instructions and are more efficient
+        // when we don't promote, particularly when it occurs due to inlining
+
+        SetOpLclRelatedToSIMDIntrinsic(dst);
+        SetOpLclRelatedToSIMDIntrinsic(src);
+    }
+#endif // FEATURE_SIMD
 
     /* Create the assignment node */
 
@@ -11446,10 +11461,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_RET_EXPR:
-            printf("(inl return from call ");
-            printTreeID(tree->AsRetExpr()->gtInlineCandidate);
+        {
+            GenTree* const associatedTree = tree->AsRetExpr()->gtInlineCandidate;
+            printf("(inl return %s ", tree->IsCall() ? " from call" : "expr");
+            printTreeID(associatedTree);
             printf(")");
-            break;
+        }
+        break;
 
         case GT_PHYSREG:
             printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
@@ -17584,6 +17602,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
                     case CORINFO_TYPE_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector128ULongHandle);
                         break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128NIntHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128NUIntHandle);
+                        break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
                     default:
@@ -17624,6 +17648,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
                         break;
                     case CORINFO_TYPE_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector256ULongHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256NIntHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256NUIntHandle);
                         break;
                     default:
                         break;
@@ -18937,16 +18967,27 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(var_types       type,
 //
 void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
 {
-    if (op != nullptr)
+    if (op == nullptr)
     {
-        if (op->OperIsLocal())
+        return;
+    }
+
+    if (op->OperIsLocal())
+    {
+        setLclRelatedToSIMDIntrinsic(op);
+    }
+    else if (op->OperIs(GT_OBJ))
+    {
+        GenTree* addr = op->AsIndir()->Addr();
+
+        if (addr->OperIs(GT_ADDR))
         {
-            setLclRelatedToSIMDIntrinsic(op);
-        }
-        else if ((op->OperGet() == GT_OBJ) && (op->AsOp()->gtOp1->OperGet() == GT_ADDR) &&
-                 op->AsOp()->gtOp1->AsOp()->gtOp1->OperIsLocal())
-        {
-            setLclRelatedToSIMDIntrinsic(op->AsOp()->gtOp1->AsOp()->gtOp1);
+            GenTree* addrOp1 = addr->AsOp()->gtGetOp1();
+
+            if (addrOp1->OperIsLocal())
+            {
+                setLclRelatedToSIMDIntrinsic(addrOp1);
+            }
         }
     }
 }

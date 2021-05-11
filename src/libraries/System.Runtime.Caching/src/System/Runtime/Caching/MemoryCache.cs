@@ -33,7 +33,7 @@ namespace System.Runtime.Caching
         private int _disposed;
         private MemoryCacheStatistics _stats;
         private readonly string _name;
-        private PerfCounters _perfCounters;
+        private Counters _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
         private EventHandler _onAppDomainUnload;
@@ -196,7 +196,7 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    _perfCounters = new PerfCounters(_name);
+                    _perfCounters = new Counters(_name);
                 }
                 catch
                 {

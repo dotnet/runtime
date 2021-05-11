@@ -66,7 +66,7 @@ internal static partial class Interop
             out SafeCFArrayHandle matches,
             out int pOSStatus);
 
-        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
+        private static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeHandle item)
         {
             bool addedRef = false;
 
@@ -84,6 +84,12 @@ internal static partial class Interop
                 }
             }
         }
+
+        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
+            => SecKeychainItemCopyKeychain((SafeHandle)item);
+
+        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeSecKeyRefHandle item)
+            => SecKeychainItemCopyKeychain((SafeHandle)item);
 
         internal static SafeKeychainHandle SecKeychainItemCopyKeychain(IntPtr item)
         {

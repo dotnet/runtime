@@ -3120,6 +3120,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
     if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg && (src->OperGet() != GT_PHI))
     {
+        bool convertToStoreObj;
         if (src->OperGet() == GT_CALL)
         {
             GenTreeCall*       call    = src->AsCall();
@@ -3165,8 +3166,50 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 return;
             }
 #endif // !WINDOWS_AMD64_ABI
+            convertToStoreObj = false;
         }
-        else if (!src->OperIs(GT_LCL_VAR) || (varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF))
+        else if (!varDsc->IsEnregisterable())
+        {
+            convertToStoreObj = true;
+        }
+        else if (src->OperIs(GT_CNS_INT))
+        {
+            assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
+            var_types regType = varDsc->GetRegisterType();
+#ifdef FEATURE_SIMD
+            if (varTypeIsSIMD(regType))
+            {
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+                {
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(regType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
+                BlockRange().InsertAfter(src, simdTree);
+                LowerSIMD(simdTree);
+                src               = simdTree;
+                lclStore->gtOp1   = src;
+                convertToStoreObj = false;
+            }
+            else
+#endif // FEATURE_SIMD
+            {
+                convertToStoreObj = false;
+            }
+        }
+        else if (!src->OperIs(GT_LCL_VAR))
+        {
+            convertToStoreObj = true;
+        }
+        else
+        {
+            assert(src->OperIs(GT_LCL_VAR));
+            convertToStoreObj = false;
+        }
+
+        if (convertToStoreObj)
         {
             GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(lclStore->GetLclNum(), TYP_BYREF);
 
@@ -5915,16 +5958,34 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* lclVar = &compiler->lvaTable[lclNum];
-#ifdef DEBUG
             if (node->TypeIs(TYP_SIMD12))
             {
                 assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(lclVar) || (lclVar->lvSize() == 12));
             }
-#endif // DEBUG
         }
         break;
 #endif // TARGET_64BIT
 #endif // SIMD
+
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        {
+            const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
+            const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
+            if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
+            {
+                // Emitter does not correctly handle live updates for LCL_VAR_ADDR
+                // when they are not contained, for example, `STOREIND byref(GT_LCL_VAR_ADDR not-contained)`
+                // would generate:
+                // add     r1, sp, 48   // r1 contains address of a lclVar V01.
+                // str     r0, [r1]     // a gc ref becomes live in V01, but emitter would not report it.
+                // Make sure that we use uncontained address nodes only for variables
+                // that will be marked as mustInit and will be alive throughout the whole block even when tracked.
+                assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
+                // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
+            }
+            break;
+        }
 
         default:
             break;

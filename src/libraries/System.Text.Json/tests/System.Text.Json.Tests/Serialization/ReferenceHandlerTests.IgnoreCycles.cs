@@ -315,6 +315,28 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task AlreadySeenInstance_ShouldNotBeIgnoredOnSiblingBranch_Converter()
+        {
+            var opts = new JsonSerializerOptions(s_optionsIgnoreCycles);
+            // This converter turns the object into a string.
+            opts.Converters.Add(new PersonConverter());
+
+            var person = new Person { Name = "John" };
+
+            await Test_Serialize_And_SerializeAsync(new { Person1 = person, Person2 = person },
+                expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
+
+            await Test_Serialize_And_SerializeAsync(new { Person1 = (object)person, Person2 = (object)person },
+                expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
+
+            await Test_Serialize_And_SerializeAsync(new List<Person> { person, person },
+                expected: @"[""John"",""John""]", opts);
+
+            await Test_Serialize_And_SerializeAsync(new List<object> { person, person },
+                expected: @"[""John"",""John""]", opts);
+        }
+
+        [Fact]
         public async Task IgnoreCycles_WhenWritingNull()
         {
             var opts = new JsonSerializerOptions
@@ -342,6 +364,43 @@ namespace System.Text.Json.Serialization.Tests
             await Test_Serialize_And_SerializeAsync(rootDictionary, @"{""self"":null}", opts);
         }
 
+        [Fact] // https://github.com/dotnet/runtime/issues/51837
+        public async void IgnoreCycles_StringShouldNotBeIgnored()
+        {
+            var stringReference = "John";
+            
+            var root = new Person
+            {
+                Name = stringReference,
+                Parent = new Person
+                {
+                    Name = stringReference,
+                }
+            };
+
+            await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: @"""Name"":""John""", expectedTimes: 2, s_optionsIgnoreCycles);
+        }
+
+        [Fact]
+        public async void IgnoreCycles_BoxedValueShouldNotBeIgnored()
+        {
+            object dayOfBirthAsObject = 15;
+
+
+            var root = new Person
+            {
+                Name = "Anna",
+                DayOfBirth = dayOfBirthAsObject,
+                Parent = new Person
+                {
+                    Name = "John",
+                    DayOfBirth = dayOfBirthAsObject
+                }
+            };
+
+            await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: @"""DayOfBirth"":15", expectedTimes: 2, s_optionsIgnoreCycles);
+        }
+
         private async Task Test_Serialize_And_SerializeAsync<T>(T obj, string expected, JsonSerializerOptions options)
         {
             string json;
@@ -365,6 +424,38 @@ namespace System.Text.Json.Serialization.Tests
             await JsonSerializer.SerializeAsync(ms2, obj, objType, options).ConfigureAwait(false);
             json = Encoding.UTF8.GetString(ms2.ToArray());
             Assert.Equal(expected, json);
+        }
+
+        private async Task Test_Serialize_And_SerializeAsync_Contains<T>(T obj, string expectedSubstring, int expectedTimes, JsonSerializerOptions options)
+        {
+            string json;
+            Type objType = typeof(T);
+
+            if (objType != typeof(object))
+            {
+                json = JsonSerializer.Serialize(obj, options);
+                VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
+
+                using var ms1 = new MemoryStream();
+                await JsonSerializer.SerializeAsync(ms1, obj, options).ConfigureAwait(false);
+                json = Encoding.UTF8.GetString(ms1.ToArray());
+                VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
+            }
+
+            json = JsonSerializer.Serialize(obj, objType, options);
+            VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
+
+            using var ms2 = new MemoryStream();
+            await JsonSerializer.SerializeAsync(ms2, obj, objType, options).ConfigureAwait(false);
+            json = Encoding.UTF8.GetString(ms2.ToArray());
+            VerifySubstringExistsNTimes(json, expectedSubstring, expectedTimes);
+
+
+            static void VerifySubstringExistsNTimes(string actualString, string expectedSubstring, int expectedTimes)
+            {
+                int actualTimes = actualString.Split(new[] { expectedSubstring }, StringSplitOptions.None).Length - 1;
+                Assert.Equal(expectedTimes, actualTimes);
+            }
         }
 
         private const string Next = nameof(Next);
@@ -438,5 +529,21 @@ namespace System.Text.Json.Serialization.Tests
         private class RecursiveDictionary : Dictionary<string, RecursiveDictionary> { }
 
         private class RecursiveList : List<RecursiveList> { }
+
+        private class Person
+        {
+            public string Name { get; set; }
+            public object DayOfBirth { get; set; }
+            public Person Parent { get; set; }
+        }
+
+        class PersonConverter : JsonConverter<Person>
+        {
+            public override Person? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, Person value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value.Name);
+        }
     }
 }

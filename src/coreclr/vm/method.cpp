@@ -1140,7 +1140,7 @@ BOOL MethodDesc::IsVarArg()
 
     Signature signature = GetSignature();
     _ASSERTE(!signature.IsEmpty());
-    return MetaSig::IsVarArg(GetModule(), signature);
+    return MetaSig::IsVarArg(signature);
 }
 
 //*******************************************************************************
@@ -2581,8 +2581,7 @@ void MethodDesc::Save(DataImage *image)
     {
         EX_TRY
         {
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this);
         }
         EX_CATCH
         {

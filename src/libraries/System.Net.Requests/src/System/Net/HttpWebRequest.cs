@@ -183,12 +183,10 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-#pragma warning disable SYSLIB0014
         internal HttpWebRequest(Uri uri)
         {
             _requestUri = uri;
         }
-#pragma warning restore SYSLIB0014
 
         private void SetSpecialHeaders(string HeaderName, string? value)
         {
@@ -758,9 +756,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
-#pragma warning restore SYSLIB0014
 
         public RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 

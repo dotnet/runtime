@@ -24,7 +24,7 @@
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
-      <WasmDebugLevel>1</WasmDebugLevel>
+      <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">1</WasmDebugLevel>
 
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
     </PropertyGroup>

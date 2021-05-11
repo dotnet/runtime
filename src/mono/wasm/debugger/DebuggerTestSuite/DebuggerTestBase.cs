@@ -53,6 +53,7 @@ namespace DebuggerTests
             "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
             "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
             "/usr/bin/chromium",
+            "C:/Program Files/Google/Chrome/Application/chrome.exe",
             "/usr/bin/chromium-browser",
         };
         static string chrome_path;
@@ -76,6 +77,10 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            // the debugger is working in locale of the debugged application. For example Datetime.ToString()
+            // we want the test to mach it. We are also starting chrome with --lang=en-US
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+
             insp = new Inspector();
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
@@ -85,19 +90,19 @@ namespace DebuggerTests
 
         public virtual async Task InitializeAsync()
         {
-           Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
-            {
-                Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
-                var init_cmds = new List<(string, Task<Result>)>
-                {
+            Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
+             {
+                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                 var init_cmds = new List<(string, Task<Result>)>
+                 {
                     getInitCmdFn("Profiler.enable"),
                     getInitCmdFn("Runtime.enable"),
                     getInitCmdFn("Debugger.enable"),
                     getInitCmdFn("Runtime.runIfWaitingForDebugger")
-                };
+                 };
 
-                return init_cmds;
-            };
+                 return init_cmds;
+             };
 
             await Ready();
             await insp.OpenSessionAsync(fn);
@@ -149,9 +154,9 @@ namespace DebuggerTests
                 function_name,
                 wait_for_event_fn: async (pause_location) =>
                {
-                       //make sure we're on the right bp
+                   //make sure we're on the right bp
 
-                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                   Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                    var top_frame = pause_location!["callFrames"]?[0];
 
@@ -258,11 +263,18 @@ namespace DebuggerTests
             return l;
         }
 
-        internal JToken CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false)
+        internal JToken Check(JToken locals, string name, JObject expected)
+        {
+            var l = GetAndAssertObjectWithName(locals, name);
+            CheckValue(l["value"], expected, name).Wait();
+            return l;
+        }
+
+        internal JToken CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false, string description = null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
             var val = l["value"];
-            CheckValue(val, TObject(class_name, is_null: is_null), name).Wait();
+            CheckValue(val, TObject(class_name, is_null: is_null, description: description), name).Wait();
             Assert.True(val["isValueType"] == null || !val["isValueType"].Value<bool>());
 
             return l;
@@ -326,10 +338,10 @@ namespace DebuggerTests
             Assert.Equal(value, val);
         }
 
-        internal JToken CheckValueType(JToken locals, string name, string class_name)
+        internal JToken CheckValueType(JToken locals, string name, string class_name, string description=null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TValueType(class_name), name).Wait();
+            CheckValue(l["value"], TValueType(class_name, description: description), name).Wait();
             return l;
         }
 
@@ -409,7 +421,7 @@ namespace DebuggerTests
             {
                 functionDeclaration = fn,
                 objectId = obj["value"]?["objectId"]?.Value<string>(),
-                arguments = new[] { new { value = property } , new { value = newvalue } },
+                arguments = new[] { new { value = property }, new { value = newvalue } },
                 silent = true
             });
             var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
@@ -467,7 +479,14 @@ namespace DebuggerTests
             if (locals_fn != null)
             {
                 var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>());
-                locals_fn(locals);
+                try
+                {
+                    locals_fn(locals);
+                }
+                catch (System.AggregateException ex)
+                {
+                    throw new AggregateException(ex.Message + " \n" + locals.ToString(), ex);
+                }
             }
 
             return wait_res;
@@ -697,9 +716,9 @@ namespace DebuggerTests
                     AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                Console.WriteLine($"Expected: {exp_val}. Actual: {actual_val}");
+                Console.WriteLine($"{ex.Message} \nExpected: {exp_val} \nActual: {actual_val}");
                 throw;
             }
         }
@@ -844,8 +863,8 @@ namespace DebuggerTests
         internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
             var bp1_req = !use_regex ?
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition}) :
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition});
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
@@ -924,6 +943,9 @@ namespace DebuggerTests
 
         internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
+
+        internal static JObject TNumber(string value) =>
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>
             JObject.FromObject(new { type = "object", isValueType = true, className = className, description = description ?? className });

@@ -100,8 +100,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 owner: GetType(),
                 skipVisibility: true);
 
-            ILEmitCallSiteAnalysisResult info = ILEmitCallSiteAnalyzer.Instance.CollectGenerationInfo(callSite);
-            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(info.Size);
+            // In traces we've seen methods range from 100B - 4K sized methods since we've
+            // stop trying to inline everything into scoped methods. We'll pay for a couple of resizes
+            // so there'll be allocations but we could potentially change ILGenerator to use the array pool
+            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(512);
             ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator);
 
 #if SAVE_ASSEMBLIES

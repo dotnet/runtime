@@ -177,6 +177,7 @@ endif()
 ######################################
 
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
@@ -185,7 +186,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
-    set(HOST_MACCATALYST 1)
+    set(HOST_MACCAT 1)
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
@@ -526,7 +527,7 @@ endif()
 ######################################
 set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
-elseif(HOST_OSX)
+elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
@@ -541,7 +542,7 @@ elseif(HOST_WASM)
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_MACCAT)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
@@ -735,7 +736,7 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCATALYST)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
   add_subdirectory(dlls/dbgshim)
 endif()

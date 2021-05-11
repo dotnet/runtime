@@ -134,6 +134,9 @@
   <data name="OpenGenericServiceRequiresOpenGenericImplementation" xml:space="preserve">
     <value>Open generic service type '{0}' requires registering an open generic implementation type.</value>
   </data>
+  <data name="ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation" xml:space="preserve">
+    <value>Arity of open generic service type '{0}' does not equal arity of open generic implementation type '{1}'.</value>
+  </data>
   <data name="TypeCannotBeActivated" xml:space="preserve">
     <value>Cannot instantiate implementation type '{0}' for service type '{1}'.</value>
   </data>

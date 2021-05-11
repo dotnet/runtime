@@ -18,6 +18,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50933", TestPlatforms.Android)]
         public void SerializeDeserialize_Roundtrips(TestCollection c)
         {
             TestCollection clone = BinaryFormatterHelpers.Clone(c);

@@ -16,6 +16,7 @@
  */
 
 typedef struct _DiagnosticsAttachProfilerCommandPayload DiagnosticsAttachProfilerCommandPayload;
+typedef struct _DiagnosticsStartupProfilerCommandPayload DiagnosticsStartupProfilerCommandPayload;
 typedef struct _DiagnosticsConnectPort DiagnosticsConnectPort;
 typedef struct _DiagnosticsEnvironmentInfoPayload DiagnosticsEnvironmentInfoPayload;
 typedef struct _DiagnosticsGenerateCoreDumpCommandPayload DiagnosticsGenerateCoreDumpCommandPayload;
@@ -70,6 +71,7 @@ typedef enum {
 typedef enum {
 	DS_PROFILER_COMMANDID_RESERVED = 0x00,
 	DS_PROFILER_COMMANDID_ATTACH_PROFILER = 0x01,
+	DS_PROFILER_COMMANDID_STARTUP_PROFILER = 0x02,
 	// future
 } DiagnosticsProfilerCommandId;
 

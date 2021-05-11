@@ -12,6 +12,7 @@ namespace System.Net.Primitives.Functional.Tests
     public class LoggingTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50571", TestPlatforms.Android)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(IPAddress).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);

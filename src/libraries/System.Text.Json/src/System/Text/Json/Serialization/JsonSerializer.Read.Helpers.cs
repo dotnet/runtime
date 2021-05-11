@@ -2,21 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
-        {
-            ReadStack state = default;
-            state.Initialize(returnType, options, supportContinuation: false);
-            JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-            return ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
-        }
-
         private static TValue? ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
         {
             if (jsonConverter is JsonConverter<TValue> converter)
@@ -29,6 +21,23 @@ namespace System.Text.Json
             object? value = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
             Debug.Assert(value == null || value is TValue);
             return (TValue)value!;
+        }
+
+        private static TValue? ReadUsingMetadata<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            var readerState = new JsonReaderState(options.GetReaderOptions());
+            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
+
+            TValue? value = ReadCore<TValue>(jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase, ref reader, options, ref state);
+
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length));
+            return value;
         }
     }
 }

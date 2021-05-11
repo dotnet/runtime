@@ -4,9 +4,10 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -254,7 +255,7 @@ namespace System.Text.Json
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// or <see cref="DefaultIgnoreCondition"/> has been set to a non-default value. These properties cannot be used together.
         /// </exception>
-        [Obsolete("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.", error: false)]
+        [Obsolete(Obsoletions.JsonSerializerOptionsIgnoreNullValuesMessage, DiagnosticId = Obsoletions.JsonSerializerOptionsIgnoreNullValuesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public bool IgnoreNullValues
         {
@@ -323,7 +324,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if (!JsonHelpers.IsValidNumberHandlingValue(value))
+                if (!JsonSerializer.IsValidNumberHandlingValue(value))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -567,6 +568,16 @@ namespace System.Text.Json
 
                 return _memberAccessorStrategy;
             }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal void RootBuiltInConvertersAndTypeInfoCreator()
+        {
+            RootBuiltInConverters();
+            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
         }
 
         internal JsonTypeInfo GetOrAddClass(Type type)

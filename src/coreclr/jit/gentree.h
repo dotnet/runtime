@@ -935,9 +935,6 @@ public:
 #define GTF_ARRLEN_ARR_IDX          0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 #define GTF_ARRLEN_NONFAULTING      0x20000000 // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-#define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
-                                               //            even if they have been retyped as SIMD16.
-
 #define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                                //                   rarther than from gtGetStructHandleForHWSIMD.
 
@@ -1691,10 +1688,10 @@ public:
     bool IsValidCallArgument();
 #endif // DEBUG
 
-    inline bool IsFPZero();
-    inline bool IsIntegralConst(ssize_t constVal);
-    inline bool IsIntegralConstVector(ssize_t constVal);
-    inline bool IsSIMDZero();
+    inline bool IsFPZero() const;
+    inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsIntegralConstVector(ssize_t constVal) const;
+    inline bool IsSIMDZero() const;
 
     inline bool IsBoxedValue();
 
@@ -2925,11 +2922,11 @@ struct GenTreeVal : public GenTree
 
 struct GenTreeIntConCommon : public GenTree
 {
-    inline INT64 LngValue();
+    inline INT64 LngValue() const;
     inline void SetLngValue(INT64 val);
-    inline ssize_t IconValue();
+    inline ssize_t IconValue() const;
     inline void SetIconValue(ssize_t val);
-    inline INT64 IntegralValue();
+    inline INT64 IntegralValue() const;
 
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
@@ -3093,7 +3090,7 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 #endif
 };
 
-inline INT64 GenTreeIntConCommon::LngValue()
+inline INT64 GenTreeIntConCommon::LngValue() const
 {
 #ifndef TARGET_64BIT
     assert(gtOper == GT_CNS_LNG);
@@ -3117,7 +3114,7 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 #endif
 }
 
-inline ssize_t GenTreeIntConCommon::IconValue()
+inline ssize_t GenTreeIntConCommon::IconValue() const
 {
     assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
     return AsIntCon()->gtIconVal;
@@ -3129,7 +3126,7 @@ inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
     AsIntCon()->gtIconVal = val;
 }
 
-inline INT64 GenTreeIntConCommon::IntegralValue()
+inline INT64 GenTreeIntConCommon::IntegralValue() const
 {
 #ifdef TARGET_64BIT
     return LngValue();
@@ -4229,12 +4226,13 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_DEVIRTUALIZED           0x00040000 // GT_CALL -- this call was devirtualized
 #define GTF_CALL_M_UNBOXED                 0x00080000 // GT_CALL -- this call was optimized to use the unboxed entry point
 #define GTF_CALL_M_GUARDED_DEVIRT          0x00100000 // GT_CALL -- this call is a candidate for guarded devirtualization
-#define GTF_CALL_M_GUARDED                 0x00200000 // GT_CALL -- this call was transformed by guarded devirtualization
-#define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
-#define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
-#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
-#define GTF_CALL_M_STRESS_TAILCALL         0x02000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
-#define GTF_CALL_M_EXPANDED_EARLY          0x04000000 // GT_CALL -- the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
+#define GTF_CALL_M_GUARDED_DEVIRT_CHAIN    0x00200000 // GT_CALL -- this call is a candidate for chained guarded devirtualization
+#define GTF_CALL_M_GUARDED                 0x00400000 // GT_CALL -- this call was transformed by guarded devirtualization
+#define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00800000 // GT_CALL -- this is a call to an allocator with side effects
+#define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x01000000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x02000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
+#define GTF_CALL_M_STRESS_TAILCALL         0x04000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
+#define GTF_CALL_M_EXPANDED_EARLY          0x08000000 // GT_CALL -- the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
 
     // clang-format on
 
@@ -4847,7 +4845,7 @@ struct GenTreeIntrinsic : public GenTreeOp
 struct GenTreeJitIntrinsic : public GenTreeOp
 {
 private:
-    ClassLayout* m_layout;
+    ClassLayout* gtLayout;
 
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
     regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
@@ -4867,13 +4865,13 @@ public:
 
     ClassLayout* GetLayout() const
     {
-        return m_layout;
+        return gtLayout;
     }
 
     void SetLayout(ClassLayout* layout)
     {
         assert(layout != nullptr);
-        m_layout = layout;
+        gtLayout = layout;
     }
 
     regNumber GetOtherReg() const
@@ -4927,6 +4925,9 @@ public:
     GenTreeJitIntrinsic(
         genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeOp(oper, type, op1, op2)
+        , gtLayout(nullptr)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtOtherReg(REG_NA)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -6941,7 +6942,7 @@ inline bool GenTree::OperIsCopyBlkOp()
 // Return Value:
 //    Returns true iff the tree is an GT_CNS_DBL, with value of 0.0.
 
-inline bool GenTree::IsFPZero()
+inline bool GenTree::IsFPZero() const
 {
     if ((gtOper == GT_CNS_DBL) && (AsDblCon()->gtDconVal == 0.0))
     {
@@ -6964,7 +6965,7 @@ inline bool GenTree::IsFPZero()
 //    Like gtIconVal, the argument is of ssize_t, so cannot check for
 //    long constants in a target-independent way.
 
-inline bool GenTree::IsIntegralConst(ssize_t constVal)
+inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 
 {
     if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
@@ -6990,7 +6991,7 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal)
 // Returns:
 //     True if this represents an integral const SIMD vector.
 //
-inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
+inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 {
 #ifdef FEATURE_SIMD
     // SIMDIntrinsicInit intrinsic with a const value as initializer
@@ -7007,7 +7008,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        GenTreeHWIntrinsic* node = AsHWIntrinsic();
+        const GenTreeHWIntrinsic* node = AsHWIntrinsic();
 
         if (!varTypeIsIntegral(node->GetSimdBaseType()))
         {
@@ -7057,7 +7058,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 // Returns:
 //     True if this represents an integral const SIMD vector.
 //
-inline bool GenTree::IsSIMDZero()
+inline bool GenTree::IsSIMDZero() const
 {
 #ifdef FEATURE_SIMD
     if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit))

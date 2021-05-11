@@ -1,3 +1,7 @@
+M:System.Security.Cryptography.AesCcm.IsSupported
+M:System.Security.Cryptography.AesGcm.IsSupported
+M:System.Security.Cryptography.ChaCha20Poly1305.IsSupported
+T:System.Security.Cryptography.CryptoConfig
 T:System.Security.Cryptography.RandomNumberGenerator
 T:System.Security.Cryptography.IncrementalHash
 T:System.Security.Cryptography.SHA1
