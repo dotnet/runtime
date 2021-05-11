@@ -106,7 +106,6 @@ namespace Microsoft.NET.Build.Tasks
 
             var exclusionSet = ExcludeList == null || Crossgen2Composite ? null : new HashSet<string>(ExcludeList, StringComparer.OrdinalIgnoreCase);
             var compositeExclusionSet = PublishReadyToRunCompositeExclusions == null || !Crossgen2Composite ? null : new HashSet<string>(PublishReadyToRunCompositeExclusions, StringComparer.OrdinalIgnoreCase);
-            bool publishedCompositeImage = false;
 
             foreach (var file in inputFiles)
             {
@@ -175,12 +174,6 @@ namespace Microsoft.NET.Build.Tasks
                 else if (eligibility.CompileIntoCompositeImage)
                 {
                     r2rCompositeInputList.Add(file);
-                    if (file.ItemSpec == MainAssembly.ItemSpec)
-                    {
-                        // Create a TaskItem for <MainAssembly>.r2r.dll
-                        publishedCompositeImage = true;
-                        CreateAndPublishCompositeImage(file, compositeDllWithUniqueName: false);
-                    }
                 }
 
                 // This TaskItem corresponds to the output R2R image. It is equivalent to the input TaskItem, only the ItemSpec for it points to the new path
@@ -222,24 +215,19 @@ namespace Microsoft.NET.Build.Tasks
                 }
             }
 
-            if (Crossgen2Composite && !publishedCompositeImage)
+            if (Crossgen2Composite)
             {
                 MainAssembly.SetMetadata(MetadataKeys.RelativePath, Path.GetFileName(MainAssembly.ItemSpec));
-                CreateAndPublishCompositeImage(MainAssembly, compositeDllWithUniqueName: true);
-            }
 
-            void CreateAndPublishCompositeImage(ITaskItem file, bool compositeDllWithUniqueName)
-            {
-                var compositeR2RImageRelativePath = file.GetMetadata(MetadataKeys.RelativePath);
+                var compositeR2RImageRelativePath = MainAssembly.GetMetadata(MetadataKeys.RelativePath);
                 compositeR2RImageRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, "r2r" + Path.GetExtension(compositeR2RImageRelativePath));
                 var compositeR2RImage = Path.Combine(OutputPath, compositeR2RImageRelativePath);
 
-                TaskItem r2rCompilationEntry = new TaskItem(file);
+                TaskItem r2rCompilationEntry = new TaskItem(MainAssembly);
+                r2rCompilationEntry.ItemSpec = r2rCompositeInputList[0].ItemSpec;
                 r2rCompilationEntry.SetMetadata(MetadataKeys.OutputR2RImage, compositeR2RImage);
                 r2rCompilationEntry.SetMetadata(MetadataKeys.CreateCompositeImage, "true");
                 r2rCompilationEntry.RemoveMetadata(MetadataKeys.OriginalItemSpec);
-                if (compositeDllWithUniqueName)
-                    r2rCompilationEntry.SetMetadata(MetadataKeys.CompositeImageWithoutSource, "true");
 
                 if (EmitSymbols)
                 {
@@ -262,7 +250,7 @@ namespace Microsoft.NET.Build.Tasks
                         r2rCompilationEntry.SetMetadata(MetadataKeys.OutputPDBImage, compositePDBImage);
 
                         // Publish composite PDB file
-                        TaskItem r2rSymbolsFileToPublish = new TaskItem(file);
+                        TaskItem r2rSymbolsFileToPublish = new TaskItem(MainAssembly);
                         r2rSymbolsFileToPublish.ItemSpec = compositePDBImage;
                         r2rSymbolsFileToPublish.SetMetadata(MetadataKeys.RelativePath, compositePDBRelativePath);
                         r2rSymbolsFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
@@ -278,7 +266,7 @@ namespace Microsoft.NET.Build.Tasks
                 imageCompilationList.Add(r2rCompilationEntry);
 
                 // Publish it
-                TaskItem compositeR2RFileToPublish = new TaskItem(file);
+                TaskItem compositeR2RFileToPublish = new TaskItem(MainAssembly);
                 compositeR2RFileToPublish.ItemSpec = compositeR2RImage;
                 compositeR2RFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
                 compositeR2RFileToPublish.SetMetadata(MetadataKeys.RelativePath, compositeR2RImageRelativePath);

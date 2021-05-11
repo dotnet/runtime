@@ -186,19 +186,20 @@ namespace Microsoft.NET.Build.Tasks
             }
             else
             {
-                _inputAssembly = CompilationEntry.ItemSpec;
                 _outputR2RImage = CompilationEntry.GetMetadata(MetadataKeys.OutputR2RImage);
 
-                if (!File.Exists(_inputAssembly))
+                if (!_createCompositeImage)
                 {
-                    string compositeImageWithoutSourceMetadata = CompilationEntry.GetMetadata(MetadataKeys.EmitSymbols);
-                    bool compositeImageWithoutSource = !string.IsNullOrEmpty(compositeImageWithoutSourceMetadata) && bool.Parse(compositeImageWithoutSourceMetadata);
-
-                    if (!compositeImageWithoutSource)
+                    _inputAssembly = CompilationEntry.ItemSpec;
+                    if (!File.Exists(_inputAssembly))
                     {
                         Log.LogError(Strings.InputAssemblyNotFound, _inputAssembly);
                         return false;
                     }
+                }
+                else
+                {
+                    _inputAssembly = "CompositeImage";
                 }
 
                 if (string.IsNullOrEmpty(_outputR2RImage))

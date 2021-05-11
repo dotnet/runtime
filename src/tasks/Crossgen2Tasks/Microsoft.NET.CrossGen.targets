@@ -444,7 +444,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     -->
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="RunReadyToRunCompiler" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
   <Target Name="_CreateR2RImages"
-          Inputs="@(_ReadyToRunCompileList)"
+          Inputs="@(_ReadyToRunCompileList);@(_ReadyToRunCompositeBuildInput)"
           Outputs="%(_ReadyToRunCompileList.OutputR2RImage);%(_ReadyToRunCompileList.OutputPDBImage)">
 
     <RunReadyToRunCompiler CrossgenTool="@(CrossgenTool)"
