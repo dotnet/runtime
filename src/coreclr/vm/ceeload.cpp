@@ -11368,9 +11368,6 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     // Get the command line.
     LPCWSTR osCommandLine = GetCommandLineW();
 
-    // store the entrypoint path
-    s_pEntrypointAssemblyPath = Bundle::AppIsBundle() ? static_cast<LPCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
-
 #ifndef TARGET_UNIX
     // On Windows, osCommandLine contains the executable and all arguments.
     s_pCommandLine = osCommandLine;
