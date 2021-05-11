@@ -23,6 +23,14 @@ ICorJitInfo* InitICorJitInfo(JitInstance* jitInstance)
 //
 /**********************************************************************************/
 
+// Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
+// CORINFO_FLG_JIT_INTRINSIC, except faster.
+bool MyICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    jitInstance->mc->cr->AddCall("isJitIntrinsic");
+    return jitInstance->mc->repIsJitIntrinsic(ftn);
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t MyICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
@@ -926,11 +934,11 @@ void MyICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,                      // [I
                            unsigned int*         cILOffsets,               // [OUT] size of pILOffsets
                            uint32_t**            pILOffsets,               // [OUT] IL offsets of interest
                                                                            //       jit MUST free with freeArray!
-                           ICorDebugInfo::BoundaryTypes* implictBoundaries // [OUT] tell jit, all boundries of this type
+                           ICorDebugInfo::BoundaryTypes* implicitBoundaries // [OUT] tell jit, all boundaries of this type
                            )
 {
     jitInstance->mc->cr->AddCall("getBoundaries");
-    jitInstance->mc->repGetBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    jitInstance->mc->repGetBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 
     // The JIT will want to call freearray on the array we pass back, so move the data into a form that complies with
     // this
@@ -1815,19 +1823,6 @@ HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
 {
     jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
     return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
-}
-
-// Get the likely implementing class for a virtual call or interface call made by ftnHnd
-// at the indicated IL offset. baseHnd is the interface class or base class for the method
-// being called.
-CORINFO_CLASS_HANDLE MyICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
-                                            CORINFO_CLASS_HANDLE  baseHnd,
-                                            uint32_t              ilOffset,
-                                            uint32_t*             pLikelihood,
-                                            uint32_t*             pNumberOfClasses)
-{
-    jitInstance->mc->cr->AddCall("getLikelyClass");
-    return jitInstance->mc->repGetLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

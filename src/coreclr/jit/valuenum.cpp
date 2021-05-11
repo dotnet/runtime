@@ -1682,7 +1682,7 @@ ValueNum ValueNumStore::VNForDoubleCon(double cnsVal)
     return VnForConst(cnsVal, GetDoubleCnsMap(), TYP_DOUBLE);
 }
 
-ValueNum ValueNumStore::VNForByrefCon(size_t cnsVal)
+ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
 {
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
@@ -2673,9 +2673,9 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             }
             else // We could see GT_OR of a constant ByRef and Null
             {
-                assert((typ == TYP_BYREF) || (typ == TYP_LONG));
+                assert((typ == TYP_BYREF) || (typ == TYP_I_IMPL));
                 size_t resultVal = EvalOp<size_t>(func, arg0Val, arg1Val);
-                result           = VNForByrefCon(resultVal);
+                result           = VNForByrefCon((target_size_t)resultVal);
             }
         }
     }
@@ -2705,7 +2705,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             switch (typ)
             {
                 case TYP_BYREF:
-                    result = VNForByrefCon((size_t)resultVal);
+                    result = VNForByrefCon((target_size_t)resultVal);
                     break;
                 case TYP_LONG:
                     result = VNForLongCon(resultVal);
@@ -2862,7 +2862,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     else
                     {
                         assert(typ == TYP_BYREF);
-                        return VNForByrefCon(size_t(arg0Val));
+                        return VNForByrefCon(target_size_t(arg0Val));
                     }
 #else // TARGET_32BIT
                     if (srcIsUnsigned)
@@ -2872,7 +2872,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 #endif
                 case TYP_BYREF:
                     assert(typ == TYP_BYREF);
-                    return VNForByrefCon(size_t(arg0Val));
+                    return VNForByrefCon(target_size_t(arg0Val));
 
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
@@ -2934,7 +2934,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                             return arg0VN;
                         case TYP_BYREF:
                             assert(typ == TYP_BYREF);
-                            return VNForByrefCon((size_t)arg0Val);
+                            return VNForByrefCon((target_size_t)arg0Val);
                         case TYP_FLOAT:
                             assert(typ == TYP_FLOAT);
                             if (srcIsUnsigned)
@@ -5847,8 +5847,8 @@ struct ValueNumberState
     }
 
     ValueNumberState(Compiler* comp)
-        : m_toDoAllPredsDone(comp->getAllocator(), /*minSize*/ 4)
-        , m_toDoNotAllPredsDone(comp->getAllocator(), /*minSize*/ 4)
+        : m_toDoAllPredsDone(comp->getAllocator(CMK_ValueNumber), /*minSize*/ 4)
+        , m_toDoNotAllPredsDone(comp->getAllocator(CMK_ValueNumber), /*minSize*/ 4)
         , m_comp(comp)
         , m_visited(new (comp, CMK_ValueNumber) BYTE[comp->fgBBNumMax + 1]())
     {
@@ -6780,7 +6780,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 }
                 else
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon(tree->AsIntConCommon()->IconValue()));
+                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon((target_size_t)tree->AsIntConCommon()->IconValue()));
                 }
             }
             break;
@@ -8141,29 +8141,50 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
-                // Is this invariant indirect expected to always return a non-null value?
-                if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                // Are we dereferencing the method table slot of some newly allocated object?
+                //
+                bool wasNewobj = false;
+                if ((oper == GT_IND) && (addr->TypeGet() == TYP_REF) && (tree->TypeGet() == TYP_I_IMPL))
                 {
-                    assert(tree->gtFlags & GTF_IND_NONFAULTING);
-                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
-                    if (addr->IsCnsIntOrI())
+                    VNFuncApp  funcApp;
+                    const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
+
+                    if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
                     {
-                        assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                        tree->gtVNPair =
+                            vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
+                        wasNewobj = true;
+                    }
+                }
+
+                if (!wasNewobj)
+                {
+
+                    // Is this invariant indirect expected to always return a non-null value?
+                    if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                    {
+                        assert(tree->gtFlags & GTF_IND_NONFAULTING);
+                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
+                        if (addr->IsCnsIntOrI())
+                        {
+                            assert(addrXvnp.BothEqual() &&
+                                   (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                        }
+                        else
+                        {
+                            assert(false && "it's not expected to be hit at the moment, but can be allowed.");
+                            // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        }
                     }
                     else
                     {
-                        assert(false && "it's not expected to be hit at the moment, but can be allowed.");
-                        // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        tree->gtVNPair =
+                            ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
+                                                                 addrNvnp.GetLiberal()),
+                                         vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
+                                                                 addrNvnp.GetConservative()));
+                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
-                }
-                else
-                {
-                    tree->gtVNPair =
-                        ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
-                                                             addrNvnp.GetLiberal()),
-                                     vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
-                                                             addrNvnp.GetConservative()));
-                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
             }
             else if (isVolatile)
@@ -8858,8 +8879,8 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 
         if (encodeResultType)
         {
-            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->gtSIMDSize);
-            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->gtSIMDBaseType));
+            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->GetSimdSize());
+            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->GetSimdBaseType()));
             ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
             resvnp.SetBoth(simdTypeVN);
 
@@ -8975,8 +8996,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 
     if (encodeResultType)
     {
-        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->gtSIMDSize);
-        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->gtSIMDBaseType));
+        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->GetSimdSize());
+        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->GetSimdBaseType()));
         ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
         resvnp.SetBoth(simdTypeVN);
 

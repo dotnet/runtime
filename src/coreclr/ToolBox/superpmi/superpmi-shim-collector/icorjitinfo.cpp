@@ -17,6 +17,17 @@
 // ICorMethodInfo
 //
 /**********************************************************************************/
+
+// Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
+// CORINFO_FLG_JIT_INTRINSIC, except faster.
+bool interceptor_ICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("isJitIntrinsic");
+    bool temp = original_ICorJitInfo->isJitIntrinsic(ftn);
+    mc->recIsJitIntrinsic(ftn, temp);
+    return temp;
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
@@ -1129,13 +1140,13 @@ void interceptor_ICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,        // [IN] m
                                      unsigned int*         cILOffsets, // [OUT] size of pILOffsets
                                      uint32_t**            pILOffsets, // [OUT] IL offsets of interest
                                                                        //       jit MUST free with freeArray!
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries // [OUT] tell jit, all boundries of
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries // [OUT] tell jit, all boundaries of
                                                                                      // this type
                                      )
 {
     mc->cr->AddCall("getBoundaries");
-    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
-    mc->recGetBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
+    mc->recGetBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 }
 
 // Report back the mapping from IL to native code,
@@ -2071,21 +2082,6 @@ HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE    
     HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
     mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, temp);
     return temp;
-}
-
-// Get the likely implementing class for a virtual call or interface call made by ftnHnd
-// at the indicated IL offset. baseHnd is the interface class or base class for the method
-// being called.
-CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
-                                                      CORINFO_CLASS_HANDLE  baseHnd,
-                                                      uint32_t              ilOffset,
-                                                      uint32_t*             pLikelihood,
-                                                      uint32_t*             pNumberOfClasses)
-{
-    mc->cr->AddCall("getLikelyClass");
-    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
-    mc->recGetLikelyClass(ftnHnd, baseHnd, ilOffset, result, pLikelihood, pNumberOfClasses);
-    return result;
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

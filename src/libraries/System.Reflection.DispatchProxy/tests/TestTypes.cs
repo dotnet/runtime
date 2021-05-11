@@ -19,6 +19,7 @@ public interface TestType_IHelloService
 
 public interface TestType_IOut_Ref
 {
+    void In(in string message);
     void Out(out string message);
     void Ref(ref string message);
     void InAttribute([In] string message);

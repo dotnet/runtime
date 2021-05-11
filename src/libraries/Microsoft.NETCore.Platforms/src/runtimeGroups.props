@@ -83,23 +83,23 @@
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm;x86</Architectures>
-      <Versions>8;9;10</Versions>
+      <Versions>10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>8;9;10;11;12;13</Versions>
+      <Versions>10;11;12;13;14</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="iossimulator">
       <Parent>ios</Parent>
       <Architectures>x86</Architectures>
-      <Versions>8;9;10</Versions>
+      <Versions>10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="iossimulator">
       <Parent>ios</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>8;9;10;11;12;13</Versions>
+      <Versions>10;11;12;13;14</Versions>
     </RuntimeGroup>
 
     <!-- linux mint includes major version in Include because Parent is different for each major -->
@@ -269,7 +269,7 @@
   </PropertyGroup>
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
-  <Target Name="GenerateRuntimeJson" BeforeTargets="Pack">
+  <Target Name="UpdateRuntimeJson" BeforeTargets="Pack">
     <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
          Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
          The graph can be visualized using the generated dmgl -->

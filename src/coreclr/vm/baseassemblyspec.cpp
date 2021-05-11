@@ -70,7 +70,6 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
 
 }
 
-#ifndef DACCESS_COMPILE
 BOOL BaseAssemblySpec::IsCoreLib()
 {
     CONTRACTL
@@ -361,5 +360,3 @@ VOID BaseAssemblySpec::SetName(SString const & ssName)
 
     m_ownedFlags |= NAME_OWNED;
 }
-
-#endif // !DACCESS_COMPILE

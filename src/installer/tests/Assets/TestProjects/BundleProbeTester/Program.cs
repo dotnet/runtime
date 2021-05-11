@@ -13,16 +13,22 @@ namespace BundleProbeTester
         // The bundle-probe callback is only called from native code in the product
         // Therefore the type on this test is adjusted to circumvent the failure.
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate byte BundleProbeDelegate([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr size, IntPtr offset);
+        public delegate byte BundleProbeDelegate([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr offset, IntPtr size, IntPtr compressedSize);
 
         unsafe static bool Probe(BundleProbeDelegate bundleProbe, string path, bool isExpected)
         {
-            Int64 size, offset;
-            bool exists = bundleProbe(path, (IntPtr)(&offset), (IntPtr)(&size)) != 0;
+            Int64 size, offset, compressedSize;
+            bool exists = bundleProbe(path, (IntPtr)(&offset), (IntPtr)(&size), (IntPtr)(&compressedSize)) != 0;
 
             switch (exists, isExpected)
             {
                 case (true, true):
+                    if (compressedSize < 0 || compressedSize > size)
+                    {
+                        Console.WriteLine($"Invalid compressedSize obtained for {path} within bundle.");
+                        return false;
+                    }
+
                     if (size > 0 && offset > 0)
                     {
                         return true;

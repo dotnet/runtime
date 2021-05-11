@@ -375,6 +375,19 @@ public:
     void ReturnNode(RefInfoListNode* listNode);
 };
 
+#if TRACK_LSRA_STATS
+enum LsraStat
+{
+#define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
+#include "lsra_stats.h"
+#undef LSRA_STAT_DEF
+#define REG_SEL_DEF(enum_name, value, short_str) STAT_##enum_name,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    COUNT
+};
+#endif // TRACK_LSRA_STATS
+
 struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
@@ -389,22 +402,16 @@ struct LsraBlockInfo
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
-
-    // Number of spills of local vars or tree temps in this basic block.
-    unsigned spillCount;
-
-    // Number of GT_COPY nodes inserted in this basic block while allocating regs.
-    // Note that GT_COPY nodes are also inserted as part of basic block boundary
-    // resolution, which are accounted against resolutionMovCount but not
-    // against copyRegCount.
-    unsigned copyRegCount;
-
-    // Number of resolution moves inserted in this basic block.
-    unsigned resolutionMovCount;
-
-    // Number of critical edges from this block that are split.
-    unsigned splitEdgeCount;
+    unsigned stats[LsraStat::COUNT];
 #endif // TRACK_LSRA_STATS
+};
+
+enum RegisterScore
+{
+#define REG_SEL_DEF(enum_name, value, short_str) enum_name = value,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    NONE = 0
 };
 
 // This is sort of a bit mask
@@ -1128,7 +1135,10 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
 
-    regNumber allocateReg(Interval* current, RefPosition* refPosition);
+#ifdef DEBUG
+    const char* getScoreName(RegisterScore score);
+#endif
+    regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1182,27 +1192,39 @@ private:
 #endif // TARGET_ARM
 
         // Apply a simple mask-based selection heuristic, and return 'true' if we now have a single candidate.
-        bool applySelection(int selectionScore, regMaskTP selectionCandidates)
+        bool applySelection(int selectionScore, regMaskTP selectionCandidates DEBUG_ARG(RegisterScore* registerScore))
         {
             regMaskTP newCandidates = candidates & selectionCandidates;
             if (newCandidates != RBM_NONE)
             {
                 score += selectionScore;
                 candidates = newCandidates;
-                return isSingleRegister(candidates);
+                bool found = isSingleRegister(candidates);
+#ifdef DEBUG
+                if (found)
+                {
+                    *registerScore = (RegisterScore)selectionScore;
+                }
+#endif
+                return found;
             }
             return false;
         }
 
         // Select a single register, if it is in the candidate set.
         // Return true if so.
-        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
+        bool applySingleRegSelection(int       selectionScore,
+                                     regMaskTP selectionCandidate DEBUG_ARG(RegisterScore* registerScore))
         {
             assert(isSingleRegister(selectionCandidate));
             regMaskTP newCandidates = candidates & selectionCandidate;
             if (newCandidates != RBM_NONE)
             {
+                score += selectionScore;
                 candidates = newCandidates;
+#ifdef DEBUG
+                *registerScore = (RegisterScore)selectionScore;
+#endif
                 return true;
             }
             return false;
@@ -1352,31 +1374,39 @@ private:
         LSRA_EVENT_NO_REG_ALLOCATED, LSRA_EVENT_RELOAD, LSRA_EVENT_SPECIAL_PUTARG, LSRA_EVENT_REUSE_REG,
     };
     void dumpLsraAllocationEvent(LsraDumpEvent event,
-                                 Interval*     interval     = nullptr,
-                                 regNumber     reg          = REG_NA,
-                                 BasicBlock*   currentBlock = nullptr);
+                                 Interval*     interval      = nullptr,
+                                 regNumber     reg           = REG_NA,
+                                 BasicBlock*   currentBlock  = nullptr,
+                                 RegisterScore registerScore = NONE);
 
     void validateIntervals();
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
-    enum LsraStat{
-        LSRA_STAT_SPILL, LSRA_STAT_COPY_REG, LSRA_STAT_RESOLUTION_MOV, LSRA_STAT_SPLIT_EDGE,
-    };
-
     unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
-
     void dumpLsraStats(FILE* file);
+    LsraStat firstRegSelStat = STAT_FREE;
+
+public:
+    virtual void dumpLsraStatsCsv(FILE* file);
+    static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
+#define INTRACK_STATS_IF(condition, work)                                                                              \
+    if (condition)                                                                                                     \
+    {                                                                                                                  \
+        work;                                                                                                          \
+    }
+
 #else // !TRACK_LSRA_STATS
 #define INTRACK_STATS(x)
+#define INTRACK_STATS_IF(condition, work)
 #endif // !TRACK_LSRA_STATS
 
+private:
     Compiler* compiler;
 
-private:
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);

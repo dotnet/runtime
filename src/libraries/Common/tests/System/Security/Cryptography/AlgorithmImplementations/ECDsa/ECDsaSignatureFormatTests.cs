@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class ECDsaSignatureFormatTests : DsaFamilySignatureFormatTests
     {
         protected override bool SupportsSha2 => true;

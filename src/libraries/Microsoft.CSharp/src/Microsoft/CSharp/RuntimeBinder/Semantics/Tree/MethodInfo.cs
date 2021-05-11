@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -21,6 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public MethodInfo MethodInfo
         {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 // To do this, we need to construct a type array of the parameter types,
@@ -93,6 +95,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ConstructorInfo ConstructorInfo
         {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 // To do this, we need to construct a type array of the parameter types,
@@ -142,6 +145,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public override object Object => MethodInfo;
+        public override object Object
+        {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            get => MethodInfo;
+        }
     }
 }

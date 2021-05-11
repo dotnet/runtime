@@ -13,11 +13,27 @@ namespace PInvokeTests
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public class EmptyBase2 : EmptyBase
+    {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public class SeqDerivedClass : EmptyBase
     {
         public int a;
 
         public SeqDerivedClass(int _a)
+        {
+            a = _a;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class SeqDerivedClass2 : EmptyBase2
+    {
+        public int a;
+
+        public SeqDerivedClass2(int _a)
         {
             a = _a;
         }
@@ -129,10 +145,16 @@ namespace PInvokeTests
         private static extern bool SimpleSeqLayoutClassByRef(SeqClass p);
 
         [DllImport("LayoutClassNative")]
+        private static extern bool SimpleSeqLayoutClassByRefNull([In, Out] SeqClass p);
+
+        [DllImport("LayoutClassNative")]
         private static extern bool DerivedSeqLayoutClassByRef(EmptyBase p, int expected);
 
         [DllImport("LayoutClassNative")]
         private static extern bool SimpleExpLayoutClassByRef(ExpClass p);
+
+        [DllImport("LayoutClassNative")]
+        private static extern bool SimpleBlittableSeqLayoutClass_Null(Blittable p);
 
         [DllImport("LayoutClassNative", EntryPoint = SimpleBlittableSeqLayoutClass_UpdateField)]
         private static extern bool SimpleBlittableSeqLayoutClassByRef(Blittable p);
@@ -167,13 +189,20 @@ namespace PInvokeTests
             Assert.IsTrue(SimpleSeqLayoutClassByRef(p));
         }
 
+        public static void SequentialClassNull()
+        {
+            Console.WriteLine($"Running {nameof(SequentialClassNull)}...");
+
+            Assert.IsTrue(SimpleSeqLayoutClassByRefNull(null));
+        }
+
         public static void DerivedClassWithEmptyBase()
         {
             Console.WriteLine($"Running {nameof(DerivedClassWithEmptyBase)}...");
 
             string s = "before";
-            var p = new SeqDerivedClass(42);
-            Assert.IsTrue(DerivedSeqLayoutClassByRef(p, 42));
+            Assert.IsTrue(DerivedSeqLayoutClassByRef(new SeqDerivedClass(42), 42));
+            Assert.IsTrue(DerivedSeqLayoutClassByRef(new SeqDerivedClass2(42), 42));
         }
 
         public static void ExplicitClass()
@@ -198,6 +227,13 @@ namespace PInvokeTests
             // [Compat] Marshalled with [In, Out] behaviour by default
             Console.WriteLine($"Running {nameof(BlittableClass)}...");
             ValidateBlittableClassInOut(SimpleBlittableSeqLayoutClassByRef);
+        }
+
+        public static void BlittableClassNull()
+        {
+            // [Compat] Marshalled with [In, Out] behaviour by default
+            Console.WriteLine($"Running {nameof(BlittableClassNull)}...");
+            Assert.IsTrue(SimpleBlittableSeqLayoutClass_Null(null));
         }
 
         public static void BlittableClassByInAttr()
@@ -269,9 +305,11 @@ namespace PInvokeTests
             try
             {
                 SequentialClass();
+                SequentialClassNull();
                 DerivedClassWithEmptyBase();
                 ExplicitClass();
                 BlittableClass();
+                BlittableClassNull();
                 SealedBlittableClass();
                 BlittableClassByInAttr();
                 SealedBlittableClassByInAttr();

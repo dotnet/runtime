@@ -541,12 +541,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (!isLocalProp)
     {
-        optValueNumToAsserts = new (getAllocator()) ValueNumToAssertsMap(getAllocator());
+        optValueNumToAsserts =
+            new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
     }
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep =
+            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);
@@ -2666,12 +2668,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 {
     const unsigned lclNum = tree->GetLclNum();
 
-#if FEATURE_ANYCSE
     if (lclNumIsCSE(lclNum))
     {
         return nullptr;
     }
-#endif
 
     GenTree* newTree = tree;
 
@@ -2733,8 +2733,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     LclVarDsc* varDsc   = lvaGetDesc(lclNum);
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
-                    var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
+                    CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+                    newTree                     = gtGetSIMDZero(simdType, simdBaseJitType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;
@@ -5167,13 +5167,11 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
             {
                 return WALK_CONTINUE;
             }
-#if FEATURE_ANYCSE
             // Let's not conflict with CSE (to save the movw/movt).
             if (lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
             {
                 return WALK_CONTINUE;
             }
-#endif
             break;
 
         default:

@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.Xml.Linq">
+    <type fullname="System.Xml.Linq.XElement" />
+  </assembly>
+  <assembly fullname="System.Private.DataContractSerialization">
+   <type fullname="System.Runtime.Serialization.KeyValuePairAdapter`2" />
+  </assembly>
+</linker>

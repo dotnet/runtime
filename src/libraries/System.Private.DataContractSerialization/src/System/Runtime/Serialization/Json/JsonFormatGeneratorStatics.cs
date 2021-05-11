@@ -4,9 +4,10 @@
 using System;
 using System.Collections;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -115,6 +116,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetItemContractMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getItemContractMethod == null)
@@ -127,6 +129,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetJsonDataContractMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getJsonDataContractMethod == null)
@@ -139,6 +142,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetJsonMemberIndexMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getJsonMemberIndexMethod == null)
@@ -151,6 +155,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetRevisedItemContractMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getRevisedItemContractMethod == null)
@@ -163,6 +168,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetUninitializedObjectMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getUninitializedObjectMethod == null)
@@ -270,8 +276,10 @@ namespace System.Runtime.Serialization
                 return s_onDeserializationMethod;
             }
         }
+
         public static MethodInfo ReadJsonValueMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_readJsonValueMethod == null)
@@ -391,6 +399,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo WriteJsonISerializableMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeJsonISerializableMethod == null)
@@ -415,6 +424,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo WriteJsonValueMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeJsonValueMethod == null)

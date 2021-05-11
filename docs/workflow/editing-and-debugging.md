@@ -17,7 +17,7 @@ more on Markdown in general.
 
 The repository has a number of Visual Studio Solutions files (`*.sln`) that are useful for editing parts of the repository. In particular
 
-   * `src\coreclr\System.Private.CoreLib\System.Private.CorLib.sln` - This solution is for all managed (C#) code that is defined
+   * `src\coreclr\System.Private.CoreLib\System.Private.CoreLib.sln` - This solution is for all managed (C#) code that is defined
    in the runtime itself.   This is all class library support of one form or another.
    * `artifacts\obj\coreclr\windows.<Arch>.<BuildType>\ide\CoreCLR.sln` - this solution contains most native (C++) projects
    associated with the repository, including

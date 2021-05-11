@@ -99,6 +99,28 @@ m_dbgprot_decode_string (uint8_t *buf, uint8_t **endbuf, uint8_t *limit)
 	return s;
 }
 
+char*
+m_dbgprot_decode_string_with_len(uint8_t* buf, uint8_t** endbuf, uint8_t* limit, int *len)
+{
+	*len = m_dbgprot_decode_int(buf, &buf, limit);
+	char* s;
+
+	if (*len < 0) {
+		*endbuf = buf;
+		return NULL;
+	}
+
+	s = (char*)g_malloc(*len + 1);
+	g_assert(s);
+
+	memcpy(s, buf, *len);
+	s[*len] = '\0';
+	buf += *len;
+	*endbuf = buf;
+
+	return s;
+}
+
 uint8_t*
 m_dbgprot_decode_byte_array (uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int32_t *len)
 {
