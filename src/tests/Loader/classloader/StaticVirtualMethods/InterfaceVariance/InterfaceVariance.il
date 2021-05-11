@@ -12,7 +12,8 @@
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
   {
   } // end of method Method
-} // end of class InterfaceScenario1
+} // end of class InterfaceScenario1`1
+
 .class interface public abstract auto ansi InterfaceScenario2`1<- T>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -43,7 +44,7 @@
 
 .class public auto ansi BaseScenario2
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario1`1<string>, class InterfaceScenario1`1<object>
+       implements class InterfaceScenario2`1<string>, class InterfaceScenario2`1<object>
 {
   // NOTE: The order of the methods in this .il file is important as it controls the MethodImpl record creation order
   .method public static int32 Method() cil managed noinlining
@@ -77,18 +78,18 @@
 {
     .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario2`1<string>::Method()
+    .override method int32 class InterfaceScenario2`1<object>::Method()
     ldc.i4 6
     ret
   } // end of method Method
 
   .method public static int32 Method2() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario2`1<string>::Method2()
+    .override method int32 class InterfaceScenario2`1<object>::Method2()
     ldc.i4 7
     ret
   } // end of method Method
-} // end of class DerivedScenario1
+} // end of class DerivedScenario2
 
 
 .class public auto ansi TestEntrypoint
@@ -106,7 +107,7 @@
     ret
   } // end of method Test_Scenario1
 
-  .method public static string Test_Scenario2_1<T, (class InterfaceScenario1`1<!!0>) ImplType>() cil managed noinlining
+  .method public static string Test_Scenario2_1<T, (class InterfaceScenario2`1<!!0>) ImplType>() cil managed noinlining
   {
     // Variant dispatch to method on base type
     .locals init (int32 V_1)
@@ -118,7 +119,7 @@
     ret
   } // end of method Test_Scenario1
 
-  .method public static string Test_Scenario2_2<T, (class InterfaceScenario1`1<!!0>) ImplType>() cil managed noinlining
+  .method public static string Test_Scenario2_2<T, (class InterfaceScenario2`1<!!0>) ImplType>() cil managed noinlining
   {
     // Variant dispatch to method on base type
     .locals init (int32 V_1)

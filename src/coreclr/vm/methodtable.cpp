@@ -9220,6 +9220,37 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                 {
                     return pMD;
                 }
+
+                if (pInterfaceType->HasVariance())
+                {
+                    // Variant interface dispatch
+                    MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
+                    while (it.Next())
+                    {
+                        if (it.GetInterface() == pInterfaceType)
+                        {
+                            // This is the variant interface check logic, skip the 
+                            continue;
+                        }
+
+                        if (!it.GetInterface()->HasSameTypeDefAs(pInterfaceType))
+                        {
+                            // Variance matches require a typedef match
+                            continue;
+                        }
+
+                        if (it.GetInterface()->CanCastTo(pInterfaceType, NULL))
+                        {
+                            // Variant matching interface found
+                            // Attempt to resolve on variance matched interface
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(it.GetInterface(), pInterfaceMD);
+                            if (pMD != nullptr)
+                            {
+                                return pMD;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -9249,8 +9280,6 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
 
     // This gets the count out of the metadata interface.
     uint32_t dwNumberMethodImpls = hEnumMethodImpl.EnumMethodImplGetCount();
-
-    // TODO: support type-equivalent interface type matches and variant interface scenarios
 
     // Iterate through each MethodImpl declared on this class
     for (uint32_t i = 0; i < dwNumberMethodImpls; i++)
