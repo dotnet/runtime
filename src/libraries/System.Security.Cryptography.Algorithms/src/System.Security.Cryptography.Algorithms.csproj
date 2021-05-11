@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
@@ -16,14 +16,28 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\CryptoConfig.Common.cs" />
+    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
+    <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
+    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
+             Link="Internal\Cryptography\HashProvider.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
-    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.cs" />
     <Compile Include="Internal\Cryptography\RijndaelImplementation.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
@@ -61,22 +75,12 @@
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
-    <Compile Include="System\Security\Cryptography\SHA1.cs" />
-    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHA256.cs" />
-    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHA384.cs" />
-    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHA512.cs" />
-    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACMD5.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA1.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA384.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
-    <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\PKCS1MaskGenerationMethod.cs" />
-    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\RC2.cs" />
     <Compile Include="System\Security\Cryptography\Rijndael.cs" />
     <Compile Include="System\Security\Cryptography\RijndaelManaged.cs" />
@@ -104,8 +108,6 @@
              Link="Internal\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
-             Link="Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs"
              Link="Common\Internal\Cryptography\PemKeyImportHelpers.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs"
@@ -114,8 +116,6 @@
              Link="Internal\Cryptography\UniversalCryptoEncryptor.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoDecryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoDecryptor.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
@@ -688,34 +688,19 @@
     <Compile Include="Internal\Cryptography\Pbkdf2Implementation.Managed.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
-             Link="Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
-    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Browser.cs" />
-    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfig.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
-    <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
-    <Compile Include="System\Security\Cryptography\SHA1.cs" />
-    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHA256.cs" />
-    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHA384.cs" />
-    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SHA512.cs" />
-    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
