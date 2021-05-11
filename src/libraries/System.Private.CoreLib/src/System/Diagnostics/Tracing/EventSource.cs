@@ -4619,6 +4619,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public int EventId { get; }
 
+        private Guid _activityId;
+
         /// <summary>
         /// Gets the activity ID for the thread on which the event was written.
         /// </summary>
@@ -4626,13 +4628,12 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                ref Guid activityId = ref MoreInfo.ActivityId;
-                if (activityId == Guid.Empty)
+                if (_activityId == Guid.Empty)
                 {
-                    activityId = EventSource.CurrentThreadActivityId;
+                    _activityId = EventSource.CurrentThreadActivityId;
                 }
 
-                return activityId;
+                return _activityId;
             }
         }
 
@@ -4761,7 +4762,7 @@ namespace System.Diagnostics.Tracing
         {
             if (pActivityID != null)
             {
-                MoreInfo.ActivityId = *pActivityID;
+                _activityId = *pActivityID;
             }
 
             if (pChildActivityID != null)
@@ -4778,7 +4779,6 @@ namespace System.Diagnostics.Tracing
             public string? Message;
             public string? EventName;
             public ReadOnlyCollection<string>? PayloadNames;
-            public Guid ActivityId;
             public Guid RelatedActivityId;
             public long? OsThreadId;
             public EventTags Tags;
