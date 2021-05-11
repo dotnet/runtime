@@ -643,8 +643,11 @@ public:
             uint32_t            xcptnsCount,    /* IN */
             CorJitAllocMemFlag  flag,           /* IN */
             void **             hotCodeBlock,   /* OUT */
+            void **             hotCodeBlockRW, /* OUT */
             void **             coldCodeBlock,  /* OUT */
-            void **             roDataBlock     /* OUT */
+            void **             coldCodeBlockRW,/* OUT */
+            void **             roDataBlock,    /* OUT */
+            void **             roDataBlockRW   /* OUT */
             ) override final;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
@@ -673,6 +676,8 @@ public:
             CORINFO_EH_CLAUSE* clause               /* OUT */
             ) override final;
 
+    void doneWritingCode() override final;
+
     HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
@@ -695,6 +700,7 @@ public:
 
     void recordRelocation(
             void                    *location,
+            void                    *locationRW,
             void                    *target,
             uint16_t                 fRelocType,
             uint16_t                 slot,
@@ -703,18 +709,6 @@ public:
     uint16_t getRelocTypeHint(void * target) override final;
 
     uint32_t getExpectedTargetArchitecture() override final;
-
-    CodeHeader* GetCodeHeader()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_CodeHeader;
-    }
-
-    void SetCodeHeader(CodeHeader* pValue)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_CodeHeader = pValue;
-    }
 
     void ResetForJitRetry()
     {

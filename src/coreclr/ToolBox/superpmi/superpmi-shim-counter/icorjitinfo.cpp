@@ -1256,11 +1256,14 @@ void interceptor_ICJI::allocMem(
           uint32_t xcptnsCount,
           CorJitAllocMemFlag flag,
           void** hotCodeBlock,
+          void** hotCodeBlockRW,
           void** coldCodeBlock,
-          void** roDataBlock)
+          void** coldCodeBlockRW,
+          void** roDataBlock,
+          void** roDataBlockRW)
 {
     mcs->AddCall("allocMem");
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, hotCodeBlockRW, coldCodeBlock, coldCodeBlockRW, roDataBlock, roDataBlockRW);
 }
 
 void interceptor_ICJI::reserveUnwindInfo(
@@ -1363,13 +1366,14 @@ void interceptor_ICJI::recordCallSite(
 
 void interceptor_ICJI::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
     mcs->AddCall("recordRelocation");
-    original_ICorJitInfo->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
 }
 
 uint16_t interceptor_ICJI::getRelocTypeHint(
@@ -1391,5 +1395,11 @@ uint32_t interceptor_ICJI::getJitFlags(
 {
     mcs->AddCall("getJitFlags");
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+void interceptor_ICJI::doneWritingCode()
+{
+    mcs->AddCall("doneWritingCode");
+    original_ICorJitInfo->doneWritingCode();
 }
 

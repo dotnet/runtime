@@ -3066,12 +3066,20 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
-        private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
+        private void doneWritingCode()
+        {
+        }
+
+        private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* hotCodeBlockRW, ref void* coldCodeBlock, ref void* coldCodeBlockRW, ref void* roDataBlock, ref void* roDataBlockRW)
         {
             hotCodeBlock = (void*)GetPin(_code = new byte[hotCodeSize]);
+            hotCodeBlockRW = hotCodeBlock;
 
             if (coldCodeSize != 0)
+            {
                 coldCodeBlock = (void*)GetPin(_coldCode = new byte[coldCodeSize]);
+                coldCodeBlockRW = coldCodeBlock;
+            }
 
             _codeAlignment = -1;
             if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
@@ -3105,6 +3113,7 @@ namespace Internal.JitInterface
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
 
                 roDataBlock = (void*)GetPin(_roData);
+                roDataBlockRW = roDataBlock;
             }
 
             if (_numFrameInfos > 0)
@@ -3280,7 +3289,7 @@ namespace Internal.JitInterface
             };
         }
 
-        private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
+        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
             // slotNum is not used
             Debug.Assert(slotNum == 0);

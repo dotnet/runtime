@@ -1532,11 +1532,14 @@ void WrapICorJitInfo::allocMem(
           uint32_t xcptnsCount,
           CorJitAllocMemFlag flag,
           void** hotCodeBlock,
+          void** hotCodeBlockRW,
           void** coldCodeBlock,
-          void** roDataBlock)
+          void** coldCodeBlockRW,
+          void** roDataBlock,
+          void** roDataBlockRW)
 {
     API_ENTER(allocMem);
-    wrapHnd->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    wrapHnd->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, hotCodeBlockRW, coldCodeBlock, coldCodeBlockRW, roDataBlock, roDataBlockRW);
     API_LEAVE(allocMem);
 }
 
@@ -1656,13 +1659,14 @@ void WrapICorJitInfo::recordCallSite(
 
 void WrapICorJitInfo::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
     API_ENTER(recordRelocation);
-    wrapHnd->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    wrapHnd->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
     API_LEAVE(recordRelocation);
 }
 
@@ -1691,6 +1695,13 @@ uint32_t WrapICorJitInfo::getJitFlags(
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
     return temp;
+}
+
+void WrapICorJitInfo::doneWritingCode()
+{
+    API_ENTER(doneWritingCode);
+    wrapHnd->doneWritingCode();
+    API_LEAVE(doneWritingCode);
 }
 
 /**********************************************************************************/

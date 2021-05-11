@@ -1621,6 +1621,7 @@ public:
     BYTE* emitCodeBlock;     // Hot code block
     BYTE* emitColdCodeBlock; // Cold code block
     BYTE* emitConsBlock;     // Read-only (constant) data block
+    size_t writeableOffset;  // Offset applied to a code address to get memory location that can be written
 
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;

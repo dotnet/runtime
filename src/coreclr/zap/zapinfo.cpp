@@ -1145,8 +1145,11 @@ void ZapInfo::allocMem(
     uint32_t            xcptnsCount,    /* IN */
     CorJitAllocMemFlag  flag,           /* IN */
     void **             hotCodeBlock,   /* OUT */
+    void **             hotCodeBlockRW, /* OUT */
     void **             coldCodeBlock,  /* OUT */
-    void **             roDataBlock     /* OUT */
+    void **             coldCodeBlockRW,/* OUT */
+    void **             roDataBlock,    /* OUT */
+    void **             roDataBlockRW   /* OUT */
     )
 {
     bool optForSize = m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SIZE_OPT);
@@ -1157,6 +1160,7 @@ void ZapInfo::allocMem(
 
     m_pCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, hotCodeSize, align);
     *hotCodeBlock = m_pCode->GetData();
+    *hotCodeBlockRW = m_pCode->GetData();
 
     if (coldCodeSize != 0)
     {
@@ -1164,6 +1168,7 @@ void ZapInfo::allocMem(
 
         m_pColdCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, coldCodeSize, align);
         *coldCodeBlock = m_pColdCode->GetData();
+        *coldCodeBlockRW = m_pColdCode->GetData();
     }
 
     //
@@ -1186,6 +1191,7 @@ void ZapInfo::allocMem(
         }
         m_pROData = ZapBlobWithRelocs::NewAlignedBlob(m_pImage, NULL, roDataSize, align);
         *roDataBlock = m_pROData->GetData();
+        *roDataBlockRW = m_pROData->GetData();
     }
 
     if (m_pImage->m_stats)
@@ -2803,7 +2809,7 @@ void ZapInfo::recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO *callSig, CO
     return;
 }
 
-void ZapInfo::recordRelocation(void *location, void *target,
+void ZapInfo::recordRelocation(void *location, void *locationRW, void *target,
                                uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
 {
     // Factor slotNum into the location address
@@ -4124,6 +4130,10 @@ bool ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
     }
 
     return m_pEEJitInfo->pInvokeMarshalingRequired(method, sig);
+}
+
+void ZapInfo::doneWritingCode()
+{
 }
 
 LPVOID ZapInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,

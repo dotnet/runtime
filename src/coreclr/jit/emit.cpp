@@ -5355,8 +5355,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     BYTE* consBlock;
+    BYTE* consBlockRW;
     BYTE* codeBlock;
+    BYTE* codeBlockRW;
     BYTE* coldCodeBlock;
+    BYTE* coldCodeBlockRW;
     BYTE* cp;
 
     assert(emitCurIG == nullptr);
@@ -5530,13 +5533,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
     }
     emitCmpHandle->allocMem(emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs, emitTotalColdCodeSize, 0,
-                            xcptnsCount, allocMemFlag, (void**)&codeBlock, (void**)&coldCodeBlock, (void**)&consBlock);
+                            xcptnsCount, allocMemFlag, (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock, (void**)&coldCodeBlockRW, (void**)&consBlock, (void**)&consBlockRW);
 
     consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
 
 #else
     emitCmpHandle->allocMem(emitTotalHotCodeSize, emitTotalColdCodeSize, emitConsDsc.dsdOffs, xcptnsCount, allocMemFlag,
-                            (void**)&codeBlock, (void**)&coldCodeBlock, (void**)&consBlock);
+                            (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock, (void**)&coldCodeBlockRW, (void**)&consBlock, (void**)&consBlockRW);
 #endif
 
 #ifdef DEBUG
@@ -5762,6 +5765,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     /* Issue all instruction groups in order */
     cp = codeBlock;
+    writeableOffset = codeBlockRW - codeBlock;
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
@@ -5779,6 +5783,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
             assert(coldCodeBlock);
             cp = coldCodeBlock;
+            writeableOffset = coldCodeBlockRW - coldCodeBlock;
 #ifdef DEBUG
             if (emitComp->opts.disAsm || emitComp->verbose)
             {
@@ -6065,11 +6070,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     // Patch Forward Short Jump
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
-                    *(BYTE*)adr -= (BYTE)adj;
+                    *(BYTE*)(adr + writeableOffset) -= (BYTE)adj;
 #elif defined(TARGET_ARM)
                     // The following works because the jump offset is in the low order bits of the instruction.
                     // Presumably we could also just call "emitOutputLJ(NULL, adr, jmp)", like for long jumps?
-                    *(short int*)adr -= (short)adj;
+                    *(short int*)(adr + writeableOffset) -= (short)adj;
 #elif defined(TARGET_ARM64)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
@@ -6082,7 +6087,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     // Patch Forward non-Short Jump
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
-                    *(int*)adr -= adj;
+                    *(int*)(adr + writeableOffset) -= adj;
 #elif defined(TARGET_ARMARCH)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
@@ -6117,10 +6122,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
 
+    BYTE* cpRW = cp + writeableOffset;
     for (unsigned i = 0; i < unusedSize; ++i)
     {
-        *cp++ = DEFAULT_CODE_BUFFER_INIT;
+        *cpRW++ = DEFAULT_CODE_BUFFER_INIT;
     }
+    cp = cpRW - writeableOffset;
     assert(emitTotalCodeSize == emitCurCodeOffs(cp));
 
     // Total code size is sum of all IG->size and doesn't include padding in the last IG.
@@ -6150,6 +6157,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     // Assign the real prolog size
     *prologSize = emitCodeOffset(emitPrologIG, emitPrologEndPos);
+
+    // Ensure that any attempt to write code after this point will fail
+    writeableOffset = 0;
+    // Notify the EE that all code was written. It can switch off writeable code memory.
+    emitCmpHandle->doneWritingCode();
 
     /* Return the amount of code we've generated */
 
@@ -6641,7 +6653,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t         numElems = dscSize / TARGET_POINTER_SIZE;
-            target_size_t* bDst     = (target_size_t*)dst;
+            target_size_t* bDst     = (target_size_t*)(dst + writeableOffset);
             for (unsigned i = 0; i < numElems; i++)
             {
                 BasicBlock* block = ((BasicBlock**)dsc->dsCont)[i];
@@ -6670,7 +6682,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
 
             size_t    numElems = dscSize / 4;
-            unsigned* uDst     = (unsigned*)dst;
+            unsigned* uDst     = (unsigned*)(dst + writeableOffset);
             insGroup* labFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
 
             for (unsigned i = 0; i < numElems; i++)
@@ -6691,7 +6703,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
-            memcpy(dst, dsc->dsCont, dscSize);
+            memcpy(dst + writeableOffset, dsc->dsCont, dscSize);
 
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -7395,7 +7407,8 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
 
 unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
 {
-    *castto(dst, unsigned char*) = (unsigned char)val;
+    BYTE* dstRW = dst + writeableOffset;
+    *castto(dst + writeableOffset, unsigned char*) = (unsigned char)val;
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
@@ -7414,7 +7427,8 @@ unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputWord(BYTE* dst, ssize_t val)
 {
-    MISALIGNED_WR_I2(dst, (short)val);
+    BYTE* dstRW = dst + writeableOffset;
+    MISALIGNED_WR_I2(dstRW, (short)val);
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
@@ -7433,7 +7447,8 @@ unsigned char emitter::emitOutputWord(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 {
-    MISALIGNED_WR_I4(dst, (int)val);
+    BYTE* dstRW = dst + writeableOffset;
+    MISALIGNED_WR_I4(dstRW, (int)val);
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
@@ -7452,10 +7467,11 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 {
+    BYTE* dstRW = dst + writeableOffset;
 #if !defined(TARGET_64BIT)
-    MISALIGNED_WR_I4(dst, (int)val);
+    MISALIGNED_WR_I4(dstRW, (int)val);
 #else
-    MISALIGNED_WR_ST(dst, val);
+    MISALIGNED_WR_ST(dstRW, val);
 #endif
 
     return TARGET_POINTER_SIZE;
@@ -8447,7 +8463,8 @@ void emitter::emitRecordRelocation(void* location,            /* IN */
     // late disassembly; maybe we'll need it?
     if (emitComp->info.compMatchedVM)
     {
-        emitCmpHandle->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+        void* locationRW = (BYTE*)location + writeableOffset;
+        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
     }
 #if defined(LATE_DISASM)
     codeGen->getDisAssembler().disRecordRelocation((size_t)location, (size_t)target);

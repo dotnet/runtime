@@ -10253,7 +10253,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 /*static*/ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
     assert(sizeof(code_t) == 4);
-    *((code_t*)dst) = code;
+    *((code_t*)(dst + writeableOffset)) = code;
 
     return sizeof(code_t);
 }

@@ -2317,12 +2317,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _allocMem(IntPtr thisHandle, IntPtr* ppException, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock)
+        static void _allocMem(IntPtr thisHandle, IntPtr* ppException, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, void** hotCodeBlock, void** hotCodeBlockRW, void** coldCodeBlock, void** coldCodeBlockRW, void** roDataBlock, void** roDataBlockRW)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, ref *hotCodeBlock, ref *coldCodeBlock, ref *roDataBlock);
+                _this.allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, ref *hotCodeBlock, ref *hotCodeBlockRW, ref *coldCodeBlock, ref *coldCodeBlockRW, ref *roDataBlock, ref *roDataBlockRW);
             }
             catch (Exception ex)
             {
@@ -2490,12 +2490,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _recordRelocation(IntPtr thisHandle, IntPtr* ppException, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
+        static void _recordRelocation(IntPtr thisHandle, IntPtr* ppException, void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+                _this.recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
             }
             catch (Exception ex)
             {
@@ -2548,10 +2548,24 @@ namespace Internal.JitInterface
             }
         }
 
+        [UnmanagedCallersOnly]
+        static void _doneWritingCode(IntPtr thisHandle, IntPtr* ppException)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.doneWritingCode();
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
 
         static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 172);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 173);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isJitIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodAttribs;
@@ -2709,7 +2723,7 @@ namespace Internal.JitInterface
             callbacks[153] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_SIG_INFO*, CORINFO_GET_TAILCALL_HELPERS_FLAGS, CORINFO_TAILCALL_HELPERS*, byte>)&_getTailCallHelpers;
             callbacks[154] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
             callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;
-            callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, uint, uint, uint, uint, CorJitAllocMemFlag, void**, void**, void**, void>)&_allocMem;
+            callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, uint, uint, uint, uint, CorJitAllocMemFlag, void**, void**, void**, void**, void**, void**, void>)&_allocMem;
             callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void>)&_reserveUnwindInfo;
             callbacks[158] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void>)&_allocUnwindInfo;
             callbacks[159] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocGCInfo;
@@ -2721,10 +2735,11 @@ namespace Internal.JitInterface
             callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, HRESULT>)&_getPgoInstrumentationResults;
             callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT>)&_allocPgoInstrumentationBySchema;
             callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
-            callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, ushort, ushort, int, void>)&_recordRelocation;
+            callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, ushort, ushort, int, void>)&_recordRelocation;
             callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
             callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
+            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, void>)&_doneWritingCode;
 
             return (IntPtr)callbacks;
         }
