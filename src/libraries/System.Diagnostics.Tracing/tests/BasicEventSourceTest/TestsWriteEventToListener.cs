@@ -105,13 +105,17 @@ namespace BasicEventSourceTests
 
                     #region Validate byte array arguments
 
+                    var rng = new Random(42);
+
                     byte[] arr = new byte[20];
+                    rng.NextBytes(arr);
                     log.EventWithByteArray(arr);
                     Assert.Equal(52, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
 
                     arr = new byte[20];
+                    rng.NextBytes(arr);
                     log.EventWithByteArrayCustom(arr);
                     Assert.Equal(53, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -124,6 +128,7 @@ namespace BasicEventSourceTests
                     Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
 
                     arr = new byte[20];
+                    rng.NextBytes(arr);
                     fixed (byte* arrPtr = arr)
                     {
                         log.EventWithBytePointer(arrPtr, arr.Length);
