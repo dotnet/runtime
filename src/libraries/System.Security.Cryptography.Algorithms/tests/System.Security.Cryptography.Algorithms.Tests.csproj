@@ -105,6 +105,8 @@
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(UseAndroidCrypto)' != 'true'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.CryptoNative.cs"
+             Link="Common\Interop\Unix\Interop.CryptoNative.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="DefaultECDsaProvider.Android.cs" />

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
@@ -586,6 +586,8 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.CryptoNative.cs"
+             Link="Common\Interop\Unix\Interop.CryptoNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Unix.cs" />
@@ -601,8 +603,6 @@
              Link="Common\System\Security\Cryptography\ECOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECOpenSsl.ImportExport.cs"
              Link="Common\System\Security\Cryptography\ECOpenSsl.ImportExport.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.CryptoNative.cs"
-             Link="Common\Interop\Unix\Interop.CryptoNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs"
