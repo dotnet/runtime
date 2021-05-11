@@ -4626,12 +4626,13 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (_moreInfo is MoreEventInfo moreInfo && moreInfo.ActivityId != Guid.Empty)
+                ref Guid activityId = ref MoreInfo.ActivityId;
+                if (activityId == Guid.Empty)
                 {
-                    return moreInfo.ActivityId;
+                    activityId = EventSource.CurrentThreadActivityId;
                 }
 
-                return EventSource.CurrentThreadActivityId;
+                return activityId;
             }
         }
 
@@ -4728,17 +4729,17 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                MoreEventInfo moreInfo = MoreInfo;
-                if (!moreInfo.OsThreadId.HasValue)
+                ref long? osThreadId = ref MoreInfo.OsThreadId;
+                if (!osThreadId.HasValue)
                 {
 #if ES_BUILD_STANDALONE
-                    moreInfo.OsThreadId = (long)Interop.Kernel32.GetCurrentThreadId();
+                    osThreadId = (long)Interop.Kernel32.GetCurrentThreadId();
 #else
-                    moreInfo.OsThreadId = (long)Thread.CurrentOSThreadId;
+                    osThreadId = (long)Thread.CurrentOSThreadId;
 #endif
                 }
 
-                return moreInfo.OsThreadId.Value;
+                return osThreadId.Value;
             }
             internal set => MoreInfo.OsThreadId = value;
         }
