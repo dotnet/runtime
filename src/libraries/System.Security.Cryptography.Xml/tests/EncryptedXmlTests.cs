@@ -11,7 +11,6 @@ namespace System.Security.Cryptography.Xml.Tests
     public static class EncryptedXmlTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49871", TestPlatforms.Android)]
         public static void DecryptWithCertificate_NotInStore()
         {
             const string SecretMessage = "Grilled cheese is tasty";
