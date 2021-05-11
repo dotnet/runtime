@@ -185,6 +185,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Stop accepting new streams.
             state.AcceptQueue.Writer.Complete();
+
+            // Stop notifying about available streams.
+            state.NewUnidirectionalStreamsAvailableTcs.CompleteException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            state.NewBidirectionalStreamsAvailableTcs.CompleteException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+
             return MsQuicStatusCodes.Success;
         }
 
