@@ -7,15 +7,6 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class RandomNumberGeneratorImplementation
     {
-        // a singleton which always calls into a thread-safe implementation
-        // and whose Dispose method no-ops
-        internal static readonly RandomNumberGeneratorImplementation s_singleton = new RandomNumberGeneratorImplementation();
-
-        // private ctor used only by singleton
-        private RandomNumberGeneratorImplementation()
-        {
-        }
-
         private static unsafe void GetBytes(byte* pbBuffer, int count)
         {
             Debug.Assert(count > 0);
