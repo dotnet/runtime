@@ -7697,19 +7697,6 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 
 #endif // FEATURE_MULTIREG_RET
 
-#if 0 // REVIEW
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
-    {
-        // At this time, the only multi-reg HW intrinsics all return the type of their
-        // arguments. If this changes, we will need a way to record or determine this.
-        assert(TypeGet() == TYP_STRUCT);
-        // REVIEW: what should this return?
-        return gtGetOp1()->TypeGet();
-    }
-#endif
-#endif // 0
-
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
