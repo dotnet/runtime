@@ -97,7 +97,7 @@ if(CLR_CMAKE_HOST_WIN32)
 
     target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
 
-elseif(CLR_CMAKE_HOST_UNIX)
+elseif(CLR_CMAKE_HOST_WIN32)
 
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
