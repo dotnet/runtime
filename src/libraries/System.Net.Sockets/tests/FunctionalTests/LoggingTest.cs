@@ -32,6 +32,7 @@ namespace System.Net.Sockets.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50639")]
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
