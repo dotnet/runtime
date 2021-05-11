@@ -182,7 +182,7 @@
     <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile/tests/System.IO.Compression.ZipFile.Tests.csproj" />
-    
+
     <!-- Can't AOT in interp mode -->
     <ProjectExclusions Condition="'$(MonoForceInterpreter)' == 'true'"
                        Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\AOT\**\*.Test.csproj" />
@@ -396,7 +396,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')">
-    <!-- Disable tvOS.Simulator.Aot.Test.csproj temporarily due to https://github.com/dotnet/runtime/issues/49757 -->
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
