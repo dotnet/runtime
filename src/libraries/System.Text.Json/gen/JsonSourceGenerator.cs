@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.SourceGeneration.Reflection;
@@ -15,14 +16,13 @@ namespace System.Text.Json.SourceGeneration
     /// Generates source code to optimize serialization and deserialization with JsonSerializer.
     /// </summary>
     [Generator]
-    public sealed class JsonSourceGenerator : ISourceGenerator
+    public sealed partial class JsonSourceGenerator : ISourceGenerator
     {
-        private JsonSourceGeneratorHelper? _helper;
-
         /// <summary>
         /// Helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? SerializableTypes => _helper.GetSerializableTypes();
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
+        private Dictionary<string, TypeMetadata>? _rootTypes;
 
         /// <summary>
         /// Registers a syntax resolver to receive compilation units.
@@ -30,7 +30,7 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="context"></param>
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new JsonSerializableSyntaxReceiver());
+            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
         }
 
         /// <summary>
@@ -39,90 +39,34 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
-            Compilation compilation = executionContext.Compilation;
-
-            const string JsonSerializableAttributeName = "System.Text.Json.Serialization.JsonSerializableAttribute";
-            INamedTypeSymbol jsonSerializableAttribute = compilation.GetTypeByMetadataName(JsonSerializableAttributeName);
-            if (jsonSerializableAttribute == null)
+            SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
+            List<CompilationUnitSyntax> compilationUnits = receiver.CompilationUnits;
+            if (compilationUnits == null)
             {
                 return;
             }
 
-            JsonSerializableSyntaxReceiver receiver = (JsonSerializableSyntaxReceiver)executionContext.SyntaxReceiver;
-            MetadataLoadContextInternal metadataLoadContext = new(compilation);
+            Parser parser = new(executionContext.Compilation);
+            _rootTypes = parser.GetRootSerializableTypes(receiver.CompilationUnits);
 
-            TypeExtensions.NullableOfTType = metadataLoadContext.Resolve(typeof(Nullable<>));
-
-            JsonSourceGeneratorHelper helper = new(executionContext, metadataLoadContext);
-            _helper = helper;
-
-            // Discover serializable types indicated by JsonSerializableAttribute.
-            foreach (CompilationUnitSyntax compilationUnit in receiver.CompilationUnits)
+            if (_rootTypes != null)
             {
-                SemanticModel compilationSemanticModel = executionContext.Compilation.GetSemanticModel(compilationUnit.SyntaxTree);
+                Emitter emitter = new(executionContext, _rootTypes);
+                emitter.Emit();
+            }
+        }
 
-                foreach (AttributeListSyntax attributeListSyntax in compilationUnit.AttributeLists)
+        internal sealed class SyntaxReceiver : ISyntaxReceiver
+        {
+            public List<CompilationUnitSyntax>? CompilationUnits { get; private set; }
+
+            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+            {
+                if (syntaxNode is CompilationUnitSyntax compilationUnit)
                 {
-                    AttributeSyntax attributeSyntax = attributeListSyntax.Attributes.First();
-                    IMethodSymbol attributeSymbol = compilationSemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
-
-                    if (attributeSymbol == null || !jsonSerializableAttribute.Equals(attributeSymbol.ContainingType, SymbolEqualityComparer.Default))
-                    {
-                        // Not the right attribute.
-                        continue;
-                    }
-
-                    // Get JsonSerializableAttribute arguments.
-                    IEnumerable<SyntaxNode> attributeArguments = attributeSyntax.DescendantNodes().Where(node => node is AttributeArgumentSyntax);
-
-                    ITypeSymbol? typeSymbol = null;
-                    string? typeInfoPropertyName = null;
-
-                    int i = 0;
-                    foreach (AttributeArgumentSyntax node in attributeArguments)
-                    {
-                        if (i == 0)
-                        {
-                            TypeOfExpressionSyntax? typeNode = node.ChildNodes().Single() as TypeOfExpressionSyntax;
-                            if (typeNode != null)
-                            {
-                                ExpressionSyntax typeNameSyntax = (ExpressionSyntax)typeNode.ChildNodes().Single();
-                                typeSymbol = compilationSemanticModel.GetTypeInfo(typeNameSyntax).ConvertedType;
-                            }
-                        }
-                        else if (i == 1)
-                        {
-                            // Obtain the optional TypeInfoPropertyName string property on the attribute, if present.
-                            SyntaxNode? typeInfoPropertyNameNode = node.ChildNodes().ElementAtOrDefault(1);
-                            if (typeInfoPropertyNameNode != null)
-                            {
-                                typeInfoPropertyName = typeInfoPropertyNameNode.GetFirstToken().ValueText;
-                            }
-                        }
-
-                        i++;
-                    }
-
-                    if (typeSymbol == null)
-                    {
-                        continue;
-                    }
-
-
-                    Type type = new TypeWrapper(typeSymbol, metadataLoadContext);
-                    if (type.Namespace == "<global namespace>")
-                    {
-                        // typeof() reference where the type's name isn't fully qualified.
-                        // The compilation is not valid and the user needs to fix their code.
-                        // The compiler will notify the user so we don't have to.
-                        return;
-                    }
-
-                    helper.RegisterRootSerializableType(type, typeInfoPropertyName);
+                    (CompilationUnits ??= new List<CompilationUnitSyntax>()).Add(compilationUnit);
                 }
             }
-
-            helper.GenerateSerializationMetadata();
         }
     }
 }

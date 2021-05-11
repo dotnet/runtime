@@ -71,5 +71,11 @@ namespace System
 
         internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
         internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
+
+        internal const string RijndaelMessage = "The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.";
+        internal const string RijndaelDiagId = "SYSLIB0022";
+
+        internal const string RNGCryptoServiceProviderMessage = "RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.";
+        internal const string RNGCryptoServiceProviderDiagId = "SYSLIB0023";
     }
 }

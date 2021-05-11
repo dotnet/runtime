@@ -42,6 +42,15 @@ stages:
   jobs:
 
   #
+  # Localization build
+  #
+  - template: /eng/common/templates/job/onelocbuild.yml
+    parameters:
+      CreatePr: false
+      LclSource: lclFilesfromPackage
+      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+
+  #
   # Source Index Build
   #
   - template: ./source-index.yml

@@ -36,14 +36,6 @@ internal static partial class Interop
             out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_RsaDecryptionPrimitive(
-            SafeSecKeyRefHandle privateKey,
-            ref byte pbData,
-            int cbData,
-            out SafeCFDataHandle pDataOut,
-            out SafeCFErrorHandle pErrorOut);
-
-        [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_RsaEncryptionPrimitive(
             SafeSecKeyRefHandle publicKey,
             ref byte pbData,
@@ -268,22 +260,6 @@ internal static partial class Interop
 
             Debug.Fail($"Unknown return value ({returnValue}) or no data object returned");
             throw new CryptographicException();
-        }
-
-        internal static bool TryRsaDecryptionPrimitive(
-            SafeSecKeyRefHandle privateKey,
-            ReadOnlySpan<byte> source,
-            Span<byte> destination,
-            out int bytesWritten)
-        {
-            int returnValue = AppleCryptoNative_RsaDecryptionPrimitive(
-                privateKey,
-                ref MemoryMarshal.GetReference(source),
-                source.Length,
-                out SafeCFDataHandle cfData,
-                out SafeCFErrorHandle cfError);
-
-            return ProcessPrimitiveResponse(returnValue, cfData, cfError, destination, out bytesWritten);
         }
 
         internal static bool TryRsaEncryptionPrimitive(

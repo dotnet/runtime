@@ -94,14 +94,15 @@ internal static class Utils
 
         if (process.ExitCode != 0)
         {
-            Logger?.LogMessage(MessageImportance.Low, $"Exit code: {process.ExitCode}");
+            Logger?.LogMessage(MessageImportance.High, $"Exit code: {process.ExitCode}");
             if (!ignoreErrors)
-                throw new Exception("Error: " + errorBuilder);
+                throw new Exception("Error: Process returned non-zero exit code: " + errorBuilder);
         }
 
         return outputBuilder.ToString().Trim('\r', '\n');
     }
 
+#if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
     {
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
@@ -118,6 +119,7 @@ internal static class Utils
             File.Copy(file, Path.Combine(destDir, relativePath), true);
         }
     }
+#endif
 
     public static TaskLoggingHelper? Logger { get; set; }
 

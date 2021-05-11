@@ -438,7 +438,7 @@ DWORD Thread::ResumeThread()
     DWORD res = ::ResumeThread(m_ThreadHandleForResume);
     _ASSERTE (res != 0 && "Thread is not previously suspended");
 #ifdef _DEBUG_IMPL
-    _ASSERTE (!m_Creater.IsCurrentThread());
+    _ASSERTE (!m_Creator.IsCurrentThread());
     if ((res != (DWORD)-1) && (res != 0))
     {
         Thread * pCurThread = GetThreadNULLOk();

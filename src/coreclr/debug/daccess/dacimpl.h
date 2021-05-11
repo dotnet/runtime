@@ -2001,12 +2001,15 @@ private:
         _ASSERTE(mCurr == NULL);
         _ASSERTE(mHead.next == NULL);
 
+        bool clearProfilerFilterContext = false;
+        T_CONTEXT ctx;
+
         // Get the current thread's context and set that as the filter context
         if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
         {
-            T_CONTEXT ctx;
             mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
             mThread->SetProfilerFilterContext(&ctx);
+            clearProfilerFilterContext = true;
         }
 
         // Setup GCCONTEXT structs for the stackwalk.
@@ -2032,6 +2035,11 @@ private:
 
         mEnumerated = true;
         mThread->StackWalkFrames(DacStackReferenceWalker::Callback, &gcctx, flagsStackWalk);
+
+        if (clearProfilerFilterContext)
+        {
+            mThread->SetProfilerFilterContext(NULL);
+        }
 
         // We have filled the user's array as much as we could.  If there's more data than
         // could fit, mHead.Next will contain a linked list of refs to enumerate.

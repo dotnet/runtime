@@ -935,9 +935,6 @@ public:
 #define GTF_ARRLEN_ARR_IDX          0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 #define GTF_ARRLEN_NONFAULTING      0x20000000 // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-#define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
-                                               //            even if they have been retyped as SIMD16.
-
 #define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                                //                   rarther than from gtGetStructHandleForHWSIMD.
 
@@ -1691,10 +1688,10 @@ public:
     bool IsValidCallArgument();
 #endif // DEBUG
 
-    inline bool IsFPZero();
-    inline bool IsIntegralConst(ssize_t constVal);
-    inline bool IsIntegralConstVector(ssize_t constVal);
-    inline bool IsSIMDZero();
+    inline bool IsFPZero() const;
+    inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsIntegralConstVector(ssize_t constVal) const;
+    inline bool IsSIMDZero() const;
 
     inline bool IsBoxedValue();
 
@@ -2925,11 +2922,11 @@ struct GenTreeVal : public GenTree
 
 struct GenTreeIntConCommon : public GenTree
 {
-    inline INT64 LngValue();
+    inline INT64 LngValue() const;
     inline void SetLngValue(INT64 val);
-    inline ssize_t IconValue();
+    inline ssize_t IconValue() const;
     inline void SetIconValue(ssize_t val);
-    inline INT64 IntegralValue();
+    inline INT64 IntegralValue() const;
 
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
@@ -3093,7 +3090,7 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 #endif
 };
 
-inline INT64 GenTreeIntConCommon::LngValue()
+inline INT64 GenTreeIntConCommon::LngValue() const
 {
 #ifndef TARGET_64BIT
     assert(gtOper == GT_CNS_LNG);
@@ -3117,7 +3114,7 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 #endif
 }
 
-inline ssize_t GenTreeIntConCommon::IconValue()
+inline ssize_t GenTreeIntConCommon::IconValue() const
 {
     assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
     return AsIntCon()->gtIconVal;
@@ -3129,7 +3126,7 @@ inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
     AsIntCon()->gtIconVal = val;
 }
 
-inline INT64 GenTreeIntConCommon::IntegralValue()
+inline INT64 GenTreeIntConCommon::IntegralValue() const
 {
 #ifdef TARGET_64BIT
     return LngValue();
@@ -6945,7 +6942,7 @@ inline bool GenTree::OperIsCopyBlkOp()
 // Return Value:
 //    Returns true iff the tree is an GT_CNS_DBL, with value of 0.0.
 
-inline bool GenTree::IsFPZero()
+inline bool GenTree::IsFPZero() const
 {
     if ((gtOper == GT_CNS_DBL) && (AsDblCon()->gtDconVal == 0.0))
     {
@@ -6968,7 +6965,7 @@ inline bool GenTree::IsFPZero()
 //    Like gtIconVal, the argument is of ssize_t, so cannot check for
 //    long constants in a target-independent way.
 
-inline bool GenTree::IsIntegralConst(ssize_t constVal)
+inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 
 {
     if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
@@ -6994,7 +6991,7 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal)
 // Returns:
 //     True if this represents an integral const SIMD vector.
 //
-inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
+inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 {
 #ifdef FEATURE_SIMD
     // SIMDIntrinsicInit intrinsic with a const value as initializer
@@ -7011,7 +7008,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        GenTreeHWIntrinsic* node = AsHWIntrinsic();
+        const GenTreeHWIntrinsic* node = AsHWIntrinsic();
 
         if (!varTypeIsIntegral(node->GetSimdBaseType()))
         {
@@ -7061,7 +7058,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 // Returns:
 //     True if this represents an integral const SIMD vector.
 //
-inline bool GenTree::IsSIMDZero()
+inline bool GenTree::IsSIMDZero() const
 {
 #ifdef FEATURE_SIMD
     if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit))

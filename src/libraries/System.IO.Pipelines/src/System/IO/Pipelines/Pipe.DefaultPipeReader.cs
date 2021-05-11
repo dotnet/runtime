@@ -23,6 +23,8 @@ namespace System.IO.Pipelines
 
             public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => _pipe.ReadAsync(cancellationToken);
 
+            protected override ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumBytes, CancellationToken cancellationToken) => _pipe.ReadAtLeastAsync(minimumBytes, cancellationToken);
+
             public override void AdvanceTo(SequencePosition consumed) => _pipe.AdvanceReader(consumed);
 
             public override void AdvanceTo(SequencePosition consumed, SequencePosition examined) => _pipe.AdvanceReader(consumed, examined);
