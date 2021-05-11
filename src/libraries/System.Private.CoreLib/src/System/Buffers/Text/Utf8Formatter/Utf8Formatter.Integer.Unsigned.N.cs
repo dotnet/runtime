@@ -48,6 +48,8 @@ namespace System.Buffers.Text
             if (trailingZeroCount > 0)
             {
                 destination[digitCount + commaCount] = Utf8Constants.Period;
+
+                // Fill with ASCII zeros
                 destination.Slice(digitCount + commaCount + 1, trailingZeroCount).Fill((byte)'0');
             }
 

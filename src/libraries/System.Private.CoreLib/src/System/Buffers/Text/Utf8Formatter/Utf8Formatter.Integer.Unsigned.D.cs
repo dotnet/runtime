@@ -43,6 +43,7 @@ namespace System.Buffers.Text
 
             if (leadingZeroCount > 0)
             {
+                // Fill with ASCII zeros
                 destination.Slice(0, leadingZeroCount).Fill((byte)'0');
             }
             FormattingHelpers.WriteDigits(value, destination.Slice(leadingZeroCount, digitCount));
