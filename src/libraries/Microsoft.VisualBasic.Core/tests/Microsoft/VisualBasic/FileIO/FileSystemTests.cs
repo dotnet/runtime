@@ -296,6 +296,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
         // path that followed the symlink.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();

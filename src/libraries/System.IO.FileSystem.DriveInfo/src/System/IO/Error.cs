@@ -13,7 +13,7 @@ namespace System.IO
         // An alternative to Win32Marshal with friendlier messages for drives
         internal static Exception GetExceptionForLastWin32DriveError(string driveName)
         {
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             return GetExceptionForWin32DriveError(errorCode, driveName);
         }
 

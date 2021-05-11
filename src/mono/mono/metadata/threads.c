@@ -3914,15 +3914,59 @@ mono_thread_init_apartment_state (void)
 #endif
 }
 
-void 
+void
 mono_thread_cleanup_apartment_state (void)
 {
 #ifdef HOST_WIN32
 	MonoInternalThread* thread = mono_thread_internal_current ();
-
 	if (thread && thread->apartment_state != ThreadApartmentState_Unknown) {
 		CoUninitialize ();
 	}
+#endif
+}
+
+void
+mono_thread_init_from_native (void)
+{
+#if defined(HOST_DARWIN)
+	MonoInternalThread* thread = mono_thread_internal_current ();
+
+	g_assert (mono_defaults.autoreleasepool_class != NULL);
+	ERROR_DECL (error);
+	MONO_STATIC_POINTER_INIT (MonoMethod, create_autoreleasepool)
+
+		create_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.autoreleasepool_class, "CreateAutoreleasePool", 0, 0, error);
+		mono_error_assert_ok (error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, create_autoreleasepool)
+
+	mono_runtime_invoke_handle_void (create_autoreleasepool, NULL_HANDLE, NULL, error);
+	mono_error_cleanup (error);
+
+	thread->flags |= MONO_THREAD_FLAG_CLEANUP_FROM_NATIVE;
+#endif
+}
+
+void
+mono_thread_cleanup_from_native (void)
+{
+#if defined(HOST_DARWIN)
+	MonoInternalThread* thread = mono_thread_internal_current ();
+	if (!(thread->flags & MONO_THREAD_FLAG_CLEANUP_FROM_NATIVE))
+		return;
+
+	g_assert (mono_defaults.autoreleasepool_class != NULL);
+	ERROR_DECL (error);
+	MONO_STATIC_POINTER_INIT (MonoMethod, drain_autoreleasepool)
+
+		drain_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.autoreleasepool_class, "DrainAutoreleasePool", 0, 0, error);
+		mono_error_assert_ok (error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, drain_autoreleasepool)
+
+	mono_runtime_invoke_handle_void (drain_autoreleasepool, NULL_HANDLE, NULL, error);
+	mono_error_cleanup (error);
+
 #endif
 }
 

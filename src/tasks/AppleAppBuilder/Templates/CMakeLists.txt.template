@@ -43,6 +43,11 @@ if("${HARDENED_RUNTIME}")
   set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES")
   if("${HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE}")
     set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
+    add_custom_command(
+      TARGET %ProjectName% POST_BUILD
+      COMMAND codesign
+      ARGS -fs "$CODE_SIGN_IDENTITY" "$CODESIGNING_FOLDER_PATH/Contents/Resources/*.dylib"
+      )
   endif()
 endif()
 

@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (!Debugger.IsAttached)
             {
-                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             }
         }
 
@@ -434,11 +434,11 @@ namespace System.Net.WebSockets.Tests
             int frameSize = 2 << windowBits;
 
             byte[] message = new byte[frameSize * 10];
-            Random random = new(0);
+            new Random(0).NextBytes(message);
 
             for (int i = 0; i < message.Length; ++i)
             {
-                message[i] = (byte)random.Next(maxValue: 10);
+                message[i] %= 10;
             }
 
             await client.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken);

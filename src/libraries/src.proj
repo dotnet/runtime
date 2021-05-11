@@ -52,7 +52,7 @@
   </Target>
 
   <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
-          Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
+          Project="$(MSBuildThisFileDirectory)\illink-trimassemblies.targets" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"

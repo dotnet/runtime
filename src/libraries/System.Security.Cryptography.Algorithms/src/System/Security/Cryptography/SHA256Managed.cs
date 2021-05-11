@@ -6,6 +6,7 @@ using System.ComponentModel;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     // SHA256Managed has a copy of the same implementation as SHA256
     public sealed class SHA256Managed : SHA256

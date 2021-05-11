@@ -20,7 +20,7 @@ namespace System
                 builder.EnsureCapacity((int)length);
             }
 
-            if (length == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
+            if (length == 0 && Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
             {
                 builder.Dispose();
                 return null;
@@ -34,7 +34,7 @@ namespace System
         {
             if (!Interop.Kernel32.SetEnvironmentVariable(variable, value))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 switch (errorCode)
                 {
                     case Interop.Errors.ERROR_ENVVAR_NOT_FOUND:

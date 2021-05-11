@@ -212,7 +212,8 @@ void HandleTerminationRequest(int terminationExitCode)
     {
         SetLatchedExitCode(terminationExitCode);
 
-        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
+        DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableDumpOnSigTerm);
+        ForceEEShutdown(enabled == 1 ? SCA_TerminateProcessWhenShutdownComplete : SCA_ExitProcessWhenShutdownComplete);
     }
 }
 #endif
@@ -1186,6 +1187,12 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             // We are transitioning back to managed code, so ensure that we are in
             // SO-tolerant mode before we do so.
             RestoreSOToleranceState();
+#endif
+
+#ifdef TARGET_AMD64
+            // OSes older than Win8 have a bug where RtlUnwindEx passes meaningless ContextFlags to the personality routine in
+            // some cases.
+            pContextRecord->ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 #endif
 
             ExceptionTracker::ResumeExecution(pContextRecord);

@@ -1406,12 +1406,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _getBoundaries(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, uint* cILOffsets, uint** pILOffsets, BoundaryTypes* implictBoundaries)
+        static void _getBoundaries(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, uint* cILOffsets, uint** pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getBoundaries(ftn, ref *cILOffsets, ref *pILOffsets, implictBoundaries);
+                _this.getBoundaries(ftn, ref *cILOffsets, ref *pILOffsets, implicitBoundaries);
             }
             catch (Exception ex)
             {

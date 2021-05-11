@@ -295,7 +295,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 Assert.Equal(writeBuffer.Length, readData.Length);
-                Assert.Equal(writeBuffer, readData.ToArray());
+                AssertExtensions.SequenceEqual(writeBuffer, readData.ToArray());
             }
             finally
             {
@@ -345,7 +345,7 @@ namespace System.Net.Sockets.Tests
                 }
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData.OrderBy(i => i), receiveData.OrderBy(i => i));
+                AssertExtensions.SequenceEqual(sendData.OrderBy(i => i).ToArray(), receiveData.OrderBy(i => i).ToArray());
             }
         }
 
@@ -383,7 +383,7 @@ namespace System.Net.Sockets.Tests
 
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData, receiveData);
+                AssertExtensions.SequenceEqual(sendData, receiveData);
             }
         }
 
@@ -463,6 +463,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Linux)] // Don't support abstract socket addresses.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void UnixDomainSocketEndPoint_UsingAbstractSocketAddressOnUnsupported_Throws()
         {
             // An abstract socket address starts with a zero byte.
