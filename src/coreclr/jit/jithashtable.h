@@ -555,7 +555,7 @@ public:
         //    begin - `true` to construct an "begin" iterator,
         //            `false` to construct an "end" iterator
         //
-        KeyIterator(const JitHashTable* hash, BOOL begin)
+        KeyIterator(const JitHashTable* hash, bool begin)
             : m_table(hash->m_table)
             , m_node(nullptr)
             , m_tableSize(hash->m_tableSizeInfo.prime)

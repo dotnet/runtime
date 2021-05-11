@@ -1974,9 +1974,9 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 // at compile-time.
 //
 GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    BOOL*                   pRuntimeLookup /* = NULL */,
-                                    BOOL                    mustRestoreHandle /* = FALSE */,
-                                    BOOL                    importParent /* = FALSE */)
+                                    bool*                   pRuntimeLookup /* = NULL */,
+                                    bool                    mustRestoreHandle /* = FALSE */,
+                                    bool                    importParent /* = FALSE */)
 {
     assert(!fgGlobalMorph);
 
@@ -5912,7 +5912,7 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
 
                 if (actualMethodAttribs & CORINFO_FLG_PROTECTED)
                 {
-                    BOOL targetIsStatic = actualMethodAttribs & CORINFO_FLG_STATIC;
+                    bool targetIsStatic = actualMethodAttribs & CORINFO_FLG_STATIC;
 
                     Verify(targetIsStatic || !isOpenDelegate,
                            "Unverifiable creation of an open instance delegate for a protected member.");
@@ -6181,8 +6181,8 @@ typeInfo Compiler::verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType
 void Compiler::verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
                               const CORINFO_FIELD_INFO& fieldInfo,
                               const typeInfo*           tiThis,
-                              BOOL                      mutator,
-                              BOOL                      allowPlainStructAsThis)
+                              bool                      mutator,
+                              bool                      allowPlainStructAsThis)
 {
     CORINFO_CLASS_HANDLE enclosingClass = pResolvedToken->hClass;
     unsigned             fieldFlags     = fieldInfo.fieldFlags;
@@ -6716,7 +6716,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // the opcode stack becomes empty
         impBoxTempInUse = true;
 
-        const BOOL useParent = FALSE;
+        const bool useParent = false;
         op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
         if (op1 == nullptr)
         {
@@ -7433,7 +7433,7 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     {
         return nullptr;
     }
-    BOOL runtimeLookup;
+    bool runtimeLookup;
 
     GenTree* node = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
 
@@ -8716,7 +8716,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         assert(opcode != CEE_CALLI);
 
         GenTree* instParam;
-        BOOL     runtimeLookup;
+        bool     runtimeLookup;
 
         // Instantiated generic method
         if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
@@ -14306,7 +14306,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
-                        const BOOL useParent = TRUE;
+                        const bool useParent = true;
                         op1                  = gtNewAllocObjNode(&resolvedToken, useParent);
                         if (op1 == nullptr)
                         {
@@ -14544,8 +14544,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDSFLDA:
             {
 
-                BOOL isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
-                BOOL isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
+                bool isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
+                bool isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
 
                 /* Get the CP_Fieldref index */
                 assertImp(sz == sizeof(unsigned));
@@ -14640,7 +14640,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (tiVerificationNeeded)
                 {
                     // You can also pass the unboxed struct to  LDFLD
-                    BOOL bAllowPlainValueTypeAsThis = FALSE;
+                    bool bAllowPlainValueTypeAsThis = FALSE;
                     if (opcode == CEE_LDFLD && impIsValueType(tiObj))
                     {
                         bAllowPlainValueTypeAsThis = TRUE;
@@ -14921,7 +14921,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STSFLD:
             {
 
-                BOOL isStoreStatic = (opcode == CEE_STSFLD);
+                bool isStoreStatic = (opcode == CEE_STSFLD);
 
                 CORINFO_CLASS_HANDLE fieldClsHnd; // class of the field (if it's a ref type)
 
@@ -15706,7 +15706,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                BOOL runtimeLookup;
+                bool runtimeLookup;
                 op2 = impTokenToHandle(&resolvedToken, &runtimeLookup);
                 if (op2 == nullptr)
                 {

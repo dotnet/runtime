@@ -158,7 +158,7 @@ static BOOL tiCompatibleWithByRef(COMP_HANDLE CompHnd, const typeInfo& child, co
  *
  */
 
-BOOL typeInfo::tiCompatibleWith(COMP_HANDLE     CompHnd,
+bool typeInfo::tiCompatibleWith(COMP_HANDLE     CompHnd,
                                 const typeInfo& child,
                                 const typeInfo& parent,
                                 bool            normalisedForStack)
@@ -168,28 +168,28 @@ BOOL typeInfo::tiCompatibleWith(COMP_HANDLE     CompHnd,
 
     if (typeInfo::AreEquivalent(child, parent))
     {
-        return TRUE;
+        return true;
     }
 
     if (parent.IsUnboxedGenericTypeVar() || child.IsUnboxedGenericTypeVar())
     {
-        return (FALSE); // need to have had child == parent
+        return false; // need to have had child == parent
     }
     else if (parent.IsType(TI_REF))
     {
         // An uninitialized objRef is not compatible to initialized.
         if (child.IsUninitialisedObjRef() && !parent.IsUninitialisedObjRef())
         {
-            return FALSE;
+            return false;
         }
 
         if (child.IsNullObjRef())
         { // NULL can be any reference type
-            return TRUE;
+            return true;
         }
         if (!child.IsType(TI_REF))
         {
-            return FALSE;
+            return false;
         }
 
         return CompHnd->canCast(child.m_cls, parent.m_cls);
@@ -198,17 +198,17 @@ BOOL typeInfo::tiCompatibleWith(COMP_HANDLE     CompHnd,
     {
         if (!child.IsType(TI_METHOD))
         {
-            return FALSE;
+            return false;
         }
 
         // Right now we don't bother merging method handles
-        return FALSE;
+        return false;
     }
     else if (parent.IsType(TI_STRUCT))
     {
         if (!child.IsType(TI_STRUCT))
         {
-            return FALSE;
+            return false;
         }
 
         // Structures are compatible if they are equivalent
@@ -224,24 +224,24 @@ BOOL typeInfo::tiCompatibleWith(COMP_HANDLE     CompHnd,
     // between an int32 and a native int.
     else if (parent.IsType(TI_INT) && typeInfo::AreEquivalent(nativeInt(), child))
     {
-        return TRUE;
+        return true;
     }
     else if (typeInfo::AreEquivalent(nativeInt(), parent) && child.IsType(TI_INT))
     {
-        return TRUE;
+        return true;
     }
 #endif // TARGET_64BIT
-    return FALSE;
+    return false;
 }
 
-BOOL typeInfo::tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
+bool typeInfo::tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
                                      const typeInfo& child,
                                      const typeInfo& parent,
                                      bool            normalisedForStack)
 {
     if (!child.IsPermanentHomeByRef() && parent.IsPermanentHomeByRef())
     {
-        return FALSE;
+        return false;
     }
 
     return typeInfo::tiCompatibleWith(CompHnd, child, parent, normalisedForStack);
@@ -280,7 +280,7 @@ BOOL typeInfo::tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
  *
  */
 
-BOOL typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const typeInfo* pSrc, bool* changed)
+bool typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const typeInfo* pSrc, bool* changed)
 {
     assert(pSrc->IsDead() || typeInfo::AreEquivalent(::NormaliseForStack(*pSrc), *pSrc));
     assert(pDest->IsDead() || typeInfo::AreEquivalent(::NormaliseForStack(*pDest), *pDest));
@@ -311,7 +311,7 @@ BOOL typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
     // OK the main event.  Merge the main types
     if (typeInfo::AreEquivalent(*pDest, *pSrc))
     {
-        return (TRUE);
+        return true;
     }
 
     if (pDest->IsUnboxedGenericTypeVar() || pSrc->IsUnboxedGenericTypeVar())
@@ -323,7 +323,7 @@ BOOL typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
     {
         if (pSrc->IsType(TI_NULL))
         { // NULL can be any reference type
-            return TRUE;
+            return true;
         }
         if (!pSrc->IsType(TI_REF))
         {
@@ -337,7 +337,7 @@ BOOL typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
         {
             *changed = true;
         }
-        return TRUE;
+        return true;
     }
     else if (pDest->IsType(TI_NULL))
     {
@@ -367,19 +367,19 @@ BOOL typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
     // between an int32 and a native int.
     else if (typeInfo::AreEquivalent(*pDest, typeInfo::nativeInt()) && pSrc->IsType(TI_INT))
     {
-        return TRUE;
+        return true;
     }
     else if (typeInfo::AreEquivalent(*pSrc, typeInfo::nativeInt()) && pDest->IsType(TI_INT))
     {
         *pDest   = *pSrc;
         *changed = true;
-        return TRUE;
+        return true;
     }
 #endif // TARGET_64BIT
 
 FAIL:
     *pDest = typeInfo();
-    return FALSE;
+    return false;
 }
 
 #ifdef DEBUG

@@ -2853,9 +2853,9 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
 
 #ifndef TARGET_64BIT
-    BOOL fDoubleAlignHint = FALSE;
+    bool fDoubleAlignHint = false;
 #ifdef TARGET_X86
-    fDoubleAlignHint = TRUE;
+    fDoubleAlignHint = true;
 #endif
 
     if (info.compCompHnd->getClassAlignmentRequirement(typeHnd, fDoubleAlignHint) == 8)

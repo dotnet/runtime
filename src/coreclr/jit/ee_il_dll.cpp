@@ -1015,7 +1015,7 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG
     if (verbose)

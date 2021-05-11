@@ -4161,13 +4161,13 @@ public:
                               bool                 forceNormalization = false);
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                              BOOL*                   pRuntimeLookup    = nullptr,
-                              BOOL                    mustRestoreHandle = FALSE,
-                              BOOL                    importParent      = FALSE);
+                              bool*                   pRuntimeLookup    = nullptr,
+                              bool                    mustRestoreHandle = FALSE,
+                              bool                    importParent      = FALSE);
 
     GenTree* impParentClassTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                         BOOL*                   pRuntimeLookup    = nullptr,
-                                         BOOL                    mustRestoreHandle = FALSE)
+                                         bool*                   pRuntimeLookup    = nullptr,
+                                         bool                    mustRestoreHandle = FALSE)
     {
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, TRUE);
     }
@@ -5633,7 +5633,7 @@ protected:
 
     void fgControlFlowPermitted(BasicBlock* blkSrc,
                                 BasicBlock* blkDest,
-                                BOOL        IsLeave = false /* is the src a leave block */);
+                                bool        IsLeave = false /* is the src a leave block */);
 
     bool fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkDest, bool sibling);
 
@@ -7761,7 +7761,7 @@ public:
 
     // ICorJitInfo wrappers
 
-    void eeReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize);
+    void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 
     void eeAllocUnwindInfo(BYTE*          pHotCode,
                            BYTE*          pColdCode,
@@ -9471,8 +9471,8 @@ public:
         CORINFO_METHOD_HANDLE compMethodHnd;
         CORINFO_METHOD_INFO*  compMethodInfo;
 
-        BOOL hasCircularClassConstraints;
-        BOOL hasCircularMethodConstraints;
+        bool hasCircularClassConstraints;
+        bool hasCircularMethodConstraints;
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
@@ -10068,13 +10068,13 @@ public:
     */
 
 public:
-    // Set to TRUE if verification cannot be skipped for this method
+    // Set to true if verification cannot be skipped for this method
     // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
     // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
-    // BOOL tiVerificationNeeded;
-    static const BOOL tiVerificationNeeded = FALSE;
+    // bool tiVerificationNeeded;
+    static const bool tiVerificationNeeded = false;
 
-    // Returns TRUE if child is equal to or a subtype of parent for merge purposes
+    // Returns true if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
     // for example, signatures. For example, the permanent home byref (byref that
     // points to the gc heap), isn't a property of method signatures, therefore,
@@ -10083,11 +10083,11 @@ public:
     // in account
     bool tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
 
-    // Returns TRUE if child is equal to or a subtype of parent.
+    // Returns true if child is equal to or a subtype of parent.
     // normalisedForStack indicates that both types are normalised for the stack
     bool tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
 
-    // Merges pDest and pSrc. Returns FALSE if merge is undefined.
+    // Merges pDest and pSrc. Returns false if merge is undefined.
     // *pDest is modified to represent the merged type.  Sets "*changed" to true
     // if this changes "*pDest".
     bool tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
@@ -10114,7 +10114,7 @@ public:
     // the base class ctor is called, or an alternate ctor is called.
     // An uninited this ptr can be used to access fields, but cannot
     // be used to call a member function.
-    BOOL verTrackObjCtorInitState;
+    bool verTrackObjCtorInitState;
 
     void verInitBBEntryState(BasicBlock* block, EntryState* currentState);
 
@@ -10173,8 +10173,8 @@ public:
     void verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
                         const CORINFO_FIELD_INFO& fieldInfo,
                         const typeInfo*           tiThis,
-                        BOOL                      mutator,
-                        BOOL                      allowPlainStructAsThis = FALSE);
+                        bool                      mutator,
+                        bool                      allowPlainStructAsThis = FALSE);
     void verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsigned opcode);
     void verVerifyThisPtrInitialised();
     bool verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);

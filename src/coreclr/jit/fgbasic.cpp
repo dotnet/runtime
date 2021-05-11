@@ -3091,7 +3091,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
  * Consider removing this check here if we  can do it cheaply during importing
  */
 
-void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, BOOL isLeave)
+void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, bool isLeave)
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 
