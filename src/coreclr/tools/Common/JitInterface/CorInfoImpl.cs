@@ -637,12 +637,12 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute)
+        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray)
         {
             CorInfoCallConvExtension callConv = (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
 
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
-            foreach (var arg in unmanagedCallersOnlyAttribute.NamedArguments)
+            foreach (var arg in attributeWithCallConvsArray.NamedArguments)
             {
                 if (arg.Name == "CallConvs")
                 {
@@ -1262,7 +1262,21 @@ namespace Internal.JitInterface
                     MethodSignatureFlags unmanagedCallConv = methodDesc.GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
 
                     if (unmanagedCallConv == MethodSignatureFlags.None)
+                    {
+                        MethodDesc methodDescLocal = methodDesc;
+                        if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
+                        {
+                            methodDescLocal = rawPInvoke.Target;
+                        }
+
+                        CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)methodDescLocal).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
+                        if (unmanagedCallConvAttribute != null)
+                        {
+                            return GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value);
+                        }
+
                         unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
+                    }
 
                     // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoCallConvExtension via a simple cast
                     Debug.Assert((int)CorInfoCallConvExtension.C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
