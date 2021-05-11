@@ -116,8 +116,6 @@ namespace System.Text.Encodings.Web
 
         public OperationStatus Encode(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten, bool isFinalBlock)
         {
-            _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
-
             int srcIdx = 0;
             int dstIdx = 0;
 
@@ -235,8 +233,6 @@ namespace System.Text.Encodings.Web
 
         public OperationStatus EncodeUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
         {
-            _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
-
             int srcIdx = 0;
             int dstIdx = 0;
 
@@ -440,8 +436,6 @@ namespace System.Text.Encodings.Web
 
                 if (idx < lengthInChars)
                 {
-                    _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
-
                     // unroll the loop 8x
                     nint loopIter = 0;
                     for (; lengthInChars - idx >= 8; idx += 8)
@@ -488,13 +482,6 @@ namespace System.Text.Encodings.Web
         public bool IsScalarValueAllowed(Rune value)
         {
             return _allowedBmpCodePoints.IsCodePointAllowed((uint)value.Value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void _AssertThisNotNull()
-        {
-            // Used for hoisting "'this' is not null" assertions outside hot loops.
-            if (GetType() == typeof(OptimizedInboxTextEncoder)) { /* intentionally left blank */ }
         }
     }
 }
