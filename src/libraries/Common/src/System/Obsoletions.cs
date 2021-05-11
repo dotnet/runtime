@@ -81,7 +81,7 @@ namespace System
         internal const string RNGCryptoServiceProviderMessage = "RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.";
         internal const string RNGCryptoServiceProviderDiagId = "SYSLIB0023";
 
-        internal const string AppDomainCreateUnloadMessage = "Creating and unloading AppDomains is not supported and will throw PlatformNotSupportedException";
+        internal const string AppDomainCreateUnloadMessage = "Creating and unloading AppDomains is not supported and will throw PlatformNotSupportedException.";
         internal const string AppDomainCreateUnloadDiagId = "SYSLIB0024";
     }
 }
