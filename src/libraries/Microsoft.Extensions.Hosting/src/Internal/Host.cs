@@ -116,11 +116,11 @@ namespace Microsoft.Extensions.Hosting.Internal
                 IList<Exception> exceptions = new List<Exception>();
                 if (_hostedServices.Count > 0) // Started?
                 {
-                    foreach (IHostedService hostedService in _hostedServices.Reverse())
+                    for (int i = _hostedServices.Count - 1; i >= 0; i--)
                     {
                         try
                         {
-                            await hostedService.StopAsync(token).ConfigureAwait(false);
+                            await _hostedServices[i].StopAsync(token).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
