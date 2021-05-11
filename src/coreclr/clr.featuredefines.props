@@ -22,10 +22,6 @@
         <FeatureStubsAsIL>true</FeatureStubsAsIL>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
-        <FeatureObjCMarshal>true</FeatureObjCMarshal>
-    </PropertyGroup>
-
     <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
         <FeatureArrayStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
@@ -65,6 +61,5 @@
         
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
-        <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
     </PropertyGroup>
 </Project>
