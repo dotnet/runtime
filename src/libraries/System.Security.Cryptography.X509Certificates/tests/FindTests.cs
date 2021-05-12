@@ -231,7 +231,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible on iOS/tvOS/MacCatalyst")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void FindByValidThumbprint_RootCert()
         {
             using (X509Store machineRoot = new X509Store(StoreName.Root, StoreLocation.LocalMachine))

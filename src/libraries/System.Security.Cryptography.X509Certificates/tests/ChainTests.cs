@@ -636,7 +636,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
         [OuterLoop(/* Modifies user certificate store */)]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible on iOS/tvOS/MacCatalyst")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
             // Verifies that when the same root cert is placed in both a user and machine root certificate store,

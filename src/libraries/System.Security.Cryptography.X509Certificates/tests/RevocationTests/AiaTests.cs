@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "CA store is not available on iOS/tvOS/MacCatalyst")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "CA store is not available")]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(
