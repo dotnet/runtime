@@ -673,7 +673,7 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
 #endif //
 
     size_t offs = 0;
-    int moduleIndex = 0;
+    unsigned moduleIndex = 0;
     size_t cumSize = 0;
     offs = 0;
     while (moduleIndex < StressLog::MAX_MODULES)
