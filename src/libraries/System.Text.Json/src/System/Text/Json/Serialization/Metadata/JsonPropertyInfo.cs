@@ -389,7 +389,7 @@ namespace System.Text.Json.Serialization.Metadata
                     else
                     {
                         // Slower path for non-generic types that implement IDictionary<string, object>.
-                        converter = JsonMetadataServices.ObjectConverter;
+                        converter = Options.GetConverterInternal(JsonTypeInfo.ObjectType);
                     }
 
                     if (!converter.TryReadAsObject(ref reader, Options, ref state, out object? value))
