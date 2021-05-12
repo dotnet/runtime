@@ -251,7 +251,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task InspectLocalsDuringSteppingIn()
+        public async Task InspectLocalsDuringSteppingIn2()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 86, 8);
 

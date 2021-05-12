@@ -4989,6 +4989,7 @@ buffer_add_info_for_null_value (Buffer* buf, MonoType* t, MonoDomain* domain)
 		buffer_add_int (buf, m_class_get_rank (mono_class_from_mono_type_internal (t)));
 		if (m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type == MONO_TYPE_CLASS)
 			buffer_add_typeid (buf, domain, m_class_get_element_class (mono_class_from_mono_type_internal (t)));
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));			
 		break;
 	}
 }

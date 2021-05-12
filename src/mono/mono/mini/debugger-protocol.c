@@ -56,12 +56,7 @@ m_dbgprot_decode_int (uint8_t *buf, uint8_t **endbuf, uint8_t *limit)
 {
 	*endbuf = buf + 4;
 	g_assert (*endbuf <= limit);
-
-#ifndef HOST_WASM
 	return (((int)buf [0]) << 24) | (((int)buf [1]) << 16) | (((int)buf [2]) << 8) | (((int)buf [3]) << 0);
-#else
-	return (((int)buf [0]) << 0) | (((int)buf [1]) << 8) | (((int)buf [2]) << 16) | (((int)buf [3]) << 24);
-#endif
 }
 
 int64_t
@@ -198,17 +193,10 @@ void
 m_dbgprot_buffer_add_int (MdbgProtBuffer *buf, uint32_t val)
 {
 	m_dbgprot_buffer_make_room (buf, 4);
-#ifndef HOST_WASM	
 	buf->p [0] = (val >> 24) & 0xff;
 	buf->p [1] = (val >> 16) & 0xff;
 	buf->p [2] = (val >> 8) & 0xff;
 	buf->p [3] = (val >> 0) & 0xff;
-#else
-	buf->p [0] = (val >> 0) & 0xff;
-	buf->p [1] = (val >> 8) & 0xff;
-	buf->p [2] = (val >> 16) & 0xff;
-	buf->p [3] = (val >> 24) & 0xff;
-#endif	
 	buf->p += 4;
 }
 

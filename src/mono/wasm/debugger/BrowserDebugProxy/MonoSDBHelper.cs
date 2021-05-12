@@ -231,6 +231,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         GET_VALUE_SIZE = 20
     }
 
+    internal enum CmdArray {
+        GET_LENGTH = 1,
+        GET_VALUES = 2,
+        SET_VALUES = 3,
+        REF_GET_TYPE = 4
+    }
+
+
     internal enum CmdField {
         GET_INFO = 1
     }
@@ -307,6 +315,103 @@ namespace Microsoft.WebAssembly.Diagnostics
         MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
     }
 
+    internal class MonoBinaryReader : BinaryReader
+    {
+        public MonoBinaryReader(Stream stream) : base(stream) {}
+
+        internal static unsafe void PutBytesBE (byte *dest, byte *src, int count)
+        {
+            int i = 0;
+
+            if (BitConverter.IsLittleEndian){
+                dest += count;
+                for (; i < count; i++)
+                    *(--dest) = *src++;
+            } else {
+                for (; i < count; i++)
+                    *dest++ = *src++;
+            }
+        }
+
+        public override string ReadString()
+        {
+            var valueLen = ReadInt32();
+            char[] value = new char[valueLen];
+            Read(value, 0, valueLen);
+            return new string(value);
+        }
+        public unsafe long ReadLong()
+        {
+            byte[] data = new byte[8];
+            Read(data, 0, 8);
+
+            long ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 8);
+            }
+
+            return ret;
+        }
+        public override unsafe sbyte ReadSByte()
+        {
+            byte[] data = new byte[4];
+            Read(data, 0, 4);
+
+            int ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 4);
+            }
+            return (sbyte)ret;
+        }
+
+        public unsafe byte ReadUByte()
+        {
+            byte[] data = new byte[4];
+            Read(data, 0, 4);
+
+            int ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 4);
+            }
+            return (byte)ret;
+        }
+
+        public override unsafe int ReadInt32()
+        {
+            byte[] data = new byte[4];
+            Read(data, 0, 4);
+
+            int ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 4);
+            }
+            return ret;
+        }
+
+        public override unsafe uint ReadUInt32()
+        {
+            byte[] data = new byte[4];
+            Read(data, 0, 4);
+
+            uint ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 4);
+            }
+            return ret;
+        }
+        public unsafe ushort ReadUShort()
+        {
+            byte[] data = new byte[4];
+            Read(data, 0, 4);
+
+            uint ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 4);
+            }
+            return (ushort)ret;
+        }
+    }
+
     internal class MonoBinaryWriter : BinaryWriter
     {
         public MonoBinaryWriter(Stream stream) : base(stream) {}
@@ -319,6 +424,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Write((int)((val >> 32) & 0xffffffff));
             Write((int)((val >> 0) & 0xffffffff));
+        }
+        public override void Write(int val)
+        {
+            byte[] bytes = BitConverter.GetBytes(val);
+            Array.Reverse(bytes, 0, bytes.Length);
+            Write(bytes);
         }
     }
 
@@ -376,7 +487,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<BinaryReader> SendDebuggerAgentCommand(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
+        internal async Task<MonoBinaryReader> SendDebuggerAgentCommand(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
             if (res.IsErr) {
@@ -386,7 +497,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
             var ret_debugger_cmd = new MemoryStream(newBytes);
-            var ret_debugger_cmd_reader = new BinaryReader(ret_debugger_cmd);
+            var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
             return ret_debugger_cmd_reader;
         }
 
@@ -437,10 +548,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(assembly_id);
 
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.ASSEMBLY, (int) CmdAssembly.GET_LOCATION, command_params, token);
-            var stringSize = ret_debugger_cmd_reader.ReadInt32();
-            char[] memoryData = new char[stringSize];
-            ret_debugger_cmd_reader.Read(memoryData, 0, stringSize);
-            return new string(memoryData);
+            return ret_debugger_cmd_reader.ReadString();
         }
 
         public async Task<string> GetMethodName(SessionId sessionId, int method_id, CancellationToken token)
@@ -450,10 +558,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(method_id);
 
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_NAME, command_params, token);
-            var stringSize = ret_debugger_cmd_reader.ReadInt32();
-            char[] memoryData = new char[stringSize];
-            ret_debugger_cmd_reader.Read(memoryData, 0, stringSize);
-            return new string(memoryData);
+            return ret_debugger_cmd_reader.ReadString();
         }
 
         public async Task<bool> MethodIsStatic(SessionId sessionId, int method_id, CancellationToken token)
@@ -540,10 +645,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 ret_debugger_cmd_reader.ReadInt32(); //fieldId
 
-                var fieldNameLen = ret_debugger_cmd_reader.ReadInt32();
-                char[] fieldName = new char[fieldNameLen];
-                ret_debugger_cmd_reader.Read(fieldName, 0, fieldNameLen);
-                string fieldNameStr = new string(fieldName);
+                string fieldNameStr = ret_debugger_cmd_reader.ReadString();
                 fieldNameStr = fieldNameStr.Replace("k__BackingField", "");
                 fieldNameStr = fieldNameStr.Replace("<", "");
                 fieldNameStr = fieldNameStr.Replace(">", "");
@@ -561,23 +663,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write((int) MonoTypeNameFormat.MONO_TYPE_NAME_FORMAT_REFLECTION);
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_INFO, command_params, token);
 
-            var namespaceLen = ret_debugger_cmd_reader.ReadInt32();
-            char[] namespaceValue = new char[namespaceLen];
-            ret_debugger_cmd_reader.Read(namespaceValue, 0, namespaceLen);
+            ret_debugger_cmd_reader.ReadString();
 
-            var classLen = ret_debugger_cmd_reader.ReadInt32();
-            char[] classValue = new char[classLen];
-            ret_debugger_cmd_reader.Read(classValue, 0, classLen);
+            ret_debugger_cmd_reader.ReadString();
 
-            var classFullNameLen = ret_debugger_cmd_reader.ReadInt32();
-            char[] classFullName = new char[classFullNameLen];
-            ret_debugger_cmd_reader.Read(classFullName, 0, classFullNameLen);
+            string className = ret_debugger_cmd_reader.ReadString();
 
-            string className = new string(classFullName);
             className = className.Replace("+", ".");
             className = Regex.Replace(className, @"`\d+", "");
+            className = className.Replace("[]", "__SQUARED_BRACKETS__");
             className = className.Replace("[", "<");
             className = className.Replace("]", ">");
+            className = className.Replace("__SQUARED_BRACKETS__", "[]");
+            className = className.Replace("System.String", "string");
             return className;
         }
 
@@ -590,14 +688,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STRING_REF, (int) CmdString.GET_VALUE, command_params, token);
             var isUtf16 = ret_debugger_cmd_reader.ReadByte();
             if (isUtf16 == 0) {
-                var stringSize = ret_debugger_cmd_reader.ReadInt32();
-                char[] memoryData = new char[stringSize];
-                ret_debugger_cmd_reader.Read(memoryData, 0, stringSize);
-                return new string(memoryData);
+                return ret_debugger_cmd_reader.ReadString();
             }
             return null;
         }
+        public async Task<int> GetArrayLength(SessionId sessionId, int object_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(object_id);
 
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.ARRAY_REF, (int) CmdArray.GET_LENGTH, command_params, token);
+            var length = ret_debugger_cmd_reader.ReadInt32();
+            length = ret_debugger_cmd_reader.ReadInt32();
+            return length;
+        }
         public async Task<string> GetClassNameFromObject(SessionId sessionId, int object_id, CancellationToken token)
         {
             var command_params = new MemoryStream();
@@ -634,7 +739,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (newBytes.Length == 0)
                 return null;
             var ret_debugger_cmd = new MemoryStream(newBytes);
-            var ret_debugger_cmd_reader = new BinaryReader(ret_debugger_cmd);
+            var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
             ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
             return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, varName, token);
         }
@@ -654,16 +759,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             for (int i = 0 ; i < nProperties; i++)
             {
                 ret_debugger_cmd_reader.ReadInt32(); //propertyId
-                var propertyNameLen = ret_debugger_cmd_reader.ReadInt32();
-                char[] propertyName = new char[propertyNameLen];
-                ret_debugger_cmd_reader.Read(propertyName, 0, propertyNameLen);
+                string propertyNameStr = ret_debugger_cmd_reader.ReadString();
                 var getMethodId = ret_debugger_cmd_reader.ReadInt32();
                 ret_debugger_cmd_reader.ReadInt32(); //setmethod
                 ret_debugger_cmd_reader.ReadInt32(); //attrs
                 if (await MethodIsStatic(sessionId, getMethodId, token))
                     continue;
                 JObject propRet = null;
-                string propertyNameStr = new string(propertyName);
                 if (valueType.HasFieldWithSameName(propertyNameStr))
                     continue;
                 if (valueType.valueTypeAutoExpand)
@@ -678,9 +780,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 type = "function",
                                 objectId = "dotnet:valuetype:" + valueType.typeId + ":method_id:" + getMethodId,
                                 className = "Function",
-                                description = "get " + new string(propertyName) + " ()",
+                                description = "get " + propertyNameStr + " ()",
                             },
-                            name = new string(propertyName)
+                            name = propertyNameStr
                         });
                 }
                 valueTypeFields.Add(propRet);
@@ -694,7 +796,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return true;
             return false;
         }
-        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, BinaryReader ret_debugger_cmd_reader, string name, CancellationToken token)
+        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, string name, CancellationToken token)
         {
             long initialPos = ret_debugger_cmd_reader == null ? 0 : ret_debugger_cmd_reader.BaseStream.Position;
             ElementType etype = (ElementType)ret_debugger_cmd_reader.ReadByte();
@@ -716,6 +818,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                         });
                 }
                 case ElementType.I1:
+                {
+                    var value = ret_debugger_cmd_reader.ReadSByte();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "number",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
                 case ElementType.I2:
                 case ElementType.I4:
                 {
@@ -732,7 +847,33 @@ namespace Microsoft.WebAssembly.Diagnostics
                         });
                 }
                 case ElementType.U1:
+                {
+                    var value = ret_debugger_cmd_reader.ReadUByte();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "number",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
                 case ElementType.U2:
+                {
+                    var value = ret_debugger_cmd_reader.ReadUShort();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "number",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
                 case ElementType.U4:
                 {
                     var value = ret_debugger_cmd_reader.ReadUInt32();
@@ -747,13 +888,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                             name
                         });
                 }
-                case ElementType.Char:
+                case ElementType.R4:
                 {
-                    var value = ret_debugger_cmd_reader.ReadInt32();
+                    float value = BitConverter.Int32BitsToSingle(ret_debugger_cmd_reader.ReadInt32());
                     return JObject.FromObject(new {
                             value = new
                             {
-                                type = "char",
+                                type = "number",
                                 value,
                                 description = value.ToString()
                             },
@@ -761,7 +902,35 @@ namespace Microsoft.WebAssembly.Diagnostics
                             name
                         });
                 }
+                case ElementType.Char:
+                {
+                    var value = ret_debugger_cmd_reader.ReadInt32();
+                    var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "symbol",
+                                value = description,
+                                description
+                            },
+                            writable = true,
+                            name
+                        });
+                }
                 case ElementType.I8:
+                {
+                    long value = ret_debugger_cmd_reader.ReadLong();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "number",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
                 case ElementType.U8:
                 {
                     ulong high = (ulong) ret_debugger_cmd_reader.ReadInt32();
@@ -778,10 +947,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                             name
                         });
                 }
-                case ElementType.R4:
-                    return new JObject{{"Type", "void"}};
                 case ElementType.R8:
-                    return new JObject{{"Type", "void"}};
+                {
+                    long high = (long) ret_debugger_cmd_reader.ReadInt32();
+                    long low = (long) ret_debugger_cmd_reader.ReadInt32();
+                    double value = BitConverter.Int64BitsToDouble(((high << 32) | low));
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "number",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
                 case ElementType.I:
                 case ElementType.U:
                     // FIXME: The client and the debuggee might have different word sizes
@@ -805,7 +986,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case ElementType.SzArray:
                 case ElementType.Array:
-                    return new JObject{{"Type", "void"}};
+                {
+                    var objectId = ret_debugger_cmd_reader.ReadInt32();
+                    var value = await GetClassNameFromObject(sessionId, objectId, token);
+                    var length = await GetArrayLength(sessionId, objectId, token);
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "object",
+                                objectId = "dotnet:array:" + objectId,
+                                description = $"{value.ToString()}({length})",
+                                className = value.ToString(),
+                                subtype = "array"
+                            },
+                            name
+                        });
+                }
                 case ElementType.Class:
                 case ElementType.Object:
                 {
@@ -867,22 +1063,58 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case (ElementType)ValueTypeId.VALUE_TYPE_ID_NULL:
                 {
+                    string className = "";
+                    ElementType variableType = (ElementType)ret_debugger_cmd_reader.ReadByte();
+                    switch (variableType)
+                    {
+                        case ElementType.String:
+                        case ElementType.Class:
+                        {
+                            var type_id = ret_debugger_cmd_reader.ReadInt32();
+                            className = await GetTypeName(sessionId, type_id, token);
+                            break;
+                        }
+                        case ElementType.SzArray:
+                        case ElementType.Array:
+                        {
+                            ElementType byte_type = (ElementType)ret_debugger_cmd_reader.ReadByte();
+                            var rank = ret_debugger_cmd_reader.ReadInt32();
+                            if (byte_type == ElementType.Class) {
+                                var internal_type_id = ret_debugger_cmd_reader.ReadInt32();
+                            }
+                            var type_id = ret_debugger_cmd_reader.ReadInt32();
+                            className = await GetTypeName(sessionId, type_id, token);
+                            break;
+                        }
+                        default:
+                        {
+                            className = "unknown";
+                            break;
+                        }
+                    }
                     return JObject.FromObject(new {
                             value = new
                             {
                                 type = "object",
                                 subtype = "null",
-                                className = "string" //TODO get classname of null
+                                className,
+                                description = className
                             },
                             name
                         });
                 }
                 case (ElementType)ValueTypeId.VALUE_TYPE_ID_TYPE:
+                {
                     return new JObject{{"Type", "void"}};
+                }
                 case (ElementType)ValueTypeId.VALUE_TYPE_ID_PARENT_VTYPE:
+                {
                     return new JObject{{"Type", "void"}};
+                }
                 case (ElementType)ValueTypeId.VALUE_TYPE_ID_FIXED_ARRAY:
+                {
                     return new JObject{{"Type", "void"}};
+                }
             }
             return null;
         }
@@ -941,9 +1173,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             for (int i = 0 ; i < nProperties; i++)
             {
                 ret_debugger_cmd_reader.ReadInt32(); //propertyId
-                var propertyNameLen = ret_debugger_cmd_reader.ReadInt32();
-                char[] propertyName = new char[propertyNameLen];
-                ret_debugger_cmd_reader.Read(propertyName, 0, propertyNameLen);
+                string propertyNameStr = ret_debugger_cmd_reader.ReadString();
 
                 var getMethodId = ret_debugger_cmd_reader.ReadInt32();
                 ret_debugger_cmd_reader.ReadInt32(); //setmethod
@@ -957,10 +1187,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                 command_params_writer_to_proxy.Write(0);
                 valueTypes[valueTypeId].valueTypeProxy.Add(JObject.FromObject(new {
                             get = Convert.ToBase64String(command_params_to_proxy.ToArray()),
-                            name = new string(propertyName)
+                            name = propertyNameStr
                         }));
             }
             return valueTypes[valueTypeId].valueTypeProxy;
+        }
+
+        public async Task<JArray> GetArrayValues(SessionId sessionId, int arrayId, CancellationToken token)
+        {
+            var length = await GetArrayLength(sessionId, arrayId, token);
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(arrayId);
+            command_params_writer.Write(0);
+            command_params_writer.Write(length);
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.ARRAY_REF, (int) CmdArray.GET_VALUES, command_params, token);
+            JArray array = new JArray();
+            for (int i = 0 ; i < length ; i++)
+            {
+                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, i.ToString(), token);
+                array.Add(var_json);
+            }
+            return array;
         }
     }
 }

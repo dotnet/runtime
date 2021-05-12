@@ -477,21 +477,30 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 token);
                             return true;
                         }
-
                         if (objectId.Scheme == "valuetype")
+                        {
                             args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
+                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
+                            var ret_debugger_cmd = new MemoryStream(newBytes);
+                            var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
+                            ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                            var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "seila", token);
+                            /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
+                            res = Result.OkFromObject(new { result = obj["value"]});
+                            SendResponse(id, res, token);
+                            return true;
 
-                        Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                        byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
-                        var ret_debugger_cmd = new MemoryStream(newBytes);
-                        var ret_debugger_cmd_reader = new BinaryReader(ret_debugger_cmd);
-                        ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                        var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "seila", token);
-                        /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
-                        res = Result.OkFromObject(new { result = obj["value"]});
-
-                        SendResponse(id, res, token);
-                        return true;
+                        }
+                        /*if (objectId.Scheme == "array")
+                        {
+                            args["details"]  = await sdbHelper.GetArrayProxy(id, int.Parse(objectId.Value), token);
+                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                            Console.WriteLine(res);
+                            SendResponse(id, res, token);
+                        }*/
+                        return false;
                     }
             }
 
@@ -527,6 +536,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (objectId.Scheme == "valuetype")
             {
                 var ret = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), token);
+                Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                return res2;
+            }
+            if (objectId.Scheme == "array")
+            {
+                var ret = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
                 Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
                 return res2;
             }
@@ -603,7 +618,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
             var ret_debugger_cmd = new MemoryStream(newBytes);
-            var ret_debugger_cmd_reader = new BinaryReader(ret_debugger_cmd);
+            var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
             ret_debugger_cmd_reader.ReadBytes(11); //skip HEADER_LEN
             ret_debugger_cmd_reader.ReadByte(); //suspend_policy
             var number_of_events = ret_debugger_cmd_reader.ReadInt32(); //number of events -> should be always one
