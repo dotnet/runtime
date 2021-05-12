@@ -117,28 +117,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="RequiresUnreferencedCodeTitle" xml:space="preserve">
-    <value>Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</value>
+  <data name="RequiresAssemblyFilesCodeFixTitle" xml:space="preserve">
+    <value>Add RequiresAssemblyFiles attribute to parent method</value>
   </data>
-  <data name="RequiresUnreferencedCodeMessage" xml:space="preserve">
-    <value>Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.{1}{2}</value>
+  <data name="RequiresUnreferencedCodeCodeFixTitle" xml:space="preserve">
+    <value>Add RequiresUnreferencedCode attribute to parent method</value>
   </data>
-  <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
-    <value>Avoid accessing Assembly file path when publishing as a single file</value>
-  </data>
-  <data name="AvoidAssemblyLocationInSingleFileMessage" xml:space="preserve">
-    <value>'{0}' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.</value>
-  </data>
-  <data name="AvoidAssemblyGetFilesInSingleFileTitle" xml:space="preserve">
-    <value>Avoid accessing Assembly file path when publishing as a single file</value>
-  </data>
-  <data name="AvoidAssemblyGetFilesInSingleFileMessage" xml:space="preserve">
-    <value>'{0}' will throw for assemblies embedded in a single-file app</value>
-  </data>
-  <data name="RequiresAssemblyFilesTitle" xml:space="preserve">
-    <value>Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file</value>
-  </data>
-  <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
-    <value>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</value>
+  <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
+    <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>
 </root>

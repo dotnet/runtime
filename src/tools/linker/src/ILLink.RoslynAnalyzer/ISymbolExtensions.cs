@@ -19,35 +19,5 @@ namespace ILLink.RoslynAnalyzer
 
 			return false;
 		}
-
-		internal static bool TryGetRequiresAssemblyFileAttribute (this ISymbol symbol, out AttributeData? attribute)
-		{
-			attribute = null;
-			foreach (var _attribute in symbol.GetAttributes ()) {
-				if (_attribute.AttributeClass is var attrClass && attrClass != null &&
-					attrClass.HasName (RequiresAssemblyFilesAnalyzer.FullyQualifiedRequiresAssemblyFilesAttribute) &&
-					_attribute.ConstructorArguments.Length == 0) {
-					attribute = _attribute;
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		internal static bool TryGetAttributeWithMessageOnCtor (this ISymbol symbol, string qualifiedAttributeName, out AttributeData? attribute)
-		{
-			attribute = null;
-			foreach (var _attribute in symbol.GetAttributes ()) {
-				if (_attribute.AttributeClass is var attrClass && attrClass != null &&
-					attrClass.HasName (qualifiedAttributeName) && _attribute.ConstructorArguments.Length >= 1 &&
-					_attribute.ConstructorArguments[0] is { Type: { SpecialType: SpecialType.System_String } } ctorArg) {
-					attribute = _attribute;
-					return true;
-				}
-			}
-
-			return false;
-		}
 	}
 }

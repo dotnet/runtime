@@ -21,7 +21,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	/// <typeparam name="TTest">The test implementation to use.</typeparam>
 	public partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
 		   where TAnalyzer : DiagnosticAnalyzer, new()
-		   where TCodeFix : CodeFixProvider, new()
+		   where TCodeFix : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider, new()
 	{
 		public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
 		{
