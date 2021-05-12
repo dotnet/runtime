@@ -342,7 +342,8 @@ internal class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
                         .Append(" -derivedDataPath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2")
+                        .Append(" EFFECTIVE_PLATFORM_NAME=\"-maccatalyst\"");
                     break;
             }
         }
@@ -367,7 +368,8 @@ internal class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
                         .Append(" -derivedDataPath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=13.5");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=13.5")
+                        .Append(" EFFECTIVE_PLATFORM_NAME=\"-maccatalyst\"");
                     break;
             }
         }
