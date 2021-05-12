@@ -432,7 +432,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             Write(bytes);
         }
     }
-
+    internal class FieldTypeClass
+    {
+        public int Id { get; }
+        public string Name { get; }
+        public FieldTypeClass(int id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+    }
     internal class ValueTypeClass
     {
         public byte[] valueTypeBuffer;
@@ -631,9 +640,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<List<string>> GetTypeFieldsName(SessionId sessionId, int type_id, CancellationToken token)
+        public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int type_id, CancellationToken token)
         {
-            var ret = new List<string>();
+            var ret = new List<FieldTypeClass>();
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(type_id);
@@ -643,17 +652,25 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             for (int i = 0 ; i < nFields; i++)
             {
-                ret_debugger_cmd_reader.ReadInt32(); //fieldId
+                int fieldId = ret_debugger_cmd_reader.ReadInt32(); //fieldId
 
                 string fieldNameStr = ret_debugger_cmd_reader.ReadString();
                 fieldNameStr = fieldNameStr.Replace("k__BackingField", "");
                 fieldNameStr = fieldNameStr.Replace("<", "");
                 fieldNameStr = fieldNameStr.Replace(">", "");
-                ret.Add(fieldNameStr);
+                ret.Add(new FieldTypeClass(fieldId, fieldNameStr));
                 ret_debugger_cmd_reader.ReadInt32(); //typeId
                 ret_debugger_cmd_reader.ReadInt32(); //attrs
             }
             return ret;
+        }
+        public string ReplaceCommonClassNames(string className)
+        {
+            className = className.Replace("System.String", "string");
+            className = className.Replace("System.Boolean", "bool");
+            className = className.Replace("System.Char", "char");
+            className = className.Replace("System.Int32", "int");
+            return className;
         }
         public async Task<string> GetTypeName(SessionId sessionId, int type_id, CancellationToken token)
         {
@@ -675,7 +692,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             className = className.Replace("[", "<");
             className = className.Replace("]", ">");
             className = className.Replace("__SQUARED_BRACKETS__", "[]");
-            className = className.Replace("System.String", "string");
+            className = ReplaceCommonClassNames(className);
             return className;
         }
 
@@ -703,7 +720,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             length = ret_debugger_cmd_reader.ReadInt32();
             return length;
         }
-        public async Task<string> GetClassNameFromObject(SessionId sessionId, int object_id, CancellationToken token)
+        public async Task<int> GetTypeIdFromObject(SessionId sessionId, int object_id, CancellationToken token)
         {
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
@@ -711,9 +728,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.OBJECT_REF, (int) CmdObject.REF_GET_TYPE, command_params, token);
             var type_id = ret_debugger_cmd_reader.ReadInt32();
+            return type_id;
+        }
 
+        public async Task<string> GetClassNameFromObject(SessionId sessionId, int object_id, CancellationToken token)
+        {
+            int type_id = await GetTypeIdFromObject(sessionId, object_id, token);
             return await GetTypeName(sessionId, type_id, token);
         }
+
         public async Task<int> GetMethodIdByName(SessionId sessionId, int type_id, string method_name, CancellationToken token)
         {
             var ret = new List<string>();
@@ -789,13 +812,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return valueTypeFields;
         }
-        public bool AutoInvokeToString(string className) {
+
+        public bool AutoExpandable(string className) {
             if (className == "System.DateTime" ||
                 className == "System.DateTimeOffset" ||
                 className == "System.TimeSpan")
                 return true;
             return false;
         }
+
+        public bool AutoInvokeToString(string className) {
+            if (className == "System.DateTime" ||
+                className == "System.DateTimeOffset" ||
+                className == "System.TimeSpan" ||
+                className == "System.Decimal"  ||
+                className == "System.Guid")
+                return true;
+            return false;
+        }
+
         public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, string name, CancellationToken token)
         {
             long initialPos = ret_debugger_cmd_reader == null ? 0 : ret_debugger_cmd_reader.BaseStream.Position;
@@ -1011,7 +1046,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             value = new
                             {
                                 type = "object",
-                                objectId = "dotnet:object:" + objectId,
+                                objectId = $"dotnet:object:{objectId}", //maybe pass here the typeId and avoid another call to debugger-agent when getting fields
                                 description = value.ToString(),
                                 className = value.ToString(),
                             },
@@ -1025,11 +1060,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var className = await GetTypeName(sessionId, typeId, token);
                     var description = className;
                     var numFields = ret_debugger_cmd_reader.ReadInt32();
-                    var fieldsName = await GetTypeFieldsName(sessionId, typeId, token);
+                    var fields = await GetTypeFields(sessionId, typeId, token);
                     JArray valueTypeFields = new JArray();
                     for (int i = 0; i < numFields ; i++)
                     {
-                        var fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fieldsName.ElementAt(i), token);
+                        var fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, token);
                         valueTypeFields.Add(fieldValueType);
                     }
 
@@ -1040,11 +1075,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     byte[] valueTypeBuffer = new byte[endPos - initialPos];
                     ret_debugger_cmd_reader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
                     ret_debugger_cmd_reader.BaseStream.Position = endPos;
-                    valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, className == "System.DateTime");
+                    valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className));
                     if (AutoInvokeToString(className) || isEnum == 1) {
                         int method_id = await GetMethodIdByName(sessionId, typeId, "ToString", token);
                         var retMethod = await InvokeMethod(sessionId, valueTypeBuffer, method_id, "methodRet", token);
                         description = retMethod["value"]?["value"].Value<string>();
+                        if (className.Equals("System.Guid"))
+                            description = description.ToUpper(); //to keep the old behavior
                     }
 
                     return JObject.FromObject(new {
@@ -1209,6 +1246,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                 array.Add(var_json);
             }
             return array;
+        }
+
+        public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, CancellationToken token)
+        {
+            var typeId = await GetTypeIdFromObject(sessionId, objectId, token);
+            var fields = await GetTypeFields(sessionId, typeId, token);
+            JArray objectFields = new JArray();
+
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(objectId);
+            command_params_writer.Write(fields.Count);
+            foreach (var field in fields)
+            {
+                    command_params_writer.Write(field.Id);
+            }
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.OBJECT_REF, (int) CmdObject.REF_GET_VALUES, command_params, token);
+
+            foreach (var field in fields)
+            {
+                var fieldValue = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, field.Name, token);
+                objectFields.Add(fieldValue);
+            }
+            return objectFields;
         }
     }
 }

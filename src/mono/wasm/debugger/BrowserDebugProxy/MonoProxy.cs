@@ -545,31 +545,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
                 return res2;
             }
-            Result res = await SendMonoCommand(id, MonoCommands.GetDetails(objectId, args), token);
-            if (res.IsErr)
-                return res;
-
-            if (objectId.Scheme == "cfo_res")
+            if (objectId.Scheme == "object")
             {
-                // Runtime.callFunctionOn result object
-                string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
-                if (value_json_str != null)
-                {
-                    res = Result.OkFromObject(new
-                    {
-                        result = JArray.Parse(value_json_str)
-                    });
-                }
-                else
-                {
-                    res = Result.OkFromObject(new { result = new { } });
-                }
-            }
-            else
-            {
-                res = Result.Ok(JObject.FromObject(new { result = res.Value["result"]["value"] }));
+                var ret = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), token);
+                Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                return res2;
             }
 
+            Result res = Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
             return res;
         }
 
