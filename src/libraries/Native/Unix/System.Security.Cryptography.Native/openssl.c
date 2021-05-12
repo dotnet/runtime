@@ -1321,9 +1321,13 @@ static int32_t EnsureOpenSsl11Initialized()
 
 int32_t CryptoNative_OpenSslAvailable()
 {
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     // OpenLibrary will attempt to open libssl. DlOpen will handle
     // the case of it already being open and dlclose the duplicate
     return OpenLibrary();
+#else
+    return 1;
+#endif
 }
 
 int32_t CryptoNative_EnsureOpenSslInitialized()
