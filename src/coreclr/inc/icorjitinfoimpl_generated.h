@@ -635,14 +635,7 @@ bool notifyInstructionSetUsage(
           bool supportEnabled) override;
 
 void allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock) override;
+          AllocMemArgs* pArgs) override;
 
 void reserveUnwindInfo(
           bool isFunclet,
@@ -700,6 +693,7 @@ void recordCallSite(
 
 void recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,

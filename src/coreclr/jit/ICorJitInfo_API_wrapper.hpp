@@ -1526,17 +1526,10 @@ bool WrapICorJitInfo::notifyInstructionSetUsage(
 }
 
 void WrapICorJitInfo::allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock)
+          AllocMemArgs* pArgs)
 {
     API_ENTER(allocMem);
-    wrapHnd->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    wrapHnd->allocMem(pArgs);
     API_LEAVE(allocMem);
 }
 
@@ -1656,13 +1649,14 @@ void WrapICorJitInfo::recordCallSite(
 
 void WrapICorJitInfo::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
     API_ENTER(recordRelocation);
-    wrapHnd->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    wrapHnd->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
     API_LEAVE(recordRelocation);
 }
 

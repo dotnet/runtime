@@ -9270,7 +9270,7 @@ void emitter::emitDispIns(
  *  Output nBytes bytes of NOP instructions
  */
 
-static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
+static BYTE* emitOutputNOP(BYTE* dstRW, size_t nBytes)
 {
     assert(nBytes <= 15);
 
@@ -9284,49 +9284,49 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     switch (nBytes)
     {
         case 15:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 14:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 13:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 12:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 11:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 10:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 9:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 8:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 7:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 6:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 5:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 4:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 3:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 2:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 1:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             break;
         case 0:
             break;
@@ -9335,82 +9335,82 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     switch (nBytes)
     {
         case 2:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 1:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             break;
         case 0:
             break;
         case 3:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x00;
             break;
         case 4:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x40;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x40;
+            *dstRW++ = 0x00;
             break;
         case 6:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 5:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x44;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x44;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
             break;
         case 7:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x80;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x80;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
             break;
         case 15:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 7), 8);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 7), 8);
             break;
         case 14:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 7), 7);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 7), 7);
             break;
         case 13:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 5), 8);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 5), 8);
             break;
         case 12:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 4), 8);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 4), 8);
             break;
         case 11:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 10:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 9:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 8:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x84;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x84;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
             break;
     }
 #endif // TARGET_AMD64
 
-    return dst;
+    return dstRW;
 }
 
 //--------------------------------------------------------------------
@@ -9454,7 +9454,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     emitComp->loopsAligned++;
 #endif
 
-    return emitOutputNOP(dst, paddingToAdd);
+    BYTE* dstRW = dst + writeableOffset;
+    dstRW       = emitOutputNOP(dstRW, paddingToAdd);
+    return dstRW - writeableOffset;
 }
 
 /*****************************************************************************
@@ -12775,7 +12777,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (ins == INS_nop)
             {
-                dst = emitOutputNOP(dst, id->idCodeSize());
+                BYTE* dstRW = dst + writeableOffset;
+                dstRW       = emitOutputNOP(dstRW, id->idCodeSize());
+                dst         = dstRW - writeableOffset;
                 break;
             }
 
@@ -13897,7 +13901,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 #endif
 
-            dst = emitOutputNOP(dst, diff);
+            BYTE* dstRW = dst + writeableOffset;
+            dstRW       = emitOutputNOP(dstRW, diff);
+            dst         = dstRW - writeableOffset;
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }
