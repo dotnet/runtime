@@ -6193,10 +6193,9 @@ void Compiler::fgValueNumber()
         }
         for (BasicBlock* const blk : Blocks())
         {
-            // Now iterate over the block's statements, and their trees.
             for (Statement* stmt : blk->NonPhiStatements())
             {
-                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+                for (GenTree* const tree : stmt->TreeList())
                 {
                     tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                 }
@@ -6542,7 +6541,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
-        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+        for (GenTree* const tree : stmt->TreeList())
         {
             fgValueNumberTree(tree);
         }

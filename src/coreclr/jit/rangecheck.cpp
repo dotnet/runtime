@@ -1478,7 +1478,7 @@ void RangeCheck::OptimizeRangeChecks()
     {
         for (Statement* stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (IsOverBudget())
                 {

@@ -7037,7 +7037,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
     // Now iterate over the remaining statements, and their trees.
     for (Statement* stmt : blk->NonPhiStatements())
     {
-        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+        for (GenTree* const tree : stmt->TreeList())
         {
             genTreeOps oper = tree->OperGet();
 
@@ -8184,7 +8184,7 @@ void Compiler::optRemoveRedundantZeroInits()
         for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
         {
             Statement* next = stmt->GetNextStmt();
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (((tree->gtFlags & GTF_CALL) != 0))
                 {

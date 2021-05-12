@@ -4826,7 +4826,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
         // Walk the statement trees in this basic block.
         for (Statement* stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->gtOper == GT_JTRUE)
                 {
@@ -5375,7 +5375,7 @@ void Compiler::optAssertionPropMain()
             }
 
             // Perform assertion gen for control flow based assertions.
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 optAssertionGen(tree);
             }

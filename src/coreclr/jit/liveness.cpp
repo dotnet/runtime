@@ -511,7 +511,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             for (Statement* stmt : block->NonPhiStatements())
             {
                 compCurStmt = stmt;
-                for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+                for (GenTree* const node : stmt->TreeList())
                 {
                     fgPerNodeLocalVarLiveness(node);
                 }

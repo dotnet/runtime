@@ -108,12 +108,11 @@ void Compiler::fgResetForSsa()
 
         for (Statement* stmt : blk->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->IsLocal())
                 {
                     tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
-                    continue;
                 }
             }
         }
@@ -540,7 +539,7 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
 
 #ifdef DEBUG
     unsigned seqNum = 1;
-    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+    for (GenTree* const node : stmt->TreeList())
     {
         node->gtSeqNum = seqNum++;
     }
@@ -590,7 +589,7 @@ void SsaBuilder::AddPhiArg(
 
 #ifdef DEBUG
     unsigned seqNum = 1;
-    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+    for (GenTree* const node : stmt->TreeList())
     {
         node->gtSeqNum = seqNum++;
     }
@@ -1057,7 +1056,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
     // Walk the statements of the block and rename definitions and uses.
     for (Statement* stmt : block->Statements())
     {
-        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+        for (GenTree* const tree : stmt->TreeList())
         {
             if (tree->OperIs(GT_ASG))
             {

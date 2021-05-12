@@ -29,7 +29,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperGet() == GT_CALL)
                 {

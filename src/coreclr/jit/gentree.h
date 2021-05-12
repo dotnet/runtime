@@ -5946,6 +5946,52 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
+class GenTreeIterator
+{
+    GenTree* m_tree;
+
+public:
+    GenTreeIterator(GenTree* tree) : m_tree(tree)
+    {
+    }
+
+    GenTree* operator*() const
+    {
+        return m_tree;
+    }
+
+    GenTreeIterator& operator++()
+    {
+        m_tree = m_tree->gtNext;
+        return *this;
+    }
+
+    bool operator!=(const GenTreeIterator& i) const
+    {
+        return m_tree != i.m_tree;
+    }
+};
+
+class GenTreeList
+{
+    GenTree* m_trees;
+
+public:
+    GenTreeList(GenTree* trees) : m_trees(trees)
+    {
+    }
+
+    GenTreeIterator begin() const
+    {
+        return GenTreeIterator(m_trees);
+    }
+
+    GenTreeIterator end() const
+    {
+        return GenTreeIterator(nullptr);
+    }
+};
+
 // We use the following format when printing the Statement number: Statement->GetID()
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_STMT "STMT%05u"
@@ -5991,6 +6037,13 @@ public:
     void SetTreeList(GenTree* treeHead)
     {
         m_treeList = treeHead;
+    }
+
+    // TreeList: an adaptor for use with range-based `for` loops, e.g.:
+    //    for (GenTree* const tree : stmt->TreeList()) ...
+    GenTreeList TreeList() const
+    {
+        return GenTreeList(GetTreeList());
     }
 
     InlineContext* GetInlineContext() const

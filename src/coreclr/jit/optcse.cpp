@@ -796,7 +796,7 @@ unsigned Compiler::optValnumCSE_Locate()
 
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperIsCompare() && stmtHasArrLenCandidate)
                 {
@@ -1403,7 +1403,7 @@ void Compiler::optValnumCSE_Availablity()
         {
             // We walk the tree in the forwards direction (bottom up)
 
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 bool isUse = false;
                 bool isDef = false;

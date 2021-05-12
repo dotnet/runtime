@@ -304,11 +304,11 @@ void Rationalizer::SanityCheck()
     // TODO: assert(!IsLIR());
     for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* statement : block->Statements())
+        for (Statement* stmt : block->Statements())
         {
-            ValidateStatement(statement, block);
+            ValidateStatement(stmt, block);
 
-            for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
                 assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
@@ -948,7 +948,7 @@ PhaseStatus Rationalizer::DoPhase()
             continue;
         }
 
-        for (Statement* statement : StatementList(firstStatement))
+        for (Statement* statement : block->Statements())
         {
             assert(statement->GetTreeList() != nullptr);
             assert(statement->GetTreeList()->gtPrev == nullptr);
