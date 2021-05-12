@@ -48,7 +48,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// managed code is not able to run at that time.
         ///
         /// The <paramref name="beginEndCallback"/> will be called when reference tracking begins and ends.
-        /// The associated begin/end pair will never be nested and will be called on the same thread.
+        /// The associated begin/end pair will never be nested. When using Workstation GC, the begin/end pair
+        /// will be called on the same thread. When using Server GC, the begin/end pair is not guaranteed to
+        /// be called on the same thread.
         ///
         /// The <paramref name="isReferencedCallback"/> should return 0 for not reference or 1 for
         /// referenced. Any other value has undefined behavior.
@@ -73,7 +75,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The <paramref name="obj"/> must have a type in its hierarchy marked with
         /// <see cref="ObjectiveCTrackedTypeAttribute"/>.
         ///
-        /// The "Is Referenced" callback passed to Initialize
+        /// The "Is Referenced" callback passed to Initialize()
         /// will be passed the <paramref name="taggedMemory"/> returned from this function.
         /// The memory it points at is defined by the length in the <see cref="Span{IntPtr}"/> and
         /// will be zeroed out. It will be available until <paramref name="obj"/> is collected by the GC.
