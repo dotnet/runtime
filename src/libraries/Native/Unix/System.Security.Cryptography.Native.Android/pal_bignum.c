@@ -5,6 +5,12 @@
 
 int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
 {
+    // JNI requires object passed to `Call*Method` to be not NULL
+    abort_if_invalid_pointer_argument (bignum);
+
+    // JNI requires `output` to be not NULL when passed to `{Get,Set}ByteArrayRegion`
+    abort_if_invalid_pointer_argument (output);
+
     // bigNum.toByteArray()
     JNIEnv* env = GetJNIEnv();
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
@@ -27,6 +33,9 @@ int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
 
 int32_t AndroidCryptoNative_GetBigNumBytes(jobject bignum)
 {
+    // JNI requires object passed to `Call*Method` to be not NULL
+    abort_if_invalid_pointer_argument (bignum);
+
     // bigNum.bitlength();
     // round up to the nearest byte
     JNIEnv* env = GetJNIEnv();
@@ -36,9 +45,12 @@ int32_t AndroidCryptoNative_GetBigNumBytes(jobject bignum)
 
 jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len)
 {
+    // JNI requires `bytes` to be not NULL when passed to `{Get,Set}ByteArrayRegion`
+    abort_if_invalid_pointer_argument (bytes);
+
     // return new BigInteger(bytes)
     JNIEnv* env = GetJNIEnv();
-    jbyteArray buffArray = (*env)->NewByteArray(env, len);
+    jbyteArray buffArray = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)bytes);
     jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, buffArray);
     (*env)->DeleteLocalRef(env, buffArray);
@@ -47,6 +59,9 @@ jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len)
 
 int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bignum)
 {
+    // JNI requires object passed to `Call*Method` to be not NULL
+    abort_if_invalid_pointer_argument (bignum);
+
     // Use the array here to get the leading zero byte if it exists.
     // bigNum.toByteArray().length();
     JNIEnv* env = GetJNIEnv();

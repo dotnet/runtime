@@ -1411,7 +1411,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return nullptr;
     }
 
-    return (asString->chars);
+    return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
 

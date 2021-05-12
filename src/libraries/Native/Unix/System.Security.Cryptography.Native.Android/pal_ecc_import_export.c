@@ -17,12 +17,12 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                         jobject* d,
                                         int32_t* cbD)
 {
-    assert(qx != NULL);
-    assert(cbQx != NULL);
-    assert(qy != NULL);
-    assert(cbQy != NULL);
-    assert(d != NULL);
-    assert(cbD != NULL);
+    abort_if_invalid_pointer_argument (qx);
+    abort_if_invalid_pointer_argument (cbQx);
+    abort_if_invalid_pointer_argument (qy);
+    abort_if_invalid_pointer_argument (cbQy);
+    abort_if_invalid_pointer_argument (d);
+    abort_if_invalid_pointer_argument (cbD);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -50,6 +50,8 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
 
     if (includePrivate)
     {
+        abort_if_invalid_pointer_argument (d);
+
         jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
 
         if (!privateKey)
@@ -115,22 +117,22 @@ int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
                                           jobject* seed,
                                           int32_t* cbSeed)
 {
-    assert(p != NULL);
-    assert(cbP != NULL);
-    assert(a != NULL);
-    assert(cbA != NULL);
-    assert(b != NULL);
-    assert(cbB != NULL);
-    assert(gx != NULL);
-    assert(cbGx != NULL);
-    assert(gy != NULL);
-    assert(cbGy != NULL);
-    assert(order != NULL);
-    assert(cbOrder != NULL);
-    assert(cofactor != NULL);
-    assert(cbCofactor != NULL);
-    assert(seed != NULL);
-    assert(cbSeed != NULL);
+    abort_if_invalid_pointer_argument (p);
+    abort_if_invalid_pointer_argument (cbP);
+    abort_if_invalid_pointer_argument (a);
+    abort_if_invalid_pointer_argument (cbA);
+    abort_if_invalid_pointer_argument (b);
+    abort_if_invalid_pointer_argument (cbB);
+    abort_if_invalid_pointer_argument (gx);
+    abort_if_invalid_pointer_argument (cbGx);
+    abort_if_invalid_pointer_argument (gy);
+    abort_if_invalid_pointer_argument (cbGy);
+    abort_if_invalid_pointer_argument (order);
+    abort_if_invalid_pointer_argument (cbOrder);
+    abort_if_invalid_pointer_argument (cofactor);
+    abort_if_invalid_pointer_argument (cbCofactor);
+    abort_if_invalid_pointer_argument (seed);
+    abort_if_invalid_pointer_argument (cbSeed);
 
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
     int32_t rc = AndroidCryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
@@ -159,7 +161,7 @@ int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
     }
     else
     {
-        assert((*env)->IsInstanceOf(env, loc[field], g_ECFieldFpClass));
+        abort_unless((*env)->IsInstanceOf(env, loc[field], g_ECFieldFpClass), "Must be an instance of java.security.spec.ECFieldFp");
         *curveType = PrimeShortWeierstrass;
         // Get the prime p
         bn[P] = (*env)->CallObjectMethod(env, loc[field], g_ECFieldFpGetP);
@@ -302,7 +304,7 @@ static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
     }
 
     // Create the private and public keys and put them into a key pair.
-    loc[algorithmName] = JSTRING("EC");
+    loc[algorithmName] = make_java_string(env, "EC");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
     loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[pubKeySpec]);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
@@ -341,11 +343,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                 uint8_t* d,
                                                 int32_t dLength)
 {
-    if (!key || !oid)
-    {
-        assert(false);
-        return 0;
-    }
+    abort_if_invalid_pointer_argument (key);
 
     *key = NULL;
 
@@ -377,7 +375,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 
 // Converts a java.math.BigInteger to a positive int32_t value.
 // Returns -1 if bigInteger < 0 or > INT32_MAX
-static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
+ARGS_NON_NULL_ALL static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
 {
     // bigInteger is negative.
     if ((*env)->CallIntMethod(env, bigInteger, g_sigNumMethod) < 0)
@@ -422,12 +420,15 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
                                                      uint8_t* seed,
                                                      int32_t seedLength)
 {
-    if (!p || !a || !b || !gx || !gy || !order || !cofactor)
-    {
-        // qx, qy, d and seed are optional
-        assert(false);
-        return 0;
-    }
+    abort_if_invalid_pointer_argument (p);
+    abort_if_invalid_pointer_argument (a);
+    abort_if_invalid_pointer_argument (b);
+    abort_if_invalid_pointer_argument (gx);
+    abort_if_invalid_pointer_argument (gy);
+    abort_if_invalid_pointer_argument (order);
+    abort_if_invalid_pointer_argument (cofactor);
+
+    // qx, qy, d and seed are optional
 
     JNIEnv* env = GetJNIEnv();
 
@@ -485,7 +486,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
 
     if (seed && seedLength > 0)
     {
-        loc[seedArray] = (*env)->NewByteArray(env, seedLength);
+        loc[seedArray] = make_java_byte_array(env, seedLength);
         (*env)->SetByteArrayRegion(env, loc[seedArray], 0, seedLength, (jbyte*)seed);
         loc[group] = (*env)->NewObject(env, g_EllipticCurveClass, g_EllipticCurveCtorWithSeed, loc[field], bn[A], bn[B], loc[seedArray]);
     }
@@ -522,7 +523,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     else
     {
         // Otherwise generate a new key pair.
-        jstring ec = JSTRING("EC");
+        jstring ec = make_java_string(env, "EC");
         jobject keyPairGenerator =
             (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
         (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeWithParamsMethod, loc[paramSpec]);
