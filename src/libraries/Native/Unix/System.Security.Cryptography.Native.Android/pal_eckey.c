@@ -8,8 +8,8 @@
 
 EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
 {
-    assert(curveParameters);
-    assert(keyPair);
+    abort_if_invalid_pointer_argument (curveParameters);
+    abort_if_invalid_pointer_argument (keyPair);
 
     EC_KEY* keyInfo = malloc(sizeof(EC_KEY));
     memset(keyInfo, 0, sizeof(EC_KEY));
@@ -21,7 +21,7 @@ EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
 
 EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*/ publicKey, jobject /*ECPrivateKey*/ privateKey)
 {
-    assert(publicKey != NULL);
+    abort_if_invalid_pointer_argument (publicKey);
 
     if (!(*env)->IsInstanceOf(env, publicKey, g_ECPublicKeyClass))
         return NULL;
@@ -71,6 +71,8 @@ int32_t AndroidCryptoNative_EcKeyUpRef(EC_KEY* r)
 
 EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
 {
+    abort_if_invalid_pointer_argument (oid);
+
     JNIEnv* env = GetJNIEnv();
 
     // Older versions of Android don't support mapping an OID to a curve name,
@@ -164,6 +166,7 @@ int32_t AndroidCryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 
 int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curveName)
 {
+    abort_if_invalid_pointer_argument (curveName);
     if (!g_ECParameterSpecGetCurveName)
     {
         // We can't get the curve name. Treat all curves as unnamed.
@@ -171,6 +174,7 @@ int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curv
         return SUCCESS;
     }
 
+    abort_if_invalid_pointer_argument (key);
     JNIEnv* env = GetJNIEnv();
 
     jstring curveNameStr = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurveName);

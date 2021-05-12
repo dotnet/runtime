@@ -47,7 +47,10 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
-    assert(rsa != NULL);
+    abort_if_invalid_pointer_argument (from);
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (rsa);
+
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = RSA_FAIL;
@@ -90,6 +93,9 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
 
     if (!rsa->privateKey)
         return RSA_FAIL;
+
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (from);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -180,6 +186,9 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* fr
         return RSA_FAIL;
     }
 
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (from);
+
     JNIEnv* env = GetJNIEnv();
 
     jobject algName = JSTRING("RSA/ECB/NoPadding");
@@ -211,6 +220,9 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
 {
     if (!rsa)
         return RSA_FAIL;
+
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (from);
 
     JNIEnv* env = GetJNIEnv();
 

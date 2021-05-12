@@ -29,8 +29,13 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
                                                              jobject* /*X509Certificate[]*/ extraStore,
                                                              int32_t extraStoreLen)
 {
-    assert(cert != NULL);
-    assert(extraStore != NULL || extraStoreLen == 0);
+    abort_if_invalid_pointer_argument (cert);
+
+    if (extraStore == NULL && extraStoreLen != 0) {
+        LOG_WARN ("No extra store pointer provided, but extra store length is %d", extraStoreLen);
+        extraStoreLen = 0;
+    }
+
     JNIEnv* env = GetJNIEnv();
 
     X509ChainContext* ret = NULL;
@@ -106,7 +111,7 @@ void AndroidCryptoNative_X509ChainDestroyContext(X509ChainContext* ctx)
 
 int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
@@ -151,7 +156,7 @@ cleanup:
 
 int32_t AndroidCryptoNative_X509ChainGetCertificateCount(X509ChainContext* ctx)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
     JNIEnv* env = GetJNIEnv();
 
     // List<Certificate> certPathList = certPath.getCertificates();
@@ -166,7 +171,7 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
                                                      jobject* /*X509Certificate[]*/ certs,
                                                      int32_t certsLen)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
@@ -176,6 +181,8 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     int certCount = (int)(*env)->CallIntMethod(env, certPathList, g_CollectionSize);
     if (certsLen < certCount + 1)
         goto cleanup;
+
+    abort_if_invalid_pointer_argument (certs);
 
     // for (int i = 0; i < certPathList.size(); ++i) {
     //     Certificate cert = certPathList.get(i);
@@ -210,7 +217,9 @@ cleanup:
 
 int32_t AndroidCryptoNative_X509ChainGetErrorCount(X509ChainContext* ctx)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument(ctx);
+    abort_unless(ctx->errorList != NULL, "errorList is NULL in X509ChainContext");
+
     JNIEnv* env = GetJNIEnv();
     int32_t count = (*env)->CallIntMethod(env, ctx->errorList, g_CollectionSize);
     if (ctx->revocationErrorList != NULL)
@@ -342,7 +351,9 @@ static void PopulateValidationError(JNIEnv* env, jobject error, bool isRevocatio
 
 int32_t AndroidCryptoNative_X509ChainGetErrors(X509ChainContext* ctx, ValidationError* errors, int32_t errorsLen)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
+    abort_unless(ctx->errorList != NULL, "errorList is NULL in X509ChainContext");
+
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
@@ -353,6 +364,8 @@ int32_t AndroidCryptoNative_X509ChainGetErrors(X509ChainContext* ctx, Validation
 
     if (errorsLen < errorCount + revocationErrorCount)
         goto exit;
+
+    abort_if_invalid_pointer_argument (errors);
 
     // for (int i = 0; i < errorList.size(); ++i) {
     //     Throwable error = errorList.get(i);
@@ -370,12 +383,14 @@ int32_t AndroidCryptoNative_X509ChainGetErrors(X509ChainContext* ctx, Validation
     //     Throwable error = revocationErrorList.get(i);
     //     << populate errors[i] >>
     // }
-    for (int32_t i = 0; i < revocationErrorCount; ++i)
-    {
-        jobject error = (*env)->CallObjectMethod(env, ctx->revocationErrorList, g_ListGet, i);
-        ON_EXCEPTION_PRINT_AND_GOTO(exit);
-        PopulateValidationError(env, error, true /*isRevocationError*/, &errors[errorCount + i]);
-        (*env)->DeleteLocalRef(env, error);
+    if(ctx->revocationErrorList != NULL) { // double check, don't just trust the count to protect us from a segfault
+        for (int32_t i = 0; i < revocationErrorCount; ++i)
+        {
+            jobject error = (*env)->CallObjectMethod(env, ctx->revocationErrorList, g_ListGet, i);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+            PopulateValidationError(env, error, true /*isRevocationError*/, &errors[errorCount + i]);
+            (*env)->DeleteLocalRef(env, error);
+        }
     }
 
     ret = SUCCESS;
@@ -388,7 +403,10 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
                                                          jobject* /*X509Certificate*/ customTrustStore,
                                                          int32_t customTrustStoreLen)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
+    if (customTrustStoreLen > 0) {
+        abort_if_invalid_pointer_argument (customTrustStore);
+    }
     JNIEnv* env = GetJNIEnv();
 
     // HashSet<TrustAnchor> anchors = new HashSet<TrustAnchor>(customTrustStoreLen);
@@ -453,8 +471,8 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
                                       PAL_X509RevocationMode revocationMode,
                                       PAL_X509RevocationFlag revocationFlag)
 {
-    assert(ctx != NULL);
-    assert(validator != NULL);
+    abort_if_invalid_pointer_argument (ctx);
+    abort_if_invalid_pointer_argument (validator);
 
     int32_t ret = FAIL;
     INIT_LOCALS(loc, certPathFromAnchor, options, checker, result, ex);
@@ -514,7 +532,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
     }
     else
     {
-        assert(revocationFlag == X509RevocationFlag_ExcludeRoot);
+        abort_unless(revocationFlag == X509RevocationFlag_ExcludeRoot, "revocationFlag must be X509RevocationFlag_ExcludeRoot");
         certPathToUse = ctx->certPath;
     }
 
@@ -562,8 +580,8 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
                                               PAL_X509RevocationFlag revocationFlag,
                                               bool* checkedRevocation)
 {
-    assert(ctx != NULL);
-    assert(checkedRevocation != NULL);
+    abort_if_invalid_pointer_argument (ctx);
+    abort_if_invalid_pointer_argument (checkedRevocation);
     JNIEnv* env = GetJNIEnv();
 
     *checkedRevocation = false;

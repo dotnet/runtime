@@ -69,6 +69,8 @@ static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
 
 CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
 {
+    abort_if_invalid_pointer_argument (type);
+
     JNIEnv* env = GetJNIEnv();
     jobject algName = GetAlgorithmName(env, type);
     if (!algName)
@@ -158,7 +160,7 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
     if (enc != -1)
     {
-        assert(enc == 0 || enc == 1);
+        abort_unless(enc == 0 || enc == 1, "The 'enc' parameter must be either 1 or 0");
         ctx->encMode = enc == 0 ? CIPHER_DECRYPT_MODE : CIPHER_ENCRYPT_MODE;
     }
 
@@ -211,6 +213,8 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
     if (!ctx)
         return FAIL;
 
+    abort_if_invalid_pointer_argument(in);
+
     JNIEnv* env = GetJNIEnv();
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
@@ -227,6 +231,9 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
     if (!outl && !in)
         // it means caller wants us to record "inl" but we don't need it.
         return SUCCESS;
+
+    abort_if_invalid_pointer_argument(outl);
+    abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
@@ -251,6 +258,9 @@ int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t
 {
     if (!ctx)
         return FAIL;
+
+    abort_if_invalid_pointer_argument(outm);
+    abort_if_invalid_pointer_argument(outl);
 
     JNIEnv* env = GetJNIEnv();
 
