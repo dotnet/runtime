@@ -241,7 +241,7 @@ jobs:
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
-      platform: Browser_wasm
+      platform: Browser_wasm_win
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
