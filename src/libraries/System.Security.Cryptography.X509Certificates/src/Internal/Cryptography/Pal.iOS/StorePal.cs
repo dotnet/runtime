@@ -25,10 +25,10 @@ namespace Internal.Cryptography.Pal
 
             AppleCertificatePal.TryDecodePem(
                 rawData,
-                derData =>
+                (derData, contentType) =>
                 {
                     certificateList = certificateList ?? new List<ICertificatePal>();
-                    certificateList.Add(AppleCertificatePal.FromBlob(derData, password, keyStorageFlags));
+                    certificateList.Add(AppleCertificatePal.FromDerBlob(derData, contentType, password, keyStorageFlags));
                     return true;
                 });
 

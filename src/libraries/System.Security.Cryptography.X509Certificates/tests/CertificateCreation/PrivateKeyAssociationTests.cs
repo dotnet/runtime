@@ -426,7 +426,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "DSA is not available of iOS/tvOS/MacCatalyst")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void ThirdPartyProvider_DSA()
         {
             using (DSA dsaOther = new DSAOther())

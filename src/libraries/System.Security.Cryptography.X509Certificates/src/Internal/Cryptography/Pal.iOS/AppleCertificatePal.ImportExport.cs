@@ -95,14 +95,13 @@ namespace Internal.Cryptography.Pal
             return contentType;
         }
 
-        private static ICertificatePal FromDerBlob(
+        internal static ICertificatePal FromDerBlob(
             ReadOnlySpan<byte> rawData,
+            X509ContentType contentType,
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
-
-            X509ContentType contentType = GetDerCertContentType(rawData);
 
             if (contentType == X509ContentType.Pkcs7)
             {
@@ -150,13 +149,13 @@ namespace Internal.Cryptography.Pal
             ICertificatePal? result = null;
             TryDecodePem(
                 rawData,
-                derData =>
+                (derData, contentType) =>
                 {
-                    result = FromDerBlob(derData, password, keyStorageFlags);
+                    result = FromDerBlob(derData, contentType, password, keyStorageFlags);
                     return false;
                 });
 
-            return result ?? FromDerBlob(rawData, password, keyStorageFlags);
+            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, keyStorageFlags);
         }
 
         public void DisposeTempKeychain()

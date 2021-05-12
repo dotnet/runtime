@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal
         // Byte representation of "-----BEGIN "
         private static byte[] pemBegin = new byte[] { 0x2D, 0x2D, 0x2D, 0x2D, 0x2D, 0x42, 0x45, 0x47, 0x49, 0x4E, 0x20 };
 
-        internal delegate bool DerCallback(ReadOnlySpan<byte> derData);
+        internal delegate bool DerCallback(ReadOnlySpan<byte> derData, X509ContentType contentType);
 
         internal static bool TryDecodePem(ReadOnlySpan<byte> rawData, DerCallback derCallback)
         {
@@ -57,7 +57,11 @@ namespace Internal.Cryptography.Pal
                             throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                         }
 
-                        bool cont = derCallback(certBytes.AsSpan(0, bytesWritten));
+                        X509ContentType contentType =
+                            label.SequenceEqual(PemLabels.X509Certificate) ?
+                            X509ContentType.Cert :
+                            X509ContentType.Pkcs7;
+                        bool cont = derCallback(certBytes.AsSpan(0, bytesWritten), contentType);
 
                         CryptoPool.Return(certBytes, clearSize: 0);
                         certBytes = null;
@@ -71,7 +75,7 @@ namespace Internal.Cryptography.Pal
             }
             finally
             {
-                ArrayPool<char>.Shared.Return(certPem);
+                ArrayPool<char>.Shared.Return(certPem, clearArray: true);
 
                 if (certBytes != null)
                 {

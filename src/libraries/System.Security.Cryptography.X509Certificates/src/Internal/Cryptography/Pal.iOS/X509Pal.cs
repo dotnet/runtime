@@ -65,9 +65,9 @@ namespace Internal.Cryptography.Pal
 
                 AppleCertificatePal.TryDecodePem(
                     rawData,
-                    derData =>
+                    (derData, contentType) =>
                     {
-                        result = AppleCertificatePal.GetDerCertContentType(derData);
+                        result = contentType;
                         return false;
                     });
 
