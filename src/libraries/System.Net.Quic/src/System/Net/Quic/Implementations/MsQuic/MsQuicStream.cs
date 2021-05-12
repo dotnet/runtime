@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private volatile bool _disposed;
 
-        private sealed class State
+        private sealed unsafe class State
         {
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
 
@@ -51,7 +51,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Buffers to hold during a call to send.
             public MemoryHandle[] BufferArrays = new MemoryHandle[1];
-            public SafeMsQuicBufferHandle SendBufferHandle = new SafeMsQuicBufferHandle(1);
+            public IntPtr SendQuicBuffers  = Marshal.AllocHGlobal(sizeof(QuicBuffer));
+            public int SendBufferMaxCount = 1;
             public int SendBufferCount;
 
             // Resettable completions to be used for multiple calls to send, start, and shutdown.
@@ -499,7 +500,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _disposed = true;
             _state.Handle.Dispose();
-            _state.SendBufferHandle.Dispose();
+            Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
         }
@@ -809,17 +810,16 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             MemoryHandle handle = buffer.Pin();
-            QuicBuffer* quicBuffer = (QuicBuffer*)_state.SendBufferHandle.DangerousGetHandle();
-
-            quicBuffer->Length = (uint)buffer.Length;
-            quicBuffer->Buffer = (byte*)handle.Pointer;
+            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendQuicBuffers;
+            quicBuffers->Length = (uint)buffer.Length;
+            quicBuffers->Buffer = (byte*)handle.Pointer;
 
             _state.BufferArrays[0] = handle;
             _state.SendBufferCount = 1;
 
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
-                _state.SendBufferHandle,
+                quicBuffers,
                 bufferCount: 1,
                 flags,
                 IntPtr.Zero);
@@ -864,17 +864,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 ++count;
             }
 
-            if (_state.SendBufferHandle.Count < count)
+            if (_state.SendBufferMaxCount < count)
             {
-                _state.SendBufferHandle.Dispose();
-                _state.SendBufferHandle = new SafeMsQuicBufferHandle(count);
+                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                _state.SendBufferMaxCount = count;
+                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * count);
                 _state.BufferArrays = new MemoryHandle[count];
             }
 
             _state.SendBufferCount = count;
             count = 0;
 
-            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendBufferHandle.DangerousGetHandle();
+            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendQuicBuffers;
             foreach (ReadOnlyMemory<byte> buffer in buffers)
             {
                 MemoryHandle handle = buffer.Pin();
@@ -886,7 +887,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
-                _state.SendBufferHandle,
+                quicBuffers,
                 (uint)count,
                 flags,
                 IntPtr.Zero);
@@ -927,15 +928,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             uint length = (uint)array.Length;
 
-            if (_state.SendBufferHandle.Count < array.Length)
+            if (_state.SendBufferMaxCount < array.Length)
             {
-                _state.SendBufferHandle.Dispose();
-                _state.SendBufferHandle = new SafeMsQuicBufferHandle(array.Length);
+                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                _state.SendBufferMaxCount = array.Length;
+                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * array.Length);
                 _state.BufferArrays = new MemoryHandle[array.Length];
             }
 
             _state.SendBufferCount = array.Length;
-            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendBufferHandle.DangerousGetHandle();
+            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendQuicBuffers;
             for (int i = 0; i < length; i++)
             {
                 ReadOnlyMemory<byte> buffer = array[i];
@@ -949,7 +951,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
-                _state.SendBufferHandle,
+                quicBuffers,
                 length,
                 flags,
                 IntPtr.Zero);
