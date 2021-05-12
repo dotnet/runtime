@@ -934,11 +934,11 @@ void MyICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,                      // [I
                            unsigned int*         cILOffsets,               // [OUT] size of pILOffsets
                            uint32_t**            pILOffsets,               // [OUT] IL offsets of interest
                                                                            //       jit MUST free with freeArray!
-                           ICorDebugInfo::BoundaryTypes* implictBoundaries // [OUT] tell jit, all boundries of this type
+                           ICorDebugInfo::BoundaryTypes* implicitBoundaries // [OUT] tell jit, all boundaries of this type
                            )
 {
     jitInstance->mc->cr->AddCall("getBoundaries");
-    jitInstance->mc->repGetBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    jitInstance->mc->repGetBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 
     // The JIT will want to call freearray on the array we pass back, so move the data into a form that complies with
     // this

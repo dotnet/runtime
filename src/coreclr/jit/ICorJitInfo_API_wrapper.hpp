@@ -929,10 +929,10 @@ void WrapICorJitInfo::getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries)
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     API_ENTER(getBoundaries);
-    wrapHnd->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    wrapHnd->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
     API_LEAVE(getBoundaries);
 }
 
