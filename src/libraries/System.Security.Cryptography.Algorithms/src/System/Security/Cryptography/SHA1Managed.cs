@@ -6,6 +6,7 @@ using System.ComponentModel;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     // SHA1Managed has a copy of the same implementation as SHA1
     public sealed class SHA1Managed : SHA1

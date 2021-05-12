@@ -245,9 +245,6 @@ static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* hand
 
 static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream)
 {
-    assert(env != NULL);
-    assert(sslStream != NULL);
-
     PAL_SSLStreamStatus status = SSLStreamStatus_OK;
     int handshakeStatus =
         GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
@@ -275,7 +272,6 @@ static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream)
 
 static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
 {
-    assert(sslStream != NULL);
     ReleaseGRef(env, sslStream->sslContext);
     ReleaseGRef(env, sslStream->sslEngine);
     ReleaseGRef(env, sslStream->sslSession);
@@ -309,6 +305,9 @@ static int32_t AddCertChainToStore(JNIEnv* env,
                                    jobject* /*X509Certificate[]*/ certs,
                                    int32_t certsLen)
 {
+    abort_if_invalid_pointer_argument (pkcs8PrivateKey);
+    abort_if_invalid_pointer_argument (certs);
+
     int32_t ret = FAIL;
     INIT_LOCALS(loc, keyBytes, keySpec, algorithmName, keyFactory, privateKey, certArray, alias);
 
@@ -428,10 +427,10 @@ cleanup:
 int32_t AndroidCryptoNative_SSLStreamInitialize(
     SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize)
 {
-    assert(sslStream != NULL);
-    assert(sslStream->sslContext != NULL);
-    assert(sslStream->sslEngine == NULL);
-    assert(sslStream->sslSession == NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_unless(sslStream->sslContext != NULL, "sslContext is NULL in SSL stream");
+    abort_unless(sslStream->sslEngine == NULL, "sslEngine is NOT NULL in SSL stream");
+    abort_unless(sslStream->sslSession == NULL, "sslSession is NOT NULL in SSL stream");
 
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
@@ -478,8 +477,8 @@ exit:
 
 int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost)
 {
-    assert(sslStream != NULL);
-    assert(targetHost != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (targetHost);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -514,7 +513,7 @@ cleanup:
 
 PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream* sslStream)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
     JNIEnv* env = GetJNIEnv();
 
     // sslEngine.beginHandshake();
@@ -528,8 +527,8 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream* sslStream)
 PAL_SSLStreamStatus
 AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t length, int32_t* read)
 {
-    assert(sslStream != NULL);
-    assert(read != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (read);
 
     jbyteArray data = NULL;
     JNIEnv* env = GetJNIEnv();
@@ -602,7 +601,7 @@ cleanup:
 
 PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int32_t length)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
 
     JNIEnv* env = GetJNIEnv();
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
@@ -654,7 +653,8 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 
 int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int32_t* outLen)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (outLen);
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
@@ -683,8 +683,8 @@ cleanup:
 
 int32_t AndroidCryptoNative_SSLStreamGetCipherSuite(SSLStream* sslStream, uint16_t** out)
 {
-    assert(sslStream != NULL);
-    assert(out != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (out);
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
@@ -704,8 +704,8 @@ cleanup:
 
 int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream* sslStream, uint16_t** out)
 {
-    assert(sslStream != NULL);
-    assert(out != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (out);
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
@@ -725,7 +725,7 @@ cleanup:
 
 jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
 
     JNIEnv* env = GetJNIEnv();
     jobject ret = NULL;
@@ -753,8 +753,9 @@ cleanup:
 
 void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobject** out, int32_t* outLen)
 {
-    assert(sslStream != NULL);
-    assert(out != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (out);
+    abort_if_invalid_pointer_argument (outLen);
 
     JNIEnv* env = GetJNIEnv();
     *out = NULL;
@@ -788,7 +789,7 @@ cleanup:
 
 void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStream)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
     JNIEnv* env = GetJNIEnv();
 
     // sslEngine.setWantClientAuth(true);
@@ -799,9 +800,13 @@ int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStrea
                                                              ApplicationProtocolData* protocolData,
                                                              int32_t count)
 {
-    assert(sslStream != NULL);
-    assert(protocolData != NULL);
-    assert(AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration());
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (protocolData);
+
+    if (!AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration()) {
+        LOG_ERROR ("SSL does not support application protocols configuration");
+        return FAIL;
+    }
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
@@ -860,7 +865,8 @@ static jstring GetSslProtocolAsString(JNIEnv* env, PAL_SslProtocol protocol)
 int32_t
 AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream, PAL_SslProtocol* protocols, int32_t count)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (protocols);
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
@@ -887,8 +893,8 @@ cleanup:
 
 bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hostname)
 {
-    assert(sslStream != NULL);
-    assert(hostname != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
+    abort_if_invalid_pointer_argument (hostname);
     JNIEnv* env = GetJNIEnv();
 
     bool ret = false;
@@ -907,7 +913,7 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
 
 bool AndroidCryptoNative_SSLStreamShutdown(SSLStream* sslStream)
 {
-    assert(sslStream != NULL);
+    abort_if_invalid_pointer_argument (sslStream);
     JNIEnv* env = GetJNIEnv();
 
     PAL_SSLStreamStatus status = Close(env, sslStream);

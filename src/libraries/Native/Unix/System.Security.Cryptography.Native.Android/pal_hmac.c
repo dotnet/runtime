@@ -6,8 +6,9 @@
 
 jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
 {
-    assert(key || (keyLen == 0));
-    assert(keyLen >= 0);
+    if (key != NULL && keyLen < 0) {
+        return NULL;
+    }
 
     // Mac mac = Mac.getInstance(algName);
     // SecretKeySpec key = new SecretKeySpec(key, algName);
@@ -46,14 +47,19 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     }
 
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
-    if (CheckJNIExceptions(env))
+    if (CheckJNIExceptions(env) || sksObj == NULL)
     {
+        if(sksObj == NULL)
+        {
+            LOG_WARN ("Unable to create an instance of SecretKeySpec");
+        }
+
         (*env)->DeleteLocalRef(env, keyBytes);
         (*env)->DeleteLocalRef(env, sksObj);
         (*env)->DeleteLocalRef(env, macName);
         return FAIL;
     }
-    assert(sksObj && "Unable to create an instance of SecretKeySpec");
+
     jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, macName));
     (*env)->CallVoidMethod(env, macObj, g_MacInit, sksObj);
     (*env)->DeleteLocalRef(env, keyBytes);
@@ -79,6 +85,7 @@ int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
     if (!ctx)
         return FAIL;
 
+    abort_if_invalid_pointer_argument (data);
     JNIEnv* env = GetJNIEnv();
     jbyteArray dataBytes = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, dataBytes, 0, len, (jbyte*)data);
@@ -102,7 +109,7 @@ static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data, int32_t* len)
 
 int32_t CryptoNative_HmacFinal(jobject ctx, uint8_t* data, int32_t* len)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
 
     JNIEnv* env = GetJNIEnv();
     return DoFinal(env, ctx, data, len);
@@ -110,7 +117,7 @@ int32_t CryptoNative_HmacFinal(jobject ctx, uint8_t* data, int32_t* len)
 
 int32_t CryptoNative_HmacCurrent(jobject ctx, uint8_t* data, int32_t* len)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;

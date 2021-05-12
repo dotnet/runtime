@@ -124,6 +124,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithIPAddress(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -164,6 +165,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithIPAddress_AddressAsString(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -195,6 +197,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -254,6 +257,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithIPAddressAndTimeoutAndBuffer_Unix()
         {
             byte[] buffer = TestSettings.PayloadAsBytes;
@@ -342,6 +346,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -403,6 +408,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithHost()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -429,6 +435,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithHostAndTimeout()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -488,6 +495,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithHostAndTimeoutAndBuffer_Unix()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -572,6 +580,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -636,6 +645,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
