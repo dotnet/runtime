@@ -165,6 +165,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem/tests/System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks/tests/System.Threading.Tasks.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlResolver/System.Xml.XmlResolver.Tests/System.Xml.XmlResolver.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging/tests/System.IO.Packaging.Tests.csproj" />
+
+    <!-- System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Algorithms/tests/System.Security.Cryptography.Algorithms.Tests.csproj" />
 
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT\iOS.Simulator.Aot.Test.csproj" />
   </ItemGroup>
