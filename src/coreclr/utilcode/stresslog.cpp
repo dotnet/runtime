@@ -253,7 +253,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
-    int moduleIndex = 0;
+    unsigned moduleIndex = 0;
 #ifdef MEMORY_MAPPED_STRESSLOG
     StressLogHeader* hdr = theLog.stressLogHeader;
 #endif //MEMORY_MAPPED_STRESSLOG
