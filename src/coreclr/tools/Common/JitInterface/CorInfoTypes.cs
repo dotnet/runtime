@@ -313,6 +313,25 @@ namespace Internal.JitInterface
         public int Other;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AllocMemArgs
+    {
+        // Input arguments
+        public uint hotCodeSize;
+        public uint coldCodeSize;
+        public uint roDataSize;
+        public uint xcptnsCount;
+        public CorJitAllocMemFlag flag;
+
+        // Output arguments
+        public void* hotCodeBlock;
+        public void* hotCodeBlockRW;
+        public void* coldCodeBlock;
+        public void* coldCodeBlockRW;
+        public void* roDataBlock;
+        public void* roDataBlockRW;
+    }
+
     // Flags computed by a runtime compiler
     public enum CorInfoMethodRuntimeFlags
     {

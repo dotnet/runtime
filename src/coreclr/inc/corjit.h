@@ -142,6 +142,24 @@ enum CheckedWriteBarrierKinds {
     CWBKind_AddrOfLocal,     // Store through the address of a local (arguably a bug that this happens at all).
 };
 
+struct AllocMemArgs
+{
+    // Input arguments
+    uint32_t hotCodeSize;
+    uint32_t coldCodeSize;
+    uint32_t roDataSize;
+    uint32_t xcptnsCount;
+    CorJitAllocMemFlag flag;
+
+    // Output arguments
+    void* hotCodeBlock;
+    void* hotCodeBlockRW;
+    void* coldCodeBlock;
+    void* coldCodeBlockRW;
+    void* roDataBlock;
+    void* roDataBlockRW;
+};
+
 #include "corjithost.h"
 
 extern "C" void jitStartup(ICorJitHost* host);
@@ -212,17 +230,7 @@ class ICorJitInfo : public ICorDynamicInfo
 public:
     // get a block of memory for the code, readonly data, and read-write data
     virtual void allocMem (
-            uint32_t               hotCodeSize,    /* IN */
-            uint32_t               coldCodeSize,   /* IN */
-            uint32_t               roDataSize,     /* IN */
-            uint32_t               xcptnsCount,    /* IN */
-            CorJitAllocMemFlag  flag,           /* IN */
-            void **             hotCodeBlock,   /* OUT */
-            void **             hotCodeBlockRW, /* OUT */
-            void **             coldCodeBlock,  /* OUT */
-            void **             coldCodeBlockRW,/* OUT */
-            void **             roDataBlock,     /* OUT */
-            void **             roDataBlockRW   /* OUT */
+            AllocMemArgs *pArgs
             ) = 0;
 
     // Reserve memory for the method/funclet's unwind information.

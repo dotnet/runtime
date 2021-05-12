@@ -1601,57 +1601,46 @@ static void* ALIGN_UP_SPMI(void* val, size_t alignment)
 }
 
 // get a block of memory for the code, readonly data, and read-write data
-void MyICJI::allocMem(uint32_t           hotCodeSize,   /* IN */
-                      uint32_t           coldCodeSize,  /* IN */
-                      uint32_t           roDataSize,    /* IN */
-                      uint32_t           xcptnsCount,   /* IN */
-                      CorJitAllocMemFlag flag,          /* IN */
-                      void **             hotCodeBlock,   /* OUT */
-                      void **             hotCodeBlockRW, /* OUT */
-                      void **             coldCodeBlock,  /* OUT */
-                      void **             coldCodeBlockRW,/* OUT */
-                      void **             roDataBlock,    /* OUT */
-                      void **             roDataBlockRW   /* OUT */
-                      )
+void MyICJI::allocMem(AllocMemArgs* pArgs)
 {
     jitInstance->mc->cr->AddCall("allocMem");
 
     // TODO-Cleanup: Could hot block size be ever 0?
     size_t codeAlignment      = sizeof(void*);
-    size_t hotCodeAlignedSize = static_cast<size_t>(hotCodeSize);
+    size_t hotCodeAlignedSize = static_cast<size_t>(pArgs->hotCodeSize);
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
          codeAlignment = 32;
     }
-    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
          codeAlignment = 16;
     }
     hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
     hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
-    *hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
-    *hotCodeBlock      = ALIGN_UP_SPMI(*hotCodeBlock, codeAlignment);
+    pArgs->hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
+    pArgs->hotCodeBlock      = ALIGN_UP_SPMI(pArgs->hotCodeBlock, codeAlignment);
 
-    if (coldCodeSize > 0)
-        *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
+    if (pArgs->coldCodeSize > 0)
+        pArgs->coldCodeBlock = jitInstance->mc->cr->allocateMemory(pArgs->coldCodeSize);
     else
-        *coldCodeBlock = nullptr;
+        pArgs->coldCodeBlock = nullptr;
 
-    if (roDataSize > 0)
+    if (pArgs->roDataSize > 0)
     {
         size_t roDataAlignment   = sizeof(void*);
-        size_t roDataAlignedSize = static_cast<size_t>(roDataSize);
+        size_t roDataAlignedSize = static_cast<size_t>(pArgs->roDataSize);
 
-        if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
         {
             roDataAlignment = 32;
         }
-        else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
         {
             roDataAlignment = 16;
         }
-        else if (roDataSize >= 8)
+        else if (pArgs->roDataSize >= 8)
         {
             roDataAlignment = 8;
         }
@@ -1663,18 +1652,18 @@ void MyICJI::allocMem(uint32_t           hotCodeSize,   /* IN */
 
         roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
         roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
-        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
-        *roDataBlock = ALIGN_UP_SPMI(*roDataBlock, roDataAlignment);
+        pArgs->roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
+        pArgs->roDataBlock = ALIGN_UP_SPMI(pArgs->roDataBlock, roDataAlignment);
     }
     else
-        *roDataBlock = nullptr;
+        pArgs->roDataBlock = nullptr;
 
-    *hotCodeBlockRW = *hotCodeBlock;
-    *coldCodeBlockRW = *coldCodeBlock;
-    *roDataBlockRW = *roDataBlock;
+    pArgs->hotCodeBlockRW = pArgs->hotCodeBlock;
+    pArgs->coldCodeBlockRW = pArgs->coldCodeBlock;
+    pArgs->roDataBlockRW = pArgs->roDataBlock;
 
-    jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
-                                     coldCodeBlock, roDataBlock);
+    jitInstance->mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock,
+                                     &pArgs->coldCodeBlock, &pArgs->roDataBlock);
 }
 
 // Reserve memory for the method/funclet's unwind information.

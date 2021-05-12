@@ -5314,19 +5314,18 @@ void emitter::emitComputeCodeSizes()
 }
 
 //------------------------------------------------------------------------
-// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+// writeCode: write code bytes into the specified blocks of memory
 //
 // Arguments:
-//    comp - compiler instance
 //    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
-//    fullInt - true if method has fully interruptible gc reporting
-//    fullPtrMap - true if gc reporting should use full register pointer map
-//    xcptnsCount - number of EH clauses to report for the method
 //    prologSize [OUT] - prolog size in bytes
 //    epilogSize [OUT] - epilog size in bytes (see notes)
-//    codeAddr [OUT] - address of the code buffer
-//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
-//    consAddr [OUT] - address of the read only constant buffer (if any)
+//    codeBlock [IN] - executable memory address of the code buffer
+//    codeBlockRW [IN] - writeable memory address of the code buffer
+//    coldCodeBlock [IN] - executable memory address of the cold code buffer (if any)
+//    coldCodeBlockRW [IN] - writeable memory address of the cold code buffer (if any)
+//    consBlock [IN] - executable memory address of the read only constant buffer (if any)
+//    instrCount [OUT] - number of generated instructions (debug build only)
 //
 // Notes:
 //    Currently, in methods with multiple epilogs, all epilogs must have the same
@@ -5336,229 +5335,16 @@ void emitter::emitComputeCodeSizes()
 // Returns:
 //    size of the method code, in bytes
 //
-unsigned emitter::emitEndCodeGen(Compiler* comp,
-                                 bool      contTrkPtrLcls,
-                                 bool      fullyInt,
-                                 bool      fullPtrMap,
-                                 unsigned  xcptnsCount,
-                                 unsigned* prologSize,
-                                 unsigned* epilogSize,
-                                 void**    codeAddr,
-                                 void**    coldCodeAddr,
-                                 void** consAddr DEBUGARG(unsigned* instrCount))
+unsigned emitter::writeCode(bool contTrkPtrLcls,
+                            unsigned* prologSize,
+                            unsigned* epilogSize,
+                            BYTE* codeBlock,
+                            BYTE* codeBlockRW,
+                            BYTE* coldCodeBlock,
+                            BYTE* coldCodeBlockRW,
+                            BYTE* consBlock DEBUGARG(unsigned* instrCount))
 {
-#ifdef DEBUG
-    if (emitComp->verbose)
-    {
-        printf("*************** In emitEndCodeGen()\n");
-    }
-#endif
-
-    BYTE* consBlock;
-    BYTE* consBlockRW;
-    BYTE* codeBlock;
-    BYTE* codeBlockRW;
-    BYTE* coldCodeBlock;
-    BYTE* coldCodeBlockRW;
     BYTE* cp;
-
-    assert(emitCurIG == nullptr);
-
-    emitCodeBlock = nullptr;
-    emitConsBlock = nullptr;
-
-    emitOffsAdj = 0;
-
-    /* Tell everyone whether we have fully interruptible code or not */
-
-    emitFullyInt   = fullyInt;
-    emitFullGCinfo = fullPtrMap;
-
-#ifndef UNIX_X86_ABI
-    emitFullArgInfo = !emitHasFramePtr;
-#else
-    emitFullArgInfo = fullPtrMap;
-#endif
-
-#if EMITTER_STATS
-    GCrefsTable.record(emitGCrFrameOffsCnt);
-    emitSizeTable.record(static_cast<unsigned>(emitSizeMethod));
-    stkDepthTable.record(emitMaxStackDepth);
-#endif // EMITTER_STATS
-
-    // Default values, correct even if EMIT_TRACK_STACK_DEPTH is 0.
-    emitSimpleStkUsed         = true;
-    u1.emitSimpleStkMask      = 0;
-    u1.emitSimpleByrefStkMask = 0;
-
-#if EMIT_TRACK_STACK_DEPTH
-    /* Convert max. stack depth from # of bytes to # of entries */
-
-    unsigned maxStackDepthIn4ByteElements = emitMaxStackDepth / sizeof(int);
-    JITDUMP("Converting emitMaxStackDepth from bytes (%d) to elements (%d)\n", emitMaxStackDepth,
-            maxStackDepthIn4ByteElements);
-    emitMaxStackDepth = maxStackDepthIn4ByteElements;
-
-    /* Should we use the simple stack */
-
-    if (emitMaxStackDepth > MAX_SIMPLE_STK_DEPTH || emitFullGCinfo)
-    {
-        /* We won't use the "simple" argument table */
-
-        emitSimpleStkUsed = false;
-
-        /* Allocate the argument tracking table */
-
-        if (emitMaxStackDepth <= sizeof(u2.emitArgTrackLcl))
-        {
-            u2.emitArgTrackTab = (BYTE*)u2.emitArgTrackLcl;
-        }
-        else
-        {
-            u2.emitArgTrackTab = (BYTE*)emitGetMem(roundUp(emitMaxStackDepth));
-        }
-
-        u2.emitArgTrackTop   = u2.emitArgTrackTab;
-        u2.emitGcArgTrackCnt = 0;
-    }
-#endif
-
-    if (emitEpilogCnt == 0)
-    {
-        /* No epilogs, make sure the epilog size is set to 0 */
-
-        emitEpilogSize = 0;
-
-#ifdef TARGET_XARCH
-        emitExitSeqSize = 0;
-#endif // TARGET_XARCH
-    }
-
-    /* Return the size of the epilog to the caller */
-
-    *epilogSize = emitEpilogSize;
-
-#ifdef TARGET_XARCH
-    *epilogSize += emitExitSeqSize;
-#endif // TARGET_XARCH
-
-#ifdef DEBUG
-    if (EMIT_INSTLIST_VERBOSE)
-    {
-        printf("\nInstruction list before instruction issue:\n\n");
-        emitDispIGlist(true);
-    }
-
-    emitCheckIGoffsets();
-#endif
-
-    /* Allocate the code block (and optionally the data blocks) */
-
-    // If we're doing procedure splitting and we found cold blocks, then
-    // allocate hot and cold buffers.  Otherwise only allocate a hot
-    // buffer.
-
-    coldCodeBlock = nullptr;
-
-    CorJitAllocMemFlag allocMemFlag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
-
-#ifdef TARGET_X86
-    //
-    // These are the heuristics we use to decide whether or not to force the
-    // code to be 16-byte aligned.
-    //
-    // 1. For ngen code with IBC data, use 16-byte alignment if the method
-    //    has been called more than ScenarioHotWeight times.
-    // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
-    //    when the code is 16 bytes or smaller. We align small getters/setters
-    //    because of they are penalized heavily on certain hardware when not 16-byte
-    //    aligned (VSWhidbey #373938). To minimize size impact of this optimization,
-    //    we do not align large methods because of the penalty is amortized for them.
-    //
-    if (emitComp->fgHaveProfileData())
-    {
-        const float scenarioHotWeight = 256.0f;
-        if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
-        {
-            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
-        }
-    }
-    else
-    {
-        if (emitTotalHotCodeSize <= 16)
-        {
-            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
-        }
-    }
-#endif
-
-#ifdef TARGET_XARCH
-    // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
-    // they are larger than 16 bytes and contain a loop.
-    //
-    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-        (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
-    {
-        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
-    }
-#endif
-
-    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
-    assert(isPow2(emitConsDsc.alignment) && (emitConsDsc.alignment <= 32));
-
-    if (emitConsDsc.alignment == 16)
-    {
-        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
-    }
-    else if (emitConsDsc.alignment == 32)
-    {
-        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN);
-    }
-
-#ifdef TARGET_ARM64
-    // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
-    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
-    if (emitTotalColdCodeSize > 0)
-    {
-        // JIT data might be far away from the cold code.
-        NYI_ARM64("Need to handle fix-up to data from cold code.");
-    }
-
-    UNATIVE_OFFSET roDataAlignmentDelta = 0;
-    if (emitConsDsc.dsdOffs && (emitConsDsc.alignment == TARGET_POINTER_SIZE))
-    {
-        UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
-        roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
-        assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
-    }
-    emitCmpHandle->allocMem(emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs, emitTotalColdCodeSize, 0,
-                            xcptnsCount, allocMemFlag, (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock,
-                            (void**)&coldCodeBlockRW, (void**)&consBlock, (void**)&consBlockRW);
-
-    consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
-
-#else
-    emitCmpHandle->allocMem(emitTotalHotCodeSize, emitTotalColdCodeSize, emitConsDsc.dsdOffs, xcptnsCount, allocMemFlag,
-                            (void**)&codeBlock, (void**)&codeBlockRW, (void**)&coldCodeBlock, (void**)&coldCodeBlockRW,
-                            (void**)&consBlock, (void**)&consBlockRW);
-#endif
-
-#ifdef DEBUG
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
-    {
-        assert(((size_t)codeBlock & 31) == 0);
-    }
-#endif
-
-    // if (emitConsDsc.dsdOffs)
-    //     printf("Cons=%08X\n", consBlock);
-
-    /* Give the block addresses to the caller and other functions here */
-
-    *codeAddr = emitCodeBlock = codeBlock;
-    *coldCodeAddr = emitColdCodeBlock = coldCodeBlock;
-    *consAddr = emitConsBlock = consBlock;
 
     /* Nothing has been pushed on the stack */
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -6160,14 +5946,328 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // Assign the real prolog size
     *prologSize = emitCodeOffset(emitPrologIG, emitPrologEndPos);
 
+    return actualCodeSize;
+}
+
+//------------------------------------------------------------------------
+// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+//
+// Arguments:
+//    comp - compiler instance
+//    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
+//    fullInt - true if method has fully interruptible gc reporting
+//    fullPtrMap - true if gc reporting should use full register pointer map
+//    xcptnsCount - number of EH clauses to report for the method
+//    prologSize [OUT] - prolog size in bytes
+//    epilogSize [OUT] - epilog size in bytes (see notes)
+//    codeAddr [OUT] - address of the code buffer
+//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
+//    consAddr [OUT] - address of the read only constant buffer (if any)
+//
+// Notes:
+//    Currently, in methods with multiple epilogs, all epilogs must have the same
+//    size. epilogSize is the size of just one of these epilogs, not the cumulative
+//    size of all of the method's epilogs.
+//
+// Returns:
+//    size of the method code, in bytes
+//
+unsigned emitter::emitEndCodeGen(Compiler* comp,
+                                 bool      contTrkPtrLcls,
+                                 bool      fullyInt,
+                                 bool      fullPtrMap,
+                                 unsigned  xcptnsCount,
+                                 unsigned* prologSize,
+                                 unsigned* epilogSize,
+                                 void**    codeAddr,
+                                 void**    coldCodeAddr,
+                                 void** consAddr DEBUGARG(unsigned* instrCount))
+{
+#ifdef DEBUG
+    if (emitComp->verbose)
+    {
+        printf("*************** In emitEndCodeGen()\n");
+    }
+#endif
+
+    BYTE* consBlock;
+    BYTE* consBlockRW;
+    BYTE* codeBlock;
+    BYTE* codeBlockRW;
+    BYTE* coldCodeBlock;
+    BYTE* coldCodeBlockRW;
+    
+    assert(emitCurIG == nullptr);
+
+    emitCodeBlock = nullptr;
+    emitConsBlock = nullptr;
+
+    emitOffsAdj = 0;
+
+    /* Tell everyone whether we have fully interruptible code or not */
+
+    emitFullyInt   = fullyInt;
+    emitFullGCinfo = fullPtrMap;
+
+#ifndef UNIX_X86_ABI
+    emitFullArgInfo = !emitHasFramePtr;
+#else
+    emitFullArgInfo = fullPtrMap;
+#endif
+
+#if EMITTER_STATS
+    GCrefsTable.record(emitGCrFrameOffsCnt);
+    emitSizeTable.record(static_cast<unsigned>(emitSizeMethod));
+    stkDepthTable.record(emitMaxStackDepth);
+#endif // EMITTER_STATS
+
+    // Default values, correct even if EMIT_TRACK_STACK_DEPTH is 0.
+    emitSimpleStkUsed         = true;
+    u1.emitSimpleStkMask      = 0;
+    u1.emitSimpleByrefStkMask = 0;
+
+#if EMIT_TRACK_STACK_DEPTH
+    /* Convert max. stack depth from # of bytes to # of entries */
+
+    unsigned maxStackDepthIn4ByteElements = emitMaxStackDepth / sizeof(int);
+    JITDUMP("Converting emitMaxStackDepth from bytes (%d) to elements (%d)\n", emitMaxStackDepth,
+            maxStackDepthIn4ByteElements);
+    emitMaxStackDepth = maxStackDepthIn4ByteElements;
+
+    /* Should we use the simple stack */
+
+    if (emitMaxStackDepth > MAX_SIMPLE_STK_DEPTH || emitFullGCinfo)
+    {
+        /* We won't use the "simple" argument table */
+
+        emitSimpleStkUsed = false;
+
+        /* Allocate the argument tracking table */
+
+        if (emitMaxStackDepth <= sizeof(u2.emitArgTrackLcl))
+        {
+            u2.emitArgTrackTab = (BYTE*)u2.emitArgTrackLcl;
+        }
+        else
+        {
+            u2.emitArgTrackTab = (BYTE*)emitGetMem(roundUp(emitMaxStackDepth));
+        }
+
+        u2.emitArgTrackTop   = u2.emitArgTrackTab;
+        u2.emitGcArgTrackCnt = 0;
+    }
+#endif
+
+    if (emitEpilogCnt == 0)
+    {
+        /* No epilogs, make sure the epilog size is set to 0 */
+
+        emitEpilogSize = 0;
+
+#ifdef TARGET_XARCH
+        emitExitSeqSize = 0;
+#endif // TARGET_XARCH
+    }
+
+    /* Return the size of the epilog to the caller */
+
+    *epilogSize = emitEpilogSize;
+
+#ifdef TARGET_XARCH
+    *epilogSize += emitExitSeqSize;
+#endif // TARGET_XARCH
+
+#ifdef DEBUG
+    if (EMIT_INSTLIST_VERBOSE)
+    {
+        printf("\nInstruction list before instruction issue:\n\n");
+        emitDispIGlist(true);
+    }
+
+    emitCheckIGoffsets();
+#endif
+
+    /* Allocate the code block (and optionally the data blocks) */
+
+    // If we're doing procedure splitting and we found cold blocks, then
+    // allocate hot and cold buffers.  Otherwise only allocate a hot
+    // buffer.
+
+    coldCodeBlock = nullptr;
+
+    CorJitAllocMemFlag allocMemFlag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+
+#ifdef TARGET_X86
+    //
+    // These are the heuristics we use to decide whether or not to force the
+    // code to be 16-byte aligned.
+    //
+    // 1. For ngen code with IBC data, use 16-byte alignment if the method
+    //    has been called more than ScenarioHotWeight times.
+    // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
+    //    when the code is 16 bytes or smaller. We align small getters/setters
+    //    because of they are penalized heavily on certain hardware when not 16-byte
+    //    aligned (VSWhidbey #373938). To minimize size impact of this optimization,
+    //    we do not align large methods because of the penalty is amortized for them.
+    //
+    if (emitComp->fgHaveProfileData())
+    {
+        const float scenarioHotWeight = 256.0f;
+        if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
+        {
+            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+        }
+    }
+    else
+    {
+        if (emitTotalHotCodeSize <= 16)
+        {
+            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+        }
+    }
+#endif
+
+#ifdef TARGET_XARCH
+    // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
+    // they are larger than 16 bytes and contain a loop.
+    //
+    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+        (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
+    {
+        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
+    }
+#endif
+
+    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32 bytes
+    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    assert(isPow2(emitConsDsc.alignment) && (emitConsDsc.alignment <= 32));
+
+    if (emitConsDsc.alignment == 16)
+    {
+        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
+    }
+    else if (emitConsDsc.alignment == 32)
+    {
+        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN);
+    }
+
+    AllocMemArgs args;
+    memset(&args, 0, sizeof(args));
+
+#ifdef TARGET_ARM64
+    // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
+    if (emitTotalColdCodeSize > 0)
+    {
+        // JIT data might be far away from the cold code.
+        NYI_ARM64("Need to handle fix-up to data from cold code.");
+    }
+
+    UNATIVE_OFFSET roDataAlignmentDelta = 0;
+    if (emitConsDsc.dsdOffs && (emitConsDsc.alignment == TARGET_POINTER_SIZE))
+    {
+        UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
+        roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
+        assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
+    }
+
+    args.hotCodeSize = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
+    args.coldCodeSize = emitTotalColdCodeSize;
+    args.roDataSize = 0;
+    args.xcptnsCount = xcptnsCount;
+    args.flag = allocMemFlag;
+
+    emitCmpHandle->allocMem(&args);
+
+    codeBlock = (BYTE*)args.hotCodeBlock;
+    codeBlockRW = (BYTE*)args.hotCodeBlockRW;
+    coldCodeBlock = (BYTE*)args.coldCodeBlock;
+    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
+
+    consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
+    consBlockRW = codeBlockRW + emitTotalHotCodeSize + roDataAlignmentDelta;
+
+#else
+
+    args.hotCodeSize = emitTotalHotCodeSize;
+    args.coldCodeSize = emitTotalColdCodeSize;
+    args.roDataSize = emitConsDsc.dsdOffs;
+    args.xcptnsCount = xcptnsCount;
+    args.flag = allocMemFlag;
+
+    emitCmpHandle->allocMem(&args);
+
+    codeBlock = (BYTE*)args.hotCodeBlock;
+    codeBlockRW = (BYTE*)args.hotCodeBlockRW;
+    coldCodeBlock = (BYTE*)args.coldCodeBlock;
+    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
+    consBlock = (BYTE*)args.roDataBlock;
+    consBlockRW = (BYTE*)args.roDataBlockRW;
+
+#endif
+
+#ifdef DEBUG
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)codeBlock & 31) == 0);
+    }
+#endif
+
+    // if (emitConsDsc.dsdOffs)
+    //     printf("Cons=%08X\n", consBlock);
+
+    /* Give the block addresses to the caller and other functions here */
+
+    *codeAddr = emitCodeBlock = codeBlock;
+    *coldCodeAddr = emitColdCodeBlock = coldCodeBlock;
+    *consAddr = emitConsBlock = consBlock;
+
+    struct Param
+    {
+        emitter* pThis;
+        unsigned actualCodeSize;
+        bool contTrkPtrLcls;
+        unsigned* prologSize;
+        unsigned* epilogSize;
+        BYTE* codeBlock;
+        BYTE* codeBlockRW;
+        BYTE* coldCodeBlock;
+        BYTE* coldCodeBlockRW;
+        BYTE* consBlock;
+        INDEBUG(unsigned* instrCount;)
+    } param;
+
+    param.pThis = this;
+    param.contTrkPtrLcls = contTrkPtrLcls;
+    param.prologSize = prologSize;
+    param.epilogSize = epilogSize;
+    param.codeBlock = codeBlock;
+    param.codeBlockRW = codeBlockRW;
+    param.coldCodeBlock = coldCodeBlock;
+    param.coldCodeBlockRW = coldCodeBlockRW;
+    param.consBlock = consBlock;
+#ifdef DEBUG
+    param.instrCount = instrCount;
+#endif
+
+    bool success = comp->eeRunWithErrorTrap<Param>(
+        [](Param* pParam) {
+            pParam->actualCodeSize = pParam->pThis->writeCode(pParam->contTrkPtrLcls, pParam->prologSize, pParam->epilogSize, pParam->codeBlock, pParam->codeBlockRW, pParam->coldCodeBlock, pParam->coldCodeBlockRW, pParam->consBlock DEBUGARG(pParam->instrCount));
+        }, &param);
+
     // Ensure that any attempt to write code after this point will fail
     writeableOffset = 0;
-    // Notify the EE that all code was written. It can switch off writeable code memory.
+    // Notify the EE that all code writing is done. It can switch off writeable code memory.
     emitCmpHandle->doneWritingCode();
+
+    if (!success)
+    {
+        fatal(CORJIT_INTERNALERROR);
+    }
 
     /* Return the amount of code we've generated */
 
-    return actualCodeSize;
+    return param.actualCodeSize;
 }
 
 // See specification comment at the declaration.

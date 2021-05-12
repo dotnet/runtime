@@ -1250,20 +1250,10 @@ bool interceptor_ICJI::notifyInstructionSetUsage(
 }
 
 void interceptor_ICJI::allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** hotCodeBlockRW,
-          void** coldCodeBlock,
-          void** coldCodeBlockRW,
-          void** roDataBlock,
-          void** roDataBlockRW)
+          AllocMemArgs* pArgs)
 {
     mcs->AddCall("allocMem");
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, hotCodeBlockRW, coldCodeBlock, coldCodeBlockRW, roDataBlock, roDataBlockRW);
+    original_ICorJitInfo->allocMem(pArgs);
 }
 
 void interceptor_ICJI::reserveUnwindInfo(

@@ -636,19 +636,7 @@ class CEEJitInfo : public CEEInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem (
-            uint32_t            hotCodeSize,    /* IN */
-            uint32_t            coldCodeSize,   /* IN */
-            uint32_t            roDataSize,     /* IN */
-            uint32_t            xcptnsCount,    /* IN */
-            CorJitAllocMemFlag  flag,           /* IN */
-            void **             hotCodeBlock,   /* OUT */
-            void **             hotCodeBlockRW, /* OUT */
-            void **             coldCodeBlock,  /* OUT */
-            void **             coldCodeBlockRW,/* OUT */
-            void **             roDataBlock,    /* OUT */
-            void **             roDataBlockRW   /* OUT */
-            ) override final;
+    void allocMem (AllocMemArgs *pArgs) override final;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
 

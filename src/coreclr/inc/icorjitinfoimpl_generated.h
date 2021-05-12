@@ -635,17 +635,7 @@ bool notifyInstructionSetUsage(
           bool supportEnabled) override;
 
 void allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** hotCodeBlockRW,
-          void** coldCodeBlock,
-          void** coldCodeBlockRW,
-          void** roDataBlock,
-          void** roDataBlockRW) override;
+          AllocMemArgs* pArgs) override;
 
 void reserveUnwindInfo(
           bool isFunclet,

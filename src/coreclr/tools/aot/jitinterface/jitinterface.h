@@ -167,7 +167,7 @@ struct JitInterfaceCallbacks
     bool (* getTailCallHelpers)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool mustConvert);
     bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_InstructionSet instructionSet, bool supportEnabled);
-    void (* allocMem)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t hotCodeSize, uint32_t coldCodeSize, uint32_t roDataSize, uint32_t xcptnsCount, CorJitAllocMemFlag flag, void** hotCodeBlock, void** hotCodeBlockRW, void** coldCodeBlock, void** coldCodeBlockRW, void** roDataBlock, void** roDataBlockRW);
+    void (* allocMem)(void * thisHandle, CorInfoExceptionClass** ppException, AllocMemArgs* pArgs);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, bool isFunclet, bool isColdCode, uint32_t unwindSize);
     void (* allocUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, uint8_t* pHotCode, uint8_t* pColdCode, uint32_t startOffset, uint32_t endOffset, uint32_t unwindSize, uint8_t* pUnwindBlock, CorJitFuncKind funcKind);
     void* (* allocGCInfo)(void * thisHandle, CorInfoExceptionClass** ppException, size_t size);
@@ -1696,20 +1696,10 @@ public:
 }
 
     virtual void allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** hotCodeBlockRW,
-          void** coldCodeBlock,
-          void** coldCodeBlockRW,
-          void** roDataBlock,
-          void** roDataBlockRW)
+          AllocMemArgs* pArgs)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->allocMem(_thisHandle, &pException, hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, hotCodeBlockRW, coldCodeBlock, coldCodeBlockRW, roDataBlock, roDataBlockRW);
+    _callbacks->allocMem(_thisHandle, &pException, pArgs);
     if (pException != nullptr) throw pException;
 }
 

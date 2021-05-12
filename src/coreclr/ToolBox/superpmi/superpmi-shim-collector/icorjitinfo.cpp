@@ -1929,24 +1929,12 @@ bool interceptor_ICJI::runWithErrorTrap(void (*function)(void*), void* param)
 }
 
 // get a block of memory for the code, readonly data, and read-write data
-void interceptor_ICJI::allocMem(uint32_t           hotCodeSize,   /* IN */
-                                uint32_t           coldCodeSize,  /* IN */
-                                uint32_t           roDataSize,    /* IN */
-                                uint32_t           xcptnsCount,   /* IN */
-                                CorJitAllocMemFlag flag,          /* IN */
-                                void **             hotCodeBlock,   /* OUT */
-                                void **             hotCodeBlockRW, /* OUT */
-                                void **             coldCodeBlock,  /* OUT */
-                                void **             coldCodeBlockRW,/* OUT */
-                                void **             roDataBlock,    /* OUT */
-                                void **             roDataBlockRW   /* OUT */
-                                )
+void interceptor_ICJI::allocMem(AllocMemArgs *pArgs)
 {
     mc->cr->AddCall("allocMem");
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, hotCodeBlockRW,
-                                   coldCodeBlock, coldCodeBlockRW, roDataBlock, roDataBlockRW);
-    mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock,
-                        roDataBlock);
+    original_ICorJitInfo->allocMem(pArgs);
+    mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock, &pArgs->coldCodeBlock,
+                        &pArgs->roDataBlock);
 }
 
 void interceptor_ICJI::doneWritingCode()

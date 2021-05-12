@@ -3070,50 +3070,50 @@ namespace Internal.JitInterface
         {
         }
 
-        private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* hotCodeBlockRW, ref void* coldCodeBlock, ref void* coldCodeBlockRW, ref void* roDataBlock, ref void* roDataBlockRW)
+        private void allocMem(ref AllocMemArgs args)
         {
-            hotCodeBlock = (void*)GetPin(_code = new byte[hotCodeSize]);
-            hotCodeBlockRW = hotCodeBlock;
+            args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
+            args.hotCodeBlockRW = args.hotCodeBlock;
 
-            if (coldCodeSize != 0)
+            if (args.coldCodeSize != 0)
             {
-                coldCodeBlock = (void*)GetPin(_coldCode = new byte[coldCodeSize]);
-                coldCodeBlockRW = coldCodeBlock;
+                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
+                args.coldCodeBlockRW = args.coldCodeBlock;
             }
 
             _codeAlignment = -1;
-            if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
             {
                 _codeAlignment = 32;
             }
-            else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
             {
                 _codeAlignment = 16;
             }
 
-            if (roDataSize != 0)
+            if (args.roDataSize != 0)
             {
                 _roDataAlignment = 8;
 
-                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
                 {
                     _roDataAlignment = 32;
                 }
-                else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
                 {
                     _roDataAlignment = 16;
                 }
-                else if (roDataSize < 8)
+                else if (args.roDataSize < 8)
                 {
                     _roDataAlignment = PointerSize;
                 }
 
-                _roData = new byte[roDataSize];
+                _roData = new byte[args.roDataSize];
 
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
 
-                roDataBlock = (void*)GetPin(_roData);
-                roDataBlockRW = roDataBlock;
+                args.roDataBlock = (void*)GetPin(_roData);
+                args.roDataBlockRW = args.roDataBlock;
             }
 
             if (_numFrameInfos > 0)
