@@ -1817,7 +1817,7 @@ struct CORINFO_Object
 struct CORINFO_String : public CORINFO_Object
 {
     unsigned                stringLen;
-    WCHAR                   chars[1];       // actually of variable size
+    char16_t                chars[1];       // actually of variable size
 };
 
 struct CORINFO_Array : public CORINFO_Object
