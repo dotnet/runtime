@@ -112,8 +112,8 @@ PhaseStatus Compiler::fgInline()
         }
     }
 
-    BasicBlock* block = fgFirstBB;
-    bool madeChanges = false;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
 
     do
     {
