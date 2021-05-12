@@ -29,18 +29,18 @@ struct ApplicationProtocolData_t
     int32_t length;
 };
 
-static uint16_t* AllocateString(JNIEnv* env, jstring source);
+ARGS_NON_NULL(1) static uint16_t* AllocateString(JNIEnv* env, jstring source);
 
-static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream);
-static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus);
-static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus);
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream);
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus);
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus);
 
 static bool IsHandshaking(int handshakeStatus)
 {
     return handshakeStatus != HANDSHAKE_STATUS__NOT_HANDSHAKING && handshakeStatus != HANDSHAKE_STATUS__FINISHED;
 }
 
-static PAL_SSLStreamStatus Close(JNIEnv* env, SSLStream* sslStream)
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus Close(JNIEnv* env, SSLStream* sslStream)
 {
     // Call wrap to clear any remaining data before closing
     int unused;
@@ -55,7 +55,7 @@ static PAL_SSLStreamStatus Close(JNIEnv* env, SSLStream* sslStream)
     return DoWrap(env, sslStream, &unused);
 }
 
-static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslStream)
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslStream)
 {
     /*
         netOutBuffer.flip();
@@ -69,12 +69,12 @@ static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslStream)
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferFlip));
     int32_t bufferLimit = (*env)->CallIntMethod(env, sslStream->netOutBuffer, g_ByteBufferLimit);
-    jbyteArray data = (*env)->NewByteArray(env, bufferLimit);
+    jbyteArray data = make_java_byte_array(env, bufferLimit);
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferGet, data));
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    uint8_t* dataPtr = (uint8_t*)malloc((size_t)bufferLimit);
+    uint8_t* dataPtr = (uint8_t*)xmalloc((size_t)bufferLimit);
     (*env)->GetByteArrayRegion(env, data, 0, bufferLimit, (jbyte*)dataPtr);
     sslStream->streamWriter(dataPtr, bufferLimit);
     free(dataPtr);
@@ -89,7 +89,7 @@ cleanup:
     return ret;
 }
 
-static jobject ExpandBuffer(JNIEnv* env, jobject oldBuffer, int32_t newCapacity)
+ARGS_NON_NULL_ALL static jobject ExpandBuffer(JNIEnv* env, jobject oldBuffer, int32_t newCapacity)
 {
     // oldBuffer.flip();
     // ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
@@ -102,7 +102,7 @@ static jobject ExpandBuffer(JNIEnv* env, jobject oldBuffer, int32_t newCapacity)
     return newBuffer;
 }
 
-static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer, int32_t newRemaining)
+ARGS_NON_NULL_ALL static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer, int32_t newRemaining)
 {
     int32_t oldRemaining = (*env)->CallIntMethod(env, oldBuffer, g_ByteBufferRemaining);
     if (oldRemaining < newRemaining)
@@ -115,7 +115,7 @@ static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer, int32_t newRemain
     }
 }
 
-static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus)
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus)
 {
     // appOutBuffer.flip();
     // SSLEngineResult result = sslEngine.wrap(appOutBuffer, netOutBuffer);
@@ -163,7 +163,7 @@ static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handsh
     }
 }
 
-static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus)
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus)
 {
     // if (netInBuffer.position() == 0)
     // {
@@ -174,8 +174,8 @@ static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* hand
     if ((*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferPosition) == 0)
     {
         int netInBufferLimit = (*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferLimit);
-        jbyteArray tmp = (*env)->NewByteArray(env, netInBufferLimit);
-        uint8_t* tmpNative = (uint8_t*)malloc((size_t)netInBufferLimit);
+        jbyteArray tmp = make_java_byte_array(env, netInBufferLimit);
+        uint8_t* tmpNative = (uint8_t*)xmalloc((size_t)netInBufferLimit);
         int count = netInBufferLimit;
         PAL_SSLStreamStatus status = sslStream->streamReader(tmpNative, &count);
         if (status != SSLStreamStatus_OK)
@@ -243,7 +243,7 @@ static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* hand
     }
 }
 
-static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream)
+ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream)
 {
     PAL_SSLStreamStatus status = SSLStreamStatus_OK;
     int handshakeStatus =
@@ -270,7 +270,7 @@ static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream)
     return status;
 }
 
-static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
+ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
 {
     ReleaseGRef(env, sslStream->sslContext);
     ReleaseGRef(env, sslStream->sslEngine);
@@ -291,12 +291,12 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(void)
     if (CheckJNIExceptions(env))
         return NULL;
 
-    SSLStream* sslStream = malloc(sizeof(SSLStream));
-    memset(sslStream, 0, sizeof(SSLStream));
+    SSLStream* sslStream = xcalloc(1, sizeof(SSLStream));
     sslStream->sslContext = ToGRef(env, sslContext);
     return sslStream;
 }
 
+ARGS_NON_NULL_ALL
 static int32_t AddCertChainToStore(JNIEnv* env,
                                    jobject store,
                                    uint8_t* pkcs8PrivateKey,
@@ -313,20 +313,20 @@ static int32_t AddCertChainToStore(JNIEnv* env,
 
     // byte[] keyBytes = new byte[] { <pkcs8PrivateKey> };
     // PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-    loc[keyBytes] = (*env)->NewByteArray(env, pkcs8PrivateKeyLen);
+    loc[keyBytes] = make_java_byte_array(env, pkcs8PrivateKeyLen);
     (*env)->SetByteArrayRegion(env, loc[keyBytes], 0, pkcs8PrivateKeyLen, (jbyte*)pkcs8PrivateKey);
     loc[keySpec] = (*env)->NewObject(env, g_PKCS8EncodedKeySpec, g_PKCS8EncodedKeySpecCtor, loc[keyBytes]);
 
     switch (algorithm)
     {
         case PAL_DSA:
-            loc[algorithmName] = JSTRING("DSA");
+            loc[algorithmName] = make_java_string(env, "DSA");
             break;
         case PAL_EC:
-            loc[algorithmName] = JSTRING("EC");
+            loc[algorithmName] = make_java_string(env, "EC");
             break;
         case PAL_RSA:
-            loc[algorithmName] = JSTRING("RSA");
+            loc[algorithmName] = make_java_string(env, "RSA");
             break;
         default:
             LOG_ERROR("Unknown key algorithm: %d", algorithm);
@@ -340,7 +340,7 @@ static int32_t AddCertChainToStore(JNIEnv* env,
     loc[privateKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[keySpec]);
 
     // X509Certificate[] certArray = new X509Certificate[certsLen];
-    loc[certArray] = (*env)->NewObjectArray(env, certsLen, g_X509CertClass, NULL);
+    loc[certArray] = make_java_object_array(env, certsLen, g_X509CertClass, NULL);
     for (int32_t i = 0; i < certsLen; ++i)
     {
         (*env)->SetObjectArrayElement(env, loc[certArray], i, certs[i]);
@@ -348,7 +348,7 @@ static int32_t AddCertChainToStore(JNIEnv* env,
     }
 
     // store.setKeyEntry("SSLCertificateContext", privateKey, null, certArray);
-    loc[alias] = JSTRING("SSLCertificateContext");
+    loc[alias] = make_java_string(env, "SSLCertificateContext");
     (*env)->CallVoidMethod(env, store, g_KeyStoreSetKeyEntry, loc[alias], loc[privateKey], NULL, loc[certArray]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -371,13 +371,13 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
     INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers);
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
-    loc[tls13] = JSTRING("TLSv1.3");
+    loc[tls13] = make_java_string(env, "TLSv1.3");
     loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, loc[tls13]);
     if (TryClearJNIExceptions(env))
     {
         // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
         // sslContext = SSLContext.getInstance("TLSv1.2");
-        jobject tls12 = JSTRING("TLSv1.2");
+        jobject tls12 = make_java_string(env, "TLSv1.2");
         loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
         ReleaseLRef(env, tls12);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -399,7 +399,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
 
     // String kmfType = "PKIX";
     // KeyManagerFactory kmf = KeyManagerFactory.getInstance(kmfType);
-    loc[kmfType] = JSTRING("PKIX");
+    loc[kmfType] = make_java_string(env, "PKIX");
     loc[kmf] = (*env)->CallStaticObjectMethod(env, g_KeyManagerFactory, g_KeyManagerFactoryGetInstance, loc[kmfType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -414,8 +414,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8Pri
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], NULL, NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    sslStream = malloc(sizeof(SSLStream));
-    memset(sslStream, 0, sizeof(SSLStream));
+    sslStream = xcalloc(1, sizeof(SSLStream));
     sslStream->sslContext = ToGRef(env, loc[sslContext]);
     loc[sslContext] = NULL;
 
@@ -488,7 +487,7 @@ int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* t
     // ArrayList<SNIServerName> nameList = new ArrayList<SNIServerName>();
     // SNIHostName hostName = new SNIHostName(targetHost);
     // nameList.add(hostName);
-    loc[hostStr] = JSTRING(targetHost);
+    loc[hostStr] = make_java_string(env, targetHost);
     loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
@@ -580,7 +579,7 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
 
     if (rem > 0)
     {
-        data = (*env)->NewByteArray(env, rem);
+        data = make_java_byte_array(env, rem);
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferGet, data));
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferCompact));
@@ -611,7 +610,7 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     // byte[] data = new byte[arraySize];
     int32_t remaining = (*env)->CallIntMethod(env, sslStream->appOutBuffer, g_ByteBufferRemaining);
     int32_t arraySize = length > remaining ? remaining : length;
-    jbyteArray data = (*env)->NewByteArray(env, arraySize);
+    jbyteArray data = make_java_byte_array(env, arraySize);
 
     int32_t written = 0;
     while (written < length)
@@ -775,7 +774,7 @@ void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobj
     *outLen = len;
     if (len > 0)
     {
-        *out = malloc(sizeof(jobject) * (size_t)len);
+        *out = xmalloc(sizeof(jobject) * (size_t)len);
         for (int32_t i = 0; i < len; i++)
         {
             jobject cert = (*env)->GetObjectArrayElement(env, certs, i);
@@ -813,16 +812,16 @@ int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStrea
     INIT_LOCALS(loc, protocols, params);
 
     // String[] protocols = new String[count];
-    loc[protocols] = (*env)->NewObjectArray(env, count, g_String, NULL);
+    loc[protocols] = make_java_object_array(env, count, g_String, NULL);
     for (int32_t i = 0; i < count; ++i)
     {
         // Data length + 1 for null terminator
         int32_t len = protocolData[i].length;
-        char* data = (char*)malloc((size_t)(len + 1) * sizeof(char));
+        char* data = (char*)xmalloc((size_t)(len + 1) * sizeof(char));
         memcpy(data, protocolData[i].data, (size_t)len);
         data[len] = '\0';
 
-        jstring protocol = JSTRING(data);
+        jstring protocol = make_java_string(env, data);
         free(data);
         (*env)->SetObjectArrayElement(env, loc[protocols], i, protocol);
         (*env)->DeleteLocalRef(env, protocol);
@@ -849,13 +848,13 @@ static jstring GetSslProtocolAsString(JNIEnv* env, PAL_SslProtocol protocol)
     switch (protocol)
     {
         case PAL_SslProtocol_Tls10:
-            return JSTRING("TLSv1");
+            return make_java_string(env, "TLSv1");
         case PAL_SslProtocol_Tls11:
-            return JSTRING("TLSv1.1");
+            return make_java_string(env, "TLSv1.1");
         case PAL_SslProtocol_Tls12:
-            return JSTRING("TLSv1.2");
+            return make_java_string(env, "TLSv1.2");
         case PAL_SslProtocol_Tls13:
-            return JSTRING("TLSv1.3");
+            return make_java_string(env, "TLSv1.3");
         default:
             LOG_ERROR("Unsupported SslProtocols value: %d", protocol);
             return NULL;
@@ -872,7 +871,7 @@ AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream, PAL_SslPr
     int32_t ret = FAIL;
 
     // String[] protocolsArray = new String[count];
-    jobjectArray protocolsArray = (*env)->NewObjectArray(env, count, g_String, NULL);
+    jobjectArray protocolsArray = make_java_object_array(env, count, g_String, NULL);
     for (int32_t i = 0; i < count; ++i)
     {
         jstring protocol = GetSslProtocolAsString(env, protocols[i]);
@@ -902,7 +901,7 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
 
     // HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
     // return verifier.verify(hostname, sslSession);
-    loc[name] = JSTRING(hostname);
+    loc[name] = make_java_string(env, hostname);
     loc[verifier] =
         (*env)->CallStaticObjectMethod(env, g_HttpsURLConnection, g_HttpsURLConnectionGetDefaultHostnameVerifier);
     ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], sslStream->sslSession);
@@ -929,7 +928,7 @@ static uint16_t* AllocateString(JNIEnv* env, jstring source)
     jsize len = (*env)->GetStringLength(env, source);
 
     // +1 for null terminator.
-    uint16_t* buffer = malloc(sizeof(uint16_t) * (size_t)(len + 1));
+    uint16_t* buffer = xmalloc(sizeof(uint16_t) * (size_t)(len + 1));
     buffer[len] = '\0';
 
     (*env)->GetStringRegion(env, source, 0, len, (jchar*)buffer);

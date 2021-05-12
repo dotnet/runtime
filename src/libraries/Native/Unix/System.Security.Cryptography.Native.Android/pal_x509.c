@@ -12,9 +12,9 @@
 #include <stdbool.h>
 #include <string.h>
 
-static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
+ARGS_NON_NULL(1,2,4) static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
 
-static void FindCertStart(const uint8_t** buffer, int32_t* len);
+ARGS_NON_NULL_ALL static void FindCertStart(const uint8_t** buffer, int32_t* len);
 
 // Handles both DER and PEM formats
 jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, int32_t len)
@@ -31,7 +31,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, i
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
-    loc[bytes] = (*env)->NewByteArray(env, len);
+    loc[bytes] = make_java_byte_array(env, len);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
@@ -39,7 +39,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, i
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
     // return (X509Certificate)certFactory.generateCertificate(stream);
-    loc[certType] = JSTRING("X.509");
+    loc[certType] = make_java_string(env, "X.509");
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -86,13 +86,13 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
-    loc[bytes] = (*env)->NewByteArray(env, bufLen);
+    loc[bytes] = make_java_byte_array(env, bufLen);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, bufLen, (const jbyte*)buf);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-    loc[certType] = JSTRING("X.509");
+    loc[certType] = make_java_string(env, "X.509");
     loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -172,7 +172,7 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     }
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-    loc[certType] = JSTRING("X.509");
+    loc[certType] = make_java_string(env, "X.509");
     loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -181,7 +181,7 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     loc[certPath] =
         (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertPathFromList, loc[certList]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[pkcs7Type] = JSTRING("PKCS7");
+    loc[pkcs7Type] = make_java_string(env, "PKCS7");
     loc[encoded] = (*env)->CallObjectMethod(env, loc[certPath], g_CertPathGetEncoded, loc[pkcs7Type]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -212,18 +212,18 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
-    loc[bytes] = (*env)->NewByteArray(env, len);
+    loc[bytes] = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
     loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-    loc[certType] = JSTRING("X.509");
+    loc[certType] = make_java_string(env, "X.509");
     loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // CertPath certPath = certFactory.generateCertPath(stream, "PKCS7");
-    loc[pkcs7Type] = JSTRING("PKCS7");
+    loc[pkcs7Type] = make_java_string(env, "PKCS7");
     loc[certPath] = (*env)->CallObjectMethod(
         env, loc[certFactory], g_CertFactoryGenerateCertPathFromStream, loc[stream], loc[pkcs7Type]);
     if (!TryClearJNIExceptions(env))
