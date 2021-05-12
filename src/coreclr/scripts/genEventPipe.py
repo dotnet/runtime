@@ -3,7 +3,7 @@ from genEventing import *
 from genLttngProvider import *
 import os
 import xml.dom.minidom as DOM
-from utilities import open_for_update, parseExclusionList
+from utilities import open_for_update, parseExclusionList, parseInclusionList
 
 stdprolog_cpp = """// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
@@ -72,8 +72,20 @@ def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces.append(")")
     return ''.join(sig_pieces)
 
+def includeEvent(inclusionList, providerName, eventName):
+    if len(inclusionList) == 0:
+        return True
+    if providerName in inclusionList and eventName in inclusionList[providerName]:
+        return True
+    elif "*" in inclusionList and eventName in inclusionList["*"]:
+        return True
+    elif "*" in inclusionList and "*" in inclusionList["*"]:
+        return True
+    else:
+        return False
+
 def generateClrEventPipeWriteEventsImpl(
-        providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, exclusionList):
+        providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList):
     providerPrettyName = providerName.replace("Windows-", '')
     providerPrettyName = providerPrettyName.replace("Microsoft-", '')
     providerPrettyName = providerPrettyName.replace('-', '_')
@@ -82,6 +94,10 @@ def generateClrEventPipeWriteEventsImpl(
     # EventPipeEvent declaration
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
+
+        if not includeEvent(inclusionList, providerName, eventName):
+            continue
+
         WriteEventImpl.append(
             "EventPipeEvent *EventPipeEvent" +
             eventName +
@@ -92,6 +108,10 @@ def generateClrEventPipeWriteEventsImpl(
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
+
+        if not includeEvent(inclusionList, providerName, eventName):
+            continue
+
         eventIsEnabledFunc = ""
         if runtimeFlavor == RuntimeFlavor.coreclr:
             eventIsEnabledFunc = "EventPipeAdapter::EventIsEnabled"
@@ -182,6 +202,9 @@ def generateClrEventPipeWriteEventsImpl(
         eventLevel = eventNode.getAttribute('level')
         eventLevel = eventLevel.replace("win:", "EP_EVENT_LEVEL_").upper()
         taskName = eventNode.getAttribute('task')
+
+        if not includeEvent(inclusionList, providerName, eventName):
+            continue
 
         needStack = "true"
         for nostackentry in exclusionList.nostack:
@@ -669,11 +692,8 @@ def getCoreCLREventPipeImplFileSuffix():
     return ""
 
 def getMonoEventPipeImplFilePrefix():
-    return """#include <config.h>
+    return """#include <eventpipe/ep-rt-config.h>
 #ifdef ENABLE_PERFTRACING
-#include <eventpipe/ep-rt-config.h>
-#include <eventpipe/ep-types.h>
-#include <eventpipe/ep-rt.h>
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-event.h>
 %s
@@ -865,7 +885,7 @@ def getMonoEventPipeImplFileSuffix():
     return "#endif\n"
 
 def generateEventPipeImplFiles(
-        etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, exclusionList, dryRun):
+        etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
     tree = DOM.parse(etwmanifest)
 
     # Find the src directory starting with the assumption that
@@ -930,6 +950,7 @@ def generateEventPipeImplFiles(
                         extern,
                         target_cpp,
                         runtimeFlavor,
+                        inclusionList,
                         exclusionList) + "\n")
 
                 if runtimeFlavor == RuntimeFlavor.coreclr:
@@ -938,7 +959,7 @@ def generateEventPipeImplFiles(
                     eventpipeImpl.write(getMonoEventPipeImplFileSuffix())
 
 def generateEventPipeFiles(
-        etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, exclusionList, dryRun):
+        etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
     eventpipe_directory = os.path.join(intermediate, eventpipe_dirname)
     tree = DOM.parse(etwmanifest)
 
@@ -961,6 +982,7 @@ def generateEventPipeFiles(
         extern,
         target_cpp,
         runtimeFlavor,
+        inclusionList,
         exclusionList,
         dryRun
     )
@@ -979,6 +1001,8 @@ def main(argv):
                           help='full path to manifest containig the description of events')
     required.add_argument('--exc',  type=str, required=True,
                                     help='full path to exclusion list')
+    required.add_argument('--inc',  type=str,default="",
+                                    help='full path to inclusion list')
     required.add_argument('--intermediate', type=str, required=True,
                           help='full path to eventprovider  intermediate directory')
     required.add_argument('--runtimeFlavor', type=str,default="CoreCLR",
@@ -994,6 +1018,7 @@ def main(argv):
 
     sClrEtwAllMan = args.man
     exclusion_filename = args.exc
+    inclusion_filename = args.inc
     intermediate = args.intermediate
     runtimeFlavor = RuntimeFlavor[args.runtimeFlavor.lower()]
     extern = not args.nonextern
@@ -1003,7 +1028,10 @@ def main(argv):
     if runtimeFlavor == RuntimeFlavor.mono:
         target_cpp = False
 
-    generateEventPipeFiles(sClrEtwAllMan, intermediate, extern, target_cpp, runtimeFlavor, parseExclusionList(exclusion_filename), dryRun)
+    inclusion_list = parseInclusionList(inclusion_filename)
+    exclusion_list = parseExclusionList(exclusion_filename)
+
+    generateEventPipeFiles(sClrEtwAllMan, intermediate, extern, target_cpp, runtimeFlavor, inclusion_list, exclusion_list, dryRun)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])
