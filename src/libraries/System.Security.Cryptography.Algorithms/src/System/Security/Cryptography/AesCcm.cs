@@ -14,12 +14,16 @@ namespace System.Security.Cryptography
 
         public AesCcm(ReadOnlySpan<byte> key)
         {
+            ThrowIfNotSupported();
+
             AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
         public AesCcm(byte[] key)
         {
+            ThrowIfNotSupported();
+
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
@@ -75,6 +79,14 @@ namespace System.Security.Cryptography
 
             if (!tag.Length.IsLegalSize(TagByteSizes))
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tag));
+        }
+
+        private static void ThrowIfNotSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(AesCcm)));
+            }
         }
     }
 }

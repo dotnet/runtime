@@ -839,6 +839,17 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
     public class AesGcmIsSupportedTests
     {
+        public static bool RuntimeSaysIsNotSupported => !AesGcm.IsSupported;
+
+        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        public static void CtorThrowsPNSEIfNotSupported()
+        {
+            byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
+
+            Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key));
+            Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key.AsSpan()));
+        }
+
         [Fact]
         public static void CheckIsSupported()
         {
