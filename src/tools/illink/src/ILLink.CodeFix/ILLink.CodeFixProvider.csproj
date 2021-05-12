@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
+    <EnableXlfLocalization>false</EnableXlfLocalization>
   </PropertyGroup>
 
   <!-- Analyzer package properties -->
@@ -24,12 +27,14 @@
     <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
   </ItemGroup>
 
-  <Target Name="IncludeAnalyzerAssembliesInPkg"
-          DependsOnTargets="InitializeStandardNuspecProperties"
-          AfterTargets="AfterBuild">
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
+  </ItemGroup>
+
+  <Target Name="IncludeAnalyzerAssembliesInPkg" DependsOnTargets="InitializeStandardNuspecProperties" AfterTargets="AfterBuild">
     <ItemGroup>
       <None Include="$(OutputPath)\**\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-      <None Include="$(OutputPath)\**\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build"/>
+      <None Include="$(OutputPath)\**\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build" />
     </ItemGroup>
   </Target>
 

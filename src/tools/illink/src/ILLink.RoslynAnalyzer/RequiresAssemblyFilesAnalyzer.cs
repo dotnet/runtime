@@ -7,19 +7,18 @@ using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer
 {
 	[DiagnosticAnalyzer (LanguageNames.CSharp)]
-	public sealed class RequiresAssemblyFilesAnalyzer : DiagnosticAnalyzer
+	public sealed class RequiresAssemblyFilesAnalyzer : RequiresAnalyzerBase
 	{
 		public const string IL3000 = nameof (IL3000);
 		public const string IL3001 = nameof (IL3001);
 		public const string IL3002 = nameof (IL3002);
 
-		internal const string RequiresAssemblyFilesAttribute = nameof (RequiresAssemblyFilesAttribute);
-		internal const string FullyQualifiedRequiresAssemblyFilesAttribute = "System.Diagnostics.CodeAnalysis." + RequiresAssemblyFilesAttribute;
+		private const string RequiresAssemblyFilesAttribute = nameof (RequiresAssemblyFilesAttribute);
+		public const string RequiresAssemblyFilesAttributeFullyQualifiedName = "System.Diagnostics.CodeAnalysis." + RequiresAssemblyFilesAttribute;
 
 		static readonly DiagnosticDescriptor s_locationRule = new DiagnosticDescriptor (
 			IL3000,
@@ -56,120 +55,65 @@ namespace ILLink.RoslynAnalyzer
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule);
 
-		public override void Initialize (AnalysisContext context)
+		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
+
+		private protected override string RequiresAttributeFullyQualifiedName => RequiresAssemblyFilesAttributeFullyQualifiedName;
+
+		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Property | DiagnosticTargets.Event;
+
+		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresAssemblyFilesRule;
+
+		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation)
 		{
-			context.EnableConcurrentExecution ();
-			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
+			var isSingleFileAnalyzerEnabled = options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer, compilation);
+			if (!string.Equals (isSingleFileAnalyzerEnabled?.Trim (), "true", StringComparison.OrdinalIgnoreCase))
+				return false;
+			var includesAllContent = options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.IncludeAllContentForSelfExtract, compilation);
+			if (string.Equals (includesAllContent?.Trim (), "true", StringComparison.OrdinalIgnoreCase))
+				return false;
+			return true;
+		}
 
-			context.RegisterCompilationStartAction (context => {
-				var compilation = context.Compilation;
+		protected override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)
+		{
+			var dangerousPatternsBuilder = ImmutableArray.CreateBuilder<ISymbol> ();
 
-				var isSingleFileAnalyzerEnabled = context.Options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer, compilation);
-				if (!string.Equals (isSingleFileAnalyzerEnabled?.Trim (), "true", StringComparison.OrdinalIgnoreCase))
-					return;
+			var assemblyType = compilation.GetTypeByMetadataName ("System.Reflection.Assembly");
+			if (assemblyType != null) {
+				// properties
+				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyType.GetMembers ("Location")));
 
-				var includesAllContent = context.Options.GetMSBuildPropertyValue (MSBuildPropertyOptionNames.IncludeAllContentForSelfExtract, compilation);
-				if (string.Equals (includesAllContent?.Trim (), "true", StringComparison.OrdinalIgnoreCase))
-					return;
+				// methods
+				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFile").OfType<IMethodSymbol> ());
+				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFiles").OfType<IMethodSymbol> ());
+			}
 
-				var dangerousPatternsBuilder = ImmutableArray.CreateBuilder<ISymbol> ();
+			var assemblyNameType = compilation.GetTypeByMetadataName ("System.Reflection.AssemblyName");
+			if (assemblyNameType != null) {
+				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("CodeBase")));
+				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("EscapedCodeBase")));
+			}
+			return dangerousPatternsBuilder.ToImmutable ();
+		}
 
-				var assemblyType = compilation.GetTypeByMetadataName ("System.Reflection.Assembly");
-				if (assemblyType != null) {
-					// properties
-					ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyType.GetMembers ("Location")));
+		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> dangerousPatterns, ISymbol member)
+		{
+			if (member is IMethodSymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
+				operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, operationContext.Operation.Syntax.GetLocation (), member));
+				return true;
+			} else if (member is IPropertySymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
+				operationContext.ReportDiagnostic (Diagnostic.Create (s_locationRule, operationContext.Operation.Syntax.GetLocation (), member));
+				return true;
+			}
+			return false;
+		}
 
-					// methods
-					dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFile").OfType<IMethodSymbol> ());
-					dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFiles").OfType<IMethodSymbol> ());
-				}
+		protected override bool VerifyAttributeArguments (AttributeData attribute) => attribute.ConstructorArguments.Length == 0;
 
-				var assemblyNameType = compilation.GetTypeByMetadataName ("System.Reflection.AssemblyName");
-				if (assemblyNameType != null) {
-					ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("CodeBase")));
-					ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("EscapedCodeBase")));
-				}
-				var dangerousPatterns = dangerousPatternsBuilder.ToImmutable ();
-
-				context.RegisterOperationAction (operationContext => {
-					var methodInvocation = (IInvocationOperation) operationContext.Operation;
-					CheckCalledMember (operationContext, methodInvocation.TargetMethod, dangerousPatterns);
-				}, OperationKind.Invocation);
-
-				context.RegisterOperationAction (operationContext => {
-					var objectCreation = (IObjectCreationOperation) operationContext.Operation;
-					var ctor = objectCreation.Constructor;
-					if (ctor is not null) {
-						CheckCalledMember (operationContext, ctor, dangerousPatterns);
-					}
-				}, OperationKind.ObjectCreation);
-
-				context.RegisterOperationAction (operationContext => {
-					var propAccess = (IPropertyReferenceOperation) operationContext.Operation;
-					var prop = propAccess.Property;
-					var usageInfo = propAccess.GetValueUsageInfo (prop);
-					if (usageInfo.HasFlag (ValueUsageInfo.Read) && prop.GetMethod != null)
-						CheckCalledMember (operationContext, prop.GetMethod, dangerousPatterns);
-
-					if (usageInfo.HasFlag (ValueUsageInfo.Write) && prop.SetMethod != null)
-						CheckCalledMember (operationContext, prop.SetMethod, dangerousPatterns);
-
-					CheckCalledMember (operationContext, prop, dangerousPatterns);
-				}, OperationKind.PropertyReference);
-
-				context.RegisterOperationAction (operationContext => {
-					var eventRef = (IEventReferenceOperation) operationContext.Operation;
-					CheckCalledMember (operationContext, eventRef.Member, dangerousPatterns);
-				}, OperationKind.EventReference);
-
-				context.RegisterOperationAction (operationContext => {
-					var delegateCreation = (IDelegateCreationOperation) operationContext.Operation;
-					IMethodSymbol methodSymbol;
-					if (delegateCreation.Target is IMethodReferenceOperation methodRef)
-						methodSymbol = methodRef.Method;
-					else if (delegateCreation.Target is IAnonymousFunctionOperation lambda)
-						methodSymbol = lambda.Symbol;
-					else
-						return;
-					CheckCalledMember (operationContext, methodSymbol, dangerousPatterns);
-				}, OperationKind.DelegateCreation);
-
-				static void CheckCalledMember (
-					OperationAnalysisContext operationContext,
-					ISymbol member,
-					ImmutableArray<ISymbol> dangerousPatterns)
-				{
-					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (operationContext.ContainingSymbol.HasAttribute (RequiresAssemblyFilesAttribute))
-						return;
-					// In case ContainingSymbol is a property accesor check also for RequiresAssemblyFilesAttribute in the associated property
-					if (operationContext.ContainingSymbol is IMethodSymbol containingSymbol && (containingSymbol.MethodKind == MethodKind.PropertyGet || containingSymbol.MethodKind == MethodKind.PropertySet)
-						&& containingSymbol.AssociatedSymbol!.HasAttribute (RequiresAssemblyFilesAttribute)) {
-						return;
-					}
-
-					if (member is IMethodSymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
-						operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, operationContext.Operation.Syntax.GetLocation (), member));
-						return;
-					} else if (member is IPropertySymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
-						operationContext.ReportDiagnostic (Diagnostic.Create (s_locationRule, operationContext.Operation.Syntax.GetLocation (), member));
-						return;
-					}
-
-					if (member.TryGetRequiresAssemblyFileAttribute (out AttributeData? requiresAssemblyFilesAttribute)) {
-						var message = requiresAssemblyFilesAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Message").Value.Value?.ToString ();
-						message = message != null ? " " + message + "." : message;
-						var url = requiresAssemblyFilesAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Url").Value.Value?.ToString ();
-						url = url != null ? " " + url : url;
-						operationContext.ReportDiagnostic (Diagnostic.Create (
-							s_requiresAssemblyFilesRule,
-							operationContext.Operation.Syntax.GetLocation (),
-							member.OriginalDefinition.ToString (),
-							message,
-							url));
-					}
-				}
-			});
+		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
+		{
+			var message = requiresAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Message").Value.Value?.ToString ();
+			return string.IsNullOrEmpty (message) ? "" : $" {message}.";
 		}
 	}
 }

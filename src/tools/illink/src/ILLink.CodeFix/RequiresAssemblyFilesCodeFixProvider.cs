@@ -15,17 +15,17 @@ using Microsoft.CodeAnalysis.Editing;
 
 namespace ILLink.CodeFix
 {
-	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresUnreferencedCodeCodeFixProvider)), Shared]
-	public class RequiresUnreferencedCodeCodeFixProvider : BaseAttributeCodeFixProvider
+	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresAssemblyFilesCodeFixProvider)), Shared]
+	public class RequiresAssemblyFilesCodeFixProvider : BaseAttributeCodeFixProvider
 	{
 		public sealed override ImmutableArray<string> FixableDiagnosticIds
-			=> ImmutableArray.Create (RequiresUnreferencedCodeAnalyzer.IL2026);
+			=> ImmutableArray.Create (RequiresAssemblyFilesAnalyzer.IL3000, RequiresAssemblyFilesAnalyzer.IL3001, RequiresAssemblyFilesAnalyzer.IL3002);
 
-		private protected override LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeCodeFixTitle), Resources.ResourceManager, typeof (Resources));
+		private protected override LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.RequiresAssemblyFilesCodeFixTitle), Resources.ResourceManager, typeof (Resources));
 
-		private protected override string FullyQualifiedAttributeName => RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute;
+		private protected override string FullyQualifiedAttributeName => RequiresAssemblyFilesAnalyzer.RequiresAssemblyFilesAttributeFullyQualifiedName;
 
-		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor;
+		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor | AttributeableParentTargets.Property | AttributeableParentTargets.Event;
 
 		public sealed override Task RegisterCodeFixesAsync (CodeFixContext context) => BaseRegisterCodeFixesAsync (context);
 
@@ -36,7 +36,7 @@ namespace ILLink.CodeFix
 			if (string.IsNullOrEmpty (name) || HasPublicAccessibility (containingSymbol!)) {
 				return Array.Empty<SyntaxNode> ();
 			} else {
-				return new[] { generator.AttributeArgument (generator.LiteralExpression ($"Calls {name}")) };
+				return new[] { generator.AttributeArgument ("Message", generator.LiteralExpression ($"Calls {name}")) };
 			}
 		}
 	}

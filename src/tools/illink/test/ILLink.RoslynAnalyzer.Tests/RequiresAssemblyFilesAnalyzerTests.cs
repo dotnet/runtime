@@ -1,37 +1,58 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
-using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpAnalyzerVerifier<
-	ILLink.RoslynAnalyzer.RequiresAssemblyFilesAnalyzer>;
+using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
+	ILLink.RoslynAnalyzer.RequiresAssemblyFilesAnalyzer,
+	ILLink.CodeFix.RequiresAssemblyFilesCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
 	public class RequiresAssemblyFilesAnalyzerTests
 	{
-		static Task VerifyRequiresAssemblyFilesAnalyzer (string source, params DiagnosticResult[] expected)
-		{
-			var attributeDefinition = @"
+		private const string rafDef = @"
+#nullable enable
 namespace System.Diagnostics.CodeAnalysis
 {
-#nullable enable
-    [AttributeUsage(AttributeTargets.Constructor |
-                    AttributeTargets.Event |
-                    AttributeTargets.Method |
-                    AttributeTargets.Property,
-                    Inherited = false,
-                    AllowMultiple = false)]
-    public sealed class RequiresAssemblyFilesAttribute : Attribute
-    {
-			public RequiresAssemblyFilesAttribute() { }
-			public string? Message { get; set; }
-			public string? Url { get; set; }
+	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+	public sealed class RequiresAssemblyFilesAttribute : Attribute
+	{
+		public RequiresAssemblyFilesAttribute () { }
+		public string? Message { get; set; }
+		public string? Url { get; set; }
 	}
 }";
-			source = source + attributeDefinition;
+		static Task VerifyRequiresAssemblyFilesAnalyzer (string source, params DiagnosticResult[] expected)
+		{
+			source = source + rafDef;
 			return VerifyCS.VerifyAnalyzerAsync (source,
 				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer),
 				expected);
+		}
+
+		static Task VerifyRequiresAssemblyFilesCodeFix (
+			string source,
+			string fixedSource,
+			DiagnosticResult[] baselineExpected,
+			DiagnosticResult[] fixedExpected,
+			int? numberOfIterations = null)
+		{
+			var test = new VerifyCS.Test {
+				TestCode = source + rafDef,
+				FixedCode = fixedSource + rafDef,
+			};
+			test.ExpectedDiagnostics.AddRange (baselineExpected);
+			test.TestState.AnalyzerConfigFiles.Add (
+						("/.editorconfig", SourceText.From (@$"
+is_global = true
+build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
+			if (numberOfIterations != null) {
+				test.NumberOfIncrementalIterations = numberOfIterations;
+				test.NumberOfFixAllIterations = numberOfIterations;
+			}
+			test.FixedState.ExpectedDiagnostics.AddRange (fixedExpected);
+			return test.RunAsync ();
 		}
 
 		[Fact]
@@ -416,6 +437,420 @@ class C
 				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (10, 20, 10, 22).WithArguments ("C.M1()", "", ""),
 				// (11,26): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
 				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (11, 26, 11, 30).WithArguments ("C.M1()", "", ""));
+		}
+
+		[Fact]
+		public Task RequiresAssemblyFilesDiagnosticFix ()
+		{
+			var test = @"
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+    int M2() => M1();
+}
+class D
+{
+    public int M3(C c) => c.M1();
+    public class E
+    {
+        public int M4(C c) => c.M1();
+    }
+}
+public class E
+{
+    public class F
+    {
+        public int M5(C c) => c.M1();
+    }
+}
+";
+			var fixtest = @"
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+    [RequiresAssemblyFiles(Message = ""Calls M1"")]
+    int M2() => M1();
+}
+class D
+{
+    [RequiresAssemblyFiles(Message = ""Calls M1"")]
+    public int M3(C c) => c.M1();
+    public class E
+    {
+        [RequiresAssemblyFiles(Message = ""Calls M1"")]
+        public int M4(C c) => c.M1();
+    }
+}
+public class E
+{
+    public class F
+    {
+        [RequiresAssemblyFiles()]
+        public int M5(C c) => c.M1();
+    }
+}
+";
+			return VerifyRequiresAssemblyFilesCodeFix (
+				test,
+				fixtest,
+				baselineExpected: new[] {
+				// /0/Test0.cs(7,17): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", ""),
+				// /0/Test0.cs(11,27): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (11, 27, 11, 33).WithArguments ("C.M1()", " message.", ""),
+				// /0/Test0.cs(14,31): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (14, 31, 14, 37).WithArguments ("C.M1()", " message.", ""),
+				// /0/Test0.cs(21,31): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (21, 31, 21, 37).WithArguments ("C.M1()", " message.", "")
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task FixInSingleFileSpecialCases ()
+		{
+			var test = @"
+using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+    public static Assembly assembly = Assembly.LoadFrom(""/some/path/not/in/bundle"");
+    public string M1() => assembly.Location;
+    public void M2() {
+        _ = assembly.GetFiles();
+    }
+}
+";
+			var fixtest = @"
+using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+    public static Assembly assembly = Assembly.LoadFrom(""/some/path/not/in/bundle"");
+
+    [RequiresAssemblyFiles()]
+    public string M1() => assembly.Location;
+
+    [RequiresAssemblyFiles()]
+    public void M2() {
+        _ = assembly.GetFiles();
+    }
+}
+";
+			return VerifyRequiresAssemblyFilesCodeFix (
+				test,
+				fixtest,
+				baselineExpected: new[] {
+				// /0/Test0.cs(7,27): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3000).WithSpan (7, 27, 7, 44).WithArguments ("System.Reflection.Assembly.Location", "", ""),
+				// /0/Test0.cs(9,13): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3001).WithSpan (9, 13, 9, 32).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task FixInPropertyDecl ()
+		{
+			var src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    int M2 => M1();
+}";
+			var fix = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    [RequiresAssemblyFiles(Message = ""Calls M1"")]
+    int M2 => M1();
+}";
+			return VerifyRequiresAssemblyFilesCodeFix (
+				src,
+				fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(10,15): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+					VerifyCS.Diagnostic(RequiresAssemblyFilesAnalyzer.IL3002).WithSpan(10, 15, 10, 19).WithArguments("C.M1()", " message.", "")
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task FixInField ()
+		{
+			const string src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+class C
+{
+    public static Lazy<C> _default = new Lazy<C>(InitC);
+    public static C Default => _default.Value;
+
+    [RequiresAssemblyFiles]
+    public static C InitC() {
+        C cObject = new C();
+        return cObject;
+    }
+}";
+			var fixtest = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+class C
+{
+    public static Lazy<C> _default = new Lazy<C>(InitC);
+    public static C Default => _default.Value;
+
+    [RequiresAssemblyFiles]
+    public static C InitC() {
+        C cObject = new C();
+        return cObject;
+    }
+}";
+
+			return VerifyRequiresAssemblyFilesCodeFix (
+				src,
+				fixtest,
+				baselineExpected: new[] {
+				// /0/Test0.cs(6,50): warning IL3002: Using member 'C.InitC()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (6, 50, 6, 55).WithArguments ("C.InitC()", "", ""),
+				},
+				fixedExpected: new[] {
+				// /0/Test0.cs(6,50): warning IL3002: Using member 'C.InitC()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (6, 50, 6, 55).WithArguments ("C.InitC()", "", ""),
+				});
+		}
+
+		[Fact]
+		public Task FixInLocalFunc ()
+		{
+			var src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    Action M2()
+    {
+        void Wrapper () => M1();
+        return Wrapper;
+    }
+}";
+			var fix = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    [RequiresAssemblyFiles(Message = ""Calls Wrapper"")]
+    Action M2()
+    {
+        [global::System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message = ""Calls M1"")] void Wrapper () => M1();
+        return Wrapper;
+    }
+}";
+			// Roslyn currently doesn't simplify the attribute name properly, see https://github.com/dotnet/roslyn/issues/52039
+			return VerifyRequiresAssemblyFilesCodeFix (
+				src,
+				fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(12,28): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+					VerifyCS.Diagnostic(RequiresAssemblyFilesAnalyzer.IL3002).WithSpan(12, 28, 12, 32).WithArguments("C.M1()", " message.", "")
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> (),
+				numberOfIterations: 2);
+		}
+
+		[Fact]
+		public Task FixInCtor ()
+		{
+			var src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    public C () => M1();
+}";
+			var fix = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    [RequiresAssemblyFiles()]
+    public C () => M1();
+}";
+			return VerifyRequiresAssemblyFilesCodeFix (
+				src,
+				fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(10,15): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
+					VerifyCS.Diagnostic(RequiresAssemblyFilesAnalyzer.IL3002).WithSpan(10, 20, 10, 24).WithArguments("C.M1()", " message.", "")
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task FixInEvent ()
+		{
+			var src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    public event EventHandler E1
+    {
+        add
+        {
+            var a = M1();
+        }
+        remove { }
+    }
+}";
+			var fix = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class C
+{
+    [RequiresAssemblyFiles(Message = ""message"")]
+    public int M1() => 0;
+
+    [RequiresAssemblyFiles()]
+    public event EventHandler E1
+    {
+        add
+        {
+            var a = M1();
+        }
+        remove { }
+    }
+}";
+			return VerifyRequiresAssemblyFilesCodeFix (
+				src,
+				fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(14,21): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+					VerifyCS.Diagnostic(RequiresAssemblyFilesAnalyzer.IL3002).WithSpan(14, 21, 14, 25).WithArguments("C.M1()", " message.", "")
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task TestStaticCctorRequiresAssemblyFiles ()
+		{
+			var src = @"
+using System.Diagnostics.CodeAnalysis;
+
+class StaticCtor
+{
+	[RequiresAssemblyFiles (Message = ""Message for --TestStaticCtor--"")]
+	static StaticCtor ()
+	{
+	}
+
+	static void TestStaticCctorRequiresUnreferencedCode ()
+	{
+		_ = new StaticCtor ();
+	}
+}";
+			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (13,7): warning IL3002: Using member 'StaticCtor.StaticCtor()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Message for --TestStaticCtor--.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (13, 7, 13, 24).WithArguments ("StaticCtor.StaticCtor()", " Message for --TestStaticCtor--.", "")
+				);
+		}
+
+		[Fact]
+		public Task StaticCtorTriggeredByFieldAccess ()
+		{
+			var src = @"
+using System.Diagnostics.CodeAnalysis;
+
+class StaticCtorTriggeredByFieldAccess
+{
+	public static int field;
+
+	[RequiresAssemblyFiles (Message = ""Message for --StaticCtorTriggeredByFieldAccess.Cctor--"")]
+	static StaticCtorTriggeredByFieldAccess ()
+	{
+		field = 0;
+	}
+}
+class C
+{
+	static void TestStaticCtorMarkingIsTriggeredByFieldAccess ()
+	{
+		var x = StaticCtorTriggeredByFieldAccess.field + 1;
+	}
+}";
+			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (18,11): warning IL2026: Using member 'StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.. Message for --StaticCtorTriggeredByFieldAccess.Cctor--.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (18, 11, 18, 49).WithArguments ("StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()", " Message for --StaticCtorTriggeredByFieldAccess.Cctor--.", "")
+				);
+		}
+
+		[Fact]
+		public Task TestStaticCtorTriggeredByMethodCall ()
+		{
+			var src = @"
+using System.Diagnostics.CodeAnalysis;
+
+class StaticCtorTriggeredByMethodCall
+{
+	[RequiresAssemblyFiles (Message = ""Message for --StaticCtorTriggeredByMethodCall.Cctor--"")]
+	static StaticCtorTriggeredByMethodCall ()
+	{
+	}
+
+	[RequiresAssemblyFiles (Message = ""Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--"")]
+	public void TriggerStaticCtorMarking ()
+	{
+	}
+}
+
+class C
+{
+	static void TestStaticCtorTriggeredByMethodCall ()
+	{
+		new StaticCtorTriggeredByMethodCall ().TriggerStaticCtorMarking ();
+	}
+}";
+			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (21,3): warning IL2026: Using member 'StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", ""),
+				// (21,3): warning IL2026: Using member 'StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.. Message for --StaticCtorTriggeredByMethodCall.Cctor--.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (21, 3, 21, 41).WithArguments ("StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()", " Message for --StaticCtorTriggeredByMethodCall.Cctor--.", "")
+				);
 		}
 	}
 }
