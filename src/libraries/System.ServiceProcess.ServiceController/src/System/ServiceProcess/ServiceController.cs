@@ -914,7 +914,7 @@ namespace System.ServiceProcess
         /// </summary>
         public void Stop()
         {
-            Stop(true);
+            Stop(stopDependentServices: true);
         }
 
         /// <summary>
