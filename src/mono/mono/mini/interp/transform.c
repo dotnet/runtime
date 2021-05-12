@@ -4301,7 +4301,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean link_bblocks = TRUE;
 	gboolean inlining = td->method != method;
 	InterpBasicBlock *exit_bb = NULL;
-	gboolean without_debug_info = FALSE;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
@@ -4360,8 +4359,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			/* Methods without line number info like auto-generated property accessors */
 			seq_point_locs = mono_bitset_new (header->code_size, 0);
 			sym_seq_points = TRUE;
-			if (!mono_debug_image_has_debug_info (m_class_get_image (method->klass)))
-				without_debug_info = TRUE;
 		}
 	}
 
