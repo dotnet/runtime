@@ -123,7 +123,7 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, System.Net.Sockets.Socket? socket)
         {
             _pool = pool;
             _stream = stream;
@@ -136,7 +136,10 @@ namespace System.Net.Http
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
-            _rttEstimator = _pool.Settings._fakeRtt != null ? new RttEstimator(_pool.Settings._fakeRtt.Value) : null;
+            InitialStreamWindowSize = pool.Settings._initialStreamWindowSize;
+            _rttEstimator = _pool.Settings._fakeRtt != null || socket != null ?
+                new RttEstimator(this, _pool.Settings._fakeRtt, socket) :
+                null;
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -195,7 +198,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
                 _outgoingBuffer.Commit(2);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, InitialStreamWindowSize);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)InitialStreamWindowSize);
                 _outgoingBuffer.Commit(4);
 #else
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
@@ -207,7 +210,7 @@ namespace System.Net.Http
 #endif
 
                 // Send initial connection-level WINDOW_UPDATE
-                uint windowUpdateAmount = ConnectionWindowSize - InitialStreamWindowSize;
+                uint windowUpdateAmount = (uint)(ConnectionWindowSize - InitialStreamWindowSize);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Initial connection-level WINDOW_UPDATE, windowUpdateAmount={windowUpdateAmount}");
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);

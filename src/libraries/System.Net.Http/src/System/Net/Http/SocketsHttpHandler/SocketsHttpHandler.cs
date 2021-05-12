@@ -60,6 +60,12 @@ namespace System.Net.Http
             set => _settings._fakeRtt = value;
         }
 
+        public int InitialStreamWindowSize
+        {
+            get => _settings._initialStreamWindowSize;
+            set => _settings._initialStreamWindowSize = value;
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

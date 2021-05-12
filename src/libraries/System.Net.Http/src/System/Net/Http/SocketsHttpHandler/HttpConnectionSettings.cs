@@ -69,6 +69,8 @@ namespace System.Net.Http
 
         internal TimeSpan? _fakeRtt;
 
+        internal int _initialStreamWindowSize = 65535;
+
         public HttpConnectionSettings()
         {
             bool allowHttp2 = AllowHttp2;
@@ -122,7 +124,8 @@ namespace System.Net.Http
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
-                _fakeRtt = _fakeRtt
+                _fakeRtt = _fakeRtt,
+                _initialStreamWindowSize = _initialStreamWindowSize
             };
 
             // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished

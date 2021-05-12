@@ -1436,9 +1436,11 @@ namespace System.Net.Http
 
         private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            Socket? socket = (stream as NetworkStream)?.Socket;
+
             stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
 
-            Http2Connection http2Connection = new Http2Connection(this, stream);
+            Http2Connection http2Connection = new Http2Connection(this, stream, socket);
             try
             {
                 await http2Connection.SetupAsync().ConfigureAwait(false);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -9,7 +10,7 @@ namespace System.Net.Http
     internal sealed partial class Http2Connection
     {
         private const int StreamWindowUpdateRatio = 8;
-        private const int InitialStreamWindowSize = 65535;
+        private int InitialStreamWindowSize { get; } = 65535;
 
         private class Http2StreamWindowManager
         {
@@ -25,11 +26,15 @@ namespace System.Net.Http
             public Http2StreamWindowManager(Http2Connection connection, Http2Stream stream)
             {
                 _connection = connection;
+
                 _stream = stream;
+                InitialStreamWindowSize = connection.InitialStreamWindowSize;
                 _streamWindowSize = InitialStreamWindowSize;
 
                 _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
             }
+
+            internal int InitialStreamWindowSize { get; }
 
             internal int StreamWindowSize => _streamWindowSize;
 
@@ -111,10 +116,21 @@ namespace System.Net.Http
 
         private class RttEstimator
         {
-            public TimeSpan Rtt { get; }
-            public RttEstimator(TimeSpan fakeRtt)
+            private Http2Connection _connection;
+            private readonly Socket? _socket;
+            public TimeSpan Rtt { get; private set; }
+            public RttEstimator(Http2Connection connection, TimeSpan? fakeRtt, Socket? socket)
             {
-                Rtt = fakeRtt;
+                _connection = connection;
+                if (fakeRtt.HasValue)
+                    Rtt = fakeRtt.Value;
+                _socket = socket;
+                UpdateRttFromSocket();
+            }
+
+            private void UpdateRttFromSocket()
+            {
+                if (_socket == null) return;
             }
         }
     }
