@@ -3066,10 +3066,6 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
-        private void doneWritingCode()
-        {
-        }
-
         private void allocMem(ref AllocMemArgs args)
         {
             args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);

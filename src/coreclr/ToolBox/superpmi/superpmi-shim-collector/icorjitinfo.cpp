@@ -1937,12 +1937,6 @@ void interceptor_ICJI::allocMem(AllocMemArgs *pArgs)
                         &pArgs->roDataBlock);
 }
 
-void interceptor_ICJI::doneWritingCode()
-{
-    mc->cr->AddCall("doneWritingCode");
-    original_ICorJitInfo->doneWritingCode();
-}
-
 // Reserve memory for the method/funclet's unwind information.
 // Note that this must be called before allocMem. It should be
 // called once for the main method, once for every funclet, and

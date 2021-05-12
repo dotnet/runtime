@@ -12412,19 +12412,6 @@ void CEEJitInfo::getEHinfo(
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::doneWritingCode()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    EE_TO_JIT_TRANSITION();
-}
-
 
 #endif // CROSSGEN_COMPILE
 
@@ -14252,12 +14239,6 @@ bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 }
 
 void CEEInfo::allocMem (AllocMemArgs *pArgs)
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called on derived class.
-}
-
-void CEEInfo::doneWritingCode ()
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

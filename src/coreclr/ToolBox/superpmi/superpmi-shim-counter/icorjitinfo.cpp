@@ -1387,9 +1387,3 @@ uint32_t interceptor_ICJI::getJitFlags(
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
 }
 
-void interceptor_ICJI::doneWritingCode()
-{
-    mcs->AddCall("doneWritingCode");
-    original_ICorJitInfo->doneWritingCode();
-}
-

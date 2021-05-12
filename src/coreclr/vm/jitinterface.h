@@ -664,8 +664,6 @@ public:
             CORINFO_EH_CLAUSE* clause               /* OUT */
             ) override final;
 
-    void doneWritingCode() override final;
-
     HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */

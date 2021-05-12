@@ -183,7 +183,6 @@ struct JitInterfaceCallbacks
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
-    void (* doneWritingCode)(void * thisHandle, CorInfoExceptionClass** ppException);
 
 };
 
@@ -1855,12 +1854,5 @@ public:
     uint32_t temp = _callbacks->getJitFlags(_thisHandle, &pException, flags, sizeInBytes);
     if (pException != nullptr) throw pException;
     return temp;
-}
-
-    virtual void doneWritingCode()
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->doneWritingCode(_thisHandle, &pException);
-    if (pException != nullptr) throw pException;
 }
 };

@@ -2548,24 +2548,10 @@ namespace Internal.JitInterface
             }
         }
 
-        [UnmanagedCallersOnly]
-        static void _doneWritingCode(IntPtr thisHandle, IntPtr* ppException)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.doneWritingCode();
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-            }
-        }
-
 
         static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 173);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 172);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isJitIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodAttribs;
@@ -2739,7 +2725,6 @@ namespace Internal.JitInterface
             callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
             callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
-            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, void>)&_doneWritingCode;
 
             return (IntPtr)callbacks;
         }

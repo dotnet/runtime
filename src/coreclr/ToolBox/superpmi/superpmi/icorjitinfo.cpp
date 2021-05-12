@@ -1866,8 +1866,3 @@ uint32_t MyICJI::getExpectedTargetArchitecture()
     DWORD result = jitInstance->mc->repGetExpectedTargetArchitecture();
     return result;
 }
-
-void MyICJI::doneWritingCode()
-{
-    jitInstance->mc->cr->AddCall("doneWritingCode");
-}

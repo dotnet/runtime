@@ -464,9 +464,6 @@ public:
         uint32_t        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
                                           version number for the CORJIT_FLAGS value. */
         ) = 0;
-
-    // Notify the EE that JIT is done writing to the memory allocated for code
-    virtual void doneWritingCode() = 0;
 };
 
 /**********************************************************************************/

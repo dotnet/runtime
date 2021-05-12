@@ -1687,13 +1687,6 @@ uint32_t WrapICorJitInfo::getJitFlags(
     return temp;
 }
 
-void WrapICorJitInfo::doneWritingCode()
-{
-    API_ENTER(doneWritingCode);
-    wrapHnd->doneWritingCode();
-    API_LEAVE(doneWritingCode);
-}
-
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/
