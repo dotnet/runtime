@@ -950,7 +950,8 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
-                await Task.WhenAny(disposeTask, receiveTask).WaitAsync(TimeSpan.FromSeconds(30));
+                await Task.WhenAny(disposeTask, receiveTask)
+                          .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -1035,14 +1036,17 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));
-                    await disposeTask;
+                    await Task.WhenAny(disposeTask, socketOperation)
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
+                    await disposeTask
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
 
                     SocketError? localSocketError = null;
                     bool disposedException = false;
                     try
                     {
-                        await socketOperation;
+                        await socketOperation
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                     }
                     catch (SocketException se)
                     {
@@ -1077,7 +1081,8 @@ namespace System.Net.Sockets.Tests
                         {
                             try
                             {
-                                int received = await ReceiveAsync(socket2, receiveBuffer);
+                                int received = await ReceiveAsync(socket2, receiveBuffer)
+                                                     .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                                 if (received == 0)
                                 {
                                     break;
