@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    [ActiveIssue("", TestPlatforms.tvOS)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
     public static class NullableArrayIndexTests
     {
         #region NullableBool tests
@@ -338,7 +338,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("", TestPlatforms.tvOS)]
         public static void CheckExceptionNullableShortArrayIndexTest(bool useInterpreter)
         {
             // null arrays

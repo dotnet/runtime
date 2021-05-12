@@ -8,6 +8,7 @@ namespace System.Diagnostics.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/51376", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/37073", TestPlatforms.Android)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/51376", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public class ActivityTests : IDisposable
     {
         [Fact]

@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
         public static void ConvertNullToNonNullableValueTest(bool useInterpreter)
         {
             foreach (var e in ConvertNullToNonNullableValue())
