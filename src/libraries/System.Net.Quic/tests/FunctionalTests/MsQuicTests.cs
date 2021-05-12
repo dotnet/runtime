@@ -375,5 +375,60 @@ namespace System.Net.Quic.Tests
 
             GC.Collect();
         }
+
+        [Fact]
+        public async Task Read_ConnectionAbortedByPeer_Throws()
+        {
+            const int ExpectedErrorCode = 1234;
+
+            await Task.Run(async () =>
+            {
+                using QuicListener listener = CreateQuicListener();
+                ValueTask<QuicConnection> serverConnectionTask = listener.AcceptConnectionAsync();
+
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                await clientConnection.ConnectAsync();
+
+                using QuicConnection serverConnection = await serverConnectionTask;
+
+                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                await clientStream.WriteAsync(new byte[1]);
+
+                await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                await serverStream.ReadAsync(new byte[1]);
+
+                await clientConnection.CloseAsync(ExpectedErrorCode);
+
+                byte[] buffer = new byte[100];
+                QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
+                Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+            }).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task Read_ConnectionAbortedByUser_Throws()
+        {
+            await Task.Run(async () =>
+            {
+                using QuicListener listener = CreateQuicListener();
+                ValueTask<QuicConnection> serverConnectionTask = listener.AcceptConnectionAsync();
+
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                await clientConnection.ConnectAsync();
+
+                using QuicConnection serverConnection = await serverConnectionTask;
+
+                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                await clientStream.WriteAsync(new byte[1]);
+
+                await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                await serverStream.ReadAsync(new byte[1]);
+
+                await serverConnection.CloseAsync(0);
+
+                byte[] buffer = new byte[100];
+                await Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
+            }).WaitAsync(TimeSpan.FromSeconds(5));
+        }
     }
 }
