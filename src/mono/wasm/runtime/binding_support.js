@@ -586,8 +586,9 @@ var BindingSupportLib = {
 						BINDING.set_task_failure (tcs, reason);
 					})
 					return this.get_task_and_bind (tcs, js_obj);
-				case js_obj.constructor.name === "Date":
-					return this.box_js_obj_with_converter(js_obj, "System.DateTime");
+				case js_obj.constructor.name === "Date": {
+					return this.box_js_obj_with_converter(js_obj, this.find_corlib_class ("System", "DateTime"));
+				} 
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -2125,7 +2126,6 @@ var BindingSupportLib = {
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = obj[Symbol.for("wasm type")];
 					obj.__owns_handle__ = true;
-					console.log("mono_wasm_register_obj", typeof(obj), Object.getPrototypeOf(obj));
 					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 

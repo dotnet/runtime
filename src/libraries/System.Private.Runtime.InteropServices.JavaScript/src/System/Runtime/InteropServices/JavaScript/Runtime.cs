@@ -210,7 +210,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (!_rawToJS.TryGetValue(rawObj, out jsObject))
                     {
-                        Debug.WriteLine($"BindExistingObject({rawObj}, {jsId})");
                         _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
                     }
                 }
