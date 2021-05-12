@@ -777,7 +777,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static void CleanupSendState(State state)
         {
-            lock (state) {
+            lock (state)
+            {
                 Debug.Assert(state.SendState != SendState.Pending);
                 Debug.Assert(state.SendBufferCount <= state.BufferArrays.Length);
 
