@@ -158,9 +158,9 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
         // in this case, interpret the number as GB
-        maxBytesPerThread *= (1024*1024*1024);
+        maxBytesPerThread *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizePerThread = (unsigned)(maxBytesPerThread,0xffffffff);
+    theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,0xffffffff);
 
     size_t maxBytesTotal = maxBytesTotalArg;
     if (maxBytesTotal < STRESSLOG_CHUNK_SIZE * 256)
@@ -168,7 +168,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         // in this case, interpret the number as GB
         maxBytesTotal *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, 0xffffffff);;
+    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, 0xffffffff);
     theLog.totalChunk = 0;
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
     theLog.levelToLog = level;
@@ -277,6 +277,7 @@ void StressLog::AddModule(uint8_t* moduleBase)
         hdr->modules[moduleIndex].baseAddress = moduleBase;
     }
 #endif //MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
     uint8_t* addr = moduleBase;
     while (true)
     {
@@ -298,6 +299,12 @@ void StressLog::AddModule(uint8_t* moduleBase)
         }
 #endif //MEMORY_MAPPED_STRESSLOG
     }
+#else //HOST_WINDOWS
+    // as it is not easy to obtain module size on Linux or OSX,
+    // just guess and hope for the best
+    size_t remainingSize = StressMsg::maxOffset - cumSize;
+    theLog.modules[moduleIndex].size = remainingSize / 2;
+#endif //HOST_WINDOWS
 }
 
 /*********************************************************************************/
