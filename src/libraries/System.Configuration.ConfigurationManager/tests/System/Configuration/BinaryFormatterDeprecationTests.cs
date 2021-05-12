@@ -21,6 +21,7 @@ namespace System.ConfigurationTests
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SettingsSerializeAs.Binary is deprecated only on Core")]
         [ConditionalFact(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
         public void SerializeAndDeserializeWithSettingsSerializeAsBinary()
         {
