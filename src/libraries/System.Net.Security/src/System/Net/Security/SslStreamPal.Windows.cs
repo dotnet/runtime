@@ -422,6 +422,11 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(interopConnectionInfo, cipherSuite);
         }
 
+        public static int Renegotiate(SafeDeleteContext securityContext)
+        {
+            throw  new PlatformNotSupportedException();
+        }
+
         private static int GetProtocolFlagsFromSslProtocols(SslProtocols protocols, bool isServer)
         {
             int protocolFlags = (int)protocols;

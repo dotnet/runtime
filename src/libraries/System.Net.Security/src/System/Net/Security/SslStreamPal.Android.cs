@@ -175,5 +175,10 @@ namespace System.Net.Security
 
             return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
         }
+
+        public static int Renegotiate(SafeDeleteContext securityContext)
+        {
+            throw  new PlatformNotSupportedException();
+        }
     }
 }

@@ -214,6 +214,13 @@ when an error is encountered.
 PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num);
 
 /*
+Shims the SSL_renegotiate method.
+
+Returns 1 when renegotiation started; 0 on error.
+*/
+PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl);
+
+/*
 Shims the SSL_renegotiate_pending method.
 
 Returns 1 when negotiation is requested; 0 once a handshake has finished.

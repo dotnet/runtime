@@ -218,6 +218,11 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(((SafeDeleteSslContext)securityContext).SslContext);
         }
 
+        public static int Renegotiate(SafeDeleteContext securityContext)
+        {
+            throw  new PlatformNotSupportedException();
+        }
+
         private static SecurityStatusPal HandshakeInternal(
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,

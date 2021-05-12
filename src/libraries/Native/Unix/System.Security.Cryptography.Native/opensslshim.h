@@ -507,12 +507,19 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LEGACY_FUNCTION(SSL_library_init) \
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
+    REQUIRED_FUNCTION(SSL_peek) \
+    REQUIRED_FUNCTION(SSL_state_string_long) \
     REQUIRED_FUNCTION(SSL_read) \
+    REQUIRED_FUNCTION(SSL_get_state) \
+    REQUIRED_FUNCTION(ERR_print_errors_fp) \
+    REQUIRED_FUNCTION(SSL_in_init) \
+    REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
+    REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
     LEGACY_FUNCTION(SSL_state) \
     LEGACY_FUNCTION(SSLeay) \
@@ -925,12 +932,19 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_library_init SSL_library_init_ptr
 #define SSL_load_error_strings SSL_load_error_strings_ptr
 #define SSL_new SSL_new_ptr
+#define SSL_peek SSL_peek_ptr
+#define SSL_state_string_long SSL_state_string_long_ptr
 #define SSL_read SSL_read_ptr
+#define SSL_get_state SSL_get_state_ptr
+#define ERR_print_errors_fp ERR_print_errors_fp_ptr
+#define SSL_in_init SSL_in_init_ptr
+#define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
+#define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
 #define SSLeay SSLeay_ptr

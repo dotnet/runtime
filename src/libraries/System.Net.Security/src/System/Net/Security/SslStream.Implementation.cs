@@ -303,6 +303,85 @@ namespace System.Net.Security
             }
         }
 
+         private async Task Renegotiate<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false, bool renego = false)
+            where TIOAdapter : IReadWriteAdapter
+        {
+            int foo = _context!.Renegotiate();
+
+            if (foo < 0 ){
+
+                await ForceAuthenticationAsync(adapter, false, null, isApm).ConfigureAwait(false);
+
+                Console.WriteLine("Renegotiate: short doen!");
+            }
+
+//            ProtocolToken message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+            Console.WriteLine("Renegotiate: Next message?????? ---------------------------------------------");
+            ProtocolToken message = _context!.NextMessage(reAuthenticationData);
+            Console.WriteLine("Writig {0} {1}", message.Size, message.Status);
+            if (message.Size > 0)
+            {
+                await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                await adapter.FlushAsync().ConfigureAwait(false);
+            }
+
+            Console.WriteLine("REad done with {0}", "len");
+//            await ForceAuthenticationAsync(adapter, false, null).ConfigureAwait(false);
+//            Console.WriteLine("ForceAuthenticationAsync????? done??");
+
+
+            //Interop.OpenSsl.SslRenegotiate(_context._securityContext);
+
+
+            // Console.WriteLine("Renegotiate ?????");
+            // _context!.Renegotiate();
+
+do {
+
+           //   message = _context!.NextMessage(reAuthenticationData);
+           Console.WriteLine("Renegotiate: Waiting for ReceiveBlobAsync?????? ---------------------------------------------");
+           message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+            Console.WriteLine("Writng2 {0} and {1}", message.Size, message.Status);
+            if (message.Size > 0)
+            {
+                await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                await adapter.FlushAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                    Console.WriteLine("Renegotiate WTF???? --------------------------------");
+                    _context!.Renegotiate();
+                    Console.WriteLine("Renegotiate WTF!!! --------------------------------");
+                    message = _context!.NextMessage(reAuthenticationData);
+                    Console.WriteLine("Writng3 {0} ", message.Size);
+                    if (message.Size > 0)
+                    {
+                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
+                    }
+
+
+            }
+            if (message.Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded)
+            {
+                Console.WriteLine("Renegotiate: finished with {0} ---------------------------------------------", message.Status.ErrorCode);
+                break;
+            }
+} while (true);
+            var remoteCert = CertificateValidationPal.GetRemoteCertificate(_context!._securityContext!);
+
+//            ProtocolToken? alertToken = null;
+//            if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+//            {
+//Console.WriteLine(" CompleteHandshakefailed!");
+//            }
+            Console.WriteLine("Renegotiate is NONE {0}", remoteCert);
+//            //await ReceiveBlobAsync(adapter, true);
+//            byte[] buffer = new byte[32000];
+//            int len = await ReadAsyncInternal(adapter, buffer, true).ConfigureAwait(false);
+//            Console.WriteLine("REad done with {0}", len);
+        }
+
         // reAuthenticationData is only used on Windows in case of renegotiation.
         private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false)
              where TIOAdapter : IReadWriteAdapter
@@ -327,6 +406,7 @@ namespace System.Net.Security
                     message = _context!.NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
+                    Console.WriteLine("Senfing {0}", message.Size);
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                         await adapter.FlushAsync().ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
@@ -353,12 +433,15 @@ namespace System.Net.Security
 
                 while (!handshakeCompleted)
                 {
+                Console.WriteLine("Going to receive!");
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                    Console.WriteLine("Senfing2 {0} error={1}", message.Size, message.Status.ErrorCode);
 
                     byte[]? payload = null;
                     int size = 0;
                     if (message.Size > 0)
                     {
+                    Console.WriteLine("Senfing2 {0}", message.Size);
                         payload = message.Payload;
                         size = message.Size;
                     }
@@ -487,6 +570,8 @@ namespace System.Net.Security
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
             }
+
+            Console.WriteLine("REceive blob done. frame size  {0}, got {1}", frameSize, _handshakeBuffer.ActiveLength);
 
             // At this point, we have at least one TLS frame.
             if (_lastFrame.Header.Type == TlsContentType.Alert)

@@ -81,6 +81,17 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
+        public static int Renegotiate(SafeDeleteContext securityContext)
+        {
+//            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
+
+            Console.WriteLine("RENEGO ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext).SslContext));
+
+            int ret = Interop.Ssl.SslRenegotiate(((SafeDeleteSslContext)securityContext).SslContext);
+            Console.WriteLine("RENEGO {1} ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext).SslContext), ret);
+            return 1;
+        }
+
         public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
@@ -104,6 +115,8 @@ namespace System.Net.Security
             byte[]? output = null;
             int outputSize = 0;
 
+            Console.WriteLine("HandshakeInternal: giving {0} bytes", inputBuffer.Length);
+
             try
             {
                 if ((null == context) || context.IsInvalid)
@@ -111,7 +124,15 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
+Console.WriteLine("RENEGO ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext));
                 bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
+                if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext))
+                {
+                    Console.WriteLine("WTF fif got nothe! {0} trying again", done);
+                    done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, ReadOnlySpan<byte>.Empty, out output, out outputSize);
+                    Console.WriteLine("WTF {0} {1}", done, outputSize);
+                }
+Console.WriteLine("RENEGO ? {0} done ? {1}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext), done);
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.
@@ -128,7 +149,7 @@ namespace System.Net.Security
                     outputSize == output!.Length ? output :
                     new Span<byte>(output, 0, outputSize).ToArray();
 
-                return new SecurityStatusPal(done ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
+                return new SecurityStatusPal(done && !Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext) ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
             }
             catch (Exception exc)
             {

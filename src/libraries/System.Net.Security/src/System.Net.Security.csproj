@@ -399,6 +399,7 @@
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Console" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />

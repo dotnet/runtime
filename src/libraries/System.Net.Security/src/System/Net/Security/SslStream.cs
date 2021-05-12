@@ -531,6 +531,10 @@ namespace System.Net.Security
             get
             {
                 ThrowIfExceptionalOrNotAuthenticated();
+                if (_nestedAuth == 0)
+                {
+                    var crt = GetRemoteCertificate().GetAwaiter().GetResult();
+                }
                 return _context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate;
             }
         }
@@ -818,6 +822,19 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
+        }
+
+        public virtual async Task<X509Certificate?> GetRemoteCertificate()
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            Console.WriteLine("Calling GetRemoteCertificate ???");
+            _sslAuthenticationOptions!.RemoteCertRequired = true;
+            //await ProcessAuthentication(true)!.ConfigureAwait(false);
+           // await ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
+           await Renegotiate(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
+           Console.WriteLine("Calling GetRemoteCertificate Finished!!!");
+            return RemoteCertificate;
         }
 
         private void ThrowIfExceptional()
