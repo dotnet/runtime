@@ -708,6 +708,7 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeConfig, W("EventPipeConfig"), "Confi
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeRundown, W("EventPipeRundown"), 1, "Enable/disable eventpipe rundown.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"), 1024, "The EventPipe circular buffer size in megabytes.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 0, "Enable/disable streaming for trace file set in COMPlus_EventPipeOutputPath.  Non-zero values enable streaming.")
 
 // 
 // Generational Aware Analysis
