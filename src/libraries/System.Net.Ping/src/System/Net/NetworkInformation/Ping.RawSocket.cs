@@ -65,7 +65,7 @@ namespace System.Net.NetworkInformation
             Socket socket = new Socket(addrFamily, socketType, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
-            if (addrFamily == AddressFamily.InterNetworkV6 && SuppressDualMode)
+            if (addrFamily == AddressFamily.InterNetworkV6 && !SupportsDualMode)
             {
                 socket.DualMode = false;
             }
