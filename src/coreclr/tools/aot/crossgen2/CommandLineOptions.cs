@@ -16,6 +16,7 @@ namespace ILCompiler
         public string HelpText;
 
         public IReadOnlyList<string> InputFilePaths;
+        public IReadOnlyList<string> InputBubbleReferenceFilePaths;
         public IReadOnlyList<string> UnrootedInputFilePaths;
         public IReadOnlyList<string> ReferenceFilePaths;
         public IReadOnlyList<string> MibcFilePaths;
@@ -73,6 +74,7 @@ namespace ILCompiler
         public CommandLineOptions(string[] args)
         {
             InputFilePaths = Array.Empty<string>();
+            InputBubbleReferenceFilePaths = Array.Empty<string>();
             UnrootedInputFilePaths = Array.Empty<string>();
             ReferenceFilePaths = Array.Empty<string>();
             MibcFilePaths = Array.Empty<string>();
@@ -100,6 +102,7 @@ namespace ILCompiler
                 syntax.DefineOption("Os|optimize-space", ref OptimizeSpace, SR.OptimizeSpaceOption);
                 syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
                 syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);
+                syntax.DefineOptionList("inputbubbleref", ref InputBubbleReferenceFilePaths, SR.InputBubbleReferenceFiles);
                 syntax.DefineOption("composite", ref Composite, SR.CompositeBuildMode);
                 syntax.DefineOption("compile-no-methods", ref CompileNoMethods, SR.CompileNoMethodsOption);
                 syntax.DefineOption("out-near-input", ref OutNearInput, SR.OutNearInputOption);
