@@ -87,6 +87,119 @@ namespace System.Security.Cryptography
                 }
             }
 
+            public override RSAParameters ExportParameters(bool includePrivateParameters)
+            {
+                SecKeyPair keys = GetKeys();
+
+                if (includePrivateParameters && keys.PrivateKey == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+                }
+
+                bool gotKeyBlob = Interop.AppleCrypto.TrySecKeyCopyExternalRepresentation(
+                    includePrivateParameters ? keys.PrivateKey! : keys.PublicKey,
+                    out byte[] keyBlob);
+
+                if (!gotKeyBlob)
+                {
+                    return ExportParametersFromLegacyKey(keys, includePrivateParameters);
+                }
+
+                try
+                {
+                    if (!includePrivateParameters)
+                    {
+                        // When exporting a key handle opened from a certificate, it seems to
+                        // export as a PKCS#1 blob instead of an X509 SubjectPublicKeyInfo blob.
+                        // So, check for that.
+                        // NOTE: It doesn't affect macOS Mojave when SecCertificateCopyKey API
+                        // is used.
+                        RSAParameters key;
+
+                        AsnReader reader = new AsnReader(keyBlob, AsnEncodingRules.BER);
+                        AsnReader sequenceReader = reader.ReadSequence();
+
+                        if (sequenceReader.PeekTag().Equals(Asn1Tag.Integer))
+                        {
+                            AlgorithmIdentifierAsn ignored = default;
+                            RSAKeyFormatHelper.ReadRsaPublicKey(keyBlob, ignored, out key);
+                        }
+                        else
+                        {
+                            RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                                keyBlob,
+                                out int localRead,
+                                out key);
+                            Debug.Assert(localRead == keyBlob.Length);
+                        }
+                        return key;
+                    }
+                    else
+                    {
+                        AlgorithmIdentifierAsn ignored = default;
+                        RSAKeyFormatHelper.FromPkcs1PrivateKey(
+                            keyBlob,
+                            ignored,
+                            out RSAParameters key);
+                        return key;
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(keyBlob);
+                }
+            }
+
+            public override void ImportParameters(RSAParameters parameters)
+            {
+                ValidateParameters(parameters);
+                ThrowIfDisposed();
+
+                bool isPrivateKey = parameters.D != null;
+
+                if (isPrivateKey)
+                {
+                    // Start with the private key, in case some of the private key fields
+                    // don't match the public key fields.
+                    //
+                    // Public import should go off without a hitch.
+                    ImportPrivateKey(
+                        parameters,
+                        out SafeSecKeyRefHandle privateKey,
+                        out SafeSecKeyRefHandle publicKey);
+                    SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
+                }
+                else
+                {
+                    SafeSecKeyRefHandle publicKey = ImportKey(parameters);
+                    SetKey(SecKeyPair.PublicOnly(publicKey));
+                }
+            }
+
+            public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+            {
+                ThrowIfDisposed();
+
+                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                {
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                    {
+                        // Validate the DER value and get the number of bytes.
+                        RSAKeyFormatHelper.ReadRsaPublicKey(
+                            manager.Memory,
+                            out int localRead);
+
+                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
+                            source.Slice(0, localRead),
+                            Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
+                            isPublic: true);
+                        SetKey(SecKeyPair.PublicOnly(publicKey));
+
+                        bytesRead = localRead;
+                    }
+                }
+            }
+
             public override void ImportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,
                 ReadOnlySpan<byte> source,
@@ -149,65 +262,56 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                if (padding == RSAEncryptionPadding.Pkcs1 && data.Length > 0)
+                if (data.Length == 0)
                 {
-                    const int Pkcs1PaddingOverhead = 11;
-                    int maxAllowed = rsaSize - Pkcs1PaddingOverhead;
+                    RsaPaddingProcessor? processor;
 
-                    if (data.Length > maxAllowed)
+                    switch (padding.Mode)
                     {
-                        throw new CryptographicException(
-                            SR.Format(SR.Cryptography_Encryption_MessageTooLong, maxAllowed));
+                        case RSAEncryptionPaddingMode.Pkcs1:
+                            processor = null;
+                            break;
+                        case RSAEncryptionPaddingMode.Oaep:
+                            processor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
+                            break;
+                        default:
+                            throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
                     }
 
-                    return Interop.AppleCrypto.TryRsaEncrypt(
-                        GetKeys().PublicKey,
-                        data,
-                        destination,
-                        padding,
-                        out bytesWritten);
-                }
+                    byte[] rented = CryptoPool.Rent(rsaSize);
+                    Span<byte> tmp = new Span<byte>(rented, 0, rsaSize);
 
-                RsaPaddingProcessor? processor;
-
-                switch (padding.Mode)
-                {
-                    case RSAEncryptionPaddingMode.Pkcs1:
-                        processor = null;
-                        break;
-                    case RSAEncryptionPaddingMode.Oaep:
-                        processor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-                        break;
-                    default:
-                        throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-                }
-
-                byte[] rented = CryptoPool.Rent(rsaSize);
-                Span<byte> tmp = new Span<byte>(rented, 0, rsaSize);
-
-                try
-                {
-                    if (processor != null)
+                    try
                     {
-                        processor.PadOaep(data, tmp);
-                    }
-                    else
-                    {
-                        Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Pkcs1);
-                        RsaPaddingProcessor.PadPkcs1Encryption(data, tmp);
-                    }
+                        if (processor != null)
+                        {
+                            processor.PadOaep(data, tmp);
+                        }
+                        else
+                        {
+                            Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Pkcs1);
+                            RsaPaddingProcessor.PadPkcs1Encryption(data, tmp);
+                        }
 
-                    return Interop.AppleCrypto.TryRsaEncryptionPrimitive(
-                        GetKeys().PublicKey,
-                        tmp,
-                        destination,
-                        out bytesWritten);
+                        return Interop.AppleCrypto.TryRsaEncryptionPrimitive(
+                            GetKeys().PublicKey,
+                            tmp,
+                            destination,
+                            out bytesWritten);
+                    }
+                    finally
+                    {
+                        CryptographicOperations.ZeroMemory(tmp);
+                        CryptoPool.Return(rented, clearSize: 0);
+                    }
                 }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(tmp);
-                    CryptoPool.Return(rented, clearSize: 0);
-                }
+
+                return Interop.AppleCrypto.TryRsaEncrypt(
+                    GetKeys().PublicKey,
+                    data,
+                    destination,
+                    padding,
+                    out bytesWritten);
             }
 
             public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
@@ -235,30 +339,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
                 }
 
-                if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
-                {
-                    return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
-                }
-
-                int maxOutputSize = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
-                byte[] rented = CryptoPool.Rent(maxOutputSize);
-                int bytesWritten = 0;
-
-                try
-                {
-                    if (!TryDecrypt(keys.PrivateKey, data, rented, padding, out bytesWritten))
-                    {
-                        Debug.Fail($"TryDecrypt returned false with a modulus-sized destination");
-                        throw new CryptographicException();
-                    }
-
-                    Span<byte> contentsSpan = new Span<byte>(rented, 0, bytesWritten);
-                    return contentsSpan.ToArray();
-                }
-                finally
-                {
-                    CryptoPool.Return(rented, bytesWritten);
-                }
+                return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
             }
 
             public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
@@ -300,35 +381,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
                 }
 
-                if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ||
-                    padding == RSAEncryptionPadding.OaepSHA1)
-                {
-                    return Interop.AppleCrypto.TryRsaDecrypt(privateKey, data, destination, padding, out bytesWritten);
-                }
-
-                Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
-                RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                byte[] rented = CryptoPool.Rent(modulusSizeInBytes);
-                Span<byte> unpaddedData = Span<byte>.Empty;
-
-                try
-                {
-                    if (!Interop.AppleCrypto.TryRsaDecryptionPrimitive(privateKey, data, rented, out int paddedSize))
-                    {
-                        Debug.Fail($"Raw decryption failed with KeySize={KeySize} and a buffer length {rented.Length}");
-                        throw new CryptographicException();
-                    }
-
-                    Debug.Assert(modulusSizeInBytes == paddedSize);
-                    unpaddedData = new Span<byte>(rented, 0, paddedSize);
-                    return processor.DepadOaep(unpaddedData, destination, out bytesWritten);
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(unpaddedData);
-                    CryptoPool.Return(rented, clearSize: 0);
-                }
+                return Interop.AppleCrypto.TryRsaDecrypt(privateKey, data, destination, padding, out bytesWritten);
             }
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
@@ -662,6 +715,46 @@ namespace System.Security.Cryptography
                 if (newKeyPair != null)
                 {
                     KeySizeValue = Interop.AppleCrypto.GetSimpleKeySizeInBits(newKeyPair.PublicKey);
+                }
+            }
+
+            private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
+            {
+                AsnWriter keyWriter;
+                bool hasPrivateKey;
+
+                if (parameters.D != null)
+                {
+                    keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
+                    hasPrivateKey = true;
+                }
+                else
+                {
+                    keyWriter = RSAKeyFormatHelper.WritePkcs1PublicKey(parameters);
+                    hasPrivateKey = false;
+                }
+
+                byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
+
+                if (!keyWriter.TryEncode(rented, out int written))
+                {
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new InvalidOperationException();
+                }
+
+                // Explicitly clear the inner buffer
+                keyWriter.Reset();
+
+                try
+                {
+                    return Interop.AppleCrypto.CreateDataKey(
+                        rented.AsSpan(0, written),
+                        Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
+                        isPublic: !hasPrivateKey);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, written);
                 }
             }
 

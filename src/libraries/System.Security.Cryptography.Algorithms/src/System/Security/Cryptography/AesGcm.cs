@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 
         public AesGcm(ReadOnlySpan<byte> key)
         {
-            AesAEAD.CheckKeySize(key.Length * 8);
+            AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
@@ -24,13 +24,15 @@ namespace System.Security.Cryptography
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            AesAEAD.CheckKeySize(key.Length * 8);
+            AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
+        public static bool IsSupported => true;
+
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
-            AesAEAD.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
 
@@ -42,12 +44,12 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            EncryptInternal(nonce, plaintext, ciphertext, tag, associatedData);
+            EncryptCore(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
         {
-            AesAEAD.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }
 
@@ -59,7 +61,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            DecryptInternal(nonce, ciphertext, tag, plaintext, associatedData);
+            DecryptCore(nonce, ciphertext, tag, plaintext, associatedData);
         }
 
         private static void CheckParameters(

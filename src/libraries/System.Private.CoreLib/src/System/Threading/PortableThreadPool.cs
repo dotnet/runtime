@@ -327,10 +327,13 @@ namespace System.Threading
 
         private bool ShouldAdjustMaxWorkersActive(int currentTimeMs)
         {
-            // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute times unreliable.
+            // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute
+            // times unreliable. Intervals are unsigned to avoid wrapping around on the subtract after enough time elapses, and
+            // this also prevents the initial elapsed interval from being negative due to the prior and next times being
+            // initialized to zero.
             int priorTime = Volatile.Read(ref _separated.priorCompletedWorkRequestsTime);
-            int requiredInterval = _separated.nextCompletedWorkRequestsTime - priorTime;
-            int elapsedInterval = currentTimeMs - priorTime;
+            uint requiredInterval = (uint)(_separated.nextCompletedWorkRequestsTime - priorTime);
+            uint elapsedInterval = (uint)(currentTimeMs - priorTime);
             if (elapsedInterval >= requiredInterval)
             {
                 // Avoid trying to adjust the thread count goal if there are already more threads than the thread count goal.

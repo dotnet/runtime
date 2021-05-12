@@ -5845,6 +5845,7 @@ var_types GenTreeLclVar::GetFieldTypeByIndex(Compiler* compiler, unsigned idx)
     assert(IsMultiReg());
     LclVarDsc* varDsc      = compiler->lvaGetDesc(GetLclNum());
     LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + idx);
+    assert(fieldVarDsc->TypeGet() != TYP_STRUCT); // Don't expect struct fields.
     return fieldVarDsc->TypeGet();
 }
 
@@ -17601,6 +17602,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
                     case CORINFO_TYPE_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector128ULongHandle);
                         break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128NIntHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128NUIntHandle);
+                        break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
                     default:
@@ -17641,6 +17648,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
                         break;
                     case CORINFO_TYPE_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector256ULongHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256NIntHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256NUIntHandle);
                         break;
                     default:
                         break;

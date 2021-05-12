@@ -3120,6 +3120,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
     if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg && (src->OperGet() != GT_PHI))
     {
+        bool convertToStoreObj;
         if (src->OperGet() == GT_CALL)
         {
             GenTreeCall*       call    = src->AsCall();
@@ -3165,8 +3166,50 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 return;
             }
 #endif // !WINDOWS_AMD64_ABI
+            convertToStoreObj = false;
         }
-        else if (!src->OperIs(GT_LCL_VAR) || (varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF))
+        else if (!varDsc->IsEnregisterable())
+        {
+            convertToStoreObj = true;
+        }
+        else if (src->OperIs(GT_CNS_INT))
+        {
+            assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
+            var_types regType = varDsc->GetRegisterType();
+#ifdef FEATURE_SIMD
+            if (varTypeIsSIMD(regType))
+            {
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+                {
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(regType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
+                BlockRange().InsertAfter(src, simdTree);
+                LowerSIMD(simdTree);
+                src               = simdTree;
+                lclStore->gtOp1   = src;
+                convertToStoreObj = false;
+            }
+            else
+#endif // FEATURE_SIMD
+            {
+                convertToStoreObj = false;
+            }
+        }
+        else if (!src->OperIs(GT_LCL_VAR))
+        {
+            convertToStoreObj = true;
+        }
+        else
+        {
+            assert(src->OperIs(GT_LCL_VAR));
+            convertToStoreObj = false;
+        }
+
+        if (convertToStoreObj)
         {
             GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(lclStore->GetLclNum(), TYP_BYREF);
 

@@ -8141,29 +8141,50 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
-                // Is this invariant indirect expected to always return a non-null value?
-                if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                // Are we dereferencing the method table slot of some newly allocated object?
+                //
+                bool wasNewobj = false;
+                if ((oper == GT_IND) && (addr->TypeGet() == TYP_REF) && (tree->TypeGet() == TYP_I_IMPL))
                 {
-                    assert(tree->gtFlags & GTF_IND_NONFAULTING);
-                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
-                    if (addr->IsCnsIntOrI())
+                    VNFuncApp  funcApp;
+                    const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
+
+                    if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
                     {
-                        assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                        tree->gtVNPair =
+                            vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
+                        wasNewobj = true;
+                    }
+                }
+
+                if (!wasNewobj)
+                {
+
+                    // Is this invariant indirect expected to always return a non-null value?
+                    if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                    {
+                        assert(tree->gtFlags & GTF_IND_NONFAULTING);
+                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
+                        if (addr->IsCnsIntOrI())
+                        {
+                            assert(addrXvnp.BothEqual() &&
+                                   (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                        }
+                        else
+                        {
+                            assert(false && "it's not expected to be hit at the moment, but can be allowed.");
+                            // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        }
                     }
                     else
                     {
-                        assert(false && "it's not expected to be hit at the moment, but can be allowed.");
-                        // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        tree->gtVNPair =
+                            ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
+                                                                 addrNvnp.GetLiberal()),
+                                         vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
+                                                                 addrNvnp.GetConservative()));
+                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
-                }
-                else
-                {
-                    tree->gtVNPair =
-                        ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
-                                                             addrNvnp.GetLiberal()),
-                                     vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
-                                                             addrNvnp.GetConservative()));
-                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
             }
             else if (isVolatile)

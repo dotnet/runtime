@@ -413,7 +413,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 // Avoid a type reference to JsonObject and its converter to support trimming.
-                Debug.Assert(propValue is Node.JsonObject);
+                Debug.Assert(propValue is Nodes.JsonObject);
 
                 ConverterBase.ReadElementAndSetProperty(propValue, state.Current.JsonPropertyNameAsString!, ref reader, Options, ref state);
             }
@@ -435,7 +435,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
-            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverterInternal(typeof(JsonElement));
             if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
             {
                 // JsonElement is a struct that must be read in full.

@@ -2,6 +2,10 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <PackageDescription>Abstractions for reading `.deps` files.
+
+Commonly Used Types:
+Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
