@@ -320,6 +320,11 @@ MethodTableBuilder::ExpandApproxInterface(
 {
     STANDARD_VM_CONTRACT;
 
+    if (pNewInterface->HasVirtualStaticMethods())
+    {
+        bmtProp->fHasVirtualStaticMethods = TRUE;
+    }
+
     //#ExpandingInterfaces
     // We expand the tree of inherited interfaces into a set by adding the
     // current node BEFORE expanding the parents of the current node.
