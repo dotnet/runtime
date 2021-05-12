@@ -19,6 +19,7 @@ internal static partial class Interop
             internal const int FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
             internal const int FILE_FLAG_FIRST_PIPE_INSTANCE = 0x00080000;
             internal const int FILE_FLAG_OVERLAPPED = 0x40000000;
+            internal const int FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
 
             internal const int FILE_LIST_DIRECTORY = 0x0001;
         }
