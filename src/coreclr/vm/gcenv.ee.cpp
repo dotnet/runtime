@@ -59,8 +59,11 @@ void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_conc
     CONTRACTL_END;
 
 #ifdef VERIFY_HEAP
-    // Validate byrefs pinned by IL stubs since the last GC.
-    StubHelpers::ProcessByrefValidationList();
+    if (is_bgc)
+    {
+        // Validate byrefs pinned by IL stubs since the last GC.
+        StubHelpers::ProcessByrefValidationList();
+    }
 #endif // VERIFY_HEAP
 
     if (!is_concurrent)

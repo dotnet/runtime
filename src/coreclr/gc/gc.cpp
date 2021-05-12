@@ -23683,7 +23683,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         grow_mark_list_piece();
 #endif //USE_REGIONS
 
-        GCToEEInterface::BeforeGcScanRoots(max_generation, /* is_bgc */ false, /* is_concurrent */ false);
+        GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
         num_sizedrefs = GCToEEInterface::GetTotalNumSizedRefHandles();
 
 #ifdef MULTIPLE_HEAPS
