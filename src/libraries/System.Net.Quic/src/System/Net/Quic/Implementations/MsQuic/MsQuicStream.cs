@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private volatile bool _disposed;
 
-        private sealed unsafe class State
+        private sealed class State
         {
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
 
@@ -51,8 +51,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Buffers to hold during a call to send.
             public MemoryHandle[] BufferArrays = new MemoryHandle[1];
-            public IntPtr SendQuicBuffers  = Marshal.AllocHGlobal(sizeof(QuicBuffer));
-            public int SendBufferMaxCount = 1;
+            public IntPtr SendQuicBuffers;
+            public int SendBufferMaxCount;
             public int SendBufferCount;
 
             // Resettable completions to be used for multiple calls to send, start, and shutdown.
@@ -811,6 +811,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             MemoryHandle handle = buffer.Pin();
+            if (_state.SendQuicBuffers == IntPtr.Zero)
+            {
+                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer));
+                _state.SendBufferMaxCount = 1;
+            }
+
             QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendQuicBuffers;
             quicBuffers->Length = (uint)buffer.Length;
             quicBuffers->Buffer = (byte*)handle.Pointer;
@@ -869,8 +875,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 Marshal.FreeHGlobal(_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendBufferMaxCount = count;
                 _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * count);
+                _state.SendBufferMaxCount = count;
                 _state.BufferArrays = new MemoryHandle[count];
             }
 
@@ -934,8 +940,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 Marshal.FreeHGlobal(_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendBufferMaxCount = array.Length;
                 _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * array.Length);
+                _state.SendBufferMaxCount = array.Length;
                 _state.BufferArrays = new MemoryHandle[array.Length];
             }
 
