@@ -1738,7 +1738,6 @@ namespace System.Diagnostics.Tracing
                             // byte[] are written to EventData* as an int followed by a blob
                             Debug.Assert(*(int*)dataPointer == (data + 1)->Size);
                             data++;
-                            dataPointer = data->DataPointer;
                             goto BytePtr;
                         }
                         else if (IntPtr.Size == 4 && dataType == typeof(IntPtr))
@@ -1836,12 +1835,16 @@ namespace System.Diagnostics.Tracing
                 }
 
             BytePtr:
-                var blob = new byte[data->Size];
-                if (blob.Length != 0)
+                if (data->Size == 0)
                 {
-                    Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                    decoded = Array.Empty<byte>();
                 }
-                decoded = blob;
+                else
+                {
+                    var blob = new byte[data->Size];
+                    Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                    decoded = blob;
+                }
                 goto Store;
 
             String:

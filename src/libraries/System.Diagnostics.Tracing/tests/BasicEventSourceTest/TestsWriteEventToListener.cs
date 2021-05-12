@@ -115,6 +115,16 @@ namespace BasicEventSourceTests
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
 
+                    log.EventWithByteArray(new byte[0]);
+                    Assert.Equal(52, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithByteArray(null);
+                    Assert.Equal(52, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
+
                     arr = new byte[20];
                     rng.NextBytes(arr);
                     log.EventWithByteArrayCustom(arr);
@@ -122,11 +132,10 @@ namespace BasicEventSourceTests
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
 
-                    arr = new byte[0];
-                    log.EventWithByteArrayCustom(arr);
+                    log.EventWithByteArrayCustom(new byte[0]);
                     Assert.Equal(53, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
-                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
 
                     arr = new byte[20];
                     rng.NextBytes(arr);
@@ -141,7 +150,7 @@ namespace BasicEventSourceTests
                     log.EventWithBytePointer((byte*)IntPtr.Zero, 0);
                     Assert.Equal(54, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
-                    Assert.Equal(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
 
                     #endregion
 
