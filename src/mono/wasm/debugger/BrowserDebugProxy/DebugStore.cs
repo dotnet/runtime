@@ -317,6 +317,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public SourceId SourceId => source.SourceId;
 
+        public int DebuggerId { get; set; }
         public string Name { get; }
         public MethodDebugInformation DebugInformation;
         public MethodDefinitionHandle methodDefHandle;

@@ -4991,6 +4991,8 @@ buffer_add_info_for_null_value (Buffer* buf, MonoType* t, MonoDomain* domain)
 			buffer_add_typeid (buf, domain, m_class_get_element_class (mono_class_from_mono_type_internal (t)));
 		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));			
 		break;
+	default:
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
 	}
 }
 /*
@@ -8732,6 +8734,16 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	}
 	case CMD_METHOD_ASSEMBLY: {
 		buffer_add_assemblyid(buf, mono_domain_get (), m_class_get_image(method->klass)->assembly);
+		break;
+	}
+	case MDBGPROT_CMD_METHOD_HAS_ASYNC_DEBUG_INFO: {
+		MonoDebugMethodAsyncInfo* async_method = mono_debug_lookup_method_async_debug_info (method);
+		if (async_method) {
+			buffer_add_byte(buf, TRUE);
+			mono_debug_free_method_async_debug_info (async_method);
+		}
+		else 
+			buffer_add_byte(buf, FALSE);
 		break;
 	}
 	default:

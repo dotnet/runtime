@@ -666,6 +666,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 continue;
                             }
 
+                            method.DebuggerId = method_id;
+
                             SourceLocation location = method?.GetLocationByIl(il_pos);
 
                             // When hitting a breakpoint on the "IncrementCount" method in the standard
