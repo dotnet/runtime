@@ -785,8 +785,18 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-            span.Fill(value);
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    array[i] = value;
+                }
+            }
+            else
+            {
+                var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
+                span.Fill(value);
+            }
         }
 
         public static void Fill<T>(T[] array, T value, int startIndex, int count)
@@ -806,9 +816,19 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)startIndex);
-            var span = new Span<T>(ref first, count);
-            span.Fill(value);
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            {
+                for (int i = startIndex; i < startIndex + count; i++)
+                {
+                    array[i] = value;
+                }
+            }
+            else
+            {
+                ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)startIndex);
+                var span = new Span<T>(ref first, count);
+                span.Fill(value);
+            }
         }
 
         public static T? Find<T>(T[] array, Predicate<T> match)
