@@ -197,7 +197,9 @@ namespace System.IO
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual IntPtr Handle => _strategy.Handle;
 
+        [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
+        [UnsupportedOSPlatform("tvos")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -212,7 +214,9 @@ namespace System.IO
             _strategy.Lock(position, length);
         }
 
+        [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
+        [UnsupportedOSPlatform("tvos")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)

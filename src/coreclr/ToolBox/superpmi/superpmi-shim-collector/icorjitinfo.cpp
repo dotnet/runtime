@@ -1140,13 +1140,13 @@ void interceptor_ICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,        // [IN] m
                                      unsigned int*         cILOffsets, // [OUT] size of pILOffsets
                                      uint32_t**            pILOffsets, // [OUT] IL offsets of interest
                                                                        //       jit MUST free with freeArray!
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries // [OUT] tell jit, all boundries of
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries // [OUT] tell jit, all boundaries of
                                                                                      // this type
                                      )
 {
     mc->cr->AddCall("getBoundaries");
-    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
-    mc->recGetBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
+    mc->recGetBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 }
 
 // Report back the mapping from IL to native code,

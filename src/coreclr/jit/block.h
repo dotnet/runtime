@@ -1032,6 +1032,8 @@ struct BasicBlock : private LIR::Range
     // in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are
     // still in the BB list by whether they have the same stamp (with high probability).
     unsigned bbTraversalStamp;
+
+    // bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.
     unsigned bbID;
 #endif // DEBUG
 

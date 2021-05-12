@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="Microsoft.CSharp">
+    <!-- Required for COM event dispatch -->
+    <type fullname="System.Runtime.InteropServices.ComEventsSink"/>
+  </assembly>
+</linker>

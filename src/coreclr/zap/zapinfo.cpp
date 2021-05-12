@@ -1577,7 +1577,10 @@ CORINFO_CLASS_HANDLE ZapInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
 
     if (IsReadyToRunCompilation())
     {
-        _ASSERTE(!"embedClassHandle");
+        // This is supported by crossgen2
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun: embedding class handle not supported\n"));
+
         ThrowHR(E_NOTIMPL);
     }
 

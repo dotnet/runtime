@@ -148,12 +148,12 @@ public:
     void recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                           unsigned int*                 cILOffsets,
                           uint32_t**                       pILOffsets,
-                          ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                          ICorDebugInfo::BoundaryTypes* implicitBoundaries);
     void dmpGetBoundaries(DWORDLONG key, const Agnostic_GetBoundaries& value);
     void repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                           unsigned int*                 cILOffsets,
                           uint32_t**                    pILOffsets,
-                          ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                          ICorDebugInfo::BoundaryTypes* implicitBoundaries);
 
     void recInitClass(CORINFO_FIELD_HANDLE   field,
                       CORINFO_METHOD_HANDLE  method,

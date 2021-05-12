@@ -379,8 +379,12 @@ public:
 enum LsraStat
 {
 #define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
-#include "lsrastats.h"
+#include "lsra_stats.h"
 #undef LSRA_STAT_DEF
+#define REG_SEL_DEF(enum_name, value, short_str) STAT_##enum_name,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    COUNT
 };
 #endif // TRACK_LSRA_STATS
 
@@ -400,6 +404,14 @@ struct LsraBlockInfo
     // Per block maintained LSRA statistics.
     unsigned stats[LsraStat::COUNT];
 #endif // TRACK_LSRA_STATS
+};
+
+enum RegisterScore
+{
+#define REG_SEL_DEF(enum_name, value, short_str) enum_name = value,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    NONE = 0
 };
 
 // This is sort of a bit mask
@@ -1123,7 +1135,10 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
 
-    regNumber allocateReg(Interval* current, RefPosition* refPosition);
+#ifdef DEBUG
+    const char* getScoreName(RegisterScore score);
+#endif
+    regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1177,21 +1192,29 @@ private:
 #endif // TARGET_ARM
 
         // Apply a simple mask-based selection heuristic, and return 'true' if we now have a single candidate.
-        bool applySelection(int selectionScore, regMaskTP selectionCandidates)
+        bool applySelection(int selectionScore, regMaskTP selectionCandidates DEBUG_ARG(RegisterScore* registerScore))
         {
             regMaskTP newCandidates = candidates & selectionCandidates;
             if (newCandidates != RBM_NONE)
             {
                 score += selectionScore;
                 candidates = newCandidates;
-                return isSingleRegister(candidates);
+                bool found = isSingleRegister(candidates);
+#ifdef DEBUG
+                if (found)
+                {
+                    *registerScore = (RegisterScore)selectionScore;
+                }
+#endif
+                return found;
             }
             return false;
         }
 
         // Select a single register, if it is in the candidate set.
         // Return true if so.
-        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
+        bool applySingleRegSelection(int       selectionScore,
+                                     regMaskTP selectionCandidate DEBUG_ARG(RegisterScore* registerScore))
         {
             assert(isSingleRegister(selectionCandidate));
             regMaskTP newCandidates = candidates & selectionCandidate;
@@ -1199,6 +1222,9 @@ private:
             {
                 score += selectionScore;
                 candidates = newCandidates;
+#ifdef DEBUG
+                *registerScore = (RegisterScore)selectionScore;
+#endif
                 return true;
             }
             return false;
@@ -1348,9 +1374,10 @@ private:
         LSRA_EVENT_NO_REG_ALLOCATED, LSRA_EVENT_RELOAD, LSRA_EVENT_SPECIAL_PUTARG, LSRA_EVENT_REUSE_REG,
     };
     void dumpLsraAllocationEvent(LsraDumpEvent event,
-                                 Interval*     interval     = nullptr,
-                                 regNumber     reg          = REG_NA,
-                                 BasicBlock*   currentBlock = nullptr);
+                                 Interval*     interval      = nullptr,
+                                 regNumber     reg           = REG_NA,
+                                 BasicBlock*   currentBlock  = nullptr,
+                                 RegisterScore registerScore = NONE);
 
     void validateIntervals();
 #endif // DEBUG
@@ -1359,7 +1386,7 @@ private:
     unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void dumpLsraStats(FILE* file);
-    LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
+    LsraStat firstRegSelStat = STAT_FREE;
 
 public:
     virtual void dumpLsraStatsCsv(FILE* file);

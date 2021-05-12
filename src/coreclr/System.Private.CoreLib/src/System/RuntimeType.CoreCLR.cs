@@ -3680,7 +3680,7 @@ namespace System
             Type[] aArgsTypes,
             Type retType)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
