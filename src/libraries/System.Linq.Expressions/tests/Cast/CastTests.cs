@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    [ActiveIssue("", TestPlatforms.tvOS)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
     public static class CastTests
     {
         #region Test methods
@@ -909,14 +909,12 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("", TestPlatforms.tvOS)]
         public static void ConvertObjectCastGenericWithStructRestrictionAsStruct(bool useInterpreter)
         {
             CheckObjectCastGenericWithStructRestrictionHelper<S>(useInterpreter);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("", TestPlatforms.tvOS)]
         public static void ConvertObjectCastGenericWithStructRestrictionAsStructWithStringAndField(bool useInterpreter)
         {
             CheckObjectCastGenericWithStructRestrictionHelper<Scs>(useInterpreter);
@@ -1013,7 +1011,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("", TestPlatforms.tvOS)]
         public static void ConvertValueTypeCastGenericWithStructRestrictionAsStruct(bool useInterpreter)
         {
             CheckValueTypeCastGenericWithStructRestrictionHelper<S>(useInterpreter);
