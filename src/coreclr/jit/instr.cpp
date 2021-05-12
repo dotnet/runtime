@@ -405,7 +405,7 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 // Arguments:
 //    ins   - the instruction to generate;
 //    reg1  - the first register to use, the dst for most instructions;
-//    tree  - the second register to use, the src for most instructions;
+//    reg2  - the second register to use, the src for most instructions;
 //    type  - the type used to get the size attribute if not given, usually type of the reg2 operand;
 //    size  - the size attribute, the type arg is ignored if this arg is provided with an actual value;
 //    flags - whether flags are set for arm32.
