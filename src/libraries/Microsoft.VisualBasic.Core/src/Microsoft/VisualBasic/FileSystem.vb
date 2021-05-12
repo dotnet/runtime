@@ -1009,7 +1009,9 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Function InputString(ByVal FileNumber As Integer, ByVal CharCount As Integer) As String
             Try
                 Dim oFile As VB6File
@@ -1047,37 +1049,49 @@ Namespace Microsoft.VisualBasic
             Return oFile.LineInput()
         End Function
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock()
         End Sub
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(Record)
         End Sub
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Lock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(FromRecord, ToRecord)
         End Sub
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock()
         End Sub
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(Record)
         End Sub
 
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(FromRecord, ToRecord)

@@ -1279,8 +1279,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree* dest      = nullptr;
-    unsigned destFlags = 0;
+    GenTree*     dest      = nullptr;
+    GenTreeFlags destFlags = GTF_EMPTY;
 
     if (ilOffset == BAD_IL_OFFSET)
     {
@@ -2025,7 +2025,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                    CORINFO_LOOKUP*         pLookup,
-                                   unsigned                handleFlags,
+                                   GenTreeFlags            handleFlags,
                                    void*                   compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
@@ -2086,7 +2086,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 #ifdef FEATURE_READYTORUN_COMPILER
 GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
-                                             unsigned              handleFlags,
+                                             GenTreeFlags          handleFlags,
                                              void*                 compileTimeHandle)
 {
     CORINFO_GENERIC_HANDLE handle       = nullptr;
@@ -7566,7 +7566,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 #ifdef FEATURE_READYTORUN_COMPILER
             if (opts.IsReadyToRun())
             {
-                unsigned callFlags = 0;
+                GenTreeFlags callFlags = GTF_EMPTY;
 
                 if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
                 {
@@ -7604,7 +7604,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             GenTree*          ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
             GenTreeCall::Use* args    = gtNewCallArgs(ctxTree);
 
-            unsigned callFlags = 0;
+            GenTreeFlags callFlags = GTF_EMPTY;
 
             if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
             {
@@ -21007,6 +21007,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (isExplicitTailCall)
         {
             JITDUMP("Have a direct explicit tail call to boxed entry point; can't optimize further\n");
+        }
+        else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            // Per https://github.com/dotnet/runtime/issues/52483, crossgen2 seemingly gets
+            // confused about whether the unboxed entry requires an extra arg.
+            // So defer further optimization for now.
+            //
+            JITDUMP("Have a direct boxed entry point, prejitting. Can't optimize further yet.\n");
         }
         else
         {

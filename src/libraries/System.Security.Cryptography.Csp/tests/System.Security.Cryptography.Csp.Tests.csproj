@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <!-- SYSLIB0021: Derived cryptographic types are obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTransformCompat.cs" />

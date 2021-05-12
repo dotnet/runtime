@@ -753,6 +753,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "SendBufferSize, ReceiveBufferSize = 0 not supported on BSD like stacks.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendRecv_NoBuffering_Success()
         {
             if (UsesSync) return;
@@ -931,6 +932,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens

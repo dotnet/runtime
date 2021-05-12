@@ -1912,11 +1912,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     do
     {
-        unsigned   jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
-        unsigned   bbFlags = 0;
-        BBswtDesc* swtDsc  = nullptr;
-        unsigned   nxtBBoffs;
-        OPCODE     opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        unsigned        jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
+        BasicBlockFlags bbFlags = BBF_EMPTY;
+        BBswtDesc*      swtDsc  = nullptr;
+        unsigned        nxtBBoffs;
+        OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
         BBjumpKinds jmpKind = BBJ_NONE;
 

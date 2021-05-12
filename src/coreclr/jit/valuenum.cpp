@@ -1711,7 +1711,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /
     return result;
 }
 
-ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, unsigned handleFlags)
+ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
 {
     assert((handleFlags & ~GTF_ICON_HDL_MASK) == 0);
 
@@ -4217,7 +4217,7 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
     return TypeOfVN(vn) == TYP_INT;
 }
 
-unsigned ValueNumStore::GetHandleFlags(ValueNum vn)
+GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
 {
     assert(IsVNHandle(vn));
     Chunk*    c      = m_chunks.GetNoExpand(GetChunkNum(vn));
@@ -6358,8 +6358,8 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
                 }
                 else
                 {
-                    newMemoryVN =
-                        vnStore->VNForFunc(TYP_REF, VNF_PhiMemoryDef, vnStore->VNForHandle(ssize_t(blk), 0), phiAppVN);
+                    newMemoryVN = vnStore->VNForFunc(TYP_REF, VNF_PhiMemoryDef,
+                                                     vnStore->VNForHandle(ssize_t(blk), GTF_EMPTY), phiAppVN);
                 }
             }
             GetMemoryPerSsaData(blk->bbMemorySsaNumIn[memoryKind])->m_vnPair.SetLiberal(newMemoryVN);
