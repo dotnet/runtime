@@ -4488,6 +4488,9 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // We also need to reset the scanned stack range since the scanned frames will be
                 // obsolete after the unwind of the native frames completes.
                 ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+
+                // The tracker will only be non-null in the case when we handle the managed exception in
+                // the runtime native code.
                 if (pTracker != NULL)
                     pTracker->CleanupBeforeNativeFramesUnwind();
             }
