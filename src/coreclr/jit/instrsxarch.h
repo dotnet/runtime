@@ -77,6 +77,7 @@ INST4(xor,              "xor",              IUM_RW, 0x000030,     0x003080,     
 INST4(cmp,              "cmp",              IUM_RD, 0x000038,     0x003880,     0x00003A,     0x00003C,                  INS_FLAGS_WritesAllFlags)
 INST4(test,             "test",             IUM_RD, 0x000084,     0x0000F6,     0x000084,     0x0000A8,                  INS_FLAGS_WritesAllFlags | INS_FLAGS_Resets_CF_OF_Flags) // AF = ?
 INST4(mov,              "mov",              IUM_WR, 0x000088,     0x0000C6,     0x00008A,     0x0000B0,                  INS_FLAGS_None)
+INST4(mov_eliminated,   "mov_eliminated",   IUM_WR, 0x000088,     0x0000C6,     0x00008A,     0x0000B0,                  INS_FLAGS_None)
 
 INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     0x00008D,     BAD_CODE,                  INS_FLAGS_None)
 
