@@ -78,6 +78,11 @@ namespace NetCoreServer
                 await EchoWebSocketHeadersHandler.InvokeAsync(context);
                 return;
             }
+            if (path.Equals(new PathString("/test.ashx")))
+            {
+                await TestHandler.InvokeAsync(context);
+                return;
+            }
 
             // Default handling.
             await EchoHandler.InvokeAsync(context);
