@@ -202,8 +202,6 @@ namespace System.Numerics
 
         private static uint AddDivisor(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
 
             // Repairs the dividend, if the last subtract was too much
@@ -223,8 +221,6 @@ namespace System.Numerics
 
         private static uint SubtractDivisor(Span<uint> left, ReadOnlySpan<uint> right, ulong q)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(q <= 0xFFFFFFFF);
 

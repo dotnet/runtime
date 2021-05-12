@@ -20,7 +20,6 @@ namespace System.Numerics
 
         public static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
         {
-            Debug.Assert(value.Length >= 0);
             Debug.Assert(bits.Length == value.Length + value.Length);
 
             // Executes different algorithms for computing z = a * a
@@ -161,8 +160,6 @@ namespace System.Numerics
 
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(bits.Length == left.Length + right.Length);
 
@@ -286,9 +283,6 @@ namespace System.Numerics
 
         private static void SubtractCore(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> core)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
-            Debug.Assert(core.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(core.Length >= left.Length);
 

@@ -32,8 +32,6 @@ namespace System.Numerics
 
         public static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(bits.Length == left.Length + 1);
 
@@ -67,8 +65,6 @@ namespace System.Numerics
 
         private static void AddSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
 
             int i = 0;
@@ -121,8 +117,6 @@ namespace System.Numerics
 
         public static void Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(Compare(left, right) >= 0);
             Debug.Assert(bits.Length == left.Length);
@@ -158,8 +152,6 @@ namespace System.Numerics
 
         private static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(left.Length >= 0);
-            Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(Compare(left, right) >= 0);
 
