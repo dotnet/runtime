@@ -961,6 +961,8 @@ namespace System
             return match;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
             if (fullname == null) throw new ArgumentNullException(nameof(fullname));
@@ -2023,6 +2025,7 @@ namespace System
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override Type[] GetInterfaces();
 
