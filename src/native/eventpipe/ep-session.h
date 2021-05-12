@@ -23,9 +23,9 @@ struct _EventPipeSession {
 #else
 struct _EventPipeSession_Internal {
 #endif
-	// When the session is of IPC type, this becomes a reference to the streaming thread.
-	ep_rt_thread_handle_t ipc_streaming_thread;
-	// Event object used to signal Disable that the IPC streaming thread is done.
+	// When the session is of IPC or FILE stream type, this becomes a reference to the streaming thread.
+	ep_rt_thread_handle_t streaming_thread;
+	// Event object used to signal Disable that the streaming thread is done.
 	ep_rt_wait_event_handle_t rt_thread_shutdown_event;
 	// The set of configurations for each provider in the session.
 	EventPipeSessionProviderList *providers;
@@ -42,8 +42,8 @@ struct _EventPipeSession_Internal {
 	uint32_t index;
 	// True if rundown is enabled.
 	volatile uint32_t rundown_enabled;
-	// Data members used when an IPC streaming thread is used.
-	volatile uint32_t ipc_streaming_enabled;
+	// Data members used when an streaming thread is used.
+	volatile uint32_t streaming_enabled;
 	// The type of the session.
 	// This determines behavior within the system (e.g. policies around which events to drop, etc.)
 	EventPipeSessionType session_type;
@@ -118,7 +118,7 @@ ep_session_write_sequence_point_unbuffered (EventPipeSession *session);
 // MUST be called AFTER sending the IPC response
 // Side effects:
 // - sends file header information for nettrace format
-// - turns on IpcStreaming thread which flushes events to stream
+// - turns on streaming thread which flushes events to stream
 // _Requires_lock_held (ep)
 void
 ep_session_start_streaming (EventPipeSession *session);
@@ -176,10 +176,10 @@ ep_session_set_rundown_enabled (
 	bool enabled);
 
 bool
-ep_session_get_ipc_streaming_enabled (const EventPipeSession *session);
+ep_session_get_streaming_enabled (const EventPipeSession *session);
 
 void
-ep_session_set_ipc_streaming_enabled (
+ep_session_set_streaming_enabled (
 	EventPipeSession *session,
 	bool enabled);
 

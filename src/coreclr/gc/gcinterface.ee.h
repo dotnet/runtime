@@ -426,6 +426,9 @@ public:
 
     virtual
     void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg) = 0;
+
+    virtual
+    uint32_t GetCurrentProcessCpuCount() = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

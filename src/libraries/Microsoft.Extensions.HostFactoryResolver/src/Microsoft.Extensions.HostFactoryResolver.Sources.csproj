@@ -5,6 +5,7 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IsSourcePackage>true</IsSourcePackage>
     <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
 

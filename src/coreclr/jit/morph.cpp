@@ -71,7 +71,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallLateArgs        = nullptr;
     call->fgArgInfo             = nullptr;
     call->gtRetClsHnd           = nullptr;
-    call->gtCallMoreFlags       = 0;
+    call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
 
@@ -3663,7 +3663,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     GenTreeCall::Use* args;
     GenTree*          argx;
 
-    unsigned flagsSummary = 0;
+    GenTreeFlags flagsSummary = GTF_EMPTY;
 
     unsigned argIndex = 0;
 
@@ -4267,8 +4267,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 //
 void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 {
-    bool     foundStructArg = false;
-    unsigned flagsSummary   = 0;
+    bool         foundStructArg = false;
+    GenTreeFlags flagsSummary   = GTF_EMPTY;
 
 #ifdef TARGET_X86
     assert(!"Logic error: no MultiregStructArgs for X86");
@@ -8358,7 +8358,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 //
 GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP*         pLookup,
-                                 unsigned                handleFlags,
+                                 GenTreeFlags            handleFlags,
                                  void*                   compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
@@ -14090,6 +14090,14 @@ DONE_MORPHING_CHILDREN:
                 op2 = tree->AsOp()->gtOp2;
             }
 
+            // Fold "cmp & 1" to just "cmp"
+            if (tree->OperIs(GT_AND) && tree->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1))
+            {
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(tree);
+                return op1;
+            }
+
             // See if we can fold floating point operations (can regress minopts mode)
             if (opts.OptimizationEnabled() && varTypeIsFloating(tree->TypeGet()) && !optValnumCSE_phase)
             {
@@ -14782,12 +14790,12 @@ DONE_MORPHING_CHILDREN:
                 // TBD: this transformation is currently necessary for correctness -- it might
                 // be good to analyze the failures that result if we don't do this, and fix them
                 // in other ways.  Ideally, this should be optional.
-                GenTree* commaNode = op1;
-                unsigned treeFlags = tree->gtFlags;
-                commaNode->gtType  = typ;
-                commaNode->gtFlags = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
-                                                                     // dangerous, clear the GTF_REVERSE_OPS at
-                                                                     // least.
+                GenTree*     commaNode = op1;
+                GenTreeFlags treeFlags = tree->gtFlags;
+                commaNode->gtType      = typ;
+                commaNode->gtFlags     = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
+                                                                         // dangerous, clear the GTF_REVERSE_OPS at
+                                                                         // least.
 #ifdef DEBUG
                 commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -17739,8 +17747,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    unsigned    propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
-    BasicBlock* remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+    BasicBlockFlags propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
+    BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* helperBlock = fgNewBBafter(BBJ_NONE, block, true);
@@ -17917,8 +17925,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    unsigned    propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
-    BasicBlock* remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+    BasicBlockFlags propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
+    BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_COND, block, true);
@@ -19418,9 +19426,9 @@ bool Compiler::fgCanTailCallViaJitHelper()
 #endif
 }
 
-static const int      numberOfTrackedFlags               = 5;
-static const unsigned trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
-                                                            GTF_ORDER_SIDEEFF};
+static const int          numberOfTrackedFlags               = 5;
+static const GenTreeFlags trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
+                                                                GTF_ORDER_SIDEEFF};
 
 //------------------------------------------------------------------------
 // fgMorphArgList: morph argument list tree without recursion.
