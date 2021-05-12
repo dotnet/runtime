@@ -6752,7 +6752,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     {
         size_t dscSize = dsc->dsSize;
 
-        BYTE *dstRW = dst + writeableOffset;
+        BYTE* dstRW = dst + writeableOffset;
 
         // absolute label table
         if (dsc->dsType == dataSection::blockAbsoluteAddr)
@@ -6761,7 +6761,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t         numElems = dscSize / TARGET_POINTER_SIZE;
-            target_size_t* bDstRW     = (target_size_t*)dstRW;
+            target_size_t* bDstRW   = (target_size_t*)dstRW;
             for (unsigned i = 0; i < numElems; i++)
             {
                 BasicBlock* block = ((BasicBlock**)dsc->dsCont)[i];
@@ -6790,7 +6790,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
 
             size_t    numElems = dscSize / 4;
-            unsigned* uDstRW     = (unsigned*)dstRW;
+            unsigned* uDstRW   = (unsigned*)dstRW;
             insGroup* labFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
 
             for (unsigned i = 0; i < numElems; i++)
