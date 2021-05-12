@@ -99,30 +99,28 @@ PhaseStatus Compiler::fgInline()
                                                                         &info.compMethodInfo->args);
 #endif // DEBUG
 
-    BasicBlock* block       = fgFirstBB;
-    bool        madeChanges = false;
-    noway_assert(block != nullptr);
+    noway_assert(fgFirstBB != nullptr);
 
     // Set the root inline context on all statements
     InlineContext* rootContext = m_inlineStrategy->GetRootContext();
 
-    for (; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
         }
     }
 
-    // Reset block back to start for inlining
-    block = fgFirstBB;
+    BasicBlock* block = fgFirstBB;
+    bool madeChanges = false;
 
     do
     {
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
 
 #ifdef DEBUG
@@ -212,7 +210,7 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             // Call Compiler::fgDebugCheckInlineCandidates on each node
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
@@ -1119,7 +1117,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
         }

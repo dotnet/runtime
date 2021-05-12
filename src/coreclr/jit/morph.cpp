@@ -16933,7 +16933,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
 
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         if (fgRemoveRestOfBlock)
         {
@@ -18063,7 +18063,7 @@ void Compiler::fgExpandQmarkNodes()
     {
         for (BasicBlock* const block : Blocks())
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
 #ifdef DEBUG
@@ -18089,7 +18089,7 @@ void Compiler::fgPostExpandQmarkChecks()
 {
     for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             GenTree* expr = stmt->GetRootNode();
             fgWalkTreePre(&expr, Compiler::fgAssertNoQmark, nullptr);

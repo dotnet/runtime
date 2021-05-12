@@ -5109,7 +5109,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         compCycleEstimate = 0;
         for (BasicBlock* const block : Blocks())
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 compSizeEstimate += stmt->GetCostSz();
                 compCycleEstimate += stmt->GetCostEx();
@@ -5344,7 +5344,7 @@ void Compiler::ResetOptAnnotations()
 
     for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const tree : stmt->TreeList())
             {
@@ -7368,7 +7368,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
 
     for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->NonPhiStatements())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             for (GenTree* const tree : stmt->TreeList())
             {
@@ -7496,7 +7496,7 @@ void Compiler::compCallArgStats()
 
     for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const call : stmt->TreeList())
             {
@@ -8922,7 +8922,7 @@ GenTree* dFindTree(unsigned id)
 
     for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             tree = dFindTree(stmt->GetRootNode(), id);
             if (tree != nullptr)
@@ -8945,7 +8945,7 @@ Statement* dFindStmt(unsigned id)
     unsigned stmtId = 0;
     for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmtId++;
             if (stmtId == id)

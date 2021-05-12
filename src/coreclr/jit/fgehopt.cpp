@@ -102,7 +102,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
-        for (Statement* stmt : firstBlock->Statements())
+        for (Statement* const stmt : firstBlock->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
@@ -544,7 +544,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             // If we're in a non-funclet model, decrement the nesting
             // level of any GT_END_LFIN we find in the handler region,
             // since we're removing the enclosing handler.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
@@ -732,7 +732,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Should we compute statement cost here, or is it
             // premature...? For now just count statements I guess.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 regionStmtCount++;
             }
@@ -1512,7 +1512,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // Remove the GT_END_LFIN from the continuation,
     // Note we only expect to see one such statement.
     bool foundEndLFin = false;
-    for (Statement* stmt : continuation->Statements())
+    for (Statement* const stmt : continuation->Statements())
     {
         GenTree* expr = stmt->GetRootNode();
         if (expr->gtOper == GT_END_LFIN)

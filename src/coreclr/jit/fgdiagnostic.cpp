@@ -2233,7 +2233,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
 
     if (!block->IsLIR())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgDumpStmtTree(stmt, block->bbNum);
         }
@@ -3486,7 +3486,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 
 void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         // Verify that bbStmtList is threaded correctly.
         // Note that for the statements list, the GetPrevStmt() list is circular.
@@ -3676,7 +3676,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
         }
         else
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* root = stmt->GetRootNode();
                 fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);

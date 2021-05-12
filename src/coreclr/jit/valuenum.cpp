@@ -6193,7 +6193,7 @@ void Compiler::fgValueNumber()
         }
         for (BasicBlock* const blk : Blocks())
         {
-            for (Statement* stmt : blk->NonPhiStatements())
+            for (Statement* const stmt : blk->NonPhiStatements())
             {
                 for (GenTree* const tree : stmt->TreeList())
                 {

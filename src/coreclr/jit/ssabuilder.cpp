@@ -106,7 +106,7 @@ void Compiler::fgResetForSsa()
             }
         }
 
-        for (Statement* stmt : blk->Statements())
+        for (Statement* const stmt : blk->Statements())
         {
             for (GenTree* const tree : stmt->TreeList())
             {
@@ -485,7 +485,7 @@ void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkV
 static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 {
     // Walk the statements for phi nodes.
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         // A prefix of the statements of the block are phi definition nodes. If we complete processing
         // that prefix, exit.
@@ -903,7 +903,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                 bool phiFound = false;
 #endif
                 // A prefix of blocks statements will be SSA definitions.  Search those for "lclNum".
-                for (Statement* stmt : handler->Statements())
+                for (Statement* const stmt : handler->Statements())
                 {
                     // If the tree is not an SSA def, break out of the loop: we're done.
                     if (!stmt->IsPhiDefnStmt())
@@ -1054,7 +1054,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
     }
 
     // Walk the statements of the block and rename definitions and uses.
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         for (GenTree* const tree : stmt->TreeList())
         {
@@ -1119,7 +1119,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
     for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
     {
         // Walk the statements for phi nodes.
-        for (Statement* stmt : succ->Statements())
+        for (Statement* const stmt : succ->Statements())
         {
             // A prefix of the statements of the block are phi definition nodes. If we complete processing
             // that prefix, exit.
@@ -1250,7 +1250,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                 // For a filter, we consider the filter to be the "real" handler.
                 BasicBlock* handlerStart = succTry->ExFlowBlock();
 
-                for (Statement* stmt : handlerStart->Statements())
+                for (Statement* const stmt : handlerStart->Statements())
                 {
                     GenTree* tree = stmt->GetRootNode();
 

@@ -772,7 +772,7 @@ bool BasicBlock::CloneBlockState(
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
 
-    for (Statement* fromStmt : from->Statements())
+    for (Statement* const fromStmt : from->Statements())
     {
         auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
         if (!newExpr)
@@ -936,7 +936,7 @@ bool BasicBlock::isEmpty() const
 {
     if (!IsLIR())
     {
-        for (Statement* stmt : NonPhiStatements())
+        for (Statement* const stmt : NonPhiStatements())
         {
             if (!stmt->GetRootNode()->OperIs(GT_NOP))
             {

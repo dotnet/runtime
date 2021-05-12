@@ -1237,7 +1237,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
             do
             {
                 block = block->bbNext;
-                for (Statement* stmt : block->Statements())
+                for (Statement* const stmt : block->Statements())
                 {
                     if (stmt->GetRootNode() == incr)
                     {
@@ -3748,7 +3748,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     ++loopRetCount;
                 }
 
-                for (Statement* stmt : block->Statements())
+                for (Statement* const stmt : block->Statements())
                 {
                     gtSetStmtInfo(stmt);
                     loopCostSz += stmt->GetCostSz();
@@ -4229,7 +4229,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     unsigned estDupCostSz = 0;
 
-    for (Statement* stmt : bTest->Statements())
+    for (Statement* const stmt : bTest->Statements())
     {
         GenTree* tree = stmt->GetRootNode();
         gtPrepareCost(tree);
@@ -4318,7 +4318,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         //
         // If the condition has array.Length operations, also boost, as they are likely to be CSE'd.
 
-        for (Statement* stmt : bTest->Statements())
+        for (Statement* const stmt : bTest->Statements())
         {
             GenTree* tree = stmt->GetRootNode();
 
@@ -4377,7 +4377,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
 
     // Clone each statement in bTest and append to bNewCond.
-    for (Statement* stmt : bTest->Statements())
+    for (Statement* const stmt : bTest->Statements())
     {
         GenTree* originalTree = stmt->GetRootNode();
         GenTree* clonedTree   = gtCloneExpr(originalTree);
@@ -5331,7 +5331,7 @@ bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip,
     {
         noway_assert(beg != nullptr);
 
-        for (Statement* stmt : beg->Statements())
+        for (Statement* const stmt : beg->Statements())
         {
             if (fgWalkTreePre(stmt->GetRootNodePointer(), optIsVarAssgCB, &desc) != WALK_CONTINUE)
             {
@@ -5401,7 +5401,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
 
         for (BasicBlock* const block : loop->LoopBlocks())
         {
-            for (Statement* stmt : block->NonPhiStatements())
+            for (Statement* const stmt : block->NonPhiStatements())
             {
                 fgWalkTreePre(stmt->GetRootNodePointer(), optIsVarAssgCB, &desc);
 
@@ -6151,7 +6151,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         void HoistBlock(BasicBlock* block)
         {
-            for (Statement* stmt : block->NonPhiStatements())
+            for (Statement* const stmt : block->NonPhiStatements())
             {
                 WalkTree(stmt->GetRootNodePointer(), nullptr);
                 assert(m_valueStack.TopRef().Node() == stmt->GetRootNode());
@@ -6759,7 +6759,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // into the phi via the loop header block will now flow through the preheader
     // block from the header block.
 
-    for (Statement* stmt : top->Statements())
+    for (Statement* const stmt : top->Statements())
     {
         GenTree* tree = stmt->GetRootNode();
         if (tree->OperGet() != GT_ASG)
@@ -7035,7 +7035,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
     MemoryKindSet memoryHavoc = emptyMemoryKindSet;
 
     // Now iterate over the remaining statements, and their trees.
-    for (Statement* stmt : blk->NonPhiStatements())
+    for (Statement* const stmt : blk->NonPhiStatements())
     {
         for (GenTree* const tree : stmt->TreeList())
         {

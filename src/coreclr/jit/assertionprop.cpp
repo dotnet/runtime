@@ -4824,7 +4824,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
         GenTree*  jtrue    = nullptr;
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const tree : stmt->TreeList())
             {

@@ -2316,7 +2316,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
     for (BasicBlock* const block : loop.LoopBlocks())
     {
         compCurBB = block;
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             info.stmt               = stmt;
             const bool lclVarsOnly  = false;

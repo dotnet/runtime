@@ -100,7 +100,7 @@ private:
     {
         int count = 0;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             if (compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
@@ -1012,7 +1012,7 @@ private:
                 }
             };
 
-            for (Statement* nextStmt : remainderBlock->Statements())
+            for (Statement* const nextStmt : remainderBlock->Statements())
             {
                 JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
 
@@ -1275,7 +1275,7 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 
     for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckForTransformableIndirectCalls);
         }

@@ -215,7 +215,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
     for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             BuildConnGraphVisitor buildConnGraphVisitor(this);
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -349,7 +349,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
         }
 #endif // DEBUG
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
             GenTree* op2      = nullptr;
@@ -915,7 +915,7 @@ void ObjectAllocator::RewriteUses()
 
     for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             RewriteUsesVisitor rewriteUsesVisitor(this);
             rewriteUsesVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);

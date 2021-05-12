@@ -3471,7 +3471,7 @@ IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
     // could have a similar function for LIR that searches for GT_IL_OFFSET nodes.
     assert(!block->IsLIR());
 
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
         {

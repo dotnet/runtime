@@ -1217,7 +1217,7 @@ void Compiler::fgMarkAddressExposedLocals()
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             visitor.VisitStmt(stmt);
         }

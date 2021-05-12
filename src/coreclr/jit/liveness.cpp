@@ -508,7 +508,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         }
         else
         {
-            for (Statement* stmt : block->NonPhiStatements())
+            for (Statement* const stmt : block->NonPhiStatements())
             {
                 compCurStmt = stmt;
                 for (GenTree* const node : stmt->TreeList())

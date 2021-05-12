@@ -790,7 +790,7 @@ unsigned Compiler::optValnumCSE_Locate()
         noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
         /* Walk the statement trees in this basic block */
-        for (Statement* stmt : block->NonPhiStatements())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             const bool isReturn = stmt->GetRootNode()->OperIs(GT_RETURN);
 
@@ -1399,7 +1399,7 @@ void Compiler::optValnumCSE_Availablity()
 
         // Walk the statement trees in this basic block
 
-        for (Statement* stmt : block->NonPhiStatements())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We walk the tree in the forwards direction (bottom up)
 
@@ -3838,7 +3838,7 @@ void Compiler::optCleanupCSEs()
         block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : block->NonPhiStatements())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We must clear the gtCSEnum field.
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
@@ -3863,7 +3863,7 @@ void Compiler::optEnsureClearCSEInfo()
     {
         assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
-        for (Statement* stmt : block->NonPhiStatements())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
             {

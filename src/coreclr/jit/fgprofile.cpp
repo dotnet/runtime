@@ -1417,7 +1417,7 @@ void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     //
     BuildClassProbeSchemaGen                    schemaGen(schema, m_schemaCount);
     ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(m_comp, schemaGen);
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -1450,7 +1450,7 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
 
     ClassProbeInserter                    insertProbes(schema, profileMemory, &classSchemaIndex, m_instrCount);
     ClassProbeVisitor<ClassProbeInserter> visitor(m_comp, insertProbes);
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -1478,7 +1478,7 @@ void ClassProbeInstrumentor::SuppressProbes()
             continue;
         }
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }

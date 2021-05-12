@@ -2141,7 +2141,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
             block->bbStmtList = firstNonPhi;
         }
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgRemoveStmt(block, stmt);
         }
@@ -3453,7 +3453,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     assert(!bDest->IsLIR());
 
     unsigned estDupCostSz = 0;
-    for (Statement* stmt : bDest->Statements())
+    for (Statement* const stmt : bDest->Statements())
     {
         // We want to compute the costs of the statement. Unfortunately, gtPrepareCost() / gtSetStmtInfo()
         // call gtSetEvalOrder(), which can reorder nodes. If it does so, we need to re-thread the gtNext/gtPrev
@@ -3563,7 +3563,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     /* Visit all the statements in bDest */
 
-    for (Statement* curStmt : bDest->Statements())
+    for (Statement* const curStmt : bDest->Statements())
     {
         // Clone/substitute the expression.
         Statement* stmt = gtCloneStmt(curStmt);
@@ -5933,7 +5933,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
             break;
     }
 
-    for (Statement* stmt : block->NonPhiStatements())
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         unsigned char cost = stmt->GetCostSz();
         costSz += cost;
@@ -5955,7 +5955,7 @@ unsigned Compiler::fgMeasureIR()
     {
         if (!block->IsLIR())
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 fgWalkTreePre(stmt->GetRootNodePointer(),
                               [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {

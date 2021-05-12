@@ -304,7 +304,7 @@ void Rationalizer::SanityCheck()
     // TODO: assert(!IsLIR());
     for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             ValidateStatement(stmt, block);
 
@@ -948,7 +948,7 @@ PhaseStatus Rationalizer::DoPhase()
             continue;
         }
 
-        for (Statement* statement : block->Statements())
+        for (Statement* const statement : block->Statements())
         {
             assert(statement->GetTreeList() != nullptr);
             assert(statement->GetTreeList()->gtPrev == nullptr);

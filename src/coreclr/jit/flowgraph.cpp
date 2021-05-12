@@ -25,7 +25,7 @@
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
     bool blockMayNeedGCPoll = false;
-    for (Statement* stmt : block->NonPhiStatements())
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
         {
@@ -2921,7 +2921,7 @@ void Compiler::fgFindOperOrder()
     for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             /* Recursively process the statement */
 
@@ -4473,7 +4473,7 @@ void Compiler::fgSetStmtSeq(Statement* stmt)
 
 void Compiler::fgSetBlockOrder(BasicBlock* block)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         fgSetStmtSeq(stmt);
 
