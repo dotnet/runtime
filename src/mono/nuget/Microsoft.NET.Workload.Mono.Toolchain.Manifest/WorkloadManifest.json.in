@@ -1,7 +1,7 @@
 {
   "version": "${WorkloadVersion}",
   "workloads": {
-    "microsoft-net-runtime-browser-native": {
+    "microsoft-net-sdk-blazorwebassembly-aot": {
       "description": "Browser Runtime native performance tools",
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
