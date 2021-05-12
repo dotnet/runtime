@@ -976,8 +976,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         }
 
         LclVarDsc* varDsc = &lvaTable[varNum];
+        bool       isThis = lvaIsOriginalThisArg(varNum) && lvaIsOriginalThisReadOnly();
+        bool       isVt   = (info.compClassAttr & CORINFO_FLG_VALUECLASS) != 0;
 
-        if (varDsc->lvStackByref || (lvaIsOriginalThisArg(varNum) && lvaIsOriginalThisReadOnly()))
+        if (varDsc->lvStackByref || (isThis && !isVt))
         {
             return false;
         }
