@@ -366,9 +366,8 @@ void CodeGen::genCodeForBBlist()
             GetEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
         }
 
-        /* Both stacks are always empty on entry to a basic block */
-
-        SetStackLevel(0);
+        // Both stacks are always empty on entry to a basic block.
+        assert(genStackLevel == 0);
         genAdjustStackLevel(block);
         savedStkLvl = genStackLevel;
 
