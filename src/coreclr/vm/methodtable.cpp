@@ -9201,7 +9201,7 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 //==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
 MethodDesc *
-MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL checkDuplicates)
+MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL checkDuplicates, BOOL allowVariantMatches)
 {
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
@@ -9237,7 +9237,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     return pMD;
                 }
 
-                if (pInterfaceType->HasVariance())
+                if (pInterfaceType->HasVariance() || pInterfaceType->HasTypeEquivalence())
                 {
                     // Variant interface dispatch
                     MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
@@ -9252,12 +9252,26 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         if (!it.GetInterface()->HasSameTypeDefAs(pInterfaceType))
                         {
                             // Variance matches require a typedef match
+                            // Equivalence isn't sufficient, and is uninteresting as equivalent interfaces cannot have static virtuals.
                             continue;
                         }
 
-                        if (it.GetInterface()->CanCastTo(pInterfaceType, NULL))
+                        BOOL equivalentOrVariantCompatible;
+
+                        if (allowVariantMatches)
                         {
-                            // Variant matching interface found
+                            equivalentOrVariantCompatible = it.GetInterface()->CanCastTo(pInterfaceType, NULL);
+                        }
+                        else
+                        {
+                            // When performing override checking to ensure that a concrete type is valid, require the implementation 
+                            // actually implement the exact or equivalent interface.
+                            equivalentOrVariantCompatible = it.GetInterface()->IsEquivalentTo(pInterfaceType, NULL);
+                        }
+
+                        if (equivalentOrVariantCompatible)
+                        {
+                            // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
                             pMD = pMT->TryResolveVirtualStaticMethodOnThisType(it.GetInterface(), pInterfaceMD, checkDuplicates);
                             if (pMD != nullptr)
@@ -9418,7 +9432,7 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                 MethodDesc *pMD = it.GetMethodDesc();
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* checkDuplicates */ TRUE))
+                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* checkDuplicates */ TRUE, /* allowVariantMatches */ FALSE))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
