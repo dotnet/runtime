@@ -33,9 +33,9 @@ private:
 public:
     virtual void* allocateMemory(size_t size);
     virtual void freeMemory(void* block);
-    virtual int getIntConfigValue(const WCHAR* name, int defaultValue);
-    virtual const WCHAR* getStringConfigValue(const WCHAR* name);
-    virtual void freeStringConfigValue(const WCHAR* value);
+    virtual int getIntConfigValue(const char16_t* name, int defaultValue);
+    virtual const char16_t* getStringConfigValue(const char16_t* name);
+    virtual void freeStringConfigValue(const char16_t* value);
     virtual void* allocateSlab(size_t size, size_t* pActualSize);
     virtual void freeSlab(void* slab, size_t actualSize);
 
