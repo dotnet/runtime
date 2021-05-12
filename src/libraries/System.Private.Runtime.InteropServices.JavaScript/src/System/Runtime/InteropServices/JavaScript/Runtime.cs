@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -209,6 +210,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (!_rawToJS.TryGetValue(rawObj, out jsObject))
                     {
+                        Debug.WriteLine($"BindExistingObject({rawObj}, {jsId})");
                         _rawToJS.Add(rawObj, jsObject = new JSObject(jsId, rawObj));
                     }
                 }
@@ -680,25 +682,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public static string ObjectToString(object o)
         {
             return o.ToString() ?? string.Empty;
-        }
-
-        public static double GetDateValue(object dtv)
-        {
-            if (dtv == null)
-                throw new ArgumentNullException(nameof(dtv));
-            if (!(dtv is DateTime dt))
-                throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
-            if (dt.Kind == DateTimeKind.Local)
-                dt = dt.ToUniversalTime();
-            else if (dt.Kind == DateTimeKind.Unspecified)
-                dt = new DateTime(dt.Ticks, DateTimeKind.Utc);
-            return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
-        }
-
-        public static DateTime CreateDateTime(double ticks)
-        {
-            DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
-            return unixTime.DateTime;
         }
 
         public static Uri CreateUri(string uri)

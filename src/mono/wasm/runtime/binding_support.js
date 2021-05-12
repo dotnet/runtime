@@ -160,8 +160,6 @@ var BindingSupportLib = {
 			this.get_call_sig = get_method ("GetCallSignature");
 
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
-			this.get_date_value = get_method ("GetDateValue");
-			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
 
 			this.safehandle_addref = get_method ("SafeHandleAddRef");
@@ -448,11 +446,9 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.call_method(this.get_date_value, null, "m", [ mono_obj ]);
-					return new Date(dateValue);
+					return this.extract_js_obj_with_converter (mono_obj, klass);
 				case 21: // clr .NET DateTimeOffset
-					var dateoffsetValue = this._object_to_string (mono_obj);
-					return dateoffsetValue;
+					return this.extract_js_obj_with_converter (mono_obj, klass);
 				case 22: // clr .NET Uri
 					var uriValue = this._object_to_string (mono_obj);
 					return uriValue;
@@ -591,8 +587,7 @@ var BindingSupportLib = {
 					})
 					return this.get_task_and_bind (tcs, js_obj);
 				case js_obj.constructor.name === "Date":
-					// We may need to take into account the TimeZone Offset
-					return this.call_method(this.create_date_time, null, "d!", [ js_obj.getTime() ]);
+					return this.box_js_obj_with_converter(js_obj, "System.DateTime");
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -858,15 +853,59 @@ var BindingSupportLib = {
 			return result;
 		},
 
+		_resolve_class_ptr: function (ptrOrName) {
+			if (typeof (ptrOrName) === "string")
+				throw new Error("nyi: klass lookup");
+			else
+				return ptrOrName | 0;
+		},
+
+		extract_js_obj_with_converter: function (mono_obj, klass) {
+			if (mono_obj == 0)
+				return null;
+
+			var klassPtr = this._resolve_class_ptr (klass);
+			if (!klassPtr)
+				throw new Error("No class pointer specified");
+			var converter = this._get_struct_unboxer_for_class (klassPtr);
+			if (converter)
+				return converter (mono_obj);
+			else
+				throw new Error (`No converter available for object ${mono_obj} of class ${klass}`);
+		},
+
 		extract_js_obj_with_possible_converter: function (mono_obj, klass) {
 			if (mono_obj == 0)
 				return null;
 
-			var converter = this._get_struct_unboxer_for_class (klass);
+			var klassPtr = this._resolve_class_ptr (klass);
+			if (!klassPtr)
+				throw new Error("No class pointer specified");
+
+			var converter = this._get_struct_unboxer_for_class (klassPtr);
 			if (converter)
 				return converter (mono_obj);
 
 			return this.extract_js_obj (mono_obj);
+		},
+
+		box_js_obj_with_converter: function (js_obj, klass) {
+			if ((js_obj === null) || (js_obj === undefined))
+				return 0;
+
+			var klassPtr = this._resolve_class_ptr (klass);
+			if (!klassPtr)
+				throw new Error("No class pointer specified");
+			
+			var typePtr = this.mono_wasm_class_get_type (klassPtr);
+			if (!typePtr)
+				throw new Error("No type pointer for class");
+			
+			var converter = this._pick_automatic_converter_for_user_type(0, "a", typePtr);
+			if (!converter)
+				throw new Error (`No converter available for class ${klass}`);
+
+			return converter (js_obj);
 		},
 
 		extract_js_obj: function (mono_obj) {
@@ -1214,7 +1253,6 @@ var BindingSupportLib = {
 			if (!this._automatic_converter_table)
 				this._automatic_converter_table = new Map ();
 			if (!this._automatic_converter_table.has (typePtr)) {
-					
 				var info = this._get_custom_marshaler_info_for_type (typePtr);
 				// HACK
 				if (!info)
@@ -2087,6 +2125,7 @@ var BindingSupportLib = {
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = obj[Symbol.for("wasm type")];
 					obj.__owns_handle__ = true;
+					console.log("mono_wasm_register_obj", typeof(obj), Object.getPrototypeOf(obj));
 					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 
