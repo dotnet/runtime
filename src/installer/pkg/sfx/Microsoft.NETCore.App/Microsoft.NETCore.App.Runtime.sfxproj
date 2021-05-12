@@ -15,4 +15,5 @@
   </PropertyGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
+  <Import Project="ReadyToRun.targets" />
 </Project>

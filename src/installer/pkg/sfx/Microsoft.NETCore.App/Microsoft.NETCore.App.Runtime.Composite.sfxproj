@@ -14,8 +14,9 @@
     <VSInsertionShortComponentName>NetCore.SharedFramework.Composite</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(PgoInstrument)' != ''"">true</SkipBuild>
-    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(PgoInstrument)' != ''">true</SkipBuild>
+    <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
+    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion> <!-- The composite image does not have a FileVersion resource -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,37 +32,9 @@
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
 
-  <Target Name="_GenerateFrameworkList"
-          DependsOnTargets="GetFilesToPackage"
-          Condition="'$(PlatformPackageType)' == 'TargetingPack' or '$(PlatformPackageType)' == 'RuntimePack'">
-    <ItemGroup>
-      <_FrameworkRuntimeList Include="$(IntermediateOutputPath)FrameworkList.xml"
-                             Condition="'$(PlatformPackageType)' == 'TargetingPack'" />
-      <_FrameworkRuntimeList Include="$(IntermediateOutputPath)RuntimeList.xml"
-                             Condition="'$(PlatformPackageType)' == 'RuntimePack'" />
-      <_FrameworkRuntimeList>
-        <TargetPath>data</TargetPath>
-      </_FrameworkRuntimeList>
+  <ItemGroup>
+    <PublishReadyToRunCrossgen2ExtraArgsList Include="--compositekeyfile:$(AssemblyOriginatorKeyFile)"/>
+  </ItemGroup>
 
-      <_FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(TargetFrameworkIdentifier)" />
-      <_FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(TargetFrameworkVersion.TrimStart('vV'))" />
-      <_FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
-      <_FrameworkListRootAttribute Include="Name" Value="$(SharedFrameworkFriendlyName)" />
-      <_FrameworkListTargetFilePrefix Include="ref/;runtimes/" />
-      <FilesToPackage2 Include="@(FilesToPackage)" />
-      <FilesToPackage2 Remove="%(FilesToPackage2.Identity)" Condition="'%(Filename)%(Extension)' == 'Microsoft.NETCore.App.Composite.r2r.dll'" />
-    </ItemGroup>
-
-    <CreateFrameworkListFile
-      Files="@(FilesToPackage2)"
-      FileClassifications="@(FrameworkListFileClass)"
-      TargetFile="@(_FrameworkRuntimeList)"
-      TargetFilePrefixes="@(_FrameworkListTargetFilePrefix)"
-      SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)"
-      RootAttributes="@(_FrameworkListRootAttribute)" />
-    <ItemGroup>
-      <FileWrites Include="@(_FrameworkRuntimeList)" />
-      <FilesToPackage Include="@(_FrameworkRuntimeList)" />
-    </ItemGroup>
-  </Target>
+  <Import Project="ReadyToRun.targets" />
 </Project>

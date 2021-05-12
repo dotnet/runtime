@@ -144,5 +144,4 @@
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
   </PropertyGroup>
-  <Import Project="ReadyToRun.targets" />
 </Project>
