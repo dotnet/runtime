@@ -131,14 +131,14 @@ ConstrainedCallOnAbstractClassToAbstractMethodOnSharedGenericDone: nop
     .try {
         call void TestEntrypoint::TestScenario2Wrapper()
         ldstr "ConstraintCheckShouldFail"
-        ldstr "TypeLoadException"
+        ldstr "VerificationException"
         ldstr "Did not throw exception"
         call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
         leave.s ConstraintCheckShouldFailDone
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "ConstraintCheckShouldFail"
-        ldstr "TypeLoadException"
+        ldstr "VerificationException"
         ldloc.0
         callvirt   instance class [System.Runtime]System.Type [System.Runtime]System.Exception::GetType()
         callvirt   instance string [System.Runtime]System.Reflection.MemberInfo::get_Name()
