@@ -42,7 +42,7 @@ namespace System.Tests
         [InlineData(1)] // setting ExitCode and exiting Main
         [InlineData(2)] // setting ExitCode both from Main and from an Unloading event handler.
         [InlineData(3)] // using Exit(exitCode)
-        [SkipOnPlatform(TestPlatforms.Browser, "throws PNSE")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
         public static void ExitCode_VoidMainAppReturnsSetValue(int mode)

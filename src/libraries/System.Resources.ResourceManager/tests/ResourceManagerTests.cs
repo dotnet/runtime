@@ -82,6 +82,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(CultureResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36893", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);
@@ -92,6 +93,7 @@ namespace System.Resources.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36893", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void GetString_FromTestClassWithoutNeutralResources()
         {
             // This test is designed to complement the GetString_FromCulutureAndResourceType "fr" & "fr-CA" cases
