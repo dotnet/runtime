@@ -1732,13 +1732,13 @@ private:
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
 
-    unsigned writeCode(bool contTrkPtrLcls,
+    unsigned writeCode(bool      contTrkPtrLcls,
                        unsigned* prologSize,
                        unsigned* epilogSize,
-                       BYTE* codeBlock,
-                       BYTE* codeBlockRW,
-                       BYTE* coldCodeBlock,
-                       BYTE* coldCodeBlockRW,
+                       BYTE*     codeBlock,
+                       BYTE*     codeBlockRW,
+                       BYTE*     coldCodeBlock,
+                       BYTE*     coldCodeBlockRW,
                        BYTE* consBlock DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/

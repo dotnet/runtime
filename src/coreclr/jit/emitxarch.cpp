@@ -9270,7 +9270,7 @@ void emitter::emitDispIns(
  *  Output nBytes bytes of NOP instructions
  */
 
-BYTE* emitter::emitOutputNOP(BYTE* dstRW, size_t nBytes)
+static BYTE* emitOutputNOP(BYTE* dstRW, size_t nBytes)
 {
     assert(nBytes <= 15);
 

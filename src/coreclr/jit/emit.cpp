@@ -5335,13 +5335,13 @@ void emitter::emitComputeCodeSizes()
 // Returns:
 //    size of the method code, in bytes
 //
-unsigned emitter::writeCode(bool contTrkPtrLcls,
+unsigned emitter::writeCode(bool      contTrkPtrLcls,
                             unsigned* prologSize,
                             unsigned* epilogSize,
-                            BYTE* codeBlock,
-                            BYTE* codeBlockRW,
-                            BYTE* coldCodeBlock,
-                            BYTE* coldCodeBlockRW,
+                            BYTE*     codeBlock,
+                            BYTE*     codeBlockRW,
+                            BYTE*     coldCodeBlock,
+                            BYTE*     coldCodeBlockRW,
                             BYTE* consBlock DEBUGARG(unsigned* instrCount))
 {
     BYTE* cp;
@@ -5996,7 +5996,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     BYTE* codeBlockRW;
     BYTE* coldCodeBlock;
     BYTE* coldCodeBlockRW;
-    
+
     assert(emitCurIG == nullptr);
 
     emitCodeBlock = nullptr;
@@ -6171,38 +6171,38 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
     }
 
-    args.hotCodeSize = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
+    args.hotCodeSize  = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
     args.coldCodeSize = emitTotalColdCodeSize;
-    args.roDataSize = 0;
-    args.xcptnsCount = xcptnsCount;
-    args.flag = allocMemFlag;
+    args.roDataSize   = 0;
+    args.xcptnsCount  = xcptnsCount;
+    args.flag         = allocMemFlag;
 
     emitCmpHandle->allocMem(&args);
 
-    codeBlock = (BYTE*)args.hotCodeBlock;
-    codeBlockRW = (BYTE*)args.hotCodeBlockRW;
-    coldCodeBlock = (BYTE*)args.coldCodeBlock;
+    codeBlock       = (BYTE*)args.hotCodeBlock;
+    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
+    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
     coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
 
-    consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
+    consBlock   = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
     consBlockRW = codeBlockRW + emitTotalHotCodeSize + roDataAlignmentDelta;
 
 #else
 
-    args.hotCodeSize = emitTotalHotCodeSize;
+    args.hotCodeSize  = emitTotalHotCodeSize;
     args.coldCodeSize = emitTotalColdCodeSize;
-    args.roDataSize = emitConsDsc.dsdOffs;
-    args.xcptnsCount = xcptnsCount;
-    args.flag = allocMemFlag;
+    args.roDataSize   = emitConsDsc.dsdOffs;
+    args.xcptnsCount  = xcptnsCount;
+    args.flag         = allocMemFlag;
 
     emitCmpHandle->allocMem(&args);
 
-    codeBlock = (BYTE*)args.hotCodeBlock;
-    codeBlockRW = (BYTE*)args.hotCodeBlockRW;
-    coldCodeBlock = (BYTE*)args.coldCodeBlock;
+    codeBlock       = (BYTE*)args.hotCodeBlock;
+    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
+    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
     coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
-    consBlock = (BYTE*)args.roDataBlock;
-    consBlockRW = (BYTE*)args.roDataBlockRW;
+    consBlock       = (BYTE*)args.roDataBlock;
+    consBlockRW     = (BYTE*)args.roDataBlockRW;
 
 #endif
 
@@ -6224,36 +6224,40 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     struct Param
     {
-        emitter* pThis;
-        unsigned actualCodeSize;
-        bool contTrkPtrLcls;
+        emitter*  pThis;
+        unsigned  actualCodeSize;
+        bool      contTrkPtrLcls;
         unsigned* prologSize;
         unsigned* epilogSize;
-        BYTE* codeBlock;
-        BYTE* codeBlockRW;
-        BYTE* coldCodeBlock;
-        BYTE* coldCodeBlockRW;
-        BYTE* consBlock;
+        BYTE*     codeBlock;
+        BYTE*     codeBlockRW;
+        BYTE*     coldCodeBlock;
+        BYTE*     coldCodeBlockRW;
+        BYTE*     consBlock;
         INDEBUG(unsigned* instrCount;)
     } param;
 
-    param.pThis = this;
-    param.contTrkPtrLcls = contTrkPtrLcls;
-    param.prologSize = prologSize;
-    param.epilogSize = epilogSize;
-    param.codeBlock = codeBlock;
-    param.codeBlockRW = codeBlockRW;
-    param.coldCodeBlock = coldCodeBlock;
+    param.pThis           = this;
+    param.contTrkPtrLcls  = contTrkPtrLcls;
+    param.prologSize      = prologSize;
+    param.epilogSize      = epilogSize;
+    param.codeBlock       = codeBlock;
+    param.codeBlockRW     = codeBlockRW;
+    param.coldCodeBlock   = coldCodeBlock;
     param.coldCodeBlockRW = coldCodeBlockRW;
-    param.consBlock = consBlock;
+    param.consBlock       = consBlock;
 #ifdef DEBUG
     param.instrCount = instrCount;
 #endif
 
     bool success = comp->eeRunWithErrorTrap<Param>(
         [](Param* pParam) {
-            pParam->actualCodeSize = pParam->pThis->writeCode(pParam->contTrkPtrLcls, pParam->prologSize, pParam->epilogSize, pParam->codeBlock, pParam->codeBlockRW, pParam->coldCodeBlock, pParam->coldCodeBlockRW, pParam->consBlock DEBUGARG(pParam->instrCount));
-        }, &param);
+            pParam->actualCodeSize =
+                pParam->pThis->writeCode(pParam->contTrkPtrLcls, pParam->prologSize, pParam->epilogSize,
+                                         pParam->codeBlock, pParam->codeBlockRW, pParam->coldCodeBlock,
+                                         pParam->coldCodeBlockRW, pParam->consBlock DEBUGARG(pParam->instrCount));
+        },
+        &param);
 
     // Ensure that any attempt to write code after this point will fail
     writeableOffset = 0;
@@ -6748,6 +6752,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     {
         size_t dscSize = dsc->dsSize;
 
+        BYTE *dstRW = dst + writeableOffset;
+
         // absolute label table
         if (dsc->dsType == dataSection::blockAbsoluteAddr)
         {
@@ -6755,7 +6761,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t         numElems = dscSize / TARGET_POINTER_SIZE;
-            target_size_t* bDst     = (target_size_t*)(dst + writeableOffset);
+            target_size_t* bDstRW     = (target_size_t*)dstRW;
             for (unsigned i = 0; i < numElems; i++)
             {
                 BasicBlock* block = ((BasicBlock**)dsc->dsCont)[i];
@@ -6769,13 +6775,13 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef TARGET_ARM
                 target = (BYTE*)((size_t)target | 1); // Or in thumb bit
 #endif
-                bDst[i] = (target_size_t)(size_t)target;
+                bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    emitRecordRelocation(&(bDst[i]), target, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation(&(bDstRW[i]), target, IMAGE_REL_BASED_HIGHLOW);
                 }
 
-                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDst[i]);
+                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
             }
         }
         // relative label table
@@ -6784,7 +6790,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
 
             size_t    numElems = dscSize / 4;
-            unsigned* uDst     = (unsigned*)(dst + writeableOffset);
+            unsigned* uDstRW     = (unsigned*)dstRW;
             insGroup* labFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
 
             for (unsigned i = 0; i < numElems; i++)
@@ -6795,9 +6801,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 insGroup* lab = (insGroup*)emitCodeGetCookie(block);
 
                 assert(FitsIn<uint32_t>(lab->igOffs - labFirst->igOffs));
-                uDst[i] = lab->igOffs - labFirst->igOffs;
+                uDstRW[i] = lab->igOffs - labFirst->igOffs;
 
-                JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDst[i]);
+                JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDstRW[i]);
             }
         }
         else
@@ -6805,7 +6811,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
-            memcpy(dst + writeableOffset, dsc->dsCont, dscSize);
+            memcpy(dstRW, dsc->dsCont, dscSize);
 
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -7510,7 +7516,7 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
 unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
 {
     BYTE* dstRW = dst + writeableOffset;
-    *castto(dst + writeableOffset, unsigned char*) = (unsigned char)val;
+    *castto(dstRW, unsigned char*) = (unsigned char)val;
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
