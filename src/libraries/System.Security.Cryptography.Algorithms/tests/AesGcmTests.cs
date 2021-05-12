@@ -844,6 +844,11 @@ namespace System.Security.Cryptography.Algorithms.Tests
         {
             bool expectedIsSupported = !PlatformDetection.IsBrowser;
 
+            if (PlatformDetection.IsOSX)
+            {
+                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
+            }
+
             Assert.Equal(expectedIsSupported, AesGcm.IsSupported);
         }
     }

@@ -101,6 +101,8 @@ namespace System
             }
         }
 
+        public static bool OpenSslPresentOnSystem => Interop.OpenSslNoInit.OpenSslIsAvailable;
+
         private static Version s_opensslVersion;
         private static Version GetOpenSslVersion()
         {

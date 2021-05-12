@@ -1319,6 +1319,13 @@ static int32_t EnsureOpenSsl11Initialized()
 
 #endif
 
+int32_t CryptoNative_OpenSslAvailable()
+{
+    // OpenLibrary will attempt to open libssl. DlOpen will handle
+    // the case of it already being open and dlclose the duplicate
+    return OpenLibrary();
+}
+
 int32_t CryptoNative_EnsureOpenSslInitialized()
 {
     // If portable then decide which OpenSSL we are, and call the right one.

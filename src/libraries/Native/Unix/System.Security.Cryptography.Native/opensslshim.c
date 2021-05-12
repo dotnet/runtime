@@ -51,7 +51,7 @@ static void DlOpen(const char* libraryName)
     }
 }
 
-static bool OpenLibrary()
+int OpenLibrary()
 {
     // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
@@ -124,7 +124,14 @@ static bool OpenLibrary()
         DlOpen(MAKELIB("8"));
     }
 
-    return libssl != NULL;
+    if (libssl != NULL)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 void InitializeOpenSSLShim(void)

@@ -586,6 +586,8 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Unix.cs" />

@@ -28,8 +28,6 @@ namespace System.Security.Cryptography
             ImportKey(key);
         }
 
-        public static bool IsSupported => true;
-
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
             AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);

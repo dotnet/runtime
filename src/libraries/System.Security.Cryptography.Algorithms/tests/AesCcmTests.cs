@@ -678,15 +678,17 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
     public class AesCcmIsSupportedTests
     {
-        public class AesGcmIsSupportedTests
+        [Fact]
+        public static void CheckIsSupported()
         {
-            [Fact]
-            public static void CheckIsSupported()
-            {
-                bool expectedIsSupported = !PlatformDetection.IsBrowser;
+            bool expectedIsSupported = !PlatformDetection.IsBrowser;
 
-                Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
+            if (PlatformDetection.IsOSX)
+            {
+                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
             }
+
+            Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
         }
     }
 }
