@@ -1026,7 +1026,9 @@ namespace System.Net.Sockets.Tests
                             var buffer = new ArraySegment<byte>(new byte[4096]);
                             while (true)
                             {
-                                SendAsync(socket1, buffer).GetAwaiter().GetResult();
+                                SendAsync(socket1, buffer)
+                                    .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout))
+                                    .GetAwaiter().GetResult();
                             }
                         });
                     }
