@@ -6256,7 +6256,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 void emitter::emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
 {
-    if (IsFMAInstruction(ins))
+    if (IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseVEXEncoding());
 
@@ -6270,11 +6270,6 @@ void emitter::emitIns_SIMD_R_R_R_R(
             emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
         }
 
-        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg);
-    }
-    else if (IsAVXVNNIInstruction(ins))
-    {
-        assert(UseVEXEncoding());
         emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg);
     }
     else if (UseVEXEncoding())

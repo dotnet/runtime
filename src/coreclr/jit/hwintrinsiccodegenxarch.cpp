@@ -340,12 +340,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             assert(op1Reg != REG_NA);
                             assert(op2Reg != REG_NA);
 
-                            if (targetReg != op1Reg)
-                            {
-                                node->SetRegNum(op1Reg);
-                                targetReg = op1Reg;
-                            }
-
                             genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3);
                             break;
                         }
