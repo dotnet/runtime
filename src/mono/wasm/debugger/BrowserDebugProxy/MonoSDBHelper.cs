@@ -1203,6 +1203,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 command_params_writer.Write(var.Index);
             }
+
             if (await IsAsyncMethod(sessionId, method.DebuggerId, token))
             {
                 ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_THIS, command_params, token);
@@ -1212,7 +1213,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>")));
                 foreach (var asyncLocal in asyncLocals)
                 {
-                    asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
+                    if (asyncLocal["name"].Value<string>().Contains("<"))
+                        asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
                 }
                 return asyncLocals;
             }
