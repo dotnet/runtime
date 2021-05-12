@@ -325,7 +325,8 @@
       <Content Include="@(_AnalyzerFile)" Pack="True" Condition="!%(_AnalyzerFile.IsSymbol)" />
       <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).           
            Pack does honor TargetPath and does Path.Combine("lib/%(TargetFramework)", "%(TargetPath)"),
-           so a rooted path value for TargetPath will override lib. -->
+           so a rooted path value for TargetPath will override lib. 
+           https://github.com/NuGet/Home/issues/10860 -->
       <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
     </ItemGroup>
   </Target>
