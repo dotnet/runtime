@@ -290,6 +290,8 @@ namespace System.Reflection.Emit
             return _tb.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             return _tb.GetInterface(name, ignoreCase);
@@ -301,6 +303,7 @@ namespace System.Reflection.Emit
             return _tb.GetInterfaceMap(interfaceType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             return _tb.GetInterfaces();

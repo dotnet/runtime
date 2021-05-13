@@ -171,6 +171,7 @@ namespace System.Threading.Threads.Tests
         [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();

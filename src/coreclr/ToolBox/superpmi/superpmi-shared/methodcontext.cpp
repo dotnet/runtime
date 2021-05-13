@@ -968,7 +968,7 @@ void MethodContext::repGetVars(CORINFO_METHOD_HANDLE      ftn,
 void MethodContext::recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      unsigned int*                 cILOffsets,
                                      uint32_t**                    pILOffsets,
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries)
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     if (GetBoundaries == nullptr)
         GetBoundaries = new LightWeightMap<DWORDLONG, Agnostic_GetBoundaries>();
@@ -978,7 +978,7 @@ void MethodContext::recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
     value.cILOffsets = (DWORD)*cILOffsets;
     value.pILOffset_offset =
         (DWORD)GetBoundaries->AddBuffer((unsigned char*)*pILOffsets, sizeof(DWORD) * (*cILOffsets));
-    value.implicitBoundaries = *implictBoundaries;
+    value.implicitBoundaries = *implicitBoundaries;
 
     DWORDLONG key = CastHandle(ftn);
     GetBoundaries->Add(key, value);
@@ -1000,7 +1000,7 @@ void MethodContext::dmpGetBoundaries(DWORDLONG key, const Agnostic_GetBoundaries
 void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      unsigned int*                 cILOffsets,
                                      uint32_t**                    pILOffsets,
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries)
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     DWORDLONG key = CastHandle(ftn);
     AssertMapAndKeyExist(GetBoundaries, key, ": key %016llX", key);
@@ -1011,7 +1011,7 @@ void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
     *cILOffsets = (unsigned int)value.cILOffsets;
     if (*cILOffsets > 0)
         *pILOffsets    = (uint32_t*)GetBoundaries->GetBuffer(value.pILOffset_offset);
-    *implictBoundaries = (ICorDebugInfo::BoundaryTypes)value.implicitBoundaries;
+    *implicitBoundaries = (ICorDebugInfo::BoundaryTypes)value.implicitBoundaries;
 }
 
 void MethodContext::recInitClass(CORINFO_FIELD_HANDLE   field,

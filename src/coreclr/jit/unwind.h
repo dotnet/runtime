@@ -661,7 +661,7 @@ public:
         ufiPrologCodes.GetFinalInfo(ppUnwindBlock, pUnwindBlockSize);
     }
 
-    void Reserve(BOOL isFunclet, bool isHotCode);
+    void Reserve(bool isFunclet, bool isHotCode);
 
     void Allocate(
         CorJitFuncKind funKind, void* pHotCode, void* pColdCode, UNATIVE_OFFSET funcEndOffset, bool isHotCode);
@@ -738,7 +738,7 @@ public:
 
     static void EmitSplitCallback(void* context, emitLocation* emitLoc);
 
-    void Reserve(BOOL isFunclet, bool isHotCode);
+    void Reserve(bool isFunclet, bool isHotCode);
 
     void Allocate(CorJitFuncKind funKind, void* pHotCode, void* pColdCode, bool isHotCode);
 
