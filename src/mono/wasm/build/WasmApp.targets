@@ -394,16 +394,18 @@
       <Output TaskParameter="Lines" PropertyName="_DefaultEmccFlags" />
     </ReadLinesFromFile>
 
-    <PropertyGroup>
-      <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
-      <EmccFlags Condition="'$(EmccVerbose)' != 'false'">$(EmccFlags) -v</EmccFlags>
-      <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
-      <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
-      <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>
-      <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
-      <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
-      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
-    </PropertyGroup>
+    <ItemGroup>
+      <_EmccCommonFlags Include="-O0"                               Condition="'$(_WasmDevel)' == 'true'" />
+      <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
+      <_EmccCommonFlags Include="$(EmccFlags)" />
+      <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
+      <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
+      <_EmccCommonFlags Include="-DENABLE_AOT=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCommonFlags Include="-DDRIVER_GEN=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCommonFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_EmccCommonFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
+      <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
+    </ItemGroup>
 
    <PropertyGroup>
      <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
@@ -450,20 +452,22 @@
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
+
+      <_EmccCFlags Include="@(_EmccCommonFlags)" />
+      <_EmccCFlags Include="-DCORE_BINDINGS" />
+      <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
     </ItemGroup>
 
     <PropertyGroup>
-      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1</EmccCFlags>
-      <EmccCFlags>$(EmccCFlags) @(_EmccIncludePaths -> '&quot;-I%(Identity)&quot;', ' ')</EmccCFlags>
-      <EmccCFlags Condition="'$(WasmNativeDebugSymbols)' == 'true'">$(EmccCFlags) -g</EmccCFlags>
-
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
     </PropertyGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='emcc "@$(_EmccCompileRsp)" "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
   <Target Name="_WasmLinkDotNet">
@@ -478,20 +482,21 @@
    </PropertyGroup>
 
     <ItemGroup>
-      <_EmccLinkerArguments Include="$(EmccLDFlags)" />
-      <_EmccLinkerArguments Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
-      <_EmccLinkerArguments Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
-      <_EmccLinkerArguments Include="&quot;%(_WasmObjects.Identity)&quot;" />
-      <_EmccLinkerArguments Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
+      <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+      <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
+      <_EmccLDFlags Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
+      <_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
+      <_EmccLDFlags Include="&quot;%(_WasmObjects.Identity)&quot;" />
+      <_EmccLDFlags Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_EmccLinkerResponseFile>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkerResponseFile>
+      <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
     </PropertyGroup>
 
-    <WriteLinesToFile Lines="@(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" Overwrite="true" />
-    <Message Text="Running emcc with @(_EmccLinkerArguments->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command="emcc &quot;@$(_EmccLinkerResponseFile)&quot;" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <WriteLinesToFile Lines="@(_EmccLDFlags)" File="$(_EmccLinkRsp)" Overwrite="true" />
+    <Message Text="Running emcc with @(_EmccLDFlags->'%(Identity)', ' ')" Importance="Low" />
+    <Exec Command='emcc "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
