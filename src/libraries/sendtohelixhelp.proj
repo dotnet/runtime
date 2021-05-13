@@ -106,11 +106,11 @@
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps' and '$(BrowserHost)' != 'windows'">
+  <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and '$(BrowserHost)' != 'windows'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps' and '$(BrowserHost)' == 'windows'">
+  <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Include="setx PATH=%HELIX_CORRELATION_PAYLOAD%/chromedriver_win32;%PATH%" />
     <HelixPreCommand Include="setx PATH=%HELIX_CORRELATION_PAYLOAD%/chrome-win;%PATH%" />
   </ItemGroup>
