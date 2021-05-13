@@ -76,6 +76,9 @@ namespace System.Net.Http
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
+        [SupportedOSPlatformGuard("linux")]
+        [SupportedOSPlatformGuard("macOS")]
+        [SupportedOSPlatformGuard("Windows")]
         private readonly bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
@@ -122,8 +125,8 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+
+            if (_http3Enabled)
             {
                 _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
             }
@@ -261,14 +264,10 @@ namespace System.Net.Http
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
 
-                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-                if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+                if (_http3Enabled)
                 {
-                    if (_http3Enabled)
-                    {
-                        _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
-                        _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
-                    }
+                    _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
+                    _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
                 }
             }
 
@@ -866,8 +865,7 @@ namespace System.Net.Http
         {
             HttpResponseMessage? response;
 
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (_http3Enabled)
             {
                 response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
                 if (response is not null)
