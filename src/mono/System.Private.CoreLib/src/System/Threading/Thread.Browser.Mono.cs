@@ -7,6 +7,7 @@ namespace System.Threading
 {
     public partial class Thread
     {
+        [UnsupportedOSPlatformGuard("browser")]
         internal const bool IsThreadStartSupported = false;
 
         [UnsupportedOSPlatform("browser")]
