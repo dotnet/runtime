@@ -770,6 +770,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
         AppDir="$(BuildDir)"
+        InvariantGlobalization="true"
     >
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
