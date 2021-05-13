@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 
 #include "opensslshim.h"
