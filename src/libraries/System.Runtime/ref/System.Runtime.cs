@@ -7839,15 +7839,15 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
-        public StreamReader(string path, FileOptions options) { }
+        public StreamReader(string path, System.IO.FileOptions options) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, bool detectEncodingFromByteOrderMarks, FileOptions options) { }
+        public StreamReader(string path, bool detectEncodingFromByteOrderMarks, System.IO.FileOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, FileOptions options) { }
+        public StreamReader(string path, System.Text.Encoding encoding, System.IO.FileOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, FileOptions options) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, FileOptions options) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, System.IO.FileOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }
@@ -7877,13 +7877,13 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
-        public StreamWriter(string path, FileOptions options) { }
+        public StreamWriter(string path, System.IO.FileOptions options) { }
         public StreamWriter(string path, bool append) { }
-        public StreamWriter(string path, bool append, FileOptions options) { }
+        public StreamWriter(string path, bool append, System.IO.FileOptions options) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding, FileOptions options) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding encoding, System.IO.FileOptions options) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize, FileOptions options) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize, System.IO.FileOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public override System.Text.Encoding Encoding { get { throw null; } }
