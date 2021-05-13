@@ -28565,7 +28565,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
 #ifdef MULTIPLE_HEAPS
     assert (survived <= (size_t)heap_segment_survived (region));
 #else
-    assert (survived == heap_segment_survived (region));
+    assert (survived == (size_t)heap_segment_survived (region));
 #endif //MULTIPLE_HEAPS
 #endif //_DEBUG
 
