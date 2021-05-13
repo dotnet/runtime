@@ -340,7 +340,7 @@ namespace System.IO
                 string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
 
                 // Add a watch for the full path.  If the path is already being watched, this will return
-                // the existing descriptor.  This works even in the case of a rename. We also add the 
+                // the existing descriptor.  This works even in the case of a rename. We also add the
                 // EXCL_UNLINK flag to keep parity with Windows where we don't pickup unlinked files (which don't exist in Windows).
                 int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._watchFilters | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
                 if (wd == -1)
