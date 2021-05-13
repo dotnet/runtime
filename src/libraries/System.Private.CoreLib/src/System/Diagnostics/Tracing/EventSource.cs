@@ -1842,7 +1842,7 @@ namespace System.Diagnostics.Tracing
                 else
                 {
                     var blob = new byte[data->Size];
-                    Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                    Marshal.Copy(data->DataPointer, blob, 0, blob.Length);
                     decoded = blob;
                 }
                 goto Store;
