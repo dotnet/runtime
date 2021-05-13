@@ -4,11 +4,11 @@ Libraries can be packaged in one or more of the following ways: as part of the .
 
 ## .NETCore Shared framework
 
-To add a library to  the .NETCore shared framework, that library's `AssemblyName` should be added to [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props)
+To add a library to the .NETCore shared framework, that library's `AssemblyName` should be added to [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props)
 
-The library should have both a `ref` and `src` project. It's reference assembly will be included in the ref-pack for the Microsoft.NETCore.App shared framework, and it's implementation assembly will be included in the runtime pack.
+The library should have both a `ref` and `src` project. Its reference assembly will be included in the ref-pack for the Microsoft.NETCore.App shared framework, and its implementation assembly will be included in the runtime pack.
 
-Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package). If a library ships both in the shared framework and a nuget package, it may decide to exclude it's latest `$(NetCoreAppCurrent)` build from the package. This can be done by setting `ExcludeCurrentNetCoreAppFromPackage` to true. Libraries should take care when doing this to ensure that whatever asset in the package that would apply to `$(NetCoreAppCurrent)` is functionally equivalent to that which it replaces from the shared framework, to avoid breaking applications which reference a newer package than the shared framework. If possible, it's preferable to avoid this by choosing to target frameworks which can both ship in the package and shared framework.
+Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package). If a library ships both in the shared framework and a nuget package, it may decide to exclude its latest `$(NetCoreAppCurrent)` build from the package. This can be done by setting `ExcludeCurrentNetCoreAppFromPackage` to true. Libraries should take care when doing this to ensure that whatever asset in the package that would apply to `$(NetCoreAppCurrent)` is functionally equivalent to that which it replaces from the shared framework, to avoid breaking applications which reference a newer package than the shared framework. If possible, it's preferable to avoid this by choosing to target frameworks which can both ship in the package and shared framework.
 
 In some occasions we may want to include a library in the shared framework, but not expose it publicly. To do so, include the library in the `NetCoreAppLibraryNoReference` property in [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props). The library should also be named in a way to discourage use at runtime, for example using the `System.Private` prefix. We should avoid hiding arbitrary public libraries as it complicates deployment and servicing, though some platform specific libraries are in this state due to historical reasons.
 
@@ -24,7 +24,7 @@ Transport packages are non-shipping packages that dotnet/runtime produces in ord
 
 This package represents the set of libraries which are produced in dotnet/runtime and ship in the ASP.NETCore shared framework. We produce a transport package so that we can easily share reference assemblies and implementation configurations that might not be present in NuGet packages that also ship.
 
-To add a library to  the ASP.NETCore shared framework, that library should set the `IsAspNetCoreApp` property for it's `ref` and `src` project. This is typically done in the library's `Directory.Build.props`, for example https://github.com/dotnet/runtime/blob/98ac23212e6017c615e7e855e676fc43c8e44cb8/src/libraries/Microsoft.Extensions.Logging.Abstractions/Directory.Build.props#L4.
+To add a library to the ASP.NETCore shared framework, that library should set the `IsAspNetCoreApp` property for its `ref` and `src` project. This is typically done in the library's `Directory.Build.props`, for example https://github.com/dotnet/runtime/blob/98ac23212e6017c615e7e855e676fc43c8e44cb8/src/libraries/Microsoft.Extensions.Logging.Abstractions/Directory.Build.props#L4.
 
 Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the ASP.NETCore shared framework or the .NETCore shared framework. This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
 
@@ -54,7 +54,7 @@ Package content can be defined using any of the publicly defined Pack inputs: ht
 
 ### TargetFrameworks
 
-By default all TargetFrameworks listed in your project will be included in the package. You may exclude sepecific TargetFrameworks by setting `ExcludeFromPackage` on that framework.
+By default all TargetFrameworks listed in your project will be included in the package. You may exclude specific TargetFrameworks by setting `ExcludeFromPackage` on that framework.
 ```xml
   <PropertyGroup>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net5.0'">true</ExcludeFromPackage>
