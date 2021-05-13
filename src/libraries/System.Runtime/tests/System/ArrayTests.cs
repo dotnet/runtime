@@ -4251,6 +4251,28 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Array.Fill(new string[arrayLength], "", startIndex, count));
         }
 
+        public class Bar
+        {
+        }
+
+        public class Foo
+        {
+        }
+
+        [Fact]
+        public static void Fill_Casting()
+        {
+            Bar[] barArray = new Bar[2];
+            Array.Fill<object>(barArray, new Bar());
+        }
+
+        [Fact]
+        public static void Fill_Casting_Invalid()
+        {
+            Bar[] barArray = new Bar[2];
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo()));
+        }
+
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
         {
             // TODO: use (or merge this data into) Reverse_TestData if/when xunit/xunit#965 is merged
