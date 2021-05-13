@@ -73,12 +73,6 @@ process_protocol_helper_set_environment_variable (
 
 static
 bool
-process_protocol_helper_get_environment_variable (
-	DiagnosticsIpcMessage *message,
-	DiagnosticsIpcStream *stream);
-
-static
-bool
 process_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -539,147 +533,6 @@ ep_on_error:
 }
 
 static
-uint16_t
-get_environment_variable_payload_get_size (ep_char16_t *payload)
-{
-    size_t size = sizeof(uint32_t);
-    size += (payload != NULL) ? (ep_rt_utf16_string_len (payload) + 1) * sizeof(ep_char16_t) : 0;
-
-    EP_ASSERT (size <= UINT16_MAX);
-    return (uint16_t)size;
-}
-
-static
-bool
-get_environment_variable_payload_flatten (
-    void *payload,
-    uint8_t **buffer,
-    uint16_t *size)
-{
-    ep_char16_t *value = (ep_char16_t *)payload;
-
-    EP_ASSERT (payload != NULL);
-    EP_ASSERT (buffer != NULL);
-    EP_ASSERT (*buffer != NULL);
-    EP_ASSERT (size != NULL);
-    EP_ASSERT (get_environment_variable_payload_get_size (value) == *size);
-
-    bool success = ds_ipc_message_try_write_string_utf16_t (buffer, size, value);
-
-    // Assert we've used the whole buffer we were given
-    EP_ASSERT(*size == 0);
-
-    return success;
-}
-
-DiagnosticsGetEnvironmentVariablePayload *
-ds_get_environment_variable_payload_alloc (void)
-{
-	return ep_rt_object_alloc (DiagnosticsGetEnvironmentVariablePayload);
-}
-
-void
-ds_get_environment_variable_payload_free (DiagnosticsGetEnvironmentVariablePayload *payload)
-{
-	ep_return_void_if_nok (payload != NULL);
-	ep_rt_byte_array_free (payload->incoming_buffer);
-	ep_rt_object_free (payload);
-}
-
-static
-uint8_t *
-get_environment_variable_command_try_parse_payload (
-	uint8_t *buffer,
-	uint16_t buffer_len)
-{
-	EP_ASSERT (buffer != NULL);
-
-	uint8_t * buffer_cursor = buffer;
-	uint32_t buffer_cursor_len = buffer_len;
-
-	DiagnosticsGetEnvironmentVariablePayload *instance = ds_get_environment_variable_payload_alloc ();
-	ep_raise_error_if_nok (instance != NULL);
-
-	instance->incoming_buffer = buffer;
-
-	if (!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->name))
-		ep_raise_error ();
-
-ep_on_exit:
-	return (uint8_t *)instance;
-
-ep_on_error:
-	ds_get_environment_variable_payload_free (instance);
-	instance = NULL;
-	ep_exit_error_handler ();
-}
-
-static
-bool
-process_protocol_helper_get_environment_variable (
-	DiagnosticsIpcMessage *message,
-	DiagnosticsIpcStream *stream)
-{
-	EP_ASSERT (message != NULL);
-	EP_ASSERT (stream != NULL);
-
-	if (!stream)
-		return false;
-
-	ep_char16_t *valueBuffer = NULL;
-	uint32_t bufferSize = 0;
-	uint32_t realLength;
-    bool result = false;
-    DiagnosticsGetEnvironmentVariablePayload *payload = (DiagnosticsGetEnvironmentVariablePayload *)ds_ipc_message_try_parse_payload (message, get_environment_variable_command_try_parse_payload);
-	if (!payload) {
-		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
-		ep_raise_error ();
-	}
-
-	ds_ipc_result_t ipc_result;
-	ipc_result = ds_rt_get_environment_variable (payload->name, 0, &realLength, NULL);
-	if (ipc_result != DS_IPC_S_OK) {
-		ds_ipc_message_send_error (stream, ipc_result);
-		ep_raise_error ();
-	}
-
-	// Reserve space for the header and the environment variable
-	bufferSize = (realLength * sizeof(ep_char16_t));
-	valueBuffer = (ep_char16_t *)ep_rt_byte_array_alloc (bufferSize);
-	if (!valueBuffer) {
-		ds_ipc_message_send_error(stream, DS_IPC_E_FAIL);
-		ep_raise_error ();
-	}
-
-	ipc_result = ds_rt_get_environment_variable (payload->name, realLength, &realLength, valueBuffer);
-	if (ipc_result != DS_IPC_S_OK) {
-		ds_ipc_message_send_error (stream, ipc_result);
-		ep_raise_error ();
-	}
-
-    ep_raise_error_if_nok (ds_ipc_message_initialize_buffer (
-        message,
-        ds_ipc_header_get_generic_success (),
-        (void *)valueBuffer,
-        get_environment_variable_payload_get_size (valueBuffer),
-        get_environment_variable_payload_flatten));
-
-    ep_raise_error_if_nok (ds_ipc_message_send (message, stream));
-
-	result = true;
-
-ep_on_exit:
-	ds_get_environment_variable_payload_free (payload);
-	ep_rt_byte_array_free ((uint8_t *)valueBuffer);
-    ds_ipc_stream_free (stream);
-	return result;
-
-ep_on_error:
-	EP_ASSERT (!result);
-	ep_exit_error_handler ();
-}
-
-static
 bool
 process_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
@@ -713,9 +566,6 @@ ds_process_protocol_helper_handle_ipc_message (
 		break;
 	case DS_PROCESS_COMMANDID_SET_ENV_VAR:
 		result = process_protocol_helper_set_environment_variable (message, stream);
-		break;
-	case DS_PROCESS_COMMANDID_GET_ENV_VAR:
-		result = process_protocol_helper_get_environment_variable (message, stream);
 		break;
 	default:
 		result = process_protocol_helper_unknown_command (message, stream);

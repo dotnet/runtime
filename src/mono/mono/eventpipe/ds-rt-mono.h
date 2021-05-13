@@ -263,37 +263,6 @@ ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *valu
 	return success ? DS_IPC_S_OK : DS_IPC_E_FAIL;
 }
 
-static
-uint32_t
-ds_rt_get_environment_variable (const ep_char16_t *name,
-								uint32_t valueBufferLength,
-								uint32_t *valueLengthOut,
-								ep_char16_t *valueBuffer)
-{
-	gchar *nameNarrow = ep_rt_utf16_to_utf8_string (name, ep_rt_utf16_string_len (name));
-	gchar *valueNarrow = g_getenv(nameNarrow);
-
-	uint32_t valueLength = strlen(valueNarrow);
-	if (valueLength > valueBufferLength && valueBuffer != NULL)
-	{
-		g_free (nameNarrow);
-		g_free (valueNarrow);
-
-		return DS_IPC_E_INSUFFICIENT_BUFFER;
-	}
-
-	if (valueBuffer != NULL)
-	{
-		ep_char16_t *valueWide = u8to16 (valueNarrow);
-		memcpy (valueBuffer, valueWide, valueLength * sizeof(ep_char16_t));
-		g_free (valueWide);
-	}
-
-	g_free (nameNarrow);
-	g_free (valueNarrow);
-	return DS_IPC_S_OK;
-}
-
 /*
 * DiagnosticServer.
 */

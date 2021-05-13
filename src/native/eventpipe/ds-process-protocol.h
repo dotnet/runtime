@@ -115,32 +115,6 @@ void
 ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload);
 
 /*
-* DiagnosticsGetEnvironmentVariablePayload
-*/
-
-#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
-struct _DiagnosticsGetEnvironmentVariablePayload {
-#else
-struct _DiagnosticsGetEnvironmentVariablePayload_Internal {
-#endif
-	uint8_t * incoming_buffer;
-
-	const ep_char16_t *name;
-};
-
-#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
-struct _DiagnosticsGetEnvironmentVariablePayload {
-	uint8_t _internal [sizeof (struct _DiagnosticsGetEnvironmentVariablePayload_Internal)];
-};
-#endif
-
-DiagnosticsGetEnvironmentVariablePayload *
-ds_get_environment_variable_payload_alloc (void);
-
-void
-ds_get_environment_variable_payload_free (DiagnosticsGetEnvironmentVariablePayload *payload);
-
-/*
  * DiagnosticsProcessProtocolHelper.
  */
 

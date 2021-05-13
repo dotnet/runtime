@@ -65,45 +65,6 @@ namespace Profiler.Tests
             Console.WriteLine("Finished sending startup profiler message.");
         }
 
-        public bool GetEnvironmentVariable(string name, out string val)
-        {
-            val = String.Empty;
-
-            MethodInfo getEnvironmentVariable = typeof(DiagnosticsClient).GetMethod("GetEnvironmentVariable", BindingFlags.Public);
-            if (getEnvironmentVariable != null)
-            {
-                throw new Exception("You updated DiagnosticsClient to a version that supports GetEnvironmentVariable, please remove this and use the real code.");
-            }
-
-            Console.WriteLine($"Sending GetEnvironmentVariable message name={name}.");
-            
-            using (var stream = new MemoryStream())
-            using (var writer = new BinaryWriter(stream))
-            {
-                writer.WriteString(name);
-
-                writer.Flush();
-                byte[] payload = stream.ToArray();
-                
-                var message = new IpcMessage(0x04, 0x03, payload);
-                Console.WriteLine($"Sent: {message.ToString()}");
-                IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(_processId), message);
-                Console.WriteLine($"Received: {response.ToString()}");
-
-                if (response.Header.CommandSet != 255 || response.Header.CommandId != 0)
-                {
-                    Console.WriteLine($"GetEnvironmentVariable failed.");
-                    return false;
-                }
-
-                val = ReadString(response.Payload);
-            }
-
-            Console.WriteLine($"Finished sending GetEnvironmentVariable message value={val}.");
-
-            return true;
-    }
-
         public bool SetEnvironmentVariable(string name, string val)
         {
             MethodInfo setEnvironmentVariable = typeof(DiagnosticsClient).GetMethod("SetEnvironmentVariable", BindingFlags.Public);
@@ -123,7 +84,7 @@ namespace Profiler.Tests
                 writer.Flush();
                 byte[] payload = stream.ToArray();
                 
-                var message = new IpcMessage(0x04, 0x04, payload);
+                var message = new IpcMessage(0x04, 0x03, payload);
                 Console.WriteLine($"Sent: {message.ToString()}");
                 IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(_processId), message);
                 Console.WriteLine($"Received: {response.ToString()}");

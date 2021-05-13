@@ -47,8 +47,6 @@ namespace ReverseStartupTests
                 return 100;
             }
 
-            string expected = "Hello, friend!";
-
             string serverName = ReverseServer.MakeServerAddress();
             Task backgroundTask = Task.Run(() =>
             {
@@ -80,14 +78,6 @@ namespace ReverseStartupTests
                                 throw new Exception("Failed clearing environment variable.");
                             }
 
-                            string val;
-                            if (!client.GetEnvironmentVariable("ReverseServerTest_ReadMe", out val) 
-                                || !String.Equals(val, expected))
-                            {
-                                Console.WriteLine($"{val.Length} {expected.Length}");
-                                throw new Exception($"Failed getting environment variable, value=\"{val}\" expected=\"{expected}\" equals? {String.Equals(val, expected)}");
-                            }
-
                             // Resume runtime message
                             IpcMessage resumeMessage = new IpcMessage(0x04,0x01);
                             Console.WriteLine($"Sent resume runtime message: {resumeMessage.ToString()}");
@@ -117,8 +107,7 @@ namespace ReverseStartupTests
             Dictionary<string, string> envVars = new Dictionary<string, string>()
             {
                 { "ReverseServerTest_OverwriteMe", "OriginalValue" },
-                { "ReverseServerTest_ClearMe", "OriginalValue" },
-                { "ReverseServerTest_ReadMe", expected },
+                { "ReverseServerTest_ClearMe", "OriginalValue" }
             };
 
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,

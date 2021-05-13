@@ -46,17 +46,6 @@ HRESULT NullProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
             return hr;
         }
 
-        if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_ReadMe"),
-                                                                 bufferSize,
-                                                                 &envVarLen,
-                                                                 envVar))
-            || wcscmp(envVar, WCHAR("Hello, friend!")) != 0)
-        {
-            wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
-            _failures++;
-            return hr;
-        }
-
         hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_ClearMe"),
                                                             bufferSize,
                                                             &envVarLen,
