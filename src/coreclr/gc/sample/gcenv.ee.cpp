@@ -291,7 +291,6 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
 
 void GCToEEInterface::FreeStringConfigValue(const char *value)
 {
-
 }
 
 bool GCToEEInterface::IsGCThread()
@@ -341,7 +340,6 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 
 inline void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
-
 }
 
 void GCToEEInterface::VerifySyncTableEntry()
@@ -350,4 +348,9 @@ void GCToEEInterface::VerifySyncTableEntry()
 
 void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPublicKeywords, int currentPrivateLevel, int currentPrivateKeywords)
 {
+}
+
+uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return GCToOSInterface::GetTotalProcessorCount();
 }

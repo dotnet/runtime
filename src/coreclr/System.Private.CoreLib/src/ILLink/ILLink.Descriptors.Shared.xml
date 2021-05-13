@@ -9,10 +9,6 @@
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerator" />
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
-    <!-- Workaround for https://github.com/mono/linker/issues/378 -->
-    <type fullname="System.Runtime.InteropServices.IDispatch" />
-    <type fullname="System.Runtime.InteropServices.IMarshal" />
-    <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
 
     <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->
     <type fullname="System.Collections.Generic.IEnumerable`1" />

@@ -20,8 +20,8 @@ BYTE* emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t condcode);
 BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
 
-static unsigned emitOutput_Thumb1Instr(BYTE* dst, code_t code);
-static unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Thumb1Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
 
 /************************************************************************/
 /*             Debug-only routines to display instructions              */

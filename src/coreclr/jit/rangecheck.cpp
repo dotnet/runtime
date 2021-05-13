@@ -213,8 +213,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     if (m_pCompiler->vnStore->IsVNConstant(arrLenVn))
     {
-        ssize_t  constVal  = -1;
-        unsigned iconFlags = 0;
+        ssize_t      constVal  = -1;
+        GenTreeFlags iconFlags = GTF_EMPTY;
 
         if (m_pCompiler->optIsTreeKnownIntValue(true, bndsChk->gtArrLen, &constVal, &iconFlags))
         {
@@ -249,8 +249,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
     if (m_pCompiler->vnStore->IsVNConstant(idxVn) && (arrSize > 0))
     {
-        ssize_t  idxVal    = -1;
-        unsigned iconFlags = 0;
+        ssize_t      idxVal    = -1;
+        GenTreeFlags iconFlags = GTF_EMPTY;
         if (!m_pCompiler->optIsTreeKnownIntValue(true, treeIndex, &idxVal, &iconFlags))
         {
             return;

@@ -154,7 +154,7 @@ unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 */
 
 template <typename T>
-inline BOOL genMaxOneBit(T value)
+inline bool genMaxOneBit(T value)
 {
     return (value & (value - 1)) == 0;
 }
@@ -164,7 +164,7 @@ inline BOOL genMaxOneBit(T value)
 *  Return true if the given 32-bit value has exactly zero or one bits set.
 */
 
-inline BOOL genMaxOneBit(unsigned value)
+inline bool genMaxOneBit(unsigned value)
 {
     return (value & (value - 1)) == 0;
 }
@@ -867,10 +867,10 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 {
     gtOper     = oper;
     gtType     = type;
-    gtFlags    = 0;
+    gtFlags    = GTF_EMPTY;
     gtLIRFlags = 0;
 #ifdef DEBUG
-    gtDebugFlags = 0;
+    gtDebugFlags = GTF_DEBUG_NONE;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
 #if ASSERTION_PROP
@@ -999,7 +999,7 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
  *  that may need to be fixed up).
  */
 
-inline GenTree* Compiler::gtNewIconHandleNode(size_t value, unsigned flags, FieldSeqNode* fields)
+inline GenTree* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
 {
     GenTree* node;
     assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
@@ -1092,7 +1092,7 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 
 inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeCall::Use* args)
 {
-    unsigned     flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? 0 : GTF_EXCEPT;
+    GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
     GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
     result->gtFlags |= flags;
 
@@ -1473,7 +1473,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use ChangeOperConst() instead
 
-    unsigned mask = GTF_COMMON_MASK;
+    GenTreeFlags mask = GTF_COMMON_MASK;
     if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
     {
         mask |= GTF_IND_NONFAULTING;
@@ -1510,7 +1510,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
-    unsigned mask = GTF_COMMON_MASK;
+    GenTreeFlags mask = GTF_COMMON_MASK;
     if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
     {
         mask |= GTF_IND_NONFAULTING;
@@ -4648,7 +4648,7 @@ inline void DEBUG_DESTROY_NODE(GenTree* tree)
     tree->gtOperSave = tree->gtOper;
 
     tree->gtType = TYP_UNDEF;
-    tree->gtFlags |= 0xFFFFFFFF & ~GTF_NODE_MASK;
+    tree->gtFlags |= ~GTF_NODE_MASK;
     if (tree->OperIsSimple())
     {
         tree->AsOp()->gtOp1 = tree->AsOp()->gtOp2 = nullptr;

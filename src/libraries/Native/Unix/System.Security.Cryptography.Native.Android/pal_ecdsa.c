@@ -6,9 +6,9 @@
 #include "pal_signature.h"
 #include "pal_utilities.h"
 
-static jobject GetEcDsaSignatureObject(JNIEnv* env)
+ARGS_NON_NULL_ALL static jobject GetEcDsaSignatureObject(JNIEnv* env)
 {
-    jstring algorithmName = JSTRING("NONEwithECDSA");
+    jstring algorithmName = make_java_string(env, "NONEwithECDSA");
     jobject signatureObject =
         (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, algorithmName);
     (*env)->DeleteLocalRef(env, algorithmName);
@@ -19,13 +19,10 @@ static jobject GetEcDsaSignatureObject(JNIEnv* env)
 
 int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32_t* siglen, EC_KEY* key)
 {
-    assert(dgst);
-    assert(sig);
-    assert(key);
-    if (!siglen)
-    {
-        return FAIL;
-    }
+    abort_if_invalid_pointer_argument (dgst);
+    abort_if_invalid_pointer_argument (sig);
+    abort_if_invalid_pointer_argument (key);
+    abort_if_invalid_pointer_argument (siglen);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -50,9 +47,10 @@ int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint
 
 int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* sig, int32_t siglen, EC_KEY* key)
 {
-    assert(dgst);
-    assert(sig);
-    assert(key);
+    abort_if_invalid_pointer_argument (dgst);
+    abort_if_invalid_pointer_argument (sig);
+    abort_if_invalid_pointer_argument (key);
+
     JNIEnv* env = GetJNIEnv();
 
     jobject signatureObject = GetEcDsaSignatureObject(env);
@@ -70,6 +68,8 @@ int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, co
 
 int32_t AndroidCryptoNative_EcDsaSize(const EC_KEY* key)
 {
+    abort_if_invalid_pointer_argument (key);
+
     // The maximum size of a signature for the provided key is 2* bitlength of the order + extra bytes for the DER
     // encoding. The DER encoding is as follows (with R and S being the components of the signature and all lengths
     // being one byte width):

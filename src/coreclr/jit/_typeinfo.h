@@ -443,13 +443,13 @@ public:
     }
 #endif // DEBUG
 
-    static BOOL tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const typeInfo* pSrc, bool* changed);
-    static BOOL tiCompatibleWith(COMP_HANDLE     CompHnd,
+    static bool tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const typeInfo* pSrc, bool* changed);
+    static bool tiCompatibleWith(COMP_HANDLE     CompHnd,
                                  const typeInfo& child,
                                  const typeInfo& parent,
                                  bool            normalisedForStack);
 
-    static BOOL tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
+    static bool tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
                                       const typeInfo& child,
                                       const typeInfo& parent,
                                       bool            normalisedForStack);
@@ -603,7 +603,7 @@ public:
         return (ti_types)(m_flags & TI_FLAG_DATA_MASK);
     }
 
-    BOOL IsType(ti_types type) const
+    bool IsType(ti_types type) const
     {
         assert(type != TI_ERROR);
         return (m_flags & (TI_FLAG_DATA_MASK | TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY | TI_FLAG_BYREF_PERMANENT_HOME |
@@ -611,68 +611,68 @@ public:
     }
 
     // Returns whether this is an objref
-    BOOL IsObjRef() const
+    bool IsObjRef() const
     {
         return IsType(TI_REF) || IsType(TI_NULL);
     }
 
     // Returns whether this is a by-ref
-    BOOL IsByRef() const
+    bool IsByRef() const
     {
         return (m_flags & TI_FLAG_BYREF);
     }
 
     // Returns whether this is the this pointer
-    BOOL IsThisPtr() const
+    bool IsThisPtr() const
     {
         return (m_flags & TI_FLAG_THIS_PTR);
     }
 
-    BOOL IsUnboxedGenericTypeVar() const
+    bool IsUnboxedGenericTypeVar() const
     {
         return !IsByRef() && (m_flags & TI_FLAG_GENERIC_TYPE_VAR);
     }
 
-    BOOL IsReadonlyByRef() const
+    bool IsReadonlyByRef() const
     {
         return IsByRef() && (m_flags & TI_FLAG_BYREF_READONLY);
     }
 
-    BOOL IsPermanentHomeByRef() const
+    bool IsPermanentHomeByRef() const
     {
         return IsByRef() && (m_flags & TI_FLAG_BYREF_PERMANENT_HOME);
     }
 
     // Returns whether this is a method desc
-    BOOL IsMethod() const
+    bool IsMethod() const
     {
         return GetType() == TI_METHOD;
     }
 
-    BOOL IsStruct() const
+    bool IsStruct() const
     {
         return IsType(TI_STRUCT);
     }
 
     // A byref value class is NOT a value class
-    BOOL IsValueClass() const
+    bool IsValueClass() const
     {
         return (IsStruct() || IsPrimitiveType());
     }
 
     // Does not return true for primitives. Will return true for value types that behave
     // as primitives
-    BOOL IsValueClassWithClsHnd() const
+    bool IsValueClassWithClsHnd() const
     {
         if ((GetType() == TI_STRUCT) ||
             (m_cls && GetType() != TI_REF && GetType() != TI_METHOD &&
              GetType() != TI_ERROR)) // necessary because if byref bit is set, we return TI_ERROR)
         {
-            return TRUE;
+            return true;
         }
         else
         {
-            return FALSE;
+            return false;
         }
     }
 
@@ -680,7 +680,7 @@ public:
     // NOTE: Use NormaliseToPrimitiveType() if you think you may have a
     // System.Int32 etc., because those types are not considered number
     // types by this function.
-    BOOL IsNumberType() const
+    bool IsNumberType() const
     {
         ti_types Type = GetType();
 
@@ -694,7 +694,7 @@ public:
     // NOTE: Use NormaliseToPrimitiveType() if you think you may have a
     // System.Int32 etc., because those types are not considered number
     // types by this function.
-    BOOL IsIntegerType() const
+    bool IsIntegerType() const
     {
         ti_types Type = GetType();
 
@@ -705,7 +705,7 @@ public:
     }
 
     // Returns true whether this is an integer or a native int.
-    BOOL IsIntOrNativeIntType() const
+    bool IsIntOrNativeIntType() const
     {
 #ifdef TARGET_64BIT
         return (GetType() == TI_INT) || AreEquivalent(*this, nativeInt());
@@ -714,7 +714,7 @@ public:
 #endif
     }
 
-    BOOL IsNativeIntType() const
+    bool IsNativeIntType() const
     {
         return AreEquivalent(*this, nativeInt());
     }
@@ -722,7 +722,7 @@ public:
     // Returns whether this is a primitive type (not a byref, objref,
     // array, null, value class, invalid value)
     // May Need to normalise first (m/r/I4 --> I4)
-    BOOL IsPrimitiveType() const
+    bool IsPrimitiveType() const
     {
         DWORD Type = GetType();
 
@@ -732,7 +732,7 @@ public:
     }
 
     // Returns whether this is the null objref
-    BOOL IsNullObjRef() const
+    bool IsNullObjRef() const
     {
         return (IsType(TI_NULL));
     }
@@ -740,17 +740,17 @@ public:
     // must be for a local which is an object type (i.e. has a slot >= 0)
     // for primitive locals, use the liveness bitmap instead
     // Note that this works if the error is 'Byref'
-    BOOL IsDead() const
+    bool IsDead() const
     {
         return (m_flags & (TI_FLAG_DATA_MASK)) == TI_ERROR;
     }
 
-    BOOL IsUninitialisedObjRef() const
+    bool IsUninitialisedObjRef() const
     {
         return (m_flags & TI_FLAG_UNINIT_OBJREF);
     }
 
-    BOOL IsToken() const
+    bool IsToken() const
     {
         return IsMethod() && ((m_flags & TI_FLAG_TOKEN) != 0);
     }

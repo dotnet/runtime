@@ -3066,45 +3066,50 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
-        private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
+        private void allocMem(ref AllocMemArgs args)
         {
-            hotCodeBlock = (void*)GetPin(_code = new byte[hotCodeSize]);
+            args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
+            args.hotCodeBlockRW = args.hotCodeBlock;
 
-            if (coldCodeSize != 0)
-                coldCodeBlock = (void*)GetPin(_coldCode = new byte[coldCodeSize]);
+            if (args.coldCodeSize != 0)
+            {
+                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
+                args.coldCodeBlockRW = args.coldCodeBlock;
+            }
 
             _codeAlignment = -1;
-            if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
             {
                 _codeAlignment = 32;
             }
-            else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
             {
                 _codeAlignment = 16;
             }
 
-            if (roDataSize != 0)
+            if (args.roDataSize != 0)
             {
                 _roDataAlignment = 8;
 
-                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
                 {
                     _roDataAlignment = 32;
                 }
-                else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
                 {
                     _roDataAlignment = 16;
                 }
-                else if (roDataSize < 8)
+                else if (args.roDataSize < 8)
                 {
                     _roDataAlignment = PointerSize;
                 }
 
-                _roData = new byte[roDataSize];
+                _roData = new byte[args.roDataSize];
 
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
 
-                roDataBlock = (void*)GetPin(_roData);
+                args.roDataBlock = (void*)GetPin(_roData);
+                args.roDataBlockRW = args.roDataBlock;
             }
 
             if (_numFrameInfos > 0)
@@ -3280,7 +3285,7 @@ namespace Internal.JitInterface
             };
         }
 
-        private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
+        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
             // slotNum is not used
             Debug.Assert(slotNum == 0);

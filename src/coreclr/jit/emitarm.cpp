@@ -5094,7 +5094,7 @@ inline unsigned insEncodeImmT2_Mov(int imm)
  *  Emit a Thumb-1 instruction (a 16-bit integer as code)
  */
 
-/*static*/ unsigned emitter::emitOutput_Thumb1Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Thumb1Instr(BYTE* dst, code_t code)
 {
     unsigned short word1 = code & 0xffff;
     assert(word1 == code);
@@ -5104,7 +5104,8 @@ inline unsigned insEncodeImmT2_Mov(int imm)
     assert(top5bits < 29);
 #endif
 
-    MISALIGNED_WR_I2(dst, word1);
+    BYTE* dstRW = dst + writeableOffset;
+    MISALIGNED_WR_I2(dstRW, word1);
 
     return sizeof(short);
 }
@@ -5113,7 +5114,7 @@ inline unsigned insEncodeImmT2_Mov(int imm)
  *  Emit a Thumb-2 instruction (two 16-bit integers as code)
  */
 
-/*static*/ unsigned emitter::emitOutput_Thumb2Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Thumb2Instr(BYTE* dst, code_t code)
 {
     unsigned short word1 = (code >> 16) & 0xffff;
     unsigned short word2 = (code)&0xffff;
@@ -5124,9 +5125,10 @@ inline unsigned insEncodeImmT2_Mov(int imm)
     assert(top5bits >= 29);
 #endif
 
-    MISALIGNED_WR_I2(dst, word1);
-    dst += 2;
-    MISALIGNED_WR_I2(dst, word2);
+    BYTE* dstRW = dst + writeableOffset;
+    MISALIGNED_WR_I2(dstRW, word1);
+    dstRW += 2;
+    MISALIGNED_WR_I2(dstRW, word2);
 
     return sizeof(short) * 2;
 }
