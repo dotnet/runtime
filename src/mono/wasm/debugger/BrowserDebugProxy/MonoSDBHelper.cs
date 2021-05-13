@@ -675,6 +675,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             className = className.Replace("System.Boolean", "bool");
             className = className.Replace("System.Char", "char");
             className = className.Replace("System.Int32", "int");
+            className = className.Replace("System.Object", "object");
             return className;
         }
         public async Task<string> GetTypeName(SessionId sessionId, int type_id, CancellationToken token)
@@ -697,6 +698,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             className = className.Replace("[", "<");
             className = className.Replace("]", ">");
             className = className.Replace("__SQUARED_BRACKETS__", "[]");
+            className = className.Replace(",", ", ");
             className = ReplaceCommonClassNames(className);
             return className;
         }
@@ -783,7 +785,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_PROPERTIES, command_params, token);
             var nProperties = ret_debugger_cmd_reader.ReadInt32();
-
             for (int i = 0 ; i < nProperties; i++)
             {
                 ret_debugger_cmd_reader.ReadInt32(); //propertyId
@@ -840,6 +841,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             long initialPos = ret_debugger_cmd_reader == null ? 0 : ret_debugger_cmd_reader.BaseStream.Position;
             ElementType etype = (ElementType)ret_debugger_cmd_reader.ReadByte();
+            JObject fieldValueType = null;
             switch (etype) {
                 case ElementType.Void:
                     return new JObject{{"Type", "void"}};
@@ -1061,6 +1063,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.ValueType:
                 {
                     var isEnum = ret_debugger_cmd_reader.ReadByte();
+                    var isBoxed = ret_debugger_cmd_reader.ReadByte() == 1;
                     var typeId = ret_debugger_cmd_reader.ReadInt32();
                     var className = await GetTypeName(sessionId, typeId, token);
                     var description = className;
@@ -1080,6 +1083,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 {
                                     type = "object",
                                     subtype = "null",
+                                    isValueType = true,
                                     className,
                                     description = className
                                 },
@@ -1088,7 +1092,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     for (int i = 0; i < numFields ; i++)
                     {
-                        var fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, token);
+                        fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, token);
                         valueTypeFields.Add(fieldValueType);
                     }
 
@@ -1106,6 +1110,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         description = retMethod["value"]?["value"].Value<string>();
                         if (className.Equals("System.Guid"))
                             description = description.ToUpper(); //to keep the old behavior
+                    }
+                    else if (isBoxed && numFields == 1) {
+                        fieldValueType["name"] = name;
+                        return fieldValueType;
                     }
 
                     return JObject.FromObject(new {

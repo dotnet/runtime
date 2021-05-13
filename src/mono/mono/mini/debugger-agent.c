@@ -5176,6 +5176,9 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		buffer_add_byte (buf, MONO_TYPE_VALUETYPE);
 		buffer_add_byte (buf, m_class_is_enumtype (klass));
+
+		if (CHECK_PROTOCOL_VERSION(2, 61))
+			buffer_add_byte(buf, boxed_vtype);
 		buffer_add_typeid (buf, domain, klass);
 
 		nfields = 0;
@@ -5249,7 +5252,8 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	ErrorCode err;
 
 	is_enum = decode_byte (buf, &buf, limit);
-
+	if (CHECK_PROTOCOL_VERSION(2, 61))
+		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (err != ERR_NONE)
 		return err;
@@ -5477,6 +5481,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				*/
 				buf2 = buf;
 				is_enum = decode_byte (buf, &buf, limit);
+				decode_byte (buf, &buf, limit); //ignore is boxed
 				klass = decode_typeid (buf, &buf, limit, &d, &err);
 				if (err != ERR_NONE)
 					return err;
