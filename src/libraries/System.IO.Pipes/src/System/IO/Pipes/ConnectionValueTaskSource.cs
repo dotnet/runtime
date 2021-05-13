@@ -1,17 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.ExceptionServices;
-using System.Threading;
-
 namespace System.IO.Pipes
 {
-    internal sealed class ConnectionCompletionSource : PipeCompletionSource<VoidResult>
+    internal sealed class ConnectionValueTaskSource : PipeValueTaskSource<VoidResult>
     {
         private readonly NamedPipeServerStream _serverStream;
 
-        // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
-        internal ConnectionCompletionSource(NamedPipeServerStream server)
+        internal ConnectionValueTaskSource(NamedPipeServerStream server)
             : base(server._threadPoolBinding!, ReadOnlyMemory<byte>.Empty)
         {
             _serverStream = server;
@@ -20,7 +16,7 @@ namespace System.IO.Pipes
         internal override void SetCompletedSynchronously()
         {
             _serverStream.State = PipeState.Connected;
-            TrySetResult(default(VoidResult));
+            SetResult(default(VoidResult));
         }
 
         protected override void AsyncCallback(uint errorCode, uint numBytes)
@@ -35,10 +31,10 @@ namespace System.IO.Pipes
         }
 
         protected override void HandleError(int errorCode) =>
-            TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Win32Marshal.GetExceptionForWin32Error(errorCode)));
+            SetException(Win32Marshal.GetExceptionForWin32Error(errorCode));
 
         protected override void HandleUnexpectedCancellation() =>
-            TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(Error.GetOperationAborted()));
+            SetException(Error.GetOperationAborted());
     }
 
     internal struct VoidResult { }

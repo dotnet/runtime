@@ -3,14 +3,14 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipes
 {
-    internal abstract unsafe class PipeCompletionSource<TResult> : TaskCompletionSource<TResult>
+    internal abstract unsafe class PipeValueTaskSource<TResult> : IValueTaskSource<TResult>, IValueTaskSource
     {
         private const int NoResult = 0;
         private const int ResultSuccess = 1;
@@ -30,22 +30,31 @@ namespace System.IO.Pipes
         private bool _cancellationHasBeenRegistered;
 #endif
 
-        // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
-        protected PipeCompletionSource(ThreadPoolBoundHandle handle, ReadOnlyMemory<byte> bufferToPin)
-            : base(TaskCreationOptions.RunContinuationsAsynchronously)
+        protected ManualResetValueTaskSourceCore<TResult> _source; // mutable struct; do not make this readonly
+        public TResult GetResult(short token) => _source.GetResult(token);
+        public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
+        void IValueTaskSource.GetResult(short token) => _source.GetResult(token);
+
+        internal short Version => _source.Version;
+
+        protected PipeValueTaskSource(ThreadPoolBoundHandle handle, ReadOnlyMemory<byte> bufferToPin)
         {
             Debug.Assert(handle != null, "handle is null");
 
             _threadPoolBinding = handle;
             _state = NoResult;
+            _source = default;
+            // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
+            _source.RunContinuationsAsynchronously = true;
 
             _pinnedMemory = bufferToPin.Pin();
             _overlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
             {
-                var completionSource = (PipeCompletionSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
-                Debug.Assert(completionSource.Overlapped == pOverlapped);
+                var valueTaskSource = (PipeValueTaskSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
+                Debug.Assert(valueTaskSource.Overlapped == pOverlapped);
 
-                completionSource.AsyncCallback(errorCode, numBytes);
+                valueTaskSource.AsyncCallback(errorCode, numBytes);
             }, this, null);
         }
 
@@ -69,7 +78,7 @@ namespace System.IO.Pipes
                 if (state == NoResult)
                 {
                     // Register the cancellation
-                    _cancellationRegistration = cancellationToken.UnsafeRegister(thisRef => ((PipeCompletionSource<TResult>)thisRef!).Cancel(), this);
+                    _cancellationRegistration = cancellationToken.UnsafeRegister(thisRef => ((PipeValueTaskSource<TResult>)thisRef!).Cancel(), this);
 
                     // Grab the state for case if IO completed while we were setting the registration.
                     state = Interlocked.Exchange(ref _state, NoResult);
@@ -152,7 +161,7 @@ namespace System.IO.Pipes
             }
         }
 
-        protected virtual void HandleUnexpectedCancellation() => TrySetCanceled();
+        protected virtual void HandleUnexpectedCancellation() => SetCanceled();
 
         private void CompleteCallback(int resultState)
         {
@@ -172,7 +181,7 @@ namespace System.IO.Pipes
                     else
                     {
                         // otherwise set canceled
-                        TrySetCanceled(cancellationToken);
+                        SetCanceled(cancellationToken);
                     }
                 }
                 else
@@ -185,5 +194,9 @@ namespace System.IO.Pipes
                 SetCompletedSynchronously();
             }
         }
+
+        protected void SetResult(TResult result) => _source.SetResult(result);
+        protected void SetException(Exception exception) => _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(exception));
+        protected void SetCanceled(CancellationToken cancellationToken = default) => SetException(new OperationCanceledException(cancellationToken));
     }
 }

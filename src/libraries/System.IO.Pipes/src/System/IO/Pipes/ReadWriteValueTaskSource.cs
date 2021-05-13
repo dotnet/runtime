@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.ExceptionServices;
-using System.Threading;
-
 namespace System.IO.Pipes
 {
-    internal sealed class ReadWriteCompletionSource : PipeCompletionSource<int>
+    internal sealed class ReadWriteValueTaskSource : PipeValueTaskSource<int>
     {
         private readonly bool _isWrite;
         private readonly PipeStream _pipeStream;
@@ -14,7 +11,7 @@ namespace System.IO.Pipes
         private bool _isMessageComplete;
         private int _numBytes; // number of buffer read OR written
 
-        internal ReadWriteCompletionSource(PipeStream stream, ReadOnlyMemory<byte> bufferToPin, bool isWrite)
+        internal ReadWriteValueTaskSource(PipeStream stream, ReadOnlyMemory<byte> bufferToPin, bool isWrite)
             : base(stream._threadPoolBinding!, bufferToPin)
         {
             _pipeStream = stream;
@@ -29,7 +26,7 @@ namespace System.IO.Pipes
                 _pipeStream.UpdateMessageCompletion(_isMessageComplete);
             }
 
-            TrySetResult(_numBytes);
+            SetResult(_numBytes);
         }
 
         protected override void AsyncCallback(uint errorCode, uint numBytes)
@@ -63,7 +60,6 @@ namespace System.IO.Pipes
             base.AsyncCallback(errorCode, numBytes);
         }
 
-        protected override void HandleError(int errorCode) =>
-            TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(_pipeStream.WinIOError(errorCode)));
+        protected override void HandleError(int errorCode) => SetException(_pipeStream.WinIOError(errorCode));
     }
 }

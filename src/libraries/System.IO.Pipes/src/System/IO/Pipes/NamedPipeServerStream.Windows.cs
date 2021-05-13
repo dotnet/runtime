@@ -140,7 +140,11 @@ namespace System.IO.Pipes
 
             if (IsAsync)
             {
-                WaitForConnectionCoreAsync(CancellationToken.None).GetAwaiter().GetResult();
+                ValueTask vt = WaitForConnectionCoreAsync(CancellationToken.None);
+                if (!vt.IsCompleted)
+                {
+                    vt.AsTask().GetAwaiter().GetResult();
+                }
             }
             else
             {
@@ -180,7 +184,7 @@ namespace System.IO.Pipes
                     this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
-            return WaitForConnectionCoreAsync(cancellationToken);
+            return WaitForConnectionCoreAsync(cancellationToken).AsTask();
         }
 
         public void Disconnect()
@@ -293,7 +297,7 @@ namespace System.IO.Pipes
         }
 
         // Async version of WaitForConnection.  See the comments above for more info.
-        private unsafe Task WaitForConnectionCoreAsync(CancellationToken cancellationToken)
+        private unsafe ValueTask WaitForConnectionCoreAsync(CancellationToken cancellationToken)
         {
             CheckConnectOperationsServerWithHandle();
 
@@ -302,9 +306,9 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
             }
 
-            var completionSource = new ConnectionCompletionSource(this);
+            var valueTaskSource = new ConnectionValueTaskSource(this);
 
-            if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, completionSource.Overlapped))
+            if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, valueTaskSource.Overlapped))
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
@@ -317,26 +321,26 @@ namespace System.IO.Pipes
                     // so we should unpin and free the overlapped.
                     case Interop.Errors.ERROR_PIPE_CONNECTED:
                         // IOCompletitionCallback will not be called because we completed synchronously.
-                        completionSource.ReleaseResources();
+                        valueTaskSource.ReleaseResources();
                         if (State == PipeState.Connected)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
                         }
-                        completionSource.SetCompletedSynchronously();
+                        valueTaskSource.SetCompletedSynchronously();
 
                         // We return a cached task instead of TaskCompletionSource's Task allowing the GC to collect it.
-                        return Task.CompletedTask;
+                        return ValueTask.CompletedTask;
 
                     default:
-                        completionSource.ReleaseResources();
+                        valueTaskSource.ReleaseResources();
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
             }
 
             // If we are here then connection is pending.
-            completionSource.RegisterForCancellation(cancellationToken);
+            valueTaskSource.RegisterForCancellation(cancellationToken);
 
-            return completionSource.Task;
+            return new ValueTask(valueTaskSource, valueTaskSource.Version);
         }
 
         private void CheckConnectOperationsServerWithHandle()
