@@ -378,7 +378,7 @@ namespace System.Text.Json.Serialization.Metadata
                 else
                 {
                     JsonConverter<object> converter = (JsonConverter<object>)GetDictionaryValueConverter(JsonTypeInfo.ObjectType);
-                    object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options);
+                    object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
                     dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = value;
                 }
             }
