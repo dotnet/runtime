@@ -51,8 +51,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public readonly ResettableCompletionSource<bool> NewUnidirectionalStreamsAvailableTcs = new ResettableCompletionSource<bool>();
-            public readonly ResettableCompletionSource<bool> NewBidirectionalStreamsAvailableTcs = new ResettableCompletionSource<bool>();
+            public readonly RewritingResettableCompletionSource<bool> NewUnidirectionalStreamsAvailableTcs = new RewritingResettableCompletionSource<bool>();
+            public readonly RewritingResettableCompletionSource<bool> NewBidirectionalStreamsAvailableTcs = new RewritingResettableCompletionSource<bool>();
 
             public bool Connected;
             public long AbortErrorCode = -1;
