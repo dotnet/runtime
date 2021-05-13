@@ -3726,47 +3726,136 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     return true;
 }
 
-/*****************************************************************************
- *
- *  Function called to optimize switch statements
- */
-
+//-----------------------------------------------------------------------------
+// fgOptimizeSwitchJump: see if a switch has a dominant case, and modify to
+//   check for that case up front (aka switch peeling).
+//
+// Returns:
+//    True if the switch now has an upstream check for the dominant case.
+//
 bool Compiler::fgOptimizeSwitchJumps()
 {
-    bool result = false; // Our return value
-
-#if 0
-    // TODO-CQ: Add switch jump optimizations?
     if (!fgHasSwitch)
-        return false;
-
-    if (!fgHaveValidEdgeWeights)
-        return false;
-
-    for (BasicBlock* bSrc = fgFirstBB; bSrc != NULL; bSrc = bSrc->bbNext)
     {
-        if (bSrc->bbJumpKind == BBJ_SWITCH)
-        {
-            unsigned        jumpCnt; jumpCnt = bSrc->bbJumpSwt->bbsCount;
-            BasicBlock**    jumpTab; jumpTab = bSrc->bbJumpSwt->bbsDstTab;
-
-            do
-            {
-                BasicBlock*   bDst       = *jumpTab;
-                flowList*     edgeToDst  = fgGetPredForBlock(bDst, bSrc);
-                double        outRatio   = (double) edgeToDst->edgeWeightMin()  / (double) bSrc->bbWeight;
-
-                if (outRatio >= 0.60)
-                {
-                    // straighten switch here...
-                }
-            }
-            while (++jumpTab, --jumpCnt);
-        }
+        return false;
     }
-#endif
 
-    return result;
+    bool modified = false;
+
+    for (BasicBlock* block = fgFirstBB; block != NULL; block = block->bbNext)
+    {
+        if (block->IsLIR())
+        {
+            break;
+        }
+
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
+        if (block->bbJumpKind != BBJ_SWITCH)
+        {
+            continue;
+        }
+
+        if (!block->bbJumpSwt->bbsHasDominantCase)
+        {
+            continue;
+        }
+
+        // We currently will only see dominant cases with PGO.
+        //
+        assert(block->hasProfileWeight());
+
+        const unsigned dominantCase = block->bbJumpSwt->bbsDominantCase;
+
+        JITDUMP(FMT_BB " has switch with dominant case %u, considering peeling\n", block->bbNum, dominantCase);
+
+        // The dominant case should not be the default case, as we already peel that one.
+        //
+        assert(dominantCase < (block->bbJumpSwt->bbsCount - 1));
+        BasicBlock* const dominantTarget = block->bbJumpSwt->bbsDstTab[dominantCase];
+        Statement* const  switchStmt     = block->lastStmt();
+        GenTree* const    switchTree     = switchStmt->GetRootNode();
+        assert(switchTree->OperIs(GT_SWITCH));
+        GenTree* const switchValue = switchTree->AsOp()->gtGetOp1();
+
+        // Split the switch block just before at the switch.
+        //
+        // After this, newBlock is the switch block, and
+        // block is the upstream block.
+        //
+        BasicBlock* newBlock = nullptr;
+
+        if (block->firstStmt() == switchStmt)
+        {
+            newBlock = fgSplitBlockAtBeginning(block);
+        }
+        else
+        {
+            newBlock = fgSplitBlockAfterStatement(block, switchStmt->GetPrevStmt());
+        }
+
+        // Set up a compare in the upstream block, "stealing" the switch value tree.
+        //
+        GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
+        GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
+        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetILOffsetX());
+        fgInsertStmtAtEnd(block, jmpStmt);
+        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
+
+        // Reattach switch value to the switch. This may introduce a comma
+        // in the upstream compare tree, if the switch value expression is complex.
+        //
+        switchTree->AsOp()->gtOp1 = fgMakeMultiUse(&dominantCaseCompare->AsOp()->gtOp1);
+
+        // Update flags
+        //
+        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
+        jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
+        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
+
+        // Wire up the new control flow.
+        //
+        block->bbJumpKind                   = BBJ_COND;
+        block->bbJumpDest                   = dominantTarget;
+        flowList* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+        flowList* const blockToNewBlockEdge = newBlock->bbPreds;
+        assert(blockToNewBlockEdge->getBlock() == block);
+        assert(blockToTargetEdge->getBlock() == block);
+
+        // Update profile data
+        //
+        const BasicBlock::weight_t fraction              = newBlock->bbJumpSwt->bbsDominantFraction;
+        const BasicBlock::weight_t blockToTargetWeight   = block->bbWeight * fraction;
+        const BasicBlock::weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
+
+        newBlock->setBBProfileWeight(blockToNewBlockWeight);
+
+        blockToTargetEdge->setEdgeWeights(blockToTargetWeight, blockToTargetWeight, dominantTarget);
+        blockToNewBlockEdge->setEdgeWeights(blockToNewBlockWeight, blockToNewBlockWeight, block);
+
+        for (flowList* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->flNext)
+        {
+            if (pred->getBlock() == newBlock)
+            {
+                assert(pred->flDupCount == 1);
+                pred->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT, block);
+            }
+        }
+
+        // For now we leave the switch as is, since there's no way
+        // to indicate that one of the cases is now unreachable.
+        //
+        // But it no longer has a dominant case.
+        //
+        newBlock->bbJumpSwt->bbsHasDominantCase = false;
+
+        modified = true;
+    }
+
+    return modified;
 }
 
 //-----------------------------------------------------------------------------

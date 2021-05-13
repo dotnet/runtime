@@ -85,44 +85,7 @@ class typeInfo;
 struct BasicBlockList;
 struct flowList;
 struct EHblkDsc;
-
-/*****************************************************************************
- *
- *  The following describes a switch block.
- *
- *  Things to know:
- *  1. If bbsHasDefault is true, the default case is the last one in the array of basic block addresses
- *     namely bbsDstTab[bbsCount - 1].
- *  2. bbsCount must be at least 1, for the default case. bbsCount cannot be zero. It appears that the ECMA spec
- *     allows for a degenerate switch with zero cases. Normally, the optimizer will optimize degenerate
- *     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
- *     However, in debuggable code, we might not do that, so bbsCount might be 1.
- */
-struct BBswtDesc
-{
-    BasicBlock** bbsDstTab; // case label table address
-    unsigned     bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
-    bool         bbsHasDefault;
-
-    BBswtDesc() : bbsHasDefault(true)
-    {
-    }
-
-    void removeDefault()
-    {
-        assert(bbsHasDefault);
-        assert(bbsCount > 0);
-        bbsHasDefault = false;
-        bbsCount--;
-    }
-
-    BasicBlock* getDefault()
-    {
-        assert(bbsHasDefault);
-        assert(bbsCount > 0);
-        return bbsDstTab[bbsCount - 1];
-    }
-};
+struct BBswtDesc;
 
 struct StackEntry
 {
@@ -1291,6 +1254,47 @@ struct BasicBlockList
     }
 };
 
+// BBswtDesc -- descriptor for a switch block
+//
+//  Things to know:
+//  1. If bbsHasDefault is true, the default case is the last one in the array of basic block addresses
+//     namely bbsDstTab[bbsCount - 1].
+//  2. bbsCount must be at least 1, for the default case. bbsCount cannot be zero. It appears that the ECMA spec
+//     allows for a degenerate switch with zero cases. Normally, the optimizer will optimize degenerate
+//     switches with just a default case to a BBJ_ALWAYS branch, and a switch with just two cases to a BBJ_COND.
+//     However, in debuggable code, we might not do that, so bbsCount might be 1.
+//
+struct BBswtDesc
+{
+    BasicBlock**         bbsDstTab; // case label table address
+    unsigned             bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
+    unsigned             bbsDominantCase;
+    BasicBlock::weight_t bbsDominantFraction;
+    bool                 bbsHasDefault;
+    bool                 bbsHasDominantCase;
+
+    BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false)
+    {
+    }
+
+    void removeDefault()
+    {
+        assert(bbsHasDefault);
+        assert(bbsCount > 0);
+        bbsHasDefault = false;
+        bbsCount--;
+    }
+
+    BasicBlock* getDefault()
+    {
+        assert(bbsHasDefault);
+        assert(bbsCount > 0);
+        return bbsDstTab[bbsCount - 1];
+    }
+};
+
+// flowList -- control flow edge
+//
 struct flowList
 {
 public:
