@@ -2613,7 +2613,6 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
     CONTRACTL_END;
 
     PreInit(pMD->GetModule(), pMD->GetMethodTable());
-    SetIsStatic (pMD->IsStatic());
     m_sig = pMD->GetSignature();
     if (pMD->IsEEImpl())
     {
@@ -2718,7 +2717,6 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 
     PreInit(pModule, NULL);
     m_sig = sig;
-    SetIsStatic(!(MetaSig::GetCallingConvention(sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv(CallConvWinApiSentinel, FALSE);
 }
 
@@ -5838,8 +5836,8 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pMD->ShouldSuppressGCTransition()
-                || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()
+                || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //
