@@ -2714,7 +2714,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt    = FALSE;
+    copiedForGenericsCtxt    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
@@ -2753,8 +2753,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
     const genTreeOps oper      = tree->OperGet();
     const unsigned   kind      = tree->OperKind();
-    unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    unsigned         chkFlags  = 0;
+    GenTreeFlags     treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags     chkFlags  = GTF_EMPTY;
 
     if (tree->OperMayThrow(this))
     {
@@ -3207,7 +3207,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 //                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
 //    debugFlags - the second argument to gtDispFlags
 //
-void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
     if (tree->OperGet() == GT_IND)
     {
@@ -3230,7 +3230,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
 
-void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags)
+void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags)
 {
     if (chkFlags & ~treeFlags)
     {
@@ -3252,7 +3252,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     {
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
-        unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
         if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
         {

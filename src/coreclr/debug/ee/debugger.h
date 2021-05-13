@@ -1973,7 +1973,7 @@ public:
                              unsigned int *cILOffsets, DWORD **pILOffsets);
     void getBoundaries(MethodDesc * ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                       ICorDebugInfo::BoundaryTypes* implicitBoundaries);
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,

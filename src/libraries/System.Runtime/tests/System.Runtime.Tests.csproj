@@ -229,6 +229,7 @@
     <Compile Include="System\Runtime\Serialization\SerializationExceptionTests.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContextTests.cs" />
     <Compile Include="System\Runtime\Versioning\OSPlatformAttributeTests.cs" />
+    <Compile Include="System\Runtime\Versioning\RequiresPreviewFeaturesAttributeTests.cs" />
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\Security\SecurityExceptionTests.cs" />
     <Compile Include="System\Text\StringBuilderTests.cs" />

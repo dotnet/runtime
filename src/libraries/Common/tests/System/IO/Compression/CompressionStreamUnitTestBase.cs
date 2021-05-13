@@ -47,6 +47,8 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task FlushAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -74,6 +76,8 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task FlushAsync_DuringFlushAsync()
         {
             byte[] buffer = null;
@@ -115,6 +119,8 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());
@@ -133,6 +139,8 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Read(string testFile)
         {
             var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
@@ -168,6 +176,8 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Read_EndOfStreamPosition()
         {
             var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
@@ -187,6 +197,8 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Read_BaseStreamSlowly()
         {
             string testFile = UncompressedTestFile();
@@ -321,6 +333,8 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task TestLeaveOpenAfterValidDecompress()
         {
             //Create the Stream
@@ -395,6 +409,8 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task BaseStream_Modify(CompressionMode mode)
         {
             using (var baseStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile())))
@@ -426,6 +442,8 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task BaseStream_ValidAfterDisposeWithTrueLeaveOpen(CompressionMode mode)
         {
             var ms = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
@@ -444,6 +462,7 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task CompressionLevel_SizeInOrder(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
