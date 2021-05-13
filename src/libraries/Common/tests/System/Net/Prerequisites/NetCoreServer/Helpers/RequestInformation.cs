@@ -75,7 +75,8 @@ namespace NetCoreServer
 
             info.SecureConnection = request.IsHttps;
 
-            //info.ClientCertificate = request.ClientCertificate;
+            // FixMe: https://github.com/dotnet/runtime/issues/52693
+            // info.ClientCertificate = request.ClientCertificate;
 
             return info;
         }
