@@ -363,6 +363,15 @@ convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
+# Set natvis file
+
+set(JIT_NATVIS_SOURCE
+  clrjit.natvis
+)
+
+convert_to_absolute_path(JIT_NATVIS_SOURCE ${JIT_NATVIS_SOURCE})
+add_linker_flag("/NATVIS:${JIT_NATVIS_SOURCE}")
+
 set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 
 if(CLR_CMAKE_TARGET_WIN32)
