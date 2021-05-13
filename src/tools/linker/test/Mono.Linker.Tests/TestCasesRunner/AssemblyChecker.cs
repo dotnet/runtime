@@ -205,7 +205,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 				}
 
-				Assert.IsEmpty (expectedInterfaces, $"Unexpected interfaces on {src}");
+				Assert.IsEmpty (expectedInterfaces, $"Expected interfaces were not found on {src}");
 			}
 		}
 

@@ -37,6 +37,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Helpers
 
 		public static void RequiresNonPublicProperties ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] this Type type) { }
 
+		public static void RequiresInterfaces ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] this Type type) { }
+
 		public static void RequiresNone (this Type type) { }
 	}
 }
