@@ -4474,6 +4474,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
 			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
+
+#ifdef TARGET_WASM
+		if (ainfo && ainfo->storage == LLVMArgVtypeByRef)
+			/* This causes llvm to make a copy of the value which is what we need */
+			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
+#endif
 	}
 
 	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
@@ -8693,58 +8699,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_XOP: {
-			IntrinsicId id = (IntrinsicId)0;
-			switch (ins->inst_c0) {
-			case SIMD_OP_SSE_LFENCE: id = INTRINS_SSE_LFENCE; break;
-			case SIMD_OP_SSE_SFENCE: id = INTRINS_SSE_SFENCE; break;
-			case SIMD_OP_SSE_MFENCE: id = INTRINS_SSE_MFENCE; break;
-			default: g_assert_not_reached (); break;
-			}
+			IntrinsicId id = (IntrinsicId)ins->inst_c0;
 			call_intrins (ctx, id, NULL, "");
 			break;
 		}
 		case OP_XOP_X_I:
-		case OP_XOP_X_X: {
-			IntrinsicId id = (IntrinsicId)0;
-			switch (ins->inst_c0) {
-			case SIMD_OP_SSE_SQRTPS: id = INTRINS_SSE_SQRT_PS; break;
-			case SIMD_OP_SSE_RCPPS: id = INTRINS_SSE_RCP_PS; break;
-			case SIMD_OP_SSE_RSQRTPS: id = INTRINS_SSE_RSQRT_PS; break;
-			case SIMD_OP_SSE_SQRTPD: id = INTRINS_SSE_SQRT_PD; break;
-			case SIMD_OP_SSE_LDDQU: id = INTRINS_SSE_LDU_DQ; break;
-			case SIMD_OP_SSE_PHMINPOSUW: id = INTRINS_SSE_PHMINPOSUW; break;
-			case SIMD_OP_AES_IMC: id = INTRINS_AESNI_AESIMC; break;
-			default: g_assert_not_reached (); break;
-			}
-			LLVMValueRef arg0 = lhs;
-			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
-			break;
-		}
+		case OP_XOP_X_X:
 		case OP_XOP_I4_X:
-		case OP_XOP_I8_X: {
-			IntrinsicId id = (IntrinsicId)0;
-			switch (ins->inst_c0) {
-			case SIMD_OP_SSE_CVTSS2SI: id = INTRINS_SSE_CVTSS2SI; break;
-			case SIMD_OP_SSE_CVTTSS2SI: id = INTRINS_SSE_CVTTSS2SI; break;
-			case SIMD_OP_SSE_CVTSS2SI64: id = INTRINS_SSE_CVTSS2SI64; break;
-			case SIMD_OP_SSE_CVTTSS2SI64: id = INTRINS_SSE_CVTTSS2SI64; break;
-			case SIMD_OP_SSE_CVTSD2SI: id = INTRINS_SSE_CVTSD2SI; break;
-			case SIMD_OP_SSE_CVTTSD2SI: id = INTRINS_SSE_CVTTSD2SI; break;
-			case SIMD_OP_SSE_CVTSD2SI64: id = INTRINS_SSE_CVTSD2SI64; break;
-			case SIMD_OP_SSE_CVTTSD2SI64: id = INTRINS_SSE_CVTTSD2SI64; break;
-			default: g_assert_not_reached (); break;
-			}
-			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+		case OP_XOP_I8_X:
+		case OP_XOP_X_X_X:
+		case OP_XOP_X_X_I4:
+		case OP_XOP_X_X_I8: {
+			IntrinsicId id = (IntrinsicId)ins->inst_c0;
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
+
 		case OP_XOP_I4_X_X: {
 			gboolean to_i8_t = FALSE;
 			gboolean ret_bool = FALSE;
-			IntrinsicId id = (IntrinsicId)0;
+			IntrinsicId id = (IntrinsicId)ins->inst_c0;
 			switch (ins->inst_c0) {
-			case SIMD_OP_SSE_TESTC:  id = INTRINS_SSE_TESTC;  to_i8_t = TRUE; ret_bool = TRUE; break;
-			case SIMD_OP_SSE_TESTZ:  id = INTRINS_SSE_TESTZ;  to_i8_t = TRUE; ret_bool = TRUE; break;
-			case SIMD_OP_SSE_TESTNZ: id = INTRINS_SSE_TESTNZ; to_i8_t = TRUE; ret_bool = TRUE; break;
+			case INTRINS_SSE_TESTC: to_i8_t = TRUE; ret_bool = TRUE; break;
+			case INTRINS_SSE_TESTZ: to_i8_t = TRUE; ret_bool = TRUE; break;
+			case INTRINS_SSE_TESTNZ: to_i8_t = TRUE; ret_bool = TRUE; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef args [] = { lhs, rhs };
@@ -8761,71 +8740,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			} else {
 				values [ins->dreg] = call;
 			}
-			break;
-		}
-		case OP_XOP_X_X_X:
-		case OP_XOP_X_X_I4:
-		case OP_XOP_X_X_I8: {
-			LLVMValueRef args [] = { lhs, rhs };
-			IntrinsicId id = (IntrinsicId)0;
-			switch (ins->inst_c0) {
-			case SIMD_OP_SSE_CVTSD2SS: id = INTRINS_SSE_CVTSD2SS; break; 
-			case SIMD_OP_SSE_MAXPS: id = INTRINS_SSE_MAXPS; break;
-			case SIMD_OP_SSE_MAXSS: id = INTRINS_SSE_MAXSS; break;
-			case SIMD_OP_SSE_MINPS: id = INTRINS_SSE_MINPS; break;
-			case SIMD_OP_SSE_MINSS: id = INTRINS_SSE_MINSS; break;
-			case SIMD_OP_SSE_MAXPD: id = INTRINS_SSE_MAXPD; break;
-			case SIMD_OP_SSE_MAXSD: id = INTRINS_SSE_MAXSD; break;
-			case SIMD_OP_SSE_MINPD: id = INTRINS_SSE_MINPD; break;
-			case SIMD_OP_SSE_MINSD: id = INTRINS_SSE_MINSD; break;
-			case SIMD_OP_SSE_PMADDWD: id = INTRINS_SSE_PMADDWD; break;
-			case SIMD_OP_SSE_PMULHW: id = INTRINS_SSE_PMULHW; break;
-			case SIMD_OP_SSE_PMULHUW: id = INTRINS_SSE_PMULHUW; break;
-			case SIMD_OP_SSE_PACKSSWB: id = INTRINS_SSE_PACKSSWB; break;
-			case SIMD_OP_SSE_PACKSSDW: id = INTRINS_SSE_PACKSSDW; break;
-			case SIMD_OP_SSE_PSRLW_IMM: id = INTRINS_SSE_PSRLI_W; break;
-			case SIMD_OP_SSE_PSRLD_IMM: id = INTRINS_SSE_PSRLI_D; break;
-			case SIMD_OP_SSE_PSRLQ_IMM: id = INTRINS_SSE_PSRLI_Q; break;
-			case SIMD_OP_SSE_PSRLW: id = INTRINS_SSE_PSRL_W; break;
-			case SIMD_OP_SSE_PSRLD: id = INTRINS_SSE_PSRL_D; break;
-			case SIMD_OP_SSE_PSRLQ: id = INTRINS_SSE_PSRL_Q; break;
-			case SIMD_OP_SSE_PSLLW_IMM: id = INTRINS_SSE_PSLLI_W; break;
-			case SIMD_OP_SSE_PSLLD_IMM: id = INTRINS_SSE_PSLLI_D; break;
-			case SIMD_OP_SSE_PSLLQ_IMM: id = INTRINS_SSE_PSLLI_Q; break;
-			case SIMD_OP_SSE_PSLLW: id = INTRINS_SSE_PSLL_W; break;
-			case SIMD_OP_SSE_PSLLD: id = INTRINS_SSE_PSLL_D; break;
-			case SIMD_OP_SSE_PSLLQ: id = INTRINS_SSE_PSLL_Q; break;
-			case SIMD_OP_SSE_PSRAW_IMM: id = INTRINS_SSE_PSRAI_W; break;
-			case SIMD_OP_SSE_PSRAD_IMM: id = INTRINS_SSE_PSRAI_D; break;
-			case SIMD_OP_SSE_PSRAW: id = INTRINS_SSE_PSRA_W; break;
-			case SIMD_OP_SSE_PSRAD: id = INTRINS_SSE_PSRA_D; break;
-			case SIMD_OP_SSE_PSADBW: id = INTRINS_SSE_PSADBW; break;
-			case SIMD_OP_SSE_ADDSUBPS: id = INTRINS_SSE_ADDSUBPS; break;
-			case SIMD_OP_SSE_ADDSUBPD: id = INTRINS_SSE_ADDSUBPD; break;
-			case SIMD_OP_SSE_HADDPS: id = INTRINS_SSE_HADDPS; break;
-			case SIMD_OP_SSE_HADDPD: id = INTRINS_SSE_HADDPD; break;
-			case SIMD_OP_SSE_PHADDW: id = INTRINS_SSE_PHADDW; break;
-			case SIMD_OP_SSE_PHADDD: id = INTRINS_SSE_PHADDD; break;
-			case SIMD_OP_SSE_PHSUBW: id = INTRINS_SSE_PHSUBW; break;
-			case SIMD_OP_SSE_PHSUBD: id = INTRINS_SSE_PHSUBD; break;
-			case SIMD_OP_SSE_HSUBPS: id = INTRINS_SSE_HSUBPS; break;
-			case SIMD_OP_SSE_HSUBPD: id = INTRINS_SSE_HSUBPD; break;
-			case SIMD_OP_SSE_PHADDSW: id = INTRINS_SSE_PHADDSW; break;
-			case SIMD_OP_SSE_PHSUBSW: id = INTRINS_SSE_PHSUBSW; break;
-			case SIMD_OP_SSE_PSIGNB: id = INTRINS_SSE_PSIGNB; break;
-			case SIMD_OP_SSE_PSIGNW: id = INTRINS_SSE_PSIGNW; break;
-			case SIMD_OP_SSE_PSIGND: id = INTRINS_SSE_PSIGND; break;
-			case SIMD_OP_SSE_PMADDUBSW: id = INTRINS_SSE_PMADDUBSW; break;
-			case SIMD_OP_SSE_PMULHRSW: id = INTRINS_SSE_PMULHRSW; break;
-			case SIMD_OP_SSE_PACKUSDW: id = INTRINS_SSE_PACKUSDW; break;
-			case SIMD_OP_AES_DEC: id = INTRINS_AESNI_AESDEC; break;
-			case SIMD_OP_AES_DECLAST: id = INTRINS_AESNI_AESDECLAST; break;
-			case SIMD_OP_AES_ENC: id = INTRINS_AESNI_AESENC; break;
-			case SIMD_OP_AES_ENCLAST: id = INTRINS_AESNI_AESENCLAST; break;
-			default: g_assert_not_reached (); break;
-			}
-
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 
@@ -11625,6 +11539,14 @@ emit_method_inner (EmitContext *ctx)
 		return;
 	}
 
+#ifdef TARGET_WASM
+	if (ctx->module->interp && cfg->header->code_size > 100000) {
+		/* Large methods slow down llvm too much */
+		set_failure (ctx, "il code too large.");
+		return;
+	}
+#endif
+
 	header = cfg->header;
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
@@ -11714,6 +11636,13 @@ emit_method_inner (EmitContext *ctx)
 			/* For OP_LDADDR */
 			cfg->args [i + sig->hasthis]->opcode = OP_VTARG_ADDR;
 		}
+
+#ifdef TARGET_WASM
+		if (ainfo->storage == LLVMArgVtypeByRef) {
+			/* This causes llvm to make a copy of the value which is what we need */
+			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
+		}
+#endif
 	}
 	g_free (names);
 
@@ -12176,15 +12105,16 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		cfg->exception_message = g_strdup ("varargs");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
 	call->cinfo = get_llvm_call_info (cfg, sig);
 
 	if (cfg->disable_llvm)
 		return;
-
-	if (sig->call_convention == MONO_CALL_VARARG) {
-		cfg->exception_message = g_strdup ("varargs");
-		cfg->disable_llvm = TRUE;
-	}
 
 	for (i = 0; i < n; ++i) {
 		MonoInst *ins;

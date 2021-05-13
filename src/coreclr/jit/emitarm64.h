@@ -101,7 +101,7 @@ emitter::code_t emitInsCode(instruction ins, insFormat fmt);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
 //  Emit the 32-bit Arm64 instruction 'code' into the 'dst'  buffer
-static unsigned emitOutput_Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
 // A helper method to return the natural scale for an EA 'size'
 static unsigned NaturalScale_helper(emitAttr size);

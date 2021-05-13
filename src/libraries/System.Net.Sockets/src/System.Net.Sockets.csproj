@@ -95,7 +95,6 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
     <Compile Include="System\Net\Sockets\IOControlKeepAlive.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
-    <Compile Include="System\Net\Sockets\TransmitFileAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
              Link="Common\System\Net\ContextAwareResult.Windows.cs" />

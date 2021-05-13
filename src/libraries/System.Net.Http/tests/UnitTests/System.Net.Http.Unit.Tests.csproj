@@ -148,6 +148,8 @@
              Link="ProductionCode\System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\KnownHeader.cs"
              Link="ProductionCode\System\Net\Http\Headers\KnownHeader.cs" />
+    <Compile Include="..\..\src\System\Net\Http\Headers\KnownHeader.Http2And3.cs"
+             Link="ProductionCode\System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\MediaTypeHeaderParser.cs"
              Link="ProductionCode\System\Net\Http\Headers\MediaTypeHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\MediaTypeHeaderValue.cs"
@@ -391,10 +393,14 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.Http3.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.Http3.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs"

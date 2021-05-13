@@ -1143,6 +1143,8 @@ DWORD_PTR GetCurrentProcessCpuMask();
 
 #endif // HOST_WINDOWS
 
+int GetTotalProcessorCount();
+
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************

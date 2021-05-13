@@ -55,6 +55,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50872", TestPlatforms.Android)]
         public void ReadsRuntimeTargetInfoWithCommentsIsInvalid()
         {
             var exception = Assert.ThrowsAny<JsonException>(() => Read(
@@ -307,6 +308,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50872", TestPlatforms.Android)]
         public void RejectsMissingLibrary()
         {
             var exception = Assert.Throws<InvalidOperationException>(() => Read(

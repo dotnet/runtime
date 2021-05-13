@@ -301,4 +301,9 @@ inline void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, con
     g_theGCToCLR->LogStressMsg(level, facility, msg);
 }
 
+inline uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return g_theGCToCLR->GetCurrentProcessCpuCount();
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

@@ -388,11 +388,6 @@ public:
     //  Size of the cache
     static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
 
-    // Get number of processors assigned to the current process
-    // Return:
-    //  The number of processors
-    static uint32_t GetCurrentProcessCpuCount();
-
     // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:
     //  procNo - The requested affinity for the calling thread.
