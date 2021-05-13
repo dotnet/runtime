@@ -55,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Download20_Dynamic(string hostName)
         {
             _listener.Enabled = true;
-            _listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync");
+            _listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync") || m.Contains("Rtt estimation updated");
 
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
@@ -178,11 +178,12 @@ namespace System.Net.Http.Functional.Tests
         public override void Dispose()
         {
             base.Dispose();
+            var timeout = TimeSpan.FromSeconds(2);
 
-            if (!_processMessages.Wait(TimeSpan.FromSeconds(10)))
+            if (!_processMessages.Wait(timeout))
             {
                 _stopProcessing.Cancel();
-                _processMessages.Wait();
+                _processMessages.Wait(timeout);
             }
         }
     }
