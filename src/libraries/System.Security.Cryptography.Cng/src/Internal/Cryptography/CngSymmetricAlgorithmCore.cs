@@ -111,25 +111,35 @@ namespace Internal.Cryptography
 
         public ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true);
+            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true, _outer.Padding, _outer.Mode);
         }
 
         public ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false);
+            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false, _outer.Padding, _outer.Mode);
         }
 
         private ICryptoTransform CreateCryptoTransform(bool encrypting)
         {
             if (KeyInPlainText)
             {
-                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting);
+                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode);
             }
 
             return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
         }
 
-        private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
+        public UniversalCryptoTransform CreateCryptoTransform(byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
+        {
+            if (KeyInPlainText)
+            {
+                return CreateCryptoTransform(_outer.BaseKey, iv, encrypting, padding, mode);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
@@ -148,29 +158,29 @@ namespace Internal.Cryptography
 
             // CloneByteArray is null-preserving. So even when GetCipherIv returns null the iv variable
             // is correct, and detached from the input parameter.
-            byte[]? iv = _outer.Mode.GetCipherIv(rgbIV).CloneByteArray();
+            byte[]? iv = mode.GetCipherIv(rgbIV).CloneByteArray();
 
             key = _outer.PreprocessKey(key);
 
-            return CreateEphemeralCryptoTransformCore(key, iv, encrypting);
+            return CreateEphemeralCryptoTransformCore(key, iv, encrypting, padding, mode);
         }
 
-        private ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting)
+        private UniversalCryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
         {
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle();
+            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle(mode);
 
             BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(
                 algorithmModeHandle,
-                _outer.Mode,
+                mode,
                 blockSizeInBytes,
                 _outer.GetPaddingSize(),
                 key,
-                false,
+                ownsParentHandle: false,
                 iv,
                 encrypting);
 
-            return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
+            return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
         private ICryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)

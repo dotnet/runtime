@@ -28,7 +28,7 @@ namespace Internal.Cryptography
 
         // Other members.
         bool IsWeakKey(byte[] key);
-        SafeAlgorithmHandle GetEphemeralModeHandle();
+        SafeAlgorithmHandle GetEphemeralModeHandle(CipherMode mode);
         string GetNCryptAlgorithmIdentifier();
         byte[] PreprocessKey(byte[] key);
         int GetPaddingSize();
