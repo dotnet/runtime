@@ -872,7 +872,7 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        addr->gtFlags = 0;
+        addr->gtFlags = GTF_EMPTY;
 
         INDEBUG(m_stmtModified = true;)
     }
@@ -1044,7 +1044,7 @@ private:
             return;
         }
 
-        unsigned flags = 0;
+        GenTreeFlags flags = GTF_EMPTY;
 
         if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
         {

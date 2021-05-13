@@ -1935,8 +1935,6 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
-             Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSSupportVersion.cs"
@@ -2016,6 +2014,18 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
+             Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoreleasePool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureObjCMarshal)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and ('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true')">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
@@ -2034,9 +2044,5 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
       <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoreleasePool.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" />
   </ItemGroup>
 </Project>

@@ -35,6 +35,7 @@ enum class WellKnownAttribute : DWORD
     ThreadStatic,
     WinRTMarshalingBehaviorAttribute,
     PreserveBaseOverridesAttribute,
+    ObjectiveCTrackedTypeAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -101,6 +102,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "Windows.Foundation.Metadata.MarshalingBehaviorAttribute";
         case WellKnownAttribute::PreserveBaseOverridesAttribute:
             return "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
+        case WellKnownAttribute::ObjectiveCTrackedTypeAttribute:
+            return "System.Runtime.InteropServices.ObjectiveC.ObjectiveCTrackedTypeAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

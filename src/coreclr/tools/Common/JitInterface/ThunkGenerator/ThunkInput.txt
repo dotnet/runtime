@@ -101,6 +101,8 @@ CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*
 ICorJitInfo::PgoInstrumentationSchema**,ref PgoInstrumentationSchema*
 ICorJitInfo::PgoInstrumentationSchema*,PgoInstrumentationSchema*
 
+AllocMemArgs*, ref AllocMemArgs
+
 ; Enums
 CorInfoClassId
 CorInfoHelpFunc
@@ -306,7 +308,7 @@ FUNCTIONS
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
-    void allocMem(        uint32_t               hotCodeSize,    uint32_t               coldCodeSize,     uint32_t               roDataSize,             uint32_t               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );
+    void allocMem(AllocMemArgs* pArgs);
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
     void allocUnwindInfo(uint8_t* pHotCode, uint8_t* pColdCode, uint32_t startOffset, uint32_t endOffset, uint32_t unwindSize, uint8_t* pUnwindBlock, CorJitFuncKind funcKind)
     void* allocGCInfo(size_t size)
@@ -318,7 +320,7 @@ FUNCTIONS
     JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t**pInstrumentationData)
     JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData)
     void recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
-    void recordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+    void recordRelocation(void* location, void* locationRW, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
     uint16_t getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)

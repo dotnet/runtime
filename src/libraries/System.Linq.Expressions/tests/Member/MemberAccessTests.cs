@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
     public static class MemberAccessTests
     {
         private class UnreadableIndexableClass

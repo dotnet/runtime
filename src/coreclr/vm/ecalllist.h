@@ -930,6 +930,14 @@ FCFuncStart(gComWrappersFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+FCFuncStart(gObjCMarshalFuncs)
+    QCFuncElement("TrySetGlobalMessageSendCallback", ObjCMarshalNative::TrySetGlobalMessageSendCallback)
+    QCFuncElement("TryInitializeReferenceTracker", ObjCMarshalNative::TryInitializeReferenceTracker)
+    QCFuncElement("CreateReferenceTrackingHandleInternal", ObjCMarshalNative::CreateReferenceTrackingHandle)
+FCFuncEnd()
+#endif // FEATURE_OBJCMARSHAL
+
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
     FCFuncElement("ConvertContentsToNative", MngdRefCustomMarshaler::ConvertContentsToNative)
@@ -1121,9 +1129,9 @@ FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFuncs)
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
@@ -1180,6 +1188,9 @@ FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
+#ifdef FEATURE_OBJCMARSHAL
+FCClassElement("ObjectiveCMarshal", "System.Runtime.InteropServices.ObjectiveC", gObjCMarshalFuncs)
+#endif // FEATURE_OBJCMARSHAL
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 
@@ -1216,7 +1227,6 @@ FCClassElement("Variant", "System", gVariantFuncs)
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
 FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)

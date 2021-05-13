@@ -1973,6 +1973,33 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+#ifdef FEATURE_OBJCMARSHAL
+    // Check if this type has a finalizer and then if it is a referenced tracked type.
+    if (pMT->HasFinalizer() && !IsValueClass() && !IsInterface() && !IsDelegate())
+    {
+        BOOL isTrackedReference = FALSE;
+        if (HasParent())
+        {
+            MethodTable * pParentClass = GetParentMethodTable();
+            PREFIX_ASSUME(pParentClass != NULL);
+            isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
+        }
+
+        if (!isTrackedReference)
+        {
+            HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+                WellKnownAttribute::ObjectiveCTrackedTypeAttribute,
+                NULL,
+                NULL);
+
+            isTrackedReference = hr == S_OK ? TRUE : FALSE;
+        }
+
+        if (isTrackedReference)
+            pMT->SetIsTrackedReferenceWithFinalizer();
+    }
+#endif // FEATURE_OBJCMARSHAL
+
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
     pModule->EnsureTypeDefCanBeStored(bmtInternal->pType->GetTypeDefToken());

@@ -1635,12 +1635,12 @@ extern void dspRegMask(regMaskTP regMask, size_t minSiz = 0);
 #endif
 
 #if CPU_HAS_BYTE_REGS
-inline BOOL isByteReg(regNumber reg)
+inline bool isByteReg(regNumber reg)
 {
     return (reg <= REG_EBX);
 }
 #else
-inline BOOL isByteReg(regNumber reg)
+inline bool isByteReg(regNumber reg)
 {
     return true;
 }

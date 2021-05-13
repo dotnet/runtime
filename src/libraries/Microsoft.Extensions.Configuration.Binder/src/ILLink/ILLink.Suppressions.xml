@@ -43,5 +43,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetAllProperties(System.Type)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.Extensions.Configuration.ConfigurationBinder.FindOpenGenericInterface(System.Type,System.Type)</property>
+    </attribute>
   </assembly>
 </linker>

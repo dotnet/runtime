@@ -413,7 +413,7 @@ interface ISOSDacInterface8 : IUnknown
 // Increment anytime there is a change in the data structures that SOS depends on like
 // stress log structs (StressMsg, StressLogChunck, ThreadStressLog, etc), exception
 // stack traces (StackTraceElement), the PredefinedTlsSlots enums, etc.
-cpp_quote("#define SOS_BREAKING_CHANGE_VERSION 2")
+cpp_quote("#define SOS_BREAKING_CHANGE_VERSION 3")
 
 [
     object,

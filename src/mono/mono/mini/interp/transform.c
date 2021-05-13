@@ -4511,7 +4511,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				(td->sp > td->stack && (td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_VT)) ? (td->sp [-1].klass == NULL ? "?" : m_class_get_name (td->sp [-1].klass)) : "");
 		}
 
-		if (sym_seq_points && mono_bitset_test_fast (seq_point_locs, td->ip - header->code)) {
+		if (td->gen_sdb_seq_points && ((!sym_seq_points && td->stack == td->sp) || (sym_seq_points && mono_bitset_test_fast (seq_point_locs, td->ip - header->code)))) {
 			if (in_offset == 0 || (header->num_clauses && !td->cbb->last_ins))
 				interp_add_ins (td, MINT_SDB_INTR_LOC);
 			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
