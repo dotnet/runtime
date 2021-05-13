@@ -111,8 +111,8 @@
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
   <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and '$(BrowserHost)' == 'windows'">
-    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%/chromedriver_win32%3B%PATH%" />
-    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%/chrome-win%3B%PATH%" />
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
