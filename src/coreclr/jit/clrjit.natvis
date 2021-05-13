@@ -114,7 +114,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <!-- Emitter -->
   <Type Name="insGroup">
     <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d} [extend]</DisplayString>
-    <DisplayString>IG{igNum,d]</DisplayString>
+    <DisplayString>IG{igNum,d}</DisplayString>
   </Type>
 
   <!-- utils -->
