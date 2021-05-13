@@ -266,19 +266,20 @@
     </ItemGroup>
 
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
-      <!-- 84.0.4147.105 is 768962 for example -->
-      <ChromiumRevision>768968</ChromiumRevision>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
+      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
+      <!-- 84.0.4147.105 is 768962 for example -->
+      <ChromiumRevision>768968</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
-      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/857997/chrome-win.zip</ChromiumUrl>
-      <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/857997/chromedriver_win32.zip</SeleniumUrl>
+      <ChromiumRevision>857997</ChromiumRevision>
+      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
+      <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</SeleniumUrl>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
