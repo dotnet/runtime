@@ -178,8 +178,18 @@ namespace System.IO
         {
         }
 
+        public StreamReader(string path, FileOptions options)
+            : this(path, true, options)
+        {
+        }
+
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks)
             : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        {
+        }
+
+        public StreamReader(string path, bool detectEncodingFromByteOrderMarks, FileOptions options)
+            : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize, options)
         {
         }
 
@@ -188,17 +198,32 @@ namespace System.IO
         {
         }
 
+        public StreamReader(string path, Encoding encoding, FileOptions options)
+            : this(path, encoding, true, DefaultBufferSize, options)
+        {
+        }
+
         public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks)
             : this(path, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) :
-            this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileOptions options)
+            : this(path, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, options)
         {
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+            : this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+        {
+        }
+
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, FileOptions options)
+            : this(ValidateArgsAndOpenPath(path, encoding, bufferSize, options), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+        {
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize, FileOptions options = FileOptions.SequentialScan)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -209,7 +234,7 @@ namespace System.IO
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, options);
         }
 
         public override void Close()

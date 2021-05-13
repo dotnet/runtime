@@ -139,8 +139,18 @@ namespace System.IO
         {
         }
 
+        public StreamWriter(string path, FileOptions options)
+            : this(path, false, UTF8NoBOM, DefaultBufferSize, options)
+        {
+        }
+
         public StreamWriter(string path, bool append)
             : this(path, append, UTF8NoBOM, DefaultBufferSize)
+        {
+        }
+
+        public StreamWriter(string path, bool append, FileOptions options)
+            : this(path, append, UTF8NoBOM, DefaultBufferSize, options)
         {
         }
 
@@ -149,12 +159,22 @@ namespace System.IO
         {
         }
 
+        public StreamWriter(string path, bool append, Encoding encoding, FileOptions options)
+            : this(path, append, encoding, DefaultBufferSize, options)
+        {
+        }
+
         public StreamWriter(string path, bool append, Encoding encoding, int bufferSize) :
             this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize), encoding, bufferSize, leaveOpen: false)
         {
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize, FileOptions options) :
+            this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize, options), encoding, bufferSize, leaveOpen: false)
+        {
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize, FileOptions options = FileOptions.SequentialScan)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -165,7 +185,7 @@ namespace System.IO
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize, options);
         }
 
         public override void Close()
