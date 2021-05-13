@@ -335,21 +335,20 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
 
-            builder.Services.AddTransient<TClient>(s => AddTransientHelper<TClient>(s));
+            builder.Services.AddTransient(s => AddTransientHelper<TClient>(s, builder));
 
             return builder;
+        }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. Outer method has been annotated with DynamicallyAccessedMembers.")]
-            TClient1 AddTransientHelper<TClient1>(IServiceProvider s)
-            where TClient1 : class
-            {
-                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. Outer method has been annotated with DynamicallyAccessedMembers.")]
+        private static TClient AddTransientHelper<TClient>(IServiceProvider s, IHttpClientBuilder builder) where TClient : class
+        {
+            IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+            HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
-                ITypedHttpClientFactory<TClient1> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient1>>();
-                return typedClientFactory.CreateClient(httpClient);
-            };
+            ITypedHttpClientFactory<TClient> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
+            return typedClientFactory.CreateClient(httpClient);
         }
 
         /// <summary>
@@ -403,22 +402,20 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
 
-            builder.Services.AddTransient<TClient>(s => AddTransientHelper<TClient, TImplementation>(s));
+            builder.Services.AddTransient(s => AddTransientHelper<TClient, TImplementation>(s, builder));
 
             return builder;
+        }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. Outer method has been annotated with DynamicallyAccessedMembers.")]
-            TClient1 AddTransientHelper<TClient1, TImplementation1>(IServiceProvider s)
-            where TClient1 : class
-            where TImplementation1 : class, TClient1
-            {
-                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. Outer method has been annotated with DynamicallyAccessedMembers.")]
+        private static TClient AddTransientHelper<TClient, TImplementation>(IServiceProvider s, IHttpClientBuilder builder) where TClient : class where TImplementation : class, TClient
+        {
+            IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+            HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
 
-                ITypedHttpClientFactory<TImplementation1> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TImplementation1>>();
-                return typedClientFactory.CreateClient(httpClient);
-            };
+            ITypedHttpClientFactory<TImplementation> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TImplementation>>();
+            return typedClientFactory.CreateClient(httpClient);
         }
 
         /// <summary>
