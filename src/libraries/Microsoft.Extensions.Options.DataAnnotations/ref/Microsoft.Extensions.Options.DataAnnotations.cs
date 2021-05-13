@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Options
     {
         public DataAnnotationValidateOptions(string name) { }
         public string Name { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of options cannot be statically discovered.")]
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
 }

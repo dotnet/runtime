@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        [RequiresUnreferencedCode("The type of options cannot be statically discovered.")]
         public ValidateOptionsResult Validate(string name, TOptions options)
         {
             // Null name is used to configure all named options.
