@@ -296,8 +296,6 @@
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.CryptoNative.cs"
-             Link="Common\Interop\Unix\Interop.CryptoNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"

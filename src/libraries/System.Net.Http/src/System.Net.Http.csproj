@@ -527,8 +527,6 @@
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.CryptoNative.cs"
-             Link="Common\Interop\Unix\Interop.CryptoNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
