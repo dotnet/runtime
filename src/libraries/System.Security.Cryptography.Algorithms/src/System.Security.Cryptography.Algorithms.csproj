@@ -453,7 +453,7 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs" />
