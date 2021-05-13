@@ -9266,7 +9266,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         {
                             // When performing override checking to ensure that a concrete type is valid, require the implementation 
                             // actually implement the exact or equivalent interface.
-                            equivalentOrVariantCompatible = it.GetInterface()->IsEquivalentTo(pInterfaceType, NULL);
+                            equivalentOrVariantCompatible = it.GetInterface()->IsEquivalentTo(pInterfaceType);
                         }
 
                         if (equivalentOrVariantCompatible)
