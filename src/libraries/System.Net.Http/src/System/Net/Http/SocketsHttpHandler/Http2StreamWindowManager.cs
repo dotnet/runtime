@@ -116,6 +116,7 @@ namespace System.Net.Http
 
         private class RttEstimator
         {
+            private readonly TimeSpan _initialRtt;
             private Http2Connection _connection;
             private readonly Socket? _socket;
             public TimeSpan Rtt { get; private set; }
@@ -123,15 +124,31 @@ namespace System.Net.Http
             {
                 _connection = connection;
                 if (fakeRtt.HasValue)
+                {
                     Rtt = fakeRtt.Value;
+                    _initialRtt = Rtt;
+                }
                 _socket = socket;
-                UpdateRttFromSocket();
+                UpdateEstimation();
             }
 
-            private void UpdateRttFromSocket()
+#if WINDOWS
+            internal void UpdateEstimation()
             {
                 if (_socket == null) return;
+
+                if (Interop.Winsock.GetTcpInfoV0(_socket.SafeHandle, out Interop.Winsock._TCP_INFO_v0 tcpInfo) == SocketError.Success)
+                {
+                    Rtt = TimeSpan.FromTicks(10 * tcpInfo.RttUs);
+                    _connection.Trace($"Rtt estimation updated: Rtt={Rtt} || (initial fake:{_initialRtt} difference:{Rtt - _initialRtt}");
+                }
             }
+
+#else
+            internal void UpdateEstimation()
+            {
+            }
+#endif
         }
     }
 }

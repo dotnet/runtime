@@ -599,6 +599,7 @@ namespace System.Net.Http
 
             if (frameData.Length > 0)
             {
+                _rttEstimator?.UpdateEstimation();
                 ExtendWindow(frameData.Length);
             }
 
