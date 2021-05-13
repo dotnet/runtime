@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
@@ -10,7 +12,9 @@ namespace System.Text.Json.Nodes
     [DebuggerTypeProxy(typeof(JsonValue<>.DebugView))]
     internal sealed partial class JsonValue<TValue> : JsonValue
     {
-        internal readonly TValue _value; // keep as a field for direct access to avoid copies
+        public readonly TValue _value; // keep as a field for direct access to avoid copies
+        public readonly JsonTypeInfo<TValue>? _jsonTypeInfo;
+        public readonly JsonConverter<TValue>? _converter;
 
         public JsonValue(TValue value, JsonNodeOptions? options = null) : base(options)
         {
@@ -25,6 +29,34 @@ namespace System.Text.Json.Nodes
             _value = value;
         }
 
+        public JsonValue(TValue value, JsonTypeInfo<TValue> jsonTypeInfo, JsonNodeOptions? options = null) : base(options)
+        {
+            Debug.Assert(value != null);
+            Debug.Assert(!(value is JsonElement) || ((JsonElement)(object)value).ValueKind != JsonValueKind.Null);
+
+            if (value is JsonNode)
+            {
+                ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
+            }
+
+            _value = value;
+            _jsonTypeInfo = jsonTypeInfo;
+        }
+
+        public JsonValue(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options = null) : base(options)
+        {
+            Debug.Assert(value != null);
+            Debug.Assert(!(value is JsonElement) || ((JsonElement)(object)value).ValueKind != JsonValueKind.Null);
+
+            if (value is JsonNode)
+            {
+                ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
+            }
+
+            _value = value;
+            _converter = converter;
+        }
+
         public TValue Value
         {
             get
@@ -33,7 +65,7 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        public override T GetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] T>()
+        public override T GetValue<T>()
         {
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)
@@ -86,7 +118,27 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                JsonSerializer.Serialize(writer, _value, _value!.GetType(), options);
+                if (_converter != null)
+                {
+                    options ??= JsonSerializerOptions.s_defaultOptions;
+
+                    if (_converter.IsInternalConverterForNumberType)
+                    {
+                        _converter.WriteNumberWithCustomHandling(writer, _value, options.NumberHandling);
+                    }
+                    else
+                    {
+                        _converter.Write(writer, _value, options);
+                    }
+                }
+                else if (_jsonTypeInfo != null)
+                {
+                    JsonSerializer.Serialize(writer, _value, _jsonTypeInfo);
+                }
+                else
+                {
+                    JsonSerializer.Serialize(writer, _value, options);
+                }
             }
         }
 

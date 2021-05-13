@@ -60,6 +60,7 @@
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.KeyCollection.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.ValueCollection.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
     <Compile Include="System\Text\Json\Nodes\MetaDynamic.cs" />
