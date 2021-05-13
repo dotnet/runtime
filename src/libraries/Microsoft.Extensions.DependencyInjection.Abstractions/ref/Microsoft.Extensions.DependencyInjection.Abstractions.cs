@@ -132,6 +132,7 @@ namespace Microsoft.Extensions.DependencyInjection
     }
     public static partial class ServiceProviderServiceExtensions
     {
+        public static Microsoft.Extensions.DependencyInjection.AsyncServiceScope CreateAsyncScope(this Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.AsyncServiceScope CreateAsyncScope(this System.IServiceProvider provider) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope(this System.IServiceProvider provider) { throw null; }
         public static object GetRequiredService(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
