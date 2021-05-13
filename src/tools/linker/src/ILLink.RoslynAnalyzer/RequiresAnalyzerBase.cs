@@ -11,7 +11,6 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer
 {
-	[DiagnosticAnalyzer (LanguageNames.CSharp)]
 	public abstract class RequiresAnalyzerBase : DiagnosticAnalyzer
 	{
 		private protected abstract string RequiresAttributeName { get; }
