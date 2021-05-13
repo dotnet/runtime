@@ -794,8 +794,7 @@ namespace System
             }
             else
             {
-                var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-                span.Fill(value);
+                new Span<T>(array).Fill(value);
             }
         }
 
