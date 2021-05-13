@@ -20925,7 +20925,7 @@ size_t gc_heap::get_promoted_bytes()
     dprintf (3, ("h%d getting surv", heap_number));
     size_t region_count = get_total_region_count();
     size_t promoted = 0;
-    for (int i = 0; i < region_count; i++)
+    for (size_t i = 0; i < region_count; i++)
     {
         if (survived_per_region[i] > 0)
         {
@@ -28563,7 +28563,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
         ((survived == heap_segment_survived (region)) ? "same as" : "diff from"),
         heap_segment_survived (region)));
 #ifdef MULTIPLE_HEAPS
-    assert (survived <= heap_segment_survived (region));
+    assert (survived <= (size_t)heap_segment_survived (region));
 #else
     assert (survived == heap_segment_survived (region));
 #endif //MULTIPLE_HEAPS
