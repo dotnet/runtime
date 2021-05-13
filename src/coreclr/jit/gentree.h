@@ -5946,6 +5946,8 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
+// GenTreeIterator: forward iterator for the execution order GenTree linked list (using `gtNext` pointer).
+//
 class GenTreeIterator
 {
     GenTree* m_tree;
@@ -5972,6 +5974,10 @@ public:
     }
 };
 
+// GenTreeList: adapter class for forward iteration of the execution order GenTree linked list
+// using range-based `for`, normally used via Statement::TreeList(), e.g.:
+//    for (GenTree* const tree : stmt->TreeList()) ...
+//
 class GenTreeList
 {
     GenTree* m_trees;
@@ -6039,8 +6045,10 @@ public:
         m_treeList = treeHead;
     }
 
-    // TreeList: an adaptor for use with range-based `for` loops, e.g.:
+    // TreeList: convenience method for enabling range-based `for` iteration over the
+    // execution order of the GenTree linked list, e.g.:
     //    for (GenTree* const tree : stmt->TreeList()) ...
+    //
     GenTreeList TreeList() const
     {
         return GenTreeList(GetTreeList());
@@ -6156,6 +6164,8 @@ private:
     bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
+// StatementIterator: forward iterator for the statement linked list.
+//
 class StatementIterator
 {
     Statement* m_stmt;
@@ -6182,6 +6192,12 @@ public:
     }
 };
 
+// StatementList: adapter class for forward iteration of the statement linked list using range-based `for`,
+// normally used via BasicBlock::Statements(), e.g.:
+//    for (Statement* const stmt : block->Statements()) ...
+// or:
+//    for (Statement* const stmt : block->NonPhiStatements()) ...
+//
 class StatementList
 {
     Statement* m_stmts;

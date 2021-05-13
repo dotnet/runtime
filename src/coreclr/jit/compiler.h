@@ -4978,8 +4978,9 @@ public:
 
     void fgInterBlockLocalVarLiveness();
 
-    // Use to iterate over all the blocks in the function, e.g.:
+    // Blocks: convenience method for enabling range-based `for` iteration over the function's blocks, e.g.:
     //    for (BasicBlock* const block : compiler->Blocks()) ...
+    //
     BasicBlockSimpleList Blocks() const
     {
         return BasicBlockSimpleList(fgFirstBB);
@@ -6487,11 +6488,13 @@ public:
                    (lpHead->bbNum < lpTop->bbNum || lpHead->bbNum > lpBottom->bbNum);
         }
 
-        // Use to iterate over all the blocks in the loop, e.g.:
-        //    for (BasicBlock* const block : LoopBlocks()) ...
+        // LoopBlocks: convenience method for enabling range-based `for` iteration over all the
+        // blocks in a loop, e.g.:
+        //    for (BasicBlock* const block : loop->LoopBlocks()) ...
         // Currently, the loop blocks are expected to be in linear, lexical, `bbNext` order
         // from `lpFirst` through `lpBottom`, inclusive. All blocks in this range are considered
         // to be part of the loop.
+        //
         BasicBlockRangeList LoopBlocks() const
         {
             return BasicBlockRangeList(lpFirst, lpBottom);
@@ -11273,8 +11276,9 @@ public:
     }
 };
 
-// EH descriptor iterator classes
-
+// EHDscIterator: forward iterator for the exception handling table entries. Iteration is in
+// table order.
+//
 class EHDscIterator
 {
     EHblkDsc* m_ehDsc;
@@ -11301,8 +11305,9 @@ public:
     }
 };
 
-// Iterate over EH table using:
+// EHClauses: adapter class for forward iteration of the exception handling table using range-based `for`, e.g.:
 //    for (EHblkDsc* const ehDsc : EHClauses(compiler))
+//
 class EHClauses
 {
     EHblkDsc* m_begin;

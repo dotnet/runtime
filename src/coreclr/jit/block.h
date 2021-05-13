@@ -319,8 +319,8 @@ public:
     }
 };
 
-// Predecessor list iterators
-
+// PredEdgeIterator: forward iterator for the predecessor edges linked list.
+//
 class PredEdgeIterator
 {
     flowList* m_pred;
@@ -343,6 +343,9 @@ public:
     }
 };
 
+// PredBlockIterator: forward iterator for the predecessor edges linked list, yielding the predecessor
+// block, not the edge.
+//
 class PredBlockIterator
 {
     flowList* m_pred;
@@ -362,6 +365,10 @@ public:
     }
 };
 
+// PredEdgeList: adapter class for forward iteration of the predecessor edge linked list using range-based `for`,
+// normally used via BasicBlock::PredEdges(), e.g.:
+//    for (flowList* const edge : block->PredEdges()) ...
+//
 class PredEdgeList
 {
     flowList* m_begin;
@@ -382,6 +389,10 @@ public:
     }
 };
 
+// PredBlockList: adapter class for forward iteration of the predecessor edge linked list yielding
+// predecessor blocks, using range-based `for`, normally used via BasicBlock::PredBlocks(), e.g.:
+//    for (BasicBlock* const predBlock : block->PredBlocks()) ...
+//
 class PredBlockList
 {
     flowList* m_begin;
@@ -959,11 +970,17 @@ struct BasicBlock : private LIR::Range
         flowList*       bbPreds;      // ptr to list of predecessors
     };
 
+    // PredEdges: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
+    //    for (flowList* const edge : block->PredEdges()) ...
+    //
     PredEdgeList PredEdges() const
     {
         return PredEdgeList(bbPreds);
     }
 
+    // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
+    //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
+    //
     PredBlockList PredBlocks() const
     {
         return PredBlockList(bbPreds);
@@ -1135,11 +1152,18 @@ struct BasicBlock : private LIR::Range
     Statement* firstStmt() const;
     Statement* lastStmt() const;
 
+    // Statements: convenience method for enabling range-based `for` iteration over the statement list, e.g.:
+    //    for (Statement* const stmt : block->Statements())
+    //
     StatementList Statements() const
     {
         return StatementList(firstStmt());
     }
 
+    // NonPhiStatements: convenience method for enabling range-based `for` iteration over the statement list,
+    // excluding any initial PHI statements, e.g.:
+    //    for (Statement* const stmt : block->NonPhiStatements())
+    //
     StatementList NonPhiStatements() const
     {
         return StatementList(FirstNonPhiDef());
@@ -1295,8 +1319,8 @@ typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkVector> BlkToBl
 // Map from Block to Block.  Used for a variety of purposes.
 typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
 
-// BasicBlock iterator classes
-
+// BasicBlockIterator: forward iterator for the BasicBlock linked list.
+//
 class BasicBlockIterator
 {
     BasicBlock* m_block;
@@ -1323,8 +1347,11 @@ public:
     }
 };
 
-// BasicBlockSimpleList: Iterate of a lexically contigous range of BasicBlocks, starting at `begin` and
-// going to the end of the function.
+// BasicBlockSimpleList: adapter class for forward iteration of a lexically contiguous range of
+// BasicBlock, starting at `begin` and going to the end of the function, using range-based `for`,
+// normally used via Compiler::Blocks(), e.g.:
+//    for (BasicBlock* const block : Blocks()) ...
+//
 class BasicBlockSimpleList
 {
     BasicBlock* m_begin;
@@ -1390,8 +1417,11 @@ struct BBswtDesc
     }
 };
 
-// BasicBlockRangeList: Iterate over a lexically contiguous range of BasicBlocks. `begin` and `end` are *inclusive* and
-// must be non-null.
+// BasicBlockRangeList: adapter class for forward iteration of a lexically contiguous range of
+// BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
+// and must be non-null. E.g.,
+//    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
+//
 class BasicBlockRangeList
 {
     BasicBlock* m_begin;
