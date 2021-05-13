@@ -273,7 +273,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             if (isStatic && !foundLogger)
                                             {
-                                                Diag(DiagnosticDescriptors.MissingLoggerArgument, method.GetLocation());
+                                                Diag(DiagnosticDescriptors.MissingLoggerArgument, method.GetLocation(), lm.Name);
                                                 keepMethod = false;
                                             }
                                             else if (!isStatic && foundLogger)
