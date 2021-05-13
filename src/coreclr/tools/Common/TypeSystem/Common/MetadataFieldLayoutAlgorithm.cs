@@ -853,25 +853,20 @@ namespace Internal.TypeSystem
             }
 
             TargetDetails target = type.Context.Target;
-
-            if (classLayoutSize != 0)
-            {
-                LayoutInt parentSize;
-                if (type.IsValueType)
-                    parentSize = new LayoutInt(0);
-                else
-                    parentSize = type.BaseType.InstanceByteCountUnaligned;
-
-                LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
-
-                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
-            }
+            LayoutInt parentSize;
+            if (type.IsValueType || type.BaseType == null)
+                parentSize = new LayoutInt(0);
             else
+                parentSize = type.BaseType.InstanceByteCountUnaligned;
+            LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
+
+            if (specifiedInstanceSize.AsInt >= instanceSize.AsInt)
             {
-                if (type.IsValueType)
-                {
-                    instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
-                }
+                instanceSize = specifiedInstanceSize;
+            }
+            else if (type.IsValueType)
+            {
+                instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
             }
 
             if (type.IsValueType)
