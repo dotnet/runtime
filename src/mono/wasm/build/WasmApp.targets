@@ -179,7 +179,15 @@
     <ItemGroup>
       <!-- Add back the interpreter-only assemblies -->
       <_WasmAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+
+      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
+      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
+
+      <_WasmNativeFileForLinking Include="@(_BitcodeFile)" />
     </ItemGroup>
+
+    <Error Condition="@(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
+           Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
@@ -412,12 +420,8 @@
 
      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
 
-     <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
-     <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
    </ItemGroup>
 
-   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
-          Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
   </Target>
 
   <Target Name="_GeneratePInvokeTable">
@@ -476,7 +480,7 @@
     <ItemGroup>
       <_EmccLinkerArguments Include="$(EmccLDFlags)" />
       <_EmccLinkerArguments Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
-      <_EmccLinkerArguments Include="&quot;%(_BitcodeFile.Identity)&quot;" />
+      <_EmccLinkerArguments Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_EmccLinkerArguments Include="&quot;%(_WasmObjects.Identity)&quot;" />
       <_EmccLinkerArguments Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
     </ItemGroup>
