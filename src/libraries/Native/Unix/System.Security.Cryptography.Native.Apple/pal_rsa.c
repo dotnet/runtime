@@ -26,6 +26,10 @@ int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeRSA);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
+        if (__builtin_available(macOS 10.15, iOS 13, tvOS 13, *))
+        {
+            CFDictionaryAddValue(attributes, kSecUseDataProtectionKeychain, kCFBooleanTrue);
+        }
 
         *pPrivateKey = SecKeyCreateRandomKey(attributes, pErrorOut);
         if (*pPrivateKey != NULL)
