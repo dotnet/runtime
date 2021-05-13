@@ -884,7 +884,7 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			IEnumerable<IMemberDefinition> members;
+			IEnumerable<IMetadataTokenProvider> members;
 			if (dynamicDependency.MemberSignature is string memberSignature) {
 				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, acceptName: true);
 				if (!members.Any ()) {
@@ -903,7 +903,7 @@ namespace Mono.Linker.Steps
 			MarkMembers (type, members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute), context);
 		}
 
-		void MarkMembers (TypeDefinition typeDefinition, IEnumerable<IMemberDefinition> members, DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		void MarkMembers (TypeDefinition typeDefinition, IEnumerable<IMetadataTokenProvider> members, DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			foreach (var member in members) {
 				switch (member) {
@@ -925,6 +925,9 @@ namespace Mono.Linker.Steps
 				case EventDefinition @event:
 					MarkEvent (@event, reason);
 					MarkMethodsIf (@event.OtherMethods, m => true, reason, sourceLocationMember);
+					break;
+				case InterfaceImplementation interfaceType:
+					MarkInterfaceImplementation (interfaceType, sourceLocationMember, reason);
 					break;
 				case null:
 					MarkEntireType (typeDefinition, includeBaseTypes: true, includeInterfaceTypes: true, reason, sourceLocationMember);
@@ -3267,16 +3270,16 @@ namespace Mono.Linker.Steps
 			return IsFullyPreserved (type);
 		}
 
-		protected virtual void MarkInterfaceImplementation (InterfaceImplementation iface, TypeDefinition type)
+		protected internal virtual void MarkInterfaceImplementation (InterfaceImplementation iface, IMemberDefinition sourceLocation, DependencyInfo? reason = null)
 		{
 			if (Annotations.IsMarked (iface))
 				return;
 
 			// Blame the type that has the interfaceimpl, expecting the type itself to get marked for other reasons.
-			MarkCustomAttributes (iface, new DependencyInfo (DependencyKind.CustomAttribute, iface), type);
+			MarkCustomAttributes (iface, new DependencyInfo (DependencyKind.CustomAttribute, iface), sourceLocation);
 			// Blame the interface type on the interfaceimpl itself.
-			MarkType (iface.InterfaceType, new DependencyInfo (DependencyKind.InterfaceImplementationInterfaceType, iface), type);
-			Annotations.MarkProcessed (iface, new DependencyInfo (DependencyKind.InterfaceImplementationOnType, type));
+			MarkType (iface.InterfaceType, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationInterfaceType, iface), sourceLocation);
+			Annotations.MarkProcessed (iface, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, sourceLocation));
 		}
 
 		//

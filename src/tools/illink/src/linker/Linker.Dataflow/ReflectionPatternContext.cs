@@ -67,7 +67,7 @@ namespace Mono.Linker.Dataflow
 		}
 #pragma warning restore CA1822
 
-		public void RecordRecognizedPattern (IMemberDefinition accessedItem, Action mark)
+		public void RecordRecognizedPattern (IMetadataTokenProvider accessedItem, Action mark)
 		{
 #if DEBUG
 			if (!_patternAnalysisAttempted)

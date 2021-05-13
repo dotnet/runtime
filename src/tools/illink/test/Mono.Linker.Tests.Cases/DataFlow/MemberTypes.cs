@@ -42,6 +42,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicEvents (typeof (PublicEventsType));
 			RequireNonPublicEvents (typeof (NonPublicEventsType));
 			RequireAllEvents (typeof (AllEventsType));
+			RequireInterfaces (typeof (InterfacesType));
 			RequireAll (typeof (AllType));
 			RequireAll (typeof (RequireAllWithRecursiveTypeReferences));
 		}
@@ -1565,6 +1566,94 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static public event EventHandler<EventArgs> HideStaticEvent;
 		}
 
+		[Kept]
+		private static void RequireInterfaces (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		interface IInterfaceOnBaseBase
+		{
+		}
+
+		[Kept]
+		[KeptInterface (typeof (IInterfaceOnBaseBase))]
+		interface IInterfacesOnBase : IInterfaceOnBaseBase
+		{
+			void OnBaseInterfaceMethod ();
+		}
+
+		[Kept]
+		[KeptInterface (typeof (IInterfacesOnBase))] // Interface implementations are collected across all base types, so this one has to be included as well
+		[KeptInterface (typeof (IInterfaceOnBaseBase))] // Roslyn adds transitively implemented interfaces automatically
+		class InterfacesBaseType : IInterfacesOnBase
+		{
+			public void OnBaseInterfaceMethod () { }
+		}
+
+		[Kept]
+		interface IInterfacesEmpty
+		{
+		}
+
+		[Kept]
+		interface IInterfacesWithMethods
+		{
+			void InterfaceMethod ();
+		}
+
+		[Kept]
+		interface IInterfaceGeneric<T>
+		{
+			void GenericMethod<U> (T t, U u);
+		}
+
+		[Kept]
+		interface IInterfacesBase
+		{
+			void BaseMethod ();
+		}
+
+		[Kept]
+		[KeptInterface (typeof (IInterfacesBase))]
+		interface IInterfacesDerived : IInterfacesBase
+		{
+			void DerivedMethod ();
+		}
+
+		interface IInterfacesSuperDerived : IInterfacesDerived
+		{
+			void SuperDerivedMethod ();
+		}
+
+		[Kept]
+		[KeptInterface (typeof (IInterfacesEmpty))]
+		[KeptInterface (typeof (IInterfacesWithMethods))]
+		[KeptInterface (typeof (IInterfacesBase))] // Roslyn adds transitively implemented interfaces automatically
+		[KeptInterface (typeof (IInterfacesDerived))]
+		[KeptInterface (typeof (IInterfaceGeneric<int>))]
+		[KeptBaseType (typeof (InterfacesBaseType))]
+		class InterfacesType : InterfacesBaseType, IInterfacesEmpty, IInterfacesWithMethods, IInterfacesDerived, IInterfaceGeneric<int>
+		{
+			public void InterfaceMethod ()
+			{
+			}
+
+			public void BaseMethod ()
+			{
+			}
+
+			public void DerivedMethod ()
+			{
+			}
+
+			public void GenericMethod<U> (int t, U u)
+			{
+			}
+		}
 
 		[Kept]
 		private static void RequireAll (
@@ -1575,7 +1664,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		class AllBaseType
+		interface IAllBaseGenericInterface<T>
+		{
+			[Kept]
+			void BaseInterfaceMethod ();
+			[Kept]
+			void BaseDefaultMethod () { }
+		}
+
+		[Kept]
+		[KeptInterface (typeof (IAllBaseGenericInterface<Int64>))]
+		interface IAllDerivedInterface : IAllBaseGenericInterface<Int64>
+		{
+			[Kept]
+			void DerivedInterfaceMethod ();
+
+			[Kept]
+			void DerivedDefaultMethod () { }
+		}
+
+		[Kept]
+		[KeptInterface (typeof (IAllDerivedInterface))]
+		[KeptInterface (typeof (IAllBaseGenericInterface<Int64>))]
+		class AllBaseType : IAllDerivedInterface
 		{
 			// This is different from all of the above cases.
 			// All means really everything - so we include everything on base class as well - including private stuff
@@ -1637,6 +1748,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			protected static void ProtectedStaticBaseMethod () { }
 			[Kept]
 			public static void HideStaticMethod () { }
+
+			[Kept]
+			public void DerivedInterfaceMethod () { }
+			[Kept]
+			public void BaseInterfaceMethod () { }
 
 			[Kept]
 			[KeptBackingField]
