@@ -462,7 +462,7 @@ signatures. [*Example*: The following illustrates this point:
 (Change first paragraph)
 
 A generic parameter declared on a generic class or generic method can be *constrained* by one or more
-type (for encoding, see *GenericParamConstraint* table in paragraph II.22.21) and by one or more special
+types (for encoding, see *GenericParamConstraint* table in paragraph II.22.21) and by one or more special
 constraints (paragraph II.10.1.7). Generic parameters can be instantiated only with generic arguments that are
 *assignable-to* (paragraph I.8.7.3) (when boxed) and *implements-all-static-interface-methods-of* (**paragraph
 reference needed**) each of the declared constraints and that satisfy all specified special constraints.
