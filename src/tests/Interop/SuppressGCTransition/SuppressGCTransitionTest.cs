@@ -11,7 +11,7 @@ using TestLibrary;
 unsafe static class SuppressGCTransitionNative
 {
     [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl)]
-    public static extern unsafe void SetIsInCooperativeModeFunction(delegate* unmanaged[Stdcall]<int> fn);
+    public static extern unsafe void SetIsInCooperativeModeFunction(delegate* unmanaged<int> fn);
 
     [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     [SuppressGCTransition]
@@ -118,7 +118,7 @@ unsafe class SuppressGCTransitionTest
         MethodInfo getFunctionPtr = marshalType.GetMethod("GetIsInCooperativeGCModeFunctionPointer", BindingFlags.NonPublic | BindingFlags.Static);
         if (getFunctionPtr != null)
         {
-            delegate* unmanaged[Stdcall]<int> isInCooperativeModeFunc = (delegate* unmanaged[Stdcall]<int>)(IntPtr)getFunctionPtr.Invoke(null, null);
+            var isInCooperativeModeFunc = (delegate* unmanaged<int>)(IntPtr)getFunctionPtr.Invoke(null, null);
             SuppressGCTransitionNative.SetIsInCooperativeModeFunction(isInCooperativeModeFunc);
             ExplicitModeCheckEnabled = true;
             Console.WriteLine("Explicit GC mode check is enabled");

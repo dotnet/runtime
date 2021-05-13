@@ -808,7 +808,7 @@ namespace System.Runtime.InteropServices
 
 #if DEBUG // Used for testing in Checked or Debug
         [DllImport(RuntimeHelpers.QCall)]
-        internal static unsafe extern delegate* unmanaged[Stdcall]<int> GetIsInCooperativeGCModeFunctionPointer();
+        internal static unsafe extern delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }
 }
