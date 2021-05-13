@@ -50,6 +50,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			ApplyingAnnotationIntroducesTypesToApplyAnnotationToViaInterfaces.Test ();
 			ApplyingAnnotationIntroducesTypesToApplyAnnotationToMultipleAnnotations.Test ();
 			ApplyingAnnotationIntroducesTypesToApplyAnnotationToEntireType.Test ();
+
+			EnumerationOverInstances.Test ();
 		}
 
 		[Kept]
@@ -1346,6 +1348,41 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				Type t = GetInstance ().GetType ();
 				t.RequiresAll ();
+			}
+		}
+
+		[Kept]
+		class EnumerationOverInstances
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedBase
+			{
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			[KeptMember (".ctor()")]
+			class Derived : AnnotatedBase
+			{
+				// https://github.com/mono/linker/issues/2027
+				// [Kept]
+				public void Method () { }
+			}
+
+			[Kept]
+			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
+
+			[Kept]
+			// https://github.com/mono/linker/issues/2027
+			[ExpectedWarning ("IL2075", nameof (Type.GetType))]
+			public static void Test ()
+			{
+				foreach (var instance in GetInstances ()) {
+					instance.GetType ().GetMethod ("Method");
+				}
 			}
 		}
 	}
