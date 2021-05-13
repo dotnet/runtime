@@ -49,9 +49,6 @@ namespace System.Net.Http
         private int _haveServerQpackDecodeStream;
         private int _haveServerQpackEncodeStream;
 
-        // Signals multiple waiting requests that a certain amount of streams is available.
-        private readonly SemaphoreSlim _newStreamsAvailable = new SemaphoreSlim(0);
-
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
 
@@ -87,9 +84,6 @@ namespace System.Net.Http
 
             // Errors are observed via Abort().
             _ = SendSettingsAsync();
-
-            // Wait for available streams capacity announced by the peer.
-            _ = WaitForAvailableStreamsAsync();
 
             // This process is cleaned up when _connection is disposed, and errors are observed via Abort().
             _ = AcceptStreamsAsync();
@@ -165,9 +159,6 @@ namespace System.Net.Http
         {
             Debug.Assert(async);
 
-            // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-            await _newStreamsAvailable.WaitAsync(cancellationToken).ConfigureAwait(false);
-
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
@@ -176,7 +167,24 @@ namespace System.Net.Http
             {
                 if (_connection != null)
                 {
-                    quicStream = await _connection.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+                    ValueTask<QuicStream> openStreamTask = default;
+
+                    while (true)
+                    {
+                        lock (SyncObj)
+                        {
+                            if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
+                            {
+                                openStreamTask = _connection.OpenBidirectionalStreamAsync(cancellationToken);
+                                break;
+                            }
+                        }
+
+                        // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
+                        await _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    quicStream = await openStreamTask.ConfigureAwait(false);
                 }
                 lock (SyncObj)
                 {
@@ -367,27 +375,6 @@ namespace System.Net.Http
             buffer[3] = (byte)Http3SettingType.MaxHeaderListSize;
 
             return buffer.Slice(0, 4 + integerLength).ToArray();
-        }
-
-        private async Task WaitForAvailableStreamsAsync()
-        {
-            try
-            {
-                while (true)
-                {
-                    // No cancellation token is needed here; we expect the operation to cancel itself when _connection is disposed.
-                    int availableCount = await _connection!.WaitForAvailableBidirectionalStreamsAsync().ConfigureAwait(false);
-                    _newStreamsAvailable.Release(availableCount);
-                }
-            }
-            catch (QuicOperationAbortedException)
-            {
-                // Shutdown initiated by us, no need to abort.
-            }
-            catch (Exception ex)
-            {
-                Abort(ex);
-            }
         }
 
         /// <summary>

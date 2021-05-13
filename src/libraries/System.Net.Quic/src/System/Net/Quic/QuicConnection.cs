@@ -71,13 +71,13 @@ namespace System.Net.Quic
         /// Waits for available unidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
         /// </summary>
         /// <returns></returns>
-        public ValueTask<int> WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableUnidirectionalStreamsAsync(cancellationToken);
+        public ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableUnidirectionalStreamsAsync(cancellationToken);
 
         /// <summary>
         /// Waits for available bidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
         /// </summary>
         /// <returns></returns>
-        public ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
+        public ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
 
         /// <summary>
         /// Create an outbound unidirectional stream.

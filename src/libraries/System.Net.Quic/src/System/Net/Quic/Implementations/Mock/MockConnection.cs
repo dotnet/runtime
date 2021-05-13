@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -138,14 +139,14 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
-        internal override ValueTask<int> WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            return new ValueTask<int>(1);
+            return _disposed ? ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException())) : ValueTask.CompletedTask;
         }
 
-        internal override ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            return new ValueTask<int>(1);
+            return _disposed ? ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException())) : ValueTask.CompletedTask;
         }
 
         internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)

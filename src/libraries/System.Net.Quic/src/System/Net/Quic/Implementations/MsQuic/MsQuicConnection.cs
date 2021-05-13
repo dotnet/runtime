@@ -51,8 +51,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public readonly ResettableCompletionSource<int> NewUnidirectionalStreamsAvailableTcs = new ResettableCompletionSource<int>();
-            public readonly ResettableCompletionSource<int> NewBidirectionalStreamsAvailableTcs = new ResettableCompletionSource<int>();
+            public readonly ResettableCompletionSource<bool> NewUnidirectionalStreamsAvailableTcs = new ResettableCompletionSource<bool>();
+            public readonly ResettableCompletionSource<bool> NewBidirectionalStreamsAvailableTcs = new ResettableCompletionSource<bool>();
 
             public bool Connected;
             public long AbortErrorCode = -1;
@@ -206,11 +206,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
             {
-                state.NewUnidirectionalStreamsAvailableTcs.Complete(connectionEvent.Data.StreamsAvailable.UniDirectionalCount);
+                state.NewUnidirectionalStreamsAvailableTcs.Complete(true);
             }
             if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
             {
-                state.NewBidirectionalStreamsAvailableTcs.Complete(connectionEvent.Data.StreamsAvailable.BiDirectionalCount);
+                state.NewBidirectionalStreamsAvailableTcs.Complete(true);
             }
 
             return MsQuicStatusCodes.Success;
@@ -340,26 +340,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        internal override ValueTask<int> WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            int availableCount = GetRemoteAvailableUnidirectionalStreamCount();
-            if (availableCount > 0)
-            {
-                return new ValueTask<int>(availableCount);
-            }
-
-            return _state.NewUnidirectionalStreamsAvailableTcs.GetValueTask();
+            return _state.NewUnidirectionalStreamsAvailableTcs.GetTypelessValueTask();
         }
 
-        internal override ValueTask<int> WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            int availableCount = GetRemoteAvailableBidirectionalStreamCount();
-            if (availableCount > 0)
-            {
-                return new ValueTask<int>(availableCount);
-            }
-
-            return _state.NewBidirectionalStreamsAvailableTcs.GetValueTask();
+            return _state.NewBidirectionalStreamsAvailableTcs.GetTypelessValueTask();
         }
 
         internal override async ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)

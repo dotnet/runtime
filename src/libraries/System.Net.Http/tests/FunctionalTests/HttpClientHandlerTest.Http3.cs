@@ -79,10 +79,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(10)]
         [InlineData(100)]
+        [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -113,7 +115,6 @@ namespace System.Net.Http.Functional.Tests
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
-
 
         [Fact]
         public async Task ReservedFrameType_Throws()
