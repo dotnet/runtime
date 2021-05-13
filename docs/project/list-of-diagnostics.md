@@ -78,6 +78,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0021`__ | Derived cryptographic types are obsolete. Use the Create method on the base type instead. |
 |  __`SYSLIB0022`__ | The Rijndael and RijndaelManaged types are obsolete. Use Aes instead. |
 |  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead. |
+|  __`SYSLIB0024`__ | Creating and unloading AppDomains is not supported and throws an exception. |
 
 ## Analyzer Warnings
 

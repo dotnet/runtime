@@ -51,6 +51,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void GetXml()
         {
             DSAKeyValue dsa = new DSAKeyValue();
@@ -79,6 +80,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void GetXml_SameDsa()
         {
             using (DSA dsa = DSA.Create())
@@ -90,6 +92,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void LoadXml()
         {
             const string pValue = "oDZlcdJA1Kf6UeNEIZqm4KDqA6zpX7CmEtAGWi9pgnBhWOUDVEfhswfsvTLR5BCbKfE6KoHvt5Hh8D1RcAko//iZkLZ+gds9y/5Oxape8tu3TUi1BnNPWu8ieXjMtdnpyudKFsCymssJked1rBeRePG23HTVwOV1DpopjRkjBEU=";
@@ -129,6 +132,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public void ImportDSAKeyValue()
         {
             string p = "6zJxhRqpk5yQ7sjFSr6mPepyVwpTAXSmw1oh+5Cn/z1DjFSpW6rC6sTOkE3CMNwWOwIzrpVS3bWep7wo9CaBrOPIIVe+E4sqpPeyM2wr10mQThHEsCQAjnxBhJJindf9amaBhi6sOtVNnyETFWV6yKDptZEm9c3xdl4L7ogEbX8=";

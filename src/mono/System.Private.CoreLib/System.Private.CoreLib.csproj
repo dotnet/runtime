@@ -136,6 +136,7 @@
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.OSX.xml"
                            Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
+    <ILLinkDescriptorsXmls Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
 
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"

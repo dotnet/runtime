@@ -1250,17 +1250,10 @@ bool interceptor_ICJI::notifyInstructionSetUsage(
 }
 
 void interceptor_ICJI::allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock)
+          AllocMemArgs* pArgs)
 {
     mcs->AddCall("allocMem");
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    original_ICorJitInfo->allocMem(pArgs);
 }
 
 void interceptor_ICJI::reserveUnwindInfo(
@@ -1363,13 +1356,14 @@ void interceptor_ICJI::recordCallSite(
 
 void interceptor_ICJI::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
     mcs->AddCall("recordRelocation");
-    original_ICorJitInfo->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
 }
 
 uint16_t interceptor_ICJI::getRelocTypeHint(
