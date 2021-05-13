@@ -559,7 +559,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                             break;
 
                         case CallerMethodScenario.GenericOverConstrainedType:
-                            mdIndividualTestMethod.Name = $"{mdIndividualTestMethod.Name}<(class {CommonPrefix}IFaceGeneric`1<!!U>, {CommonPrefix}IFaceNonGeneric, class {CommonPrefix}IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>";
+                            mdIndividualTestMethod.Name = $"{mdIndividualTestMethod.Name}<({(interfaceTypeSansImplPrefix.Contains("`") ? "class " : "")}{CommonPrefix}{interfaceTypeSansImplPrefix}) T,U>";
 
                             expectedString = expectedString.Replace("!!0", $"{constrainedTypePrefix}{constrainedType}");
                             expectedString = expectedString.Replace(ImplPrefix, "");

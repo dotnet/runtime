@@ -3531,7 +3531,7 @@
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -3539,8 +3539,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -3553,8 +3553,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3570,8 +3570,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -3579,8 +3579,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -3593,8 +3593,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3610,8 +3610,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -3619,8 +3619,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -3633,8 +3633,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3650,8 +3650,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -3659,8 +3659,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -3673,8 +3673,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3690,8 +3690,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -3699,8 +3699,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -3713,8 +3713,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3730,8 +3730,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -3739,8 +3739,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -3753,8 +3753,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3770,8 +3770,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -3779,8 +3779,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<class NonGenericClass>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -3793,8 +3793,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<class NonGenericClass>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3810,8 +3810,8 @@
     ldstr "class NonGenericClass'IFaceNonGeneric.GenericMethod'<class NonGenericClass>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -3819,8 +3819,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<valuetype NonGenericValuetype>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -3833,8 +3833,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<valuetype NonGenericValuetype>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3850,8 +3850,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceNonGeneric.GenericMethod'<valuetype NonGenericValuetype>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -3862,8 +3862,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -3879,8 +3879,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3899,8 +3899,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -3911,8 +3911,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -3928,8 +3928,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3948,8 +3948,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -3960,8 +3960,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -3977,8 +3977,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -3997,8 +3997,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -4009,8 +4009,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -4026,8 +4026,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4046,8 +4046,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4058,8 +4058,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4075,8 +4075,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4095,8 +4095,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4107,8 +4107,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4124,8 +4124,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4144,8 +4144,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4156,8 +4156,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4173,8 +4173,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4193,8 +4193,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4205,8 +4205,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4222,8 +4222,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4242,8 +4242,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -4254,8 +4254,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -4271,8 +4271,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4291,8 +4291,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -4303,8 +4303,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -4320,8 +4320,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4340,8 +4340,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -4352,8 +4352,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -4369,8 +4369,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4389,8 +4389,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -4401,8 +4401,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -4418,8 +4418,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4438,8 +4438,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4450,8 +4450,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4467,8 +4467,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4487,8 +4487,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4499,8 +4499,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -4516,8 +4516,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4536,8 +4536,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4548,8 +4548,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4565,8 +4565,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4585,8 +4585,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4597,8 +4597,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -4614,8 +4614,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4634,8 +4634,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::NormalMethod()
@@ -4643,8 +4643,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::NormalMethod()
@@ -4657,8 +4657,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4674,8 +4674,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::NormalMethod()
@@ -4683,8 +4683,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::NormalMethod()
@@ -4697,8 +4697,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4714,8 +4714,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<int32>()
@@ -4723,8 +4723,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<int32>()
@@ -4737,8 +4737,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4754,8 +4754,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<int32>()
@@ -4763,8 +4763,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<int32>()
@@ -4777,8 +4777,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4794,8 +4794,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<string>()
@@ -4803,8 +4803,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<string>()
@@ -4817,8 +4817,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4834,8 +4834,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<string>()
@@ -4843,8 +4843,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<string>()
@@ -4857,8 +4857,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4874,8 +4874,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<!!0>()
@@ -4883,8 +4883,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<class NonGenericClass>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<!!0>()
@@ -4897,8 +4897,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<class NonGenericClass>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4914,8 +4914,8 @@
     ldstr "class NonGenericClass'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<class NonGenericClass>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]NonGenericClass>) T,U>
+  .method public static void Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<!!0>()
@@ -4923,8 +4923,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<valuetype NonGenericValuetype>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<!!0>()
@@ -4937,8 +4937,8 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<valuetype NonGenericValuetype>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
+  .method public static void Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -4954,7 +4954,7 @@
     ldstr "valuetype NonGenericValuetype'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<valuetype NonGenericValuetype>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
+  } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>) T,U>
   .method public static void Test_Call_GenericOverStructGenericClass_NonGeneric_NonGeneric_NormalMethod() cil managed noinlining
   {
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<int32>
@@ -8475,7 +8475,7 @@
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -8483,8 +8483,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -8497,8 +8497,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8514,8 +8514,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -8523,8 +8523,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -8537,8 +8537,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8554,8 +8554,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -8563,8 +8563,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -8577,8 +8577,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8594,8 +8594,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -8603,8 +8603,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -8617,8 +8617,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8634,8 +8634,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -8643,8 +8643,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -8657,8 +8657,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8674,8 +8674,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -8683,8 +8683,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -8697,8 +8697,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8714,8 +8714,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -8723,8 +8723,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<class GenericClass`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -8737,8 +8737,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<class GenericClass`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8754,8 +8754,8 @@
     ldstr "class GenericClass`1<int32>'IFaceNonGeneric.GenericMethod'<class GenericClass`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -8763,8 +8763,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<valuetype GenericValuetype`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -8777,8 +8777,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<valuetype GenericValuetype`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8794,8 +8794,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceNonGeneric.GenericMethod'<valuetype GenericValuetype`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -8806,8 +8806,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -8823,8 +8823,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8843,8 +8843,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -8855,8 +8855,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -8872,8 +8872,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8892,8 +8892,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -8904,8 +8904,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -8921,8 +8921,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8941,8 +8941,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -8953,8 +8953,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -8970,8 +8970,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -8990,8 +8990,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9002,8 +9002,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9019,8 +9019,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9039,8 +9039,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9051,8 +9051,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9068,8 +9068,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9088,8 +9088,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9100,8 +9100,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9117,8 +9117,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9137,8 +9137,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9149,8 +9149,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9166,8 +9166,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9186,8 +9186,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -9198,8 +9198,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -9215,8 +9215,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9235,8 +9235,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -9247,8 +9247,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -9264,8 +9264,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9284,8 +9284,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -9296,8 +9296,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -9313,8 +9313,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9333,8 +9333,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -9345,8 +9345,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -9362,8 +9362,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9382,8 +9382,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9394,8 +9394,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9411,8 +9411,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9431,8 +9431,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9443,8 +9443,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -9460,8 +9460,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9480,8 +9480,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9492,8 +9492,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9509,8 +9509,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9529,8 +9529,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9541,8 +9541,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -9558,8 +9558,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9578,8 +9578,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::NormalMethod()
@@ -9587,8 +9587,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::NormalMethod()
@@ -9601,8 +9601,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9618,8 +9618,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::NormalMethod()
@@ -9627,8 +9627,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::NormalMethod()
@@ -9641,8 +9641,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9658,8 +9658,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<int32>()
@@ -9667,8 +9667,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<int32>()
@@ -9681,8 +9681,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9698,8 +9698,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<int32>()
@@ -9707,8 +9707,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<int32>()
@@ -9721,8 +9721,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9738,8 +9738,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<string>()
@@ -9747,8 +9747,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<string>()
@@ -9761,8 +9761,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9778,8 +9778,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<string>()
@@ -9787,8 +9787,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<string>()
@@ -9801,8 +9801,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9818,8 +9818,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<!!0>()
@@ -9827,8 +9827,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<class GenericClass`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<!!0>()
@@ -9841,8 +9841,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<class GenericClass`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9858,8 +9858,8 @@
     ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<class GenericClass`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>) T,U>
+  .method public static void Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<!!0>()
@@ -9867,8 +9867,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<!!0>()
@@ -9881,8 +9881,8 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -9898,7 +9898,7 @@
     ldstr "valuetype GenericValuetype`1<int32>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<int32>>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
+  } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>) T,U>
   .method public static void Test_Call_GenericOverGenericStructOverTypeParameterGenericClass_GenericOverInt32_NonGeneric_NormalMethod<T>() cil managed noinlining
   {
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<valuetype [GenericContextCommonAndImplementation]GenericStruct`1<!!0>>
@@ -15979,7 +15979,7 @@
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -15987,8 +15987,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -16001,8 +16001,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16018,8 +16018,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -16027,8 +16027,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
@@ -16041,8 +16041,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16058,8 +16058,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_NormalMethod<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -16067,8 +16067,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -16081,8 +16081,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16098,8 +16098,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -16107,8 +16107,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<int32>()
@@ -16121,8 +16121,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16138,8 +16138,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverInt<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -16147,8 +16147,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -16161,8 +16161,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16178,8 +16178,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -16187,8 +16187,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<string>()
@@ -16201,8 +16201,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16218,8 +16218,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverString<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -16227,8 +16227,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<class GenericClass`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -16241,8 +16241,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<class GenericClass`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16258,8 +16258,8 @@
     ldstr "class GenericClass`1<object>'IFaceNonGeneric.GenericMethod'<class GenericClass`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -16267,8 +16267,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<valuetype GenericValuetype`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<!!0>()
@@ -16281,8 +16281,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<valuetype GenericValuetype`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16298,8 +16298,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceNonGeneric.GenericMethod'<valuetype GenericValuetype`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameter<([GenericContextCommonAndImplementation]IFaceNonGeneric) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16310,8 +16310,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16327,8 +16327,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16347,8 +16347,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16359,8 +16359,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16376,8 +16376,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16396,8 +16396,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16408,8 +16408,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16425,8 +16425,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16445,8 +16445,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16457,8 +16457,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16474,8 +16474,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16494,8 +16494,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16506,8 +16506,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16523,8 +16523,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16543,8 +16543,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16555,8 +16555,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16572,8 +16572,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16592,8 +16592,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -16604,8 +16604,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -16621,8 +16621,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16641,8 +16641,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -16653,8 +16653,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -16670,8 +16670,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16690,8 +16690,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16702,8 +16702,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16719,8 +16719,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16739,8 +16739,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16751,8 +16751,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
@@ -16768,8 +16768,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16788,8 +16788,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16800,8 +16800,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16817,8 +16817,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16837,8 +16837,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16849,8 +16849,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
@@ -16866,8 +16866,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16886,8 +16886,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16898,8 +16898,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16915,8 +16915,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16935,8 +16935,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16947,8 +16947,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
@@ -16964,8 +16964,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -16984,8 +16984,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -16996,8 +16996,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -17013,8 +17013,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17033,8 +17033,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -17045,8 +17045,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
@@ -17062,8 +17062,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17082,8 +17082,8 @@
     call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::NormalMethod()
@@ -17091,8 +17091,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::NormalMethod()
@@ -17105,8 +17105,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17122,8 +17122,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::NormalMethod()
@@ -17131,8 +17131,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::NormalMethod()
@@ -17145,8 +17145,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17162,8 +17162,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<int32>()
@@ -17171,8 +17171,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<int32>()
@@ -17185,8 +17185,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17202,8 +17202,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<int32>()
@@ -17211,8 +17211,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<int32>()
@@ -17225,8 +17225,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17242,8 +17242,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<string>()
@@ -17251,8 +17251,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<string>()
@@ -17265,8 +17265,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17282,8 +17282,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<string>()
@@ -17291,8 +17291,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<string>()
@@ -17305,8 +17305,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17322,8 +17322,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<!!0>()
@@ -17331,8 +17331,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<class GenericClass`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<!!0>()
@@ -17345,8 +17345,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<class GenericClass`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17362,8 +17362,8 @@
     ldstr "class GenericClass`1<object>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<object>>.GenericMethod'<class GenericClass`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>) T,U>
+  .method public static void Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<!!0>()
@@ -17371,8 +17371,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<valuetype GenericValuetype`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     constrained. !!0
     ldftn void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<!!0>()
@@ -17385,8 +17385,8 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<valuetype GenericValuetype`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
-  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>() cil managed noinlining
+  } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
+  .method public static void Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>() cil managed noinlining
   {
     ldnull
     constrained. !!0
@@ -17402,7 +17402,7 @@
     ldstr "valuetype GenericValuetype`1<object>'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<object>>.GenericMethod'<valuetype GenericValuetype`1<object>>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
-  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
+  } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>) T,U>
   .method public static void Test_Call_GenericOverTypeParameterGenericClass_GenericOverInt32_NonGeneric_NormalMethod<T>() cil managed noinlining
   {
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>

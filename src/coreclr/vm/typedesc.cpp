@@ -1905,7 +1905,12 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                     {
                         // Static virtual methods need an extra check when an abstract type is used for instantiation
                         // to ensure that the implementation of the constraint is complete
-                        if (!thElem.IsTypeDesc() &&
+                        //
+                        // Do not apply this check when the generic argument is exactly a generic variable, as those
+                        // do not hold the correct detail for checking, and do not need to do so. This constraint rule 
+                        // is only applicable for generic arguments which have been specialized to some extent
+                        if (!thArg.IsGenericVariable() &&
+                            !thElem.IsTypeDesc() &&
                             thElem.AsMethodTable()->IsAbstract() &&
                             thConstraint.IsInterface() &&
                             thConstraint.AsMethodTable()->HasVirtualStaticMethods())
