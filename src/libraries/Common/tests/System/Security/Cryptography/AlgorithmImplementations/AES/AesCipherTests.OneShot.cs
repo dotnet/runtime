@@ -25,6 +25,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 aes.Key = s_aes128OneShotKey;
 
+                // Even though we have set the instance to use CFB, the Ecb one shots should
+                // always be done in ECB.
+                aes.FeedbackSize = 8;
+                aes.Mode = CipherMode.CFB;
+                aes.Padding = padding == PaddingMode.None ? PaddingMode.PKCS7 : PaddingMode.None;
+
                 byte[] encrypted = aes.EncryptEcb(plaintext, padding);
                 byte[] decrypted = aes.DecryptEcb(encrypted, padding);
 

@@ -141,9 +141,9 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        int ICngSymmetricAlgorithm.GetPaddingSize()
+        int ICngSymmetricAlgorithm.GetPaddingSize(CipherMode mode, int feedbackSizeBits)
         {
-            return this.GetPaddingSize();
+            return this.GetPaddingSize(mode, feedbackSizeBits);
         }
 
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode)

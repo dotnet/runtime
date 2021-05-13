@@ -76,7 +76,15 @@ namespace Internal.Cryptography
                 ValidateCFBFeedbackSize(FeedbackSize);
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, this.GetPaddingSize(), encrypting);
+            return CreateTransformCore(
+                Mode,
+                Padding,
+                rgbKey,
+                rgbIV,
+                BlockSize / BitsPerByte,
+                FeedbackSize / BitsPerByte,
+                this.GetPaddingSize(Mode, FeedbackSize),
+                encrypting);
         }
 
         protected override bool TryDecryptEcbCore(

@@ -27,6 +27,12 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             {
                 tdes.Key = s_tdes192OneShotKey;
 
+                // Even though we have set the instance to use CFB, the Ecb one shots should
+                // always be done in ECB.
+                tdes.FeedbackSize = 8;
+                tdes.Mode = CipherMode.CFB;
+                tdes.Padding = padding == PaddingMode.None ? PaddingMode.PKCS7 : PaddingMode.None;
+
                 byte[] encrypted = tdes.EncryptEcb(plaintext, padding);
                 byte[] decrypted = tdes.DecryptEcb(encrypted, padding);
 

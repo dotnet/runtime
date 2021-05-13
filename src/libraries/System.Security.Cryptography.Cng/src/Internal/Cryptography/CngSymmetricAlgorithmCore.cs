@@ -174,7 +174,7 @@ namespace Internal.Cryptography
                 algorithmModeHandle,
                 mode,
                 blockSizeInBytes,
-                _outer.GetPaddingSize(),
+                _outer.GetPaddingSize(mode, _outer.FeedbackSize),
                 key,
                 ownsParentHandle: false,
                 iv,
@@ -189,7 +189,14 @@ namespace Internal.Cryptography
 
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
             int feedbackSizeInBytes = _outer.FeedbackSize;
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting, feedbackSizeInBytes, _outer.GetPaddingSize());
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(
+                cngKeyFactory,
+                _outer.Mode,
+                blockSizeInBytes,
+                iv,
+                encrypting,
+                feedbackSizeInBytes,
+                _outer.GetPaddingSize(_outer.Mode, _outer.FeedbackSize));
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
         }
 
