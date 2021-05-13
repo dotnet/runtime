@@ -29,8 +29,6 @@
     <Compile Include="System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
     <Compile Include="System\Net\Http\HeaderEncodingSelector.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
@@ -137,6 +135,8 @@
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="System\Net\Http\HttpMethod.Http3.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
