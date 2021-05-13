@@ -1902,7 +1902,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 {
-#ifdef UNIX_AMD64_ABI
+    assert(varTypeIsSIMD(lclNode));
+
     regNumber dst       = lclNode->GetRegNum();
     GenTree*  op1       = lclNode->gtGetOp1();
     GenTree*  actualOp1 = op1->gtSkipReloadOrCopy();
@@ -1920,15 +1921,10 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
 
     assert(regCount == 2);
-    assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(0)));
-    assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(1)));
-
-    // This is a case where the two 8-bytes that comprise the operand are in
-    // two different xmm registers and need to be assembled into a single
-    // xmm register.
     regNumber targetReg = lclNode->GetRegNum();
-    regNumber reg0      = call->GetRegNumByIdx(0);
-    regNumber reg1      = call->GetRegNumByIdx(1);
+
+    regNumber reg0 = call->GetRegNumByIdx(0);
+    regNumber reg1 = call->GetRegNumByIdx(1);
 
     if (op1->IsCopyOrReload())
     {
@@ -1947,6 +1943,13 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
         }
     }
 
+#ifdef UNIX_AMD64_ABI
+    assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(0)));
+    assert(varTypeIsFloating(retTypeDesc->GetReturnRegType(1)));
+
+    // This is a case where the two 8-bytes that comprise the operand are in
+    // two different xmm registers and need to be assembled into a single
+    // xmm register.
     if (targetReg != reg0 && targetReg != reg1)
     {
         // targetReg = reg0;
@@ -1979,9 +1982,32 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
         inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, targetReg, 0x01);
     }
     genProduceReg(lclNode);
-#else  // !UNIX_AMD64_ABI
-    assert(!"Multireg store to SIMD reg not supported on Windows");
-#endif // !UNIX_AMD64_ABI
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    assert(varTypeIsIntegral(retTypeDesc->GetReturnRegType(0)));
+    assert(varTypeIsIntegral(retTypeDesc->GetReturnRegType(1)));
+    assert(lclNode->TypeIs(TYP_SIMD8));
+
+    // This is a case where a SIMD8 struct returned as [EAX, EDX]
+    // and needs to be assembled into a single xmm register,
+    // note we can't check reg0=EAX, reg1=EDX because they could be already moved.
+
+    inst_RV_RV(ins_Copy(reg0, TYP_FLOAT), targetReg, reg0, TYP_INT);
+    const emitAttr size = emitTypeSize(TYP_SIMD8);
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_pinsrd, size, targetReg, targetReg, reg1, 1);
+    }
+    else
+    {
+        regNumber tempXmm = lclNode->GetSingleTempReg();
+        inst_RV_RV(ins_Copy(reg1, TYP_FLOAT), tempXmm, reg1, TYP_INT);
+        GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
+    }
+#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    assert(!"Multireg store to SIMD reg not supported on Windows x64");
+#else
+#error Unsupported or unset target architecture
+#endif
 }
 #endif // FEATURE_SIMD
 
