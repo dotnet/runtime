@@ -86,6 +86,7 @@
     <SystemDiagnosticsToolsVersion>4.3.0</SystemDiagnosticsToolsVersion>
     <SystemDiagnosticsTracingVersion>4.3.0</SystemDiagnosticsTracingVersion>
     <SystemDynamicRuntimeVersion>4.3.0</SystemDynamicRuntimeVersion>
+    <SystemLinqVersion>4.3.0</SystemLinqVersion>
     <SystemLinqExpressionsVersion>4.3.0</SystemLinqExpressionsVersion>
     <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
     <SystemNetHttpVersion>4.3.4</SystemNetHttpVersion>
