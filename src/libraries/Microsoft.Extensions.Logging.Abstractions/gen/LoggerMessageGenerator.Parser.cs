@@ -105,7 +105,12 @@ namespace Microsoft.Extensions.Logging.Generators
                                         continue;
                                     }
 
-                                    (int eventId, int? level, string message, string? eventName) = ExtractAttributeValues(ma.ArgumentList!, sm);
+                                    (int? eventId, int? level, string message, string? eventName) = ExtractAttributeValues(ma.ArgumentList!, sm);
+
+                                    if (!eventId.HasValue)
+                                    {
+                                        continue;
+                                    }
 
                                     IMethodSymbol? methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
                                     if (methodSymbol != null)
@@ -115,7 +120,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Name = methodSymbol.Name,
                                             Level = level,
                                             Message = message,
-                                            EventId = eventId,
+                                            EventId = (int)eventId.Value,
                                             EventName = eventName,
                                             IsExtensionMethod = methodSymbol.IsExtensionMethod,
                                             Modifiers = method.Modifiers.ToString(),
@@ -415,9 +420,9 @@ namespace Microsoft.Extensions.Logging.Generators
                 return (loggerField, false);
             }
 
-            private (int eventId, int? level, string message, string? eventName) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
+            private (int? eventId, int? level, string message, string? eventName) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
             {
-                int eventId = 0;
+                int? eventId = 0;
                 int? level = null;
                 string? eventName = null;
                 string message = string.Empty;
@@ -428,13 +433,13 @@ namespace Microsoft.Extensions.Logging.Generators
                     switch (a.NameEquals.Name.ToString())
                     {
                         case "EventId":
-                            eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                            eventId = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
                             break;
                         case "EventName":
                             eventName = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
                             break;
                         case "Level":
-                            level = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                            level = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
                             break;
                         case "Message":
                             message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
