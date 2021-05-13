@@ -79,7 +79,7 @@ namespace System.Net.Http
         [SupportedOSPlatformGuard("linux")]
         [SupportedOSPlatformGuard("macOS")]
         [SupportedOSPlatformGuard("Windows")]
-        private readonly bool _http3Enabled;
+        private readonly bool _http3Enabled = (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
@@ -286,7 +286,7 @@ namespace System.Net.Http
 
         private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
         {
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            // TODO: Cannot use instance field _http3Enabled in static method
             if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
             {
                 // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.

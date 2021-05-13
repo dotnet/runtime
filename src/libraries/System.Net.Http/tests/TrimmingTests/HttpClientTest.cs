@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 class Program
@@ -18,8 +19,12 @@ class Program
         const string quicDll = "System.Net.Quic.dll";
         var quicDllExists = File.Exists(Path.Combine(AppContext.BaseDirectory, quicDll));
 
-        // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-        if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        [SupportedOSPlatformGuard("linux")]
+        [SupportedOSPlatformGuard("macOS")]
+        [SupportedOSPlatformGuard("Windows")]
+        private readonly bool _http3Enabled = (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
+        if (_http3Enabled)
         {
             Console.WriteLine($"Expected {quicDll} is {(quicDllExists ? "present - OK" : "missing - BAD")}.");
             return quicDllExists ? 100 : -1;

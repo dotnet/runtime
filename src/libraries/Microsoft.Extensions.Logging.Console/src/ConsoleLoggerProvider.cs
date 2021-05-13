@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             _messageQueue = new ConsoleLoggerProcessor();
 
-            if (DoesWindowsConsoleSupportAnsi())
+            if (DoesConsoleSupportAnsi())
             {
                 _messageQueue.Console = new AnsiLogConsole();
                 _messageQueue.ErrorConsole = new AnsiLogConsole(stdErr: true);
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         [UnsupportedOSPlatformGuard("windows")]
-        private static bool DoesWindowsConsoleSupportAnsi()
+        private static bool DoesConsoleSupportAnsi()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
