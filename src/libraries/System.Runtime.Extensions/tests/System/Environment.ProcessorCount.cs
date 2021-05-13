@@ -19,12 +19,45 @@ namespace System.Tests
             Assert.InRange(Environment.ProcessorCount, 1, int.MaxValue);
         }
 
+        private static unsafe int ParseProcessorCount(string settingValue)
+        {
+            const uint MAX_PROCESSOR_COUNT = 0xffff;
+
+            if (string.IsNullOrEmpty(settingValue))
+                return 0;
+
+            // Mimic handling the setting's value in coreclr's GetCurrentProcessCpuCount
+            fixed (char *ptr = settingValue)
+            {
+                char *endptr;
+                int value = (int)wcstoul(ptr, &endptr, 16);
+
+                if (0 < value && value <= MAX_PROCESSOR_COUNT)
+                    return value;
+            }
+
+            return 0;
+        }
+
+        private static int GetTotalProcessorCount()
+        {
+            // Assume a single CPU group
+            GetSystemInfo(out SYSTEM_INFO sysInfo);
+            return (int)sysInfo.dwNumberOfProcessors;
+        }
+
         [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to get processor information
         [Fact]
         public void ProcessorCount_Windows_MatchesGetSystemInfo()
         {
-            GetSystemInfo(out SYSTEM_INFO sysInfo);
-            Assert.Equal((int)sysInfo.dwNumberOfProcessors, Environment.ProcessorCount);
+            string procCountConfig = Environment.GetEnvironmentVariable(ProcessorCountEnvVar);
+            int expectedCount = ParseProcessorCount(procCountConfig);
+
+            // Assume no process affinity or CPU quota set
+            if (expectedCount == 0)
+                expectedCount = GetTotalProcessorCount();
+
+            Assert.Equal(expectedCount, Environment.ProcessorCount);
         }
 
         public static int GetProcessorCount() => Environment.ProcessorCount;
@@ -34,10 +67,11 @@ namespace System.Tests
         [InlineData(8000, 0, null)]
         [InlineData(8000, 2000, null)]
         [InlineData(8000, 0, "1")]
-        [InlineData(2000, 0, "")]
-        [InlineData(2000, 0, "11")]
+        [InlineData(2000, 0, null)]
+        [InlineData(2000, 0, " 0x11 ")]
         [InlineData(0, 0, "3")]
-        public static unsafe void JobLimitAndConfigSetting(ushort maxRate, ushort minRate, string procCountConfig)
+        public static unsafe void ProcessorCount_Windows_RespectsJobCpuRateAndConfigurationSetting(
+            ushort maxRate, ushort minRate, string procCountConfig)
         {
             IntPtr hJob = IntPtr.Zero;
             PROCESS_INFORMATION processInfo = default;
@@ -50,6 +84,10 @@ namespace System.Tests
 
                 if (maxRate != 0)
                 {
+                    // Setting JobObjectCpuRateControlInformation requires Windows 8 or later
+                    if (!PlatformDetection.IsWindows8xOrLater)
+                        return;
+
                     if (minRate == 0)
                     {
                         cpuRateControl.ControlFlags =
@@ -59,6 +97,10 @@ namespace System.Tests
                     }
                     else
                     {
+                        // Setting min and max rates requires Windows 10 or later
+                        if (!PlatformDetection.IsWindows10OrLater)
+                            return;
+
                         cpuRateControl.ControlFlags =
                             JobObjectCpuRateControlFlags.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE |
                             JobObjectCpuRateControlFlags.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
@@ -72,6 +114,7 @@ namespace System.Tests
                 }
 
                 ProcessStartInfo startInfo;
+
                 using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(GetProcessorCount, new RemoteInvokeOptions { Start = false }))
                 {
                     startInfo = handle.Process.StartInfo;
@@ -107,13 +150,17 @@ namespace System.Tests
                 if (!GetExitCodeProcess(processInfo.hProcess, out uint exitCode))
                     throw new Win32Exception();
 
-                int expectedCount;
-                if (!string.IsNullOrEmpty(procCountConfig))
-                    expectedCount = Convert.ToInt32(procCountConfig, 16);
-                else if (maxRate == 0)
-                    expectedCount = Environment.ProcessorCount;
-                else
-                    expectedCount = (maxRate * Environment.ProcessorCount + 9999) / 10000;
+                int expectedCount = ParseProcessorCount(procCountConfig);
+
+                if (expectedCount == 0)
+                {
+                    int totalProcCount = GetTotalProcessorCount();
+
+                    if (maxRate == 0)
+                        expectedCount = totalProcCount;
+                    else
+                        expectedCount = (maxRate * totalProcCount + 9999) / 10000;
+                }
 
                 Assert.Equal(expectedCount, (int)exitCode);
             }
@@ -134,6 +181,9 @@ namespace System.Tests
                     CloseHandle(hJob);
             }
         }
+
+        [DllImport("msvcrt.dll")]
+        private static extern unsafe uint wcstoul(char *strSource, char **endptr, int @base);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_INFO
