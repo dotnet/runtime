@@ -74,6 +74,25 @@ namespace System.IO.Tests
         }
     }
 
+    public class FileInfo_Open_fm_fa_fs_buffer_fo : FileStream_ctor_str_fm_fa_fs_buffer_fo
+    {
+        protected override FileStream CreateFileStream(string path, FileMode mode)
+        {
+            return new FileInfo(path).Open(mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, FileOptions.SequentialScan);
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
+        {
+            return new FileInfo(path).Open(mode, access, FileShare.ReadWrite | FileShare.Delete, FileOptions.SequentialScan);
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        {
+            if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+            return new FileInfo(path).Open(mode, access, share, options);
+        }
+    }
+
     public class FileInfo_OpenSpecial : FileStream_ctor_str_fm_fa_fs
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)

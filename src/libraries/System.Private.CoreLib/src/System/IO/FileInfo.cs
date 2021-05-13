@@ -79,11 +79,20 @@ namespace System.IO
         public StreamReader OpenText()
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
+        public StreamReader OpenText(FileOptions options)
+            => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options);
+
         public StreamWriter CreateText()
             => new StreamWriter(NormalizedPath, append: false);
 
+        public StreamWriter CreateText(FileOptions options)
+            => new StreamWriter(NormalizedPath, append: false, options);
+
         public StreamWriter AppendText()
             => new StreamWriter(NormalizedPath, append: true);
+
+        public StreamWriter AppendText(FileOptions options)
+            => new StreamWriter(NormalizedPath, append: true, options);
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
@@ -106,6 +115,13 @@ namespace System.IO
             return fileStream;
         }
 
+        public FileStream Create(FileOptions options)
+        {
+            FileStream fileStream = File.Create(NormalizedPath, options);
+            Invalidate();
+            return fileStream;
+        }
+
         public override void Delete()
         {
             FileSystem.DeleteFile(FullPath);
@@ -115,17 +131,32 @@ namespace System.IO
         public FileStream Open(FileMode mode)
             => Open(mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);
 
+        public FileStream Open(FileMode mode, FileOptions options)
+            => Open(mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None, options);
+
         public FileStream Open(FileMode mode, FileAccess access)
             => Open(mode, access, FileShare.None);
+
+        public FileStream Open(FileMode mode, FileAccess access, FileOptions options)
+            => Open(mode, access, FileShare.None, options);
 
         public FileStream Open(FileMode mode, FileAccess access, FileShare share)
             => new FileStream(NormalizedPath, mode, access, share);
 
+        public FileStream Open(FileMode mode, FileAccess access, FileShare share, FileOptions options)
+            => new FileStream(NormalizedPath, mode, access, share, File.DefaultBufferSize, options);
+
         public FileStream OpenRead()
-            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, File.DefaultBufferSize, false);
+
+        public FileStream OpenRead(FileOptions options)
+            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, File.DefaultBufferSize, options);
 
         public FileStream OpenWrite()
             => new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+
+        public FileStream OpenWrite(FileOptions options)
+            => new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, File.DefaultBufferSize, options);
 
         // Moves a given file to a new location and potentially a new file name.
         // This method does work across volumes.

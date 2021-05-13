@@ -36,6 +36,14 @@ namespace System.IO
             return new StreamReader(path);
         }
 
+        public static StreamReader OpenText(string path, FileOptions options)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            return new StreamReader(path, options);
+        }
+
         public static StreamWriter CreateText(string path)
         {
             if (path == null)
@@ -44,12 +52,28 @@ namespace System.IO
             return new StreamWriter(path, append: false);
         }
 
+        public static StreamWriter CreateText(string path, FileOptions options)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            return new StreamWriter(path, append: false, options);
+        }
+
         public static StreamWriter AppendText(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
             return new StreamWriter(path, append: true);
+        }
+
+        public static StreamWriter AppendText(string path, FileOptions options)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            return new StreamWriter(path, append: true, options);
         }
 
         /// <summary>
@@ -85,6 +109,11 @@ namespace System.IO
         public static FileStream Create(string path)
         {
             return Create(path, DefaultBufferSize);
+        }
+
+        public static FileStream Create(string path, FileOptions options)
+        {
+            return Create(path, DefaultBufferSize, options);
         }
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
@@ -149,14 +178,29 @@ namespace System.IO
             return Open(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);
         }
 
+        public static FileStream Open(string path, FileMode mode, FileOptions options)
+        {
+            return Open(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None, options);
+        }
+
         public static FileStream Open(string path, FileMode mode, FileAccess access)
         {
             return Open(path, mode, access, FileShare.None);
         }
 
+        public static FileStream Open(string path, FileMode mode, FileAccess access, FileOptions options)
+        {
+            return Open(path, mode, access, FileShare.None, options);
+        }
+
         public static FileStream Open(string path, FileMode mode, FileAccess access, FileShare share)
         {
             return new FileStream(path, mode, access, share);
+        }
+
+        public static FileStream Open(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        {
+            return new FileStream(path, mode, access, share, DefaultBufferSize, options);
         }
 
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
@@ -260,10 +304,19 @@ namespace System.IO
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
+        public static FileStream OpenRead(string path, FileOptions options)
+        {
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, options);
+        }
+
         public static FileStream OpenWrite(string path)
         {
-            return new FileStream(path, FileMode.OpenOrCreate,
-                                  FileAccess.Write, FileShare.None);
+            return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+        }
+
+        public static FileStream OpenWrite(string path, FileOptions options)
+        {
+            return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, DefaultBufferSize, options);
         }
 
         public static string ReadAllText(string path)
