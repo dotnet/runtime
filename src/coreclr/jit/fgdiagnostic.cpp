@@ -2559,7 +2559,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         // we find a potential 'hit' we check if the funclet we're looking at is
         // from the correct try region.
 
-        for (BasicBlock* const bcall : BasicBlockSimpleList(comp->fgFirstFuncletBB))
+        for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
             if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
             {

@@ -197,7 +197,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        for (BasicBlock* const block : BasicBlockSimpleList(firstTryBlock))
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -473,7 +473,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // handler region (if any) won't change.
         //
         // Kind of overkill to loop here, but hey.
-        for (BasicBlock* const block : BasicBlockSimpleList(firstTryBlock))
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -510,7 +510,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
         // Decrement nesting level of enclosed GT_END_LFINs.
-        for (BasicBlock* const block : BasicBlockRangeList(firstHandlerBlock, lastHandlerBlock))
+        for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
             {
@@ -1243,7 +1243,7 @@ PhaseStatus Compiler::fgCloneFinally()
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);
 
-            for (BasicBlock* const block : BasicBlockRangeList(firstBlock, lastBlock))
+            for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
                 if (block->hasProfileWeight())
                 {
@@ -1344,7 +1344,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
         assert(lastTryBlock->getTryIndex() <= XTnum);
         BasicBlock* const finallyBlock = isFinally ? HBtab->ebdHndBeg : nullptr;
 
-        for (BasicBlock* const block : BasicBlockRangeList(firstTryBlock, lastTryBlock))
+        for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
         {
             // Only check the directly contained blocks.
             assert(block->hasTryIndex());

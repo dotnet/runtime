@@ -4978,12 +4978,26 @@ public:
 
     void fgInterBlockLocalVarLiveness();
 
-    // Blocks: convenience method for enabling range-based `for` iteration over the function's blocks, e.g.:
-    //    for (BasicBlock* const block : compiler->Blocks()) ...
+    // Blocks: convenience methods for enabling range-based `for` iteration over the function's blocks, e.g.:
+    // 1.   for (BasicBlock* const block : compiler->Blocks()) ...
+    // 2.   for (BasicBlock* const block : compiler->Blocks(startBlock)) ...
+    // 3.   for (BasicBlock* const block : compiler->Blocks(startBlock, endBlock)) ...
+    // In case (1), the block list can be empty. In case (2), `startBlock` can be nullptr. In case (3),
+    // both `startBlock` and `endBlock` must be non-null.
     //
     BasicBlockSimpleList Blocks() const
     {
         return BasicBlockSimpleList(fgFirstBB);
+    }
+
+    BasicBlockSimpleList Blocks(BasicBlock* startBlock) const
+    {
+        return BasicBlockSimpleList(startBlock);
+    }
+
+    BasicBlockRangeList Blocks(BasicBlock* startBlock, BasicBlock* endBlock) const
+    {
+        return BasicBlockRangeList(startBlock, endBlock);
     }
 
     // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
