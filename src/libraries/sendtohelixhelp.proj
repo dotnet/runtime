@@ -277,7 +277,7 @@
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
-      <ChromiumRevision>857997</ChromiumRevision>
+      <ChromiumRevision>768983</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</SeleniumUrl>
     </PropertyGroup>
