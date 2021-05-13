@@ -428,8 +428,10 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+        [InlineData(16384 * 100, 4096, 1024, false)]
         [InlineData(16384 * 100, 4096, 1024, true)]
         [InlineData(16384 * 100, 1024 * 20, 1024, true)]
+        [InlineData(16384 , 3, 3, true)]
         public async Task SslStream_RandomWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
         {
             byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);
@@ -467,7 +469,7 @@ namespace System.Net.Security.Tests
                             server.Write(data.Span.Slice(0, writeLength));
                         }
 
-                        data = data.Slice(writeBufferSize);
+                        data = data.Slice(Math.Min(writeBufferSize, data.Length));
                     }
 
                     server.ShutdownAsync().GetAwaiter().GetResult();
