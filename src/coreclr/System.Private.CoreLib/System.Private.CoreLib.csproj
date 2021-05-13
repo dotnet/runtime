@@ -297,6 +297,9 @@
     </Compile>
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />
+  </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 

@@ -36,6 +36,7 @@
 #include "fieldmarshaler.h"
 #include "pinvokeoverride.h"
 #include "nativelibrary.h"
+#include "interoplibinterface.h"
 
 #include <formattype.h>
 #include "../md/compiler/custattr.h"
@@ -725,7 +726,7 @@ public:
                 ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
 
                 pcsDispatch->EmitDUP();
-                pcsDispatch->EmitLDC(0);
+                pcsDispatch->EmitLDC(0); // Compare against S_OK (i.e. 0).
                 pcsDispatch->EmitBGE(pSkipThrowLabel);
 
 #ifdef FEATURE_COMINTEROP
@@ -747,6 +748,20 @@ public:
                 pcsDispatch->EmitLabel(pSkipThrowLabel);
                 pcsDispatch->EmitPOP();
             }
+        }
+
+        if (SF_IsCheckPendingException(m_dwStubFlags)
+            && SF_IsForwardStub(m_dwStubFlags))
+        {
+            ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
+
+            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_PENDING_EXCEPTION_OBJECT, 0, 1);
+            pcsDispatch->EmitDUP();
+            pcsDispatch->EmitBRFALSE(pSkipThrowLabel);
+            pcsDispatch->EmitTHROW();
+            pcsDispatch->EmitLDC(0);   // keep the IL stack balanced across the branch and the fall-through
+            pcsDispatch->EmitLabel(pSkipThrowLabel);
+            pcsDispatch->EmitPOP();
         }
 
         m_slIL.End(m_dwStubFlags);
@@ -1360,6 +1375,10 @@ private:
         {
             dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
         }
+        if (HasCheckForPendingException(pTargetMD))
+        {
+            dwStubFlags |= NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION;
+        }
         return dwStubFlags;
     }
 
@@ -1385,6 +1404,22 @@ private:
     static BOOL TargetSuppressGCTransition(DWORD dwStubFlags, MethodDesc* pTargetMD)
     {
         return SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition();
+    }
+
+    static BOOL HasCheckForPendingException(MethodDesc* pTargetMD)
+    {
+#ifdef CROSSGEN_COMPILE
+        return FALSE;
+#else
+        if (pTargetMD == NULL || !pTargetMD->IsNDirect())
+            return FALSE;
+
+        auto pNMD = (NDirectMethodDesc*)pTargetMD;
+        if (!Interop::ShouldCheckForPendingException(pNMD))
+            return FALSE;
+
+        return TRUE;
+#endif // !CROSSGEN_COMPILE
     }
 };
 
@@ -3088,10 +3123,10 @@ BOOL NDirect::MarshalingRequired(
 
     if (pMD != NULL)
     {
+        // HRESULT swapping is handled by stub
         if (pMD->IsNDirect() || pMD->IsComPlusCall())
         {
-            // HRESULT swapping is handled by stub
-            if ((pMD->GetImplAttrs() & miPreserveSig) == 0)
+            if (!IsMiPreserveSig(pMD->GetImplAttrs()))
                 return TRUE;
         }
 
@@ -3120,6 +3155,12 @@ BOOL NDirect::MarshalingRequired(
             // Make sure running cctor can be handled by stub
             if (pNMD->IsClassConstructorTriggeredByILStub())
                 return TRUE;
+
+#ifndef CROSSGEN_COMPILE
+            // Pending exceptions are handled by stub
+            if (Interop::ShouldCheckForPendingException(pNMD))
+                return TRUE;
+#endif // !CROSSGEN_COMPILE
         }
 
         callConv = sigInfo.GetCallConv();

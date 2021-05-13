@@ -68,6 +68,7 @@ WARNING:   When setting properties based on their current state (for example:
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>
+      <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%COMPlus_GCStress%"=="" (
@@ -281,7 +282,7 @@ if defined DoLink (
           </BatchLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>      
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs)</_CLRTestRunFile>
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...

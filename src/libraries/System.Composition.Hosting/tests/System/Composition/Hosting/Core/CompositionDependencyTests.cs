@@ -37,6 +37,7 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50917", TestPlatforms.Android)]
         public void Satisfied_Invoke_ReturnsExpected()
         {
             var contract = new CompositionContract(typeof(int));

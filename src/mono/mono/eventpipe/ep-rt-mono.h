@@ -872,9 +872,22 @@ ep_rt_config_value_get_circular_mb (void)
 	uint32_t circular_mb = 0;
 	gchar *value = g_getenv ("COMPlus_EventPipeCircularMB");
 	if (value)
-		circular_mb = strtoul (value, NULL, 9);
+		circular_mb = strtoul (value, NULL, 10);
 	g_free (value);
 	return circular_mb;
+}
+
+static
+inline
+bool
+ep_rt_config_value_get_output_streaming (void)
+{
+	bool enable = false;
+	gchar *value = g_getenv ("COMPlus_EventPipeOutputStreaming");
+	if (value && atoi (value) == 1)
+		enable = true;
+	g_free (value);
+	return enable;
 }
 
 static
@@ -1097,7 +1110,9 @@ inline
 bool
 ep_rt_process_detach (void)
 {
-	return (mono_runtime_is_shutting_down () == TRUE) ? true : false;
+	// This is set to early in Mono compared to coreclr and only represent runtime
+	// shutting down. EventPipe won't be shutdown to late on Mono, so always return FALSE.
+	return FALSE;
 }
 
 static
@@ -1247,7 +1262,14 @@ inline
 void
 ep_rt_thread_sleep (uint64_t ns)
 {
-	g_usleep (ns / 1000);
+	MONO_REQ_GC_UNSAFE_MODE;
+	if (ns == 0) {
+		mono_thread_info_yield ();
+	} else {
+		MONO_ENTER_GC_SAFE;
+		g_usleep (ns / 1000);
+		MONO_EXIT_GC_SAFE;
+	}
 }
 
 static

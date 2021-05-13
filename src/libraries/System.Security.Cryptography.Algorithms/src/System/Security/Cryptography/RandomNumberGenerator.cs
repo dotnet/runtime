@@ -12,10 +12,7 @@ namespace System.Security.Cryptography
     {
         protected RandomNumberGenerator() { }
 
-        public static RandomNumberGenerator Create()
-        {
-            return new RandomNumberGeneratorImplementation();
-        }
+        public static RandomNumberGenerator Create() => RandomNumberGeneratorImplementation.s_singleton;
 
         [UnsupportedOSPlatform("browser")]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]

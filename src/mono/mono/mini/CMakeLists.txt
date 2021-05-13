@@ -20,7 +20,11 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(HOST_DARWIN)
-set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
+  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
+
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(OS_LIBS "-lobjc" "-lc++")
+  endif()
 elseif(HOST_IOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
@@ -385,6 +389,7 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h CONTENT [=[cons
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h
   VERBATIM
 )
 

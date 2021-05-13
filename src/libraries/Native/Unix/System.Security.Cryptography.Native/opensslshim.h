@@ -95,6 +95,7 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 #define NEED_OPENSSL_1_1 true
 #define NEED_OPENSSL_3_0 true
 
+int OpenLibrary(void);
 void InitializeOpenSSLShim(void);
 
 #if !HAVE_OPENSSL_EC2M
@@ -141,6 +142,14 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx,
                                           void* arg),
                                 void* arg);
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
+#endif
+
+#if !HAVE_OPENSSL_CHACHA20POLY1305
+#undef HAVE_OPENSSL_CHACHA20POLY1305
+#define HAVE_OPENSSL_CHACHA20POLY1305 1
+const EVP_CIPHER* EVP_chacha20_poly1305(void);
+#define EVP_CTRL_AEAD_GET_TAG 0x10
+#define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
 #define API_EXISTS(fn) (fn != NULL)
@@ -281,6 +290,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_aes_256_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_256_ecb) \
     REQUIRED_FUNCTION(EVP_aes_256_gcm) \
+    LIGHTUP_FUNCTION(EVP_chacha20_poly1305) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_free) \
@@ -714,6 +724,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
 #define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
 #define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
+#define EVP_chacha20_poly1305 EVP_chacha20_poly1305_ptr
 #define EVP_CIPHER_CTX_cleanup EVP_CIPHER_CTX_cleanup_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
 #define EVP_CIPHER_CTX_free EVP_CIPHER_CTX_free_ptr
