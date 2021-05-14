@@ -322,12 +322,14 @@
 
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
+      <_HasCryptoWorkerJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet_crypto_worker.js'">true</_HasCryptoWorkerJs>
     </PropertyGroup>
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet_crypto_worker.js" Condition="'$(_HasCryptoWorkerJs)' != 'true'" />
 
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
@@ -376,13 +378,36 @@
       <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
       <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
+      <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
+      <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
     </PropertyGroup>
 
+   
    <ItemGroup>
-      <_WasmPInvokeModules Include="libSystem.Native" />
-      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+     <_WasmRuntimePackSystemLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\libSystem.*.a"/>
+     <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a"/>
+
+     <_WasmPInvokeModules Include="@(_WasmRuntimePackSystemLibs->'%(FileName)')" />
+     <!-- libSystem.Globalization.Native is built in but we still need the module so add it explicitly -->
+     <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+
+     <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
+     <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
+
+     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
+     <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
+
+     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
+
+     <_DotnetJSSrcPreFile Include="$(_WasmRuntimePackSrcDir)*channel.js" />
+
+     <_DotnetJSSrcFile Remove="@(_DotnetJSSrcPreFile)" />
+
+     <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
+     <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
    </ItemGroup>
+
+   <Message Text="Collected PInvoke: modules @(_WasmPInvokeModules)" Importance="Low" /> 
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
      Assemblies="@(_WasmAssembliesInternal)"
@@ -398,21 +423,10 @@
      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
      <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
      <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
+
+     <!-- Current WebWorkers are pure JavaScript and therefore have no WASM, but are treated as native assets. -->
+     <_WasmRuntimePackWebWorkerDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir)))</_WasmRuntimePackWebWorkerDir>
    </PropertyGroup>
-
-   <ItemGroup>
-     <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a" />
-     <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
-     <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
-
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
-     <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
-
-     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
-
-     <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
-     <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
-   </ItemGroup>
 
    <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
           Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
@@ -432,11 +446,13 @@
    </PropertyGroup>
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+
     <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
     
     <ItemGroup>
       <_EmccLinkerArguments Include="$(EmccLDFlags)" />
       <_EmccLinkerArguments Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
+      <_EmccLinkerArguments Include="--pre-js &quot;%(_DotnetJSSrcPreFile.Identity)&quot;" Condition="@(_DotNetJSSrcPreFile->Count()) > 0" />
       <_EmccLinkerArguments Include="&quot;%(_BitcodeFile.Identity)&quot;" />
       <_EmccLinkerArguments Include="&quot;%(_WasmObjects.Identity)&quot;" />
       <_EmccLinkerArguments Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
@@ -455,6 +471,7 @@
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+      <WasmNativeAsset Include="$(_WasmRuntimePackWebWorkerDir)dotnet_crypto_worker.js" />
     </ItemGroup>
   </Target>
 

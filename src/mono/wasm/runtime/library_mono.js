@@ -48,13 +48,17 @@
  */
 
 var MonoSupportLib = {
-	$MONO__postset: 'MONO.export_functions (Module);',
+	$MONO__postset: 'MONO.export_functions (Module); MONO._initialize_workers ();',
 	$MONO: {
 		pump_count: 0,
 		timeout_queue: [],
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+		mono_wasm_crypto: {
+			channel: null,
+			worker: null
+		},
 
 		/** @type {object.<string, object>} */
 		_id_table: {},
@@ -1738,6 +1742,33 @@ var MonoSupportLib = {
 			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
 		},
 
+		_initialize_workers: function () {
+			console.debug ("MONO_WASM: Initialize WebWorkers");
+			// Crypto support is only available in the Browser.
+			if (ENVIRONMENT_IS_WEB) {
+				var chan = Module.channel.create ();
+				var worker = new Worker ("dotnet_crypto_worker.js");
+				worker.postMessage ({
+					comm_buf: chan.get_comm_buffer(),
+					msg_buf: chan.get_msg_buffer(),
+					msg_char_len: chan.get_msg_len()
+				});
+				MONO.mono_wasm_crypto.channel = chan;
+				MONO.mono_wasm_crypto.worker = worker;
+			}
+		},
+
+		_shutdown_workers: function () {
+			console.debug ("MONO_WASM: Shutdown WebWorkers");
+			// Crypto support is only available in the Browser.
+			if (ENVIRONMENT_IS_WEB) {
+				var chan = MONO.mono_wasm_crypto.channel;
+				if (chan !== null) {
+					chan.shutdown ();
+				}
+			}
+		},
+
 		_finalize_startup: function (args, ctx) {
 			var loaded_files_with_debug_info = [];
 
@@ -1777,6 +1808,9 @@ var MonoSupportLib = {
 			MONO.mono_wasm_setenv ("TZ", tz || "UTC");
 			MONO.mono_wasm_runtime_ready ();
 			args.loaded_cb ();
+
+			// [TODO] Shutdown workers when run under test environment
+			// MONO._shutdown_workers();
 		},
 
 		_load_assets_and_runtime: function (args) {

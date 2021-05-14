@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
     public class Sha512Tests : HashAlgorithmTest
     {
         protected override HashAlgorithm Create()

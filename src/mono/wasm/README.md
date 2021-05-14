@@ -9,8 +9,7 @@ Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always inst
 
 `EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
 
-Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if
-you are directly using the `dotnet build`, or `build.sh`.
+Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if you are directly using the `dotnet build`, or `build.sh`.
 
 * Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
 Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.12`. See [emscripten-version.txt](./emscripten-version.txt)

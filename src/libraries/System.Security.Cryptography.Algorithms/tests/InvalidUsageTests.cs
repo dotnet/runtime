@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         public void InvalidHashCoreArgumentsFromStream()
         {
             using (SHA1 sha1 = SHA1.Create())

@@ -244,6 +244,7 @@
     <Compile Include="CommonAEADTests.cs" />
     <Compile Include="CngUtility.cs" />
     <Compile Include="HKDFTests.cs" />
+    <Compile Include="ShaTests.NoPlatformCrypto.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />

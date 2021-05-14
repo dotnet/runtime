@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyIncrementalHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.Equal(referenceHash, incrementalB);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyEmptyHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyTrivialHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         public static void AppendDataAfterHashClose()
         {
             using (IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
@@ -243,7 +243,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         public static void GetHashTwice()
         {
             using (IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         public static void ModifyAfterHashDispose()
         {
             using (IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 () => IncrementalHash.CreateHMAC(new HashAlgorithmName("SHA0"), Array.Empty<byte>()));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyIncrementalHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.Equal<byte>(new Span<byte>(referenceHash, 0, referenceHashLength).ToArray(), incrementalB);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyEmptyHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -417,7 +417,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyTrivialHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void Dispose_HashAlgorithm_ThrowsException(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -497,7 +497,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyGetCurrentHash_Digest(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -568,7 +568,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyBounds_GetCurrentHash_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -587,7 +587,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyBounds_GetHashAndReset_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
