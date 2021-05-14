@@ -18,7 +18,7 @@ namespace System.Net.Http.Headers
         internal static readonly GenericHeaderParser MultipleValueNameValueWithParametersParser = new GenericHeaderParser(true, NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
         internal static readonly GenericHeaderParser SingleValueNameValueParser = new GenericHeaderParser(false, ParseNameValue);
         internal static readonly GenericHeaderParser MultipleValueNameValueParser = new GenericHeaderParser(true, ParseNameValue);
-        internal static readonly GenericHeaderParser MailAddressParser = new GenericHeaderParser(false, ParseMailAddress);
+        internal static readonly GenericHeaderParser FromParser = new GenericHeaderParser(false, ParseFrom);
         internal static readonly GenericHeaderParser SingleValueProductParser = new GenericHeaderParser(false, ParseProduct);
         internal static readonly GenericHeaderParser MultipleValueProductParser = new GenericHeaderParser(true, ParseProduct);
         internal static readonly GenericHeaderParser RangeConditionParser = new GenericHeaderParser(false, RangeConditionHeaderValue.GetRangeConditionLength);
@@ -114,7 +114,7 @@ namespace System.Net.Http.Headers
             return resultLength;
         }
 
-        private static int ParseMailAddress(string value, int startIndex, out object? parsedValue)
+        private static int ParseFrom(string value, int startIndex, out object? parsedValue)
         {
             parsedValue = null;
 
@@ -124,11 +124,6 @@ namespace System.Net.Http.Headers
             }
 
             string result = value.Substring(startIndex);
-
-            if (!HeaderUtilities.IsValidEmailAddress(result))
-            {
-                return 0;
-            }
 
             parsedValue = result;
             return result.Length;
