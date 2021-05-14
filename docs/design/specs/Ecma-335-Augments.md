@@ -746,6 +746,10 @@ Edit section *7.b*: Static | Virtual | !Abstract
 Edit section 7: The method indexed by *MethodBody* shall be non-virtual if the method indexed
 by MethodDeclaration is static. Otherwise it shall be virtual.
 
+(Add new section 14 after section 13:)
+
+* 14. If the method indexed by *MethodBody* has the static flag set, the method indexed by *MethodBody* must be indexed via a MethodDef and not a MemberRef. [ERROR]
+
 ### III.2.1, constrained. - (prefix) invoke a member on a value of a variable type (page 316)
 
 (Change the section title to:)
