@@ -50,10 +50,14 @@
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Publish`.
 
-      - $(EmccFlags)                        - This sets the initial emcc flags.
       - $(EmccVerbose)                      - Set to false to disable verbose emcc output.
+
       - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
       - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+
+      - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
+      - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
+      - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
 
 
       Public items:
@@ -464,6 +468,7 @@
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
       <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+      <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -486,6 +491,7 @@
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
+      <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
 
       <_EmccLDFlags Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
       <_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
