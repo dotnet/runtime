@@ -6576,6 +6576,25 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_MOV_8_2)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [3], guint64) = LOCAL_VAR (ip [4], guint64);
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_8_3)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [3], guint64) = LOCAL_VAR (ip [4], guint64);
+			LOCAL_VAR (ip [5], guint64) = LOCAL_VAR (ip [6], guint64);
+			ip += 7;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_8_4)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [3], guint64) = LOCAL_VAR (ip [4], guint64);
+			LOCAL_VAR (ip [5], guint64) = LOCAL_VAR (ip [6], guint64);
+			LOCAL_VAR (ip [7], guint64) = LOCAL_VAR (ip [8], guint64);
+			ip += 9;
+			MINT_IN_BREAK;
+
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
 			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
