@@ -1,7 +1,7 @@
 # MsQuic
 
 `System.Net.Quic` depends on [MsQuic](https://github.com/microsoft/msquic), Microsoft, cross-platform, native implementation of the [QUIC](https://datatracker.ietf.org/wg/quic/about/) protocol.
-Currently, `System.Net.Quic` depends on [**msquic@2084736032ec917f1819802caa515e61a6d3dd9a**](https://github.com/microsoft/msquic/commit/2084736032ec917f1819802caa515e61a6d3dd9a) revision.
+Currently, `System.Net.Quic` depends on [**msquic@26cff1a8de7890cf7ff77709ee14b51bc84e330e**](https://github.com/microsoft/msquic/commit/26cff1a8de7890cf7ff77709ee14b51bc84e330e) revision.
 
 ## Usage
 
