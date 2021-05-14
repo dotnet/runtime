@@ -113,6 +113,8 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
     WCHAR dacName[MAX_PATH_FNAME] = { 0 };
     CLR_DEBUGGING_VERSION version;
     BOOL versionSupportedByCaller = FALSE;
+    BOOL hDacAllocatedLocally = FALSE; // whether hDac was allocated with LoadLibraryW (so we can unload it).
+    BOOL hDbiAllocatedLocally = FALSE; // whether hDbi was allocated with LoadLibraryW (so we can unload it).
 
     // argument checking
     if ((ppProcess != NULL || pFlags != NULL) && pLibraryProvider == NULL)
@@ -170,6 +172,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
             if (SUCCEEDED(hr))
             {
                 hDbi = LoadLibraryW(pDbiModulePath);
+                hDbiAllocatedLocally = TRUE;
                 if (hDbi == NULL)
                 {
                     hr = HRESULT_FROM_WIN32(GetLastError());
@@ -191,6 +194,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
                 if (SUCCEEDED(hr))
                 {
                     hDac = LoadLibraryW(pDacModulePath);
+                    hDacAllocatedLocally = TRUE;
                     if (hDac == NULL)
                     {
                         hr = HRESULT_FROM_WIN32(GetLastError());
@@ -247,6 +251,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
                 if (loadLibraryWFn != NULL)
                 {
                     hDac = loadLibraryWFn(pDacModulePath);
+                    hDacAllocatedLocally = TRUE;
                     if (hDac == NULL)
                     {
                         hr = E_HANDLE;
@@ -324,12 +329,14 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
         pDt->Release();
     }
     
-    if (hDac != NULL)
+    // If a library was loaded via LoadLibrary, we can safely unload it
+    if (hDacAllocatedLocally == TRUE && hDac != NULL)
     {
         FreeLibrary(hDac);
     }
 
-    if (hDbi != NULL)
+    // If a library was loaded via LoadLibrary, we can safely unload it
+    if (hDbiAllocatedLocally == TRUE && hDbi != NULL)
     {
         FreeLibrary(hDbi);
     }
