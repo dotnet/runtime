@@ -28134,7 +28134,7 @@ void gc_heap::thread_final_regions (bool compact_p)
         heap_segment* current_region = heap_segment_rw (generation_start_segment (generation_of (gen_idx)));
         dprintf (REGIONS_LOG, ("gen%d start from %Ix", gen_idx, heap_segment_mem (current_region)));
 
-        while (current_region == find_first_valid_region (current_region, compact_p))
+        while ((current_region = find_first_valid_region (current_region, compact_p)))
         {
             assert (!compact_p || 
                     (heap_segment_plan_gen_num (current_region) == heap_segment_gen_num (current_region)));
