@@ -393,11 +393,11 @@ helix_runner_uid="%24(id -u)"
 sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="$HELIX_WORKITEM_UPLOAD_ROOT" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v --targets ios-simulator-64
 CLRTestExitCode=$?
 echo '======== STDOUT ======== ({['
-cat "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.log"
+cat "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.log" 2>/dev/null
 echo ']})'
 echo ''
 echo '======== STDERR ======== ({['
-cat "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.err.log"
+cat "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.err.log" 2>/dev/null
 echo ']})'
 echo ''
 
