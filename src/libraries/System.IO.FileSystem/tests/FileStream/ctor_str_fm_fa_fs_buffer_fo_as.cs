@@ -125,7 +125,13 @@ namespace System.IO.Tests
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 
-            Assert.False(File.Exists(filePath)); // ensure it was NOT created (provided OOTB by Windows, emulated on Unix)
+            // ensure it was NOT created (provided OOTB by Windows, emulated on Unix)
+            bool exists = File.Exists(filePath);
+            if (exists)
+            {
+                File.Delete(filePath);
+            }
+            Assert.False(exists);
         }
 
         [Theory]
@@ -149,7 +155,7 @@ namespace System.IO.Tests
         [Fact]
         public void WhenFileIsTruncatedWithAllocationSizeSpecifiedTheAllocationSizeIsSet()
         {
-            const int initialSize = 10_000; // this must be more than 4kb which seems to be minimum allocaiton size on Windows
+            const int initialSize = 10_000; // this must be more than 4kb which seems to be minimum allocation size on Windows
             const long allocationSize = 100;
 
             string filePath = GetPathToNonExistingFile();

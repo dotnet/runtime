@@ -119,11 +119,11 @@ internal static partial class Interop
             }
             if ((options & FileOptions.Asynchronous) == 0)
             {
-                result |= DesiredAccess.SYNCHRONIZE; // requried by FILE_SYNCHRONOUS_IO_NONALERT
+                result |= DesiredAccess.SYNCHRONIZE; // required by FILE_SYNCHRONOUS_IO_NONALERT
             }
             if ((options & FileOptions.DeleteOnClose) != 0 || fileMode == FileMode.Create)
             {
-                result |= DesiredAccess.DELETE; // required by FILE_DELETE_ON_CLOSE and FILE_SUPERSEDE (which deletes a file if it exsits)
+                result |= DesiredAccess.DELETE; // required by FILE_DELETE_ON_CLOSE and FILE_SUPERSEDE (which deletes a file if it exists)
             }
 
             return result;
