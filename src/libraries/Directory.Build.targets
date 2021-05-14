@@ -12,7 +12,7 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
-    <TargetsForTfmSpecificContentInPackage Condition="'$(IsPackable)' == 'true'">$(TargetsForTfmSpecificContentInPackage);LibIntellisenseDocs</TargetsForTfmSpecificContentInPackage>
+    <TargetsForTfmSpecificContentInPackage Condition="'$(IsPackable)' == 'true'">$(TargetsForTfmSpecificContentInPackage);AddRefAssemblies;AddRuntimeSpecificAssemblies;LibIntellisenseDocs</TargetsForTfmSpecificContentInPackage>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')))">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable;CA1052</NoWarn>
@@ -234,6 +234,8 @@
 
   <PropertyGroup>
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
+    <IncludeBuildOutput Condition="'$(TargetsAnyOS)' != 'true' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
+    <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(DotnetBuildFromSource)' == 'true' and '$(IsPackable)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetFrameworkIdentifier)' != '.NETStandard' and '$(TargetFrameworkVersion)' != 'v2.0'">
@@ -290,6 +292,55 @@
       <TfmSpecificPackageFile Include="$(XmlDocFileRoot)1033\$(TargetName).xml"
                               Condition="Exists('$(XmlDocFileRoot)1033\$(TargetName).xml')"
                               PackagePath="lib/$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddRefAssemblies" Condition="'$(ExcludeFromPackage)' == ''">
+    <PropertyGroup>
+      <RefPath>$(BaseOutputPath)/ref/$(TargetFrameworkWithoutSuffix)-$(Configuration)/$(TargetName).dll</RefPath>
+    </PropertyGroup>
+    <ItemGroup Condition="Exists('$(RefPath)')">
+       <TfmSpecificPackageFile Include="$(RefPath)">
+         <PackagePath>ref/$(TargetFrameworkWithoutSuffix)</PackagePath>
+         <TargetPath>ref/$(TargetFrameworkWithoutSuffix)</TargetPath>
+       </TfmSpecificPackageFile>
+       <TfmSpecificPackageFile Include="$(DocumentationFile)">
+          <PackagePath>ref/$(TargetFrameworkWithoutSuffix)</PackagePath>
+          <TargetPath>ref/$(TargetFrameworkWithoutSuffix)</TargetPath>
+       </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
+    <Target Name="AddRuntimeSpecificAssemblies"
+          DependsOnTargets="BuiltProjectOutputGroup;DocumentationProjectOutputGroup;SatelliteDllsProjectOutputGroup;_AddPriFileToPackBuildOutput;$(TargetsForTfmSpecificBuildOutput)"
+          Condition="'$(TargetsAnyOS)' != 'true' and '$(ExcludeFromPackage)' == ''">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupOutput);
+                            @(BuiltProjectOutputGroupOutput);
+                            @(DocumentationProjectOutputGroupOutput);
+                            @(_PathToPriFile)">
+        <PackagePath>runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)</PackagePath>
+        <TargetPath>runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)</TargetPath>
+       </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>AddRefDebugSymbolsWithTfm</TargetsForTfmSpecificDebugSymbolsInPackage>
+  </PropertyGroup>
+  
+  <Target Name="AddRefDebugSymbolsWithTfm"
+          Condition="'$(ExcludeFromPackage)' == ''">
+    
+    <PropertyGroup>
+      <RefSymbolPath>$(BaseOutputPath)ref\$(TargetFrameworkWithoutSuffix)-$(Configuration)\$(TargetName).pdb</RefSymbolPath>
+    </PropertyGroup>
+    
+    <ItemGroup Condition="Exists('$(RefSymbolPath)')">
+      <_TargetPathsToSymbolsWithTfm Include="$(RefSymbolPath)">
+        <TargetPath>/ref/$(TargetFrameworkWithoutSuffix)/$(TargetName).pdb</TargetPath>
+        <TargetFramework>$(TargetFrameworkWithoutSuffix)</TargetFramework>
+      </_TargetPathsToSymbolsWithTfm>
     </ItemGroup>
   </Target>
 
