@@ -1145,6 +1145,8 @@ var BindingSupportLib = {
 				}
 				var json = this.get_custom_marshaler_info (typePtr, marshalerFullName);
 				result = JSON.parse(json);
+				if (!result)
+					throw new Error (`Configured custom marshaler for ${fullName} could not be loaded: ${marshalerFullName}`);
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);
