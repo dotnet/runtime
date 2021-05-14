@@ -165,6 +165,8 @@
       <!-- If there is a TestGrouping, then take only the files that belong to the TestGroup == $(_PayloadGroup). -->
       <_PayloadFiles Include="@(_TestGroupingRelevant->WithMetadataValue('TestGroup','$(_PayloadGroup)')->DistinctWithCase())" Condition="'$(_TestGroupingExists)' == 'true'" />
       <_PayloadFiles Include="$(_FileDirectory)*" Condition="'$(_TestGroupingExists)' == 'true'" />
+      <_PayloadFiles Include="$(_FileDirectory)/*.app" Condition="'$(_TestGroupingExists)' == 'true'" />
+      <_PayloadFiles Include="$(_FileDirectory)/*.app/**" Condition="'$(_TestGroupingExists)' == 'true'" />
 
       <_PayloadFiles Update="@(_PayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
