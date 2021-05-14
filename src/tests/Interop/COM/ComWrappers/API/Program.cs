@@ -610,20 +610,20 @@ namespace ComWrappersTests
         {
             try
             {
-                // ValidateComInterfaceCreation();
-                // ValidateComInterfaceCreationRoundTrip();
-                // ValidateFallbackQueryInterface();
-                // ValidateCreateObjectCachingScenario();
-                // ValidateWrappersInstanceIsolation();
-                // ValidatePrecreatedExternalWrapper();
+                ValidateComInterfaceCreation();
+                ValidateComInterfaceCreationRoundTrip();
+                ValidateFallbackQueryInterface();
+                ValidateCreateObjectCachingScenario();
+                ValidateWrappersInstanceIsolation();
+                ValidatePrecreatedExternalWrapper();
                 ValidateExternalWrapperCacheCleanUp();
-                // ValidateSuppliedInnerNotAggregation();
-                // ValidateIUnknownImpls();
-                // ValidateBadComWrapperImpl();
-                // ValidateRuntimeTrackerScenario();
-                // ValidateQueryInterfaceAfterManagedObjectCollected();
-                // ValidateAggregationWithComObject();
-                // ValidateAggregationWithReferenceTrackerObject();
+                ValidateSuppliedInnerNotAggregation();
+                ValidateIUnknownImpls();
+                ValidateBadComWrapperImpl();
+                ValidateRuntimeTrackerScenario();
+                ValidateQueryInterfaceAfterManagedObjectCollected();
+                ValidateAggregationWithComObject();
+                ValidateAggregationWithReferenceTrackerObject();
             }
             catch (Exception e)
             {
