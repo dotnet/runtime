@@ -204,9 +204,9 @@ namespace Internal.Cryptography
             }
 
 #if NET5_0_OR_GREATER
-                Span<byte> buffer = GC.AllocateUninitializedArray<byte>(input.Length);
+            Span<byte> buffer = GC.AllocateUninitializedArray<byte>(input.Length);
 #else
-                Span<byte> buffer = new byte[input.Length];
+            Span<byte> buffer = new byte[input.Length];
 #endif
 
             fixed (byte* pBuffer = buffer)
