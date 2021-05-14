@@ -17,7 +17,7 @@ index e9db368ef24..c396c21a798 100644
 --- a/src/libraries/System.Security.Cryptography.Pkcs/src/System.Security.Cryptography.Pkcs.csproj
 +++ b/src/libraries/System.Security.Cryptography.Pkcs/src/System.Security.Cryptography.Pkcs.csproj
 @@ -639,7 +639,7 @@
-     <ResolvedMatchingContract Include="$(NuGetPackageRoot)$(MSBuildProjectName.ToLowerInvariant())\$(SystemSecurityCryptographyPkcsVersion)\ref\$(TargetFramework)\$(MSBuildProjectName).dll" />
+     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
    </ItemGroup>
    <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
 -    <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />

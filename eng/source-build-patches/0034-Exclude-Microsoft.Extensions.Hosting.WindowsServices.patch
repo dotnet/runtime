@@ -13,8 +13,8 @@ index c5f4d2e6da1..5493f19bc19 100644
 --- a/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
 +++ b/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
 @@ -3,5 +3,7 @@
+   <Import Project="..\Directory.Build.props" />
    <PropertyGroup>
-     <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
      <PackageTags>hosting</PackageTags>
 +    <!-- Source build does not support Windows. -->
 +    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>

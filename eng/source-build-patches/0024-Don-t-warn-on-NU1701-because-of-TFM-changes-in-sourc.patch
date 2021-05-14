@@ -18,12 +18,12 @@ index bcf5ce56123..41bd9555c45 100644
 @@ -11,7 +11,7 @@
    </ItemGroup>
  
-   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
 -    <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
 +    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" />
    </ItemGroup>
  
-   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
 diff --git a/src/libraries/Microsoft.Extensions.Options/ref/Microsoft.Extensions.Options.csproj b/src/libraries/Microsoft.Extensions.Options/ref/Microsoft.Extensions.Options.csproj
 index c441c3ec38a..24c3e885eec 100644
 --- a/src/libraries/Microsoft.Extensions.Options/ref/Microsoft.Extensions.Options.csproj

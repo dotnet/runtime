@@ -69,9 +69,9 @@ index 4adc0b2edb5..66d4e2aa47d 100644
 --- a/src/libraries/System.Configuration.ConfigurationManager/ref/System.Configuration.ConfigurationManager.csproj
 +++ b/src/libraries/System.Configuration.ConfigurationManager/ref/System.Configuration.ConfigurationManager.csproj
 @@ -10,7 +10,7 @@
-   <ItemGroup>
-     <Compile Include="System.Configuration.ConfigurationManager.cs" />
-   </ItemGroup>
+    <Compile Include="System.Configuration.ConfigurationManager.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
 -  <ItemGroup>
 +  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
      <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
