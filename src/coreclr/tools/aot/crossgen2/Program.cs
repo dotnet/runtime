@@ -36,6 +36,8 @@ namespace ILCompiler
         private Dictionary<string, string> _allInputFilePaths = new Dictionary<string, string>();
         private List<ModuleDesc> _referenceableModules = new List<ModuleDesc>();
 
+        private Dictionary<string, string> _inputbubblereferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         private CompilerTypeSystemContext _typeSystemContext;
         private ReadyToRunMethodLayoutAlgorithm _methodLayout;
         private ReadyToRunFileLayoutAlgorithm _fileLayout;
@@ -127,6 +129,9 @@ namespace ILCompiler
 
             foreach (var reference in _commandLineOptions.ReferenceFilePaths)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+
+            foreach (var reference in _commandLineOptions.InputBubbleReferenceFilePaths)
+              Helpers.AppendExpandedPaths(_inputbubblereferenceFilePaths, reference, false);
 
 
             int alignment = _commandLineOptions.CustomPESectionAlignment;
@@ -438,13 +443,27 @@ namespace ILCompiler
                     {
                         EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
                         _referenceableModules.Add(module);
-                        if (_commandLineOptions.InputBubble)
+                        if (_commandLineOptions.InputBubble && _inputbubblereferenceFilePaths.Count == 0)
                         {
                             // In large version bubble mode add reference paths to the compilation group
+                            // Consider bubble as large if no explicit bubble references were passed
                             versionBubbleModulesHash.Add(module);
                         }
                     }
                     catch { } // Ignore non-managed pe files
+                }
+
+                if (_commandLineOptions.InputBubble)
+                {
+                    foreach (var referenceFile in _inputbubblereferenceFilePaths.Values)
+                    {
+                        try
+                        {
+                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                            versionBubbleModulesHash.Add(module);
+                        }
+                        catch { } // Ignore non-managed pe files
+                    }
                 }
             }
 
