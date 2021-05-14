@@ -28,10 +28,6 @@ namespace System.IO.Strategies
             internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
         }
 
-        private const uint NT_ERROR_STATUS_DISK_FULL = 0xC000007F;
-        private const uint NT_ERROR_STATUS_FILE_TOO_LARGE = 0xC0000904;
-        private const uint NT_STATUS_INVALID_PARAMETER = 0xC000000D;
-
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
             if (UseNet5CompatStrategy)
@@ -142,12 +138,12 @@ namespace System.IO.Strategies
             {
                 case 0:
                     return fileHandle;
-                case NT_ERROR_STATUS_DISK_FULL:
+                case Interop.NtDll.NT_ERROR_STATUS_DISK_FULL:
                     throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
                 // NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
                 // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
-                case NT_STATUS_INVALID_PARAMETER:
-                case NT_ERROR_STATUS_FILE_TOO_LARGE:
+                case Interop.NtDll.NT_STATUS_INVALID_PARAMETER:
+                case Interop.NtDll.NT_ERROR_STATUS_FILE_TOO_LARGE:
                     throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
                 default:
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
