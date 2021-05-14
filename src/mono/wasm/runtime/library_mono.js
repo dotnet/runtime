@@ -814,12 +814,15 @@ var MonoSupportLib = {
 			return vars;
 		},
 
-		mono_wasm_add_dbg_command_received: function(id, buffer, buffer_len) {
+		mono_wasm_add_dbg_command_received: function(res_ok, id, buffer, buffer_len) {
 			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
 			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
 			const buffer_obj = {
-				id,
-				value: base64String
+				res_ok,
+				res: {
+						id,
+						value: base64String
+				}
 			}
 			MONO.commands_received = buffer_obj;
 		},
@@ -828,12 +831,12 @@ var MonoSupportLib = {
 		{
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
 			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
-			let res_ok = this._c_fn_table.mono_wasm_invoke_method_debugger_agent_wrapper (dataHeap.byteOffset, command_parameters.length);
-			let res = MONO.commands_received;
+			this._c_fn_table.mono_wasm_invoke_method_debugger_agent_wrapper (dataHeap.byteOffset, command_parameters.length);
+			let { res_ok, res } = MONO.commands_received;
 			MONO.commands_received = null;
-			if (res_ok) {
-				return { res_ok, res };
-			}
+			if (!res_ok)
+				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent`);
+			return res;
 		},
 
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
@@ -841,20 +844,23 @@ var MonoSupportLib = {
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
 			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
 
-			let res_ok = this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
+			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
 
-			let res = MONO.commands_received;
+			let { res_ok, res } = MONO.commands_received;
 			MONO.commands_received = null;
-			if (res_ok) {
-				return { res_ok, res };
-			}
+			if (!res_ok)
+				throw new Error (`Failed on mono_wasm_send_dbg_command`);
+			return res;
+
 		},
 
 		mono_wasm_get_dbg_command_info: function ()
 		{
-			let res = MONO.commands_received;
+			let { res_ok, res } =  MONO.commands_received;
 			MONO.commands_received = null;
-			return { res };
+			if (!res_ok)
+				throw new Error (`Failed on mono_wasm_get_dbg_command_info`);
+			return res;
 		},
 
  		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
@@ -1331,7 +1337,7 @@ var MonoSupportLib = {
 			if (fn_res === undefined)
 				return { type: "undefined" };
 
-			if (fn_res.res.value !== undefined ) {
+			if (fn_res.value !== undefined ) {
 				return fn_res;
 			}
 

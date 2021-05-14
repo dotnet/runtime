@@ -1670,8 +1670,8 @@ mono_wasm_invoke_method_debugger_agent (guint8* data, unsigned int size)
 	if (error != 0)
 		printf("error - mono_wasm_invoke_method_debugger_agent - %d\n", error);
 	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2);
-	}, -1, buf.buf, buf.p-buf.buf);
+		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+	}, error == MDBGPROT_ERR_NONE, -1, buf.buf, buf.p-buf.buf);
 
 	buffer_free (&buf);
 	return TRUE;
@@ -1683,11 +1683,11 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	MdbgProtBuffer buf;
 	buffer_init (&buf, 128);
 	gboolean no_reply;
-	mono_process_dbg_packet(id, command_set, command, &no_reply, data, data + size, &buf);
-
+	MdbgProtErrorCode error = mono_process_dbg_packet(id, command_set, command, &no_reply, data, data + size, &buf);
+	
 	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2);
-	}, id, buf.buf, buf.p-buf.buf);
+		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
 	
 	buffer_free (&buf);
 	return TRUE;
@@ -1697,7 +1697,7 @@ static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
 	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received (-1, $0, $1);
+		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
 	}, data, len);
 	mono_wasm_fire_debugger_agent_message ();	
 	return FALSE;
