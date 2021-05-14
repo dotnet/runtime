@@ -6,13 +6,13 @@ using Xunit;
 namespace System.IO.Tests
 {
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public partial class FileStream_ctor_str_fm_fa_fs_buffer_fo_as : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
+    public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
-        protected override long AllocationSize => 10;
+        protected override long PreallocationSize => 10;
 
         protected override long InitialLength => 10;
 
-        private long GetExpectedFileLength(long allocationSize) => allocationSize;
+        private long GetExpectedFileLength(long preallocationSize) => preallocationSize;
 
         private long GetActualAllocationSize(FileStream fileStream) => fileStream.Length;
     }

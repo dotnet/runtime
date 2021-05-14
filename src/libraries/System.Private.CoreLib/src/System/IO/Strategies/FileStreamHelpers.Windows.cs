@@ -46,16 +46,16 @@ namespace System.IO.Strategies
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long allocationSize)
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             if (UseNet5CompatStrategy)
             {
-                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, allocationSize);
+                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, preallocationSize);
             }
 
             WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
-                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, allocationSize)
-                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options, allocationSize);
+                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize)
+                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
 
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
@@ -63,18 +63,18 @@ namespace System.IO.Strategies
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
             => bufferSize == 1 ? strategy : new BufferedFileStreamStrategy(strategy, bufferSize);
 
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
-            => CreateFileOpenHandle(path, mode, access, share, options, allocationSize);
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+            => CreateFileOpenHandle(path, mode, access, share, options, preallocationSize);
 
-        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
+        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             using (DisableMediaInsertionPrompt.Create())
             {
                 Debug.Assert(path != null);
 
-                if (ShouldPreallocate(allocationSize, access, mode))
+                if (ShouldPreallocate(preallocationSize, access, mode))
                 {
-                    IntPtr fileHandle = NtCreateFile(path, mode, access, share, options, allocationSize);
+                    IntPtr fileHandle = NtCreateFile(path, mode, access, share, options, preallocationSize);
 
                     return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
                 }
@@ -110,7 +110,7 @@ namespace System.IO.Strategies
             }
         }
 
-        private static IntPtr NtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
+        private static IntPtr NtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             uint ntStatus;
             IntPtr fileHandle;
@@ -118,7 +118,7 @@ namespace System.IO.Strategies
             const string mandatoryNtPrefix = @"\??\";
             if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
             {
-                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(fullPath, mode, access, share, options, allocationSize);
+                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(fullPath, mode, access, share, options, preallocationSize);
             }
             else
             {
@@ -134,7 +134,7 @@ namespace System.IO.Strategies
                     vsb.Append(fullPath);
                 }
 
-                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(vsb.AsSpan(), mode, access, share, options, allocationSize);
+                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
                 vsb.Dispose();
             }
 
@@ -143,12 +143,12 @@ namespace System.IO.Strategies
                 case 0:
                     return fileHandle;
                 case NT_ERROR_STATUS_DISK_FULL:
-                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, allocationSize));
+                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
                 // NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
                 // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
                 case NT_STATUS_INVALID_PARAMETER:
                 case NT_ERROR_STATUS_FILE_TOO_LARGE:
-                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, allocationSize));
+                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
                 default:
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
                     throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);

@@ -7,13 +7,13 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class FileStream_ctor_str_fm_fa_fs_buffer_fo_as : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
+    public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
-        protected override long AllocationSize => 10;
+        protected override long PreallocationSize => 10;
 
         protected override long InitialLength => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
 
-        private long GetExpectedFileLength(long allocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
+        private long GetExpectedFileLength(long preallocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
 
         private unsafe long GetActualAllocationSize(FileStream fileStream)
         {
@@ -30,13 +30,13 @@ namespace System.IO.Tests
         [InlineData("")]
         public void ExtendedPathsAreSupported(string prefix)
         {
-            const long allocationSize = 123;
+            const long preallocationSize = 123;
 
             string filePath = prefix + Path.GetFullPath(GetPathToNonExistingFile());
 
-            using (var fs = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
+            using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.True(GetActualAllocationSize(fs) >= allocationSize, $"Provided {allocationSize}, actual: {GetActualAllocationSize(fs)}");
+                Assert.True(GetActualAllocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualAllocationSize(fs)}");
             }
         }
 
@@ -51,7 +51,7 @@ namespace System.IO.Tests
             string filePath = GetPathToNonExistingFile();
             Assert.StartsWith(Path.GetTempPath(), filePath); // this is what IsFat32 method relies on
 
-            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, tooMuch));
+            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, tooMuch)));
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 

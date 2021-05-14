@@ -37,7 +37,7 @@ internal static partial class Interop
             ObjectAttributes objectAttributes = ObjectAttributes.OBJ_CASE_INSENSITIVE,
             void* eaBuffer = null,
             uint eaLength = 0,
-            long* allocationSize = null)
+            long* preallocationSize = null)
         {
             fixed (char* c = &MemoryMarshal.GetReference(path))
             {
@@ -58,7 +58,7 @@ internal static partial class Interop
                     desiredAccess,
                     ref attributes,
                     out IO_STATUS_BLOCK statusBlock,
-                    AllocationSize: allocationSize,
+                    AllocationSize: preallocationSize,
                     fileAttributes,
                     shareAccess,
                     createDisposition,
@@ -70,7 +70,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe (uint status, IntPtr handle) CreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
+        internal static unsafe (uint status, IntPtr handle) CreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
             => CreateFile(
                 path: path,
                 rootDirectory: IntPtr.Zero,
@@ -80,7 +80,7 @@ internal static partial class Interop
                 fileAttributes: GetFileAttributes(options),
                 createOptions: GetCreateOptions(options),
                 objectAttributes: GetObjectAttributes(share),
-                allocationSize: &allocationSize);
+                preallocationSize: &preallocationSize);
 
         private static CreateDisposition GetCreateDisposition(FileMode mode)
         {
