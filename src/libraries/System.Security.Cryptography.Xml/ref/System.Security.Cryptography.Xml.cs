@@ -46,6 +46,8 @@ namespace System.Security.Cryptography.Xml
         public DSAKeyValue() { }
         public DSAKeyValue(System.Security.Cryptography.DSA key) { }
         public System.Security.Cryptography.DSA Key { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public override System.Xml.XmlElement GetXml() { throw null; }
         public override void LoadXml(System.Xml.XmlElement value) { }
     }

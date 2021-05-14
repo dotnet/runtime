@@ -15,6 +15,8 @@ namespace System.Security.Cryptography
         public abstract void SetKey(AsymmetricAlgorithm key);
         public abstract void SetHashAlgorithm(string strName);
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public virtual byte[] CreateSignature(HashAlgorithm hash)
         {
             if (hash == null)

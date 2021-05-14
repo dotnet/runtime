@@ -96,6 +96,8 @@ namespace System.Security.Cryptography
     {
         protected AsymmetricSignatureFormatter() { }
         public abstract byte[] CreateSignature(byte[] rgbHash);
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual byte[] CreateSignature(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
         public abstract void SetHashAlgorithm(string strName);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
