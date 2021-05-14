@@ -39,19 +39,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _valueTaskSource.OnCompleted(continuation, state, token, flags);
         }
 
-        public virtual void Complete(T result)
+        public void Complete(T result)
         {
             _valueTaskSource.SetResult(result);
         }
 
-        public virtual void CompleteException(Exception ex)
+        public void CompleteException(Exception ex)
         {
             _valueTaskSource.SetException(ex);
-        }
-
-        public void Reset()
-        {
-            _valueTaskSource.Reset();
         }
 
         public T GetResult(short token)
