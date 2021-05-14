@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeFeature
@@ -28,6 +30,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
+        [RequiresPreviewFeatures]
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
 
         /// <summary>
