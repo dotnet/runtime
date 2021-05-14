@@ -555,6 +555,95 @@ namespace System.Net.Sockets
             return saea.SendToAsync(this, cancellationToken);
         }
 
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> to a connected <see cref="Socket"/> object.
+        /// </summary>
+        /// <param name="fileName">A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        public ValueTask SendFileAsync(string? fileName, CancellationToken cancellationToken = default)
+        {
+            return SendFileAsync(fileName, default, default, TransmitFileOptions.UseDefaultWorkerThread, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> and buffers of data to a connected <see cref="Socket"/> object
+        /// using the specified <see cref="TransmitFileOptions"/> value.
+        /// </summary>
+        /// <param name="fileName">A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="preBuffer">A <see cref="byte"/> array that contains data to be sent before the file is sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="postBuffer">A <see cref="byte"/> array that contains data to be sent after the file is sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="flags">One or more of <see cref="TransmitFileOptions"/> values.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        public ValueTask SendFileAsync(string? fileName, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            if (!IsConnectionOriented)
+            {
+                var soex = new SocketException((int)SocketError.NotConnected);
+                return ValueTask.FromException(soex);
+            }
+
+            int packetsCount = 0;
+
+            if (fileName is not null)
+            {
+                packetsCount++;
+            }
+
+            if (!preBuffer.IsEmpty)
+            {
+                packetsCount++;
+            }
+
+            if (!postBuffer.IsEmpty)
+            {
+                packetsCount++;
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            SendPacketsElement[] sendPacketsElements = saea.SendPacketsElements?.Length == packetsCount
+                ? saea.SendPacketsElements
+                : new SendPacketsElement[packetsCount];
+
+            int index = 0;
+            if (!preBuffer.IsEmpty)
+            {
+                sendPacketsElements[index++] = new SendPacketsElement(preBuffer, endOfPacket: index == packetsCount);
+            }
+
+            if (fileName is not null)
+            {
+                sendPacketsElements[index++] = new SendPacketsElement(fileName, 0, 0, endOfPacket: index == packetsCount);
+            }
+
+            if (!postBuffer.IsEmpty)
+            {
+                sendPacketsElements[index++] = new SendPacketsElement(postBuffer, endOfPacket: index == packetsCount);
+            }
+
+            Debug.Assert(index == packetsCount);
+
+            saea.SendPacketsFlags = flags;
+            saea.SendPacketsElements = sendPacketsElements;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.SendPacketsAsync(this, cancellationToken);
+        }
+
         private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
             if (buffer == null)
@@ -991,6 +1080,26 @@ namespace System.Net.Sockets
                 Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask(this, _token);
+                }
+
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    default :
+                    ValueTask.FromException(CreateException(error));
+            }
+
+            public ValueTask SendPacketsAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+
+                // TODO: Support cancellation by passing cancellationToken down through SendPacketsAsync, etc.
+                if (socket.SendPacketsAsync(this))
                 {
                     _cancellationToken = cancellationToken;
                     return new ValueTask(this, _token);

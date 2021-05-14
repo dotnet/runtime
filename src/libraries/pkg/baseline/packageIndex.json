@@ -1251,7 +1251,7 @@
         "3.0.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {}
     },
     "Microsoft.Phone": {
@@ -2030,7 +2030,7 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.2.0.0",
         "netcoreapp2.1": "4.2.1.0",
@@ -2059,8 +2059,7 @@
         "4.2.0.0": "4.4.0",
         "4.2.1.0": "4.5.0",
         "4.3.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.ComponentModel.Composition": {

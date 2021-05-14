@@ -2675,7 +2675,7 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 /* interface __MIDL_itf_sospriv_0000_0012 */
 /* [local] */ 
 
-#define SOS_BREAKING_CHANGE_VERSION 2
+#define SOS_BREAKING_CHANGE_VERSION 3
 
 
 extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0012_v0_0_c_ifspec;

@@ -26,27 +26,27 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey)
         {
-            SafeSecKeyRefHandle keychainPublic;
-            SafeSecKeyRefHandle keychainPrivate;
+            SafeSecKeyRefHandle publicKey;
+            SafeSecKeyRefHandle privateKey;
             SafeCFErrorHandle error;
 
             int result = AppleCryptoNative_EccGenerateKey(
                 keySizeInBits,
-                out keychainPublic,
-                out keychainPrivate,
+                out publicKey,
+                out privateKey,
                 out error);
 
             using (error)
             {
                 if (result == kSuccess)
                 {
-                    pPublicKey = keychainPublic;
-                    pPrivateKey = keychainPrivate;
+                    pPublicKey = publicKey;
+                    pPrivateKey = privateKey;
                     return;
                 }
 
-                using (keychainPrivate)
-                using (keychainPublic)
+                using (privateKey)
+                using (publicKey)
                 {
                     if (result == kErrorSeeError)
                     {

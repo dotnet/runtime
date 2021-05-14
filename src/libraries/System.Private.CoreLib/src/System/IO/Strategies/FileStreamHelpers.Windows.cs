@@ -235,7 +235,7 @@ namespace System.IO.Strategies
                 // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
                 // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
                 // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && path!.Length == PathInternal.GetRootLength(path))
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
@@ -288,7 +288,7 @@ namespace System.IO.Strategies
 
         internal static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
         {
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
 
             // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set
             // the handle as invalid; the handle must also be closed.
@@ -353,7 +353,7 @@ namespace System.IO.Strategies
                 if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
                 {
                     int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
-                        ? Marshal.GetLastWin32Error()
+                        ? Marshal.GetLastPInvokeError()
                         : Interop.Errors.ERROR_SUCCESS;
 
                     handle.Dispose();
@@ -381,19 +381,6 @@ namespace System.IO.Strategies
 
         internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
-            if (!TrySetFileLength(handle, length, out int errorCode))
-            {
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
-                }
-
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
-            }
-        }
-
-        private static unsafe bool TrySetFileLength(SafeFileHandle handle, long length, out int errorCode)
-        {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
                 EndOfFile = length
@@ -405,12 +392,11 @@ namespace System.IO.Strategies
                 &eofInfo,
                 (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
-                errorCode = Marshal.GetLastWin32Error();
-                return false;
+                int errorCode = Marshal.GetLastPInvokeError();
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
+                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
             }
-
-            errorCode = 0;
-            return true;
         }
 
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)

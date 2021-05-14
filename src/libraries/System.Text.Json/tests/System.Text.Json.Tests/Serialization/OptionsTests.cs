@@ -343,7 +343,7 @@ namespace System.Text.Json.Serialization.Tests
             ReadOnlySpan<byte> data = Encoding.UTF8.GetBytes(stringValue);
             Utf8JsonReader reader = new Utf8JsonReader(data);
             reader.Read();
-            T readValue = converter.Read(ref reader, typeof(T), null);
+            T readValue = converter.Read(ref reader, typeof(T), options);
 
             if (readValue is JsonElement element)
             {

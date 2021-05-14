@@ -67,6 +67,8 @@
     <Compile Include="SystemFontsTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="System\Drawing\ImageAnimator.ManualTests.cs" />
+    <Compile Include="System\Drawing\ImageAnimatorTests.cs" />
     <Compile Include="TextureBrushTests.cs" />
     <Compile Include="ToolboxBitmapAttributeTests.cs" />
     <Compile Include="Design\CategoryNameCollectionTests.cs" />
@@ -113,12 +115,12 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="GraphicsTests.Core.cs" />
     <Compile Include="Graphics_GetContextTests.Core.cs" />
     <Compile Include="Drawing2D\MatrixTests.Core.cs" />
-    <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
   </ItemGroup>
 </Project>

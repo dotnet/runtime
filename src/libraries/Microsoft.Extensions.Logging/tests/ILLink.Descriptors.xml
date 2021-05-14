@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Diagnostics.TraceSource">
+    <type fullname="System.Diagnostics.TraceListener">
+        <method signature="System.Void .ctor()" />
+    </type>
+  </assembly>
+</linker>

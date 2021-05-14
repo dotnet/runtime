@@ -78,6 +78,43 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
+        [Theory]
+        [InlineData(100)]
+        public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                for (int i = 0; i < streamLimit + 1; ++i)
+                {
+                    using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    await stream.HandleRequestAsync();
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                for (int i = 0; i < streamLimit + 1; ++i)
+                {
+                    using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                    using var response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+                }
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+
         [Fact]
         public async Task ReservedFrameType_Throws()
         {

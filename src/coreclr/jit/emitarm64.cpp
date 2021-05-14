@@ -10250,10 +10250,11 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
  *  Emit a 32-bit Arm64 instruction
  */
 
-/*static*/ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
     assert(sizeof(code_t) == 4);
-    *((code_t*)dst) = code;
+    BYTE* dstRW       = dst + writeableOffset;
+    *((code_t*)dstRW) = code;
 
     return sizeof(code_t);
 }
