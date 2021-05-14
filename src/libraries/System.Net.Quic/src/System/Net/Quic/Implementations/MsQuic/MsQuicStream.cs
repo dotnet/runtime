@@ -635,7 +635,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // Check send state before completing as send cancellation is shared between start and send.
-                if (state.SendState == SendState.None)
+                if (state.SendState == SendState.None || state.SendState == SendState.Pending)
                 {
                     shouldComplete = true;
                 }
