@@ -126,7 +126,7 @@ namespace Internal.Cryptography
                 return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode);
             }
 
-            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode);
         }
 
         public UniversalCryptoTransform CreateCryptoTransform(byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
@@ -136,7 +136,7 @@ namespace Internal.Cryptography
                 return CreateCryptoTransform(_outer.BaseKey, iv, encrypting, padding, mode);
             }
 
-            throw new NotImplementedException();
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, iv, encrypting, padding, mode);
         }
 
         private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode)
@@ -183,7 +183,7 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
-        private ICryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
+        private UniversalCryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
         {
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
@@ -191,13 +191,13 @@ namespace Internal.Cryptography
             int feedbackSizeInBytes = _outer.FeedbackSize;
             BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(
                 cngKeyFactory,
-                _outer.Mode,
+                mode,
                 blockSizeInBytes,
                 iv,
                 encrypting,
                 feedbackSizeInBytes,
-                _outer.GetPaddingSize(_outer.Mode, _outer.FeedbackSize));
-            return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
+                _outer.GetPaddingSize(mode, _outer.FeedbackSize));
+            return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
         private CngKey ProduceCngKey()
