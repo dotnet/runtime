@@ -3931,7 +3931,9 @@ mono_thread_init_from_native (void)
 #if defined(HOST_DARWIN)
 	MonoInternalThread* thread = mono_thread_internal_current ();
 
-	g_assert (mono_defaults.autoreleasepool_class != NULL);
+	if (!mono_defaults.autoreleasepool_class)
+		return;
+
 	ERROR_DECL (error);
 	MONO_STATIC_POINTER_INIT (MonoMethod, create_autoreleasepool)
 
