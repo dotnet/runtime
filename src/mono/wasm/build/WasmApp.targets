@@ -80,8 +80,6 @@
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
 
     <_WasmNativeBuildDependsOn>
-        _WasmAotCompileApp;
-        _WasmStripAOTAssemblies;
         _CheckEmccIsExpectedVersion;
         _PrepareForWasmBuildNative;
         _GenerateDriverGenC;
@@ -378,8 +376,6 @@
   <Target Name="_PrepareForWasmBuildNative">
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
-    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
 
     <PropertyGroup>
       <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
@@ -421,9 +417,7 @@
      <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
 
      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
-
    </ItemGroup>
-
   </Target>
 
   <Target Name="_GeneratePInvokeTable">
@@ -440,6 +434,9 @@
   </Target>
 
   <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
+    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
+
     <Exec Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
@@ -475,18 +472,14 @@
       <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a" />
       <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
       <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
-    </ItemGroup>
 
-    <PropertyGroup>
-     <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
-   </PropertyGroup>
-
-    <ItemGroup>
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
+
       <_EmccLDFlags Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
       <_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_EmccLDFlags Include="&quot;%(_WasmObjects.Identity)&quot;" />
+
       <_EmccLDFlags Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
     </ItemGroup>
 
