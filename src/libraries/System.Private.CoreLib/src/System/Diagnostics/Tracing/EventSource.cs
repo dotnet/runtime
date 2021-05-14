@@ -2065,7 +2065,7 @@ namespace System.Diagnostics.Tracing
                     return;
                 }
 
-                Debug.Assert(arg is not string stringArg || stringArg.IndexOf('\0') == -1, $"{infos[i].Name} may not contain null chars");
+                Debug.Assert(arg is not string stringArg || !stringArg.Contains('\0'), $"{infos[i].Name} may not contain null chars");
             }
         }
 
