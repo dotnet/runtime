@@ -20,7 +20,10 @@ Param(
     [string] $MonoDotnet="",
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind",
     [string] $LogicalMachine="",
-    [switch] $AndroidMono
+    [switch] $AndroidMono,
+    [switch] $NoPGO,
+    [switch] $DynamicPGO,
+    [switch] $FullPGO
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -86,6 +89,22 @@ if ($RunFromPerformanceRepo) {
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+}
+
+if($NoPGO)
+{
+    $SetupArguments = "$SetupArguments --no-pgo"
+    $Configurations += " PGOType=nopgo"
+}
+else if($DynamicPGO)
+{
+    $SetupArguments = "$SetupArguments --dynamic-pgo"
+    $Configurations += " PGOType=dynamicpgo"
+}
+else if($FullPGO)
+{
+    $SetupArguments = "$SetupArguments --full-pgo"
+    $Configurations += " PGOType=fullpgo"
 }
 
 if($MonoDotnet -ne "")

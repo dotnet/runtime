@@ -16,6 +16,7 @@ parameters:
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-performance-job.yml'
   additionalSetupParameters: ''
   logicalMachine: ''
+  pgoRunType: ''
 
 ### Perf job
 
@@ -42,6 +43,7 @@ jobs:
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     container: ${{ parameters.container }}
     logicalmachine: ${{ parameters.logicalmachine }}
+    pgoRunType: ${{ parameters.pgoRunType }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ if ne(parameters.runtimeType, 'AndroidMono')}}:
