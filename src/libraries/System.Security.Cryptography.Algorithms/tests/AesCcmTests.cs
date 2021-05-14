@@ -687,15 +687,28 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
     public class AesCcmIsSupportedTests
     {
-        public class AesGcmIsSupportedTests
-        {
-            [Fact]
-            public static void CheckIsSupported()
-            {
-                bool expectedIsSupported = !PlatformDetection.IsBrowser;
+        public static bool RuntimeSaysIsNotSupported => !AesCcm.IsSupported;
 
-                Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
+        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        public static void CtorThrowsPNSEIfNotSupported()
+        {
+            byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
+
+            Assert.Throws<PlatformNotSupportedException>(() => new AesCcm(key));
+            Assert.Throws<PlatformNotSupportedException>(() => new AesCcm(key.AsSpan()));
+        }
+
+        [Fact]
+        public static void CheckIsSupported()
+        {
+            bool expectedIsSupported = !PlatformDetection.IsBrowser;
+
+            if (PlatformDetection.IsOSX)
+            {
+                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
             }
+
+            Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
         }
     }
 }

@@ -766,6 +766,9 @@ public:
     void SetIDynamicInterfaceCastable();
     BOOL IsIDynamicInterfaceCastable();
 
+    void SetIsTrackedReferenceWithFinalizer();
+    BOOL IsTrackedReferenceWithFinalizer();
+
 #ifdef FEATURE_TYPEEQUIVALENCE
     // mark the type as opted into type equivalence
     void SetHasTypeEquivalence()
@@ -3602,7 +3605,7 @@ private:
 
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
 
-        // enum_flag_unused                   = 0x04000000,
+        enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
 
         enum_flag_HasCriticalFinalizer        = 0x08000000, // finalizer must be run on Appdomain Unload
         enum_flag_Collectible                 = 0x10000000,

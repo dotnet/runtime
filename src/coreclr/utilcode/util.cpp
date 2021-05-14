@@ -237,7 +237,7 @@ namespace
         StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
             IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
 
             EX_TRY
@@ -256,9 +256,9 @@ namespace
             IfFailRet(hr);
 
             wszDllPath = ssDllName.GetUnicode();
-#else // !TARGET_UNIX
+#else // HOST_WINDOWS
             return E_FAIL;
-#endif // !TARGET_UNIX
+#endif // HOST_WINDOWS
         }
         _ASSERTE(wszDllPath != nullptr);
 
@@ -1321,6 +1321,36 @@ int GetCurrentProcessCpuCount()
                     count = 64;
             }
         }
+
+        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
+
+        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
+            sizeof(cpuRateControl), NULL))
+        {
+            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
+            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
+            DWORD maxRate = 0;
+
+            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
+            {
+                maxRate = cpuRateControl.CpuRate;
+            }
+            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
+            {
+                maxRate = cpuRateControl.MaxRate;
+            }
+
+            // The rate is the percentage times 100
+            const DWORD MAXIMUM_CPU_RATE = 10000;
+
+            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
+            {
+                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                if (cpuLimit < count)
+                    count = cpuLimit;
+            }
+        }
+
 #else // HOST_WINDOWS
         count = PAL_GetLogicalCpuCountFromOS();
 

@@ -23683,6 +23683,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         grow_mark_list_piece();
 #endif //USE_REGIONS
 
+        GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
         num_sizedrefs = GCToEEInterface::GetTotalNumSizedRefHandles();
 
 #ifdef MULTIPLE_HEAPS
@@ -31731,14 +31732,13 @@ void gc_heap::background_mark_phase ()
             bgc_tuning::record_bgc_sweep_start();
 #endif //BGC_SERVO_TUNING
 
+            GCToEEInterface::BeforeGcScanRoots(max_generation, /* is_bgc */ true, /* is_concurrent */ false);
+
 #ifdef MULTIPLE_HEAPS
             dprintf(3, ("Joining BGC threads after absorb"));
             bgc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
-
-        // give VM a chance to do work
-        GCToEEInterface::GcBeforeBGCSweepWork();
 
         //reset the flag, indicating that the EE no longer expect concurrent
         //marking
