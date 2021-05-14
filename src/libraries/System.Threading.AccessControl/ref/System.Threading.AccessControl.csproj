@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System.Threading.AccessControl.Extensions.cs" />
     <Compile Include="System.Threading.AccessControl.cs" Condition="'$(TargetFramework)' != 'net461'" />
     <Compile Include="System.Threading.AccessControl.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
