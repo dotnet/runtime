@@ -428,6 +428,29 @@ namespace System
             return TypeCode.Object;
         }
 
+#if !CORECLR
+        [Intrinsic]
+        public static bool operator ==(Type? left, Type? right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if (left is null || right is null)
+                return false;
+
+            // CLR-compat: runtime types are never equal to non-runtime types
+            // If `left` is a non-runtime type with a weird Equals implementation
+            // this is where operator `==` would differ from `Equals` call.
+            if (left.IsRuntimeImplemented() || right.IsRuntimeImplemented())
+                return false;
+
+            return left.Equals(right);
+        }
+
+        [Intrinsic]
+        public static bool operator !=(Type? left, Type? right) => !(left == right);
+#endif
+
         public abstract Guid GUID { get; }
 
         [SupportedOSPlatform("windows")]
