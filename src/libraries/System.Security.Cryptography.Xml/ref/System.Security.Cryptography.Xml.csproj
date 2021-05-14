@@ -10,6 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(TargetFramework)' != 'net461'" Include="System.Security.Cryptography.Xml.cs" />
-    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.Security.Cryptography.Xml.Forwards.cs" />
+    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.Security.Cryptography.Xml.net461.cs" />
   </ItemGroup>
 </Project>

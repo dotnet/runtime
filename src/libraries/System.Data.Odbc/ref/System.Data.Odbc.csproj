@@ -5,6 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Condition="'$(TargetFramework)' != 'net461'" Include="System.Data.Odbc.cs" />
-    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.Data.Odbc.Forwards.cs" />
+    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.Data.Odbc.net461.cs" />
   </ItemGroup>
 </Project>

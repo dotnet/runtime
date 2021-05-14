@@ -5,6 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Condition="'$(TargetFramework)' != 'net461'" Include="Microsoft.Win32.SystemEvents.cs" />
-    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="Microsoft.Win32.SystemEvents.Forwards.cs" />
+    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="Microsoft.Win32.SystemEvents.net461.cs" />
   </ItemGroup>
 </Project>
