@@ -26,6 +26,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         public static bool TestsEnabled => OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
 
+        public static bool TestsBackwardsCompatibilityEnabled => !OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
+
         protected override Version UseVersion => new Version(2, 0);
 
         protected static byte[] DataBytes = Encoding.ASCII.GetBytes("data");
@@ -308,6 +310,32 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     await connection.SendDefaultResponseHeadersAsync(streamId, endStream: false);
                     await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes, endStream: true));
                 };
+            }
+        }
+
+        [ConditionalFact(nameof(TestsBackwardsCompatibilityEnabled))]
+        public async Task BackwardsCompatibility_DowngradeToHttp11()
+        {
+            TaskCompletionSource<object> completeStreamTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, server.Address);
+                message.Version = new Version(2, 0);
+                message.Content = new StreamingContent(async s =>
+                {
+                    await completeStreamTcs.Task;
+                });
+
+                Task<HttpResponseMessage> sendTask = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
+
+                // If WinHTTP doesn't support streaming a request without a length then it will fallback
+                // to HTTP/1.1. This is pretty weird behavior but we keep it for backwards compatibility.
+                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.EstablishConnectionAsync());
+                Assert.Equal("HTTP/1.1 request sent to HTTP/2 connection.", ex.Message);
+
+                completeStreamTcs.SetResult(null);
             }
         }
 

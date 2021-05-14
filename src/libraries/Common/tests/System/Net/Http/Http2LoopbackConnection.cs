@@ -100,6 +100,8 @@ namespace System.Net.Test.Common
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
                 await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
                 _connectionSocket.Shutdown(SocketShutdown.Send);
+
+                throw new Exception("HTTP/1.1 request sent to HTTP/2 connection.");
             }
         }
 
