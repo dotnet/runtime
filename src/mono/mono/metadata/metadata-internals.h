@@ -809,13 +809,18 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 }
 #else /* ENABLE_METADATA_UPDATE */
-extern int mono_metadata_update_has_updates_private;
+
+typedef struct _MonoMetadataUpdateData {
+	int has_updates;
+} MonoMetadataUpdateData;
+
+extern MonoMetadataUpdateData mono_metadata_update_data_private;
 
 /* returns TRUE if there's at least one update */
 static inline gboolean
 mono_metadata_has_updates (void)
 {
-	return mono_metadata_update_has_updates_private != 0;
+	return mono_metadata_update_data_private.has_updates != 0;
 }
 
 void

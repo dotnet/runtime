@@ -7,6 +7,7 @@
 #include "mono/component/component.h"
 #include "mono/component/hot_reload.h"
 #include "mono/metadata/components.h"
+#include "mono/metadata/metadata-update.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error-internals.h"
 
@@ -19,8 +20,40 @@ hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint3
 static MonoComponentHotReload *
 component_hot_reload_stub_init (void);
 
+static void
+hot_reload_stub_set_fastpath_data (MonoMetadataUpdateData *ptr);
+
+static gboolean
+hot_reload_stub_update_enabled (int *modifiable_assemblies_out);
+
+static gboolean
+hot_reload_stub_no_inline (MonoMethod *caller, MonoMethod *callee);
+
+static uint32_t
+hot_reload_stub_thread_expose_published (void);
+
+static uint32_t
+hot_reload_stub_get_thread_generation (void);
+
+static void
+hot_reload_stub_cleanup_on_close (MonoImage *image);
+
+static void
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int *idx);
+
+static int
+hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
+	&hot_reload_stub_set_fastpath_data,
+	&hot_reload_stub_update_enabled,
+	&hot_reload_stub_no_inline,
+	&hot_reload_stub_thread_expose_published,
+	&hot_reload_stub_get_thread_generation,
+	&hot_reload_stub_cleanup_on_close,
+	&hot_reload_stub_effective_table_slow,
+	&hot_reload_stub_relative_delta_index,
 	&hot_reload_stub_apply_changes,
 };
 
@@ -40,6 +73,61 @@ static MonoComponentHotReload *
 component_hot_reload_stub_init (void)
 {
 	return &fn_table;
+}
+
+void
+hot_reload_stub_set_fastpath_data (MonoMetadataUpdateData *ptr)
+{
+}
+
+gboolean
+hot_reload_stub_update_enabled (int *modifiable_assemblies_out)
+{
+	if (modifiable_assemblies_out)
+		*modifiable_assemblies_out = MONO_MODIFIABLE_ASSM_NONE;
+	return false;
+}
+
+static gboolean
+hot_reload_stub_no_inline (MonoMethod *caller, MonoMethod *callee)
+{
+	return false;
+}
+
+
+static uint32_t
+hot_reload_stub_thread_expose_published (void)
+{
+	return 0;
+}
+
+uint32_t
+hot_reload_stub_get_thread_generation (void)
+{
+	return 0;
+}
+
+void
+hot_reload_stub_cleanup_on_close (MonoImage *image)
+{
+}
+
+void
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int *idx)
+{
+	g_assert_not_reached ();
+}
+
+static int
+hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token)
+{
+	g_assert_not_reached ();
+}
+
+void
+hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
+{
+        mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
 }
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

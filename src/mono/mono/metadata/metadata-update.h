@@ -9,6 +9,9 @@
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/metadata-internals.h"
 
+void
+mono_metadata_update_init (void);
+
 #ifdef ENABLE_METADATA_UPDATE
 
 enum MonoModifiableAssemblies {
@@ -24,35 +27,14 @@ mono_metadata_update_enabled (int *modifiable_assemblies_out);
 gboolean
 mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee);
 
-void
-mono_metadata_update_init (void);
-
-gboolean
-mono_metadata_update_available (void);
-
 uint32_t
 mono_metadata_update_thread_expose_published (void);
 
 uint32_t
 mono_metadata_update_get_thread_generation (void);
 
-gboolean
-mono_metadata_wait_for_update (uint32_t timeout_ms);
-
-uint32_t
-mono_metadata_update_prepare (void);
-
-void
-mono_metadata_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation);
-
-void
-mono_metadata_update_cancel (uint32_t generation);
-
 void
 mono_metadata_update_cleanup_on_close (MonoImage *base_image);
-
-MonoImage *
-mono_table_info_get_base_image (const MonoTableInfo *t);
 
 #else /* ENABLE_METADATA_UPDATE */
 

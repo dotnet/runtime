@@ -2031,9 +2031,7 @@ mono_metadata_init (void)
 
 	mono_components_init ();
 
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_init ();
-#endif
 }
 
 /**
