@@ -8,7 +8,6 @@ namespace Internal.Cryptography
 {
     internal sealed partial class AesImplementation : Aes
     {
-
         public sealed override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);

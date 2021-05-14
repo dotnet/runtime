@@ -114,7 +114,6 @@ namespace System.Security.Cryptography.Cng.Tests
 
                 if (oneShotPersistedEncrypted is not null)
                 {
-
                     Assert.Equal(oneShotEphemeralEncrypted, oneShotPersistedEncrypted);
 
                     if (paddingMode == PaddingMode.Zeros)
