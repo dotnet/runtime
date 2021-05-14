@@ -144,7 +144,7 @@ namespace System.IO
         /// -or-
         /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
         /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="bufferSize" /> is negative or zero.
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><see cref="System.IO.FileStreamOptions.PreallocationSize" />  is negative or zero.
         /// -or-
         /// <see cref="System.IO.FileStreamOptions.Mode" />, <see cref="System.IO.FileStreamOptions.Access" />, or <see cref="System.IO.FileStreamOptions.Share" /> contain an invalid value.</exception>
         /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="System.IO.FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
@@ -207,6 +207,10 @@ namespace System.IO
             else if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
+            else if (preallocationSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(preallocationSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             // Write access validation

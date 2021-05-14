@@ -40,14 +40,7 @@ namespace System.IO.Tests
 
     public class FileStream_ctor_options_as_zero : FileStream_ctor_options_as_base
     {
-        protected override long AllocationSize => 0; // specifying 0 should have no effect
-
-        protected override long InitialLength => 0;
-    }
-
-    public class FileStream_ctor_options_as_negative : FileStream_ctor_options_as_base
-    {
-        protected override long AllocationSize => -1; // specifying negative value should have no effect
+        protected override long PreallocationSize => 0; // specifying 0 should have no effect
 
         protected override long InitialLength => 0;
     }
@@ -61,13 +54,18 @@ namespace System.IO.Tests
     [Collection("NoParallelTests")]
     public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
+        [Fact]
+        public void NegativePreallocationSizeThrows()
+        {
+            string filePath = GetPathToNonExistingFile();
+            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
+                () => new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, -1)));
+        }
+
         [Theory]
         [InlineData(FileMode.Create, 0L)]
-        [InlineData(FileMode.Create, -1L)]
         [InlineData(FileMode.CreateNew, 0L)]
-        [InlineData(FileMode.CreateNew, -1L)]
         [InlineData(FileMode.OpenOrCreate, 0L)]
-        [InlineData(FileMode.OpenOrCreate, -1L)]
         public void WhenFileIsCreatedWithoutAllocationSizeSpecifiedTheAllocationSizeIsNotSet(FileMode mode, long preallocationSize)
         {
             using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
@@ -80,13 +78,10 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(FileMode.Open, 0L)]
-        [InlineData(FileMode.Open, -1L)]
         [InlineData(FileMode.Open, 1L)]
         [InlineData(FileMode.OpenOrCreate, 0L)]
-        [InlineData(FileMode.OpenOrCreate, -1L)]
         [InlineData(FileMode.OpenOrCreate, 1L)]
         [InlineData(FileMode.Append, 0L)]
-        [InlineData(FileMode.Append, -1L)]
         [InlineData(FileMode.Append, 1L)]
         public void WhenExistingFileIsBeingOpenedWithAllocationSizeSpecifiedTheAllocationSizeIsNotChanged(FileMode mode, long preallocationSize)
         {
@@ -153,17 +148,15 @@ namespace System.IO.Tests
             Assert.False(exists);
         }
 
-        [Theory]
-        [InlineData(0L)]
-        [InlineData(-1L)]
-        public void WhenFileIsTruncatedWithoutAllocationSizeSpecifiedTheAllocationSizeIsNotSet(int allocationSize)
+        [Fact]
+        public void WhenFileIsTruncatedWithoutAllocationSizeSpecifiedTheAllocationSizeIsNotSet()
         {
             const int initialSize = 10_000;
 
             string filePath = GetPathToNonExistingFile();
             File.WriteAllBytes(filePath, new byte[initialSize]);
 
-            using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.Write, FileShare.None, FileOptions.None, allocationSize)))
+            using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.Write, FileShare.None, FileOptions.None, 0)))
             {
                 Assert.Equal(0, GetActualAllocationSize(fs));
                 Assert.Equal(0, fs.Length);
