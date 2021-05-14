@@ -6,7 +6,6 @@ using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -432,10 +431,10 @@ namespace System.Net.Security.Tests
         [InlineData(16384 * 100, 4096, 1024, true)]
         [InlineData(16384 * 100, 1024 * 20, 1024, true)]
         [InlineData(16384 , 3, 3, true)]
-        public async Task SslStream_RandomWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
+        public async Task SslStream_RandomSizeWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
         {
             byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);
-            byte[] srcHash = SHA256.HashData(dataToCopy);
+            byte[] dataReceived = new byte[dataToCopy.Length + readBufferSize]; // make the buffer bigger to have chance to read more
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
@@ -446,8 +445,8 @@ namespace System.Net.Security.Tests
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
             using (clientStream)
             using (serverStream)
-            using (SslStream client = new SslStream(new RandomIOStream(clientStream, readBufferSize)))
-            using (SslStream server = new SslStream(new RandomIOStream(serverStream)))
+            using (SslStream client = new SslStream(new RandomReadWriteSizeStream(clientStream, readBufferSize)))
+            using (SslStream server = new SslStream(new RandomReadWriteSizeStream(serverStream)))
             {
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
@@ -477,8 +476,7 @@ namespace System.Net.Security.Tests
 
                 Task reader = Task.Run(() =>
                 {
-                    SHA256 hash = SHA256.Create();
-                    byte[] readBuffer = new byte[readBufferSize];
+                    Memory<byte> readBuffer = new Memory<byte>(dataReceived);
                     int totalLength = 0;
                     int readLength;
 
@@ -486,26 +484,24 @@ namespace System.Net.Security.Tests
                     {
                         if (useAsync)
                         {
-                            readLength = client.ReadAsync(readBuffer).GetAwaiter().GetResult();
+                            readLength = client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize)).GetAwaiter().GetResult();
                         }
                         else
                         {
-                            readLength = client.Read(readBuffer);
+                            readLength = client.Read(readBuffer.Span.Slice(totalLength, readBufferSize));
                         }
 
                         if (readLength == 0)
                         {
-                            hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                             break;
                         }
 
-                        hash.TransformBlock(readBuffer, 0, readLength, null, 0);
                         totalLength += readLength;
                         Assert.True(totalLength <= bufferSize);
                     }
 
                     Assert.Equal(bufferSize, totalLength);
-                    AssertExtensions.SequenceEqual(srcHash, hash.Hash);
+                    AssertExtensions.SequenceEqual(dataToCopy.AsSpan(), dataReceived.AsSpan().Slice(0, totalLength));
                 });
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(writer, reader);
@@ -523,12 +519,12 @@ namespace System.Net.Security.Tests
             return true;
         }
 
-        private class RandomIOStream : Stream
+        private class RandomReadWriteSizeStream: Stream
         {
             private readonly Stream _innerStream;
             private readonly int _maxSize;
 
-            public RandomIOStream(Stream stream, int maximumSize = int.MaxValue)
+            public RandomReadWriteSizeStream(Stream stream, int maximumSize = int.MaxValue)
             {
                 _innerStream = stream;
                 _maxSize = maximumSize;
