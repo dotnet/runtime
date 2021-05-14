@@ -1382,7 +1382,7 @@ public:
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-    void FinishInitialization();
+    void PrepareApartmentAndContext();
 
 #ifdef FEATURE_COMINTEROP
     bool IsDisableComObjectEagerCleanup()
