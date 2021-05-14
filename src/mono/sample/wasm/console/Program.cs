@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using SkiaSharp;
 
 public class Test
 {
@@ -13,6 +15,48 @@ public class Test
         for (int i = 0; i < args.Length; i++) {
             Console.WriteLine($"args[{i}] = {args[i]}");
         }
+
+        var data = CreateImage("Hello world");
+        Console.WriteLine ($"back from CreateImage");
+        using var ms = new MemoryStream();
+        data.SaveTo(ms);
+        var bytes = ms.ToArray();
+        string b64 = Convert.ToBase64String(bytes);
+        Console.WriteLine(b64);
+
         return args.Length;
+    }
+
+
+    private static SKData CreateImage(string text)
+    {
+        // create a surface
+        var info = new SKImageInfo(256, 256);
+        using (var surface = SKSurface.Create(info))
+        {
+            // the the canvas and properties
+            var canvas = surface.Canvas;
+
+            // make sure the canvas is blank
+            canvas.Clear(SKColors.White);
+
+            // draw some text
+            var paint = new SKPaint
+            {
+                Color = SKColors.Black,
+                      IsAntialias = true,
+                      Style = SKPaintStyle.Fill,
+                      TextAlign = SKTextAlign.Center,
+                      TextSize = 24
+            };
+            var coord = new SKPoint(info.Width / 2, (info.Height + paint.TextSize) / 2);
+            canvas.DrawText(text, coord, paint);
+
+            // retrieve the encoded image
+            using (var image = surface.Snapshot())
+            {
+                return image.Encode(SKEncodedImageFormat.Png, 100);
+            }
+        }
     }
 }

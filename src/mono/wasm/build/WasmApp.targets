@@ -325,7 +325,7 @@
   <Target Name="_WasmBuildNative" DependsOnTargets="$(_WasmNativeBuildDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
 
   <Target Name="_SetWasmBuildNativeDefaults">
-    <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
+    <!-- if it was already set, maybe by a user project, then a missing emsdk is an error -->
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
@@ -438,11 +438,11 @@
   </Target>
 
   <Target Name="_GeneratePInvokeTable">
-    <ItemGroup>
+   <ItemGroup>
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
-    </ItemGroup>
+   </ItemGroup>
 
     <PInvokeTableGenerator
       Modules="@(_WasmPInvokeModules)"
@@ -510,7 +510,6 @@
 
       <_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_EmccLDFlags Include="&quot;%(_WasmObjects.Identity)&quot;" />
-
       <_EmccLDFlags Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
     </ItemGroup>
 

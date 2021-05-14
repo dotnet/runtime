@@ -365,7 +365,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	/* There is only one thread class */
 	mono_defaults.internal_thread_class = mono_defaults.thread_class;
 
-#if defined(HOST_DARWIN)
+#if defined(HOST_DARWIN) && !defined(TARGET_WASM)
 	mono_defaults.autoreleasepool_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "AutoreleasePool");
 #else

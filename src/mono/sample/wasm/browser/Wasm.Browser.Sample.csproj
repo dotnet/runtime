@@ -2,6 +2,8 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <PublishTrimmed>false</PublishTrimmed>
+    <!--<TargetFramework>net6.0-Browser1.0</TargetFramework>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,5 +14,17 @@
     <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!--<_WasmPInvokeModules Include="libSkiaSharp" />-->
+    <PackageReference Include="AppLogger" Version="6.0.0-dev" />
+    <PackageReference Include="SkiaSharp" Version="2.80.3-*" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="2.80.3-*" />
+  </ItemGroup>
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+
+  <Target Name="SkipTrimmingSkiaSharp" BeforeTargets="Publish">
+    <ItemGroup>
+      <ResolvedFileToPublish TrimMode="copy" Condition="'%(FileName)' == 'SkiaSharp'" />
+    </ItemGroup>
+  </Target>
 </Project>

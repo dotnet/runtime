@@ -3,11 +3,18 @@
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <PropertyGroup>
     <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.80.3-*" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="2.80.3-*" />
+  </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
 </Project>
