@@ -41,7 +41,8 @@ internal static partial class Interop
             ObjectAttributes objectAttributes = ObjectAttributes.OBJ_CASE_INSENSITIVE,
             void* eaBuffer = null,
             uint eaLength = 0,
-            long* preallocationSize = null)
+            long* preallocationSize = null,
+            SECURITY_QUALITY_OF_SERVICE* securityQualityOfService = null)
         {
             fixed (char* c = &MemoryMarshal.GetReference(path))
             {
@@ -55,7 +56,8 @@ internal static partial class Interop
                 OBJECT_ATTRIBUTES attributes = new OBJECT_ATTRIBUTES(
                     &name,
                     objectAttributes,
-                    rootDirectory);
+                    rootDirectory,
+                    securityQualityOfService);
 
                 uint status = NtCreateFile(
                     out IntPtr handle,
@@ -75,7 +77,16 @@ internal static partial class Interop
         }
 
         internal static unsafe (uint status, IntPtr handle) CreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
-            => CreateFile(
+        {
+            // For mitigating local elevation of privilege attack through named pipes
+            // make sure we always call NtCreateFile with SECURITY_ANONYMOUS so that the
+            // named pipe server can't impersonate a high privileged client security context
+            SECURITY_QUALITY_OF_SERVICE securityQualityOfService = new SECURITY_QUALITY_OF_SERVICE(
+                ImpersonationLevel.Anonymous, // SECURITY_ANONYMOUS
+                ContextTrackingMode.Static,
+                effectiveOnly: false);
+
+            return CreateFile(
                 path: path,
                 rootDirectory: IntPtr.Zero,
                 createDisposition: GetCreateDisposition(mode),
@@ -84,7 +95,9 @@ internal static partial class Interop
                 fileAttributes: GetFileAttributes(options),
                 createOptions: GetCreateOptions(options),
                 objectAttributes: GetObjectAttributes(share),
-                preallocationSize: &preallocationSize);
+                preallocationSize: &preallocationSize,
+                securityQualityOfService: &securityQualityOfService);
+        }
 
         private static CreateDisposition GetCreateDisposition(FileMode mode)
         {

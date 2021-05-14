@@ -1528,6 +1528,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs">
       <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
     </Compile>
