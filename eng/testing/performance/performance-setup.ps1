@@ -96,12 +96,12 @@ if($NoPGO)
     $SetupArguments = "$SetupArguments --no-pgo"
     $Configurations += " PGOType=nopgo"
 }
-else if($DynamicPGO)
+elseif($DynamicPGO)
 {
     $SetupArguments = "$SetupArguments --dynamic-pgo"
     $Configurations += " PGOType=dynamicpgo"
 }
-else if($FullPGO)
+elseif($FullPGO)
 {
     $SetupArguments = "$SetupArguments --full-pgo"
     $Configurations += " PGOType=fullpgo"
