@@ -139,7 +139,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
         BlockRange().Remove(indir);
 
-        var_types lclType = comp->lvaGetDesc(addr->AsLclVar())->TypeGet();
+        const GenTreeLclVar* lclAddr = addr->AsLclVar();
+        const unsigned       lclNum  = lclAddr->GetLclNum();
+        LclVarDsc*           varDsc  = comp->lvaGetDesc(lclNum);
+
+        var_types lclType = varDsc->TypeGet();
 
         if (lclType == simdType)
         {
@@ -156,7 +160,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
                 addr->gtFlags |= GTF_VAR_USEASG;
             }
 
-            comp->lvaSetVarDoNotEnregister(addr->AsLclFld()->GetLclNum() DEBUGARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LocalField));
+        }
+        if (varDsc->lvPromotedStruct())
+        {
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_IsStructArg));
         }
 
         addr->gtType = simdType;

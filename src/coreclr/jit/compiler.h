@@ -3433,6 +3433,7 @@ public:
         DNER_NoRegVars,   // opts.compFlags & CLFLG_REGVAR is not set
         DNER_MinOptsGC,   // It is a GC Ref and we are compiling MinOpts
 #if !defined(TARGET_64BIT)
+        DNER_LongParamVar,   // It is a long parameter.
         DNER_LongParamField, // It is a decomposed field of a long parameter.
 #endif
 #ifdef JIT32_GCENCODER
