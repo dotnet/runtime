@@ -116,6 +116,9 @@
 /* Host Platform is Mac Catalyst */
 #cmakedefine HOST_MACCAT 1
 
+/* Host Platform is iOS or tvOS simulator */
+#cmakedefine HOST_DARWIN_SIMULATOR 1
+
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
 

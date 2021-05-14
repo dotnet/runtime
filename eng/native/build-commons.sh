@@ -94,6 +94,10 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
+    if [[ "$targetOS" == "iOSSimulator" || "$targetOS" == "tvOSSimulator" ]]; then
+	cmakeArgs="-DCMAKE_SYSTEM_VARIANT=$targetOS $cmakeArgs"
+    fi
+
     if [[ "$__UseNinja" == 1 ]]; then
         generator="ninja"
         buildTool="$(command -v ninja || command -v ninja-build)"
