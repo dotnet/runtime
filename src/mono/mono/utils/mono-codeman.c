@@ -669,7 +669,7 @@ mono_codeman_enable_write (void)
 		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
 		pthread_jit_write_protect_np (0);
 	}
-#elif defined(HOST_MACCAT) && defined(__aarch64__)
+#elif (defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_DARWIN_SIMULATOR) && defined(__aarch64__)
         int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
         level ++;
         mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
@@ -695,7 +695,7 @@ mono_codeman_disable_write (void)
 		if (level == 0)
 			pthread_jit_write_protect_np (1);
 	}
-#elif defined(HOST_MACCAT) && defined(__aarch64__)
+#elif (defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_DARWIN_SIMULATOR) && defined(__aarch64__)
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		g_assert (level);
 		level --;
