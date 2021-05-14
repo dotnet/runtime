@@ -778,6 +778,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId)
         {
+            AssertValidParameters(eventId);
             WriteEventCore(eventId, 0, null);
         }
 
@@ -788,6 +789,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, int arg1)
         {
+            AssertValidParameters(eventId, arg1);
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
@@ -804,6 +806,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2)
         {
+            AssertValidParameters(eventId, arg1, arg2);
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -823,6 +826,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3)
         {
+            AssertValidParameters(eventId, arg1, arg2, arg3);
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
@@ -846,6 +850,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, long arg1)
         {
+            AssertValidParameters(eventId, arg1);
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
@@ -862,6 +867,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2)
         {
+            AssertValidParameters(eventId, arg1, arg2);
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -881,6 +887,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2, long arg3)
         {
+            AssertValidParameters(eventId, arg1, arg2, arg3);
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
@@ -904,6 +911,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, string? arg1)
         {
+            AssertValidParameters(eventId, arg1 ?? "");
             if (IsEnabled())
             {
                 arg1 ??= "";
@@ -924,6 +932,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2)
         {
+            AssertValidParameters(eventId, arg1 ?? "", arg2 ?? "");
             if (IsEnabled())
             {
                 arg1 ??= "";
@@ -949,6 +958,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3)
         {
+            AssertValidParameters(eventId, arg1 ?? "", arg2 ?? "", arg3 ?? "");
             if (IsEnabled())
             {
                 arg1 ??= "";
@@ -980,6 +990,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2)
         {
+            AssertValidParameters(eventId, arg1 ?? "", arg2);
             if (IsEnabled())
             {
                 arg1 ??= "";
@@ -1003,6 +1014,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3)
         {
+            AssertValidParameters(eventId, arg1 ?? "", arg2, arg3);
             if (IsEnabled())
             {
                 arg1 ??= "";
@@ -1030,6 +1042,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, string? arg1, long arg2)
         {
+            AssertValidParameters(eventId, arg1 ?? "", arg2);
             if (IsEnabled())
             {
                 arg1 ??= "";
@@ -1054,6 +1067,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, long arg1, string? arg2)
         {
+            AssertValidParameters(eventId, arg1, arg2 ?? "");
             if (IsEnabled())
             {
                 arg2 ??= "";
@@ -1078,6 +1092,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, int arg1, string? arg2)
         {
+            AssertValidParameters(eventId, arg1, arg2 ?? "");
             if (IsEnabled())
             {
                 arg2 ??= "";
@@ -1101,6 +1116,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, byte[]? arg1)
         {
+            AssertValidParameters(eventId, arg1 ?? Array.Empty<byte>());
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
@@ -1138,6 +1154,7 @@ namespace System.Diagnostics.Tracing
 #endif
         protected unsafe void WriteEvent(int eventId, long arg1, byte[]? arg2)
         {
+            AssertValidParameters(eventId, arg1, arg2 ?? Array.Empty<byte>());
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
@@ -2012,6 +2029,9 @@ namespace System.Diagnostics.Tracing
             return eventData;
         }
 
+        [Conditional("DEBUG")]
+        private void AssertValidParameters(int eventId, params object?[] args) => LogEventArgsMismatches(eventId, args);
+
         /// <summary>
         /// We expect that the arguments to the Event method and the arguments to WriteEvent match. This function
         /// checks that they in fact match and logs a warning to the debugger if they don't.
@@ -2044,6 +2064,8 @@ namespace System.Diagnostics.Tracing
                     ReportOutOfBandMessage(SR.Format(SR.EventSource_VarArgsParameterMismatch, eventId, infos[i].Name));
                     return;
                 }
+
+                Debug.Assert(arg is not string stringArg || stringArg.IndexOf('\0') == -1, $"{infos[i].Name} may not contain null chars");
             }
         }
 
@@ -2072,7 +2094,10 @@ namespace System.Diagnostics.Tracing
                     {
                         AssertValidString(data);
                         IntPtr dataPointer = data->DataPointer;
-                        args[i] = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+                        if (dataPointer != IntPtr.Zero)
+                        {
+                            args[i] = new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+                        }
                     }
                 }
                 else if (metadata.AllParametersAreInt32)
@@ -3782,6 +3807,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal void ReportOutOfBandMessage(string msg)
         {
+#if DEBUG
+            if (Name != "EventSourceTest")
+            {
+                Debug.Fail(msg);
+            }
+#endif
+
             try
             {
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
@@ -3795,7 +3827,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // send message to debugger
-                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
+                Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, Environment.NewLine));
 
                 // Send it to all listeners.
                 WriteEventString(msg);
