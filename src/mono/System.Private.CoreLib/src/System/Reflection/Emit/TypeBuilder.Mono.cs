@@ -1651,7 +1651,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (created == null)
                 throw new NotSupportedException("This method is not implemented for incomplete types.");
