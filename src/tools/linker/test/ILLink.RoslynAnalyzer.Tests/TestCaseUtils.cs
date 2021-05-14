@@ -14,40 +14,33 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public class TestCaseUtils
+	public abstract class TestCaseUtils
 	{
 		public static IEnumerable<object[]> GetTestData (string testSuiteName)
 		{
-			var testFile = File.ReadAllText (s_testFiles[testSuiteName][0]);
+			foreach (var testFile in s_testFiles[testSuiteName]) {
 
-			var root = CSharpSyntaxTree.ParseText (testFile).GetRoot ();
+				var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
 
-			var attributes = root.DescendantNodes ()
-				.OfType<AttributeSyntax> ()
-				.Where (a => IsWellKnown (a));
-
-			var methodsXattributes = root.DescendantNodes ()
-				.OfType<MethodDeclarationSyntax> ()
-				.Select (m => (m!, m.AttributeLists.SelectMany (
-									 al => al.Attributes.Where (a => IsWellKnown (a)))
-								  .ToList ()))
-				.Where (mXattrs => mXattrs.Item2.Count > 0)
-				.Distinct ()
-				.ToList ();
-
-			foreach (var (m, attrs) in methodsXattributes) {
-				yield return new object[] { m, attrs };
-			}
-
-			static bool IsWellKnown (AttributeSyntax attr)
-			{
-				switch (attr.Name.ToString ()) {
-				case "ExpectedWarning":
-				case "LogContains":
-				case "LogDoesNotContain":
-					return true;
+				foreach (var node in root.DescendantNodes ()) {
+					if (node is MethodDeclarationSyntax m) {
+						var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
+						if (attrs.Count > 0) {
+							yield return new object[] { m, attrs };
+						}
+					}
 				}
-				return false;
+
+				static bool IsWellKnown (AttributeSyntax attr)
+				{
+					switch (attr.Name.ToString ()) {
+					case "ExpectedWarning":
+					case "LogContains":
+					case "LogDoesNotContain":
+						return true;
+					}
+					return false;
+				}
 			}
 		}
 
