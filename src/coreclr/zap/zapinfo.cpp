@@ -2388,6 +2388,13 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     _ASSERTE(pResult);
 
+    if ((flags & CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != nullptr)
+    {
+        // Defer constrained call / ldftn instructions used for static virtual methods
+        // to runtime resolution.
+        ThrowHR(E_NOTIMPL);
+    }
+
     // Fill in the kind of the virtual call.
     // We set kindOnly=true since we don't want the EE to actually give us
     // a call stub - instead we want to generate an indirection ourselves.
