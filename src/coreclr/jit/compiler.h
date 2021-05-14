@@ -5513,9 +5513,15 @@ public:
     unsigned fgGetCodeEstimate(BasicBlock* block);
 
 #if DUMP_FLOWGRAPHS
+    enum class PhasePosition
+    {
+        PrePhase,
+        PostPhase
+    };
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
-    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
-    bool fgDumpFlowGraph(Phases phase);
+    static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
+    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type);
+    bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
