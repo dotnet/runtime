@@ -52,6 +52,9 @@
 
       - $(EmccFlags)                        - This sets the initial emcc flags.
       - $(EmccVerbose)                      - Set to false to disable verbose emcc output.
+      - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
+      - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -384,6 +387,11 @@
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
+
+      <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
+
+      <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
+      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(_EmccOptimizationFlagDefault)</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(EmccFlagsFile)">
@@ -391,7 +399,6 @@
     </ReadLinesFromFile>
 
     <ItemGroup>
-      <_EmccCommonFlags Include="-O0"                               Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
@@ -450,6 +457,8 @@
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
 
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
       <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
@@ -473,6 +482,8 @@
       <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
       <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
 
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
 
