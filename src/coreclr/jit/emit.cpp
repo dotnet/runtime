@@ -7389,8 +7389,8 @@ void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, boo
     regPtrNext->rpdGCtype = gcType;
 
     regPtrNext->rpdOffs            = emitCurCodeOffs(addr);
-    regPtrNext->rpdArg             = FALSE;
-    regPtrNext->rpdCall            = FALSE;
+    regPtrNext->rpdArg             = false;
+    regPtrNext->rpdCall            = false;
     regPtrNext->rpdIsThis          = isThis;
     regPtrNext->rpdCompiler.rpdAdd = (regMaskSmall)regMask;
     regPtrNext->rpdCompiler.rpdDel = 0;
@@ -7419,9 +7419,9 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
     regPtrNext->rpdGCtype = gcType;
 
     regPtrNext->rpdOffs            = emitCurCodeOffs(addr);
-    regPtrNext->rpdCall            = FALSE;
-    regPtrNext->rpdIsThis          = FALSE;
-    regPtrNext->rpdArg             = FALSE;
+    regPtrNext->rpdCall            = false;
+    regPtrNext->rpdIsThis          = false;
+    regPtrNext->rpdArg             = false;
     regPtrNext->rpdCompiler.rpdAdd = 0;
     regPtrNext->rpdCompiler.rpdDel = (regMaskSmall)regMask;
 }
@@ -7782,12 +7782,12 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
             regPtrDsc* regPtrNext = gcInfo->gcRegPtrAllocDsc();
             regPtrNext->rpdGCtype = gcType;
             regPtrNext->rpdOffs   = emitCurCodeOffs(addr);
-            regPtrNext->rpdArg    = TRUE;
-            regPtrNext->rpdCall   = FALSE;
+            regPtrNext->rpdArg    = true;
+            regPtrNext->rpdCall   = false;
             noway_assert(FitsIn<unsigned short>(offs));
             regPtrNext->rpdPtrArg  = (unsigned short)offs;
             regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
-            regPtrNext->rpdIsThis  = FALSE;
+            regPtrNext->rpdIsThis  = false;
         }
     }
     else
@@ -8244,15 +8244,15 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
                 regPtrNext->rpdGCtype = gcType;
 
                 regPtrNext->rpdOffs = emitCurCodeOffs(addr);
-                regPtrNext->rpdArg  = TRUE;
-                regPtrNext->rpdCall = FALSE;
+                regPtrNext->rpdArg  = true;
+                regPtrNext->rpdCall = false;
                 if (level.IsOverflow() || !FitsIn<unsigned short>(level.Value()))
                 {
                     IMPL_LIMITATION("Too many/too big arguments to encode GC information");
                 }
                 regPtrNext->rpdPtrArg  = (unsigned short)level.Value();
                 regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
-                regPtrNext->rpdIsThis  = FALSE;
+                regPtrNext->rpdIsThis  = false;
             }
 
             /* This is an "interesting" argument push */
@@ -8382,7 +8382,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
 #endif
     regPtrNext->rpdCallGCrefRegs = gcrefRegs;
     regPtrNext->rpdCallByrefRegs = byrefRegs;
-    regPtrNext->rpdArg           = TRUE;
+    regPtrNext->rpdArg           = true;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
 }
