@@ -391,8 +391,16 @@ simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
 open -a "$simulator_app"
 helix_runner_uid="%24(id -u)"
 sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="$HELIX_WORKITEM_UPLOAD_ROOT" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v --targets ios-simulator-64 --reset-simulator
-
 CLRTestExitCode=$?
+echo '======== STDOUT ======== ({['
+cat "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.log"
+echo ']})'
+echo ''
+echo '======== STDERR ======== ({['
+cat "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.err.log"
+echo ']})'
+echo ''
+
 
 # Exist code of xharness is zero when tests finished successfully
 CLRTestExpectedExitCode=0
