@@ -63,6 +63,7 @@ public: // Unwrapping support
 public: // GC interaction
     static void OnFullGCStarted();
     static void OnFullGCFinished();
+    static void AfterRefCountedHandleCallbacks();
 };
 
 class GlobalComWrappersForMarshalling
@@ -187,7 +188,7 @@ public:
     // Notify before/after when GC is scanning roots.
     // Present assumption is that calls will never be nested.
     static void OnBeforeGCScanRoots();
-    static void OnAfterGCScanRoots();
+    static void OnAfterGCScanRoots(_In_ bool is_concurrent);
 };
 
 #endif // _INTEROPLIBINTERFACE_H_

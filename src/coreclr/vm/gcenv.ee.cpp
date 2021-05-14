@@ -88,8 +88,7 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
 
-    if (!sc->concurrent)
-        Interop::OnAfterGCScanRoots();
+    Interop::OnAfterGCScanRoots(sc->concurrent);
 }
 
 /*

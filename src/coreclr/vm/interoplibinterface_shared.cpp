@@ -129,7 +129,7 @@ void Interop::OnBeforeGCScanRoots()
 #endif // FEATURE_OBJCMARSHAL
 }
 
-void Interop::OnAfterGCScanRoots()
+void Interop::OnAfterGCScanRoots(_In_ bool is_concurrent)
 {
     CONTRACTL
     {
@@ -138,7 +138,12 @@ void Interop::OnAfterGCScanRoots()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_COMWRAPPERS
+    ComWrappersNative::AfterRefCountedHandleCallbacks();
+#endif // FEATURE_COMWRAPPERS
+
 #ifdef FEATURE_OBJCMARSHAL
-    ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+    if (!is_concurrent)
+        ObjCMarshalNative::AfterRefCountedHandleCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 }
