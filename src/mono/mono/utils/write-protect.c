@@ -7,7 +7,7 @@
 #include "mono-compiler.h"
 #include "write-protect.h"
 
-#if defined (HOST_MACCAT) && defined (__aarch64__)
+#if (defined(HOST_IOS) || defined(HOST_TVOS)) && defined (HOST_DARWIN_SIMULATOR) && defined (__aarch64__)
 
 /* our own declaration of pthread_jit_write_protect_np so that we don't see the __API_UNAVAILABLE__ header */
 void
