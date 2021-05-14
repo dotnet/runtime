@@ -233,6 +233,7 @@ namespace System.Tests
             return "DerivedException.ToString()";
         }
 
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
         [Fact]
         public static void Exception_SerializeObjectState()
         {
@@ -240,6 +241,7 @@ namespace System.Tests
             Assert.Throws<PlatformNotSupportedException>(() => excp.SerializeObjectState += (exception, eventArgs) => eventArgs.AddSerializedState(null));
             Assert.Throws<PlatformNotSupportedException>(() => excp.SerializeObjectState -= (exception, eventArgs) => eventArgs.AddSerializedState(null));
         }
+#pragma warning restore SYSLIB0011
 
         [Fact]
         public static void Exception_OverriddenToStringOnInnerException()

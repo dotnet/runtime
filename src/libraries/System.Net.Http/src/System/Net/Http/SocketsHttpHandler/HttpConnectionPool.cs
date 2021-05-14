@@ -781,28 +781,30 @@ namespace System.Net.Http
                         authority = authority ?? _originAuthority;
                     }
 
-                    if (authority != null)
+                    if (authority == null)
                     {
-                        if (IsAltSvcBlocked(authority))
-                        {
-                            throw GetVersionException(request, 3);
-                        }
-
-                        Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
-                        HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
-
-                        // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                        // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                        // In this case, we blocklist the authority and retry the request at the origin.
-                        if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
-                        {
-                            response.Dispose();
-                            BlocklistAuthority(connection.Authority);
-                            continue;
-                        }
-
-                        return response;
+                        break;
                     }
+
+                    if (IsAltSvcBlocked(authority))
+                    {
+                        throw GetVersionException(request, 3);
+                    }
+
+                    Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+
+                    // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                    // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                    // In this case, we blocklist the authority and retry the request at the origin.
+                    if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
+                    {
+                        response.Dispose();
+                        BlocklistAuthority(connection.Authority);
+                        continue;
+                    }
+
+                    return response;
                 }
             }
 
@@ -1439,7 +1441,15 @@ namespace System.Net.Http
             stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
 
             Http2Connection http2Connection = new Http2Connection(this, stream);
-            await http2Connection.SetupAsync().ConfigureAwait(false);
+            try
+            {
+                await http2Connection.SetupAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                // Note, SetupAsync will dispose the connection if there is an exception.
+                throw new HttpRequestException(SR.net_http_client_execution_error, e);
+            }
 
             AddHttp2Connection(http2Connection);
 

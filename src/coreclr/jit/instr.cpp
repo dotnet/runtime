@@ -399,11 +399,22 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
  *  Generate a "op reg1, reg2" instruction.
  */
 
+//------------------------------------------------------------------------
+// inst_RV_RV: Generate a "op reg1, reg2" instruction.
+//
+// Arguments:
+//    ins   - the instruction to generate;
+//    reg1  - the first register to use, the dst for most instructions;
+//    reg2  - the second register to use, the src for most instructions;
+//    type  - the type used to get the size attribute if not given, usually type of the reg2 operand;
+//    size  - the size attribute, the type arg is ignored if this arg is provided with an actual value;
+//    flags - whether flags are set for arm32.
+//
 void CodeGen::inst_RV_RV(instruction ins,
                          regNumber   reg1,
                          regNumber   reg2,
-                         var_types   type,
-                         emitAttr    size,
+                         var_types   type /* = TYP_I_IMPL */,
+                         emitAttr    size /* = EA_UNKNOWN */,
                          insFlags    flags /* = INS_FLAGS_DONT_CARE */)
 {
     if (size == EA_UNKNOWN)

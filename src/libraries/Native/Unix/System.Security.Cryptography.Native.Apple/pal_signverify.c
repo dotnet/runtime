@@ -3,153 +3,11 @@
 
 #include "pal_signverify.h"
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if defined(TARGET_OSX)
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErrorOut);
 
-static int32_t ConfigureSignVerifyTransform(
-    SecTransformRef xform, CFDataRef cfDataHash, PAL_HashAlgorithm, bool useDigestAlgorithm, CFErrorRef* pErrorOut);
-
-static int32_t GenerateSignature(SecKeyRef privateKey,
-                                 uint8_t* pbDataHash,
-                                 int32_t cbDataHash,
-                                 PAL_HashAlgorithm hashAlgorithm,
-                                 bool useHashAlgorithm,
-                                 CFDataRef* pSignatureOut,
-                                 CFErrorRef* pErrorOut)
-{
-    if (pSignatureOut != NULL)
-        *pSignatureOut = NULL;
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (privateKey == NULL || pbDataHash == NULL || cbDataHash < 0 || pSignatureOut == NULL ||
-        pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
-
-    CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
-
-    if (dataHash == NULL)
-    {
-        return kErrorUnknownState;
-    }
-
-    int32_t ret = kErrorSeeError;
-    SecTransformRef signer = SecSignTransformCreate(privateKey, pErrorOut);
-
-    if (signer != NULL)
-    {
-        if (*pErrorOut == NULL)
-        {
-            if (ConfigureSignVerifyTransform(signer, dataHash, hashAlgorithm, useHashAlgorithm, pErrorOut))
-            {
-                ret = ExecuteSignTransform(signer, pSignatureOut, pErrorOut);
-            }
-        }
-
-        CFRelease(signer);
-    }
-
-    CFRelease(dataHash);
-    return ret;
-}
-
-int32_t AppleCryptoNative_GenerateSignature(
-    SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
-{
-    return GenerateSignature(privateKey, pbDataHash, cbDataHash, PAL_Unknown, false, pSignatureOut, pErrorOut);
-}
-
-int32_t AppleCryptoNative_GenerateSignatureWithHashAlgorithm(SecKeyRef privateKey,
-                                                             uint8_t* pbDataHash,
-                                                             int32_t cbDataHash,
-                                                             PAL_HashAlgorithm hashAlgorithm,
-                                                             CFDataRef* pSignatureOut,
-                                                             CFErrorRef* pErrorOut)
-{
-    return GenerateSignature(privateKey, pbDataHash, cbDataHash, hashAlgorithm, true, pSignatureOut, pErrorOut);
-}
-
-static int32_t VerifySignature(SecKeyRef publicKey,
-                               uint8_t* pbDataHash,
-                               int32_t cbDataHash,
-                               uint8_t* pbSignature,
-                               int32_t cbSignature,
-                               PAL_HashAlgorithm hashAlgorithm,
-                               bool useHashAlgorithm,
-                               CFErrorRef* pErrorOut)
-{
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (publicKey == NULL || cbDataHash < 0 || pbSignature == NULL || cbSignature < 0 || pErrorOut == NULL)
-        return kErrorBadInput;
-
-    // A null hash is automatically the wrong length, so the signature will fail.
-    if (pbDataHash == NULL)
-    {
-        return 0;
-    }
-
-    CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
-
-    if (dataHash == NULL)
-    {
-        return kErrorUnknownState;
-    }
-
-    CFDataRef signature = CFDataCreateWithBytesNoCopy(NULL, pbSignature, cbSignature, kCFAllocatorNull);
-
-    if (signature == NULL)
-    {
-        CFRelease(dataHash);
-        return kErrorUnknownState;
-    }
-
-    int32_t ret = kErrorSeeError;
-    SecTransformRef verifier = SecVerifyTransformCreate(publicKey, signature, pErrorOut);
-
-    if (verifier != NULL)
-    {
-        if (*pErrorOut == NULL)
-        {
-            if (ConfigureSignVerifyTransform(verifier, dataHash, hashAlgorithm, useHashAlgorithm, pErrorOut))
-            {
-                ret = ExecuteVerifyTransform(verifier, pErrorOut);
-            }
-        }
-
-        CFRelease(verifier);
-    }
-
-    CFRelease(dataHash);
-    CFRelease(signature);
-
-    return ret;
-}
-
-int32_t AppleCryptoNative_VerifySignatureWithHashAlgorithm(SecKeyRef publicKey,
-                                                           uint8_t* pbDataHash,
-                                                           int32_t cbDataHash,
-                                                           uint8_t* pbSignature,
-                                                           int32_t cbSignature,
-                                                           PAL_HashAlgorithm hashAlgorithm,
-                                                           CFErrorRef* pErrorOut)
-{
-    return VerifySignature(publicKey, pbDataHash, cbDataHash, pbSignature, cbSignature, hashAlgorithm, true, pErrorOut);
-}
-
-int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
-                                          uint8_t* pbDataHash,
-                                          int32_t cbDataHash,
-                                          uint8_t* pbSignature,
-                                          int32_t cbSignature,
-                                          CFErrorRef* pErrorOut)
-{
-    return VerifySignature(publicKey, pbDataHash, cbDataHash, pbSignature, cbSignature, PAL_Unknown, false, pErrorOut);
-}
+static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfDataHash, CFErrorRef* pErrorOut);
 
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
 {
@@ -219,11 +77,7 @@ static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErr
     return ret;
 }
 
-static int32_t ConfigureSignVerifyTransform(SecTransformRef xform,
-                                            CFDataRef cfDataHash,
-                                            PAL_HashAlgorithm hashAlgorithm,
-                                            bool includeHashAlgorithm,
-                                            CFErrorRef* pErrorOut)
+static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfDataHash, CFErrorRef* pErrorOut)
 {
     if (!SecTransformSetAttribute(xform, kSecInputIsAttributeName, kSecInputIsDigest, pErrorOut))
     {
@@ -235,59 +89,206 @@ static int32_t ConfigureSignVerifyTransform(SecTransformRef xform,
         return 0;
     }
 
-    if (includeHashAlgorithm)
-    {
-        CFStringRef cfHashName = NULL;
-        int32_t hashSize = 0;
-
-        switch (hashAlgorithm)
-        {
-            case PAL_MD5:
-                cfHashName = kSecDigestMD5;
-                break;
-            case PAL_SHA1:
-                cfHashName = kSecDigestSHA1;
-                break;
-            case PAL_SHA256:
-                cfHashName = kSecDigestSHA2;
-                hashSize = 256;
-                break;
-            case PAL_SHA384:
-                cfHashName = kSecDigestSHA2;
-                hashSize = 384;
-                break;
-            case PAL_SHA512:
-                cfHashName = kSecDigestSHA2;
-                hashSize = 512;
-                break;
-            default:
-                return kErrorUnknownAlgorithm;
-        }
-
-        if (!SecTransformSetAttribute(xform, kSecDigestTypeAttribute, cfHashName, pErrorOut))
-        {
-            return 0;
-        }
-
-        if (hashSize != 0)
-        {
-            CFNumberRef cfHashSize = CFNumberCreate(NULL, kCFNumberIntType, &hashSize);
-
-            if (cfHashSize == NULL)
-            {
-                return 0;
-            }
-
-            if (!SecTransformSetAttribute(xform, kSecDigestLengthAttribute, cfHashSize, pErrorOut))
-            {
-                CFRelease(cfHashSize);
-                return 0;
-            }
-
-            CFRelease(cfHashSize);
-        }
-    }
-
     return 1;
 }
 #endif
+
+// Legacy algorithm identifiers
+const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
+
+static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorithm,
+                                                   PAL_SignatureAlgorithm signatureAlgorithm)
+{
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_EC)
+    {
+        // ECDSA signatures are always based on digests. The managed implementation
+        // will always pre-hash data before getting here.
+        return kSecKeyAlgorithmECDSASignatureDigestX962;
+    }
+
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Pkcs1)
+    {
+        switch (hashAlgorithm)
+        {
+            case PAL_MD5:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5;
+            case PAL_SHA1:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1;
+            case PAL_SHA256:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256;
+            case PAL_SHA384:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384;
+            case PAL_SHA512:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512;
+        }
+    }
+
+    // Requires macOS 10.13+ or iOS 11+
+    /*if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Pss)
+    {
+        switch (hashAlgorithm)
+        {
+            case PAL_SHA1: return kSecKeyAlgorithmRSASignatureDigestPSSSHA1;
+            case PAL_SHA256: return kSecKeyAlgorithmRSASignatureDigestPSSSHA256;
+            case PAL_SHA384: return kSecKeyAlgorithmRSASignatureDigestPSSSHA384;
+            case PAL_SHA512: return kSecKeyAlgorithmRSASignatureDigestPSSSHA512;
+        }
+    }*/
+
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Raw)
+    {
+        return kSecKeyAlgorithmRSASignatureRaw;
+    }
+
+    return NULL;
+}
+
+int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
+                                                uint8_t* pbDataHash,
+                                                int32_t cbDataHash,
+                                                PAL_HashAlgorithm hashAlgorithm,
+                                                PAL_SignatureAlgorithm signatureAlgorithm,
+                                                CFDataRef* pSignatureOut,
+                                                CFErrorRef* pErrorOut)
+{
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
+    if (pSignatureOut != NULL)
+        *pSignatureOut = NULL;
+
+    if (privateKey == NULL || pbDataHash == NULL || cbDataHash < 0 || pErrorOut == NULL || pSignatureOut == NULL)
+    {
+        return kErrorBadInput;
+    }
+
+    int32_t ret = kErrorSeeError;
+    CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
+
+    if (dataHash == NULL)
+    {
+        return kErrorUnknownState;
+    }
+
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_DSA)
+    {
+#if defined(TARGET_OSX)
+        SecTransformRef signer = SecSignTransformCreate(privateKey, pErrorOut);
+
+        if (signer != NULL)
+        {
+            if (*pErrorOut == NULL)
+            {
+                if (ConfigureSignVerifyTransform(signer, dataHash, pErrorOut))
+                {
+                    ret = ExecuteSignTransform(signer, pSignatureOut, pErrorOut);
+                }
+            }
+
+            CFRelease(signer);
+        }
+#else
+        ret = kPlatformNotSupported;
+#endif
+    }
+    else
+    {
+        CFStringRef algorithm = GetSignatureAlgorithmIdentifier(hashAlgorithm, signatureAlgorithm);
+
+        if (algorithm == NULL)
+        {
+            CFRelease(dataHash);
+            return kErrorUnknownAlgorithm;
+        }
+
+        CFDataRef sig = SecKeyCreateSignature(privateKey, algorithm, dataHash, pErrorOut);
+
+        if (sig != NULL)
+        {
+            *pSignatureOut = sig;
+            ret = 1;
+        }
+    }
+
+    CFRelease(dataHash);
+    return ret;
+}
+
+int32_t AppleCryptoNative_SecKeyVerifySignature(SecKeyRef publicKey,
+                                                uint8_t* pbDataHash,
+                                                int32_t cbDataHash,
+                                                uint8_t* pbSignature,
+                                                int32_t cbSignature,
+                                                PAL_HashAlgorithm hashAlgorithm,
+                                                PAL_SignatureAlgorithm signatureAlgorithm,
+                                                CFErrorRef* pErrorOut)
+{
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
+    if (publicKey == NULL || cbDataHash < 0 || pbSignature == NULL || cbSignature < 0 || pErrorOut == NULL)
+        return kErrorBadInput;
+
+    // A null hash is automatically the wrong length, so the signature will fail.
+    if (pbDataHash == NULL)
+        return 0;
+
+    int32_t ret = kErrorSeeError;
+    CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
+    if (dataHash == NULL)
+    {
+        return kErrorUnknownState;
+    }
+
+    CFDataRef signature = CFDataCreateWithBytesNoCopy(NULL, pbSignature, cbSignature, kCFAllocatorNull);
+    if (signature == NULL)
+    {
+        CFRelease(dataHash);
+        return kErrorUnknownState;
+    }
+
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_DSA)
+    {
+#if defined(TARGET_OSX)
+        SecTransformRef verifier = SecVerifyTransformCreate(publicKey, signature, pErrorOut);
+
+        if (verifier != NULL)
+        {
+            if (*pErrorOut == NULL)
+            {
+                if (ConfigureSignVerifyTransform(verifier, dataHash, pErrorOut))
+                {
+                    ret = ExecuteVerifyTransform(verifier, pErrorOut);
+                }
+            }
+
+            CFRelease(verifier);
+        }
+#else
+        ret = kPlatformNotSupported;
+#endif
+    }
+    else
+    {
+        CFStringRef algorithm = GetSignatureAlgorithmIdentifier(hashAlgorithm, signatureAlgorithm);
+
+        if (algorithm == NULL)
+        {
+            CFRelease(dataHash);
+            CFRelease(signature);
+            return kErrorBadInput;
+        }
+
+        if (SecKeyVerifySignature(publicKey, algorithm, dataHash, signature, pErrorOut))
+        {
+            ret = 1;
+        }
+        else if (CFErrorGetCode(*pErrorOut) == errSecVerifyFailed || CFErrorGetCode(*pErrorOut) == errSecParam)
+        {
+            ret = 0;
+        }
+    }
+
+    CFRelease(dataHash);
+    CFRelease(signature);
+
+    return ret;
+}

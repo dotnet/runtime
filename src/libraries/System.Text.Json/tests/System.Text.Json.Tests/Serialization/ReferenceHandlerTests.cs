@@ -568,7 +568,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(john, jane.Spouse);
             Assert.Same(jane, john.Spouse);
 
-            Assert.Equal(json, JsonSerializer.Serialize(people, options));
+            Assert.Equal(json, JsonSerializer.Serialize(people, options), ignoreLineEndingDifferences: true);
         }
 
         [Fact]
@@ -619,7 +619,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(firstListOfPeople[0].Spouse, secondListOfPeople[0].Spouse);
             Assert.Same(firstListOfPeople[1].Spouse, secondListOfPeople[1].Spouse);
 
-            Assert.Equal(json, JsonSerializer.Serialize(secondListOfPeople, options));
+            Assert.Equal(json, JsonSerializer.Serialize(secondListOfPeople, options), ignoreLineEndingDifferences: true);
         }
 
         internal class PresistentGuidReferenceHandler : ReferenceHandler

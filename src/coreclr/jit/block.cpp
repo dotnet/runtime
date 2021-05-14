@@ -702,7 +702,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     printf("\n");
 }
 
-const char* BasicBlock::dspToString(int blockNumPadding /* = 2*/)
+const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
 {
     static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
     static int  nextBufferIndex = 0;
@@ -762,7 +762,7 @@ bool BasicBlock::CloneBlockState(
 
     for (Statement* fromStmt : from->Statements())
     {
-        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), 0, varNum, varVal);
+        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
         if (!newExpr)
         {
             // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.

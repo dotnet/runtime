@@ -229,6 +229,8 @@ jobs:
           platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# WebAssembly on Windows
+
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml
     parameters:
@@ -239,7 +241,7 @@ jobs:
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
-      platform: Browser_wasm
+      platform: Browser_wasm_win
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}

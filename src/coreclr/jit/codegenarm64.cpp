@@ -3846,20 +3846,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 {
     // NYI for unsupported base types
-    if (simdNode->GetSimdBaseType() != TYP_INT && simdNode->GetSimdBaseType() != TYP_LONG &&
-        simdNode->GetSimdBaseType() != TYP_FLOAT && simdNode->GetSimdBaseType() != TYP_DOUBLE &&
-        simdNode->GetSimdBaseType() != TYP_USHORT && simdNode->GetSimdBaseType() != TYP_UBYTE &&
-        simdNode->GetSimdBaseType() != TYP_SHORT && simdNode->GetSimdBaseType() != TYP_BYTE &&
-        simdNode->GetSimdBaseType() != TYP_UINT && simdNode->GetSimdBaseType() != TYP_ULONG)
+    if (!varTypeIsArithmetic(simdNode->GetSimdBaseType()))
     {
-        // We don't need a base type for the Upper Save & Restore intrinsics, and we may find
-        // these implemented over lclVars created by CSE without full handle information (and
-        // therefore potentially without a base type).
-        if ((simdNode->gtSIMDIntrinsicID != SIMDIntrinsicUpperSave) &&
-            (simdNode->gtSIMDIntrinsicID != SIMDIntrinsicUpperRestore))
-        {
-            noway_assert(!"SIMD intrinsic with unsupported base type.");
-        }
+        noway_assert(!"SIMD intrinsic with unsupported base type.");
     }
 
     switch (simdNode->gtSIMDIntrinsicID)

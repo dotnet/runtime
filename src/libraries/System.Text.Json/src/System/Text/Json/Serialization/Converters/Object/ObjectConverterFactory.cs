@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
@@ -14,6 +15,9 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class ObjectConverterFactory : JsonConverterFactory
     {
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public ObjectConverterFactory() { }
+
         public override bool CanConvert(Type typeToConvert)
         {
             // This is the last built-in factory converter, so if the IEnumerableConverterFactory doesn't
@@ -22,6 +26,8 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (IsKeyValuePair(typeToConvert))
@@ -109,7 +115,8 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
-        private ConstructorInfo? GetDeserializationConstructor(Type type)
+        private ConstructorInfo? GetDeserializationConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             ConstructorInfo? ctorWithAttribute = null;
             ConstructorInfo? publicParameterlessCtor = null;

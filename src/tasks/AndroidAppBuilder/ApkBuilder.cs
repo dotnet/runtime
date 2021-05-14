@@ -24,6 +24,8 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public bool InvariantGlobalization { get; set; }
+    public bool EnableRuntimeLogging { get; set; }
     public string? StaticLinkedComponentNames { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 

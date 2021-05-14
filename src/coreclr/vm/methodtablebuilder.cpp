@@ -1973,6 +1973,33 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+#ifdef FEATURE_OBJCMARSHAL
+    // Check if this type has a finalizer and then if it is a referenced tracked type.
+    if (pMT->HasFinalizer() && !IsValueClass() && !IsInterface() && !IsDelegate())
+    {
+        BOOL isTrackedReference = FALSE;
+        if (HasParent())
+        {
+            MethodTable * pParentClass = GetParentMethodTable();
+            PREFIX_ASSUME(pParentClass != NULL);
+            isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
+        }
+
+        if (!isTrackedReference)
+        {
+            HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+                WellKnownAttribute::ObjectiveCTrackedTypeAttribute,
+                NULL,
+                NULL);
+
+            isTrackedReference = hr == S_OK ? TRUE : FALSE;
+        }
+
+        if (isTrackedReference)
+            pMT->SetIsTrackedReferenceWithFinalizer();
+    }
+#endif // FEATURE_OBJCMARSHAL
+
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
     pModule->EnsureTypeDefCanBeStored(bmtInternal->pType->GetTypeDefToken());
@@ -2557,7 +2584,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(pToken, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(GetModule(), Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;
@@ -5008,7 +5035,7 @@ MethodTableBuilder::ValidateMethods()
                 pMemberSignature = it.GetSig(&cMemberSignature);
             }
 
-            if (MetaSig::IsVarArg(pModule, Signature(pMemberSignature, cMemberSignature)))
+            if (MetaSig::IsVarArg(Signature(pMemberSignature, cMemberSignature)))
             {
                 BuildMethodTableThrowException(BFA_GENCODE_NOT_BE_VARARG);
             }

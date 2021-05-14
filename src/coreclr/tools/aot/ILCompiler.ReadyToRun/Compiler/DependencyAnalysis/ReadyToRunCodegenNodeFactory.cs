@@ -61,6 +61,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataManager MetadataManager { get; }
 
+        public CompositeImageSettings CompositeImageSettings { get; set; }
+
         public bool MarkingComplete => _markingComplete;
 
         public void SetMarkingComplete()
