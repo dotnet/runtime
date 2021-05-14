@@ -5,8 +5,8 @@ Subject: [PATCH] runtime: trim clr.tools
 
 dagood: (6.0) used '$(DotNetBuildFromSource)' != 'true' in fixup
 ---
- eng/Subsets.props | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ eng/Subsets.props | 9 ++++---
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/eng/Subsets.props b/eng/Subsets.props
 index 24b4bd2..5e6e299 100644
@@ -36,6 +36,15 @@ index 24b4bd2..5e6e299 100644
    </ItemGroup>
  
    <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
+@@ -218,7 +218,7 @@
+
+   <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(PgoInstrument)' != 'true'">
+     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
+-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" />
++    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+   </ItemGroup>
+
+   <!-- Mono sets -->
 -- 
 2.25.4
 
