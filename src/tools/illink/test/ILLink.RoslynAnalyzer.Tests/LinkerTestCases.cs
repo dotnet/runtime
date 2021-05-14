@@ -13,7 +13,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	/// </summary>
 	public class LinkerTestCases : TestCaseUtils
 	{
-		//[Theory]
+		[Theory]
 		[MemberData (nameof (GetTestData), parameters: nameof (RequiresCapability))]
 		public void RequiresCapability (MethodDeclarationSyntax m, List<AttributeSyntax> attrs)
 		{
