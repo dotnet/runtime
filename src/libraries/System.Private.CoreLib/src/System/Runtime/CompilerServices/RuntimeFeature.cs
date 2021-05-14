@@ -26,6 +26,11 @@ namespace System.Runtime.CompilerServices
         public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
 
         /// <summary>
+        /// Indicates that this version of runtime supports virtual static members of interfaces.
+        /// </summary>
+        public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+
+        /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
         /// </summary>
         public static bool IsSupported(string feature)
@@ -36,6 +41,7 @@ namespace System.Runtime.CompilerServices
                 case CovariantReturnsOfClasses:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
+                case VirtualStaticsInInterfaces:
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;
