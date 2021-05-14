@@ -9,7 +9,7 @@ namespace System
 {
     public static partial class AppContext
     {
-        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        [SuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Single File apps should always set APP_CONTEXT_BASE_DIRECTORY therefore code handles Assembly.Location equals null")]
         private static string GetBaseDirectoryCore()
         {

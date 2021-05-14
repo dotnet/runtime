@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel
     public class DependencyContext
     {
 
-        [UnconditionalSuppressMessage("SingleFile", "IL3002:Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file",
+        [SuppressMessage("SingleFile", "IL3002:Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file",
             Justification = "The annotation should be on the static constructor but is Compiler Generated, annotating the caller Default method instead")]
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 

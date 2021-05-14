@@ -250,7 +250,6 @@
     <Compile Include="System\UriIdnScope.cs" />
     <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs"
              Link="Common\System\IO\TempFileCollection.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

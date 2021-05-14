@@ -271,7 +271,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+        [SuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
             Justification = "The assembly is loaded by specifying a path outside of the single-file bundle, the location of the path will not be empty if the path exist, otherwise it will be handled as null")]
         private static Assembly? LoadFromResolveHandler(object? sender, ResolveEventArgs args)
         {

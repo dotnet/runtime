@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.SDK">
+<Project Sdk="Microsoft.NET.SDK">
   <!-- These are wrapper project files for packaging.-->
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
@@ -21,7 +21,6 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Compile Include="BuildTask.Desktop.cs" />
     <Compile Include="AssemblyResolver.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>

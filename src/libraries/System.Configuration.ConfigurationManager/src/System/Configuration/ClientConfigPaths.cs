@@ -29,7 +29,7 @@ namespace System.Configuration
         private readonly bool _includesUserConfig;
         private string _companyName;
 
-        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        [SuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Code handles single file case")]
         private ClientConfigPaths(string exePath, bool includeUserConfig)
         {
