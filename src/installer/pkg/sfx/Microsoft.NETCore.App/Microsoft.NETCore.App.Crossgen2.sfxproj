@@ -74,8 +74,10 @@
     <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" TargetPath="tools/" />
   </ItemGroup>
 
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" />
   <Import Project="ReadyToRun.targets" />
 
   <Target Name="GetFilesToPublish">

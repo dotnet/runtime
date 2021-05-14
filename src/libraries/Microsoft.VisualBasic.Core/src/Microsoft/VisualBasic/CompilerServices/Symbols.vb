@@ -424,6 +424,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return False
         End Function
 #End If
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification:="Calls GetInterfaces but only looks for existing interface type by reference equality. Trimmer guarantees that if the interface type is kept it is also kept on all the types which implement it.")>
         Friend Shared Function [Implements](ByVal implementor As System.Type, ByVal [interface] As System.Type) As Boolean
 
             Debug.Assert(Not IsInterface(implementor), "interfaces can't implement, so why call this?")
@@ -439,6 +441,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification:="Calls GetInterfaces but only looks for existing interface type by reference equality. Trimmer guarantees that if the interface type is kept it is also kept on all the types which implement it.")>
         Friend Shared Function IsOrInheritsFrom(ByVal derived As System.Type, ByVal base As System.Type) As Boolean
             Debug.Assert((Not derived.IsByRef) AndAlso (Not derived.IsPointer))
             Debug.Assert((Not base.IsByRef) AndAlso (Not base.IsPointer))
@@ -514,7 +518,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return type.GetGenericArguments
         End Function
 
-        Friend Shared Function GetInterfaceConstraints(ByVal genericParameter As Type) As Type()
+        Friend Shared Function GetInterfaceConstraints(<DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)> ByVal genericParameter As Type) As Type()
             'Returns the interface constraints for the type parameter.
             Debug.Assert(IsGenericParameter(genericParameter), "expected type parameter")
             Return System.Linq.Enumerable.ToArray(genericParameter.GetInterfaces)

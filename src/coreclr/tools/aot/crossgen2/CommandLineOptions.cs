@@ -31,8 +31,11 @@ namespace ILCompiler
         public bool CompileBubbleGenerics;
         public bool Verbose;
         public bool Composite;
+        public string CompositeKeyFile;
         public bool CompileNoMethods;
         public bool EmbedPgoData;
+        public bool OutNearInput;
+        public bool SingleFileCompilation;
 
         public string DgmlLogFileName;
         public bool GenerateFullDgmlLog;
@@ -99,7 +102,10 @@ namespace ILCompiler
                 syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
                 syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);
                 syntax.DefineOption("composite", ref Composite, SR.CompositeBuildMode);
+                syntax.DefineOption("compositekeyfile", ref CompositeKeyFile, SR.CompositeKeyFile);
                 syntax.DefineOption("compile-no-methods", ref CompileNoMethods, SR.CompileNoMethodsOption);
+                syntax.DefineOption("out-near-input", ref OutNearInput, SR.OutNearInputOption);
+                syntax.DefineOption("single-file-compilation", ref SingleFileCompilation, SR.SingleFileCompilationOption);
                 syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);

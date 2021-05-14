@@ -294,7 +294,6 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Fact]
         public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
         {

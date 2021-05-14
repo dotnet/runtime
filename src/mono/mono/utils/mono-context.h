@@ -84,7 +84,7 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->wasm_bp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->wasm_sp))
 
-#elif (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
+#elif ((defined(__i386__) || defined(_M_IX86)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
@@ -255,7 +255,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
+#elif ((defined(__x86_64__) || defined(_M_X64)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64))
 
 #include <mono/arch/amd64/amd64-codegen.h>
 

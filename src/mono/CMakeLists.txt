@@ -177,6 +177,7 @@ endif()
 ######################################
 
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
@@ -279,6 +280,9 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(TARGET_MACCAT 1)
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -526,7 +530,7 @@ endif()
 ######################################
 set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
-elseif(HOST_OSX)
+elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
@@ -541,7 +545,7 @@ elseif(HOST_WASM)
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_MACCAT)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
@@ -722,7 +726,7 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(TARGET_IOS OR TARGET_ANDROID)
+if(TARGET_IOS OR TARGET_ANDROID OR TARGET_MACCAT)
   # FIXME: the mobile products use mono_dllmap_insert so allow this
   unset(DISABLE_DLLMAP)
 else()

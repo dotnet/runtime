@@ -189,14 +189,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MetadataBuilder metadataBuilder = new MetadataBuilder();
 
+            AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None;
+            BlobHandle publicKeyBlob = default(BlobHandle);
+            AssemblyFlags manifestAssemblyFlags = default(AssemblyFlags);
+            Version manifestAssemblyVersion = new Version(0, 0, 0, 0);
+
+            if ((factory.CompositeImageSettings != null) && factory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                if (factory.CompositeImageSettings.PublicKey != null)
+                {
+                    hashAlgorithm = AssemblyHashAlgorithm.Sha1;
+                    publicKeyBlob = metadataBuilder.GetOrAddBlob(factory.CompositeImageSettings.PublicKey);
+                    manifestAssemblyFlags |= AssemblyFlags.PublicKey;
+                }
+
+                if (factory.CompositeImageSettings.AssemblyVersion != null)
+                {
+                    manifestAssemblyVersion = factory.CompositeImageSettings.AssemblyVersion;
+                }
+            }
+
             string manifestMetadataAssemblyName = "ManifestMetadata";
             metadataBuilder.AddAssembly(
                 metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
-                new Version(0, 0, 0, 0),
+                manifestAssemblyVersion,
                 culture: default(StringHandle),
-                publicKey: default(BlobHandle),
-                flags: default(AssemblyFlags),
-                hashAlgorithm: AssemblyHashAlgorithm.None);
+                publicKey: publicKeyBlob,
+                flags: manifestAssemblyFlags,
+                hashAlgorithm: hashAlgorithm);
 
             metadataBuilder.AddModule(
                 0,

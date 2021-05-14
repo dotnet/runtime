@@ -61,10 +61,4 @@
       <method name="GetApplyUpdateCapabilities" />
     </type>
   </assembly>
-
-  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
-    <type fullname="System.Diagnostics.Tracing.RuntimeEventSource">
-      <method signature="System.Void Initialize()" />
-    </type>
-  </assembly>
 </linker>

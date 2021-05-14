@@ -173,7 +173,6 @@ namespace System.Net.Quic.Tests
             await clientConnection.CloseAsync(0);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Fact]
         public async Task LargeDataSentAndReceived()
         {
@@ -348,7 +347,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, bytesRead);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Theory]
         [MemberData(nameof(ReadWrite_Random_Success_Data))]
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
@@ -434,7 +432,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).WaitAsync(TimeSpan.FromSeconds(5));
+            }).WaitAsync(TimeSpan.FromSeconds(15));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/32050")]

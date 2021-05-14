@@ -231,6 +231,24 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.IsType<Foo1>(service);
         }
 
+        [Fact]
+        public async Task CreateAsyncScope_Returns_AsyncServiceScope_Wrapping_ServiceScope_For_IServiceScopeFactory()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IFoo, Foo1>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var factory = serviceProvider.GetService<IServiceScopeFactory>();
+
+            await using var scope = factory.CreateAsyncScope();
+
+            // Act
+            var service = scope.ServiceProvider.GetService<IFoo>();
+
+            // Assert
+            Assert.IsType<Foo1>(service);
+        }
+
         private static IServiceProvider CreateTestServiceProvider(int count)
         {
             var serviceCollection = new ServiceCollection();
