@@ -16,9 +16,19 @@ namespace System.IO.Tests
         {
             var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
-            // Internally transforms the FileSystemEntry to a DirectoryInfo, which performs a disk hit on the cyclic symlink
-            Assert.Throws<IOException>(() => testDirectory.EnumerateDirectories("*", options).Count());
-            Assert.Throws<IOException>(() => testDirectory.GetDirectories("*", options).Count());
+
+            // Windows avoids accessing the cyclic symlink if we do not recurse
+            if (PlatformDetection.IsWindows && !recurse)
+            {
+                testDirectory.EnumerateDirectories("*", options).Count();
+                testDirectory.GetDirectories("*", options).Count();
+            }
+            else
+            {
+                // Internally transforms the FileSystemEntry to a DirectoryInfo, which performs a disk hit on the cyclic symlink
+                Assert.Throws<IOException>(() => testDirectory.EnumerateDirectories("*", options).Count());
+                Assert.Throws<IOException>(() => testDirectory.GetDirectories("*", options).Count());
+            }
         }
 
         [Theory]
@@ -28,9 +38,19 @@ namespace System.IO.Tests
         {
             var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
-            // Internally transforms the FileSystemEntry to a FileInfo, which performs a disk hit on the cyclic symlink
-            Assert.Throws<IOException>(() => testDirectory.EnumerateFiles("*", options).Count());
-            Assert.Throws<IOException>(() => testDirectory.GetFiles("*", options).Count());
+
+            // Windows avoids accessing the cyclic symlink if we do not recurse
+            if (PlatformDetection.IsWindows && !recurse)
+            {
+                testDirectory.EnumerateFiles("*", options).Count();
+                testDirectory.GetFiles("*", options).Count();
+            }
+            else
+            {
+                // Internally transforms the FileSystemEntry to a FileInfo, which performs a disk hit on the cyclic symlink
+                Assert.Throws<IOException>(() => testDirectory.EnumerateFiles("*", options).Count());
+                Assert.Throws<IOException>(() => testDirectory.GetFiles("*", options).Count());
+            }
         }
 
         [Theory]
@@ -40,9 +60,19 @@ namespace System.IO.Tests
         {
             var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
-            // Internally transforms the FileSystemEntry to a FileSystemInfo, which performs a disk hit on the cyclic symlink
-            Assert.Throws<IOException>(() => testDirectory.EnumerateFileSystemInfos("*", options).Count());
-            Assert.Throws<IOException>(() => testDirectory.GetFileSystemInfos("*", options).Count());
+
+            // Windows avoids accessing the cyclic symlink if we do not recurse
+            if (PlatformDetection.IsWindows && !recurse)
+            {
+                testDirectory.EnumerateFileSystemInfos("*", options).Count();
+                testDirectory.GetFileSystemInfos("*", options).Count();
+            }
+            else
+            {
+                // Internally transforms the FileSystemEntry to a FileSystemInfo, which performs a disk hit on the cyclic symlink
+                Assert.Throws<IOException>(() => testDirectory.EnumerateFileSystemInfos("*", options).Count());
+                Assert.Throws<IOException>(() => testDirectory.GetFileSystemInfos("*", options).Count());
+            }
         }
     }
 }

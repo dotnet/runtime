@@ -13,14 +13,20 @@ namespace System.IO.Tests
         public void EnumerateDirectories_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
-            Assert.Equal(0, Directory.EnumerateDirectories(testDirectory.FullName).Count());
+
+            // Windows differentiates between dir symlinks and file symlinks
+            int expected = PlatformDetection.IsWindows ? 1 : 0;
+            Assert.Equal(expected, Directory.EnumerateDirectories(testDirectory.FullName).Count());
         }
 
         [Fact]
         public void EnumerateFiles_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
-            Assert.Equal(1, Directory.EnumerateFiles(testDirectory.FullName).Count());
+
+            // Windows differentiates between dir symlinks and file symlinks
+            int expected = PlatformDetection.IsWindows ? 0 : 1;
+            Assert.Equal(expected, Directory.EnumerateFiles(testDirectory.FullName).Count());
         }
 
         [Fact]

@@ -18,13 +18,15 @@ namespace System.IO.Tests.Enumeration
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                  testDirectory.FullName,
                  (ref FileSystemEntry entry) => entry.ToFullPath(),
-                 // Skipping attributes forces a disk hit which enters the cyclic symlink
+                 // Skipping attributes would force a disk hit which enters the cyclic symlink
                  new EnumerationOptions(){ AttributesToSkip = 0 })
                  {
                      ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsDirectory
                  };
 
-            Assert.Equal(0, enumerable.Count());
+            // Windows differentiates between dir symlinks and file symlinks
+            int expected = PlatformDetection.IsWindows ? 1 : 0;
+            Assert.Equal(expected, enumerable.Count());
         }
 
         [Fact]
@@ -35,13 +37,15 @@ namespace System.IO.Tests.Enumeration
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                  testDirectory.FullName,
                  (ref FileSystemEntry entry) => entry.ToFullPath(),
-                 // Skipping attributes forces a disk hit which enters the cyclic symlink
+                 // Skipping attributes would force a disk hit which enters the cyclic symlink
                  new EnumerationOptions(){ AttributesToSkip = 0 })
                  {
                      ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory
                  };
 
-            Assert.Equal(1, enumerable.Count());
+            // Windows differentiates between dir symlinks and file symlinks
+            int expected = PlatformDetection.IsWindows ? 0 : 1;
+            Assert.Equal(expected, enumerable.Count());
         }
 
         [Fact]
@@ -52,7 +56,7 @@ namespace System.IO.Tests.Enumeration
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                  testDirectory.FullName,
                  (ref FileSystemEntry entry) => entry.ToFullPath(),
-                 // Skipping attributes forces a disk hit which enters the cyclic symlink
+                 // Skipping attributes would force a disk hit which enters the cyclic symlink
                  new EnumerationOptions(){ AttributesToSkip = 0 });
 
             Assert.Equal(1, enumerable.Count());
