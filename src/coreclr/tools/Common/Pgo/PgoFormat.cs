@@ -562,7 +562,9 @@ namespace Internal.Pgo
                     switch (existingSchemaItem.InstrumentationKind)
                     {
                         case PgoInstrumentationKind.BasicBlockIntCount:
+                        case PgoInstrumentationKind.BasicBlockLongCount:
                         case PgoInstrumentationKind.EdgeIntCount:
+                        case PgoInstrumentationKind.EdgeLongCount:
                         case PgoInstrumentationKind.TypeHandleHistogramCount:
                             if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {
