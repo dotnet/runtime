@@ -665,6 +665,14 @@ namespace System.Net.Security
         {
             _context!.ProcessHandshakeSuccess();
 
+            if (_nestedAuth != 1)
+            {
+                // ignore certificates received outside of handshake or requested renegotiation.
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+                return true;
+            }
+
             if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
@@ -943,6 +951,7 @@ namespace System.Net.Security
                             await ReplyOnReAuthenticationAsync(adapter, extraBuffer).ConfigureAwait(false);
                             if (renegotiation)
                             {
+                                // if we received data frame instead, we would not be here but we would decrypt data and hit check above.
                                 return 0;
                             }
                             // Loop on read.
@@ -960,7 +969,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested))
+                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested) || renegotiation)
                 {
                     throw;
                 }
