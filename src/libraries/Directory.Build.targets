@@ -326,7 +326,7 @@
   </Target>
 
   <PropertyGroup>
-    <TargetsForTfmSpecificDebugSymbolsInPackage>AddRefDebugSymbolsWithTfm</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>AddRefDebugSymbolsWithTfm;AddRuntimeDebugSymbolsWithTfm</TargetsForTfmSpecificDebugSymbolsInPackage>
   </PropertyGroup>
   
   <Target Name="AddRefDebugSymbolsWithTfm"
@@ -339,6 +339,21 @@
     <ItemGroup Condition="Exists('$(RefSymbolPath)')">
       <_TargetPathsToSymbolsWithTfm Include="$(RefSymbolPath)">
         <TargetPath>/ref/$(TargetFrameworkWithoutSuffix)/$(TargetName).pdb</TargetPath>
+        <TargetFramework>$(TargetFrameworkWithoutSuffix)</TargetFramework>
+      </_TargetPathsToSymbolsWithTfm>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddRuntimeDebugSymbolsWithTfm"
+          Condition="'$(TargetsAnyOS)' != 'true' and '$(ExcludeFromPackage)' == ''">
+    
+    <PropertyGroup>
+      <RuntimeSymbolPath>$(BaseOutputPath)$(TargetFrameworkWithoutSuffix)-$(TargetFrameworkSuffix)-$(Configuration)\$(TargetName).pdb</RuntimeSymbolPath>
+    </PropertyGroup>
+    
+    <ItemGroup Condition="Exists('$(RuntimeSymbolPath)')">
+      <_TargetPathsToSymbolsWithTfm Include="$(RuntimeSymbolPath)">
+        <TargetPath>/runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)/$(TargetName).pdb</TargetPath>
         <TargetFramework>$(TargetFrameworkWithoutSuffix)</TargetFramework>
       </_TargetPathsToSymbolsWithTfm>
     </ItemGroup>
