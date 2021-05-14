@@ -147,11 +147,11 @@ void GCToEEInterface::GcStartWork(int condemned, int max_gen)
 {
 }
 
-void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
+void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
 {
 }
 
-void GCToEEInterface::GcBeforeBGCSweepWork()
+void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
 {
 }
 

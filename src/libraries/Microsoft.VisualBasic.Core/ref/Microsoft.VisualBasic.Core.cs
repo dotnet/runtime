@@ -403,7 +403,9 @@ namespace Microsoft.VisualBasic
         public static void Input(int FileNumber, ref object Value) { }
         public static void Input(int FileNumber, ref float Value) { }
         public static void Input(int FileNumber, ref string Value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public static string InputString(int FileNumber, int CharCount) { throw null; }
         public static void Kill(string PathName) { }
         public static string LineInput(int FileNumber) { throw null; }

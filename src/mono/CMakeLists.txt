@@ -280,6 +280,9 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(TARGET_MACCAT 1)
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -723,7 +726,7 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(TARGET_IOS OR TARGET_ANDROID)
+if(TARGET_IOS OR TARGET_ANDROID OR TARGET_MACCAT)
   # FIXME: the mobile products use mono_dllmap_insert so allow this
   unset(DISABLE_DLLMAP)
 else()
