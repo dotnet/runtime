@@ -66,6 +66,8 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     // the RCW cache from resurrecting them.
     ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
+
+    Interop::OnAfterGCScanRoots();
 }
 
 /*

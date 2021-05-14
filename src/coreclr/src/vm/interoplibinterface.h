@@ -99,4 +99,6 @@ public:
 
     // Notify when GC finished
     static void OnGCFinished(_In_ int nCondemnedGeneration);
+
+    static void OnAfterGCScanRoots();
 };
