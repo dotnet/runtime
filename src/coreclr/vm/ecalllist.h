@@ -763,6 +763,10 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
 
+#ifdef _DEBUG
+    QCFuncElement("GetIsInCooperativeGCModeFunctionPointer", MarshalNative::GetIsInCooperativeGCModeFunctionPointer)
+#endif // _DEBUG
+
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
     FCFuncElement("IsComObject", MarshalNative::IsComObject)
