@@ -11,13 +11,13 @@ namespace System.Security.Cryptography
     {
         private SafeEvpCipherCtxHandle _ctxHandle;
 
-        public static bool IsSupported => true;
+        public static bool IsSupported { get; } = Interop.Crypto.CipherIsSupported(Interop.Crypto.EvpChaCha20Poly1305());
 
         [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             // Constructors should check key size before calling ImportKey.
-            Debug.Assert(key.Length == 256 / 8);
+            Debug.Assert(key.Length == KeySizeInBytes);
             _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(Interop.Crypto.EvpChaCha20Poly1305());
 
             Interop.Crypto.CheckValidOpenSslHandle(_ctxHandle);
@@ -27,8 +27,7 @@ namespace System.Security.Cryptography
                 Span<byte>.Empty,
                 Interop.Crypto.EvpCipherDirection.NoChange);
 
-            const int ChaChaNonceSize = 96 / 8;
-            Interop.Crypto.CipherSetNonceLength(_ctxHandle, ChaChaNonceSize);
+            Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSizeInBytes);
         }
 
         private void EncryptCore(

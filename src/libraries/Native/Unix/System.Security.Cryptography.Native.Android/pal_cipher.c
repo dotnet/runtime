@@ -76,6 +76,24 @@ ARGS_NON_NULL_ALL static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
     return make_java_string(env, type->name);
 }
 
+int32_t AndroidCryptoNative_CipherIsSupported(CipherInfo* type)
+{
+    abort_if_invalid_pointer_argument (type);
+
+    JNIEnv* env = GetJNIEnv();
+    jobject algName = GetAlgorithmName(env, type);
+    if (!algName)
+        return FAIL;
+
+    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
+    (*env)->DeleteLocalRef(env, algName);
+    (*env)->DeleteLocalRef(env, cipher);
+
+    // If we were able to call Cipher.getInstance without an exception, like NoSuchAlgorithmException,
+    // then the algorithm is supported.
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
 CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
 {
     abort_if_invalid_pointer_argument (type);
