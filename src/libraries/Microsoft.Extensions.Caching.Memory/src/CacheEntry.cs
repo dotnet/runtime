@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan? _absoluteExpirationRelativeToNow;
-        private TimeSpan? _slidingExpiration;
         private long? _size;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache
         private object _value;
@@ -35,7 +34,14 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets or sets an absolute expiration date for the cache entry.
         /// </summary>
-        public DateTimeOffset? AbsoluteExpiration { get; set; }
+        public DateTimeOffset? AbsoluteExpiration
+        {
+            get => _absoluteExpirationClockOffset.HasValue ? _cache.ClockQuantizer.ClockOffsetToUtcDateTimeOffset(_absoluteExpirationClockOffset!.Value) : null;
+            set
+            {
+                _absoluteExpirationClockOffset = !value.HasValue ? null : _cache.ClockQuantizer.DateTimeOffsetToClockOffset(value!.Value);
+            }
+        }
 
         /// <summary>
         /// Gets or sets an absolute expiration time, relative to now.
@@ -66,18 +72,25 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public TimeSpan? SlidingExpiration
         {
-            get => _slidingExpiration;
+            get => !_slidingExpirationClockOffsetUnits.HasValue ? null : _cache.ClockQuantizer.ClockOffsetUnitsToTimeSpan(_slidingExpirationClockOffsetUnits!.Value);
             set
             {
-                if (value <= TimeSpan.Zero)
+                if (value.HasValue)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(SlidingExpiration),
-                        value,
-                        "The sliding expiration value must be positive.");
-                }
+                    if (value <= TimeSpan.Zero)
+                    {
+                        throw new ArgumentOutOfRangeException(
+                            nameof(SlidingExpiration),
+                            value,
+                            "The sliding expiration value must be positive.");
+                    }
 
-                _slidingExpiration = value;
+                    _slidingExpirationClockOffsetUnits = _cache.ClockQuantizer.TimeSpanToClockOffsetUnits(value!.Value);
+                }
+                else
+                {
+                    _slidingExpirationClockOffsetUnits = null;
+                }
             }
         }
 
@@ -126,7 +139,8 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal DateTimeOffset LastAccessed { get; set; }
+        // Note that this is a "rounded-down" value for entries without sliding and/or absolute expiration based on CurrentInterval.ClockOffset at the time of last access.
+        internal DateTimeOffset LastAccessed => _cache.ClockQuantizer.ClockOffsetToUtcDateTimeOffset(_lastAccessedClockOffsetSerialPosition.ClockOffset);
 
         internal EvictionReason EvictionReason { get => _state.EvictionReason; private set => _state.EvictionReason = value; }
 
@@ -174,7 +188,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (!AbsoluteExpiration.HasValue && !_slidingExpiration.HasValue)
+            if (!AbsoluteExpiration.HasValue && !SlidingExpiration.HasValue)
             {
                 return false;
             }
@@ -189,8 +203,8 @@ namespace Microsoft.Extensions.Caching.Memory
                     return true;
                 }
 
-                if (_slidingExpiration.HasValue
-                    && (offset - LastAccessed) >= _slidingExpiration)
+                if (SlidingExpiration.HasValue
+                    && (offset - LastAccessed) >= SlidingExpiration)
                 {
                     SetExpired(EvictionReason.Expired);
                     return true;
