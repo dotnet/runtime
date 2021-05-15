@@ -1578,6 +1578,7 @@ handle_enum:
 		case MONO_TYPE_CLASS:  
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
 			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
