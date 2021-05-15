@@ -10,16 +10,35 @@
 namespace
 {
     std::atomic<uint32_t> _n{ 0 };
+
+    using IsInCooperativeMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
+    IsInCooperativeMode_fn s_isInCooperativeMode = nullptr;
 }
 
 extern "C"
-BOOL DLL_EXPORT STDMETHODVCALLTYPE NextUInt(/* out */ uint32_t *n)
+void DLL_EXPORT STDMETHODVCALLTYPE SetIsInCooperativeModeFunction(IsInCooperativeMode_fn fn)
 {
-    if (n == nullptr)
-        return FALSE;
+    s_isInCooperativeMode = fn;
+}
 
-    *n = (++_n);
-    return TRUE;
+extern "C"
+BOOL DLL_EXPORT STDMETHODVCALLTYPE NextUInt(/* out */ uint32_t* n)
+{
+    BOOL ret;
+    if (n == nullptr)
+    {
+        ret = FALSE;
+    }
+    else
+    {
+        *n = (++_n);
+        ret = TRUE;
+    }
+
+    if (s_isInCooperativeMode != nullptr)
+        ret = s_isInCooperativeMode();
+
+    return ret;
 }
 
 typedef int (STDMETHODVCALLTYPE *CALLBACKPROC)(int n);
