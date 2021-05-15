@@ -59,11 +59,6 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
-        private readonly bool _http3Enabled = (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
-
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
 
@@ -128,7 +123,7 @@ namespace System.Net.Http
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
-            if (_http3Enabled)
+            if (HttpConnectionPool.IsHttp3Supported())
             {
                 settings._quicImplementationProvider = _quicImplementationProvider;
             }

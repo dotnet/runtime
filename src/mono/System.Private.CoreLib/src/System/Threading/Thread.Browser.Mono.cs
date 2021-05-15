@@ -8,7 +8,7 @@ namespace System.Threading
     public partial class Thread
     {
         [UnsupportedOSPlatformGuard("browser")]
-        internal const bool IsThreadStartSupported = false;
+        internal static bool IsThreadStartSupported => false;
 
         [UnsupportedOSPlatform("browser")]
         public void Start() => throw new PlatformNotSupportedException();

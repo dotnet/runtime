@@ -76,10 +76,7 @@ namespace System.Net.Http
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
-        private readonly bool _http3Enabled = (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+        private readonly bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
@@ -126,7 +123,7 @@ namespace System.Net.Http
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
-            if (_http3Enabled)
+            if (IsHttp3Supported())
             {
                 _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
             }
@@ -264,10 +261,13 @@ namespace System.Net.Http
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
 
-                if (_http3Enabled)
+                if (IsHttp3Supported())
                 {
-                    _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
-                    _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                    if (_http3Enabled)
+                    {
+                        _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
+                        _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                    }
                 }
             }
 
@@ -280,14 +280,17 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
+        [SupportedOSPlatformGuard("linux")]
+        [SupportedOSPlatformGuard("macOS")]
+        [SupportedOSPlatformGuard("Windows")]
+        internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
         {
-            // TODO: Cannot use instance field _http3Enabled in static method
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (IsHttp3Supported())
             {
                 // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.
                 return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
@@ -865,7 +868,7 @@ namespace System.Net.Http
         {
             HttpResponseMessage? response;
 
-            if (_http3Enabled)
+            if (IsHttp3Supported())
             {
                 response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
                 if (response is not null)
