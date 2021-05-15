@@ -51,6 +51,13 @@ build_mono_aot()
     build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
 }
 
+build_ios_apps()
+{
+    __RuntimeFlavor="mono" \
+    __Exclude="$__RepoRootDir/src/tests/issues.targets" \
+    build_MSBuild_projects "Create_iOS_App" "$__RepoRootDir/src/tests/run.proj" "Create iOS Apps" "/t:BuildAlliOSApp"
+}
+
 generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
@@ -625,7 +632,7 @@ echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 if [ "$__TargetOS" == "Android" ]; then
     build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
 elif [ "$__TargetOS" == "iOS" ] || [ "$__TargetOS" == "iOSSimulator" ]; then
-    build_MSBuild_projects "Create_iOS_App" "$__RepoRootDir/src/tests/run.proj" "Create iOS Apps" "/t:BuildAlliOSApp"
+    build_ios_apps
 fi
 
 if [[ "$__RunTests" -ne 0 ]]; then

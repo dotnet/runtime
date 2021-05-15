@@ -734,27 +734,53 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
+        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
+      </ExtraDlls>
     </ItemGroup>
     <PropertyGroup>
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
     </PropertyGroup>
-
-    <MakeDir Directories="$(BuildDir)" />
-
     <ItemGroup>
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
     </ItemGroup>
+
+    <!--
+    <Message Importance="high" Text="exclusions? '$(HaveExcludes)'" />
+    <Message Importance="high" Text="%(TestExclusions.Identity)" />
+    <Message Importance="high" Text="    " />
+
+
+    <Message Importance="high" Text="   " />
+    <Message Importance="high" Text="===============" />
+    <Message Importance="high" Text="build dir = $(BuildDir)" />
+    <Message Importance="high" Text="AllTestScripts = %(AllTestScripts.Identity)" />
+    <Message Importance="high" Text="entry dll = %(Identity) test dlls = @(TestDlls) ..." />
+    <Message Importance="high" Text="extra dlls filename = %(TestDllFilename) dlls = @(ExtraDlls) ..." />
+    <Message Importance="high" Text="   " />
+    -->
+
+    <MakeDir Directories="$(BuildDir)" />
+    <MakeDir Directories="$(BuildDir)/%(TestDlls.Filename)" />
+
     <RemoveDir Directories="$(BundleDir)" />
     <Copy
         SourceFiles="@(RuntimePackNativeLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
-        SourceFiles="@(TestDlls)"
-        DestinationFolder="$(BuildDir)" />
-    <Copy
         SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="%(TestDlls.Identity)"
+        DestinationFolder="$(BuildDir)/%(TestDlls.Filename)" />
+    <Copy
+        SourceFiles="%(ExtraDlls.Identity)"
+        DestinationFolder="$(BuildDir)/%(ExtraDlls.TestDllFilename)" />
+
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
@@ -775,6 +801,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
+  <!--
+    -->
 
     <!-- Apparently MSBuild cannot move directories and recursively copying a
          a directory requires writing some sort of recursive traversal
@@ -785,6 +813,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MakeDir Directories="$(FinalPath)" />
     <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
     <RemoveDir Directories="$(AppBundlePath)" />
+  <!--
+    -->
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
