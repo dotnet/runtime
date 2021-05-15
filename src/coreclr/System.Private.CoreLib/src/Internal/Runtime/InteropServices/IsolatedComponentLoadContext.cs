@@ -17,7 +17,7 @@ namespace Internal.Runtime.InteropServices
     {
         private readonly AssemblyDependencyResolver _resolver;
 
-        [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this class")]
+        [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this class", Url = "https://aka.ms/dotnet-illink/nativehost")]
         public IsolatedComponentLoadContext(string componentAssemblyPath) : base($"IsolatedComponentLoadContext({componentAssemblyPath})")
         {
             _resolver = new AssemblyDependencyResolver(componentAssemblyPath);

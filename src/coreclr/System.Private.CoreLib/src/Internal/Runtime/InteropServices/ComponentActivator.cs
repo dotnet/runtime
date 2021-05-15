@@ -12,6 +12,8 @@ namespace Internal.Runtime.InteropServices
 {
     public static class ComponentActivator
     {
+        private const string TrimIncompatibleWarningMessage = "Native hosting is not trim compatible and this warning will be seen if trimming is enabled.";
+
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
 
@@ -44,7 +46,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
-        [RequiresUnreferencedCode("Native hosting is not trim compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnmanagedCallersOnly]
         public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                                    IntPtr typeNameNative,
@@ -139,7 +141,7 @@ namespace Internal.Runtime.InteropServices
             return 0;
         }
 
-        [RequiresUnreferencedCode("Native hosting is not trim compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
             IsolatedComponentLoadContext? alc;
@@ -156,7 +158,7 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
-        [RequiresUnreferencedCode("Native hosting is not trim compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
                                                          string methodName,
