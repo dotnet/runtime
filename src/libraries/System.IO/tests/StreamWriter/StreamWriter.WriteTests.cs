@@ -415,5 +415,20 @@ namespace System.IO.Tests
                 Assert.False(tempStream.CanRead);
             }
         }
+
+        [Fact]
+        public async Task StreamWriter_WriteAsync_EmitBOMAndFlushDataWhenBufferIsFull()
+        {
+            Encoding UTF8BOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true);
+
+            using (var s = new MemoryStream())
+            using (var writer = new StreamWriter(s, UTF8BOM, 4))
+            {
+                await writer.WriteAsync("abcdefg");
+                await writer.FlushAsync();
+
+                Assert.Equal(10, s.Length); // BOM (3) + string value (7)
+            }
+        }
     }
 }
