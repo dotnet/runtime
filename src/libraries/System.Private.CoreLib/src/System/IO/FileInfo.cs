@@ -79,20 +79,22 @@ namespace System.IO
         public StreamReader OpenText()
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
-        public StreamReader OpenText(FileOptions options)
-            => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options);
-
         public StreamWriter CreateText()
             => new StreamWriter(NormalizedPath, append: false);
-
-        public StreamWriter CreateText(FileOptions options)
-            => new StreamWriter(NormalizedPath, append: false, options);
 
         public StreamWriter AppendText()
             => new StreamWriter(NormalizedPath, append: true);
 
+#if NET6_0_OR_GREATER
+        public StreamReader OpenText(FileOptions options)
+            => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options);
+
+        public StreamWriter CreateText(FileOptions options)
+            => new StreamWriter(NormalizedPath, append: false, options);
+
         public StreamWriter AppendText(FileOptions options)
             => new StreamWriter(NormalizedPath, append: true, options);
+#endif
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 

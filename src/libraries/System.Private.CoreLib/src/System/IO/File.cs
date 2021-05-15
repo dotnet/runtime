@@ -36,28 +36,12 @@ namespace System.IO
             return new StreamReader(path);
         }
 
-        public static StreamReader OpenText(string path, FileOptions options)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamReader(path, options);
-        }
-
         public static StreamWriter CreateText(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
             return new StreamWriter(path, append: false);
-        }
-
-        public static StreamWriter CreateText(string path, FileOptions options)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamWriter(path, append: false, options);
         }
 
         public static StreamWriter AppendText(string path)
@@ -68,6 +52,23 @@ namespace System.IO
             return new StreamWriter(path, append: true);
         }
 
+#if NET6_0_OR_GREATER
+        public static StreamReader OpenText(string path, FileOptions options)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            return new StreamReader(path, options);
+        }
+
+        public static StreamWriter CreateText(string path, FileOptions options)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            return new StreamWriter(path, append: false, options);
+        }
+
         public static StreamWriter AppendText(string path, FileOptions options)
         {
             if (path == null)
@@ -75,6 +76,7 @@ namespace System.IO
 
             return new StreamWriter(path, append: true, options);
         }
+#endif
 
         /// <summary>
         /// Copies an existing file to a new file.
