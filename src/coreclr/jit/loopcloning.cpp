@@ -1936,9 +1936,6 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // initialization of the loop counter up above the test that determines which version of the
     // loop to take.
     loop.lpFlags |= LPFLG_DONT_UNROLL;
-
-    constexpr bool computePreds = false;
-    fgUpdateChangedFlowGraph(computePreds);
 }
 
 //-------------------------------------------------------------------------
@@ -2350,18 +2347,26 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
 //                    optInfo fields of the context are updated with the
 //                    identified optimization candidates.
 //
-void Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
+// Returns:
+//   true if there are any clonable loops.
+//
+bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 {
+    bool result = false;
     for (unsigned i = 0; i < optLoopCount; i++)
     {
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", i);
         if (optIsLoopClonable(i))
         {
-            optIdentifyLoopOptInfo(i, context);
+            if (optIdentifyLoopOptInfo(i, context))
+            {
+                result = true;
+            }
         }
         JITDUMP("------------------------------------------------------------\n");
     }
     JITDUMP("\n");
+    return result;
 }
 
 //----------------------------------------------------------------------------
@@ -2413,12 +2418,17 @@ PhaseStatus Compiler::optCloneLoops()
     }
 #endif
 
-    unsigned optStaticallyOptimizedLoops = 0;
-
     LoopCloneContext context(optLoopCount, getAllocator(CMK_LoopClone));
 
     // Obtain array optimization candidates in the context.
-    optObtainLoopCloningOpts(&context);
+    if (!optObtainLoopCloningOpts(&context))
+    {
+        JITDUMP("  No clonable loops\n");
+        // TODO: if we can verify that the IR was not modified, we can return PhaseStatus::MODIFIED_NOTHING
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    unsigned optStaticallyOptimizedLoops = 0;
 
     // For each loop, derive cloning conditions for the optimization candidates.
     for (unsigned i = 0; i < optLoopCount; ++i)
@@ -2484,6 +2494,7 @@ PhaseStatus Compiler::optCloneLoops()
 #endif
 #endif
 
+    assert(optLoopsCloned == 0); // It should be initialized, but not yet changed.
     for (unsigned i = 0; i < optLoopCount; ++i)
     {
         if (context.GetLoopOptInfo(i) != nullptr)
@@ -2493,6 +2504,13 @@ PhaseStatus Compiler::optCloneLoops()
             context.OptimizeBlockConditions(i DEBUGARG(verbose));
             optCloneLoop(i, &context);
         }
+    }
+
+    if (optLoopsCloned > 0)
+    {
+        JITDUMP("Recompute reachability and dominators after loop cloning\n");
+        constexpr bool computePreds = false;
+        fgUpdateChangedFlowGraph(computePreds);
     }
 
 #ifdef DEBUG

@@ -13,13 +13,7 @@ namespace System.Diagnostics
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> Baggage { get { throw null; } }
         public static System.Diagnostics.Activity? Current
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get { throw null; }
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             set { }
         }
         public static System.Diagnostics.ActivityIdFormat DefaultIdFormat { get { throw null; } set { } }
@@ -27,9 +21,6 @@ namespace System.Diagnostics
         public static bool ForceDefaultIdFormat { get { throw null; } set { } }
         public string? Id
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get { throw null; }
         }
 
@@ -120,9 +111,6 @@ namespace System.Diagnostics
         Hierarchical = 1,
         W3C = 2,
     }
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly partial struct ActivitySpanId : System.IEquatable<System.Diagnostics.ActivitySpanId>
     {
         private readonly object _dummy;
@@ -162,9 +150,6 @@ namespace System.Diagnostics
         None = 0,
         Recorded = 1,
     }
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly partial struct ActivityTraceId : System.IEquatable<System.Diagnostics.ActivityTraceId>
     {
         private readonly object _dummy;
@@ -271,3 +256,125 @@ namespace System.Diagnostics
    }
 }
 
+namespace System.Diagnostics.Metrics
+{
+    public sealed class Counter<T> : Instrument<T> where T : struct
+    {
+        public void Add(T delta) {  throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  {  throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  {  throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  {  throw null; }
+        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) {  throw null; }
+        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) {  throw null; }
+        internal Counter(Meter meter, string name, string? unit, string? description) :
+                        base(meter, name, unit, description) {  throw null; }
+    }
+    public sealed class Histogram<T> : Instrument<T> where T : struct
+    {
+        internal Histogram(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        public void Record(T value) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3) { throw null; }
+        public void Record(T value, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
+    }
+    public abstract class Instrument
+    {
+        public string? Description { get {throw null;} }
+        public bool Enabled { get  {throw null; } }
+        protected Instrument(Meter meter, string name, string? unit, string? description) {throw null;}
+        public virtual bool IsObservable { get  {throw null; } }
+        public Meter Meter { get {throw null;} }
+        public string Name { get {throw null;} }
+        protected void Publish() {throw null;}
+        public string? Unit { get {throw null; } }
+    }
+    public abstract class Instrument<T> : Instrument where T : struct
+    {
+        protected Instrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected void RecordMeasurement(T measurement)  { throw null; }
+        protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
+        protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
+        protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+    }
+    public readonly struct Measurement<T> where T : struct
+    {
+        public Measurement(T value) { throw null; }
+        public Measurement(T value, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) { throw null; }
+        public Measurement(T value, params System.Collections.Generic.KeyValuePair<string, object?>[]? tags) { throw null; }
+        public Measurement(T value, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
+        public T Value { get { throw null; } }
+    }
+    public delegate void MeasurementCallback<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state);
+    public class Meter : IDisposable
+    {
+        public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
+                            Func<T> observeValue,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
+                            Func<Measurement<T>> observeValue,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
+                            Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableGauge<T> CreateObservableGauge<T>(
+                            string name,
+                            Func<T> observeValue,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableGauge<T> CreateObservableGauge<T>(
+                            string name,
+                            Func<Measurement<T>> observeValue,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public ObservableGauge<T> CreateObservableGauge<T>(
+                            string name,
+                            Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
+        public void Dispose()  { throw null; }
+        public Meter(string name) { throw null; }
+        public Meter(string name, string? version)  { throw null; }
+        public string Name { get { throw null; }  }
+        public string? Version { get { throw null; } }
+    }
+    public sealed class MeterListener : IDisposable
+    {
+        public object? DisableMeasurementEvents(Instrument instrument) { throw null; }
+        public void Dispose() { throw null; }
+        public void EnableMeasurementEvents(Instrument instrument, object? state = null) { throw null; }
+        public Action<Instrument, MeterListener>? InstrumentPublished { get { throw null; } set { throw null; } }
+        public Action<Instrument, object?>? MeasurementsCompleted { get { throw null; } set { throw null; } }
+        public MeterListener() { throw null; }
+        public void RecordObservableInstruments() { throw null; }
+        public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct { throw null; }
+        public void Start() { throw null; }
+    }
+    public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
+    {
+        internal ObservableCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected override System.Collections.Generic.IEnumerable<Measurement<T>> Observe() { throw null;}
+    }
+    public sealed class ObservableGauge<T> : ObservableInstrument<T> where T : struct
+    {
+        internal ObservableGauge(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected override System.Collections.Generic.IEnumerable<Measurement<T>> Observe() { throw null; }
+    }
+    public abstract class ObservableInstrument<T> : Instrument where T : struct
+    {
+        public override bool IsObservable { get { throw null; } }
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected abstract System.Collections.Generic.IEnumerable<Measurement<T>> Observe();
+    }
+}

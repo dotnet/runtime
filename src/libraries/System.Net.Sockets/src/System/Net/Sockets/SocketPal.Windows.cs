@@ -300,31 +300,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
+        public static SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred) =>
+            SendTo(handle, buffer.AsSpan(offset, size), socketFlags, peerAddress, peerAddressSize, out bytesTransferred);
+
+        public static unsafe SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
         {
             int bytesSent;
-            if (buffer.Length == 0)
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
-                bytesSent = Interop.Winsock.sendto(
-                    handle,
-                    null,
-                    0,
-                    socketFlags,
-                    peerAddress,
-                    peerAddressSize);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = &buffer[0])
-                {
-                    bytesSent = Interop.Winsock.sendto(
-                        handle,
-                        pinnedBuffer + offset,
-                        size,
-                        socketFlags,
-                        peerAddress,
-                        peerAddressSize);
-                }
+                bytesSent = Interop.Winsock.sendto(handle, bufferPtr, buffer.Length, socketFlags, peerAddress, peerAddressSize);
             }
 
             if (bytesSent == (int)SocketError.SocketError)
@@ -528,19 +512,16 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
+        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred) =>
+            ReceiveFrom(handle, buffer.AsSpan(offset, size), SocketFlags.None, socketAddress, ref addressLength, out bytesTransferred);
+
+        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, Span<byte> buffer, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
         {
             int bytesReceived;
-            if (buffer.Length == 0)
+
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
-                bytesReceived = Interop.Winsock.recvfrom(handle, null, 0, socketFlags, socketAddress, ref addressLength);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = &buffer[0])
-                {
-                    bytesReceived = Interop.Winsock.recvfrom(handle, pinnedBuffer + offset, size, socketFlags, socketAddress, ref addressLength);
-                }
+                bytesReceived = Interop.Winsock.recvfrom(handle, bufferPtr, buffer.Length, socketFlags, socketAddress, ref addressLength);
             }
 
             if (bytesReceived == (int)SocketError.SocketError)

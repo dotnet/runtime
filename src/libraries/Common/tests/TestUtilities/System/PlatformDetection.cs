@@ -54,7 +54,7 @@ namespace System
         public static bool IsBinaryFormatterSupported => IsNotMobile;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS;
+        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;

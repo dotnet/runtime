@@ -1147,6 +1147,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/CompatibleWithTest/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/**">
+            <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
+        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizeexcep/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
@@ -1234,6 +1237,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/** ">
             <Issue>https://github.com/dotnet/runtime/issues/41180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/ObjectiveCMarshalAPI/**">
+            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsByValArray/AsByValArrayTest/**">
             <Issue>needs triage</Issue>
@@ -2707,7 +2713,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
@@ -3244,7 +3250,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">
