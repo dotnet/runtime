@@ -91,7 +91,7 @@ int32_t AndroidCryptoNative_CipherIsSupported(CipherInfo* type)
 
     // If we were able to call Cipher.getInstance without an exception, like NoSuchAlgorithmException,
     // then the algorithm is supported.
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    return TryClearJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
