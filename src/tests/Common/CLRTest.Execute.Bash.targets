@@ -393,8 +393,8 @@ helix_runner_uid="%24(id -u)"
 sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple run \
   --app="$__TestBinaryBase/$__Category.app" \
   --output-directory="$HELIX_WORKITEM_UPLOAD_ROOT" \
-  --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName)/$(MsBuildProjectName).dll" \
-  --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=$(MsBuildProjectName)" \
+  --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" \
+  --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" \
   --expected-exit-code=100 \
   --targets ios-simulator-64 \
   -v

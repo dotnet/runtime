@@ -764,10 +764,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <Message Importance="high" Text="   " />
     -->
 
-    <MakeDir Directories="$(BuildDir)" />
-    <MakeDir Directories="$(BuildDir)/%(TestDlls.Filename)" />
-
     <RemoveDir Directories="$(BundleDir)" />
+    <RemoveDir Directories="$(BuildDir)" />
+
+    <MakeDir Directories="$(BuildDir)" />
+    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+
     <Copy
         SourceFiles="@(RuntimePackNativeLibs)"
         DestinationFolder="$(BuildDir)" />
@@ -776,11 +778,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="%(TestDlls.Identity)"
-        DestinationFolder="$(BuildDir)/%(TestDlls.Filename)" />
+        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
     <Copy
         SourceFiles="%(ExtraDlls.Identity)"
-        DestinationFolder="$(BuildDir)/%(ExtraDlls.TestDllFilename)" />
-
+        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
