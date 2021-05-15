@@ -453,6 +453,10 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 const int OpenSslChaChaMinimumVersion = 0x1_01_00_00_F; //major_minor_fix_patch_status
                 expectedIsSupported = SafeEvpPKeyHandle.OpenSslVersion >= OpenSslChaChaMinimumVersion;
             }
+            else if (PlatformDetection.IsAndroid)
+            {
+                expectedIsSupported = true;
+            }
 
             Assert.Equal(expectedIsSupported, ChaCha20Poly1305.IsSupported);
         }
