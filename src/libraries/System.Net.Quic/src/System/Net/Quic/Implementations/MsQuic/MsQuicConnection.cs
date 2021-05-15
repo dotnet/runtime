@@ -30,7 +30,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private readonly State _state = new State();
         private GCHandle _stateHandle;
-        private bool _disposed;
+        private int _disposed;
 
         private IPEndPoint? _localEndPoint;
         private readonly EndPoint _remoteEndPoint;
@@ -44,7 +44,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             public SafeMsQuicConnectionHandle Handle = null!; // set inside of MsQuicConnection ctor.
 
-            // These exists to prevent GC of the MsQuicConnection in the middle of an async op (Connect or Shutdown).
             public MsQuicConnection? Connection;
 
             // TODO: only allocate these when there is an outstanding connect/shutdown.
@@ -53,6 +52,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public bool Connected;
             public long AbortErrorCode = -1;
+            public int StreamCount;
 
             // Queue for accepted streams.
             // Backlog limit is managed by MsQuic so it can be unbounded here.
@@ -87,6 +87,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            _state.Connection = this;
         }
 
         // constructor for outbound connections
@@ -121,6 +123,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            _state.Connection = this;
         }
 
         internal override IPEndPoint? LocalEndPoint => _localEndPoint;
@@ -142,7 +146,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Debug.Assert(state.Connection != null);
                 state.Connection._localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
                 state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
-                state.Connection = null;
 
                 state.Connected = true;
                 state.ConnectTcs.SetResult(MsQuicStatusCodes.Success);
@@ -185,12 +188,56 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
+        public void RemoveStream(MsQuicStream stream)
+        {
+            lock (_state)
+            {
+                _state.StreamCount--;
+            }
+
+            if (_state.Connection == null && _state.StreamCount == 0)
+            {
+                _state?.Handle?.Dispose();
+                if (_stateHandle.IsAllocated) _stateHandle.Free();
+            }
+        }
+
+        private bool TryAddStream(SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+        {
+            lock (_state)
+            {
+                var stream = new MsQuicStream(this, streamHandle, flags);
+                // once stream is created, it will call RemoveStream on disposal.
+                _state.StreamCount++;
+                if (_state.Connection != null && _state.AcceptQueue.Writer.TryWrite(stream))
+                {
+                    return true;
+                }
+                else
+                {
+                    stream.Dispose();
+                    return false;
+                }
+            }
+        }
+
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
-            var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            var stream = new MsQuicStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
+            MsQuicConnection? connection = state.Connection;
 
-            state.AcceptQueue.Writer.TryWrite(stream);
+            if (connection == null)
+            {
+                return MsQuicStatusCodes.UserCanceled;
+            }
+
+            var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
+            if (!connection.TryAddStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags))
+            {
+                // This will call StreamCloseDelegate and free the stream.
+                // We will return Success to the MsQuic to prevent double free.
+                streamHandle.Dispose();
+            }
+
             return MsQuicStatusCodes.Success;
         }
 
@@ -326,13 +373,25 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            lock (_state)
+            {
+                var stream = new MsQuicStream(this, _state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+                // once stream is created, it will call RemoveStream on disposal.
+                _state.StreamCount++;
+                return stream;
+            }
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
+            lock (_state)
+            {
+                var stream = new MsQuicStream(this, _state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
+                // once stream is created, it will call RemoveStream on disposal.
+                _state.StreamCount++;
+                return stream;
+            }
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
@@ -394,8 +453,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             QUIC_CONNECTION_SHUTDOWN_FLAGS Flags,
             long ErrorCode)
         {
-            // Store the connection into the GCHandle'd state to prevent GC if user calls ShutdownAsync and gets rid of all references to the MsQuicConnection.
-            Debug.Assert(_state.Connection == null);
             _state.Connection = this;
 
             try
@@ -476,16 +533,38 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
+        private async Task FlushAcceptQueue()
+        {
+            try {
+                // Writer may or may not be completed.
+                _state.AcceptQueue.Writer.Complete();
+            } catch { };
+
+            await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync())
+            {
+                item.Dispose();
+            }
+        }
+
         private void Dispose(bool disposing)
         {
-            if (_disposed)
+            int disposed = Interlocked.Exchange(ref _disposed, 1);
+            if (disposed == 1)
             {
                 return;
             }
 
-            _state?.Handle?.Dispose();
-            if (_stateHandle.IsAllocated) _stateHandle.Free();
-            _disposed = true;
+            _state.Connection = null;
+            FlushAcceptQueue().GetAwaiter().GetResult();
+
+            lock (_state)
+            {
+                if (_state.StreamCount == 0)
+                {
+                    _state?.Handle?.Dispose();
+                    if (_stateHandle.IsAllocated) _stateHandle.Free();
+                }
+            }
         }
 
         // TODO: this appears abortive and will cause prior successfully shutdown and closed streams to drop data.
@@ -499,7 +578,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(nameof(MsQuicStream));
             }

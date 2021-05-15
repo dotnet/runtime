@@ -35,6 +35,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private volatile bool _disposed;
 
+        private MsQuicConnection? _connection;
+
         private sealed class State
         {
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
@@ -71,7 +73,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // inbound.
-        internal MsQuicStream(SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+        internal MsQuicStream(MsQuicConnection connection, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             _state.Handle = streamHandle;
             _canRead = true;
@@ -91,10 +93,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            _connection = connection;
         }
 
         // outbound.
-        internal MsQuicStream(SafeMsQuicConnectionHandle connection, QUIC_STREAM_OPEN_FLAGS flags)
+        internal MsQuicStream(MsQuicConnection connection, SafeMsQuicConnectionHandle connectionHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             Debug.Assert(connection != null);
 
@@ -105,7 +109,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 uint status = MsQuicApi.Api.StreamOpenDelegate(
-                    connection,
+                    connectionHandle,
                     flags,
                     s_streamDelegate,
                     GCHandle.ToIntPtr(_stateHandle),
@@ -122,6 +126,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            _connection = connection;
         }
 
         internal override bool CanRead => _canRead;
@@ -284,7 +290,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         shouldComplete = true;
                     }
-
                     state.ReadState = ReadState.Aborted;
                 }
 
@@ -503,6 +508,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
+            _connection?.RemoveStream(this);
+            _connection = null;
         }
 
         private void EnableReceive()
