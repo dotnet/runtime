@@ -112,7 +112,17 @@ namespace System.Diagnostics.Metrics
         }
 
         // Called from MeterListener.EnableMeasurementEvents
-        internal void EnableMeasurement(ListenerSubscription subscription) => _subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener));
+        internal void EnableMeasurement(ListenerSubscription subscription)
+        {
+            while (!_subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)))
+            {
+                ListenerSubscription oldSubscription = _subscriptions.Remove(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener));
+                if (object.ReferenceEquals(oldSubscription.Listener, subscription.Listener))
+                {
+                    oldSubscription.Listener.MeasurementsCompleted?.Invoke(this, oldSubscription.State);
+                }
+            }
+        }
 
         // Called from MeterListener.DisableMeasurementEvents
         internal object? DisableMeasurements(MeterListener listener) => _subscriptions.Remove(new ListenerSubscription(listener), (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)).State;

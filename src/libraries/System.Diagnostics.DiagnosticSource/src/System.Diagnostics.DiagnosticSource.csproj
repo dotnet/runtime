@@ -106,7 +106,6 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
     <Reference Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" Include="System.Runtime.CompilerServices.Unsafe" />
@@ -129,7 +128,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <PackageReference Include="System.AppContext" Version="$(SystemAppContextVersion)" />
-    <PackageReference Include="System.Linq" Version="$(SystemLinqVersion)" />
     <PackageReference Include="System.Runtime.Extensions" Version="$(SystemRuntimeExtensionsVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and

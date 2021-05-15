@@ -17,12 +17,9 @@ namespace System.Diagnostics.Metrics
 #endif
     public abstract partial class Instrument<T> : Instrument where T : struct
     {
-        [ThreadStatic] private KeyValuePair<string, object?>[] ts_tags = new KeyValuePair<string, object?>[3];
+        [ThreadStatic] private KeyValuePair<string, object?>[] ts_tags;
 
-        // 0 is not recursive, 1 is recursive.
-        // We are using the thread static array ts_tags to report the measurements by calling the listener callback. We are using ts_recursive to protect against
-        // the case if the listener callback decide to record extra measurement using the same thread.
-        [ThreadStatic] private int ts_recursive;
+        private const int MaxTagsCount = 3;
 
         /// <summary>
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
@@ -31,11 +28,11 @@ namespace System.Diagnostics.Metrics
         /// <param name="tag">A key-value pair tag associated with the measurement.</param>
         protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag)
         {
-            int isRecursive = Interlocked.CompareExchange(ref ts_recursive, 1, 0);
-            KeyValuePair<string, object?>[] tags = isRecursive == 0 ? ts_tags : new KeyValuePair<string, object?>[1];
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
             tags[0] = tag;
             RecordMeasurement(measurement, tags.AsSpan().Slice(0, 1));
-            if (isRecursive == 0) { ts_recursive = 0; }
+            ts_tags = tags;
         }
 
         /// <summary>
@@ -46,12 +43,12 @@ namespace System.Diagnostics.Metrics
         /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
         protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2)
         {
-            int isRecursive = Interlocked.CompareExchange(ref ts_recursive, 1, 0);
-            KeyValuePair<string, object?>[] tags = isRecursive == 0 ? ts_tags : new KeyValuePair<string, object?>[2];
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
             tags[0] = tag1;
             tags[1] = tag2;
             RecordMeasurement(measurement, tags.AsSpan().Slice(0, 2));
-            if (isRecursive == 0) { ts_recursive = 0; }
+            ts_tags = tags;
         }
 
         /// <summary>
@@ -63,13 +60,13 @@ namespace System.Diagnostics.Metrics
         /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
         protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3)
         {
-            int isRecursive = Interlocked.CompareExchange(ref ts_recursive, 1, 0);
-            KeyValuePair<string, object?>[] tags = isRecursive == 0 ? ts_tags : new KeyValuePair<string, object?>[3];
+            var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
+            ts_tags = null;
             tags[0] = tag1;
             tags[1] = tag2;
             tags[2] = tag3;
             RecordMeasurement(measurement, tags.AsSpan().Slice(0, 3));
-            if (isRecursive == 0) { ts_recursive = 0; }
+            ts_tags = tags;
         }
     }
 }

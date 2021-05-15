@@ -549,8 +549,10 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableCounter<long> observableCounter = meter.CreateObservableCounter<long>("ObservableCounter", () => new Measurement<long>(10, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
                 ObservableGauge<decimal> observableGauge = meter.CreateObservableGauge<decimal>("ObservableGauge", () => new Measurement<decimal>(5.7m, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
 
+                int completedMeasurements = 0;
                 MeterListener listener = new MeterListener();
                 listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                listener.MeasurementsCompleted = (theInstrument, state) => completedMeasurements++;
 
                 int count = 0;
 
@@ -573,6 +575,8 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(4, count);
 
                 listener.Dispose();
+                Assert.Equal(4, completedMeasurements);
+
                 counter.Add(1);
                 Assert.Equal(4, count);
 
@@ -618,6 +622,42 @@ namespace System.Diagnostics.Metrics.Tests
 
                 counter.Add(1);
                 Assert.Equal(9, count);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnableListeneingMultipleTimesWithDifferentState()
+        {
+            RemoteExecutor.Invoke(() => {
+                Meter meter = new Meter("EnableListeneingMultipleTimesWithDifferentState");
+
+                Counter<int> counter = meter.CreateCounter<int>("Counter");
+
+                MeterListener listener = new MeterListener();
+
+                string lastState = "1";
+                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, lastState);
+                int completedCount = 0;
+                listener.MeasurementsCompleted = (theInstrument, state) => { Assert.Equal(lastState, state); completedCount++; };
+                listener.Start();
+
+                string newState = "2";
+                listener.EnableMeasurementEvents(counter, newState);
+                Assert.Equal(1, completedCount);
+                lastState = newState;
+
+                newState = "3";
+                listener.EnableMeasurementEvents(counter, newState);
+                Assert.Equal(2, completedCount);
+                lastState = newState;
+
+                newState = null;
+                listener.EnableMeasurementEvents(counter, newState);
+                Assert.Equal(3, completedCount);
+                lastState = newState;
+
+                listener.Dispose();
+                Assert.Equal(4, completedCount);
             }).Dispose();
         }
 

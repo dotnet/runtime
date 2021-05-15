@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace System.Diagnostics.Metrics
 {
@@ -34,7 +33,7 @@ namespace System.Diagnostics.Metrics
         /// <param name="tags">The measurement associated tags list.</param>
         public Measurement(T value, IEnumerable<KeyValuePair<string, object?>>? tags)
         {
-            _tags = tags?.ToArray() ?? Instrument.EmptyTags;
+            _tags = ToArray(tags);
             Value = value;
         }
 
@@ -78,5 +77,42 @@ namespace System.Diagnostics.Metrics
         /// Gets the measurement value.
         /// </summary>
         public T Value { get; }
+
+        // Private helper to copy IEnumerable to array. We have it to avoid adding dependencies on System.Linq
+        private static KeyValuePair<string, object?>[] ToArray(IEnumerable<KeyValuePair<string, object?>>? tags)
+        {
+            if (tags is null)
+            {
+                return Instrument.EmptyTags;
+            }
+
+            int count = 0;
+            using (IEnumerator<KeyValuePair<string, object?>> e = tags.GetEnumerator())
+            {
+                checked
+                {
+                    while (e.MoveNext())
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            int index = 0;
+            KeyValuePair<string, object?>[] tagsArray = new KeyValuePair<string, object?>[count];
+            using (IEnumerator<KeyValuePair<string, object?>> e = tags.GetEnumerator())
+            {
+                checked
+                {
+                    while (e.MoveNext() && index < count)
+                    {
+                        tagsArray[index] = e.Current;
+                        index++;
+                    }
+                }
+            }
+
+            return tagsArray;
+        }
     }
 }

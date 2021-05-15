@@ -58,79 +58,95 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
+        /// <remarks>
+        /// Counter is an Instrument which supports non-negative increments.
+        /// Example uses for Counter: count the number of bytes received, count the number of requests completed, count the number of accounts created, count the number of checkpoints run, and count the number of HTTP 5xx errors.
+        /// </remarks>
         public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct => new Counter<T>(this, name, unit, description);
 
         /// <summary>
-        /// Create a metrics Histogram object.
+        /// Histogram is an Instrument which can be used to report arbitrary values that are likely to be statistically meaningful. It is intended for statistics such as histograms, summaries, and percentile.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
+        /// <remarks>
+        /// Example uses for Histogram: the request duration and the size of the response payload.
+        /// </remarks>
         public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct => new Histogram<T>(this, name, unit, description);
 
         /// <summary>
-        /// Create a metrics ObservableCounter object.
+        /// ObservableCounter is an Instrument which reports monotonically increasing value(s) when the instrument is being observed.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by the instrument user.</param>
+        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
+        /// <remarks>
+        /// Example uses for ObservableCounter: The number of page faults for each process.
+        /// </remarks>
         public ObservableCounter<T> CreateObservableCounter<T>(string name, Func<T> observeValue, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableCounter<T>(this, name, observeValue, unit, description);
 
 
         /// <summary>
-        /// Create a metrics ObservableCounter object.
+        /// ObservableCounter is an Instrument which reports monotonically increasing value(s) when the instrument is being observed.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by the instrument user.</param>
+        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" /></param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
+        /// <remarks>
+        /// Example uses for ObservableCounter: The number of page faults for each process.
+        /// </remarks>
         public ObservableCounter<T> CreateObservableCounter<T>(string name, Func<Measurement<T>> observeValue, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableCounter<T>(this, name, observeValue, unit, description);
 
         /// <summary>
-        /// Create a metrics ObservableCounter object.
+        /// ObservableCounter is an Instrument which reports monotonically increasing value(s) when the instrument is being observed.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="observeValues">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by the instrument user.</param>
+        /// <param name="observeValues">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
+        /// <remarks>
+        /// Example uses for ObservableCounter: The number of page faults for each process.
+        /// </remarks>
         public ObservableCounter<T> CreateObservableCounter<T>(string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableCounter<T>(this, name, observeValues, unit, description);
 
         /// <summary>
-        /// Create a metrics ObservableGauge object.
+        /// ObservableGauge is an asynchronous Instrument which reports non-additive value(s) (e.g. the room temperature - it makes no sense to report the temperature value from multiple rooms and sum them up) when the instrument is being observed.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by the instrument user.</param>
+        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         public ObservableGauge<T> CreateObservableGauge<T>(string name, Func<T> observeValue, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableGauge<T>(this, name, observeValue, unit, description);
 
         /// <summary>
-        /// Create a metrics ObservableGauge object.
+        /// ObservableGauge is an asynchronous Instrument which reports non-additive value(s) (e.g. the room temperature - it makes no sense to report the temperature value from multiple rooms and sum them up) when the instrument is being observed.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by the instrument user.</param>
+        /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         public ObservableGauge<T> CreateObservableGauge<T>(string name, Func<Measurement<T>> observeValue, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableGauge<T>(this, name, observeValue, unit, description);
 
         /// <summary>
-        /// Create a metrics ObservableGauge object.
+        /// ObservableGauge is an asynchronous Instrument which reports non-additive value(s) (e.g. the room temperature - it makes no sense to report the temperature value from multiple rooms and sum them up) when the instrument is being observed.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="observeValues">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by the instrument user.</param>
+        /// <param name="observeValues">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         public ObservableGauge<T> CreateObservableGauge<T>(string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableGauge<T>(this, name, observeValues, unit, description);
 
         /// <summary>
-        /// Dispose the listener which will disable all instruments created by this meter.
+        /// Dispose the Meter which will disable all instruments created by this meter.
         /// </summary>
         public void Dispose()
         {

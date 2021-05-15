@@ -7,6 +7,14 @@ using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TagsBag
+    {
+        internal KeyValuePair<string, object?> Tag1;
+        internal KeyValuePair<string, object?> Tag2;
+        internal KeyValuePair<string, object?> Tag3;
+    }
+
     /// <summary>
     /// Instrument{T} is the base class from which all non-observable instruments will inherit from.
     /// </summary>
@@ -15,21 +23,11 @@ namespace System.Diagnostics.Metrics
     /// </remarks>
     public abstract partial class Instrument<T> : Instrument where T : struct
     {
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct TagsBag
-        {
-            internal KeyValuePair<string, object?> Tag1;
-            internal KeyValuePair<string, object?> Tag2;
-            internal KeyValuePair<string, object?> Tag3;
-        }
-
         /// <summary>
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tag">A key-value pair tag associated with the measurement.</param>
-        [SkipLocalsInit]
         protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag)
         {
             TagsBag tags;
@@ -44,7 +42,6 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
         /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
-        [SkipLocalsInit]
         protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2)
         {
             TagsBag tags;
@@ -61,7 +58,6 @@ namespace System.Diagnostics.Metrics
         /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
         /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
         /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
-        [SkipLocalsInit]
         protected void RecordMeasurement(T measurement, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2, KeyValuePair<string, object?> tag3)
         {
             TagsBag tags;

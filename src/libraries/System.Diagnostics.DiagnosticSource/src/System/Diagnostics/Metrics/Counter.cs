@@ -6,14 +6,15 @@ using System.Collections.Generic;
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// The counter is a metrics Instrument that supports non-negative increment measurements. Number of completed requests.
-    /// Use <see cref="Meter.CreateCounter" /> method to create the Counter object.
+    /// The counter is an instrument that supports adding non-negative values. For example you might call
+    /// counter.Add(1) each time a request is processed to track the total number of requests. Most metric viewers
+    /// will display counters using a rate by default (requests/sec) but can also display a cumulative total.
     /// </summary>
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
+    [System.Security.SecuritySafeCriticalAttribute]
 #endif
     public sealed class Counter<T> : Instrument<T> where T : struct
     {

@@ -91,7 +91,6 @@ namespace System.Diagnostics.Metrics
         /// If a measurement of type T is recorded and a callback of type T is registered, that callback will be used.
         /// </summary>
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
             if (measurementCallback is MeasurementCallback<byte> byteCallback)
@@ -177,7 +176,8 @@ namespace System.Diagnostics.Metrics
 
             while (current is not null)
             {
-                current.Value.DisableMeasurements(this);
+                object? state = current.Value.DisableMeasurements(this);
+                MeasurementsCompleted?.Invoke(current.Value, state);
                 current = current.Next;
             }
 
