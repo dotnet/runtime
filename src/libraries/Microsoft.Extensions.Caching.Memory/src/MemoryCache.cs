@@ -26,8 +26,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private long _cacheSize;
         private bool _disposed;
-        private DateTimeOffset _lastExpirationScan;
-
+        private long _lastExpirationScanClockOffset;
+        private readonly long _expirationScanFrequencyClockOffsetUnits;
         internal readonly Internal.ClockQuantization.ClockQuantizer ClockQuantizer;
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace Microsoft.Extensions.Caching.Memory
             var clock = Internal.ClockQuantization.SystemClock.Create(_options.Clock);
             ClockQuantizer = new Internal.ClockQuantization.ClockQuantizer(clock, _options.ExpirationScanFrequency);
 
-            var start = ClockQuantizer.Advance().ClockOffset;
-            _lastExpirationScan = ClockQuantizer.ClockOffsetToUtcDateTimeOffset(start);
+            _expirationScanFrequencyClockOffsetUnits = ClockQuantizer.TimeSpanToClockOffsetUnits(ClockQuantizer.MaxIntervalTimeSpan);
+            _lastExpirationScanClockOffset = ClockQuantizer.Advance().ClockOffset;
         }
 
         /// <summary>
@@ -318,29 +318,26 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StartScanForExpiredItemsIfNeeded(ref Internal.ClockQuantization.LazyClockOffsetSerialPosition position)
         {
-            DateTimeOffset utcNow = ClockQuantizer.ClockOffsetToUtcDateTimeOffset(position.IsExact ? position.ClockOffset : ClockQuantizer.UtcNowClockOffset);
-            DateTimeOffsetBasedStartScanForExpiredItemsIfNeeded(utcNow);
+            // Access clock only if needed; use the cheapest option available
+            long utcNowClockOffset = position.IsExact ? position.ClockOffset : ClockQuantizer.UtcNowClockOffset;
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void DateTimeOffsetBasedStartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
+            if (_expirationScanFrequencyClockOffsetUnits < utcNowClockOffset - _lastExpirationScanClockOffset)
             {
-                if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
-                {
-                    ScheduleTask(utcNow);
-                }
+                ScheduleTask(utcNowClockOffset);
+            }
 
-                void ScheduleTask(DateTimeOffset utcNow)
-                {
-                    _lastExpirationScan = utcNow;
-                    Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state), this,
-                        CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-                }
+            void ScheduleTask(long utcNowClockOffset)
+            {
+                _lastExpirationScanClockOffset = utcNowClockOffset;
+                Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state), this,
+                    CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
         }
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            DateTimeOffset now = cache._lastExpirationScan = cache.ClockQuantizer.UtcNow;
+            DateTimeOffset now = cache.ClockQuantizer.UtcNow;
+            cache._lastExpirationScanClockOffset = cache.ClockQuantizer.DateTimeOffsetToClockOffset(now);
 
             foreach (CacheEntry entry in cache._entries.Values)
             {
