@@ -662,6 +662,12 @@ public:
         }
 #endif // PROFILING_SUPPORTED
 
+        if (SF_IsCheckPendingException(m_dwStubFlags)
+            && SF_IsForwardStub(m_dwStubFlags))
+        {
+            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__CLEAR_PENDING_EXCEPTION_OBJECT, 0, 0);
+        }
+
         // For CoreClr, clear the last error before calling the target that returns last error.
         // There isn't always a way to know the function have failed without checking last error,
         // in particular on Unix.
@@ -2613,8 +2619,10 @@ void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
 
     // initialize data members
     m_wFlags = 0;
+    m_entryPointName = NULL;
     m_pModule = pModule;
     m_callConv = CallConvWinApiSentinel;
+    m_externModref = mdModuleRefNil;
     SetBestFitMapping (TRUE);
     SetThrowOnUnmappableChar (FALSE);
     SetLinkFlags (nlfNone);
@@ -2657,7 +2665,7 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName)
+    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName)
 {
     CONTRACTL
     {
@@ -2666,7 +2674,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     }
     CONTRACTL_END;
 
-    DllImportInit(pMD, pLibName, pEntryPointName);
+    DllImportInit(pMD, pLibName);
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
@@ -2684,7 +2692,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
 
     if (!pMT->IsDelegate())
     {
-        DllImportInit(pMD, NULL, NULL);
+        DllImportInit(pMD, NULL);
         return;
     }
 
@@ -2755,7 +2763,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     InitCallConv(CallConvWinApiSentinel, FALSE);
 }
 
-void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName, _Outptr_opt_ LPCUTF8 *ppEntryPointName)
+void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName)
 {
     CONTRACTL
     {
@@ -2767,7 +2775,6 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
         // where pMD->ndirect.m_szLibName was passed in directly, cleared
         // by this API, then accessed on another thread before being reset here.
         PRECONDITION(CheckPointer(ppLibName, NULL_OK) && (!ppLibName || *ppLibName == NULL));
-        PRECONDITION(CheckPointer(ppEntryPointName, NULL_OK) && (!ppEntryPointName || *ppEntryPointName == NULL));
     }
     CONTRACTL_END;
 
@@ -2777,21 +2784,19 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     // System.Runtime.InteropServices.DllImportAttribute
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
-    mdModuleRef modref = mdModuleRefNil;
-    if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
+    if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, &m_entryPointName, &m_externModref)))
     {
         InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
         return;
     }
 
-    // out parameter pEntryPointName
-    if (ppEntryPointName && *ppEntryPointName == NULL)
-        *ppEntryPointName = pMD->GetName();
+    if (m_entryPointName == NULL)
+        m_entryPointName = pMD->GetName();
 
     // out parameter pLibName
     if (ppLibName != NULL)
     {
-        if (FAILED(pInternalImport->GetModuleRefProps(modref, ppLibName)))
+        if (FAILED(pInternalImport->GetModuleRefProps(m_externModref, ppLibName)))
         {
             ThrowError(IDS_CLASSLOAD_BADFORMAT);
         }
@@ -3098,6 +3103,11 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 
 // Either MD or signature & module must be given.
+//
+// N.B. This method can be called at a time when the associated NDirectMethodDesc
+// has not been fully populated. This means the optimized path for this call is to rely
+// on the most basic P/Invoke metadata. An example when this can happen is when the JIT
+// is compiling a method containing a P/Invoke that is being considered for inlining.
 /*static*/
 BOOL NDirect::MarshalingRequired(
     _In_opt_ MethodDesc* pMD,
@@ -3156,7 +3166,7 @@ BOOL NDirect::MarshalingRequired(
 
 #ifndef CROSSGEN_COMPILE
             // Pending exceptions are handled by stub
-            if (Interop::ShouldCheckForPendingException(pNMD))
+            if (Interop::ShouldCheckForPendingException(pNMD, &sigInfo))
                 return TRUE;
 #endif // !CROSSGEN_COMPILE
         }
@@ -4225,7 +4235,7 @@ static void CreateNDirectStubAccessMetadata(
 
 namespace
 {
-    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_opt_z_ LPCUTF8 libName, _In_opt_z_ LPCUTF8 entryPointName)
+    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_opt_z_ LPCUTF8 libName)
     {
         CONTRACTL
         {
@@ -4260,7 +4270,7 @@ namespace
         else
         {
             pNMD->ndirect.m_pszLibName.SetValueMaybeNull(libName);
-            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(entryPointName);
+            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(sigInfo.GetEntryPointName());
         }
 
         // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
@@ -4281,9 +4291,9 @@ void NDirect::PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD)
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
-    PInvokeStaticSigInfo sigInfo(pNMD, &szLibName, &szEntryPointName);
-    PopulateNDirectMethodDescImpl(pNMD, sigInfo, szLibName, szEntryPointName);
+    LPCUTF8 szLibName = NULL;
+    PInvokeStaticSigInfo sigInfo(pNMD, &szLibName);
+    PopulateNDirectMethodDescImpl(pNMD, sigInfo, szLibName);
 }
 
 void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo)
@@ -4299,10 +4309,10 @@ void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMetho
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
-    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
+    LPCUTF8 szLibName = NULL;
+    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName);
 
-    PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName, szEntryPointName);
+    PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName);
 }
 
 #ifdef FEATURE_COMINTEROP

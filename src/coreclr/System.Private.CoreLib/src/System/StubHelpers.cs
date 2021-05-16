@@ -1247,6 +1247,11 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
+        internal static void ClearPendingExceptionObject()
+        {
+            s_pendingExceptionObject = null;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
 

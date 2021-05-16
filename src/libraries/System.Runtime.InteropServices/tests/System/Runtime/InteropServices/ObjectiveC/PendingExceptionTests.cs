@@ -44,15 +44,6 @@ namespace System.Runtime.InteropServices.Tests
             return IntPtr.Zero;
         }
 
-        private static (MessageSendFunction MsgSend, IntPtr Func)[] msgSendOverrides =
-        {
-            (MessageSendFunction.MsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSend),
-            (MessageSendFunction.MsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSendFpret),
-            (MessageSendFunction.MsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&MsgSendStret),
-            (MessageSendFunction.MsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSendSuper),
-            (MessageSendFunction.MsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&MsgSendSuperStret),
-        };
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(MessageSendFunction.MsgSend)]
         [InlineData(MessageSendFunction.MsgSendFpret)]
@@ -71,27 +62,27 @@ namespace System.Runtime.InteropServices.Tests
             }, func.ToString()).Dispose();
         }
 
-        private static void ValidateSetMessageSendPendingExceptionImpl(MessageSendFunction funcToOverride)
+        private static void ValidateSetMessageSendPendingExceptionImpl(MessageSendFunction msgSend)
         {
-            foreach (var (msgSend, func) in msgSendOverrides)
+            IntPtr func = msgSend switch
             {
-                if (funcToOverride != msgSend)
-                {
-                    continue;
-                }
+                MessageSendFunction.MsgSend => (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSend,
+                MessageSendFunction.MsgSendFpret => (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSendFpret,
+                MessageSendFunction.MsgSendStret => (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&MsgSendStret,
+                MessageSendFunction.MsgSendSuper => (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSendSuper,
+                MessageSendFunction.MsgSendSuperStret => (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&MsgSendSuperStret,
+                _ => throw new Exception($"Unknown {nameof(MessageSendFunction)}"),
+            };
 
-                // Override message send function
-                ObjectiveCMarshal.SetMessageSendCallback(msgSend, func);
+            // Override message send function
+            ObjectiveCMarshal.SetMessageSendCallback(msgSend, func);
 
-                // Call message send function through P/Invoke
-                IntPtr inst = IntPtr.Zero;
-                IntPtr sel = IntPtr.Zero;
+            // Call message send function through P/Invoke
+            IntPtr inst = IntPtr.Zero;
+            IntPtr sel = IntPtr.Zero;
 
-                Exception ex = Assert.Throws<PendingException>(() => LibObjC.CallPInvoke(msgSend, inst, sel));
-                Assert.Equal(msgSend.ToString(), ex.Message);
-
-                break;
-            }
+            Exception ex = Assert.Throws<PendingException>(() => LibObjC.CallPInvoke(msgSend, inst, sel));
+            Assert.Equal(msgSend.ToString(), ex.Message);
         }
     }
 }

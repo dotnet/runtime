@@ -3,12 +3,15 @@
 
 // Runtime headers
 #include "common.h"
+#include "dllimport.h"
 
 #include "interoplibinterface.h"
 
 using ManagedToNativeExceptionCallback = Interop::ManagedToNativeExceptionCallback;
 
-bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
+bool Interop::ShouldCheckForPendingException(
+    _In_ NDirectMethodDesc* md,
+    _In_opt_ PInvokeStaticSigInfo* sigInfo)
 {
     CONTRACTL
     {
@@ -22,7 +25,30 @@ bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
     PTR_CUTF8 libraryName = md->GetLibNameRaw();
     PTR_CUTF8 entrypointName = md->GetEntrypointName();
     if (libraryName == NULL || entrypointName == NULL)
-        return false;
+    {
+        // If no sig info was supplied we have no recourse.
+        if (sigInfo == NULL)
+            return false;
+
+        if (libraryName == NULL)
+        {
+            // If the library name is unknown, see if we can get the token
+            // from the sig info.
+            mdModuleRef modRef = sigInfo->GetExternModuleRefToken();
+            if (modRef != mdModuleRefNil)
+            {
+                IMDInternalImport* mdImport = md->GetMDImport();
+                (void)mdImport->GetModuleRefProps(modRef, &libraryName);
+            }
+        }
+
+        if (entrypointName == NULL)
+            entrypointName = sigInfo->GetEntryPointName();
+
+        // Still no luck so return false.
+        if (libraryName == NULL || entrypointName == NULL)
+            return false;
+    }
 
     if (ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
         return true;
