@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Determine exact time only when (potentially) needed
             Internal.ClockQuantization.LazyClockOffsetSerialPosition position = default;
-            if (entry.SlidingExpiration.HasValue || entry.AbsoluteExpiration.HasValue || entry.AbsoluteExpirationRelativeToNow.HasValue)
+            if (entry.SlidingExpiration.HasValue)
             {
                 ClockQuantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: true);
             }
@@ -113,7 +113,8 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTimeOffset? absoluteExpiration = null;
             if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                absoluteExpiration = ClockQuantizer.ClockOffsetToUtcDateTimeOffset(position.ClockOffset) + entry.AbsoluteExpirationRelativeToNow;
+                var now = ClockQuantizer.ClockOffsetToUtcDateTimeOffset(position.IsExact ? position.ClockOffset : ClockQuantizer.UtcNowClockOffset);
+                absoluteExpiration = now + entry.AbsoluteExpirationRelativeToNow;
             }
             else if (entry.AbsoluteExpiration.HasValue)
             {
@@ -142,7 +143,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
 
-            if (!entry.CheckExpired(ClockQuantizer.ClockOffsetToUtcDateTimeOffset(position.ClockOffset)) && !exceedsCapacity)
+            if (!entry.CheckExpired(ref position) && !exceedsCapacity)
             {
                 bool entryAdded = false;
 
