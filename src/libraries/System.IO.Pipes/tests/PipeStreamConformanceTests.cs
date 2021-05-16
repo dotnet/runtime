@@ -63,7 +63,16 @@ namespace System.IO.Pipes.Tests
     {
         protected override bool BrokenPipePropagatedImmediately => OperatingSystem.IsWindows(); // On Unix, implemented on Sockets, where it won't propagate immediate
 
-        protected abstract (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams();
+        protected abstract NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1);
+        protected abstract NamedPipeClientStream CreateClientStream(string pipeName);
+
+        protected (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams()
+        {
+            string pipeName = GetUniquePipeName();
+            var server = CreateServerStream(pipeName);
+            var client = CreateClientStream(pipeName);
+            return (server, client);
+        }
 
         protected sealed override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
@@ -629,6 +638,26 @@ namespace System.IO.Pipes.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => clientWriteToken);
             }
         }
+
+        [Fact]
+        public async Task TwoServerInstances_OnceDisposed_Throws()
+        {
+            string pipeName = GetUniquePipeName();
+            var server1 = CreateServerStream(pipeName, 2);
+            using var server2 = CreateServerStream(pipeName, 2);
+
+            var wait1 = server1.WaitForConnectionAsync();
+            var wait2 = server2.WaitForConnectionAsync();
+            server1.Dispose();
+
+            using var client = CreateClientStream(pipeName);
+            await client.ConnectAsync();
+
+            await Assert.ThrowsAsync<IOException>(() => wait1);
+            await ValidateDisposedExceptionsAsync(server1);
+
+            await wait2;
+        }
     }
 
     public sealed class AnonymousPipeTest_ServerIn_ClientOut : AnonymousPipeStreamConformanceTests
@@ -653,34 +682,28 @@ namespace System.IO.Pipes.Tests
 
     public sealed class NamedPipeTest_ServerOut_ClientIn : NamedPipeStreamConformanceTests
     {
-        protected override (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams()
-        {
-            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
-            var server = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
-            return (server, client);
-        }
+        protected override NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1) =>
+            new NamedPipeServerStream(pipeName, PipeDirection.Out, maxInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+
+        protected override NamedPipeClientStream CreateClientStream(string pipeName) =>
+            new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
     }
 
     public sealed class NamedPipeTest_ServerIn_ClientOut : NamedPipeStreamConformanceTests
     {
-        protected override (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams()
-        {
-            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
-            var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
-            return (server, client);
-        }
+        protected override NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1) =>
+            new NamedPipeServerStream(pipeName, PipeDirection.In, maxInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+
+        protected override NamedPipeClientStream CreateClientStream(string pipeName) =>
+            new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
     }
 
     public sealed class NamedPipeTest_ServerInOut_ClientInOut : NamedPipeStreamConformanceTests
     {
-        protected override (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams()
-        {
-            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
-            var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            return (server, client);
-        }
+        protected override NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1) =>
+            new NamedPipeServerStream(pipeName, PipeDirection.InOut, maxInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+
+        protected override NamedPipeClientStream CreateClientStream(string pipeName) =>
+            new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
     }
 }

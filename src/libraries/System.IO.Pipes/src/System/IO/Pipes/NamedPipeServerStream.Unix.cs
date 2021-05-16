@@ -87,6 +87,11 @@ namespace System.IO.Pipes
 
             try
             {
+                if (State == PipeState.Closed)
+                {
+                    throw Error.GetPipeNotOpen();
+                }
+
                 if (IsCurrentUserOnly)
                 {
                     uint serverEUID = Interop.Sys.GetEUid();
