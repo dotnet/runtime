@@ -231,19 +231,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             if (_entries.TryGetValue(key, out CacheEntry entry))
             {
-                if (entry.SlidingExpiration.HasValue || entry.AbsoluteExpiration.HasValue)
-                {
-                    ClockQuantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: true);
-                }
-                else
-                {
-                    ClockQuantizer.EnsureInitializedClockOffsetSerialPosition(ref position);
-                }
-
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
-                if (!entry.CheckExpired(ClockQuantizer.ClockOffsetToUtcDateTimeOffset(position.ClockOffset)) || entry.EvictionReason == EvictionReason.Replaced)
+                if (!entry.CheckExpired(ref position) || entry.EvictionReason == EvictionReason.Replaced)
                 {
+                    ClockQuantizer.EnsureInitializedClockOffsetSerialPosition(ref position);
                     entry.LastAccessedClockOffsetSerialPosition = position;
                     result = entry.Value;
 
