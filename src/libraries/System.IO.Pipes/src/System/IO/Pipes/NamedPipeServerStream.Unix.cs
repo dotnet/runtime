@@ -89,7 +89,8 @@ namespace System.IO.Pipes
             {
                 if (State == PipeState.Closed)
                 {
-                    throw Error.GetPipeNotOpen();
+                    // Pipe was closed/disposed during the connection phase, handle it as a broken pipe
+                    throw new IOException(SR.IO_PipeBroken);
                 }
 
                 if (IsCurrentUserOnly)
