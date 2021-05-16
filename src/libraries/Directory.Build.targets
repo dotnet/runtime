@@ -20,10 +20,11 @@
          SYSLIB0003: Code Access Security (CAS).
          SYSLIB0004: Constrained Execution Region (CER).
          SYSLIB0017: Strong name signing.
+         SYSLIB0021: Derived cryptographic types.
          SYSLIB0022: Rijndael types.
          SYSLIB0023: RNGCryptoServiceProvider.
     -->
-    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0022;SYSLIB0023</NoWarn>
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
     <!-- Set the documentation output file globally. -->
@@ -298,6 +299,52 @@
       <AllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;</AllowedOutputExtensionsInPackageBuildOutputFolder> 
       <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>.pdb;.mdb;$(AllowedOutputExtensionsInPackageBuildOutputFolder)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
     </PropertyGroup>
+  </Target>
+
+  <PropertyGroup>
+    <BeforePack>IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Ensure AnalyzerReference items are restored and built 
+         The target framework of Analyzers has no relationship to that of the refrencing project, 
+         so we don't apply TargetFramework filters nor do we pass in TargetFramework.
+         When BuildProjectReferences=false we make sure to set BuildReference=false to make
+         sure not to try to call GetTargetPath in the outerbuild of the analyzer project. -->
+    <ProjectReference Include="@(AnalyzerReference)" SkipGetTargetFrameworkProperties="true" UndefineProperties="TargetFramework" ReferenceOutputAssembly="false" PrivateAssets="all" BuildReference="$(BuildProjectReferences)"  />
+  </ItemGroup>
+
+  <Target Name="IncludeAnalyzersInPackage" Condition="'@(AnalyzerReference)' != ''">
+    <!-- Call a target in the analyzer project to get all the files it would normally place in a package.
+         These will be returned as items with identity pointing to the built file, and PackagePath metadata
+         set to their location in the package.  IsSymbol metadata will be set to distinguish symbols. -->
+    <MSBuild Projects="@(AnalyzerReference)"
+             Targets="GetAnalyzerPackFiles">
+      <Output TaskParameter="TargetOutputs" ItemName="_AnalyzerFile" />
+    </MSBuild>
+
+    <ItemGroup>
+      <Content Include="@(_AnalyzerFile)" Pack="True" Condition="!%(_AnalyzerFile.IsSymbol)" />
+      <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).           
+           Pack does honor TargetPath and does Path.Combine("lib/%(TargetFramework)", "%(TargetPath)"),
+           so a rooted path value for TargetPath will override lib. 
+           https://github.com/NuGet/Home/issues/10860 -->
+      <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetAnalyzerPackFiles" DependsOnTargets="$(GenerateNuspecDependsOn)" Returns="@(_AnalyzerPackFile)">
+    <PropertyGroup>
+      <_analyzerPath>analyzers/dotnet</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AnalyzerPackFile Include="@(_BuildOutputInPackage)" IsSymbol="false" />
+      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
+      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
+    </ItemGroup>
+    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'" 
+           Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
 
 </Project>

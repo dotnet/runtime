@@ -37,7 +37,7 @@ genTreeOps addrForm(genTreeOps loadForm)
 }
 
 // copy the flags determined by mask from src to dst
-void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
+void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);

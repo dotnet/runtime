@@ -4369,7 +4369,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 		thread->apartment_state = ThreadApartmentState_MTA;
 	}
 	mono_thread_init_apartment_state ();
-
+	mono_thread_init_from_native ();
 }
 
 static int

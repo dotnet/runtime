@@ -335,11 +335,87 @@ static void fprintfDouble(FILE* fgxFile, double value)
 }
 
 //------------------------------------------------------------------------
+// fgDumpTree: Dump a tree into the DOT file. Used to provide a very short, one-line,
+// visualization of a BBJ_COND block.
+//
+// Arguments:
+//    fgxFile - The file we are writing to.
+//    tree    - The operand to dump.
+//
+// static
+void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
+{
+    if (tree->OperIsCompare())
+    {
+        // Want to generate something like:
+        //   V01 <= 7
+        //   V01 > V02
+
+        const char* opName = GenTree::OpName(tree->OperGet());
+        // Make it look nicer if we can
+        switch (tree->OperGet())
+        {
+            case GT_EQ:
+                opName = "==";
+                break;
+            case GT_NE:
+                opName = "!=";
+                break;
+            case GT_LT:
+                opName = "<";
+                break;
+            case GT_LE:
+                opName = "<=";
+                break;
+            case GT_GE:
+                opName = ">=";
+                break;
+            case GT_GT:
+                opName = ">";
+                break;
+            default:
+                break;
+        }
+
+        GenTree* const lhs = tree->AsOp()->gtOp1;
+        GenTree* const rhs = tree->AsOp()->gtOp2;
+
+        fgDumpTree(fgxFile, lhs);
+        fprintf(fgxFile, " %s ", opName);
+        fgDumpTree(fgxFile, rhs);
+    }
+    else if (tree->IsCnsIntOrI())
+    {
+        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+    }
+    else if (tree->IsCnsFltOrDbl())
+    {
+        fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+    }
+    else if (tree->IsLocal())
+    {
+        fprintf(fgxFile, "V%02u", tree->AsLclVarCommon()->GetLclNum());
+    }
+    else if (tree->OperIs(GT_ARR_LENGTH))
+    {
+        GenTreeArrLen* arrLen = tree->AsArrLen();
+        GenTree*       arr    = arrLen->ArrRef();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".Length");
+    }
+    else
+    {
+        fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
+    }
+}
+
+//------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
 //
 // Arguments:
 //    wbDontClose - A boolean out argument that indicates whether the caller should close the file
 //    phase       - A phase identifier to indicate which phase is associated with the dump
+//    pos         - Are we being called to dump the flow graph pre-phase or post-phase?
 //    type        - A (wide) string indicating the type of dump, "dot" or "xml"
 //
 // Notes:
@@ -360,13 +436,14 @@ static void fprintfDouble(FILE* fgxFile, double value)
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
 
-FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type)
+FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type)
 {
     FILE*       fgxFile;
-    LPCWSTR     phasePattern = W("*"); // default (used in Release) is dump all phases
-    bool        dumpFunction = true;   // default (used in Release) is always dump
-    LPCWSTR     filename     = nullptr;
-    LPCWSTR     pathname     = nullptr;
+    LPCWSTR     prePhasePattern  = nullptr; // pre-phase:  default (used in Release) is no pre-phase dump
+    LPCWSTR     postPhasePattern = W("*");  // post-phase: default (used in Release) is dump all phases
+    bool        dumpFunction     = true;    // default (used in Release) is always dump
+    LPCWSTR     filename         = nullptr;
+    LPCWSTR     pathname         = nullptr;
     const char* escapedString;
     bool        createDuplicateFgxFiles = true;
 
@@ -391,7 +468,8 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
         pathname = JitConfig.JitDumpFgDir();
     }
 
-    phasePattern = JitConfig.JitDumpFgPhase();
+    prePhasePattern  = JitConfig.JitDumpFgPrePhase();
+    postPhasePattern = JitConfig.JitDumpFgPhase();
 #endif // DEBUG
 
     if (!dumpFunction)
@@ -400,18 +478,45 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
     }
 
     LPCWSTR phaseName = PhaseShortNames[phase];
-    if (phasePattern == nullptr)
+
+    if (pos == PhasePosition::PrePhase)
     {
-        if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
+        if (prePhasePattern == nullptr)
         {
+            // If pre-phase pattern is not specified, then don't dump for any pre-phase.
             return nullptr;
         }
-    }
-    else if (*phasePattern != W('*'))
-    {
-        if (wcsstr(phasePattern, phaseName) == nullptr)
+        else if (*prePhasePattern != W('*'))
         {
-            return nullptr;
+            if (wcsstr(prePhasePattern, phaseName) == nullptr)
+            {
+                return nullptr;
+            }
+        }
+    }
+    else
+    {
+        assert(pos == PhasePosition::PostPhase);
+        if (postPhasePattern == nullptr)
+        {
+            // There's no post-phase pattern specified. If there is a pre-phase pattern specified, then that will
+            // be the only set of phases dumped. If neither are specified, then post-phase dump after
+            // PHASE_DETERMINE_FIRST_COLD_BLOCK.
+            if (prePhasePattern != nullptr)
+            {
+                return nullptr;
+            }
+            if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
+            {
+                return nullptr;
+            }
+        }
+        else if (*postPhasePattern != W('*'))
+        {
+            if (wcsstr(postPhasePattern, phaseName) == nullptr)
+            {
+                return nullptr;
+            }
         }
     }
 
@@ -572,6 +677,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 // Arguments:
 //    phase       - A phase identifier to indicate which phase is associated with the dump,
 //                  i.e. which phase has just completed.
+//    pos         - Are we being called to dump the flow graph pre-phase or post-phase?
 //
 // Return Value:
 //    True iff a flowgraph has been dumped.
@@ -603,6 +709,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
 //                                     for all phases.
+//      COMPlus_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
 //      COMPlus_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
 //      COMPlus_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
 //                                     exception-handling regions.
@@ -611,7 +718,13 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //                                     mostly lexical block linear layout.
 //      COMPlus_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
-bool Compiler::fgDumpFlowGraph(Phases phase)
+// Example:
+//
+// If you want to dump just before and after a single phase, say loop cloning, use:
+//      set COMPlus_JitDumpFgPhase=LP-CLONE
+//      set COMPlus_JitDumpFgPrePhase=LP-CLONE
+//
+bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 {
     bool result    = false;
     bool dontClose = false;
@@ -633,13 +746,14 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     const bool useBlockId    = false;
 #endif // !DEBUG
 
-    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
+    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? W("dot") : W("fgx"));
     if (fgxFile == nullptr)
     {
         return false;
     }
 
-    JITDUMP("Dumping flow graph after phase %s\n", PhaseNames[phase]);
+    JITDUMP("Dumping flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
+            PhaseNames[phase]);
 
     bool        validWeights  = fgHaveValidEdgeWeights;
     double      weightDivisor = (double)BasicBlock::getCalledCount(this);
@@ -662,8 +776,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     if (createDotFile)
     {
         fprintf(fgxFile, "digraph FlowGraph {\n");
-        fprintf(fgxFile, "    graph [label = \"%s%s\\nafter\\n%s\"];\n", info.compMethodName,
-                compIsForInlining() ? "\\n(inlinee)" : "", PhaseNames[phase]);
+        fprintf(fgxFile, "    graph [label = \"%s%s\\n%s\\n%s\"];\n", info.compMethodName,
+                compIsForInlining() ? "\\n(inlinee)" : "", (pos == PhasePosition::PrePhase) ? "before" : "after",
+                PhaseNames[phase]);
         fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
@@ -767,69 +882,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     GenTree* const condTree = condStmt->GetRootNode();
                     noway_assert(condTree->gtOper == GT_JTRUE);
                     GenTree* const compareTree = condTree->AsOp()->gtOp1;
-                    if (compareTree->OperIsCompare())
-                    {
-                        // Want to generate something like:
-                        //   V01 <= 7
-                        //   V01 > V02
-
-                        const char* opName = GenTree::OpName(compareTree->OperGet());
-                        // Make it look nicer if we can
-                        switch (compareTree->OperGet())
-                        {
-                            case GT_EQ:
-                                opName = "==";
-                                break;
-                            case GT_NE:
-                                opName = "!=";
-                                break;
-                            case GT_LT:
-                                opName = "<";
-                                break;
-                            case GT_LE:
-                                opName = "<=";
-                                break;
-                            case GT_GE:
-                                opName = ">=";
-                                break;
-                            case GT_GT:
-                                opName = ">";
-                                break;
-                            default:
-                                break;
-                        }
-
-                        auto displayOperand = [&](GenTree* const tree) {
-                            if (tree->IsCnsIntOrI())
-                            {
-                                fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
-                            }
-                            else if (tree->IsCnsFltOrDbl())
-                            {
-                                fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
-                            }
-                            else if (tree->IsLocal())
-                            {
-                                fprintf(fgxFile, "V%02u", tree->AsLclVarCommon()->GetLclNum());
-                            }
-                            else
-                            {
-                                fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
-                            }
-                        };
-
-                        GenTree* const lhs = compareTree->AsOp()->gtOp1;
-                        GenTree* const rhs = compareTree->AsOp()->gtOp2;
-
-                        displayOperand(lhs);
-                        fprintf(fgxFile, " %s ", opName);
-                        displayOperand(rhs);
-                    }
-                    else
-                    {
-                        // !OperIsCompare
-                        fprintf(fgxFile, "[%s]", GenTree::OpName(compareTree->OperGet()));
-                    }
+                    fgDumpTree(fgxFile, compareTree);
                 }
             }
 
@@ -2185,13 +2238,15 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     }
 }
 
-/*****************************************************************************/
-//  Walk the BasicBlock list calling fgDumpTree once per Stmt
+//------------------------------------------------------------------------
+// fgDumpTrees: dumps the trees for every block in a range of blocks.
+//
+// Arguments:
+//    firstBlock - The first block to dump.
+//    lastBlock  - The last block to dump.
 //
 void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
-    // Walk the basic blocks.
-
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
     for (BasicBlock* block = firstBlock; block; block = block->bbNext)
@@ -2714,7 +2769,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt    = FALSE;
+    copiedForGenericsCtxt    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
@@ -2753,8 +2808,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
     const genTreeOps oper      = tree->OperGet();
     const unsigned   kind      = tree->OperKind();
-    unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    unsigned         chkFlags  = 0;
+    GenTreeFlags     treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags     chkFlags  = GTF_EMPTY;
 
     if (tree->OperMayThrow(this))
     {
@@ -3207,7 +3262,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 //                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
 //    debugFlags - the second argument to gtDispFlags
 //
-void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
     if (tree->OperGet() == GT_IND)
     {
@@ -3230,7 +3285,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
 
-void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags)
+void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags)
 {
     if (chkFlags & ~treeFlags)
     {
@@ -3252,7 +3307,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     {
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
-        unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
         if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
         {

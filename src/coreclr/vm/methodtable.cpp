@@ -617,6 +617,18 @@ BOOL MethodTable::IsIDynamicInterfaceCastable()
     return GetFlag(enum_flag_IDynamicInterfaceCastable);
 }
 
+void MethodTable::SetIsTrackedReferenceWithFinalizer()
+{
+    LIMITED_METHOD_CONTRACT;
+    SetFlag(enum_flag_IsTrackedReferenceWithFinalizer);
+}
+
+BOOL MethodTable::IsTrackedReferenceWithFinalizer()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetFlag(enum_flag_IsTrackedReferenceWithFinalizer);
+}
+
 #endif // !DACCESS_COMPILE
 
 //==========================================================================================
@@ -5659,6 +5671,22 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             }
             else
             {
+                // Validate implementation of virtual static methods on all implemented interfaces unless:
+                // 1) The type resides in the system module (System.Private.CoreLib); we own this module and ensure
+                //    its consistency by other means not requiring runtime checks;
+                // 2) There are no virtual static methods defined on any of the interfaces implemented by this type;
+                // 3) The method is abstract in which case it's allowed to leave some virtual static methods unimplemented
+                //    akin to equivalent behavior of virtual instance method overriding in abstract classes;
+                // 4) The type is a shared generic in which case we generally don't have enough information to perform
+                //    the validation.
+                if (!GetModule()->IsSystem() &&
+                    HasVirtualStaticMethods() &&
+                    !IsAbstract() &&
+                    !IsSharedByGenericInstantiations())
+                {
+                    VerifyThatAllVirtualStaticMethodsAreImplemented();
+                }
+                
                 // Finally, mark this method table as fully loaded
                 SetIsFullyLoaded();
             }
@@ -9171,6 +9199,250 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 }
 
 //==========================================================================================
+// Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
+MethodDesc *
+MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL checkDuplicates, BOOL allowVariantMatches)
+{
+    if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
+    {
+        // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
+        // we cannot exactly compute a target method result, as even if there is an exact match in the type hierarchy
+        // it isn't guaranteed that we will always find the right result, as we may find a match on a base type when we should find the match
+        // on a more derived type.
+
+        MethodTable *pInterfaceTypeCanonical = pInterfaceType->GetCanonicalMethodTable();
+        bool canonicalEquivalentFound = false;
+        if (pInterfaceType != pInterfaceTypeCanonical)
+        {
+            InterfaceMapIterator it = IterateInterfaceMap();
+            while (it.Next())
+            {
+                if (pInterfaceTypeCanonical == it.GetInterface())
+                {
+                    canonicalEquivalentFound = true;
+                    break;
+                    return NULL;
+                }
+            }
+        }
+
+        if (!canonicalEquivalentFound)
+        {
+            // Search for match on a per-level in the type hierarchy
+            for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
+            {
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, checkDuplicates);
+                if (pMD != nullptr)
+                {
+                    return pMD;
+                }
+
+                if (pInterfaceType->HasVariance() || pInterfaceType->HasTypeEquivalence())
+                {
+                    // Variant interface dispatch
+                    MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
+                    while (it.Next())
+                    {
+                        if (it.GetInterface() == pInterfaceType)
+                        {
+                            // This is the variant interface check logic, skip the 
+                            continue;
+                        }
+
+                        if (!it.GetInterface()->HasSameTypeDefAs(pInterfaceType))
+                        {
+                            // Variance matches require a typedef match
+                            // Equivalence isn't sufficient, and is uninteresting as equivalent interfaces cannot have static virtuals.
+                            continue;
+                        }
+
+                        BOOL equivalentOrVariantCompatible;
+
+                        if (allowVariantMatches)
+                        {
+                            equivalentOrVariantCompatible = it.GetInterface()->CanCastTo(pInterfaceType, NULL);
+                        }
+                        else
+                        {
+                            // When performing override checking to ensure that a concrete type is valid, require the implementation 
+                            // actually implement the exact or equivalent interface.
+                            equivalentOrVariantCompatible = it.GetInterface()->IsEquivalentTo(pInterfaceType);
+                        }
+
+                        if (equivalentOrVariantCompatible)
+                        {
+                            // Variant or equivalent matching interface found
+                            // Attempt to resolve on variance matched interface
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(it.GetInterface(), pInterfaceMD, checkDuplicates);
+                            if (pMD != nullptr)
+                            {
+                                return pMD;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (allowNullResult)
+        return NULL;
+    else
+        COMPlusThrow(kTypeLoadException, E_NOTIMPL);
+}
+
+//==========================================================================================
+// Try to locate the appropriate MethodImpl matching a given interface static virtual method.
+// Returns nullptr on failure.
+MethodDesc*
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL checkDuplicates)
+{
+    HRESULT hr = S_OK;
+    IMDInternalImport* pMDInternalImport = GetMDImport();
+    HENUMInternalMethodImplHolder hEnumMethodImpl(pMDInternalImport);
+    hr = hEnumMethodImpl.EnumMethodImplInitNoThrow(GetCl());
+    SigTypeContext sigTypeContext(this);
+
+    if (FAILED(hr))
+    {
+        COMPlusThrow(kTypeLoadException, hr);
+    }
+
+    // This gets the count out of the metadata interface.
+    uint32_t dwNumberMethodImpls = hEnumMethodImpl.EnumMethodImplGetCount();
+    MethodDesc* pPrevMethodImpl = nullptr;
+
+    // Iterate through each MethodImpl declared on this class
+    for (uint32_t i = 0; i < dwNumberMethodImpls; i++)
+    {
+        mdToken methodBody;
+        mdToken methodDecl;
+        hr = hEnumMethodImpl.EnumMethodImplNext(&methodBody, &methodDecl);
+        if (FAILED(hr))
+        {
+            COMPlusThrow(kTypeLoadException, hr);
+        }
+        if (hr == S_FALSE)
+        {
+            // In the odd case that the enumerator fails before we've reached the total reported
+            // entries, let's reset the count and just break out. (Should we throw?)
+            break;
+        }
+        mdToken tkParent;
+        hr = pMDInternalImport->GetParentToken(methodDecl, &tkParent);
+        if (FAILED(hr))
+        {
+            COMPlusThrow(kTypeLoadException, hr);
+        }
+        MethodTable *pInterfaceMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+            GetModule(),
+            tkParent,
+            &sigTypeContext,
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::FailIfUninstDefOrRef,
+            ClassLoader::LoadTypes,
+            CLASS_LOAD_EXACTPARENTS)
+            .GetMethodTable();
+        if (pInterfaceMT != pInterfaceType)
+        {
+            continue;
+        }
+        MethodDesc *pMethodDecl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+            GetModule(),
+            methodDecl,
+            &sigTypeContext,
+            /* strictMetadataChecks */ FALSE,
+            /* allowInstParam */ FALSE,
+            /* owningTypeLoadLevel */ CLASS_LOAD_EXACTPARENTS);
+        if (pMethodDecl == nullptr)
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+        if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
+        {
+            continue;
+        }
+
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must be MethodDef tokens.
+        if (TypeFromToken(methodBody) != mdtMethodDef)
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+        
+        MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+            GetModule(),
+            methodBody,
+            &sigTypeContext,
+            /* strictMetadataChecks */ FALSE,
+            /* allowInstParam */ FALSE,
+            /* owningTypeLoadLevel */ CLASS_LOAD_EXACTPARENTS);
+        if (pMethodImpl == nullptr)
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods 
+        // defined on the same type that defines the MethodImpl
+        if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+
+        if (pInterfaceMD->HasMethodInstantiation() || pMethodImpl->HasMethodInstantiation() || HasInstantiation())
+        {
+            pMethodImpl = pMethodImpl->FindOrCreateAssociatedMethodDesc(
+                pMethodImpl,
+                this,
+                FALSE,
+                pInterfaceMD->GetMethodInstantiation(),
+                /* allowInstParam */ FALSE,
+                /* forceRemotableMethod */ FALSE,
+                /* allowCreate */ TRUE,
+                /* level */ CLASS_LOAD_EXACTPARENTS);
+        }
+        if (pMethodImpl != nullptr)
+        {
+            if (!checkDuplicates)
+            {
+                return pMethodImpl;
+            }
+            if (pPrevMethodImpl != nullptr)
+            {
+                // Two MethodImpl records found for the same virtual static interface method
+                COMPlusThrow(kTypeLoadException, E_FAIL);
+            }
+            pPrevMethodImpl = pMethodImpl;
+        }
+    }
+
+    return pPrevMethodImpl;
+}
+
+void
+MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
+{
+    InterfaceMapIterator it = IterateInterfaceMap();
+    while (it.Next())
+    {
+        MethodTable *pInterfaceMT = it.GetInterface();
+        if (pInterfaceMT->HasVirtualStaticMethods())
+        {
+            for (MethodIterator it(pInterfaceMT); it.IsValid(); it.Next())
+            {
+                MethodDesc *pMD = it.GetMethodDesc();
+                if (pMD->IsVirtual() &&
+                    pMD->IsStatic() &&
+                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* checkDuplicates */ TRUE, /* allowVariantMatches */ FALSE))
+                {
+                    IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
+                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
+                }
+            }
+        }
+    }
+}
+
+//==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface method pInterfaceMD.
 //
 // Note our ability to resolve constraint methods is affected by the degree of code sharing we are
@@ -9188,6 +9460,18 @@ MethodTable::TryResolveConstraintMethodApprox(
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
+    if (pInterfaceMD->IsStatic())
+    {
+        _ASSERTE(!thInterfaceType.IsTypeDesc());
+        _ASSERTE(thInterfaceType.IsInterface());
+        MethodDesc *result = ResolveVirtualStaticMethod(thInterfaceType.GetMethodTable(), pInterfaceMD, pfForceUseRuntimeLookup != NULL);
+        if (result == NULL)
+        {
+            *pfForceUseRuntimeLookup = TRUE;
+        }
+        return result;
+    }
 
     // We can't resolve constraint calls effectively for reference types, and there's
     // not a lot of perf. benefit in doing it anyway.

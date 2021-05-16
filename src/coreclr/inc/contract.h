@@ -217,7 +217,7 @@
 
 
 // We only enable contracts in _DEBUG builds
-#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS)
+#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS) && !defined(JIT_BUILD)
 #define ENABLE_CONTRACTS_DATA
 #endif
 

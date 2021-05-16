@@ -251,6 +251,10 @@ if (CLR_CMAKE_TARGET_WIN32)
     vartype.h
   )
 
+  # Append clrjit.natvis file
+  list (APPEND JIT_SOURCES
+    clrjit.natvis)
+
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
     list (APPEND JIT_HEADERS
       emitarm.h
@@ -361,6 +365,15 @@ convert_to_absolute_path(JIT_AMD64_SOURCES ${JIT_AMD64_SOURCES})
 convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
+
+# Include natvis file for Windows
+if (CLR_CMAKE_HOST_WIN32)
+  set(JIT_NATVIS_SOURCE
+    clrjit.natvis
+  )
+  convert_to_absolute_path(JIT_NATVIS_SOURCE ${JIT_NATVIS_SOURCE})
+  add_linker_flag("/NATVIS:${JIT_NATVIS_SOURCE}")
+endif(CLR_CMAKE_HOST_WIN32)
 
 set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 

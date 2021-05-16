@@ -1138,45 +1138,38 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     return pgoResults->m_hr;
 }
 
-void ZapInfo::allocMem(
-    uint32_t            hotCodeSize,    /* IN */
-    uint32_t            coldCodeSize,   /* IN */
-    uint32_t            roDataSize,     /* IN */
-    uint32_t            xcptnsCount,    /* IN */
-    CorJitAllocMemFlag  flag,           /* IN */
-    void **             hotCodeBlock,   /* OUT */
-    void **             coldCodeBlock,  /* OUT */
-    void **             roDataBlock     /* OUT */
-    )
+void ZapInfo::allocMem(AllocMemArgs *pArgs)
 {
     bool optForSize = m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SIZE_OPT);
 
     UINT align = DEFAULT_CODE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) && !IsReadyToRunCompilation()) align = max(align, 16);
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) && !IsReadyToRunCompilation()) align = max(align, 16);
 
-    m_pCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, hotCodeSize, align);
-    *hotCodeBlock = m_pCode->GetData();
+    m_pCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, pArgs->hotCodeSize, align);
+    pArgs->hotCodeBlock = m_pCode->GetData();
+    pArgs->hotCodeBlockRW = m_pCode->GetData();
 
-    if (coldCodeSize != 0)
+    if (pArgs->coldCodeSize != 0)
     {
         align = sizeof(DWORD);
 
-        m_pColdCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, coldCodeSize, align);
-        *coldCodeBlock = m_pColdCode->GetData();
+        m_pColdCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, pArgs->coldCodeSize, align);
+        pArgs->coldCodeBlock = m_pColdCode->GetData();
+        pArgs->coldCodeBlockRW = m_pColdCode->GetData();
     }
 
     //
     // Allocate data
     //
 
-    if (roDataSize > 0)
+    if (pArgs->roDataSize > 0)
     {
-        if (flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)
+        if (pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)
         {
             align = 16;
         }
-        else if (optForSize || (roDataSize < 8))
+        else if (optForSize || (pArgs->roDataSize < 8))
         {
             align = TARGET_POINTER_SIZE;
         }
@@ -1184,35 +1177,36 @@ void ZapInfo::allocMem(
         {
             align = 8;
         }
-        m_pROData = ZapBlobWithRelocs::NewAlignedBlob(m_pImage, NULL, roDataSize, align);
-        *roDataBlock = m_pROData->GetData();
+        m_pROData = ZapBlobWithRelocs::NewAlignedBlob(m_pImage, NULL, pArgs->roDataSize, align);
+        pArgs->roDataBlock = m_pROData->GetData();
+        pArgs->roDataBlockRW = m_pROData->GetData();
     }
 
     if (m_pImage->m_stats)
     {
-        m_pImage->m_stats->m_nativeCodeSize     += hotCodeSize;
-        m_pImage->m_stats->m_nativeColdCodeSize += coldCodeSize;
-        m_pImage->m_stats->m_nativeRODataSize   += roDataSize;
+        m_pImage->m_stats->m_nativeCodeSize     += pArgs->hotCodeSize;
+        m_pImage->m_stats->m_nativeColdCodeSize += pArgs->coldCodeSize;
+        m_pImage->m_stats->m_nativeRODataSize   += pArgs->roDataSize;
 
         BOOL haveProfileData = CurrentMethodHasProfileData();
 
         if (haveProfileData)
         {
-            m_pImage->m_stats->m_nativeCodeSizeInProfiledMethods     += hotCodeSize;
-            m_pImage->m_stats->m_nativeColdCodeSizeInProfiledMethods += coldCodeSize;
+            m_pImage->m_stats->m_nativeCodeSizeInProfiledMethods     += pArgs->hotCodeSize;
+            m_pImage->m_stats->m_nativeColdCodeSizeInProfiledMethods += pArgs->coldCodeSize;
         }
 
-        if (coldCodeSize)
+        if (pArgs->coldCodeSize)
         {
             m_pImage->m_stats->m_NumHotColdAllocations++;
 
-            m_pImage->m_stats->m_nativeCodeSizeInSplitMethods     += hotCodeSize;
-            m_pImage->m_stats->m_nativeColdCodeSizeInSplitMethods += coldCodeSize;
+            m_pImage->m_stats->m_nativeCodeSizeInSplitMethods     += pArgs->hotCodeSize;
+            m_pImage->m_stats->m_nativeColdCodeSizeInSplitMethods += pArgs->coldCodeSize;
 
             if (haveProfileData)
             {
-                m_pImage->m_stats->m_nativeCodeSizeInSplitProfiledMethods     += hotCodeSize;
-                m_pImage->m_stats->m_nativeColdCodeSizeInSplitProfiledMethods += coldCodeSize;
+                m_pImage->m_stats->m_nativeCodeSizeInSplitProfiledMethods     += pArgs->hotCodeSize;
+                m_pImage->m_stats->m_nativeColdCodeSizeInSplitProfiledMethods += pArgs->coldCodeSize;
             }
         }
         else
@@ -2394,6 +2388,13 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     _ASSERTE(pResult);
 
+    if ((flags & CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != nullptr)
+    {
+        // Defer constrained call / ldftn instructions used for static virtual methods
+        // to runtime resolution.
+        ThrowHR(E_NOTIMPL);
+    }
+
     // Fill in the kind of the virtual call.
     // We set kindOnly=true since we don't want the EE to actually give us
     // a call stub - instead we want to generate an indirection ourselves.
@@ -2803,7 +2804,7 @@ void ZapInfo::recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO *callSig, CO
     return;
 }
 
-void ZapInfo::recordRelocation(void *location, void *target,
+void ZapInfo::recordRelocation(void *location, void *locationRW, void *target,
                                uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
 {
     // Factor slotNum into the location address
