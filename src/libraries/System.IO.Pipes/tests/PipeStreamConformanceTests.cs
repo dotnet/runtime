@@ -97,6 +97,15 @@ namespace System.IO.Pipes.Tests
             return ((NamedPipeServerStream)streams.Stream2, (NamedPipeClientStream)streams.Stream1);
         }
 
+        protected async Task ValidateDisposedExceptionsAsync(NamedPipeServerStream server)
+        {
+            Assert.Throws<ObjectDisposedException>(() => server.Disconnect());
+            Assert.Throws<ObjectDisposedException>(() => server.GetImpersonationUserName());
+            Assert.Throws<ObjectDisposedException>(() => server.WaitForConnection());
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => server.WaitForConnectionAsync());
+            await ValidateDisposedExceptionsAsync(server as Stream);
+        }
+
         /// <summary>
         /// Yields every combination of testing options for the OneWayReadWrites test
         /// </summary>
