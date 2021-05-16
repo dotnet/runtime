@@ -5808,15 +5808,6 @@ static void
 emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 {
 	MonoInst *ins;
-	gboolean has_filter = FALSE;
-
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-			has_filter = TRUE;
-	}
-	if (!has_filter)
-		return;
 
 	MonoInst **iargs;
 	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
@@ -5826,8 +5817,6 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	MonoInst *ftndesc;
 
 	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
-	/* Tell the llvm backend to skip emitting the rest of the method code */
-	cfg->interp_entry_only = TRUE;
 
 	g_assert (cfg->cbb == cfg->bb_init);
 	/* Obtain the interp entry function */
@@ -6435,8 +6424,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 	}
 
-	if (cfg->llvm_only && cfg->interp)
-		emit_llvmonly_interp_entry (cfg, header);
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		for (int i = 0; i < header->num_clauses; ++i) {
+			MonoExceptionClause *clause = &header->clauses [i];
+			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
+				cfg->interp_entry_only = TRUE;
+		}
+
+		if (cfg->interp_entry_only)
+			emit_llvmonly_interp_entry (cfg, header);
+	}
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {
