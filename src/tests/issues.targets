@@ -2961,5 +2961,36 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/AutoReleaseTest/**">
             <Issue>System.DllNotFoundException: ObjectiveC</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_36614/GitHub_36614/**">
+            <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.assert, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
+            <Issue>System.ArgumentNullException: Value cannot be null. (Parameter 'path1')</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
+            <Issue>System.Exception: Values for 'retCode' are not equal! Left='1' Right='0'</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/readytorun/multifolder/multifolder/**">
+            <Issue>System.IO.FileNotFoundException: Could not load file or assembly '/.../Library/Developer/CoreSimulator/Devices/941235AB-7563-4D79-AC28-946B7AD2304A/data/Containers/Bundle/Application/40176A30-D8F5-4497-958A-6514E5C684FC/readytorun_multifolder.app/testdir-multifolder/../FolderA/FolderA/FolderA.dll' or one of its dependencies.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
+            <Issue>Failed to catch an exception! System.DllNotFoundException: ForeignThreadExceptionsNative</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/WeakReference/multipleWRs/**">
+            <Issue>USAGE: MultipleWR.exe num objects [track]</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
+            <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.runner.utility.netcoreapp10, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
+            <Issue>Environment variable is not set: 'CORE_ROOT'</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
