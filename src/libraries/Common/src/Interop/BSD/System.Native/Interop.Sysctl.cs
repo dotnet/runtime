@@ -55,17 +55,17 @@ internal static partial class Interop
                 // previous contents, and proper checking of value returned
                 // will make code more complex.
                 Marshal.FreeHGlobal((IntPtr)value);
-                if (bytesLength == int.MaxValue)
+                if ((int)bytesLength == int.MaxValue)
                 {
                     throw new OutOfMemoryException();
                 }
-                if (bytesLength >= int.MaxValue / 2)
+                if ((int)bytesLength >= int.MaxValue / 2)
                 {
-                    bytesLength = int.MaxValue;
+                    bytesLength = (IntPtr)int.MaxValue;
                 }
                 else
                 {
-                    bytesLength *= 2;
+                    bytesLength = (IntPtr)((int)bytesLength * 2);
                 }
                 value = (byte*)Marshal.AllocHGlobal(bytesLength);
                 ret = Sysctl(name, name_len, value, &bytesLength);
