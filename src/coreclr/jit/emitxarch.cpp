@@ -4153,6 +4153,12 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     emitAdjustStackDepthPushPop(ins);
 }
 
+//------------------------------------------------------------------------
+// IsMovInstruction: Determines whether a give instruction is a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
 bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
@@ -4189,6 +4195,16 @@ bool emitter::IsMovInstruction(instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_Mov: Emits a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    dstReg    -- The destination register
+//    srcReg    -- The source register
+//    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
+//
 void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
 {
     // Only move instructions can use emitIns_Mov
@@ -4279,16 +4295,26 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
             case INS_movsx:
             case INS_movzx:
             {
-                // These instructions have a side effect and can't be skipped
-                break;
+                // These instructions have a side effect and shouldn't be skipped
+                // however existing codepaths were skipping these instructions in
+                // certain scenarios and so we skip them as well for back-compat.
+                //
+                // Long term, these paths should be audited and should likely be
+                // replaced with copies rather than extensions.
+                return;
             }
 
 #if defined(TARGET_AMD64)
             case INS_movq:
             case INS_movsxd:
             {
-                // These instructions have a side effect and can't be skipped
-                break;
+                // These instructions have a side effect and shouldn't be skipped
+                // however existing codepaths were skipping these instructions in
+                // certain scenarios and so we skip them as well for back-compat.
+                //
+                // Long term, these paths should be audited and should likely be
+                // replaced with copies rather than extensions.
+                return;
             }
 #endif // TARGET_AMD64
 
@@ -4297,8 +4323,6 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
                 unreached();
             }
         }
-
-        return;
     }
 
     UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);

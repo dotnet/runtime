@@ -11034,7 +11034,7 @@ void CodeGen::genReturn(GenTree* treeNode)
                 if (targetType == TYP_FLOAT)
                 {
                     GetEmitter()->emitIns_Mov(INS_vmov_f2i, EA_4BYTE, REG_INTRET, op1->GetRegNum(),
-                                              /* camSkip */ false);
+                                              /* canSkip */ false);
                 }
                 else
                 {

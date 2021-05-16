@@ -2639,7 +2639,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 else
 #endif
                 {
-                    inst_Mov(returnType, call->GetRegNum(), returnReg, /* canSkip */ true);
+                    inst_Mov(returnType, call->GetRegNum(), returnReg, /* canSkip */ false);
                 }
             }
         }

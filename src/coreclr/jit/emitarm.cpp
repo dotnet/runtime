@@ -1219,6 +1219,12 @@ emitter::insSize emitter::emitInsSize(insFormat insFmt)
     return ISZ_48BIT;
 }
 
+//------------------------------------------------------------------------
+// IsMovInstruction: Determines whether a give instruction is a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
 bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
@@ -2026,11 +2032,17 @@ void emitter::emitIns_MovRelocatableImmediate(instruction ins, emitAttr attr, re
     appendToCurIG(id);
 }
 
-/*****************************************************************************
- *
- *  Add a move instruction
- */
-
+//------------------------------------------------------------------------
+// emitIns_Mov: Emits a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    dstReg    -- The destination register
+//    srcReg    -- The source register
+//    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
+//    flags     -- The instructiion flags
+//
 void emitter::emitIns_Mov(instruction ins,
                           emitAttr    attr,
                           regNumber   dstReg,

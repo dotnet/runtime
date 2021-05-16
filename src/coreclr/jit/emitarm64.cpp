@@ -4059,11 +4059,17 @@ void emitter::emitIns_R_F(
     appendToCurIG(id);
 }
 
-/*****************************************************************************
- *
- *  Add a move instruction
- */
-
+//------------------------------------------------------------------------
+// emitIns_Mov: Emits a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    dstReg    -- The destination register
+//    srcReg    -- The source register
+//    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
+//    insOpts   -- The instruction options
+//
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
@@ -4155,7 +4161,7 @@ void emitter::emitIns_Mov(
         {
             assert(isValidVectorElemsizeFloat(size));
 
-            if (dstReg == srcReg)
+            if (canSkip && (dstReg == srcReg))
             {
                 // These instructions have no side effect and can be skipped
                 return;
@@ -15516,6 +15522,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+//------------------------------------------------------------------------
+// IsMovInstruction: Determines whether a give instruction is a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
 bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
