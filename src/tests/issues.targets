@@ -2961,6 +2961,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/AutoReleaseTest/**">
             <Issue>System.DllNotFoundException: ObjectiveC</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
+            <Issue>System.DllNotFoundException: SuppressGCTransitionNative</Issue>
+        </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_36614/GitHub_36614/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.assert, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.</Issue>
@@ -2991,6 +2994,17 @@
 
         <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
             <Issue>Environment variable is not set: 'CORE_ROOT'</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool/**">
+            <Issue>USAGE: ThreadStartBool bool</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool_1/**">
+            <Issue>USAGE: ThreadStartBool bool</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">
+            <Issue>System.ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')</Issue>
         </ExcludeList>
     </ItemGroup>
 </Project>
