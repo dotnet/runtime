@@ -107,7 +107,7 @@ monoEventPipeDataTypeMapping={
 
 def getEventPipeDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
-        return coreCLRPalDataTypeMapping
+        return coreCLREventPipeDataTypeMapping
     elif runtimeFlavor.mono:
         return monoEventPipeDataTypeMapping
 
@@ -352,9 +352,11 @@ def generateClrallEvents(eventNodes,allTemplates, target_cpp, runtimeFlavor, wri
         templateName = eventNode.getAttribute('template')
 
         #generate EventEnabled
+        if not target_cpp:
+            clrallEvents.append("static ")
         clrallEvents.append("inline %s EventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
         clrallEvents.append(eventName)
-        clrallEvents.append("() {return ")
+        clrallEvents.append("(void) {return ")
         clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
 
         if runtimeFlavor.coreclr or write_xplatheader:
@@ -371,6 +373,8 @@ def generateClrallEvents(eventNodes,allTemplates, target_cpp, runtimeFlavor, wri
         #generate FireEtw functions
         fnptype     = []
         fnbody      = []
+        if not target_cpp:
+            clrallEvents.append("static ")
         fnptype.append("inline %s FireEtw" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
         fnptype.append(eventName)
         fnptype.append("(\n")
@@ -510,7 +514,7 @@ def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp
         if extern:eventenabled.append('extern "C" ')
         eventenabled.append("%s EventPipeEventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
         eventenabled.append(eventName)
-        eventenabled.append("();\n")
+        eventenabled.append("(void);\n")
 
         if extern: writeevent.append('extern "C" ')
         writeevent.append("%s EventPipeWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
@@ -824,7 +828,7 @@ def main(argv):
                                     help='full path to directory where the header files will be generated')
     required.add_argument('--dummy',  type=str,default=None,
                                     help='full path to file that will have dummy definitions of FireEtw functions')
-    required.add_argument('--runtimeFlavor', type=str,default="CoreCLR",
+    required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
                                     help='runtime flavor')
     required.add_argument('--nonextern', action='store_true',
                                     help='if specified, will not generated extern function stub headers' )
@@ -838,7 +842,7 @@ def main(argv):
     sClrEtwAllMan     = args.man
     incdir            = args.inc
     etmDummyFile      = args.dummy
-    runtimeFlavor     = RuntimeFlavor(args.runtimeFlavor)
+    runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     extern            = not args.nonextern
     write_xplatheader = not args.noxplatheader
 

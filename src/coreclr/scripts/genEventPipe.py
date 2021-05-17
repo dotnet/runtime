@@ -31,7 +31,7 @@ stdprolog_cmake = """#
 eventpipe_dirname = "eventpipe"
 
 def generateMethodSignatureEnabled(eventName, runtimeFlavor):
-    return "%s EventPipeEventEnabled%s(void)" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
+    return "%s EventPipeEventEnabled%s()" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
 
 def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces = []
@@ -119,8 +119,7 @@ def generateClrEventPipeWriteEventsImpl(
             eventIsEnabledFunc = "ep_event_is_enabled"
 
         # generate EventPipeEventEnabled function
-        eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor) + ";\n\n"
-        eventEnabledImpl = eventEnabledImpl + generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
+        eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
 {
     return %s(EventPipeEvent%s);
 }
@@ -136,10 +135,7 @@ def generateClrEventPipeWriteEventsImpl(
         else:
             template = None
 
-        writeSignature = generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor)
-        fnptype.append(writeSignature)
-        fnptype.append(";\n\n")
-        fnptype.append(writeSignature)
+        fnptype.append(generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor))
         fnptype.append("\n{\n")
         checking = """    if (!EventPipeEventEnabled%s())
         return ERROR_SUCCESS;
@@ -184,6 +180,7 @@ def generateClrEventPipeWriteEventsImpl(
         eventPipeCallbackCastExpr = "reinterpret_cast<EventPipeCallback>"
     else:
         eventPipeCallbackCastExpr = "(EventPipeCallback)"
+
 
     if extern: WriteEventImpl.append('extern "C" ')
     WriteEventImpl.append(
@@ -418,7 +415,7 @@ def getCoreCLREventPipeHelperFileImplPrefix():
 #include "pal.h"
 #endif //TARGET_UNIX
 
-bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
+bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
 {
     newSize = (size_t)(newSize * 1.5);
     _ASSERTE(newSize > size); // check for overflow
@@ -426,7 +423,7 @@ bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, b
     if (newSize < 32)
         newSize = 32;
 
-    char *newBuffer = new (nothrow) char[newSize];
+    BYTE *newBuffer = new (nothrow) BYTE[newSize];
 
     if (newBuffer == NULL)
         return false;
@@ -443,7 +440,7 @@ bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, b
     return true;
 }
 
-bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (!src) return true;
     if (offset + len > size)
@@ -457,7 +454,7 @@ bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, s
     return true;
 }
 
-bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (!str) return true;
     size_t byteCount = (wcslen(str) + 1) * sizeof(*str);
@@ -473,7 +470,7 @@ bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool
     return true;
 }
 
-bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (!str) return true;
     size_t len = strlen(str) + 1;
@@ -710,13 +707,13 @@ def getCoreCLREventPipeImplFilePrefix():
 #define wcslen PAL_wcslen
 #endif
 
-bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
-bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
+bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 
 template <typename T>
-bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (sizeof(T) + offset > size)
     {
@@ -738,6 +735,7 @@ def getMonoEventPipeImplFilePrefix():
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-event.h>
+#include "clreventpipewriteevents.h"
 %s
 /*
  * Forward declares of functions.
@@ -1056,7 +1054,7 @@ def main(argv):
                                     help='full path to inclusion list')
     required.add_argument('--intermediate', type=str, required=True,
                           help='full path to eventprovider  intermediate directory')
-    required.add_argument('--runtimeFlavor', type=str,default="CoreCLR",
+    required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
                           help='runtime flavor')
     required.add_argument('--nonextern', action='store_true',
                           help='if specified, will generate files to be compiled into the CLR rather than extern' )
@@ -1071,7 +1069,7 @@ def main(argv):
     exclusion_filename = args.exc
     inclusion_filename = args.inc
     intermediate = args.intermediate
-    runtimeFlavor = RuntimeFlavor(args.runtimeFlavor)
+    runtimeFlavor = RuntimeFlavor(args.runtimeflavor)
     extern = not args.nonextern
     dryRun = args.dry_run
 
