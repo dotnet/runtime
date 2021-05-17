@@ -67,40 +67,49 @@ namespace System.IO.Tests
                 yield return TimeFunction.Create(
                     ((path, time) => File.SetCreationTime(path, time)),
                     ((path) => File.GetCreationTime(path)),
-                    DateTimeKind.Local);
+                    DateTimeKind.Local,
+                    "CreationTime_Local");
                 yield return TimeFunction.Create(
                     ((path, time) => File.SetCreationTimeUtc(path, time)),
                     ((path) => File.GetCreationTimeUtc(path)),
-                    DateTimeKind.Unspecified);
+                    DateTimeKind.Unspecified,
+                    "CreationTime_Unspecified");
                 yield return TimeFunction.Create(
                     ((path, time) => File.SetCreationTimeUtc(path, time)),
                     ((path) => File.GetCreationTimeUtc(path)),
-                    DateTimeKind.Utc);
+                    DateTimeKind.Utc,
+                    "CreationTime_Utc");
             }
             yield return TimeFunction.Create(
                 ((path, time) => File.SetLastAccessTime(path, time)),
                 ((path) => File.GetLastAccessTime(path)),
-                DateTimeKind.Local);
+                DateTimeKind.Local,
+                "LastAccessTime_Local");
             yield return TimeFunction.Create(
                 ((path, time) => File.SetLastAccessTimeUtc(path, time)),
                 ((path) => File.GetLastAccessTimeUtc(path)),
-                DateTimeKind.Unspecified);
+                DateTimeKind.Unspecified,
+                "LastAccessTime_Unspecified");
             yield return TimeFunction.Create(
                 ((path, time) => File.SetLastAccessTimeUtc(path, time)),
                 ((path) => File.GetLastAccessTimeUtc(path)),
-                DateTimeKind.Utc);
+                DateTimeKind.Utc,
+                "LastAccessTime_Utc");
             yield return TimeFunction.Create(
                 ((path, time) => File.SetLastWriteTime(path, time)),
                 ((path) => File.GetLastWriteTime(path)),
-                DateTimeKind.Local);
+                DateTimeKind.Local,
+                "LastWriteTime_Local");
             yield return TimeFunction.Create(
                 ((path, time) => File.SetLastWriteTimeUtc(path, time)),
                 ((path) => File.GetLastWriteTimeUtc(path)),
-                DateTimeKind.Unspecified);
+                DateTimeKind.Unspecified,
+                "LastWriteTime_Unspecified");
             yield return TimeFunction.Create(
                 ((path, time) => File.SetLastWriteTimeUtc(path, time)),
                 ((path) => File.GetLastWriteTimeUtc(path)),
-                DateTimeKind.Utc);
+                DateTimeKind.Utc,
+                "LastWriteTime_Utc");
         }
 
         protected override string CreateSymlinkToItem(string item)

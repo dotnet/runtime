@@ -29,19 +29,25 @@ namespace System.IO.Tests
 
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
 
-        public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind>
+        public TimeFunction TimeFunction(string name, bool requiresRoundtripping = false)
         {
-            public TimeFunction(SetTime setter, GetTime getter, DateTimeKind kind)
-                : base(item1: setter, item2: getter, item3: kind)
+            return TimeFunctions(requiresRoundtripping: name).FirstOrDefault((x) => x.Name == name);
+        }
+
+        public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind, string>
+        {
+            public TimeFunction(SetTime setter, GetTime getter, DateTimeKind kind, string name)
+                : base(item1: setter, item2: getter, item3: kind, item4: name)
             {
             }
 
-            public static TimeFunction Create(SetTime setter, GetTime getter, DateTimeKind kind)
-                => new TimeFunction(setter, getter, kind);
+            public static TimeFunction Create(SetTime setter, GetTime getter, DateTimeKind kind, string name)
+                => new TimeFunction(setter, getter, kind, name);
 
             public SetTime Setter => Item1;
             public GetTime Getter => Item2;
             public DateTimeKind Kind => Item3;
+            public string Name => Item4;
         }
 
         [Fact]
@@ -72,48 +78,64 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
+        [Theory]
+        [InlineData("CreationTime_Utc", "LastAccessTime_Utc", false)]
+        [InlineData("CreationTime_Utc", "LastAccessTime_Utc", true)]
+        [InlineData("CreationTime_Utc", "LastWriteTime_Utc", false)]
+        [InlineData("CreationTime_Utc", "LastWriteTime_Utc", true)]
+        [InlineData("LastAccessTime_Utc", "CreationTime_Utc", false)]
+        [InlineData("LastAccessTime_Utc", "CreationTime_Utc", true)]
+        [InlineData("LastAccessTime_Utc", "LastWriteTime_Utc", false)]
+        [InlineData("LastAccessTime_Utc", "LastWriteTime_Utc", true)]
+        [InlineData("LastWriteTime_Utc", "CreationTime_Utc", false)]
+        [InlineData("LastWriteTime_Utc", "CreationTime_Utc", true)]
+        [InlineData("LastWriteTime_Utc", "LastAccessTime_Utc", false)]
+        [InlineData("LastWriteTime_Utc", "LastAccessTime_Utc", true)]
         [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesAfterAnother()
+        public void SettingUpdatesPropertiesAfterAnother(string function1Name, string function2Name, bool reverse)
         {
+            // Browser is excluded as there is only 1 effective time store.
+
             T item = GetExistingItem();
 
-            // These linq calls make an IEnumerable of pairs of functions that are not identical
-            // (eg. not (creationtime, creationtime)), includes both orders as seperate entries
-            // as they it have different behavior in reverse order (of functions), in addition
-            // to the pairs of functions, there is a reverse bool that allows a test for both
-            // increasing and decreasing timestamps as to not limit the test unnecessarily.
-            // Only testing with utc because it would be hard to check if lastwrite utc was the
-            // same type of method as lastwrite local since their .Getter fields are different.
-            var timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
-            var booleanArray = new bool[] { false, true };
-            Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
+            // This test tests setting function1 to 2002, then function2 to 2001, then function1
+            // to 2000 (or reverse if reverse = true). This test is required as some apis change
+            // more dates then they're supposed to. There were issues while developing this PR
+            // with specific orders of changes, so this code should almost fully eliminate any
+            // possibilities of that in the future by having a proper test for it. Also, it should
+            // be noted that the combination (A, B, false) is not the same as (B, A, true).
+
+            var function1 = TimeFunction(function1Name);
+            if (function1 == null) return; //function not supported on this platform anyway (eg. creation time on linux)
+
+            var function2 = TimeFunction(function2Name);
+            if (function2 == null) return; //function not supported on this platform anyway (eg. creation time on linux)
+
+            // Checking that milliseconds are not dropped after setter.
+            DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+            DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+            DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+            if (reverse) //reverse the order of setting dates
             {
-                // Checking that milliseconds are not dropped after setter.
-                // Emscripten drops milliseconds in Browser
-                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                if (functions.reverse)
-                {
-                    var swap = dt3;
-                    dt3 = dt1;
-                    dt1 = swap;
-                }
-                functions.x.Setter(item, dt1);
-                functions.y.Setter(item, dt2);
-                functions.x.Setter(item, dt3);
-                DateTime result_x = functions.x.Getter(item);
-                DateTime result_y = functions.y.Getter(item);
-                Assert.Equal(dt3, result_x);
-                Assert.Equal(dt2, result_y);
-            });
+                var swap = dt3;
+                dt3 = dt1;
+                dt1 = swap;
+            }
+            function1.Setter(item, dt1);
+            function2.Setter(item, dt2);
+            function1.Setter(item, dt3);
+            DateTime result1 = function1.Getter(item);
+            DateTime result2 = function2.Getter(item);
+            Assert.Equal(dt3, result1);
+            Assert.Equal(dt2, result2);
         }
 
         [Fact]
         [PlatformSpecific(~(TestPlatforms.Browser | TestPlatforms.Windows))]
         public void SettingUpdatesPropertiesOnSymlink()
         {
+            // Browser is excluded as there is only 1 effective time store.
+            
             // This test makes sure that the times are set on the symlink itself.
             // It is needed as on OSX for example, the default for most APIs is
             // to follow the symlink to completion and set the time on that entry
@@ -122,8 +144,7 @@ namespace System.IO.Tests
 
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
-                // Checking that milliseconds are not dropped after setter.
-                // Emscripten drops milliseconds in Browser
+                // Checking that milliseconds are not dropped after setter on supported platforms.
                 DateTime dt = new DateTime(2004, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
