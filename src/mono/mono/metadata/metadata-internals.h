@@ -762,9 +762,11 @@ mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 GSList*
 mono_g_slist_append_image (MonoImage *image, GSList *list, gpointer data);
 
+MONO_COMPONENT_API
 void
 mono_image_lock (MonoImage *image);
 
+MONO_COMPONENT_API
 void
 mono_image_unlock (MonoImage *image);
 
@@ -857,6 +859,10 @@ const char*
 mono_metadata_blob_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
 gboolean
 mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, uint32_t *res, int res_size, MonoError *error);
+
+MONO_COMPONENT_API
+void
+mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, int res_size);
 
 gboolean
 mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const MonoDynamicTable *t, int idx, guint32 *res, int res_size, MonoError *error);
@@ -1056,6 +1062,7 @@ MonoImage *mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname,
 
 MonoImage *mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
+MONO_COMPONENT_API
 MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean metadata_only, const char *name, const char *filename);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);

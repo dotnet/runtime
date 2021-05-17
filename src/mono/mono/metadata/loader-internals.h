@@ -301,6 +301,7 @@ mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
 
+MONO_COMPONENT_API
 void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 

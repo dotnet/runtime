@@ -688,6 +688,7 @@ mono_runtime_free_method    (MonoMethod *method);
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs);
 
+MONO_COMPONENT_API
 MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void);
 
