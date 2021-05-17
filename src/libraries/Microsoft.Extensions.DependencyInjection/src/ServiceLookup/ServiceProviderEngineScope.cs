@@ -29,6 +29,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // For other scopes, it protects ResolvedServices and the list of disposables
         internal object Sync => ResolvedServices;
 
+        public bool IsRootScope => this == RootProvider.Root;
+
         internal ServiceProvider RootProvider { get; }
 
         public object GetService(Type serviceType)

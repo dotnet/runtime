@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 ServiceProviderMode.ILEmit => new ILEmitServiceProviderEngine(provider),
                 _ => throw new NotSupportedException()
             };
+            provider._engine = engine;
             return provider;
         }
     }
