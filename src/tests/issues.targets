@@ -3010,5 +3010,12 @@
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
             <Issue>System.DllNotFoundException: ThisCallNative</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Span/SpanBench/**">
+            <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/**">
+            <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
