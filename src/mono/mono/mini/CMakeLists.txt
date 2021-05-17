@@ -379,6 +379,27 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
+
+
+  if(TARGET_DARWIN)
+    add_library(mono-framework SHARED $<TARGET_OBJECTS:monosgen-objects>)
+    target_compile_definitions(mono-framework PRIVATE -DMONO_DLL_EXPORT)
+    target_sources(mono-framework PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+    target_link_libraries(mono-framework PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+    if(ICU_LDFLAGS)
+      set_property(TARGET mono-framework APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
+    endif()
+    if(STATIC_ICU)
+      set_property(TARGET mono-framework APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+    endif ()
+    set_property(TARGET mono-framework APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
+    target_sources(mono-framework PRIVATE "${mono-components-objects}")
+    set_target_properties(mono-framework PROPERTIES
+      FRAMEWORK TRUE
+      FRAMEWORK_VERSION C
+      MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
+    )
+  endif()
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
