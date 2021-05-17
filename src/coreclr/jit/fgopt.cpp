@@ -1803,25 +1803,26 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // Note we could update the local variable weights here by
-    // calling lvaMarkLocalVars, with the block and weight adjustment.
-
     // If either block or bNext has a profile weight
     // or if both block and bNext have non-zero weights
-    // then we select the highest weight block.
+    // then we wil use the max weight for the block.
+    //
+    const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
+    const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
 
-    if (block->hasProfileWeight() || bNext->hasProfileWeight() || (block->bbWeight && bNext->bbWeight))
+    if (hasProfileWeight || hasNonZeroWeight)
     {
-        // We are keeping block so update its fields
-        // when bNext has a greater weight
+        BasicBlock::weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
 
-        if (block->bbWeight < bNext->bbWeight)
+        if (hasProfileWeight)
         {
-            block->bbWeight = bNext->bbWeight;
-
-            block->bbFlags |= (bNext->bbFlags & BBF_PROF_WEIGHT); // Set the profile weight flag (if necessary)
-            assert(block->bbWeight != BB_ZERO_WEIGHT);
-            block->bbFlags &= ~BBF_RUN_RARELY; // Clear any RarelyRun flag
+            block->setBBProfileWeight(newWeight);
+        }
+        else
+        {
+            assert(newWeight != BB_ZERO_WEIGHT);
+            block->bbWeight = newWeight;
+            block->bbFlags &= ~BBF_RUN_RARELY;
         }
     }
     // otherwise if either block has a zero weight we select the zero weight
