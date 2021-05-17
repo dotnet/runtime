@@ -496,7 +496,7 @@ namespace Internal.Pgo
                     return x.InstrumentationKind.CompareTo(y.InstrumentationKind);
                 }
                 // Some InstrumentationKinds may be compared based on the Other field, some may not
-                if ((x.Other != y.Other) && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
+                if (x.Other != y.Other && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
                 {
                     return x.Other.CompareTo(y.Other);
                 }
@@ -510,7 +510,7 @@ namespace Internal.Pgo
                     return false;
                 if (x.InstrumentationKind != y.InstrumentationKind)
                     return false;
-                if ((x.Other != y.Other) && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
+                if (x.InstrumentationKind != y.InstrumentationKind && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
                     return false;
                 return true;
             }
