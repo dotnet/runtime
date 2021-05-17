@@ -430,7 +430,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
-            retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
+            const bool isSimdAsHWIntrinsic = true;
+            retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
                                               /* isSimdAsHWIntrinsic */ true);
             break;
         }

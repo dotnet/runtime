@@ -1665,8 +1665,8 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 //
 // tmp_simd_var = simd_var
 // tmp_index = index
-// loResult = GT_HWINTRINSIC{get_item}[int](tmp_simd_var, tmp_index * 2)
-// hiResult = GT_HWINTRINSIC{get_item}[int](tmp_simd_var, tmp_index * 2 + 1)
+// loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index * 2)
+// hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index * 2 + 1)
 // return: GT_LONG(loResult, hiResult)
 //
 // This isn't optimal codegen, since NI_Vector*_GetElement sometimes requires

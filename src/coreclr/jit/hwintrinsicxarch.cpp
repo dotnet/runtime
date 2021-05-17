@@ -983,7 +983,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // Using software fallback if
                 // 1. JIT/hardware don't support SSE2 instructions
-                // 2. simdBaseType is not a numeric type (throw execptions)
+                // 2. simdBaseType is not a numeric type (throw exceptions)
                 return nullptr;
             }
 
