@@ -520,6 +520,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
 
                         }
+                        if (objectId.Scheme == "pointer")
+                        {
+                            args["details"]  = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token);
+                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                            if (res.IsErr)
+                                return false;
+                            if (res.Value?["result"]?["value"]?["value"] != null)
+                            {
+                                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+                                var ret_debugger_cmd = new MemoryStream(newBytes);
+                                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
+                                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", token);
+                                res = Result.OkFromObject(new { result = obj["value"]});
+                                SendResponse(id, res, token);
+                                return true;
+                            }
+                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                            SendResponse(id, res, token);
+                            return true;
+
+                        }
                         /*if (objectId.Scheme == "array")
                         {
                             args["details"]  = await sdbHelper.GetArrayProxy(id, int.Parse(objectId.Value), token);

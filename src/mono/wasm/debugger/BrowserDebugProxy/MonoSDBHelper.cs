@@ -471,10 +471,12 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal class PointerValue
     {
+        public long address;
         public int typeId;
         public string varName;
-        public PointerValue(int typeId, string varName)
+        public PointerValue(long address, int typeId, string varName)
         {
+            this.address = address;
             this.typeId = typeId;
             this.varName = varName;
         }
@@ -483,8 +485,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoSDBHelper
     {
         private Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
-        private Dictionary<long, PointerValue> pointerValues = new Dictionary<long, PointerValue>();
-        private static int valuetype_id;
+        private Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
+        private static int debugger_object_id;
         private static int cmd_id;
         private static int GetId() {return cmd_id++;}
         private MonoProxy proxy;
@@ -836,15 +838,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return ret;
         }
-        public async Task<JObject> GetPointerContent(SessionId sessionId, long address, CancellationToken token)
+        public async Task<JObject> GetPointerContent(SessionId sessionId, int pointerId, CancellationToken token)
         {
             var ret = new List<string>();
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
-            command_params_writer.WriteLong(address);
-            command_params_writer.Write(pointerValues[address].typeId);
+            command_params_writer.WriteLong(pointerValues[pointerId].address);
+            command_params_writer.Write(pointerValues[pointerId].typeId);
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.POINTER, (int) CmdPointer.GET_VALUE, command_params, token);
-            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "*" + pointerValues[address].varName, token);
+            var varName = pointerValues[pointerId].varName;
+            if (int.TryParse(varName, out _))
+                varName = $"[{varName}]";
+            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "*" + varName, token);
         }
         public async Task<JArray> GetPropertiesValuesOfValueType(SessionId sessionId, int valueTypeId, CancellationToken token)
         {
@@ -1050,11 +1055,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     long valueAddress = ret_debugger_cmd_reader.ReadLong();
                     var typeId = ret_debugger_cmd_reader.ReadInt32();
                     var className = "(" + await GetTypeName(sessionId, typeId, token) + ")";
+                    int pointerId = 0;
                     if (valueAddress != 0 && className != "(void*)")
                     {
+                        pointerId = Interlocked.Increment(ref debugger_object_id);
                         type = "object";
                         value =  className;
-                        pointerValues[valueAddress] = new PointerValue(typeId, name);
+                        pointerValues[pointerId] = new PointerValue(valueAddress, typeId, name);
                     }
                     else
                     {
@@ -1069,7 +1076,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 value = value,
                                 description = value,
                                 className,
-                                objectId = $"dotnet:pointer:{valueAddress}"
+                                objectId = $"dotnet:pointer:{pointerId}"
                             },
                             writable = false,
                             name
@@ -1161,7 +1168,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     long endPos = ret_debugger_cmd_reader.BaseStream.Position;
-                    var valueTypeId = Interlocked.Increment(ref valuetype_id);
+                    var valueTypeId = Interlocked.Increment(ref debugger_object_id);
 
                     ret_debugger_cmd_reader.BaseStream.Position = initialPos;
                     byte[] valueTypeBuffer = new byte[endPos - initialPos];
