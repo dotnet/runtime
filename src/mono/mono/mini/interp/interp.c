@@ -7330,11 +7330,6 @@ copy_imethod_for_frame (InterpFrame *frame)
 	 */
 }
 
-static void
-interp_metadata_update_init (MonoError *error)
-{
-}
-
 #ifdef ENABLE_METADATA_UPDATE
 static void
 metadata_update_backup_frames (MonoThreadInfo *info, InterpFrame *frame)

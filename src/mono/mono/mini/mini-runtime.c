@@ -4337,7 +4337,6 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.install_state_summarizer = mini_register_sigterm_handler;
 #endif
 #ifdef ENABLE_METADATA_UPDATE
-	callbacks.metadata_update_init = mini_metadata_update_init;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 #endif
 	callbacks.init_mem_manager = init_jit_mem_manager;
@@ -5123,12 +5122,6 @@ mono_runtime_install_custom_handlers_usage (void)
 #endif /* HOST_WIN32 */
 
 #ifdef ENABLE_METADATA_UPDATE
-void
-mini_metadata_update_init (MonoError *error)
-{
-	mini_get_interp_callbacks ()->metadata_update_init (error);
-}
-
 void
 mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc G_GNUC_UNUSED, uint32_t generation G_GNUC_UNUSED)
 {

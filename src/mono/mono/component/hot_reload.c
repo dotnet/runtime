@@ -173,7 +173,7 @@ assembly_update_supported (MonoAssembly *assm)
 }
 
 /**
- * mono_metadata_update_no_inline:
+ * hot_reload_update_no_inline:
  * \param caller: the calling method
  * \param callee: the method being called
  *
@@ -192,9 +192,6 @@ hot_reload_no_inline (MonoMethod *caller, MonoMethod *callee)
 	MonoAssembly *callee_assm = m_class_get_image(callee->klass)->assembly;
 	return mono_assembly_is_jit_optimizer_disabled (caller_assm) || mono_assembly_is_jit_optimizer_disabled (callee_assm);
 }
-
-static void
-mono_metadata_update_ee_init (MonoError *error);
 
 /* Maps each MonoTableInfo* to the MonoImage that it belongs to.  This is
  * mapping the base image MonoTableInfos to the base MonoImage.  We don't need
@@ -310,19 +307,6 @@ hot_reload_init (void)
 {
 	table_to_image_init ();
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
-}
-
-/* Inform the execution engine that updates are coming */
-static void
-mono_metadata_update_ee_init (MonoError *error)
-{
-	static gboolean inited = FALSE;
-
-	if (inited)
-		return;
-	if (mono_get_runtime_callbacks ()->metadata_update_init)
-		mono_get_runtime_callbacks ()->metadata_update_init (error);
-	inited = TRUE;
 }
 
 static
@@ -1101,10 +1085,6 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 void
 hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, MonoError *error)
 {
-	mono_metadata_update_ee_init (error);
-	if (!is_ok (error))
-		return;
-
 	if (!assembly_update_supported (image_base->assembly)) {
 		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
 		return;
