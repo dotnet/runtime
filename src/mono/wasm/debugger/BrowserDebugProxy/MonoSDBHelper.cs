@@ -205,7 +205,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         TOKEN = 11,
         ASSEMBLY = 12,
         CLASS_TOKEN = 13,
-        ASYNC_DEBUG_INFO = 14
+        ASYNC_DEBUG_INFO = 14,
+        GET_NAME_FULL = 15
     }
 
     internal enum CmdType {
@@ -551,14 +552,27 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret_debugger_cmd_reader.ReadString();
         }
 
+
+        public async Task<string> GetAssemblyNameFull(SessionId sessionId, int assembly_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(assembly_id);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.ASSEMBLY, (int) CmdAssembly.GET_NAME, command_params, token);
+            var name = ret_debugger_cmd_reader.ReadString();
+            return name.Remove(name.IndexOf(",")) + ".dll";
+        }
+
         public async Task<string> GetMethodName(SessionId sessionId, int method_id, CancellationToken token)
         {
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(method_id);
 
-            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_NAME, command_params, token);
-            return ret_debugger_cmd_reader.ReadString();
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_NAME_FULL, command_params, token);
+            var methodName = ret_debugger_cmd_reader.ReadString();
+            return methodName.Substring(methodName.IndexOf(":")+1);
         }
 
         public async Task<bool> MethodIsStatic(SessionId sessionId, int method_id, CancellationToken token)
@@ -1210,7 +1224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_THIS, command_params, token);
                 ret_debugger_cmd_reader.ReadByte(); //ignore type
                 var objectId = ret_debugger_cmd_reader.ReadInt32();
-                var asyncLocals = await GetObjectValues(sessionId, objectId, token);
+                var asyncLocals = await GetObjectValues(sessionId, objectId, true, token);
                 asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>")));
                 foreach (var asyncLocal in asyncLocals)
                 {
@@ -1252,7 +1266,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return valueTypes[valueTypeId].valueTypeProxy;
             valueTypes[valueTypeId].valueTypeProxy = new JArray(valueTypes[valueTypeId].valueTypeJson);
 
-            var ret = new List<string>();
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(valueTypes[valueTypeId].typeId);
@@ -1301,7 +1314,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return array;
         }
 
-        public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, CancellationToken token)
+        public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, bool withProperties, CancellationToken token)
         {
             var typeId = await GetTypeIdFromObject(sessionId, objectId, token);
             var fields = await GetTypeFields(sessionId, typeId, token);
@@ -1323,8 +1336,47 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var fieldValue = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, field.Name, token);
                 objectFields.Add(fieldValue);
             }
+
+            if (!withProperties)
+                return objectFields;
+
             var props = await CreateJArrayForProperties(sessionId, typeId, Array.Empty<byte>(), objectFields, false, $"dotnet:object:{objectId}", token);
             return new JArray(objectFields.Union(props));
+        }
+
+        public async Task<JArray> GetObjectProxy(SessionId sessionId, int objectId, CancellationToken token)
+        {
+            var ret = await GetObjectValues(sessionId, objectId, false, token);
+            var typeId = await GetTypeIdFromObject(sessionId, objectId, token);
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(typeId);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_PROPERTIES, command_params, token);
+            var nProperties = ret_debugger_cmd_reader.ReadInt32();
+
+            for (int i = 0 ; i < nProperties; i++)
+            {
+                ret_debugger_cmd_reader.ReadInt32(); //propertyId
+                string propertyNameStr = ret_debugger_cmd_reader.ReadString();
+
+                var getMethodId = ret_debugger_cmd_reader.ReadInt32();
+                ret_debugger_cmd_reader.ReadInt32(); //setmethod
+                ret_debugger_cmd_reader.ReadInt32(); //attrs
+                if (await MethodIsStatic(sessionId, getMethodId, token))
+                    continue;
+                var command_params_to_proxy = new MemoryStream();
+                var command_params_writer_to_proxy = new MonoBinaryWriter(command_params_to_proxy);
+                command_params_writer_to_proxy.Write(getMethodId);
+                command_params_writer_to_proxy.Write((byte)ElementType.Class);
+                command_params_writer_to_proxy.Write(objectId);
+                command_params_writer_to_proxy.Write(0);
+                ret.Add(JObject.FromObject(new {
+                            get = Convert.ToBase64String(command_params_to_proxy.ToArray()),
+                            name = propertyNameStr
+                        }));
+            }
+            return ret;
         }
     }
 }

@@ -409,8 +409,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "DotnetDebugger.getMethodLocation":
                     {
-                        Console.WriteLine("set-breakpoint-by-method: " + id + " " + args);
-
                         DebugStore store = await RuntimeReady(id, token);
                         string aname = args["assemblyName"]?.Value<string>();
                         string typeName = args["typeName"]?.Value<string>();
@@ -466,6 +464,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Runtime.callFunctionOn":
                     {
+
                         if (!DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId))
                             return false;
 
@@ -481,13 +480,42 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
                             Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
-                            var ret_debugger_cmd = new MemoryStream(newBytes);
-                            var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
-                            ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                            var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "seila", token);
-                            /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
-                            res = Result.OkFromObject(new { result = obj["value"]});
+                            if (res.IsErr)
+                                return false;
+                            if (res.Value?["result"]?["value"]?["value"] != null)
+                            {
+                                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+                                var ret_debugger_cmd = new MemoryStream(newBytes);
+                                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
+                                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", token);
+                                /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
+                                res = Result.OkFromObject(new { result = obj["value"]});
+                                SendResponse(id, res, token);
+                                return true;
+                            }
+                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                            SendResponse(id, res, token);
+                            return true;
+                        }
+                        if (objectId.Scheme == "object")
+                        {
+                            args["details"]  = await sdbHelper.GetObjectProxy(id, int.Parse(objectId.Value), token);
+                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                            if (res.IsErr)
+                                return false;
+                            if (res.Value?["result"]?["value"]?["value"] != null)
+                            {
+                                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+                                var ret_debugger_cmd = new MemoryStream(newBytes);
+                                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
+                                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", token);
+                                res = Result.OkFromObject(new { result = obj["value"]});
+                                SendResponse(id, res, token);
+                                return true;
+                            }
+                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
                             SendResponse(id, res, token);
                             return true;
 
@@ -529,29 +557,34 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<Result> RuntimeGetProperties(MessageId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
-            if (objectId.Scheme == "scope")
-            {
-                return await GetScopeProperties(id, int.Parse(objectId.Value), token);
+            try {
+                if (objectId.Scheme == "scope")
+                {
+                    return await GetScopeProperties(id, int.Parse(objectId.Value), token);
+                }
+                if (objectId.Scheme == "valuetype")
+                {
+                    var ret = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), token);
+                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                    return res2;
+                }
+                if (objectId.Scheme == "array")
+                {
+                    var ret = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
+                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                    return res2;
+                }
+                if (objectId.Scheme == "object")
+                {
+                    var ret = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, token);
+                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                    return res2;
+                }
             }
-            if (objectId.Scheme == "valuetype")
-            {
-                var ret = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), token);
-                Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+            catch (Exception) {
+                Result res2 = Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
                 return res2;
             }
-            if (objectId.Scheme == "array")
-            {
-                var ret = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
-                Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
-                return res2;
-            }
-            if (objectId.Scheme == "object")
-            {
-                var ret = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), token);
-                Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
-                return res2;
-            }
-
             Result res = Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
             return res;
         }
@@ -598,8 +631,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             JObject data = null;
             string reason = "other";//other means breakpoint
             ExecutionContext context = GetContext(sessionId);
-
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
+            if (res.IsErr) {
+                return false;
+            }
+            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var ret_debugger_cmd = new MemoryStream(newBytes);
             var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
             ret_debugger_cmd_reader.ReadBytes(11); //skip HEADER_LEN
@@ -641,8 +676,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                             AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
                             if (asm == null)
                             {
-                                Log("debug", $"Unable to find assembly: {assembly_name}");
-                                continue;
+                                assembly_name = await sdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token); //maybe is a lazy loaded assembly
+                                asm = store.GetAssemblyByName(assembly_name);
+                                if (asm == null)
+                                {
+                                    Log("debug", $"Unable to find assembly: {assembly_name}");
+                                    continue;
+                                }
                             }
 
                             MethodInfo method = asm.GetMethodByToken(method_token);
@@ -998,7 +1038,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
-
             SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
 
             foreach (var req in context.BreakpointRequests.Values)

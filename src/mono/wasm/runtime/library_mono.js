@@ -1340,24 +1340,25 @@ var MonoSupportLib = {
 			if (fn_res.value !== undefined ) {
 				return fn_res;
 			}
-
-			if (fn_res === null || (fn_res.subtype === 'null' && fn_res.value === undefined)) {
+			return { type: "object", className: "Object", description: "Object", objectId: objId };
+			/*if (fn_res === null || (fn_res.subtype === 'null' && fn_res.value === undefined)) {
 				return fn_res;
-			}
+			}*/
 
-			// primitive type
+			/*// primitive type
 			if (Object (fn_res) !== fn_res)
-				return fn_res;
+				return fn_res;*/
 
+			/*
 			// return .value, if it is a primitive type
 			if (fn_res.value !== undefined && Object (fn_res.value.value) !== fn_res.value.value)
 				return fn_res.value;
 
 			if (request.returnByValue)
-				return {type: "object", value: fn_res};
+				return {type: "object", value: fn_res};*/
 
-			const fn_res_id = this._cache_call_function_res (fn_res);
-			if (Object.getPrototypeOf (fn_res) == Array.prototype) {
+			//const fn_res_id = this._cache_call_function_res (fn_res);
+			/*if (Object.getPrototypeOf (fn_res) == Array.prototype) {
 				return {
 					type: "object",
 					subtype: "array",
@@ -1367,7 +1368,7 @@ var MonoSupportLib = {
 				};
 			} else {
 				return { type: "object", className: "Object", description: "Object", objectId: fn_res_id };
-			}
+			}*/
 		},
 
 		_clear_per_step_state: function () {
