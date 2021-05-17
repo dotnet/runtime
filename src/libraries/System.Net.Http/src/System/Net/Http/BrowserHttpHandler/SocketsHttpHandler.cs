@@ -36,6 +36,18 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public int StreamWindowUpdateRatio
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public int StreamWindowMagicMultiplier
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

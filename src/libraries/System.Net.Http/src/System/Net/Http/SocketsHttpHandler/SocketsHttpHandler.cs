@@ -66,6 +66,18 @@ namespace System.Net.Http
             set => _settings._initialStreamWindowSize = value;
         }
 
+        public int StreamWindowUpdateRatio
+        {
+            get => _settings._streamWindowUpdateRatio;
+            set => _settings._streamWindowUpdateRatio = value;
+        }
+
+        public int StreamWindowMagicMultiplier
+        {
+            get => _settings._streamWindowMagicMultiplier;
+            set => _settings._streamWindowMagicMultiplier = value;
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

@@ -92,10 +92,10 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Theory]
-        [InlineData("10.194.114.94")]
-        public async Task Download20_Dynamic(string hostName)
+        [InlineData(BenchmarkServer)]
+        public async Task Download20_Dynamic_Default(string hostName)
         {
-            //_listener.Enabled = true;
+            _listener.Enabled = true;
             //_listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync");
 
             SocketsHttpHandler handler = new SocketsHttpHandler()
@@ -103,6 +103,27 @@ namespace System.Net.Http.Functional.Tests
                 FakeRtt = await EstimateRttAsync(hostName)
             };
             await TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb, handler);
+        }
+
+        [Theory]
+        [InlineData(BenchmarkServer, 8, 1)]
+        [InlineData(BenchmarkServer, 4, 1)]
+        [InlineData(BenchmarkServer, 2, 1)]
+        [InlineData(BenchmarkServer, 8, 10)]
+        [InlineData(BenchmarkServer, 4, 10)]
+        [InlineData(BenchmarkServer, 2, 10)]
+        public async Task Download20_Dynamic_Custom(string hostName, int ratio, int magic)
+        {
+            _listener.Enabled = true;
+            //_listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync");
+
+            SocketsHttpHandler handler = new SocketsHttpHandler()
+            {
+                FakeRtt = await EstimateRttAsync(hostName),
+                StreamWindowUpdateRatio = ratio,
+                StreamWindowMagicMultiplier = magic
+            };
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic | ratio={ratio} | magic={magic}", hostName, true, LengthMb, handler);
         }
 
         private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, HttpMessageHandler handler = null)

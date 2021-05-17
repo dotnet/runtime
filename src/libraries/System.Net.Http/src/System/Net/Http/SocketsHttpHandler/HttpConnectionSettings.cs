@@ -70,6 +70,8 @@ namespace System.Net.Http
         internal TimeSpan? _fakeRtt;
 
         internal int _initialStreamWindowSize = 65535;
+        internal int _streamWindowUpdateRatio = 8;
+        internal int _streamWindowMagicMultiplier = 1;
 
         public HttpConnectionSettings()
         {
@@ -125,7 +127,9 @@ namespace System.Net.Http
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _fakeRtt = _fakeRtt,
-                _initialStreamWindowSize = _initialStreamWindowSize
+                _initialStreamWindowSize = _initialStreamWindowSize,
+                _streamWindowUpdateRatio = _streamWindowUpdateRatio,
+                _streamWindowMagicMultiplier = _streamWindowMagicMultiplier
             };
 
             // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished

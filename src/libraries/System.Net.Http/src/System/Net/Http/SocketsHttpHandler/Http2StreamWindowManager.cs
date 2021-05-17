@@ -9,14 +9,12 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private const int StreamWindowUpdateRatio = 8;
         private int InitialStreamWindowSize { get; } = 65535;
 
         private class Http2StreamWindowManager
         {
             // See comment on ConnectionWindowThreshold.
-            internal int StreamWindowThreshold => StreamWindowSize / StreamWindowUpdateRatio;
-
+            protected int _streamWindowUpdateRatio;
             protected int _delivered;
             protected int _streamWindowSize;
 
@@ -28,15 +26,14 @@ namespace System.Net.Http
                 _connection = connection;
 
                 _stream = stream;
-                InitialStreamWindowSize = connection.InitialStreamWindowSize;
-                _streamWindowSize = InitialStreamWindowSize;
-
-                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
+                _streamWindowSize = connection.InitialStreamWindowSize;
+                _streamWindowUpdateRatio = _connection._pool.Settings._streamWindowUpdateRatio;
+                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
             }
 
-            internal int InitialStreamWindowSize { get; }
-
             internal int StreamWindowSize => _streamWindowSize;
+
+            internal int StreamWindowThreshold => _streamWindowSize / _streamWindowUpdateRatio;
 
             public virtual void AdjustWindow(int bytesConsumed)
             {
@@ -68,11 +65,13 @@ namespace System.Net.Http
         {
             private DateTime _lastWindowUpdate = DateTime.Now;
 
-            private const long Magic = 1;
+            private long _magic = 1;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
             {
+                _magic = connection._pool.Settings._streamWindowMagicMultiplier;
+                _stream.Trace($"magic:{_magic}");
             }
 
             public override void AdjustWindow(int bytesConsumed)
@@ -88,7 +87,7 @@ namespace System.Net.Http
 
                 int windowSizeIncrement = _delivered;
 
-                if (Magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
+                if (_magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
                 {
                     int newWindowSize = _streamWindowSize * 2;
                     windowSizeIncrement += newWindowSize - _streamWindowSize;
@@ -102,7 +101,7 @@ namespace System.Net.Http
                     string msg =
                         $"No adjustment! | RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
                         //$"_delivered * rtt.Ticks = {_delivered * rtt.Ticks} || StreamWindowThreshold * dt.Ticks = {StreamWindowThreshold * dt.Ticks} ||" +
-                        $"Magic*_delivered/dt = {Magic* _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
+                        $"Magic*_delivered/dt = {_magic* _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
                     _stream.Trace(msg);
                 }
 
