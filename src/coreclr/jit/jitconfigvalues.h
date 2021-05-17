@@ -29,6 +29,7 @@ CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT 
 CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0) // Display JIT Linear Scan Register Allocator statistics
                                                        // if set to 1. If set to "2", display the stats in csv format.
                                                        // Recommended to use with JitStdOutFile flag.
+CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))   // LSRA heuristics ordering
 CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0) // Prints all jitted methods to the console
 CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1)  // Whether absolute addr be encoded as PC-rel offset by
                                                              // RyuJIT where possible
