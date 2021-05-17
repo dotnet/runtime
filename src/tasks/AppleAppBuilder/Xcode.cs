@@ -197,7 +197,7 @@ internal class Xcode
         {
             defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
-        
+
         if (forceAOT)
         {
             defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
