@@ -337,7 +337,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void SetCursorPosition_Invoke_Success()
     {
         if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
@@ -364,7 +364,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void GetCursorPosition_Invoke_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -391,7 +391,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorLeft_Set_GetReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -413,7 +413,7 @@ public class WindowAndCursorProps
     [Theory]
     [InlineData(-1)]
     [InlineData(short.MaxValue + 1)]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorLeft_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
         if (PlatformDetection.IsWindows && Console.IsOutputRedirected)
@@ -434,7 +434,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorTop_Set_GetReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -456,7 +456,7 @@ public class WindowAndCursorProps
     [Theory]
     [InlineData(-1)]
     [InlineData(short.MaxValue + 1)]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorTop_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
         if (PlatformDetection.IsWindows & Console.IsOutputRedirected)
