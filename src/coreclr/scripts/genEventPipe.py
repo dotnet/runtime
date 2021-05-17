@@ -31,7 +31,7 @@ stdprolog_cmake = """#
 eventpipe_dirname = "eventpipe"
 
 def generateMethodSignatureEnabled(eventName, runtimeFlavor):
-    return "%s EventPipeEventEnabled%s()" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
+    return "%s EventPipeEventEnabled%s(void)" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
 
 def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces = []
@@ -683,6 +683,7 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
             if extern: helper.write(
                 'extern "C" '
             )
+            helper.write("void InitProvidersAndEvents(void);\n\n")
             helper.write("void InitProvidersAndEvents(void)\n{\n")
             for providerNode in tree.getElementsByTagName('provider'):
                 providerName = providerNode.getAttribute('name')
