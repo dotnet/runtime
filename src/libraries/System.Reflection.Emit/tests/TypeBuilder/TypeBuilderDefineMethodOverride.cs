@@ -268,6 +268,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
         public void DefineMethodOverride_StaticVirtualInterfaceMethod()
         {
@@ -294,6 +295,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
         public void DefineMethodOverride_StaticVirtualInterfaceMethod_VerifyWithInterfaceMap()
         {
