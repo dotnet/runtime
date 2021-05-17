@@ -11,7 +11,7 @@ namespace System.IO.Tests
 
         private long GetExpectedFileLength(long preallocationSize) => preallocationSize;
 
-        private long GetActualAllocationSize(FileStream fileStream)
+        private long GetActualPreallocationSize(FileStream fileStream)
         {
             // On Unix posix_fallocate modifies file length and we are using fstat to get it for verificaiton
             Interop.Sys.FStat(fileStream.SafeFileHandle, out Interop.Sys.FileStatus fileStatus);

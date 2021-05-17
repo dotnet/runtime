@@ -15,7 +15,7 @@ namespace System.IO.Tests
 
         private long GetExpectedFileLength(long preallocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
 
-        private unsafe long GetActualAllocationSize(FileStream fileStream)
+        private unsafe long GetActualPreallocationSize(FileStream fileStream)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 
@@ -36,7 +36,7 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.True(GetActualAllocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualAllocationSize(fs)}");
+                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
             }
         }
 

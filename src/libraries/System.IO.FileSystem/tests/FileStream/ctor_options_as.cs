@@ -66,11 +66,11 @@ namespace System.IO.Tests
         [InlineData(FileMode.Create, 0L)]
         [InlineData(FileMode.CreateNew, 0L)]
         [InlineData(FileMode.OpenOrCreate, 0L)]
-        public void WhenFileIsCreatedWithoutAllocationSizeSpecifiedTheAllocationSizeIsNotSet(FileMode mode, long preallocationSize)
+        public void WhenFileIsCreatedWithoutPreallocationSizeSpecifiedThePreallocationSizeIsNotSet(FileMode mode, long preallocationSize)
         {
             using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(0, GetActualAllocationSize(fs));
+                Assert.Equal(0, GetActualPreallocationSize(fs));
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, fs.Position);
             }
@@ -83,21 +83,21 @@ namespace System.IO.Tests
         [InlineData(FileMode.OpenOrCreate, 1L)]
         [InlineData(FileMode.Append, 0L)]
         [InlineData(FileMode.Append, 1L)]
-        public void WhenExistingFileIsBeingOpenedWithAllocationSizeSpecifiedTheAllocationSizeIsNotChanged(FileMode mode, long preallocationSize)
+        public void WhenExistingFileIsBeingOpenedWithPreallocationSizeSpecifiedThePreallocationSizeIsNotChanged(FileMode mode, long preallocationSize)
         {
             const int initialSize = 1;
             string filePath = GetPathToNonExistingFile();
             File.WriteAllBytes(filePath, new byte[initialSize]);
-            long initialAllocationSize;
+            long initialPreallocationSize;
 
             using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, 0))) // preallocationSize NOT provided
             {
-                initialAllocationSize = GetActualAllocationSize(fs); // just read it to ensure it's not being changed
+                initialPreallocationSize = GetActualPreallocationSize(fs); // just read it to ensure it's not being changed
             }
 
             using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(initialAllocationSize, GetActualAllocationSize(fs)); // it has NOT been changed
+                Assert.Equal(initialPreallocationSize, GetActualPreallocationSize(fs)); // it has NOT been changed
                 Assert.Equal(initialSize, fs.Length);
                 Assert.Equal(mode == FileMode.Append ? initialSize : 0, fs.Position);
             }
@@ -107,14 +107,14 @@ namespace System.IO.Tests
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
         [InlineData(FileMode.OpenOrCreate)]
-        public void WhenFileIsCreatedWithAllocationSizeSpecifiedTheAllocationSizeIsSet(FileMode mode)
+        public void WhenFileIsCreatedWithPreallocationSizeSpecifiedThePreallocationSizeIsSet(FileMode mode)
         {
             const long preallocationSize = 123;
 
             using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
                 // OS might allocate MORE than we have requested
-                Assert.True(GetActualAllocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualAllocationSize(fs)}");
+                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
                 Assert.Equal(GetExpectedFileLength(preallocationSize), fs.Length);
                 Assert.Equal(0, fs.Position);
             }
@@ -149,7 +149,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WhenFileIsTruncatedWithoutAllocationSizeSpecifiedTheAllocationSizeIsNotSet()
+        public void WhenFileIsTruncatedWithoutPreallocationSizeSpecifiedThePreallocationSizeIsNotSet()
         {
             const int initialSize = 10_000;
 
@@ -158,14 +158,14 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.Write, FileShare.None, FileOptions.None, 0)))
             {
-                Assert.Equal(0, GetActualAllocationSize(fs));
+                Assert.Equal(0, GetActualPreallocationSize(fs));
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, fs.Position);
             }
         }
 
         [Fact]
-        public void WhenFileIsTruncatedWithAllocationSizeSpecifiedTheAllocationSizeIsSet()
+        public void WhenFileIsTruncatedWithPreallocationSizeSpecifiedThePreallocationSizeIsSet()
         {
             const int initialSize = 10_000; // this must be more than 4kb which seems to be minimum allocation size on Windows
             const long preallocationSize = 100;
@@ -175,9 +175,9 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.True(GetActualAllocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualAllocationSize(fs)}");
+                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
                 // less than initial file size (file got truncated)
-                Assert.True(GetActualAllocationSize(fs) < initialSize, $"initialSize {initialSize}, actual: {GetActualAllocationSize(fs)}");
+                Assert.True(GetActualPreallocationSize(fs) < initialSize, $"initialSize {initialSize}, actual: {GetActualPreallocationSize(fs)}");
                 Assert.Equal(GetExpectedFileLength(preallocationSize), fs.Length);
                 Assert.Equal(0, fs.Position);
             }

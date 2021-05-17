@@ -14,6 +14,6 @@ namespace System.IO.Tests
 
         private long GetExpectedFileLength(long preallocationSize) => preallocationSize;
 
-        private long GetActualAllocationSize(FileStream fileStream) => fileStream.Length;
+        private long GetActualPreallocationSize(FileStream fileStream) => fileStream.Length;
     }
 }
