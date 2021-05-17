@@ -31,6 +31,7 @@ namespace System.IO.Tests
 
         public TimeFunction TimeFunction(string name, bool requiresRoundtripping = false)
         {
+            //if this returns null, it means that the function is not supported on the platform (eg. creation time on linux)
             return TimeFunctions(requiresRoundtripping: name).FirstOrDefault((x) => x.Name == name);
         }
 
@@ -105,11 +106,11 @@ namespace System.IO.Tests
             // possibilities of that in the future by having a proper test for it. Also, it should
             // be noted that the combination (A, B, false) is not the same as (B, A, true).
 
-            var function1 = TimeFunction(function1Name);
-            if (function1 == null) return; //function not supported on this platform anyway (eg. creation time on linux)
+            var function1 = TimeFunction(function1Name, requiresRoundtripping: true);
+            if (function1 == null) return;
 
-            var function2 = TimeFunction(function2Name);
-            if (function2 == null) return; //function not supported on this platform anyway (eg. creation time on linux)
+            var function2 = TimeFunction(function2Name, requiresRoundtripping: true);
+            if (function2 == null) return;
 
             // Checking that milliseconds are not dropped after setter.
             DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
