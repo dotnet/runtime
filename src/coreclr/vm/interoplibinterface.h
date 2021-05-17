@@ -165,16 +165,11 @@ public: // GC interaction
 
 #endif // FEATURE_OBJCMARSHAL
 
-// Forward declaration of type.
-struct PInvokeStaticSigInfo;
-
 class Interop
 {
 public:
     // Check if pending exceptions are possible for the following native export.
-    static bool ShouldCheckForPendingException(
-        _In_ NDirectMethodDesc* md,
-        _In_opt_ PInvokeStaticSigInfo* sigInfo = NULL);
+    static bool ShouldCheckForPendingException(_In_ NDirectMethodDesc* md);
 
     // A no return callback that is designed to help propagate a managed
     // exception going from Managed to Native.

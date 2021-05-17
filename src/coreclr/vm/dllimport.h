@@ -312,12 +312,12 @@ public:
 
     PInvokeStaticSigInfo(_In_ MethodDesc* pMdDelegate);
 
-    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName);
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
 
 private:
     void ThrowError(WORD errorResourceID);
     void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
-    void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName);
+    void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
     void PreInit(Module* pModule, MethodTable *pClass);
     void PreInit(MethodDesc* pMD);
 
@@ -350,8 +350,6 @@ public: // public getters
     BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
     CorInfoCallConvExtension GetCallConv() const { LIMITED_METHOD_CONTRACT; return m_callConv; }
     Signature GetSignature() const { LIMITED_METHOD_CONTRACT; return m_sig; }
-    LPCUTF8 GetEntryPointName() const { LIMITED_METHOD_CONTRACT; return m_entryPointName; }
-    mdModuleRef GetExternModuleRefToken() const { LIMITED_METHOD_CONTRACT; return m_externModref; }
     CorNativeLinkType GetCharSet() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
     CorNativeLinkFlags GetLinkFlags() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
 
@@ -406,9 +404,7 @@ private: // setters
 private:
     Module* m_pModule;
     Signature m_sig;
-    LPCUTF8 m_entryPointName;
     CorInfoCallConvExtension m_callConv;
-    mdModuleRef m_externModref;
     WORD m_wFlags;
 };
 

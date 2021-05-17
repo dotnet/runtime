@@ -2619,10 +2619,8 @@ void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
 
     // initialize data members
     m_wFlags = 0;
-    m_entryPointName = NULL;
     m_pModule = pModule;
     m_callConv = CallConvWinApiSentinel;
-    m_externModref = mdModuleRefNil;
     SetBestFitMapping (TRUE);
     SetThrowOnUnmappableChar (FALSE);
     SetLinkFlags (nlfNone);
@@ -2665,7 +2663,9 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName)
+    _In_ MethodDesc* pMD,
+    _Outptr_opt_ LPCUTF8* pLibName,
+    _Outptr_opt_ LPCUTF8* pEntryPointName)
 {
     CONTRACTL
     {
@@ -2674,7 +2674,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     }
     CONTRACTL_END;
 
-    DllImportInit(pMD, pLibName);
+    DllImportInit(pMD, pLibName, pEntryPointName);
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
@@ -2692,7 +2692,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
 
     if (!pMT->IsDelegate())
     {
-        DllImportInit(pMD, NULL);
+        DllImportInit(pMD, NULL, NULL);
         return;
     }
 
@@ -2763,7 +2763,10 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     InitCallConv(CallConvWinApiSentinel, FALSE);
 }
 
-void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName)
+void PInvokeStaticSigInfo::DllImportInit(
+    _In_ MethodDesc* pMD,
+    _Outptr_opt_ LPCUTF8* ppLibName,
+    _Outptr_opt_ LPCUTF8* ppEntryPointName)
 {
     CONTRACTL
     {
@@ -2775,6 +2778,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
         // where pMD->ndirect.m_szLibName was passed in directly, cleared
         // by this API, then accessed on another thread before being reset here.
         PRECONDITION(CheckPointer(ppLibName, NULL_OK) && (!ppLibName || *ppLibName == NULL));
+        PRECONDITION(CheckPointer(ppEntryPointName, NULL_OK) && (!ppEntryPointName || *ppEntryPointName == NULL));
     }
     CONTRACTL_END;
 
@@ -2784,19 +2788,20 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     // System.Runtime.InteropServices.DllImportAttribute
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
-    if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, &m_entryPointName, &m_externModref)))
+    mdModuleRef modref = mdModuleRefNil;
+    if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
         InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
         return;
     }
 
-    if (m_entryPointName == NULL)
-        m_entryPointName = pMD->GetName();
+    if (ppEntryPointName && *ppEntryPointName == NULL)
+        *ppEntryPointName = pMD->GetName();
 
     // out parameter pLibName
     if (ppLibName != NULL)
     {
-        if (FAILED(pInternalImport->GetModuleRefProps(m_externModref, ppLibName)))
+        if (FAILED(pInternalImport->GetModuleRefProps(modref, ppLibName)))
         {
             ThrowError(IDS_CLASSLOAD_BADFORMAT);
         }
@@ -3138,16 +3143,12 @@ BOOL NDirect::MarshalingRequired(
                 return TRUE;
         }
 
-        // SetLastError is handled by stub
-        PInvokeStaticSigInfo sigInfo(pMD);
-        if (sigInfo.GetLinkFlags() & nlfLastError)
-            return TRUE;
-
-        // LCID argument is handled by stub
-        if (GetLCIDParameterIndex(pMD) != -1)
-            return TRUE;
-
-        if (pMD->IsNDirect())
+        PInvokeStaticSigInfo sigInfo;
+        if (!pMD->IsNDirect())
+        {
+            new (&sigInfo) PInvokeStaticSigInfo(pMD);
+        }
+        else
         {
             // A P/Invoke marked with UnmanagedCallersOnlyAttribute
             // doesn't technically require marshalling. However, we
@@ -3164,12 +3165,22 @@ BOOL NDirect::MarshalingRequired(
             if (pNMD->IsClassConstructorTriggeredByILStub())
                 return TRUE;
 
+            InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
+
 #ifndef CROSSGEN_COMPILE
             // Pending exceptions are handled by stub
-            if (Interop::ShouldCheckForPendingException(pNMD, &sigInfo))
+            if (Interop::ShouldCheckForPendingException(pNMD))
                 return TRUE;
 #endif // !CROSSGEN_COMPILE
         }
+
+        // SetLastError is handled by stub
+        if (sigInfo.GetLinkFlags() & nlfLastError)
+            return TRUE;
+
+        // LCID argument is handled by stub
+        if (GetLCIDParameterIndex(pMD) != -1)
+            return TRUE;
 
         callConv = sigInfo.GetCallConv();
     }
@@ -4235,7 +4246,11 @@ static void CreateNDirectStubAccessMetadata(
 
 namespace
 {
-    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_opt_z_ LPCUTF8 libName)
+    void PopulateNDirectMethodDescImpl(
+        _Inout_ NDirectMethodDesc* pNMD,
+        _In_ const PInvokeStaticSigInfo& sigInfo,
+        _In_opt_z_ LPCUTF8 libName,
+        _In_opt_z_ LPCUTF8 entryPointName)
     {
         CONTRACTL
         {
@@ -4270,12 +4285,11 @@ namespace
         else
         {
             pNMD->ndirect.m_pszLibName.SetValueMaybeNull(libName);
-            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(sigInfo.GetEntryPointName());
+            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(entryPointName);
         }
 
-        // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
-        // or you will introduce a race condition.
-        pNMD->InterlockedSetNDirectFlags(ndirectflags);
+        // Do not publish incomplete prestub flags or you will introduce a race condition.
+        pNMD->InterlockedSetNDirectFlags(ndirectflags | NDirectMethodDesc::kNDirectPopulated);
     }
 }
 
@@ -4291,9 +4305,12 @@ void NDirect::PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD)
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    LPCUTF8 szLibName = NULL;
-    PInvokeStaticSigInfo sigInfo(pNMD, &szLibName);
-    PopulateNDirectMethodDescImpl(pNMD, sigInfo, szLibName);
+    if (pNMD->IsPopulated())
+        return;
+
+    LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
+    PInvokeStaticSigInfo sigInfo(pNMD, &szLibName, &szEntryPointName);
+    PopulateNDirectMethodDescImpl(pNMD, sigInfo, szLibName, szEntryPointName);
 }
 
 void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo)
@@ -4309,10 +4326,13 @@ void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMetho
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    LPCUTF8 szLibName = NULL;
-    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName);
+    LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
+    new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
 
-    PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName);
+    if (pNMD->IsPopulated())
+        return;
+
+    PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName, szEntryPointName);
 }
 
 #ifdef FEATURE_COMINTEROP
