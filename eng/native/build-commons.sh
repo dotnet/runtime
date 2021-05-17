@@ -95,7 +95,7 @@ build_native()
     fi
 
     if [[ "$targetOS" == "iOSSimulator" || "$targetOS" == "tvOSSimulator" ]]; then
-	cmakeArgs="-DCMAKE_SYSTEM_VARIANT=$targetOS $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=$targetOS $cmakeArgs"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
