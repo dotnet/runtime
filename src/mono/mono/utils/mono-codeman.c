@@ -653,6 +653,16 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 	return size;
 }
 
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+#define JIT_WRITE_PROTECT(enable) pthread_jit_write_protect_np ((enable))
+#define JIT_WRITE_PROTECT_AVAIL() (__builtin_available (macOS 11, *))
+#define USE_WRITE_PROTECT 1
+#elif (defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_DARWIN_SIMULATOR) && defined(HOST_ARM64)
+#define USE_WRITE_PROTECT 1
+#define JIT_WRITE_PROTECT(enable) mono_jit_write_protect ((enable))
+#define JIT_WRITE_PROTECT_AVAIL() 1
+#endif
+
 /*
  * mono_codeman_enable_write ():
  *
@@ -662,18 +672,13 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 void
 mono_codeman_enable_write (void)
 {
-#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
-	if (__builtin_available (macOS 11, *)) {
+#ifdef USE_WRITE_PROTECT
+	if (JIT_WRITE_PROTECT_AVAIL()) {
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		level ++;
 		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
-		pthread_jit_write_protect_np (0);
+		JIT_WRITE_PROTECT (0);
 	}
-#elif (defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_DARWIN_SIMULATOR) && defined(__aarch64__)
-        int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
-        level ++;
-        mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
-        mono_jit_write_protect (0);
 #endif
 }
 
@@ -686,21 +691,14 @@ mono_codeman_enable_write (void)
 void
 mono_codeman_disable_write (void)
 {
-#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
-	if (__builtin_available (macOS 11, *)) {
+#ifdef USE_WRITE_PROTECT
+	if (JIT_WRITE_PROTECT_AVAIL()) {
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		g_assert (level);
 		level --;
 		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
 		if (level == 0)
-			pthread_jit_write_protect_np (1);
+			JIT_WRITE_PROTECT (1);
 	}
-#elif (defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_DARWIN_SIMULATOR) && defined(__aarch64__)
-		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
-		g_assert (level);
-		level --;
-		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
-		if (level == 0)
-                        mono_jit_write_protect (1);
 #endif
 }
