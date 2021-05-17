@@ -2585,7 +2585,7 @@ public class name<, name, [attribute()]  name, name, name, [()] [name1()] [name2
         {
             try
             {
-                Assert.Equal(expected, actual);
+                Assert.Equal(LineEndingsHelper.Normalize(expected), actual);
             }
             catch (Xunit.Sdk.AssertActualExpectedException)
             {

@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
+#include "ds-process-protocol.h"
 #include "ds-profiler-protocol.h"
 #include "ds-dump-protocol.h"
 
@@ -319,6 +320,13 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	return hr;
 }
 #endif // PROFILING_SUPPORTED
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
 
 /*
 * DiagnosticServer.

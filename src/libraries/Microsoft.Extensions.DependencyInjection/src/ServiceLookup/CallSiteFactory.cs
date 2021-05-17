@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private readonly ServiceDescriptor[] _descriptors;
         private readonly ConcurrentDictionary<ServiceCacheKey, ServiceCallSite> _callSiteCache = new ConcurrentDictionary<ServiceCacheKey, ServiceCallSite>();
         private readonly Dictionary<Type, ServiceDescriptorCacheItem> _descriptorLookup = new Dictionary<Type, ServiceDescriptorCacheItem>();
+        private readonly ConcurrentDictionary<Type, object> _callSiteLocks = new ConcurrentDictionary<Type, object>();
 
         private readonly StackGuard _stackGuard;
 
@@ -98,13 +99,28 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return _stackGuard.RunOnEmptyStack((type, chain) => CreateCallSite(type, chain), serviceType, callSiteChain);
             }
 
-            callSiteChain.CheckCircularDependency(serviceType);
+            // We need to lock the resolution process for a single service type at a time:
+            // Consider the following:
+            // C -> D -> A
+            // E -> D -> A
+            // Resolving C and E in parallel means that they will be modifying the callsite cache concurrently
+            // to add the entry for C and E, but the resolution of D and A is synchronized
+            // to make sure C and E both reference the same instance of the callsite.
 
-            ServiceCallSite callSite = TryCreateExact(serviceType, callSiteChain) ??
-                                       TryCreateOpenGeneric(serviceType, callSiteChain) ??
-                                       TryCreateEnumerable(serviceType, callSiteChain);
+            // This is to make sure we can safely store singleton values on the callsites themselves
 
-            return callSite;
+            var callsiteLock = _callSiteLocks.GetOrAdd(serviceType, static _ => new object());
+
+            lock (callsiteLock)
+            {
+                callSiteChain.CheckCircularDependency(serviceType);
+
+                ServiceCallSite callSite = TryCreateExact(serviceType, callSiteChain) ??
+                                           TryCreateOpenGeneric(serviceType, callSiteChain) ??
+                                           TryCreateEnumerable(serviceType, callSiteChain);
+
+                return callSite;
+            }
         }
 
         private ServiceCallSite TryCreateExact(Type serviceType, CallSiteChain callSiteChain)

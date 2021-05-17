@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
     {
         private byte[] _key;
 
+        public static bool IsSupported => true;
+
         [MemberNotNull(nameof(_key))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {

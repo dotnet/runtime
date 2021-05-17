@@ -89,15 +89,21 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
-    <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-    <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <HelixPreCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <HelixPreCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
@@ -153,10 +159,10 @@
       We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
       so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">call RunTests.cmd</HelixCommand>
+    <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">./RunTests.sh</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -309,13 +315,24 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
+      <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
+      <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
+      <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+      <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
+      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
+      <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
       <!-- Create a work item for run-only WASM console app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- --run %(FileName).dll</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -325,7 +342,7 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- %(FileName).dll --testing</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome  --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 

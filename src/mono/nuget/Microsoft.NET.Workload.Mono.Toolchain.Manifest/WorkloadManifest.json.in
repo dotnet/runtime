@@ -1,7 +1,7 @@
 {
   "version": "${WorkloadVersion}",
   "workloads": {
-    "microsoft-net-runtime-browser-native": {
+    "microsoft-net-sdk-blazorwebassembly-aot": {
       "description": "Browser Runtime native performance tools",
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
@@ -11,12 +11,14 @@
         "Microsoft.NET.Runtime.Emscripten.Node",
         "Microsoft.NET.Runtime.Emscripten.Python",
         "Microsoft.NET.Runtime.Emscripten.Sdk"
-      ]
+      ],
+      "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android": {
       "abstract": true,
       "description": "Android Mono Runtime and AOT Workload",
       "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.android-arm",
         "Microsoft.NETCore.App.Runtime.Mono.android-arm64",
@@ -25,12 +27,14 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
-      ]
+      ],
+      "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-ios": {
       "abstract": true,
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm64",
@@ -47,9 +51,9 @@
       "abstract": true,
       "description": "tvOS Mono Runtime and AOT Workload",
       "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64",
-        "Microsoft.NETCore.App.Runtime.Mono.tvos-x64",
         "Microsoft.NETCore.App.Runtime.Mono.tvossimulator",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator"
@@ -212,7 +216,6 @@
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
-        "win-x86": "Microsoft.NETCore.App.Runtime.AOT.win-x86.Cross.browser-wasm",
         "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm",
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.browser-wasm",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm",

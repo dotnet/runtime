@@ -52,15 +52,19 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void IPv4Constructor_DualModeThrows()
+        public void IPv4Constructor_DualMode_GetterReturnsFalse()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Throws<NotSupportedException>(() =>
-                {
-                    Assert.False(socket.DualMode);
-                });
+                Assert.False(socket.DualMode);
+            }
+        }
 
+        [Fact]
+        public void IPv4Constructor_DualMode_SetterThrows()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
                 Assert.Throws<NotSupportedException>(() =>
                 {
                     socket.DualMode = true;
@@ -350,6 +354,7 @@ namespace System.Net.Sockets.Tests
         public Task BeginConnectV4IPAddressToV4Host_Success() => DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public Task BeginConnectV6IPAddressToV6Host_Success() => DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
 
         [Fact]

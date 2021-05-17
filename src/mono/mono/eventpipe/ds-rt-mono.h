@@ -245,6 +245,25 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 }
 
 /*
+* Environment variables
+*/
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	gchar *nameNarrow = ep_rt_utf16_to_utf8_string (name, ep_rt_utf16_string_len (name));
+	gchar *valueNarrow = ep_rt_utf16_to_utf8_string (value, ep_rt_utf16_string_len (value));
+
+	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
+
+	g_free (nameNarrow);
+	g_free (valueNarrow);
+
+	return success ? DS_IPC_S_OK : DS_IPC_E_FAIL;
+}
+
+/*
 * DiagnosticServer.
 */
 

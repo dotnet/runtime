@@ -753,6 +753,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "SendBufferSize, ReceiveBufferSize = 0 not supported on BSD like stacks.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendRecv_NoBuffering_Success()
         {
             if (UsesSync) return;
@@ -931,6 +932,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
@@ -1001,8 +1003,9 @@ namespace System.Net.Sockets.Tests
         {
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
             // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
+            // This bug is fixed in kernel 3.10.0-1160.25+.
             // TODO: Remove this, once CI machines are updated to a newer kernel.
-            bool expectGracefulShutdown = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
+            bool mayShutdownGraceful = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
@@ -1090,17 +1093,17 @@ namespace System.Net.Sockets.Tests
                             }
                         }
 
-                        if (!expectGracefulShutdown)
+                        try
                         {
                             Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                         }
-                        else
+                        catch when (mayShutdownGraceful)
                         {
                             Assert.Null(peerSocketError);
                         }
                     }
                 }
-            }, maxAttempts: 10, retryWhen: e => e is XunitException);
+            }, maxAttempts: 8, retryWhen: e => e is XunitException);
         }
 
         [Fact]

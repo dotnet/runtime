@@ -366,9 +366,8 @@ void CodeGen::genCodeForBBlist()
             GetEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
         }
 
-        /* Both stacks are always empty on entry to a basic block */
-
-        SetStackLevel(0);
+        // Both stacks are always empty on entry to a basic block.
+        assert(genStackLevel == 0);
         genAdjustStackLevel(block);
         savedStkLvl = genStackLevel;
 
@@ -1109,7 +1108,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
     {
         return;
     }
-    unsigned spillFlags = unspillTree->GetRegSpillFlagByIdx(multiRegIndex);
+    GenTreeFlags spillFlags = unspillTree->GetRegSpillFlagByIdx(multiRegIndex);
     if ((spillFlags & GTF_SPILLED) == 0)
     {
         return;
@@ -1231,7 +1230,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 
             for (unsigned i = 0; i < regCount; ++i)
             {
-                unsigned spillFlags = lclNode->GetRegSpillFlagByIdx(i);
+                GenTreeFlags spillFlags = lclNode->GetRegSpillFlagByIdx(i);
                 if ((spillFlags & GTF_SPILLED) != 0)
                 {
                     regNumber reg         = lclNode->GetRegNumByIdx(i);
@@ -1288,10 +1287,7 @@ void CodeGen::genCopyRegIfNeeded(GenTree* node, regNumber needReg)
 {
     assert((node->GetRegNum() != REG_NA) && (needReg != REG_NA));
     assert(!node->isUsedFromSpillTemp());
-    if (node->GetRegNum() != needReg)
-    {
-        inst_RV_RV(INS_mov, needReg, node->GetRegNum(), node->TypeGet());
-    }
+    inst_Mov(node->TypeGet(), needReg, node->GetRegNum(), /* canSkip */ true);
 }
 
 // Do Liveness update for a subnodes that is being consumed by codegen
@@ -1460,9 +1456,9 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
         LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
-        if (varDsc->GetRegNum() != REG_STK && varDsc->GetRegNum() != tree->GetRegNum())
+        if (varDsc->GetRegNum() != REG_STK)
         {
-            inst_RV_RV(ins_Copy(tree->TypeGet()), tree->GetRegNum(), varDsc->GetRegNum());
+            inst_Mov(tree->TypeGet(), tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
         }
     }
 
@@ -1760,7 +1756,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);
-    inst_RV_RV(INS_mov, dstReg, REG_SPBASE);
+    inst_Mov(TYP_I_IMPL, dstReg, REG_SPBASE, /* canSkip */ false);
 #else  // !TARGET_X86
     GenTree* dstAddr = putArgNode;
     if (dstAddr->GetRegNum() != dstReg)
@@ -1773,25 +1769,22 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 #endif // !TARGET_X86
 
-    if (srcAddr->GetRegNum() != srcReg)
+    if (srcAddr->OperIsLocalAddr())
     {
-        if (srcAddr->OperIsLocalAddr())
-        {
-            // The OperLocalAddr is always contained.
-            assert(srcAddr->isContained());
-            const GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
+        // The OperLocalAddr is always contained.
+        assert(srcAddr->isContained());
+        const GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
 
-            // Generate LEA instruction to load the LclVar address in RSI.
-            // Source is known to be on the stack. Use EA_PTRSIZE.
-            unsigned int offset = lclNode->GetLclOffs();
-            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
-        }
-        else
-        {
-            assert(srcAddr->GetRegNum() != REG_NA);
-            // Source is not known to be on the stack. Use EA_BYREF.
-            GetEmitter()->emitIns_R_R(INS_mov, EA_BYREF, srcReg, srcAddr->GetRegNum());
-        }
+        // Generate LEA instruction to load the LclVar address in RSI.
+        // Source is known to be on the stack. Use EA_PTRSIZE.
+        unsigned int offset = lclNode->GetLclOffs();
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
+    }
+    else
+    {
+        assert(srcAddr->GetRegNum() != REG_NA);
+        // Source is not known to be on the stack. Use EA_BYREF.
+        GetEmitter()->emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddr->GetRegNum(), /* canSkip */ true);
     }
 
     if (sizeReg != REG_NA)
@@ -1911,10 +1904,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         else
         {
             GenTree* sizeNode = blkNode->AsDynBlk()->gtDynamicSize;
-            if (sizeNode->GetRegNum() != sizeReg)
-            {
-                inst_RV_RV(INS_mov, sizeReg, sizeNode->GetRegNum(), sizeNode->TypeGet());
-            }
+            inst_Mov(sizeNode->TypeGet(), sizeReg, sizeNode->GetRegNum(), /* canSkip */ true);
         }
     }
 }
@@ -2111,7 +2101,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 
             for (unsigned i = 0; i < regCount; ++i)
             {
-                unsigned flags = lclNode->GetRegSpillFlagByIdx(i);
+                GenTreeFlags flags = lclNode->GetRegSpillFlagByIdx(i);
                 if ((flags & GTF_SPILL) != 0)
                 {
                     const regNumber reg         = lclNode->GetRegNumByIdx(i);
@@ -2135,7 +2125,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {
-                    unsigned flags = call->GetRegSpillFlagByIdx(i);
+                    GenTreeFlags flags = call->GetRegSpillFlagByIdx(i);
                     if ((flags & GTF_SPILL) != 0)
                     {
                         regNumber reg = call->GetRegNumByIdx(i);
@@ -2152,7 +2142,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {
-                    unsigned flags = argSplit->GetRegSpillFlagByIdx(i);
+                    GenTreeFlags flags = argSplit->GetRegSpillFlagByIdx(i);
                     if ((flags & GTF_SPILL) != 0)
                     {
                         regNumber reg = argSplit->GetRegNumByIdx(i);
@@ -2169,7 +2159,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {
-                    unsigned flags = multiReg->GetRegSpillFlagByIdx(i);
+                    GenTreeFlags flags = multiReg->GetRegSpillFlagByIdx(i);
                     if ((flags & GTF_SPILL) != 0)
                     {
                         regNumber reg = multiReg->GetRegNumByIdx(i);

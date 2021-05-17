@@ -725,7 +725,7 @@ namespace System.Net.Sockets
             {
                 if (AddressFamily != AddressFamily.InterNetworkV6)
                 {
-                    throw new NotSupportedException(SR.net_invalidversion);
+                    return false;
                 }
                 return ((int)GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only)! == 0);
             }
