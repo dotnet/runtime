@@ -432,7 +432,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             const bool isSimdAsHWIntrinsic = true;
             retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-                                              /* isSimdAsHWIntrinsic */ true);
             break;
         }
 
