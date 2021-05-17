@@ -31,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 1;
+        private const double LengthMb = 50;
         private const string BenchmarkServer = "10.194.114.94";
 
         [Theory]
@@ -106,10 +106,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(BenchmarkServer, 16, 4, 1)]
-        [InlineData(BenchmarkServer, 16, 8, 1)]
-        [InlineData(BenchmarkServer, 8, 4, 1)]
-        public async Task Download20_Dynamic_Custom(string hostName, int updateRatio, int extensionCheckRatio, int magic)
+        [InlineData(BenchmarkServer, 8, 1)]
+        [InlineData(BenchmarkServer, 4, 1)]
+        [InlineData(BenchmarkServer, 2, 1)]
+        [InlineData(BenchmarkServer, 8, 10)]
+        [InlineData(BenchmarkServer, 4, 10)]
+        [InlineData(BenchmarkServer, 2, 10)]
+        public async Task Download20_Dynamic_Custom(string hostName, int ratio, int magic)
         {
             _listener.Enabled = true;
             //_listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync");
@@ -117,11 +120,10 @@ namespace System.Net.Http.Functional.Tests
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
                 FakeRtt = await EstimateRttAsync(hostName),
-                StreamWindowUpdateSendRatio = updateRatio,
-                StreamWindowExtensionRatio = extensionCheckRatio,
+                StreamWindowUpdateRatio = ratio,
                 StreamWindowMagicMultiplier = magic
             };
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic | ratio={updateRatio} | magic={magic}", hostName, true, LengthMb, handler);
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic | ratio={ratio} | magic={magic}", hostName, true, LengthMb, handler);
         }
 
         private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, HttpMessageHandler handler = null)

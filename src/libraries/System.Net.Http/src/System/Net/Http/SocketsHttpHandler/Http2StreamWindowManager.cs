@@ -14,7 +14,7 @@ namespace System.Net.Http
         private class Http2StreamWindowManager
         {
             // See comment on ConnectionWindowThreshold.
-            protected int _streamWindowUpdateSendRatio;
+            protected int _streamWindowUpdateRatio;
             protected int _delivered;
             protected int _streamWindowSize;
 
@@ -27,18 +27,18 @@ namespace System.Net.Http
 
                 _stream = stream;
                 _streamWindowSize = connection.InitialStreamWindowSize;
-                _streamWindowUpdateSendRatio = _connection._pool.Settings._streamWindowUpdateSendRatio;
-                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowUpdateSendThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateSendRatio}");
+                _streamWindowUpdateRatio = _connection._pool.Settings._streamWindowUpdateRatio;
+                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
             }
 
             internal int StreamWindowSize => _streamWindowSize;
 
-            internal int StreamWindowUpdateSendThreshold => _streamWindowSize / _streamWindowUpdateSendRatio;
+            internal int StreamWindowThreshold => _streamWindowSize / _streamWindowUpdateRatio;
 
             public virtual void AdjustWindow(int bytesConsumed)
             {
                 Debug.Assert(bytesConsumed > 0);
-                Debug.Assert(_delivered < StreamWindowUpdateSendThreshold);
+                Debug.Assert(_delivered < StreamWindowThreshold);
 
                 if (!_stream.ExpectResponseData)
                 {
@@ -48,7 +48,7 @@ namespace System.Net.Http
                 }
 
                 _delivered += bytesConsumed;
-                if (_delivered < StreamWindowUpdateSendThreshold)
+                if (_delivered < StreamWindowThreshold)
                 {
                     return;
                 }
@@ -63,64 +63,53 @@ namespace System.Net.Http
 
         private class DynamicHttp2StreamWindowManager : Http2StreamWindowManager
         {
-            private DateTime _lastWindowExtensionCheck = DateTime.Now;
+            private DateTime _lastWindowUpdate = DateTime.Now;
 
             private long _magic = 1;
-            private int _streamWindowExtensionRatio;
-            private int _pendingWindowExtension;
-
-            private int StreamWindowExtensionThreshold => _streamWindowSize / _streamWindowExtensionRatio;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
             {
-                _streamWindowExtensionRatio = connection._pool.Settings._streamWindowExtensionRatio;
                 _magic = connection._pool.Settings._streamWindowMagicMultiplier;
-                _stream.Trace($"_streamWindowExtensionRatio:{_streamWindowExtensionRatio}, StreamWindowExtensionThreshold:{StreamWindowExtensionThreshold}, magic:{_magic}");
+                _stream.Trace($"magic:{_magic}");
             }
 
             public override void AdjustWindow(int bytesConsumed)
             {
                 _delivered += bytesConsumed;
-                _pendingWindowExtension += bytesConsumed;
-                if (_delivered < StreamWindowUpdateSendThreshold)
+                if (_delivered < StreamWindowThreshold)
                 {
                     return;
                 }
 
                 TimeSpan rtt = _connection._rttEstimator!.Rtt;
-                TimeSpan dt = DateTime.Now - _lastWindowExtensionCheck;
+                TimeSpan dt = DateTime.Now - _lastWindowUpdate;
 
                 int windowSizeIncrement = _delivered;
 
-                if (_pendingWindowExtension >= StreamWindowExtensionThreshold)
+                if (_magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
                 {
-                    if (_magic * _pendingWindowExtension * rtt.Ticks > StreamWindowExtensionThreshold * dt.Ticks)
-                    {
-                        int newWindowSize = _streamWindowSize * 2;
-                        windowSizeIncrement += newWindowSize - _streamWindowSize;
+                    int newWindowSize = _streamWindowSize * 2;
+                    windowSizeIncrement += newWindowSize - _streamWindowSize;
 
-                        _streamWindowSize = newWindowSize;
+                    _streamWindowSize = newWindowSize;
 
-                        _stream.Trace($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowExtensionThreshold: {StreamWindowExtensionThreshold}");
-                    }
-                    else
-                    {
-                        string msg =
-                            $"No adjustment! | RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
-                            //$"_delivered * rtt.Ticks = {_delivered * rtt.Ticks} || StreamWindowThreshold * dt.Ticks = {StreamWindowThreshold * dt.Ticks} ||" +
-                            $"Magic*_pendingWindowExtension/dt = {_magic * _pendingWindowExtension / dt.TotalSeconds} bytes/sec || StreamWindowExtensionThreshold/RTT = {StreamWindowExtensionThreshold / rtt.TotalSeconds} bytes/sec";
-                        _stream.Trace(msg);
-                    }
-
-                    _pendingWindowExtension = 0;
-                    _lastWindowExtensionCheck = DateTime.Now;
+                    _stream.Trace($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
+                }
+                else
+                {
+                    string msg =
+                        $"No adjustment! | RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
+                        //$"_delivered * rtt.Ticks = {_delivered * rtt.Ticks} || StreamWindowThreshold * dt.Ticks = {StreamWindowThreshold * dt.Ticks} ||" +
+                        $"Magic*_delivered/dt = {_magic* _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
+                    _stream.Trace(msg);
                 }
 
                 Task sendWindowUpdateTask = _connection.SendWindowUpdateAsync(_stream.StreamId, windowSizeIncrement);
                 _connection.LogExceptions(sendWindowUpdateTask);
 
                 _delivered = 0;
+                _lastWindowUpdate = DateTime.Now;
             }
         }
 
