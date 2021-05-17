@@ -654,13 +654,13 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 }
 
 #ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
-#define JIT_WRITE_PROTECT(enable) pthread_jit_write_protect_np ((enable))
-#define JIT_WRITE_PROTECT_AVAIL() (__builtin_available (macOS 11, *))
 #define USE_WRITE_PROTECT 1
+#define JIT_WRITE_PROTECT(enable) pthread_jit_write_protect_np ((enable))
+#define CHECK_WRITE_PROTECT_AVAIL 1
 #elif (defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_DARWIN_SIMULATOR) && defined(HOST_ARM64)
 #define USE_WRITE_PROTECT 1
 #define JIT_WRITE_PROTECT(enable) mono_jit_write_protect ((enable))
-#define JIT_WRITE_PROTECT_AVAIL() 1
+#undef CHECK_WRITE_PROTECT_AVAIL
 #endif
 
 /*
@@ -673,7 +673,10 @@ void
 mono_codeman_enable_write (void)
 {
 #ifdef USE_WRITE_PROTECT
-	if (JIT_WRITE_PROTECT_AVAIL()) {
+#ifdef CHECK_WRITE_PROTECT_AVAIL
+	if (__builtin_available (macOS 11, *))
+#endif
+	{
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		level ++;
 		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
