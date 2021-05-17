@@ -13456,7 +13456,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     callNode = varTypeIsFloating(impStackTop().val->TypeGet());
                 }
 
-                // At this point uns, ovf, callNode all set
+                // At this point uns, ovf, callNode are all set.
 
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1);
