@@ -624,7 +624,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (expectKeptAll) {
 				foreach (var srcField in possibleInitializerFields) {
-					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.Name == srcField.Name);
+					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
 					VerifyInitializerField (srcField, linkedField);
 				}
 			} else {
@@ -633,7 +633,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						Assert.Fail ($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndicies.Length}");
 
 					var srcField = possibleInitializerFields[index];
-					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.Name == srcField.Name);
+					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
 
 					VerifyInitializerField (srcField, linkedField);
 				}
@@ -735,14 +735,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.Fail ($"Missing expected type {originalCompilerGeneratedBufferType}");
 
 				// Have to verify the field before the type
-				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault (f => f.Name == "FixedElementField");
+				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault ();
 				if (originalElementField == null)
 					Assert.Fail ($"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
 
-				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault (l => l.Name == originalElementField.Name);
+				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault ();
 				VerifyFieldKept (originalElementField, linkedField);
 				verifiedGeneratedFields.Add (originalElementField.FullName);
-				linkedMembers.Remove (originalElementField.FullName);
+				linkedMembers.Remove (linkedField.FullName);
 
 				VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
 				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
