@@ -816,7 +816,7 @@ namespace System
                 return ASCIIUtility.GetIndexOfFirstNonAsciiChar(str, (uint)Length) == (uint)Length;
             }
         }
-        
+
         // Gets the character at a specified position.
         //
         [IndexerName("Chars")]
