@@ -200,7 +200,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 syntax.DefineOption(name: "spgo-with-edge-counts", value: ref SpgoIncludeEdgeCounts, help: "Include edge counts in the written .mibc file.", requireValue: false);
                 syntax.DefineOption(name: "spgo-min-samples", value: ref SpgoMinSamples, help: $"The minimum number of total samples a function must have before generating profile data for it with SPGO. Default: {SpgoMinSamples}", requireValue: false);
 
-                if (SpgoIncludeBlockCounts == false && SpgoIncludeEdgeCounts == false)
+                if (!SpgoIncludeBlockCounts && !SpgoIncludeEdgeCounts)
                     SpgoIncludeBlockCounts = true;
 
                 HelpOption();
@@ -245,7 +245,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 HelpArgs = new string[] { "merge", "--help", "--output", "output", "--input", "input"};
 
-                InputFilesToMerge = DefineFileOptionList(name: "i|input", help: "Input .mibc files to be merged. Multiple input arguments can be specified as -i file1.mibc -i file2.mibc");
+                InputFilesToMerge = DefineFileOptionList(name: "i|input", help: "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc");
                 OutputOption();
 
                 IReadOnlyList<string> assemblyNamesAsStrings = null;
@@ -299,7 +299,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (compareMibcCommand.IsActive)
             {
                 HelpArgs = new[] { "compare-mibc", "--input", "first.mibc", "--input", "second.mibc" };
-                CompareMibc = DefineFileOptionList(name: "i|input", help: "The input .mibc files to be merged. Specify as --input file1.mibc --input file2.mibc");
+                CompareMibc = DefineFileOptionList(name: "i|input", help: "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc");
                 if (CompareMibc.Count != 2)
                     Help = true;
             }
