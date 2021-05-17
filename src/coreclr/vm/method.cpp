@@ -5492,9 +5492,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -5522,11 +5522,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     }
 
     _ASSERTE(tgt != nullptr);
-    HRESULT hr = tgt->GetCustomAttribute(
-        WellKnownAttribute::SuppressGCTransition,
-        nullptr,
-        nullptr);
-    return (hr == S_OK) ? TRUE : FALSE;
+    bool suppressGCTransition;
+    NDirect::GetCallingConvention_IgnoreErrors(tgt, NULL /*callConv*/, &suppressGCTransition);
+    return suppressGCTransition ? TRUE : FALSE;
 }
 
 #ifdef FEATURE_COMINTEROP
