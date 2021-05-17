@@ -347,21 +347,6 @@ namespace Internal.TypeSystem
             Module = module;
             Flags = flags;
         }
-
-        public bool CheckPendingException()
-        {
-            const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
-            const string ObjectiveCMsgSend = "objc_msgSend";
-
-            // This is for the objc_msgSend suite of functions.
-            //   objc_msgSend
-            //   objc_msgSend_fpret
-            //   objc_msgSend_stret
-            //   objc_msgSendSuper
-            //   objc_msgSendSuper_stret
-            return Module.Equals(ObjectiveCLibrary)
-                && Name.StartsWith(ObjectiveCMsgSend);
-        }
     }
 
     partial class InstantiatedMethod

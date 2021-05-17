@@ -78,7 +78,7 @@ namespace Internal.IL.Stubs
             if (!_importMetadata.Flags.PreserveSig)
                 throw new NotSupportedException();
 
-            if (_importMetadata.CheckPendingException())
+            if (MarshalHelpers.ShouldCheckForPendingException(_targetMethod.Context.Target, _importMetadata))
                 throw new NotSupportedException();
 
             if (_targetMethod.IsUnmanagedCallersOnly)
