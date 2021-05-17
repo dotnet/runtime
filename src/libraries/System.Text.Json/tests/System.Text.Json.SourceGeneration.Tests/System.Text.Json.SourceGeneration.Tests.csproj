@@ -9,8 +9,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="MetadataAndSerializationContextTests.cs" />
+    <Compile Include="MetadataContextTests.cs" />
+    <Compile Include="MixedModeContextTests.cs" />
+    <Compile Include="SerializationContextTests.cs" />
     <Compile Include="TestClasses.cs" />
-    <Compile Include="JsonSourceGeneratorTests.cs" />
+    <Compile Include="ContextTests.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

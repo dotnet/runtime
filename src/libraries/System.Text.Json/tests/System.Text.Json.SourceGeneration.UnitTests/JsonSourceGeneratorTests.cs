@@ -17,10 +17,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string source = @"
             using System.Text.Json.Serialization;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     public int PublicPropertyInt { get; set; }
@@ -83,11 +86,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System.Text.Json.Serialization;
             using ReferencedAssembly;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-            [assembly: JsonSerializable(typeof(ReferencedAssembly.Location))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                [JsonSerializable(typeof(ReferencedAssembly.Location))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     public int PublicPropertyInt { get; set; }
@@ -165,15 +171,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System.Text.Json.Serialization;
             using ReferencedAssembly;
 
-            using @JsonSerializable = System.Runtime.Serialization.ContractNamespaceAttribute;
+            using @JsonSerializable = System.Runtime.Serialization.CollectionDataContractAttribute ;
             using AliasedAttribute = System.Text.Json.Serialization.JsonSerializableAttribute;
-
-            [assembly: AliasedAttribute(typeof(HelloWorld.MyType))]
-            [assembly: AliasedAttribute(typeof(ReferencedAssembly.Location))]
-            [module: @JsonSerializable(""my namespace"")]
 
             namespace HelloWorld
             {
+
+                [AliasedAttribute(typeof(HelloWorld.MyType))]
+                [AliasedAttribute(typeof(ReferencedAssembly.Location))]
+                [@JsonSerializable]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     public int PublicPropertyInt { get; set; }
@@ -245,12 +255,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string source = @"using System;
 using System.Text.Json.Serialization;
 
-[assembly: JsonSerializable(typeof(int))]
-[assembly: JsonSerializable(typeof(string), TypeInfoPropertyName = ""Str"")]
-
 namespace System.Text.Json.Serialization
 {
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    [JsonSerializable(typeof(int))]
+    [JsonSerializable(typeof(string), TypeInfoPropertyName = ""Str"")]
+    internal partial class JsonContext : JsonSerializerContext
+    {
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class JsonSerializableAttribute : JsonAttribute
     {
         public string TypeInfoPropertyName { get; set; }
@@ -341,11 +354,14 @@ namespace System.Text.Json.Serialization
             using System.Collections.Generic;
             using System.Text.Json.Serialization;
             using ReferencedAssembly;
-
-            [assembly: JsonSerializable(typeof(HelloWorld.WeatherForecastWithPOCOs))]
     
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.WeatherForecastWithPOCOs))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class WeatherForecastWithPOCOs
                 {
                     public DateTimeOffset Date { get; set; }

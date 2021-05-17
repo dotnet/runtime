@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace System.Text.Json.SourceGeneration
 {
     [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
-    internal class PropertyMetadata
+    internal class PropertyGenerationSpec
     {
         /// <summary>
         /// The CLR name of the property.
@@ -25,16 +25,21 @@ namespace System.Text.Json.SourceGeneration
         public string? JsonPropertyName { get; init; }
 
         /// <summary>
+        /// Whether the property has a set method.
+        /// </summary>
+        public bool IsReadOnly { get; init; }
+
+        /// <summary>
         /// Whether the property has a public or internal (only usable when JsonIncludeAttribute is specified)
         /// getter that can be referenced in generated source code.
         /// </summary>
-        public bool HasGetter { get; init; }
+        public bool CanUseGetter { get; init; }
 
         /// <summary>
         /// Whether the property has a public or internal (only usable when JsonIncludeAttribute is specified)
         /// setter that can be referenced in generated source code.
         /// </summary>
-        public bool HasSetter { get; init; }
+        public bool CanUseSetter { get; init; }
 
         public bool GetterIsVirtual { get; init; }
 
@@ -43,7 +48,7 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.
         /// </summary>
-        public JsonIgnoreCondition? IgnoreCondition { get; init; }
+        public JsonIgnoreCondition? DefaultIgnoreCondition { get; init; }
 
         /// <summary>
         /// The <see cref="JsonNumberHandling"/> for the property.
@@ -56,14 +61,14 @@ namespace System.Text.Json.SourceGeneration
         public bool HasJsonInclude { get; init; }
 
         /// <summary>
-        /// Metadata for the property's type.
+        /// Generation specification for the property's type.
         /// </summary>
-        public TypeMetadata TypeMetadata { get; init; }
+        public TypeGenerationSpec TypeGenerationSpec { get; init; }
 
         /// <summary>
         /// Compilable name of the property's declaring type.
         /// </summary>
-        public string DeclaringTypeCompilableName { get; init; }
+        public string DeclaringTypeRef { get; init; }
 
         /// <summary>
         /// Source code to instantiate design-time specified custom converter.

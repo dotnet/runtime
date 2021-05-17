@@ -91,6 +91,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="options"></param>
         /// <param name="createObjectFunc"></param>
         /// <param name="propInitFunc"></param>
+        /// <param name="serializeFunc"></param>
         /// <param name="numberHandling"></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/>, <paramref name="info"/>, or <paramref name="propInitFunc"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown when <paramref name="info"/>, does not represent a complex class or struct type.</exception>
@@ -98,8 +99,9 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo<T> info,
             JsonSerializerOptions options,
             Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]> propInitFunc,
-            JsonNumberHandling numberHandling)
+            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc)
             where T : notnull
         {
             if (info == null)
@@ -118,12 +120,7 @@ namespace System.Text.Json.Serialization.Metadata
                 throw new ArgumentNullException(nameof(options));
             }
 
-            if (propInitFunc == null)
-            {
-                throw new ArgumentNullException(nameof(propInitFunc));
-            }
-
-            ((JsonTypeInfoInternal<T>)info).InitializeAsObject(options, createObjectFunc, propInitFunc, numberHandling);
+            ((JsonTypeInfoInternal<T>)info).InitializeAsObject(options, createObjectFunc, propInitFunc, numberHandling, serializeFunc);
             Debug.Assert(info.PropertyInfoForTypeInfo!.ConverterStrategy == ConverterStrategy.Object);
         }
 
