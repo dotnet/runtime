@@ -35,8 +35,6 @@ echo ===========================================================================
 pushd %EXECUTION_DIR%
 @echo on
 [[RunCommands]]
-dir %HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output
-type %HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output\chromedriver*.log
 set EXIT_CODE=%ERRORLEVEL%
 @echo off
 popd
