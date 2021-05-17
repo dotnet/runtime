@@ -287,17 +287,17 @@ table_to_image_add (MonoImage *base_image)
 }
 
 static MonoImage *
-mono_table_info_get_base_image (const MonoTableInfo *t)
+table_info_get_base_image (const MonoTableInfo *t)
 {
 	MonoImage *image = (MonoImage *) g_hash_table_lookup (table_to_image, t);
 	return image;
 }
 
 static MonoImage*
-mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length, MonoImageOpenStatus *status);
+image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length, MonoImageOpenStatus *status);
 
 static void
-mono_image_append_delta (MonoImage *base, MonoImage *delta);
+image_append_delta (MonoImage *base, MonoImage *delta);
 
 static int
 metadata_update_local_generation (MonoImage *base, MonoImage *delta);
@@ -311,7 +311,7 @@ hot_reload_init (void)
 
 static
 void
-mono_metadata_update_invoke_hook (MonoAssemblyLoadContext *alc, uint32_t generation)
+hot_reload_update_published_invoke_hook (MonoAssemblyLoadContext *alc, uint32_t generation)
 {
 	if (mono_get_runtime_callbacks ()->metadata_update_published)
 		mono_get_runtime_callbacks ()->metadata_update_published (alc, generation);
@@ -356,14 +356,14 @@ thread_set_exposed_generation (uint32_t value)
  * LOCKING: assumes the publish_lock is held
  */
 static void
-metadata_update_set_has_updates (void)
+hot_reload_set_has_updates (void)
 {
 	g_assert (metadata_update_data_ptr != NULL);
 	metadata_update_data_ptr->has_updates = 1;
 }
 
 static uint32_t
-mono_metadata_update_prepare (void)
+hot_reload_update_prepare (void)
 {
 	mono_lazy_initialize (&metadata_update_lazy_init, initialize);
 	/*
@@ -372,20 +372,20 @@ mono_metadata_update_prepare (void)
 	publish_lock ();
 	uint32_t alloc_gen = ++update_alloc_frontier;
 	/* Have to set this here so the updater starts using the slow path of metadata lookups */
-	metadata_update_set_has_updates ();
+	hot_reload_set_has_updates ();
 	/* Expose the alloc frontier to the updater thread */
 	thread_set_exposed_generation (alloc_gen);
 	return alloc_gen;
 }
 
 static gboolean G_GNUC_UNUSED
-mono_metadata_update_available (void)
+hot_reload_update_available (void)
 {
 	return update_published < update_alloc_frontier;
 }
 
 /**
- * mono_metadata_update_thread_expose_published:
+ * hot_reaload_thread_expose_published:
  *
  * Allow the current thread to see the latest published deltas.
  *
@@ -401,7 +401,7 @@ hot_reload_thread_expose_published (void)
 }
 
 /**
- * mono_metadata_update_get_thread_generation:
+ * hot_reload_get_thread_generation:
  *
  * Return the published generation that the current thread is allowed to see.
  * May be behind the latest published generation if the thread hasn't called
@@ -414,25 +414,25 @@ hot_reload_get_thread_generation (void)
 }
 
 static gboolean G_GNUC_UNUSED
-mono_metadata_wait_for_update (uint32_t timeout_ms)
+hot_reload_wait_for_update (uint32_t timeout_ms)
 {
 	/* TODO: give threads a way to voluntarily wait for an update to be published. */
 	g_assert_not_reached ();
 }
 
 static void
-mono_metadata_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation)
+hot_reload_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation)
 {
 	g_assert (update_published < generation && generation <= update_alloc_frontier);
 	/* TODO: wait for all threads that are using old metadata to update. */
-	mono_metadata_update_invoke_hook (alc, generation);
+	hot_reload_update_published_invoke_hook (alc, generation);
 	update_published = update_alloc_frontier;
 	mono_memory_write_barrier ();
 	publish_unlock ();
 }
 
 static void
-mono_metadata_update_cancel (uint32_t generation)
+hot_reload_update_cancel (uint32_t generation)
 {
 	g_assert (update_alloc_frontier == generation);
 	g_assert (update_alloc_frontier > 0);
@@ -447,7 +447,7 @@ mono_metadata_update_cancel (uint32_t generation)
  * LOCKING: Assumes the publish_lock is held
  */
 void
-mono_image_append_delta (MonoImage *base, MonoImage *delta)
+image_append_delta (MonoImage *base, MonoImage *delta)
 {
 	if (!base->delta_image) {
 		base->delta_image = base->delta_image_last = g_list_alloc ();
@@ -465,7 +465,7 @@ mono_image_append_delta (MonoImage *base, MonoImage *delta)
  * LOCKING: assumes the publish_lock is held
  */
 MonoImage*
-mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length, MonoImageOpenStatus *status)
+image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length, MonoImageOpenStatus *status)
 {
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (base_image);
 	MonoImage *dmeta_image = mono_image_open_from_data_internal (alc, (char*)dmeta_bytes, dmeta_length, TRUE, status, TRUE, NULL, NULL);
@@ -473,7 +473,7 @@ mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gco
 	dmeta_image->generation = generation;
 
 	/* base_image takes ownership of 1 refcount ref of dmeta_image */
-	mono_image_append_delta (base_image, dmeta_image);
+	image_append_delta (base_image, dmeta_image);
 
 	return dmeta_image;
 }
@@ -605,7 +605,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 	 * with a generation past update_published
 	 */
 
-	MonoImage *base = mono_table_info_get_base_image (*t);
+	MonoImage *base = table_info_get_base_image (*t);
 	if (!base || !base->delta_image)
 		return;
 
@@ -1099,7 +1099,7 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 		mono_dump_mem (dil_bytes_orig, dil_length);
 	}
 
-	uint32_t generation = mono_metadata_update_prepare ();
+	uint32_t generation = hot_reload_update_prepare ();
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: 0x%08x", image_base->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string size: 0x%08x", image_base->heap_us.size);
@@ -1108,7 +1108,7 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 
 	MonoImageOpenStatus status;
 	/* makes a copy of dmeta_bytes */
-	MonoImage *image_dmeta = mono_image_open_dmeta_from_data (image_base, generation, dmeta_bytes, dmeta_length, &status);
+	MonoImage *image_dmeta = image_open_dmeta_from_data (image_base, generation, dmeta_bytes, dmeta_length, &status);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image string size: 0x%08x", image_dmeta->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image user string size: 0x%08x", image_dmeta->heap_us.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image blob heap addr: %p", image_dmeta->heap_blob.data);
@@ -1137,7 +1137,7 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 
 	if (!table_info_get_rows (table_enclog) && !table_info_get_rows (table_encmap)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "No enclog or encmap in delta image for base=%s, nothing to do", basename);
-		mono_metadata_update_cancel (generation);
+		hot_reload_update_cancel (generation);
 		return;
 	}
 
@@ -1151,7 +1151,7 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 
 	if (!apply_enclog_pass1 (image_base, image_dmeta, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
-		mono_metadata_update_cancel (generation);
+		hot_reload_update_cancel (generation);
 		return;
 	}
 
@@ -1167,13 +1167,13 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 
 	if (!apply_enclog_pass2 (image_base, generation, image_dmeta, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
-		mono_metadata_update_cancel (generation);
+		hot_reload_update_cancel (generation);
 		return;
 	}
 	mono_error_assert_ok (error);
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
-	mono_metadata_update_publish (alc, generation);
+	hot_reload_update_publish (alc, generation);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
