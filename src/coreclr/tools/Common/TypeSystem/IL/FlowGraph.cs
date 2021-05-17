@@ -8,9 +8,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Internal.IL;
 
-namespace Microsoft.Diagnostics.Tools.Pgo
+namespace Internal.IL
 {
     internal class BasicBlock : IEquatable<BasicBlock>
     {
