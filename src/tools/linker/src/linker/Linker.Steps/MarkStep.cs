@@ -495,9 +495,24 @@ namespace Mono.Linker.Steps
 				ILProcessor ilProcessor = item.Body.GetILProcessor ();
 
 				ilProcessor.InsertAfter (instr, Instruction.Create (OpCodes.Ldnull));
-				ilProcessor.Replace (instr, Instruction.Create (OpCodes.Pop));
+				Instruction new_instr = Instruction.Create (OpCodes.Pop);
+				ilProcessor.Replace (instr, new_instr);
+				UpdateBranchTarget (item.Body, instr, new_instr);
 
 				_context.LogMessage ($"Removing typecheck of '{type.FullName}' inside {item.Body.Method.GetDisplayName ()} method");
+			}
+
+			static void UpdateBranchTarget (MethodBody body, Instruction oldTarget, Instruction newTarget)
+			{
+				foreach (var instr in body.Instructions) {
+					switch (instr.OpCode.FlowControl) {
+					case FlowControl.Branch:
+					case FlowControl.Cond_Branch:
+						if (instr.Operand == oldTarget)
+							instr.Operand = newTarget;
+						break;
+					}
+				}
 			}
 		}
 

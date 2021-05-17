@@ -14,6 +14,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 			TestTypeCheckRemoved_3 (null, null);
 			TestTypeCheckRemoved_4 (null);
 			TestTypeCheckRemoved_5 (null);
+			TestTypeCheckRemoved_6 (null);
 
 			TestTypeCheckKept_1 ();
 			TestTypeCheckKept_2<string> (null);
@@ -100,6 +101,34 @@ namespace Mono.Linker.Tests.Cases.Advanced
 		{
 			object o = o1 as T7;
 			return o;
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"ldarg.0",
+			"pop",
+			"ldnull",
+			"dup",
+			"brtrue.s il_a",
+			"pop",
+			"ldnull",
+			"br.s il_f",
+			"ldfld",
+			"pop",
+			"ldnull",
+			"brfalse.s il_15",
+			"ldc.i4.1",
+			"ret",
+			"ldc.i4.2",
+			"ret"
+		})]
+		static int TestTypeCheckRemoved_6 (object o)
+		{
+			if ((o as T8)?.Instance is T8) {
+				return 1;
+			}
+
+			return 2;
 		}
 
 		[Kept]
@@ -193,6 +222,13 @@ namespace Mono.Linker.Tests.Cases.Advanced
 
 		class T7
 		{
+		}
+
+		[Kept]
+		class T8
+		{
+			[Kept]
+			public object Instance;
 		}
 	}
 }
