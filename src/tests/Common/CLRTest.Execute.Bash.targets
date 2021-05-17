@@ -385,7 +385,6 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-mkdir -p /tmp/out
 xcode_path="%24(dirname "%24(dirname "%24(xcode-select -p)")")"
 simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
 open -a "$simulator_app"
@@ -399,8 +398,11 @@ sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple run %
   --targets ios-simulator-64 %5c
   -v
 CLRTestExitCode=$?
-stdout_log_path="$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.log"
-stderr_log_path="$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.err.log"
+
+stdout_log_path="$HELIX_WORKITEM_UPLOAD_ROOT/$__Category-$(MsBuildProjectName).log"
+stderr_log_path="$HELIX_WORKITEM_UPLOAD_ROOT/$__Category-$(MsBuildProjectName).err.log"
+mv "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.log" "$stdout_log_path"
+mv "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.err.log" "$stderr_log_path"
 echo "======== STDOUT ======== $stdout_log_path ({["
 cat "$stdout_log_path" 2>/dev/null
 echo ']})'
