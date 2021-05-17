@@ -938,6 +938,13 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             if ((node->gtHWIntrinsicId == NI_Vector128_GetElement) ||
                 (node->gtHWIntrinsicId == NI_Vector256_GetElement))
             {
+                // Most NI_Vector*_GetElement intrinsics are lowered to
+                // alternative nodes, such as the Extract intrinsics,
+                // which are themselves lowered.
+                //
+                // However, certain types may not have a direct equivalent
+                // in which case we specially handle them directly as GetElement
+                // and want to do the relevant containment checks.
                 break;
             }
             return;
