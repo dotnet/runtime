@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -11,25 +12,25 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainCreateContext")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainCreateContext")]
         internal static extern SafeX509ChainContextHandle X509ChainCreateContext(
             SafeX509Handle cert,
             IntPtr[] extraStore,
             int extraStoreLen);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainDestroyContext")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainDestroyContext")]
         internal static extern void X509ChainDestroyContext(IntPtr ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainBuild")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainBuild")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static extern bool X509ChainBuild(
             SafeX509ChainContextHandle ctx,
             long timeInMsFromUnixEpoch);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetCertificateCount")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetCertificateCount")]
         private static extern int X509ChainGetCertificateCount(SafeX509ChainContextHandle ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetCertificates")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetCertificates")]
         private static extern int X509ChainGetCertificates(
             SafeX509ChainContextHandle ctx,
             IntPtr[] certs,
@@ -41,16 +42,23 @@ internal static partial class Interop
             var certPtrs = new IntPtr[count];
 
             int res = Interop.AndroidCrypto.X509ChainGetCertificates(ctx, certPtrs, certPtrs.Length);
-            if (res != SUCCESS)
+            if (res == 0)
                 throw new CryptographicException();
 
+            Debug.Assert(res <= certPtrs.Length);
+
             var certs = new X509Certificate2[certPtrs.Length];
-            for (int i = 0; i < certs.Length; i++)
+            for (int i = 0; i < res; i++)
             {
                 certs[i] = new X509Certificate2(certPtrs[i]);
             }
 
-            return certs;
+            if (res == certPtrs.Length)
+            {
+                return certs;
+            }
+
+            return certs[0..res];
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -61,10 +69,10 @@ internal static partial class Interop
             public int Status;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetErrorCount")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetErrorCount")]
         private static extern int X509ChainGetErrorCount(SafeX509ChainContextHandle ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetErrors")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainGetErrors")]
         private static unsafe extern int X509ChainGetErrors(
             SafeX509ChainContextHandle ctx,
             [Out] ValidationError[] errors,
@@ -84,13 +92,17 @@ internal static partial class Interop
             return errors;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainSetCustomTrustStore")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainSetCustomTrustStore")]
         internal static extern int X509ChainSetCustomTrustStore(
             SafeX509ChainContextHandle ctx,
             IntPtr[] customTrustStore,
             int customTrustStoreLen);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainValidate")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainSupportsRevocationOptions")]
+        [return:MarshalAs(UnmanagedType.U1)]
+        internal static extern bool X509ChainSupportsRevocationOptions();
+
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainValidate")]
         internal static extern int X509ChainValidate(
             SafeX509ChainContextHandle ctx,
             X509RevocationMode revocationMode,

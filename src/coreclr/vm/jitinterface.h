@@ -34,6 +34,7 @@ enum SignatureKind
     SK_NOT_CALLSITE,
     SK_CALLSITE,
     SK_VIRTUAL_CALLSITE,
+    SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
 class Stub;
@@ -636,16 +637,7 @@ class CEEJitInfo : public CEEInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem (
-            uint32_t            hotCodeSize,    /* IN */
-            uint32_t            coldCodeSize,   /* IN */
-            uint32_t            roDataSize,     /* IN */
-            uint32_t            xcptnsCount,    /* IN */
-            CorJitAllocMemFlag  flag,           /* IN */
-            void **             hotCodeBlock,   /* OUT */
-            void **             coldCodeBlock,  /* OUT */
-            void **             roDataBlock     /* OUT */
-            ) override final;
+    void allocMem (AllocMemArgs *pArgs) override final;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
 
@@ -687,14 +679,6 @@ public:
             uint8_t**pInstrumentationData /* OUT */
             ) override final;
 
-    CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            uint32_t              ilOffset,
-            uint32_t *            pLikelihood,
-            uint32_t *            pNumberOfClasses
-            ) override final;
-
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */
@@ -703,6 +687,7 @@ public:
 
     void recordRelocation(
             void                    *location,
+            void                    *locationRW,
             void                    *target,
             uint16_t                 fRelocType,
             uint16_t                 slot,
@@ -711,18 +696,6 @@ public:
     uint16_t getRelocTypeHint(void * target) override final;
 
     uint32_t getExpectedTargetArchitecture() override final;
-
-    CodeHeader* GetCodeHeader()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_CodeHeader;
-    }
-
-    void SetCodeHeader(CodeHeader* pValue)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_CodeHeader = pValue;
-    }
 
     void ResetForJitRetry()
     {

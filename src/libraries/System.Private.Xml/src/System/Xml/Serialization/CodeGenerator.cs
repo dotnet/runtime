@@ -53,9 +53,11 @@ namespace System.Xml.Serialization
             return type.Name == "Nullable`1";
         }
 
+        [Conditional("DEBUG")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Debug only code, we don't ship debug binaries.")]
         internal static void AssertHasInterface(Type type, Type iType)
         {
-#if DEBUG
             Debug.Assert(iType.IsInterface);
             foreach (Type iFace in type.GetInterfaces())
             {
@@ -63,7 +65,6 @@ namespace System.Xml.Serialization
                     return;
             }
             Debug.Fail("Interface not found");
-#endif
         }
 
         internal void BeginMethod(Type returnType, string methodName, Type[] argTypes, string[] argNames, MethodAttributes methodAttributes)
@@ -475,6 +476,7 @@ namespace System.Xml.Serialization
             return objType.IsValueType && !objType.IsPrimitive;
         }
 
+        [RequiresUnreferencedCode("calls LoadMember")]
         internal Type LoadMember(object obj, MemberInfo memberInfo)
         {
             if (GetVariableType(obj).IsValueType)
@@ -484,6 +486,7 @@ namespace System.Xml.Serialization
             return LoadMember(memberInfo);
         }
 
+        [RequiresUnreferencedCode("GetProperty on PropertyInfo type's base type")]
         private static MethodInfo? GetPropertyMethodFromBaseType(PropertyInfo propertyInfo, bool isGetter)
         {
             // we only invoke this when the propertyInfo does not have a GET or SET method on it
@@ -522,6 +525,7 @@ namespace System.Xml.Serialization
             return result;
         }
 
+        [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMember(MemberInfo memberInfo)
         {
             Type? memberType = null;
@@ -560,6 +564,7 @@ namespace System.Xml.Serialization
             return memberType;
         }
 
+        [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
             Type? memberType = null;
@@ -602,6 +607,7 @@ namespace System.Xml.Serialization
             return memberType;
         }
 
+        [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal void StoreMember(MemberInfo memberInfo)
         {
             if (memberInfo is FieldInfo)

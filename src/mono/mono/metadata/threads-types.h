@@ -73,11 +73,11 @@ void
 mono_thread_callbacks_init (void);
 
 typedef enum {
-	MONO_THREAD_CREATE_FLAGS_NONE         = 0x0,
-	MONO_THREAD_CREATE_FLAGS_THREADPOOL   = 0x1,
-	MONO_THREAD_CREATE_FLAGS_DEBUGGER     = 0x2,
-	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE = 0x4,
-	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
+	MONO_THREAD_CREATE_FLAGS_NONE			= 0x00,
+	MONO_THREAD_CREATE_FLAGS_THREADPOOL		= 0x01,
+	MONO_THREAD_CREATE_FLAGS_DEBUGGER		= 0x02,
+	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE	= 0x04,
+	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
 } MonoThreadCreateFlags;
 
 MonoInternalThread*
@@ -207,7 +207,7 @@ void mono_thread_internal_unhandled_exception (MonoObject* exc);
 
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields);
 
-void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);
+MONO_COMPONENT_API void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);
 void mono_thread_clr_state (MonoInternalThread *thread, MonoThreadState state);
 gboolean mono_thread_test_state (MonoInternalThread *thread, MonoThreadState test);
 gboolean mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set);
@@ -215,6 +215,12 @@ void mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadStat
 
 void mono_thread_init_apartment_state (void);
 void mono_thread_cleanup_apartment_state (void);
+
+/* There are some threads that need initialization that would normally
+	occur in managed code. Some threads occur prior to the runtime being
+	fully initialized so that must be done in native. For example, Main and Finalizer. */
+void mono_thread_init_from_native (void);
+void mono_thread_cleanup_from_native (void);
 
 void mono_threads_set_shutting_down (void);
 
@@ -323,11 +329,11 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy);
 MONO_API void
 mono_threads_detach_coop (gpointer cookie, gpointer *dummy);
 
-MonoDomain*
-mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoStackData *stackdata);
+void
+mono_threads_attach_coop_internal (gpointer *cookie, MonoStackData *stackdata);
 
 void
-mono_threads_detach_coop_internal (MonoDomain *orig_domain, gpointer cookie, MonoStackData *stackdata);
+mono_threads_detach_coop_internal (gpointer cookie, MonoStackData *stackdata);
 
 void mono_threads_begin_abort_protected_block (void);
 gboolean mono_threads_end_abort_protected_block (void);
@@ -460,6 +466,9 @@ mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *ha
 
 gboolean
 mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
+
+void
+mono_threads_exiting (void);
 
 #if SIZEOF_VOID_P == 4
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */

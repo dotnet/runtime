@@ -99,8 +99,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? AotModulesTableLanguage { get; set; } = nameof(MonoAotModulesTableLanguage.C);
 
     /// <summary>
-    /// Choose between 'Normal', 'Full', 'LLVMOnly'.
+    /// Choose between 'Normal', 'JustInterp', 'Full', 'FullInterp', 'LLVMOnly', 'LLVMOnlyInterp'.
     /// LLVMOnly means to use only LLVM for FullAOT, AOT result will be a LLVM Bitcode file (the cross-compiler must be built with LLVM support)
+    /// The "interp" options ('LLVMOnlyInterp' and 'FullInterp') mean generate necessary support to fall back to interpreter if AOT code is not possible for some methods.
+    /// The difference between 'JustInterp' and 'FullInterp' is that 'FullInterp' will AOT all the methods in the given assemblies, while 'JustInterp' will only AOT the wrappers and trampolines necessary for the runtime to execute the managed methods using the interpreter and to interoperate with P/Invokes and unmanaged callbacks.
     /// </summary>
     public string Mode { get; set; } = nameof(MonoAotMode.Normal);
 
@@ -125,6 +127,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// The assembly whose AOT image will contained dedup-ed generic instances
     /// </summary>
     public string? DedupAssembly { get; set; }
+
+    /// Debug option in llvm aot mode
+    /// defaults to "nodebug" since some targes can't generate debug info
+    /// </summary>
+    public string? LLVMDebug { get; set; } = "nodebug";
 
     [Output]
     public string[]? FileWrites { get; private set; }
@@ -185,7 +192,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!Enum.TryParse(Mode, true, out parsedAotMode))
         {
-            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(',', Enum.GetNames(typeof(MonoAotMode)))}");
+            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(",", Enum.GetNames(typeof(MonoAotMode)))}");
             return false;
         }
 
@@ -217,7 +224,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         string? monoPaths = null;
         if (AdditionalAssemblySearchPaths != null)
-            monoPaths = string.Join(Path.PathSeparator, AdditionalAssemblySearchPaths);
+            monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         if (DisableParallelAot)
         {
@@ -252,13 +259,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(";", StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(";", StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly}");
@@ -270,7 +277,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             processArgs.Add("--llvm");
 
-            aotArgs.Add($"nodebug"); // can't use debug symbols with LLVM
+            if (!string.IsNullOrEmpty(LLVMDebug))
+                aotArgs.Add(LLVMDebug);
+
             aotArgs.Add($"llvm-path={LLVMPath}");
         }
         else
@@ -290,14 +299,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         // compute output mode and file names
-        if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
+        if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.LLVMOnlyInterp)
         {
             aotArgs.Add("llvmonly");
 
             string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
             aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
 
-            if (parsedAotMode == MonoAotMode.AotInterp)
+            if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
             {
                 aotArgs.Add("interp");
             }
@@ -314,9 +323,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            if (parsedAotMode == MonoAotMode.Full)
+            if (parsedAotMode == MonoAotMode.Full || parsedAotMode == MonoAotMode.FullInterp)
             {
                 aotArgs.Add("full");
+            }
+
+            if (parsedAotMode == MonoAotMode.FullInterp || parsedAotMode == MonoAotMode.JustInterp)
+            {
+                aotArgs.Add("interp");
             }
 
             if (parsedOutputType == MonoAotOutputType.AsmOnly)
@@ -458,7 +472,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine("#define EE_MODE_LLVMONLY 1");
                 }
 
-                if (parsedAotMode == MonoAotMode.AotInterp)
+                if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
                 {
                     writer.WriteLine("#define EE_MODE_LLVMONLY_INTERP 1");
                 }
@@ -496,9 +510,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 public enum MonoAotMode
 {
     Normal,
+    JustInterp,
     Full,
+    FullInterp,
     LLVMOnly,
-    AotInterp
+    LLVMOnlyInterp
 }
 
 public enum MonoAotOutputType

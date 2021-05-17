@@ -15,8 +15,8 @@ kdb5_util create -r LINUX.CONTOSO.COM -P password -s
 krb5kdc
 
 # Add users
-kadmin.local -q "add_principal -pw password root/admin@LINUX.CONTOSO.COM"
-kadmin.local -q "add_principal -pw password user1@LINUX.CONTOSO.COM"
+kadmin.local -q "add_principal -pw Password20 root/admin@LINUX.CONTOSO.COM"
+kadmin.local -q "add_principal -pw Password20 user1@LINUX.CONTOSO.COM"
 
 # Add SPNs for services
 kadmin.local -q "add_principal -pw password HTTP/apacheweb.linux.contoso.com"

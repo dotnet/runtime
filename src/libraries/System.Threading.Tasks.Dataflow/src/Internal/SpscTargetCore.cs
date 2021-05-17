@@ -377,8 +377,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayTarget = _owningTarget as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displayTarget != null ? displayTarget.Content : _owningTarget);
+                return $"Block=\"{(displayTarget != null ? displayTarget.Content : _owningTarget)}\"";
             }
         }
 

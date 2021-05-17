@@ -803,6 +803,10 @@ namespace System
                     return list.ToArray();
                 }
 
+                [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                    Justification = "Calls to GetInterfaces technically require all interfaces on ReflectedType" +
+                        "But this is not a public API to enumerate reflection items, all the public APIs which do that" +
+                        "should be annotated accordingly.")]
                 private RuntimeFieldInfo[] PopulateFields(Filter filter)
                 {
                     ListBuilder<RuntimeFieldInfo> list = default;
@@ -983,7 +987,11 @@ namespace System
                     }
                 }
 
-                private void AddSpecialInterface(ref ListBuilder<RuntimeType> list, Filter filter, RuntimeType iList, bool addSubInterface)
+                private void AddSpecialInterface(
+                    ref ListBuilder<RuntimeType> list,
+                    Filter filter,
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] RuntimeType iList,
+                    bool addSubInterface)
                 {
                     if (iList.IsAssignableFrom(ReflectedType))
                     {
@@ -1003,6 +1011,10 @@ namespace System
                     }
                 }
 
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+                    Justification = "Calls to GetInterfaces technically require all interfaces on ReflectedType" +
+                        "But this is not a public API to enumerate reflection items, all the public APIs which do that" +
+                        "should be annotated accordingly.")]
                 private RuntimeType[] PopulateInterfaces(Filter filter)
                 {
                     ListBuilder<RuntimeType> list = default;
@@ -2418,6 +2430,18 @@ namespace System
             return cache;
         }
 
+        internal void ClearCache()
+        {
+            // If there isn't a GCHandle yet, there's nothing more to do.
+            if (Volatile.Read(ref m_cache) == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // Set the GCHandle to null. The cache will be re-created next time it is needed.
+            GCHandle.InternalSet(m_cache, null);
+        }
+
         private string? GetDefaultMemberName()
         {
             return Cache.GetDefaultMemberName();
@@ -2599,6 +2623,7 @@ namespace System
             return GetFieldCandidates(null, bindingAttr, false).ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
@@ -2642,7 +2667,7 @@ namespace System
             return members;
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
@@ -2891,6 +2916,8 @@ namespace System
             return match;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
             if (fullname is null) throw new ArgumentNullException(nameof(fullname));
@@ -3668,6 +3695,11 @@ namespace System
             Type[] aArgsTypes,
             Type retType)
         {
+            if (!Marshal.IsBuiltInComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             Debug.Assert(
                 aArgs.Length == aArgsIsByRef.Length
                 && aArgs.Length == aArgsTypes.Length

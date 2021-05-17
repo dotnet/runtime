@@ -31,7 +31,7 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
+        System.loadLibrary("System.Security.Cryptography.Native.Android");
         System.loadLibrary("monodroid");
     }
 
@@ -43,11 +43,6 @@ public class MonoRunner extends Instrumentation
     @Override
     public void onCreate(Bundle arguments) {
         if (arguments != null) {
-            String lib = arguments.getString("entryPointLibName");
-            if (lib != null) {
-                entryPointLibName = lib;
-            }
-
             ArrayList<String> argsList = new ArrayList<String>();
             for (String key : arguments.keySet()) {
                 if (key.startsWith("env:")) {
@@ -55,6 +50,8 @@ public class MonoRunner extends Instrumentation
                     String envValue = arguments.getString(key);
                     setEnv(envName, envValue);
                     Log.i("DOTNET", "env:" + envName + "=" + envValue);
+                } else if (key.equals("entrypoint:libname")) {
+                    entryPointLibName = arguments.getString(key);
                 } else {
                     String val = arguments.getString(key);
                     if (val != null) {
@@ -96,7 +93,7 @@ public class MonoRunner extends Instrumentation
         Looper.prepare();
 
         if (entryPointLibName == "") {
-            Log.e("DOTNET", "Missing entryPointLibName argument, pass '-e entryPointLibName <name.dll>' to adb to specify which program to run.");
+            Log.e("DOTNET", "Missing entrypoint argument, pass '-e entrypoint:libname <name.dll>' to adb to specify which program to run.");
             finish(1, null);
             return;
         }

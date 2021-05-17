@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <LangVersion>9.0</LangVersion>
 
+    <!-- ilasm round-trip testing test failure: https://github.com/dotnet/runtime/issues/49985 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
   </PropertyGroup>

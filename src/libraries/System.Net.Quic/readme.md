@@ -1,15 +1,13 @@
 # MsQuic
 
 `System.Net.Quic` depends on [MsQuic](https://github.com/microsoft/msquic), Microsoft, cross-platform, native implementation of the [QUIC](https://datatracker.ietf.org/wg/quic/about/) protocol.
-Currently, `System.Net.Quic` depends on [**msquic@cc104e836a5d4a5e0d324bc08b42136d2acac997**](https://github.com/microsoft/msquic/commit/cc104e836a5d4a5e0d324bc08b42136d2acac997) revision.
+Currently, `System.Net.Quic` depends on [**msquic@2084736032ec917f1819802caa515e61a6d3dd9a**](https://github.com/microsoft/msquic/commit/2084736032ec917f1819802caa515e61a6d3dd9a) revision.
 
 ## Usage
 
 ### Build MsQuic
 
 [MsQuic build docs](https://github.com/microsoft/msquic/blob/main/docs/BUILD.md)
-
-> **Note**: At the moment, we're using stub_tls option to bypass OpenSSL/SChannel, since work with certificates is not fully figured out.
 
 #### Linux
 Prerequisites:
@@ -25,10 +23,10 @@ Prerequisites:
 
 Run inside the msquic directory (for **Debug** build with logging on):
 ```bash
-# build msquic in debug with logging and stub tls
+# build msquic in debug with logging
 rm -rf build
 mkdir build
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=on -DQUIC_TLS=stub
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=on
 cd build
 cmake --build . --config Debug
 

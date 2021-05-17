@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 
@@ -28,6 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             get { return (_targetComType & VarEnum.VT_BYREF) != 0; }
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Expression InitializeArgumentVariant(MemberExpression variant, Expression parameter)
         {
             //NOTE: we must remember our variant

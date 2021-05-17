@@ -38,14 +38,6 @@ struct _MonoAppContext {
 	gint32 context_id;
 };
 
-typedef struct _MonoThunkFreeList {
-	guint32 size;
-	int length;		/* only valid for the wait list */
-	struct _MonoThunkFreeList *next;
-} MonoThunkFreeList;
-
-typedef struct _MonoJitCodeHash MonoJitCodeHash;
-
 struct _MonoDomain {
 	/*
 	 * keep all the managed objects close to each other for the precise GC
@@ -66,18 +58,7 @@ struct _MonoDomain {
 #define MONO_DOMAIN_LAST_OBJECT empty_string
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
-	/*
-	 * For framework Mono, this is every assembly loaded in this
-	 * domain. For netcore, this is every assembly loaded in every ALC in
-	 * this domain.  In netcore, the thread that adds an assembly to its
-	 * MonoAssemblyLoadContext:loaded_assemblies should also add it to this
-	 * list.
-	 */
-	GSList             *domain_assemblies;
 	char               *friendly_name;
-
-	/* Used when accessing 'domain_assemblies' */
-	MonoCoopMutex  assemblies_lock;
 };
 
 typedef struct  {
@@ -90,18 +71,6 @@ typedef struct  {
 	char framework_version [4];
 	AssemblyVersionSet version_sets [5];
 } MonoRuntimeInfo;
-
-static inline void
-mono_domain_assemblies_lock (MonoDomain *domain)
-{
-	mono_locks_coop_acquire (&domain->assemblies_lock, DomainAssembliesLock);
-}
-
-static inline void
-mono_domain_assemblies_unlock (MonoDomain *domain)
-{
-	mono_locks_coop_release (&domain->assemblies_lock, DomainAssembliesLock);
-}
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 
@@ -123,9 +92,6 @@ mono_domain_unset (void);
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception);
 
-void
-mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
-
 MonoAssembly *
 mono_assembly_load_corlib (MonoImageOpenStatus *status);
 
@@ -135,14 +101,14 @@ mono_get_runtime_info (void);
 void
 mono_runtime_set_no_exec (gboolean val);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_runtime_get_no_exec (void);
 
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
 
 MonoAssembly *
-mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext *alc, const char *name);
+mono_domain_assembly_open_internal (MonoAssemblyLoadContext *alc, const char *name);
 
 MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
 					   const char *filename,
@@ -155,23 +121,11 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, Mono
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload, gpointer user_data, MonoError *error);
 
-MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
-
-typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
-
-void
-mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
-
-void mono_enable_debug_domain_unload (gboolean enable);
-
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);
 
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
-
-GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain);
 
 void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);
@@ -182,21 +136,8 @@ mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArgument
 void
 mono_runtime_install_appctx_properties (void);
 
-gboolean 
-mono_domain_set_fast (MonoDomain *domain, gboolean force);
-
-static inline MonoMemoryManager *
-mono_domain_memory_manager (MonoDomain *domain)
-{
-	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
-}
-
-static inline MonoMemoryManager*
-mono_mem_manager_get_ambient (void)
-{
-	// FIXME: All callers should get a MemoryManager from their callers or context
-	return mono_domain_memory_manager (mono_get_root_domain ());
-}
+void 
+mono_domain_set_fast (MonoDomain *domain);
 
 G_END_DECLS
 

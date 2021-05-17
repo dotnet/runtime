@@ -24,6 +24,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
 
+extern ICorJitHost* g_jitHost;
+
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
 #define COLUMN_OPCODE 30
@@ -1830,7 +1832,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     bRangeAllowStress = false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
@@ -1852,7 +1854,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+
+    info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     info.compMethodHashPrivate = 0;
@@ -5027,11 +5031,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
-#if FEATURE_ANYCSE
             // Remove common sub-expressions
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
-#endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
@@ -5181,6 +5183,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
+
+#if TRACK_LSRA_STATS
+    if (JitConfig.DisplayLsraStats() == 2)
+    {
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+    }
+#endif // TRACK_LSRA_STATS
 
     // We're done -- set the active phase to the last phase
     // (which isn't really a phase)
@@ -5647,11 +5656,37 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // This call to getClassModule/getModuleAssembly/getAssemblyName fails in crossgen2 due to these
         // APIs being unimplemented. So disable this extra info for pre-jit mode. See
         // https://github.com/dotnet/runtime/issues/48888.
+        //
+        // Ditto for some of the class name queries for generic params.
+        //
         if (!compileFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
             // Get the assembly name, to aid finding any particular SuperPMI method context function
             (void)info.compCompHnd->getAssemblyName(
                 info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
+            {
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
+            }
+
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
+            {
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
+            }
         }
     }
 #endif // DEBUG
@@ -5867,24 +5902,6 @@ void Compiler::compCompileFinish()
         // mdMethodDef __stdcall CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-        unsigned profCallCount = 0;
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
-        {
-            bool foundEntrypointBasicBlockCount = false;
-            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
-            {
-                if ((fgPgoSchema[iSchema].InstrumentationKind ==
-                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-                    (fgPgoSchema[iSchema].ILOffset == 0))
-                {
-                    foundEntrypointBasicBlockCount = true;
-                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
-                    break;
-                }
-            }
-            assert(foundEntrypointBasicBlockCount);
-        }
-
         static bool headerPrinted = false;
         if (!headerPrinted)
         {
@@ -5901,17 +5918,17 @@ void Compiler::compCompileFinish()
 
         if (fgHaveProfileData())
         {
-            if (profCallCount <= 9999)
+            if (fgCalledCount < 1000)
             {
-                printf("%4d | ", profCallCount);
+                printf("%4.0f | ", fgCalledCount);
             }
-            else if (profCallCount <= 999500)
+            else if (fgCalledCount < 1000000)
             {
-                printf("%3dK | ", (profCallCount + 500) / 1000);
+                printf("%3.0fK | ", fgCalledCount / 1000);
             }
             else
             {
-                printf("%3dM | ", (profCallCount + 500000) / 1000000);
+                printf("%3.0fM | ", fgCalledCount / 1000000);
             }
         }
         else
@@ -5997,11 +6014,7 @@ void Compiler::compCompileFinish()
         else
         {
             printf(" %3d |", optAssertionCount);
-#if FEATURE_ANYCSE
             printf(" %3d |", optCSEcount);
-#else
-            printf(" %3d |", 0);
-#endif // FEATURE_ANYCSE
         }
 
         if (info.compPerfScore < 9999.995)
@@ -7457,9 +7470,6 @@ void Compiler::compJitStats()
 
 void Compiler::compCallArgStats()
 {
-    GenTree* args;
-    GenTree* argx;
-
     unsigned argNum;
 
     unsigned argDWordNum;
@@ -7518,7 +7528,7 @@ void Compiler::compCallArgStats()
                     regArgDeferred++;
                     argTotalObjPtr++;
 
-                    if (call->IsVirtual())
+                    if (call->AsCall()->IsVirtual())
                     {
                         /* virtual function */
                         argVirtualCalls++;
@@ -8255,7 +8265,12 @@ void JitTimer::PrintCsvHeader()
             fprintf(s_csvFile, "\"Min Opts\",");
             fprintf(s_csvFile, "\"Loops\",");
             fprintf(s_csvFile, "\"Loops Cloned\",");
-
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+            fprintf(s_csvFile, "\"Alignment Candidates\",");
+            fprintf(s_csvFile, "\"Loops Aligned\",");
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
@@ -8277,8 +8292,6 @@ void JitTimer::PrintCsvHeader()
         }
     }
 }
-
-extern ICorJitHost* g_jitHost;
 
 void JitTimer::PrintCsvMethodStats(Compiler* comp)
 {
@@ -8304,7 +8317,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     //
     // Query the jit host directly here instead of going via the
     // config cache, since value will change for each method.
-    int index = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), 0);
+    int index = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 
     CritSecHolder csvLock(s_csvLock);
 
@@ -8329,6 +8342,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
     fprintf(s_csvFile, "%u,", comp->optLoopCount);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
+    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {

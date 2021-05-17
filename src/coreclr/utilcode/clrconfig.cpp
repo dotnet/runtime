@@ -11,7 +11,10 @@
 
 // Config prefixes
 #define COMPLUS_PREFIX W("COMPlus_")
-#define LEN_OF_COMPLUS_PREFIX 8
+#define LEN_OF_COMPLUS_PREFIX StrLen(COMPLUS_PREFIX)
+
+#define DOTNET_PREFIX W("DOTNET_")
+#define LEN_OF_DOTNET_PREFIX StrLen(DOTNET_PREFIX)
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -68,7 +71,7 @@ namespace
         // Return TRUE if a name *may have* been added to the set;
         // return FALSE if the name *definitely* was NOT ever added to the set.
         //
-        BOOL MayContain(LPCWSTR name) const
+        bool MayContain(LPCWSTR name) const
         {
             WRAPPER_NO_CONTRACT;
 
@@ -98,10 +101,10 @@ namespace
         }
     };
 
-    BOOL s_fUseEnvCache = FALSE;
+    bool s_fUseEnvCache = false;
     ProbabilisticNameSet s_EnvNames; // set of environment value names seen
 
-    BOOL EnvCacheValueNameSeenPerhaps(LPCWSTR name)
+    bool EnvCacheValueNameSeenPerhaps(LPCWSTR name)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -109,10 +112,30 @@ namespace
             || s_EnvNames.MayContain(name);
     }
 
+    bool CheckLookupOption(const ConfigDWORDInfo & info, LookupOptions option)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ((info.options & option) == option);
+    }
+
+    bool CheckLookupOption(const ConfigStringInfo & info, LookupOptions option)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ((info.options & option) == option);
+    }
+
+    bool CheckLookupOption(LookupOptions infoOptions, LookupOptions optionToCheck)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ((infoOptions & optionToCheck) == optionToCheck);
+    }
+
     //*****************************************************************************
     // Reads from the environment setting
     //*****************************************************************************
-    LPWSTR EnvGetString(LPCWSTR name, bool fPrependCOMPLUS)
+    LPWSTR EnvGetString(
+        LPCWSTR name,
+        LookupOptions options)
     {
         CONTRACTL
         {
@@ -124,22 +147,37 @@ namespace
         CONTRACTL_END;
 
         WCHAR buff[64];
+        const WCHAR* fallbackPrefix = NULL;
+        const size_t namelen = wcslen(name);
 
-        if(wcslen(name) > (size_t)(64 - 1 - (fPrependCOMPLUS ? LEN_OF_COMPLUS_PREFIX : 0)))
+        bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
+        if (noPrefix)
         {
-            return NULL;
-        }
-
-        if (fPrependCOMPLUS)
-        {
-            if (!EnvCacheValueNameSeenPerhaps(name))
+            if (namelen >= _countof(buff))
+            {
+                _ASSERTE(!"Environment variable name too long.");
                 return NULL;
+            }
 
-            wcscpy_s(buff, _countof(buff), COMPLUS_PREFIX);
+            *buff = W('\0');
         }
         else
         {
-            *buff = 0;
+            bool dotnetValid = namelen < (size_t)(_countof(buff) - 1 - LEN_OF_DOTNET_PREFIX);
+            bool complusValid = namelen < (size_t)(_countof(buff) - 1 - LEN_OF_COMPLUS_PREFIX);
+            if(!dotnetValid || !complusValid)
+            {
+                _ASSERTE(!"Environment variable name too long.");
+                return NULL;
+            }
+
+            // Check if the name has been cached.
+            if (!EnvCacheValueNameSeenPerhaps(name))
+                return NULL;
+
+            // Priority order is DOTNET_ and then COMPlus_.
+            wcscpy_s(buff, _countof(buff), DOTNET_PREFIX);
+            fallbackPrefix = COMPLUS_PREFIX;
         }
 
         wcscat_s(buff, _countof(buff), name);
@@ -148,17 +186,20 @@ namespace
 
         NewArrayHolder<WCHAR> ret = NULL;
         HRESULT hr = S_OK;
-        DWORD Len;
         EX_TRY
         {
             PathString temp;
 
-            Len = WszGetEnvironmentVariable(buff, temp);
-            if (Len != 0)
+            DWORD len = WszGetEnvironmentVariable(buff, temp);
+            if (len == 0 && fallbackPrefix != NULL)
             {
-                ret = temp.GetCopyOfUnicodeString();
+                wcscpy_s(buff, _countof(buff), fallbackPrefix);
+                wcscat_s(buff, _countof(buff), name);
+                len = WszGetEnvironmentVariable(buff, temp);
             }
 
+            if (len != 0)
+                ret = temp.GetCopyOfUnicodeString();
         }
         EX_CATCH_HRESULT(hr);
 
@@ -177,7 +218,7 @@ namespace
         LPCWSTR name,
         DWORD defValue,
         __out DWORD *result,
-        bool fPrependCOMPLUS)
+        LookupOptions options)
     {
         CONTRACTL
         {
@@ -192,7 +233,7 @@ namespace
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
-        NewArrayHolder<WCHAR> val = EnvGetString(name, fPrependCOMPLUS);
+        NewArrayHolder<WCHAR> val = EnvGetString(name, options);
         if (val != NULL)
         {
             errno = 0;
@@ -212,7 +253,7 @@ namespace
 
     LPWSTR GetConfigString(
         LPCWSTR name,
-        bool fPrependCOMPLUS)
+        LookupOptions options)
     {
         CONTRACTL
         {
@@ -226,7 +267,7 @@ namespace
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
-        ret = EnvGetString(name, fPrependCOMPLUS);
+        ret = EnvGetString(name, options);
         if (ret != NULL)
         {
             if (*ret != W('\0'))
@@ -238,24 +279,6 @@ namespace
         }
 
         return NULL;
-    }
-
-    bool CheckLookupOption(const ConfigDWORDInfo & info, LookupOptions option)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
-    }
-
-    bool CheckLookupOption(const ConfigStringInfo & info, LookupOptions option)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
-    }
-
-    bool CheckLookupOption(LookupOptions infoOptions, LookupOptions optionToCheck)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((infoOptions & optionToCheck) == optionToCheck);
     }
 
     //---------------------------------------------------------------------------------------
@@ -402,9 +425,8 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *
 
     _ASSERTE (isDefault != nullptr);
 
-    bool prependCOMPlus = !CheckLookupOption(info, LookupOptions::DontPrependCOMPlus_);
     DWORD resultMaybe;
-    HRESULT hr = GetConfigDWORD(info.name, info.defaultValue, &resultMaybe, prependCOMPlus);
+    HRESULT hr = GetConfigDWORD(info.name, info.defaultValue, &resultMaybe, info.options);
 
     // Ignore the default value even if it's set explicitly.
     if (resultMaybe != info.defaultValue)
@@ -504,9 +526,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
 
     LPWSTR result = NULL;
 
-    bool prependCOMPlus = !CheckLookupOption(info, LookupOptions::DontPrependCOMPlus_);
-    result = GetConfigString(info.name, prependCOMPlus);
-
+    result = GetConfigString(info.name, info.options);
     if ((result != NULL) && CheckLookupOption(info, LookupOptions::TrimWhiteSpaceFromStringValue))
     {
         // If this fails, result remains untouched, so we'll just return the untrimmed
@@ -545,14 +565,14 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
     {
         LPWSTR result = NULL;
 
-        result = GetConfigString(name, true /* fPrependCOMPLUS */);
+        result = GetConfigString(name, LookupOptions::Default);
         if (result != NULL)
         {
             FreeConfigString(result);
             return TRUE;
         }
 
-        result = GetConfigString(name, false /* fPrependCOMPLUS */);
+        result = GetConfigString(name, LookupOptions::DontPrependPrefix);
         if (result != NULL)
         {
             FreeConfigString(result);
@@ -576,10 +596,10 @@ void CLRConfig::FreeConfigString(__in_z LPWSTR str)
 }
 
 //
-// Initialize the internal cache faster lookup.
+// Initialize the internal cache for faster lookup.
 //
 // static
-void CLRConfig::InitCache()
+void CLRConfig::Initialize()
 {
     CONTRACTL
     {
@@ -592,9 +612,11 @@ void CLRConfig::InitCache()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
 
-#ifdef TARGET_WINDOWS
+    const WCHAR prefixC = towlower(COMPLUS_PREFIX[0]);
+    const WCHAR prefixD = towlower(DOTNET_PREFIX[0]);
+
     // Create a cache of environment variables
-    WCHAR* wszStrings = WszGetEnvironmentStrings();
+    WCHAR* wszStrings = GetEnvironmentStringsW();
     if (wszStrings != NULL)
     {
         // GetEnvironmentStrings returns pointer to a null terminated block containing
@@ -603,8 +625,10 @@ void CLRConfig::InitCache()
         {
             WCHAR wch = towlower(*wszCurr);
 
-            // Lets only cache env variables with the COMPlus prefix only
-            if (wch == W('c'))
+            // Lets only cache env variables with targeted prefixes
+            bool matchC = wch == prefixC;
+            bool matchD = wch == prefixD;
+            if (matchC || matchD)
             {
                 WCHAR *wszName = wszCurr;
 
@@ -615,22 +639,27 @@ void CLRConfig::InitCache()
                 if (*wszCurr == W('='))
                 {
                     // Check the prefix
-                    if(!SString::_wcsnicmp(wszName, COMPLUS_PREFIX, LEN_OF_COMPLUS_PREFIX))
+                    if(matchC
+                        && SString::_wcsnicmp(wszName, COMPLUS_PREFIX, LEN_OF_COMPLUS_PREFIX) == 0)
                     {
                         wszName += LEN_OF_COMPLUS_PREFIX;
                         s_EnvNames.Add(wszName, (DWORD) (wszCurr - wszName));
                     }
+                    else if (matchD
+                        && SString::_wcsnicmp(wszName, DOTNET_PREFIX, LEN_OF_DOTNET_PREFIX) == 0)
+                    {
+                        wszName += LEN_OF_DOTNET_PREFIX;
+                        s_EnvNames.Add(wszName, (DWORD) (wszCurr - wszName));
+                    }
                 }
-
             }
+
             // Look for current string termination
             while (*wszCurr)
                 wszCurr++;
-
         }
 
-        WszFreeEnvironmentStrings(wszStrings);
-        s_fUseEnvCache = TRUE;
+        FreeEnvironmentStringsW(wszStrings);
+        s_fUseEnvCache = true;
     }
-#endif // TARGET_WINDOWS
 }

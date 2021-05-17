@@ -10,7 +10,8 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.")]
-    public static class DynamicRevocationTests
+    [ConditionalClass(typeof(DynamicRevocationTests), nameof(SupportsDynamicRevocation))]
+    public static partial class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
         internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
@@ -1133,7 +1134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Android | TestPlatforms.OSX))] // Android and macOS do not support offline revocation chain building.
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_NotRevoked()
         {
             SimpleTest(
@@ -1177,7 +1178,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Android | TestPlatforms.OSX))] // Android and macOS do not support offline revocation chain building.
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_Revoked()
         {
             SimpleTest(

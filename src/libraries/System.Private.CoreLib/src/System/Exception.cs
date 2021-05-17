@@ -176,11 +176,12 @@ namespace System
 
             static void Write(string source, ref Span<char> dest)
             {
-                source.AsSpan().CopyTo(dest);
+                source.CopyTo(dest);
                 dest = dest.Slice(source.Length);
             }
         }
 
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected event EventHandler<SafeSerializationEventArgs>? SerializeObjectState
         {
             add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }

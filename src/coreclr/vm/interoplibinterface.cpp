@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_COMWRAPPERS
+
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
@@ -693,6 +695,8 @@ namespace
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
+        STRESS_LOG4(LF_INTEROP, LL_INFO1000, "Get or Create EOC: (Identity: 0x%p) (Flags: %x) (Maybe: 0x%p) (ID: %lld)\n", identity, flags, OBJECTREFToObject(wrapperMaybe), wrapperId);
+
         gc.implRef = impl;
         gc.wrapperMaybeRef = wrapperMaybe;
 
@@ -724,6 +728,8 @@ namespace
                 }
             }
         }
+
+        STRESS_LOG2(LF_INTEROP, LL_INFO1000, "EOC: 0x%p or Handle: 0x%p\n", extObjCxt, handle);
 
         if (extObjCxt != NULL)
         {
@@ -794,6 +800,8 @@ namespace
                     extObjCxt = cache->FindOrAdd(cacheKey, resultHolder.GetContext());
                 }
 
+                STRESS_LOG2(LF_INTEROP, LL_INFO100, "EOC cache insert: 0x%p == 0x%p\n", extObjCxt, resultHolder.GetContext());
+
                 // If the returned context matches the new context it means the
                 // new context was inserted or a unique instance was requested.
                 if (extObjCxt == resultHolder.GetContext())
@@ -836,6 +844,8 @@ namespace
                 _ASSERTE(extObjCxt->IsActive());
             }
         }
+
+        STRESS_LOG3(LF_INTEROP, LL_INFO1000, "EOC: 0x%p, 0x%p => 0x%p\n", extObjCxt, identity, OBJECTREFToObject(gc.objRefMaybe));
 
         GCPROTECT_END();
 
@@ -1016,6 +1026,29 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         DestroyHandleCommon(static_cast<::OBJECTHANDLE>(handle), InstanceHandleType);
+    }
+
+    bool HasValidTarget(_In_ InteropLib::OBJECTHANDLE handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(handle != NULL);
+        }
+        CONTRACTL_END;
+
+        bool isValid = false;
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        {
+            // Switch to cooperative mode so the handle can be safely inspected.
+            GCX_COOP_THREAD_EXISTS(GET_THREAD());
+            isValid = ObjectFromHandle(objectHandle) != NULL;
+        }
+
+        return isValid;
     }
 
     bool GetGlobalPeggingState() noexcept
@@ -1264,8 +1297,6 @@ namespace InteropLibImports
         return runtimeContext->RefCache->AddReferenceFromObjectToObject(source, target);
     }
 }
-
-#ifdef FEATURE_COMWRAPPERS
 
 BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
@@ -1720,9 +1751,7 @@ bool ComWrappersNative::HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ 
     return cxt.HasWrapper;
 }
 
-#endif // FEATURE_COMWRAPPERS
-
-void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
+void ComWrappersNative::OnFullGCStarted()
 {
     CONTRACTL
     {
@@ -1731,42 +1760,26 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMWRAPPERS
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
-    // See Interop::OnGCFinished()
-    if (nCondemnedGeneration >= 2)
+    // If no cache exists, then there is nothing to do here.
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
     {
-        // If no cache exists, then there is nothing to do here.
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-        if (cache != NULL)
-        {
-            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
-            ExtObjCxtRefCache* refCache = cache->GetRefCache();
+        STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
+        ExtObjCxtRefCache* refCache = cache->GetRefCache();
 
-            // Reset the ref cache
-            refCache->ResetDependentHandles();
+        // Reset the ref cache
+        refCache->ResetDependentHandles();
 
-            // Create a call context for the InteropLib.
-            InteropLibImports::RuntimeCallContext cxt(cache);
-            (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
+        // Create a call context for the InteropLib.
+        InteropLibImports::RuntimeCallContext cxt(cache);
+        (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
 
-            // Shrink cache and clear unused handles.
-            refCache->ShrinkDependentHandles();
-        }
+        // Shrink cache and clear unused handles.
+        refCache->ShrinkDependentHandles();
     }
-#endif // FEATURE_COMWRAPPERS
 }
 
-void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
+void ComWrappersNative::OnFullGCFinished()
 {
     CONTRACTL
     {
@@ -1775,26 +1788,12 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMWRAPPERS
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
-    // See Interop::OnGCStarted()
-    if (nCondemnedGeneration >= 2)
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
     {
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-        if (cache != NULL)
-        {
-            (void)InteropLib::Com::EndExternalObjectReferenceTracking();
-            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
-        }
+        (void)InteropLib::Com::EndExternalObjectReferenceTracking();
+        STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
     }
-#endif // FEATURE_COMWRAPPERS
 }
+
+#endif // FEATURE_COMWRAPPERS

@@ -34,8 +34,7 @@ typedef enum {
 	MDBGPROT_CMD_VM_START_BUFFERING = 14,
 	MDBGPROT_CMD_VM_STOP_BUFFERING = 15,
 	MDBGPROT_CMD_VM_READ_MEMORY = 16,
-	MDBGPROT_CMD_VM_WRITE_MEMORY = 17,
-	MDBGPROT_CMD_VM_SET_USING_ICORDBG = 18
+	MDBGPROT_CMD_VM_WRITE_MEMORY = 17
 } MdbgProtCmdVM;
 
 typedef enum {
@@ -113,7 +112,9 @@ typedef enum {
 	MDBGPROT_CMD_THREAD_GET_TID = 6,
 	MDBGPROT_CMD_THREAD_SET_IP = 7,
 	MDBGPROT_CMD_THREAD_ELAPSED_TIME = 8,
-	MDBGPROT_CMD_THREAD_GET_APPDOMAIN = 9
+	MDBGPROT_CMD_THREAD_GET_APPDOMAIN = 9,
+	MDBGPROT_CMD_THREAD_GET_CONTEXT = 10,
+	MDBGPROT_CMD_THREAD_SET_CONTEXT = 11
 } MdbgProtCmdThread;
 
 typedef enum {
@@ -171,7 +172,8 @@ typedef enum {
 	MDBGPROT_CMD_METHOD_GET_CATTRS = 9,
 	MDBGPROT_CMD_METHOD_MAKE_GENERIC_METHOD = 10,
 	MDBGPROT_CMD_METHOD_TOKEN = 11,
-	MDBGPROT_CMD_METHOD_ASSEMBLY = 12
+	MDBGPROT_CMD_METHOD_ASSEMBLY = 12,
+	MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN = 13
 } MdbgProtCmdMethod;
 
 typedef enum {
@@ -194,7 +196,8 @@ typedef enum {
 	MDBGPROT_CMD_TYPE_GET_INTERFACE_MAP = 17,
 	MDBGPROT_CMD_TYPE_IS_INITIALIZED = 18,
 	MDBGPROT_CMD_TYPE_CREATE_INSTANCE = 19,
-	MDBGPROT_CMD_TYPE_GET_VALUE_SIZE = 20
+	MDBGPROT_CMD_TYPE_GET_VALUE_SIZE = 20,
+	MDBGPROT_CMD_TYPE_GET_VALUES_ICORDBG = 21
 } MdbgProtCmdType;
 
 typedef enum {
@@ -204,6 +207,7 @@ typedef enum {
 	MDBGPROT_CMD_STACK_FRAME_GET_DOMAIN = 4,
 	MDBGPROT_CMD_STACK_FRAME_SET_THIS = 5,
 	MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENT = 6,
+	MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENTS = 7
 } MdbgProtCmdStackFrame;
 
 typedef enum {
@@ -346,6 +350,7 @@ int m_dbgprot_decode_int (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int64_t m_dbgprot_decode_long (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int m_dbgprot_decode_id (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 char* m_dbgprot_decode_string (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
+char* m_dbgprot_decode_string_with_len(uint8_t* buf, uint8_t** endbuf, uint8_t* limit, int *len);
 uint8_t* m_dbgprot_decode_byte_array(uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int32_t *len);
 
 /*

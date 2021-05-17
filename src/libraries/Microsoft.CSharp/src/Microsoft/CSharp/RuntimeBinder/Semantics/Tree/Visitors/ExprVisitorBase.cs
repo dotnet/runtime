@@ -2,13 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class ExprVisitorBase
     {
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected Expr Visit(Expr pExpr) => pExpr == null ? null : Dispatch(pExpr);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr Dispatch(Expr pExpr) =>
             pExpr.Kind switch
             {
@@ -85,6 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _ => throw Error.InternalCompilerError(),
             };
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void VisitChildren(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -289,271 +293,398 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitEXPR(Expr pExpr)
         {
             VisitChildren(pExpr);
             return pExpr;
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitBINOP(ExprBinOp pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLIST(ExprList pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitASSIGNMENT(ExprAssignment pExpr)
         {
             return VisitEXPR(pExpr);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             return VisitEXPR(pExpr);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitUSERLOGOP(ExprUserLogicalOp pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitTYPEOF(ExprTypeOf pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitCAST(ExprCast pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitUSERDEFINEDCONVERSION(ExprUserDefinedConversion pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitZEROINIT(ExprZeroInit pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitMEMGRP(ExprMemberGroup pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitCALL(ExprCall pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitPROP(ExprProperty pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitFIELD(ExprField pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLOCAL(ExprLocal pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitCONSTANT(ExprConstant pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitMULTIGET(ExprMultiGet pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitMULTI(ExprMulti pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitWRAP(ExprWrap pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitCONCAT(ExprConcat pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitARRINIT(ExprArrayInit pExpr)
         {
             return VisitEXPR(pExpr);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitFIELDINFO(ExprFieldInfo pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitMETHODINFO(ExprMethodInfo pExpr)
         {
             return VisitEXPR(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitEQUALS(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitCOMPARE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitEQ(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitNE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitGE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitADD(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitSUB(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDIV(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitBITAND(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitBITOR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLSHIFT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLOGAND(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitSEQUENCE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitSAVE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitINDIR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitSTRINGEQ(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDELEGATEEQ(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDELEGATEADD(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitMUL(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitBITXOR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitRSHIFT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLOGOR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitSTRINGNE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDELEGATENE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitGT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitMOD(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitSWAP(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDELEGATESUB(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitTRUE(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitINC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitLOGNOT(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitNEG(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitBITNOT(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitADDR(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDECIMALNEG(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDECIMALDEC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitFALSE(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDEC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitUPLUS(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
+
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected virtual Expr VisitDECIMALINC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);

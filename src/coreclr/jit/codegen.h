@@ -88,7 +88,7 @@ private:
 
     void genPrepForCompiler();
 
-    void genPrepForEHCodegen();
+    void genMarkLabelsForCodegen();
 
     inline RegState* regStateForType(var_types t)
     {
@@ -1368,6 +1368,21 @@ public:
     void inst_SET(emitJumpKind condition, regNumber reg);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
+
+    void inst_Mov(var_types dstType,
+                  regNumber dstReg,
+                  regNumber srcReg,
+                  bool      canSkip,
+                  emitAttr  size  = EA_UNKNOWN,
+                  insFlags  flags = INS_FLAGS_DONT_CARE);
+
+    void inst_Mov_Extend(var_types srcType,
+                         bool      srcInReg,
+                         regNumber dstReg,
+                         regNumber srcReg,
+                         bool      canSkip,
+                         emitAttr  size  = EA_UNKNOWN,
+                         insFlags  flags = INS_FLAGS_DONT_CARE);
 
     void inst_RV_RV(instruction ins,
                     regNumber   reg1,

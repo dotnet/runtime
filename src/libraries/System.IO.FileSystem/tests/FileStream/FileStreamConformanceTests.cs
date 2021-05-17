@@ -161,6 +161,31 @@ namespace System.IO.Tests
             Assert.Equal(2, stream.Length);
             Assert.Equal(2, createdFromHandle.Length);
         }
+
+        [Fact]
+        public async Task WriteByteFlushesTheBufferWhenItBecomesFull()
+        {
+            string filePath;
+            List<byte> writtenBytes = new List<byte>();
+
+            using (FileStream stream = (FileStream)await CreateWriteOnlyStreamCore(Array.Empty<byte>()))
+            {
+                filePath = stream.Name;
+
+                stream.WriteByte(0);
+                writtenBytes.Add(0);
+
+                byte[] bytes = new byte[BufferSize - 1];
+                stream.Write(bytes.AsSpan());
+                writtenBytes.AddRange(bytes);
+
+                stream.WriteByte(1);
+                writtenBytes.Add(1);
+            }
+
+            byte[] allBytes = File.ReadAllBytes(filePath);
+            Assert.Equal(writtenBytes.ToArray(), allBytes);
+        }
     }
 
     public class UnbufferedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
@@ -176,7 +201,7 @@ namespace System.IO.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [PlatformSpecific(~TestPlatforms.Browser)] // copied from base class due to https://github.com/xunit/xunit/issues/2186
+    [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class UnbufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
@@ -184,7 +209,7 @@ namespace System.IO.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [PlatformSpecific(~TestPlatforms.Browser)] // copied from base class due to https://github.com/xunit/xunit/issues/2186
+    [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class BufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;

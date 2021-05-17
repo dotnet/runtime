@@ -29,6 +29,7 @@ nativeStringResourceTable_mscorrc
 #PAL_free
 #PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
+#PAL_GetTotalCpuCount
 #PAL_GetNumaProcessorNode
 #PAL_get_stdout
 #PAL_get_stderr
@@ -107,6 +108,7 @@ nativeStringResourceTable_mscorrc
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
+#FreeEnvironmentStringsW
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
@@ -114,6 +116,7 @@ nativeStringResourceTable_mscorrc
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
+#GetEnvironmentStringsW
 #GetEnvironmentVariableA
 #GetEnvironmentVariableW
 #GetFileAttributesExW

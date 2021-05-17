@@ -41,6 +41,8 @@ static char *executable;
 #error Unknown architecture
 #endif
 
+#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
 static MonoAssembly*
 mono_droid_load_assembly (const char *name, const char *culture)
 {
@@ -193,6 +195,13 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 void register_aot_modules (void);
 #endif
 
+void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
+{
+    free (args);
+    free (user_data);
+}
+
 int
 mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
 {
@@ -215,6 +224,22 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     const char* appctx_values[2];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
+
+    char *file_name = RUNTIMECONFIG_BIN_FILE;
+    int str_len = strlen (bundle_path) + strlen (file_name) + 2;
+    char *file_path = (char *)malloc (sizeof (char) * str_len);
+    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    struct stat buffer;
+
+    LOG_INFO ("file_path: %s\n", file_path);
+    assert (num_char > 0 && num_char < str_len);
+
+    if (stat (file_path, &buffer) == 0) {
+        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+        arg->kind = 0;
+        arg->runtimeconfig.name.path = file_path;
+        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+    }
 
     monovm_initialize(2, appctx_keys, appctx_values);
 

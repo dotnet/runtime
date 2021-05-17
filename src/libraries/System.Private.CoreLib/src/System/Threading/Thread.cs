@@ -63,6 +63,11 @@ namespace System.Threading
                 Delegate start = _start;
                 _start = null!;
 
+#if FEATURE_OBJCMARSHAL
+                if (AutoreleasePool.EnableAutoreleasePool)
+                    AutoreleasePool.CreateAutoreleasePool();
+#endif
+
                 if (start is ThreadStart threadStart)
                 {
                     threadStart();
@@ -76,6 +81,14 @@ namespace System.Threading
 
                     parameterizedThreadStart(startArg);
                 }
+
+#if FEATURE_OBJCMARSHAL
+                // There is no need to wrap this "clean up" code in a finally block since
+                // if an exception is thrown above, the process is going to terminate.
+                // Optimize for the most common case - no exceptions escape a thread.
+                if (AutoreleasePool.EnableAutoreleasePool)
+                    AutoreleasePool.DrainAutoreleasePool();
+#endif
             }
 
             private void InitializeCulture()
@@ -333,6 +346,17 @@ namespace System.Threading
                 return t_currentThread ?? InitializeCurrentThread();
             }
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
+        public static void Sleep(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < Timeout.Infinite)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            SleepInternal(millisecondsTimeout);
+        }
+
+        /// <summary>Returns the operating system identifier for the current thread.</summary>
+        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 

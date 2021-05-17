@@ -4731,6 +4731,20 @@ add_wrappers (MonoAotCompile *acfg)
 		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall data */
 		for (int i = 0; i < MONO_JIT_ICALL_count; ++i)
 			add_jit_icall_wrapper (acfg, mono_find_jit_icall_info ((MonoJitICallId)i));
+
+		if (acfg->aot_opts.llvm_only) {
+			/* String ctors are called directly on llvmonly */
+			for (int i = 0; i < rows; ++i) {
+				ERROR_DECL (error);
+
+				token = MONO_TOKEN_METHOD_DEF | (i + 1);
+				method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
+				if (method && method->string_ctor) {
+					MonoMethod *w = get_runtime_invoke (acfg, method, FALSE);
+					add_method (acfg, w);
+				}
+			}
+		}
 	}
 
 	/* 
@@ -5794,6 +5808,8 @@ add_generic_instances (MonoAotCompile *acfg)
 			}
 			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			add_instances_of (acfg, enum_comparer, insts, ninsts, TRUE);
+			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumComparer`1");
+			add_instances_of (acfg, enum_comparer, insts, ninsts, TRUE);
 		}
 
 		/* Add instances of the array generic interfaces for primitive types */
@@ -5807,6 +5823,10 @@ add_generic_instances (MonoAotCompile *acfg)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
 		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
+
+		klass = mono_class_try_load_from_name (acfg->image, "System", "SZGenericArrayEnumerator`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
@@ -6635,7 +6655,9 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	acfg->cfgs [method_index]->got_offset = acfg->got_offset;
 
-	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
+	MonoDebugMethodJitInfo *jit_debug_info = mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ());
+	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, jit_debug_info);
+	mono_debug_free_method_jit_info (jit_debug_info);
 
 	emit_line (acfg);
 
@@ -11728,7 +11750,9 @@ emit_dwarf_info (MonoAotCompile *acfg)
 
 		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
-		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->asm_debug_symbol, (guint8 *)cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
+		MonoDebugMethodJitInfo *jit_debug_info = mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ());
+		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->asm_debug_symbol, (guint8 *)cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, jit_debug_info);
+		mono_debug_free_method_jit_info (jit_debug_info);
 	}
 #endif
 }
@@ -12821,7 +12845,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 		return;
 
 	/* Images */
-	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain ());
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 	g_hash_table_iter_init (&iter, data->images);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ImageProfileData *idata = (ImageProfileData*)value;

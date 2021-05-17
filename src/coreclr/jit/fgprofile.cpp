@@ -48,37 +48,54 @@ bool Compiler::fgHaveProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgComputeProfileScale: determine how much scaling to apply
-//   to raw profile count data.
+// fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
-// Notes:
-//   Scaling is only needed for inlinees, and the results of this
-//   computation are recorded in fields of impInlineInfo.
-//
-void Compiler::fgComputeProfileScale()
+void Compiler::fgApplyProfileScale()
 {
     // Only applicable to inlinees
-    assert(compIsForInlining());
-
-    // Have we already determined the scale?
-    if (impInlineInfo->profileScaleState != InlineInfo::ProfileScaleState::UNDETERMINED)
+    //
+    if (!compIsForInlining())
     {
         return;
     }
 
-    // No, not yet -- try and compute the scale.
     JITDUMP("Computing inlinee profile scale:\n");
 
-    // Call site has profile weight?
+    // Callee has profile data?
     //
-    // Todo: handle case of unprofiled caller invoking profiled callee.
+    if (!fgHaveProfileData())
+    {
+        // No; we will carry on nonetheless.
+        //
+        JITDUMP("   ... no callee profile data, will use non-pgo weight to scale\n");
+    }
+
+    // Ostensibly this should be fgCalledCount for the callee, but that's not available
+    // as it requires some analysis.
+    //
+    // For most callees it will be the same as the entry block count.
+    //
+    // Note when/if we early do normalization this may need to change.
+    //
+    BasicBlock::weight_t calleeWeight = fgFirstBB->bbWeight;
+
+    // Callee entry weight is nonzero?
+    // If so, just choose the smallest plausible weight.
+    //
+    if (calleeWeight == BB_ZERO_WEIGHT)
+    {
+        calleeWeight = fgHaveProfileData() ? 1.0f : BB_UNITY_WEIGHT;
+        JITDUMP("   ... callee entry has weight zero, will use weight of " FMT_WT " to scale\n", calleeWeight);
+    }
+
+    // Call site has profile weight?
     //
     const BasicBlock* callSiteBlock = impInlineInfo->iciBlock;
     if (!callSiteBlock->hasProfileWeight())
     {
-        JITDUMP("   ... call site not profiled\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
+        // No? We will carry on nonetheless.
+        //
+        JITDUMP("   ... call site not profiled, will use non-pgo weight to scale\n");
     }
 
     const BasicBlock::weight_t callSiteWeight = callSiteBlock->bbWeight;
@@ -88,39 +105,14 @@ void Compiler::fgComputeProfileScale()
     // Todo: perhaps retain some semblance of callee profile data,
     // possibly scaled down severely.
     //
-    if (callSiteWeight == 0)
+    // You might wonder why we bother to inline at cold sites.
+    // Recall ALWAYS and FORCE inlines bypass all profitability checks.
+    // And, there can be hot-path benefits to a cold-path inline.
+    //
+    if (callSiteWeight == BB_ZERO_WEIGHT)
     {
-        JITDUMP("   ... zero call site count\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
+        JITDUMP("   ... zero call site count; scale will be 0.0\n");
     }
-
-    // Callee has profile data?
-    //
-    if (!fgHaveProfileData())
-    {
-        JITDUMP("   ... no callee profile data\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
-    }
-
-    // Find callee's unscaled entry weight.
-    //
-    // Ostensibly this should be fgCalledCount for the callee, but that's not available
-    // as it requires some analysis.
-    //
-    // For most callees it will be the same as the entry block count.
-    //
-    if (!fgFirstBB->hasProfileWeight())
-    {
-        JITDUMP("   ... no callee profile data for entry block\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
-    }
-
-    // Note when/if we early do normalization this may need to change.
-    //
-    BasicBlock::weight_t const calleeWeight = fgFirstBB->bbWeight;
 
     // If profile data reflects a complete single run we can expect
     // calleeWeight >= callSiteWeight.
@@ -131,21 +123,18 @@ void Compiler::fgComputeProfileScale()
     // So, we are willing to scale the callee counts down or up as
     // needed to match the call site.
     //
-    if (calleeWeight == BB_ZERO_WEIGHT)
-    {
-        JITDUMP("   ... callee entry count is zero\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
-    }
-
     // Hence, scale can be somewhat arbitrary...
     //
-    const double scale                = ((double)callSiteWeight) / calleeWeight;
-    impInlineInfo->profileScaleFactor = scale;
-    impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
+    const BasicBlock::weight_t scale = callSiteWeight / calleeWeight;
 
     JITDUMP("   call site count " FMT_WT " callee entry count " FMT_WT " scale " FMT_WT "\n", callSiteWeight,
             calleeWeight, scale);
+    JITDUMP("Scaling inlinee blocks\n");
+
+    for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
+    {
+        bb->scaleBBWeight(scale);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -205,10 +194,20 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 
     for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
     {
-        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-            ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
+        if ((IL_OFFSET)fgPgoSchema[i].ILOffset != offset)
+        {
+            continue;
+        }
+
+        if (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
         {
             *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
+            return true;
+        }
+
+        if (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount)
+        {
+            *weightWB = (BasicBlock::weight_t) * (uint64_t*)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }
@@ -345,9 +344,11 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
     schemaElem.Count               = 1;
     schemaElem.Other               = 0;
-    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemaElem.ILOffset            = offset;
-    schemaElem.Offset              = 0;
+    schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                         ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
+                                         : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+    schemaElem.ILOffset = offset;
+    schemaElem.Offset   = 0;
 
     schema.push_back(schemaElem);
 
@@ -373,21 +374,23 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
 //
 void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
 {
-    const int schemaIndex = (int)block->bbCountSchemaIndex;
+    const ICorJitInfo::PgoInstrumentationSchema& entry = schema[block->bbCountSchemaIndex];
 
-    assert(block->bbCodeOffs == (IL_OFFSET)schema[schemaIndex].ILOffset);
-    assert(schema[schemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
-    size_t addrOfCurrentExecutionCount = (size_t)(schema[schemaIndex].Offset + profileMemory);
+    assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
+    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
+    size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
 
+    var_types typ =
+        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
     // Read Basic-Block count value
-    GenTree* valueNode =
-        m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
     // Increment value by 1
-    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, TYP_INT, valueNode, m_comp->gtNewIconNode(1));
+    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
 
     // Write new Basic-Block count value
-    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
     GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
 
     m_comp->fgNewStmtAtBeg(block, asgNode);
@@ -422,11 +425,12 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
     assert(m_entryBlock != nullptr);
     assert(m_entryBlock->bbCodeOffs == 0);
 
-    const int firstSchemaIndex = (int)m_entryBlock->bbCountSchemaIndex;
-    assert((IL_OFFSET)schema[firstSchemaIndex].ILOffset == 0);
-    assert(schema[firstSchemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
+    const ICorJitInfo::PgoInstrumentationSchema& entry = schema[m_entryBlock->bbCountSchemaIndex];
+    assert((IL_OFFSET)entry.ILOffset == 0);
+    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
 
-    const size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
+    const size_t addrOfFirstExecutionCount = (size_t)(entry.Offset + profileMemory);
 
     GenTree* arg;
 
@@ -458,13 +462,15 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
     GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
     GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
+    var_types typ =
+        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
     // Read Basic-Block count value
     //
-    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
 
     // Compare Basic-Block count value against zero
     //
-    GenTree*   relop = m_comp->gtNewOperNode(GT_NE, TYP_INT, valueNode, m_comp->gtNewIconNode(0, TYP_INT));
+    GenTree*   relop = m_comp->gtNewOperNode(GT_NE, typ, valueNode, m_comp->gtNewIconNode(0, typ));
     GenTree*   colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
     GenTree*   cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
     Statement* stmt  = m_comp->gtNewStmt(cond);
@@ -1052,9 +1058,11 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count               = 1;
         schemaElem.Other               = targetOffset;
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
-        schemaElem.ILOffset            = sourceOffset;
-        schemaElem.Offset              = 0;
+        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                             ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
+        schemaElem.ILOffset = sourceOffset;
+        schemaElem.Offset   = 0;
 
         schema.push_back(schemaElem);
 
@@ -1093,9 +1101,12 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         // Sanity checks.
         //
         assert((schemaIndex >= 0) && (schemaIndex < (int)schema.size()));
-        assert(schema[schemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
 
-        size_t addrOfCurrentExecutionCount = (size_t)(schema[schemaIndex].Offset + profileMemory);
+        const ICorJitInfo::PgoInstrumentationSchema& entry = schema[schemaIndex];
+        assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
+               (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
+
+        size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
 
         // Determine where to place the probe.
         //
@@ -1135,16 +1146,17 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         // Place the probe
 
+        var_types typ =
+            entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
         // Read Basic-Block count value
         GenTree* valueNode =
-            m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+            m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
         // Increment value by 1
-        GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, TYP_INT, valueNode, m_comp->gtNewIconNode(1));
+        GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
 
         // Write new Basic-Block count value
-        GenTree* lhsNode =
-            m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+        GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
         GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
 
         m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
@@ -1680,6 +1692,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
 //------------------------------------------------------------------------
 // fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//   and compute profile scale for inlinees
 //
 // Returns:
 //   appropriate phase status
@@ -1692,6 +1705,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         JITDUMP("JitStress -- incorporating random profile data\n");
         fgIncorporateBlockCounts();
+        fgApplyProfileScale();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -1699,6 +1713,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     //
     if (!fgHaveProfileData())
     {
+        // No...
+        //
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
             JITDUMP("BBOPT set, but no profile data available (hr=%08x)\n", fgPgoQueryResult);
@@ -1707,7 +1723,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             JITDUMP("BBOPT not set\n");
         }
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        // Scale the "synthetic" block weights.
+        //
+        fgApplyProfileScale();
+
+        return compIsForInlining() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Summarize profile data
@@ -1727,14 +1748,17 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
                 fgPgoBlockCounts++;
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                 fgPgoEdgeCounts++;
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
 
@@ -1768,13 +1792,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgIncorporateEdgeCounts();
     }
 
-    // Now that we have profile data, compute the profile scale for inlinees,
-    // if we haven'd done so already.
+    // Scale data as appropriate
     //
-    if (compIsForInlining())
-    {
-        fgComputeProfileScale();
-    }
+    fgApplyProfileScale();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -1792,17 +1812,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 //
 void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profileWeight)
 {
-    // Scale count appropriately for inlinees.
-    //
-    if (compIsForInlining())
-    {
-        if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
-        {
-            double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
-            profileWeight       = (BasicBlock::weight_t)scaledWeight;
-        }
-    }
-
     block->setBBProfileWeight(profileWeight);
 
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
@@ -1821,8 +1830,6 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profil
 //   and set block weights
 //
 // Notes:
-//   Count data for inlinees is scaled (usually down).
-//
 //   Since we are now running before the importer, we do not know which
 //   blocks will be imported, and we should not see any internal blocks.
 //
@@ -2030,6 +2037,7 @@ private:
     bool m_mismatch;
     bool m_negativeCount;
     bool m_failedToConverge;
+    bool m_allWeightsZero;
 
 public:
     EfficientEdgeCountReconstructor(Compiler* comp)
@@ -2047,6 +2055,7 @@ public:
         , m_mismatch(false)
         , m_negativeCount(false)
         , m_failedToConverge(false)
+        , m_allWeightsZero(true)
     {
     }
 
@@ -2173,53 +2182,57 @@ void EfficientEdgeCountReconstructor::Prepare()
         switch (schemaEntry.InstrumentationKind)
         {
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
             {
                 // Optimization TODO: if profileCount is zero, we can just ignore this edge
                 // and the right things will happen.
                 //
-                uint32_t const profileCount = *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+                uint64_t const profileCount =
+                    schemaEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount
+                        ? *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset)
+                        : *(uint64_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+                BasicBlock::weight_t const weight = (BasicBlock::weight_t)profileCount;
+
+                m_allWeightsZero &= (profileCount == 0);
+
+                // Find the blocks.
+                //
+                BasicBlock* sourceBlock = nullptr;
+
+                if (!m_keyToBlockMap.Lookup(schemaEntry.ILOffset, &sourceBlock))
                 {
-                    BasicBlock::weight_t const weight = (BasicBlock::weight_t)profileCount;
-
-                    // Find the blocks.
-                    //
-                    BasicBlock* sourceBlock = nullptr;
-
-                    if (!m_keyToBlockMap.Lookup(schemaEntry.ILOffset, &sourceBlock))
-                    {
-                        JITDUMP("Could not find source block for schema entry %d (IL offset/key %08x\n", iSchema,
-                                schemaEntry.ILOffset);
-                    }
-
-                    BasicBlock* targetBlock = nullptr;
-
-                    if (!m_keyToBlockMap.Lookup(schemaEntry.Other, &targetBlock))
-                    {
-                        JITDUMP("Could not find target block for schema entry %d (IL offset/key %08x\n", iSchema,
-                                schemaEntry.ILOffset);
-                    }
-
-                    if ((sourceBlock == nullptr) || (targetBlock == nullptr))
-                    {
-                        // Looks like there is skew between schema and graph.
-                        //
-                        Mismatch();
-                        continue;
-                    }
-
-                    Edge* const edge = new (m_allocator) Edge(sourceBlock, targetBlock);
-
-                    JITDUMP("... adding known edge " FMT_BB " -> " FMT_BB ": weight " FMT_WT "\n",
-                            edge->m_sourceBlock->bbNum, edge->m_targetBlock->bbNum, weight);
-
-                    edge->m_weightKnown = true;
-                    edge->m_weight      = weight;
-
-                    EdgeKey edgeKey(schemaEntry.ILOffset, schemaEntry.Other);
-                    m_edgeKeyToEdgeMap.Set(edgeKey, edge);
-
-                    m_edges++;
+                    JITDUMP("Could not find source block for schema entry %d (IL offset/key %08x\n", iSchema,
+                            schemaEntry.ILOffset);
                 }
+
+                BasicBlock* targetBlock = nullptr;
+
+                if (!m_keyToBlockMap.Lookup(schemaEntry.Other, &targetBlock))
+                {
+                    JITDUMP("Could not find target block for schema entry %d (IL offset/key %08x\n", iSchema,
+                            schemaEntry.ILOffset);
+                }
+
+                if ((sourceBlock == nullptr) || (targetBlock == nullptr))
+                {
+                    // Looks like there is skew between schema and graph.
+                    //
+                    Mismatch();
+                    continue;
+                }
+
+                Edge* const edge = new (m_allocator) Edge(sourceBlock, targetBlock);
+
+                JITDUMP("... adding known edge " FMT_BB " -> " FMT_BB ": weight " FMT_WT "\n",
+                        edge->m_sourceBlock->bbNum, edge->m_targetBlock->bbNum, weight);
+
+                edge->m_weightKnown = true;
+                edge->m_weight      = weight;
+
+                EdgeKey edgeKey(schemaEntry.ILOffset, schemaEntry.Other);
+                m_edgeKeyToEdgeMap.Set(edgeKey, edge);
+
+                m_edges++;
             }
             break;
 
@@ -2236,9 +2249,10 @@ void EfficientEdgeCountReconstructor::Solve()
 {
     // If issues arose earlier, then don't try solving.
     //
-    if (m_badcode || m_mismatch)
+    if (m_badcode || m_mismatch || m_allWeightsZero)
     {
-        JITDUMP("... not solving because of the %s\n", m_badcode ? "badcode" : "mismatch")
+        JITDUMP("... not solving because of the %s\n",
+                m_badcode ? "badcode" : m_allWeightsZero ? "zero counts" : "mismatch");
         return;
     }
 
@@ -2423,23 +2437,65 @@ void EfficientEdgeCountReconstructor::Solve()
         }
     }
 
-    if (m_unknownBlocks == 0)
-    {
-        JITDUMP("\nSolver: converged in %u passes\n", nPasses);
-    }
-    else
+    if (m_unknownBlocks != 0)
     {
         JITDUMP("\nSolver: failed to converge in %u passes, %u blocks and %u edges remain unsolved\n", nPasses,
                 m_unknownBlocks, m_unknownEdges);
         FailedToConverge();
+        return;
+    }
+
+    JITDUMP("\nSolver: converged in %u passes\n", nPasses);
+
+    // If, after solving, the entry weight ends up as zero, set it to
+    // the max of the weight of successor edges or join-free successor
+    // block weight. We do this so we can determine a plausible scale
+    // count.
+    //
+    // This can happen for methods that do not return (say they always
+    // throw, or had not yet returned when we snapped the counts).
+    //
+    // Note we know there are nonzero counts elsewhere in the method, otherwise
+    // m_allWeightsZero would be true and we would have bailed out above.
+    //
+    BlockInfo* const firstInfo = BlockToInfo(m_comp->fgFirstBB);
+    if (firstInfo->m_weight == BB_ZERO_WEIGHT)
+    {
+        assert(!m_allWeightsZero);
+
+        BasicBlock::weight_t newWeight = BB_ZERO_WEIGHT;
+
+        for (Edge* edge = firstInfo->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
+        {
+            if (edge->m_weightKnown)
+            {
+                newWeight = max(newWeight, edge->m_weight);
+            }
+
+            BlockInfo* const targetBlockInfo  = BlockToInfo(edge->m_targetBlock);
+            Edge* const      targetBlockEdges = targetBlockInfo->m_incomingEdges;
+
+            if (targetBlockInfo->m_weightKnown && (targetBlockEdges->m_nextIncomingEdge == nullptr))
+            {
+                newWeight = max(newWeight, targetBlockInfo->m_weight);
+            }
+        }
+
+        if (newWeight == BB_ZERO_WEIGHT)
+        {
+            JITDUMP("Entry block weight and neighborhood was zero\n");
+        }
+        else
+        {
+            JITDUMP("Entry block weight was zero, setting entry weight to neighborhood max " FMT_WT "\n", newWeight);
+        }
+
+        firstInfo->m_weight = newWeight;
     }
 }
 
 //------------------------------------------------------------------------
 // EfficientEdgeCountReconstructor::Propagate: actually set block weights.
-//
-// Notes:
-//    For inlinees, weights are scaled appropriately.
 //
 void EfficientEdgeCountReconstructor::Propagate()
 {
@@ -2453,31 +2509,21 @@ void EfficientEdgeCountReconstructor::Propagate()
 
     // If any issues arose during reconstruction, don't set weights.
     //
-    if (m_badcode || m_mismatch || m_failedToConverge)
+    if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
         JITDUMP("... discarding profile data because of %s\n",
-                m_badcode ? "badcode" : m_mismatch ? "mismatch" : "failed to converge");
+                m_badcode ? "badcode" : m_mismatch ? "mismatch" : m_allWeightsZero ? "zero counts"
+                                                                                   : "failed to converge");
 
         // Make sure nothing else in the jit looks at the profile data.
         //
-        m_comp->fgPgoSchema = nullptr;
+        m_comp->fgPgoSchema     = nullptr;
+        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction problem";
 
         return;
     }
 
-    if (m_comp->compIsForInlining())
-    {
-        // Tentatively set first block's profile to compute inlinee profile scale.
-        //
-        BlockInfo* const info = BlockToInfo(m_comp->fgFirstBB);
-        assert(info->m_weightKnown);
-
-        m_comp->fgSetProfileWeight(m_comp->fgFirstBB, info->m_weight);
-        m_comp->fgComputeProfileScale();
-    }
-
-    // Set weight on all blocks (will reset entry weight for inlinees based
-    // on above computed scale).
+    // Set weight on all blocks.
     //
     for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
     {
@@ -2548,7 +2594,7 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                if (flEdgeWeightMax != 0)
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will raise flEdgeWeightMin and Max towards newWeight
                     flEdgeWeightMin = flEdgeWeightMax;
@@ -2569,10 +2615,11 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                assert(flEdgeWeightMax != 0);
-
-                // We will lower flEdgeWeightMin towards newWeight
-                flEdgeWeightMin = newWeight;
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
+                {
+                    // We will lower flEdgeWeightMin towards newWeight
+                    flEdgeWeightMin = newWeight;
+                }
 
                 if (wbUsedSlop != nullptr)
                 {
@@ -2647,7 +2694,7 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                if (flEdgeWeightMax != 0)
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will allow this to raise flEdgeWeightMax towards newWeight
                     flEdgeWeightMax = newWeight;
@@ -2667,11 +2714,12 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                assert(flEdgeWeightMax != 0);
-
-                // We will allow this to lower flEdgeWeightMin and Max towards newWeight
-                flEdgeWeightMax = flEdgeWeightMin;
-                flEdgeWeightMin = newWeight;
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
+                {
+                    // We will allow this to lower flEdgeWeightMin and Max towards newWeight
+                    flEdgeWeightMax = flEdgeWeightMin;
+                    flEdgeWeightMin = newWeight;
+                }
 
                 if (wbUsedSlop != nullptr)
                 {
@@ -2912,21 +2960,18 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
-    // Do we have an internal block as our first Block?
-    if (firstILBlock->bbFlags & BBF_INTERNAL)
+    // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+    //
+    while (firstILBlock->bbFlags & BBF_INTERNAL)
     {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
-        {
-            firstILBlock = firstILBlock->bbNext;
-        }
-        // The 'firstILBlock' is now expected to have a profile-derived weight
-        assert(firstILBlock->hasProfileWeight());
+        firstILBlock = firstILBlock->bbNext;
     }
 
-    // If the first block only has one ref then we use it's weight for fgCalledCount.
-    // Otherwise we have backedge's into the first block, so instead we use the sum
+    // The 'firstILBlock' is now expected to have a profile-derived weight
+    assert(firstILBlock->hasProfileWeight());
+
+    // If the first block only has one ref then we use its weight for fgCalledCount.
+    // Otherwise we have backedges into the first block, so instead we use the sum
     // of the return block weights for fgCalledCount.
     //
     // If the profile data has a 0 for the returnWeight
@@ -2935,7 +2980,6 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
     //
     if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
     {
-        assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
         fgCalledCount = firstILBlock->bbWeight;
     }
     else

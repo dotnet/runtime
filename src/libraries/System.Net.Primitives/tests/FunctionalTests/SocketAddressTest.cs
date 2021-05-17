@@ -98,7 +98,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Theory]
         [InlineData(AddressFamily.Packet)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
-        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.Browser))]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Linux | TestPlatforms.Browser, "Expected behavior is different on Android, Linux, or Browser")]
         public static void ToString_UnsupportedFamily_Throws(AddressFamily family)
         {
             Assert.Throws<PlatformNotSupportedException>(() => new SocketAddress(family));

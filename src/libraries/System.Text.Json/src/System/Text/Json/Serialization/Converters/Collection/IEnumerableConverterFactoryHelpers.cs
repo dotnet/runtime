@@ -4,11 +4,16 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
     internal static class IEnumerableConverterFactoryHelpers
     {
+        // System.Text.Json doesn't take a direct reference to System.Collections.Immutable so
+        // any netstandard2.0 consumers don't need to reference System.Collections.Immutable.
+        // So instead, implement a "weak reference" by using strings to check for Immutable types.
+
         // Immutable collection types.
         private const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
         private const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
@@ -48,7 +53,7 @@ namespace System.Text.Json.Serialization
 
             Type? baseTypeToCheck = type;
 
-            while (baseTypeToCheck != null && baseTypeToCheck != JsonClassInfo.ObjectType)
+            while (baseTypeToCheck != null && baseTypeToCheck != JsonTypeInfo.ObjectType)
             {
                 if (baseTypeToCheck.IsGenericType)
                 {
@@ -65,6 +70,11 @@ namespace System.Text.Json.Serialization
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The 'interfaceType' must exist and so trimmer kept it. In which case " +
+                "It also kept it on any type which implements it. The below call to GetInterfaces " +
+                "may return fewer results when trimmed but it will return the 'interfaceType' " +
+                "if the type implemented it, even after trimming.")]
         internal static Type? GetCompatibleGenericInterface(this Type type, Type interfaceType)
         {
             Debug.Assert(interfaceType.IsGenericType);
@@ -147,6 +157,10 @@ namespace System.Text.Json.Serialization
         [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableQueueTypeName, ImmutableCollectionsAssembly)]
         [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableSortedSetTypeName, ImmutableCollectionsAssembly)]
         [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableHashSetTypeName, ImmutableCollectionsAssembly)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The CreateRange method is preserved by the DynamicDependency attribute.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "Immutable collections don't have trimming annotations.")]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableEnumerableConstructingType(type);
@@ -171,6 +185,10 @@ namespace System.Text.Json.Serialization
 
         [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsAssembly)]
         [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsAssembly)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The CreateRange method is preserved by the DynamicDependency attribute.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "Immutable collections don't have trimming annotations.")]
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type keyType, Type valueType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
@@ -193,6 +211,9 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Json can't take a direct dependency on Collections.Immutable." +
+            "The types used here will be preserved by the DynamicDependency attributes on the only caller - GetImmutableEnumerableCreateRangeMethod.")]
         private static Type? GetImmutableEnumerableConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableEnumerableType());
@@ -236,6 +257,9 @@ namespace System.Text.Json.Serialization
             return underlyingType.Assembly.GetType(constructingTypeName);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Json can't take a direct dependency on Collections.Immutable." +
+            "The types used here will be preserved by the DynamicDependency attributes on the only caller - GetImmutableDictionaryCreateRangeMethod.")]
         private static Type? GetImmutableDictionaryConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableDictionaryType());
@@ -292,6 +316,9 @@ namespace System.Text.Json.Serialization
 
         // This method takes an unannotated string which makes linker reflection analysis lose track of the type we are
         // looking for. This indirection allows the removal of the type if it is not used in the calling application.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+            Justification = "This method exists to allow for 'weak references' to the Stack and Queue types. If those types are used in the app, " +
+            "they will be preserved by the app and Type.GetType will return them. If those types are not used in the app, we don't want to preserve them here.")]
         private static Type? GetTypeIfExists(string name) => Type.GetType(name, false);
     }
 }

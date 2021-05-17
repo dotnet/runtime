@@ -333,7 +333,7 @@ bool Compiler::gsFindVulnerableParams()
         for (UINT lclNum = assignGroup->bitVectGetFirst(); lclNum != (unsigned)-1;
              lclNum      = assignGroup->bitVectGetNext(lclNum))
         {
-            lvaTable[lclNum].lvIsPtr = TRUE;
+            lvaTable[lclNum].lvIsPtr = true;
             propagated->bitVectSet(lclNum);
         }
 
@@ -396,7 +396,8 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
         if (varDsc->lvSIMDType)
         {
-            shadowVarDsc->lvBaseType = varDsc->lvBaseType;
+            CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+            shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
         }
 #endif
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;

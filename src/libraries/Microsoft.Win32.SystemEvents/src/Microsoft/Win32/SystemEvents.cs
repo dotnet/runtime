@@ -668,9 +668,7 @@ namespace Microsoft.Win32
 
             IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
-            s_className = string.Format(
-                ".NET-BroadcastEventWindow.{0:x}.0",
-                AppDomain.CurrentDomain.GetHashCode());
+            s_className = $".NET-BroadcastEventWindow.{AppDomain.CurrentDomain.GetHashCode():x}.0";
 
             fixed (char* className = s_className)
             {

@@ -23,7 +23,7 @@ handle_arguments() {
             ;;
 
         *)
-            handle_arguments_local "$1"
+            handle_arguments_local "$1" "$2"
             ;;
     esac
 }
