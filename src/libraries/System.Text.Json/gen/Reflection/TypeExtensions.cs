@@ -40,6 +40,8 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         public static Type NullableOfTType { get; set; }
 
+        public static Type ObjectArrayType { get; set; }
+
         public static bool IsNullableValueType(this Type type, out Type? underlyingType)
         {
             Debug.Assert(NullableOfTType != null);

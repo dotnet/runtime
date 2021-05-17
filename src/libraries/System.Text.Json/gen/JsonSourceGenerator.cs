@@ -21,8 +21,8 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
-        private Dictionary<string, TypeMetadata>? _rootTypes;
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
+        private List<TypeGenerationSpec>? _rootTypes;
 
         /// <summary>
         /// Registers a syntax resolver to receive compilation units.
@@ -40,31 +40,32 @@ namespace System.Text.Json.SourceGeneration
         public void Execute(GeneratorExecutionContext executionContext)
         {
             SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
-            List<CompilationUnitSyntax> compilationUnits = receiver.CompilationUnits;
-            if (compilationUnits == null)
+            List<ClassDeclarationSyntax>? contextClasses = receiver.ClassDeclarationSyntaxList;
+            if (contextClasses == null)
             {
                 return;
             }
 
             Parser parser = new(executionContext.Compilation);
-            _rootTypes = parser.GetRootSerializableTypes(receiver.CompilationUnits);
-
-            if (_rootTypes != null)
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList);
+            if (spec != null)
             {
-                Emitter emitter = new(executionContext, _rootTypes);
+                _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
+
+                Emitter emitter = new(executionContext, spec);
                 emitter.Emit();
             }
         }
 
-        internal sealed class SyntaxReceiver : ISyntaxReceiver
+        private sealed class SyntaxReceiver : ISyntaxReceiver
         {
-            public List<CompilationUnitSyntax>? CompilationUnits { get; private set; }
+            public List<ClassDeclarationSyntax>? ClassDeclarationSyntaxList { get; private set; }
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                if (syntaxNode is CompilationUnitSyntax compilationUnit)
+                if (syntaxNode is ClassDeclarationSyntax cds)
                 {
-                    (CompilationUnits ??= new List<CompilationUnitSyntax>()).Add(compilationUnit);
+                    (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(cds);
                 }
             }
         }

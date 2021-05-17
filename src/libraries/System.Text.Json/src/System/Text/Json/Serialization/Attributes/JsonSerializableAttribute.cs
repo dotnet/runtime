@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// Instructs the System.Text.Json source generator to generate source code to help optimize performance
     /// when serializing and deserializing instances of the specified type and types in its object graph.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class JsonSerializableAttribute : JsonAttribute
     {
         /// <summary>
@@ -20,6 +20,11 @@ namespace System.Text.Json.Serialization
         /// Useful to resolve a name collision with another type in the compilation closure.
         /// </remarks>
         public string? TypeInfoPropertyName { get; set; }
+
+        /// <summary>
+        /// Determines what the source generator should generate for the type.
+        /// </summary>
+        public JsonSourceGenerationMode GenerationMode { get; set; }
 
         /// <summary>
         /// Initializes a new instance of <see cref="JsonSerializableAttribute"/> with the specified type.

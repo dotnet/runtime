@@ -36,24 +36,32 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSerializerOptionsAttribute"/>.
+        /// </summary>
+        internal JsonSerializerOptions? DefaultOptions { get; }
+
+        /// <summary>
         /// Creates an instance of <see cref="JsonSerializerContext"/> and binds it with the indicated <see cref="JsonSerializerOptions"/>.
         /// </summary>
-        /// <param name="options">The run-time provided options for the context instance.</param>
+        /// <param name="instanceOptions">The run-time provided options for the context instance.</param>
+        /// <param name="defaultOptions">The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSerializerOptionsAttribute"/>.</param>
         /// <remarks>
-        /// If no options are passed, then no options are set until the context is bound using <see cref="JsonSerializerOptions.AddContext{TContext}"/>,
+        /// If no instance options are passed, then no options are set until the context is bound using <see cref="JsonSerializerOptions.AddContext{TContext}"/>,
         /// or until <see cref="Options"/> is called, where a new options instance is created and bound.
         /// </remarks>
-        protected JsonSerializerContext(JsonSerializerOptions? options)
+        protected JsonSerializerContext(JsonSerializerOptions? instanceOptions, JsonSerializerOptions? defaultOptions)
         {
-            if (options != null)
+            DefaultOptions = defaultOptions;
+
+            if (instanceOptions != null)
             {
-                if (options._context != null)
+                if (instanceOptions._context != null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
                 }
 
-                _options = options;
-                options._context = this;
+                _options = instanceOptions;
+                instanceOptions._context = this;
             }
         }
 
