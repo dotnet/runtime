@@ -2758,6 +2758,11 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regMaskTP  foundRegBit            = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
+    if (foundRegBit == REG_NA)
+    {
+        return REG_NA;
+    }
+
     regNumber  foundReg               = genRegNumFromMask(foundRegBit);
     RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
     Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
