@@ -9,6 +9,11 @@ using System.Threading.Tasks;
 
 class Program
 {
+    [SupportedOSPlatformGuard("linux")]
+    [SupportedOSPlatformGuard("macOS")]
+    [SupportedOSPlatformGuard("Windows")]
+    private static bool IsHttp3Supported => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
     static async Task<int> Main(string[] args)
     {
         using var client = new HttpClient();
@@ -19,12 +24,7 @@ class Program
         const string quicDll = "System.Net.Quic.dll";
         var quicDllExists = File.Exists(Path.Combine(AppContext.BaseDirectory, quicDll));
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
-        private readonly bool _http3Enabled = (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
-
-        if (_http3Enabled)
+        if (IsHttp3Supported)
         {
             Console.WriteLine($"Expected {quicDll} is {(quicDllExists ? "present - OK" : "missing - BAD")}.");
             return quicDllExists ? 100 : -1;

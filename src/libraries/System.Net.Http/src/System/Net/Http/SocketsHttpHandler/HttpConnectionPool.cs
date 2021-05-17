@@ -76,6 +76,9 @@ namespace System.Net.Http
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
+        [SupportedOSPlatformGuard("linux")]
+        [SupportedOSPlatformGuard("macOS")]
+        [SupportedOSPlatformGuard("Windows")]
         private readonly bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
