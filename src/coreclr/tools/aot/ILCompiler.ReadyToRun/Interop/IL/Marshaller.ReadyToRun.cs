@@ -93,12 +93,16 @@ namespace Internal.TypeSystem.Interop
             if (targetMethod.IsUnmanagedCallersOnly)
                 return true;
 
-            PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
+            PInvokeMetadata metadata = targetMethod.GetPInvokeMethodMetadata();
+            PInvokeFlags flags = metadata.Flags;
 
             if (flags.SetLastError)
                 return true;
 
             if (!flags.PreserveSig)
+                return true;
+
+            if (metadata.CheckPendingException())
                 return true;
 
             var marshallers = GetMarshallersForMethod(targetMethod);
