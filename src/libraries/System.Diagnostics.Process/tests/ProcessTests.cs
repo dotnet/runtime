@@ -277,6 +277,7 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 42);
@@ -346,6 +347,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
             // Create a directory that will ProcessStartInfo.WorkingDirectory
@@ -2094,6 +2096,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
         public void LongProcessNamesAreSupported()
         {
             string sleepPath;
