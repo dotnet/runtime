@@ -113,9 +113,9 @@ def generateClrEventPipeWriteEventsImpl(
             continue
 
         eventIsEnabledFunc = ""
-        if runtimeFlavor == RuntimeFlavor.coreclr:
+        if runtimeFlavor.coreclr:
             eventIsEnabledFunc = "EventPipeAdapter::EventIsEnabled"
-        elif runtimeFlavor == RuntimeFlavor.mono:
+        elif runtimeFlavor.mono:
             eventIsEnabledFunc = "ep_event_is_enabled"
 
         # generate EventPipeEventEnabled function
@@ -148,17 +148,17 @@ def generateClrEventPipeWriteEventsImpl(
         if template:
             body = generateWriteEventBody(template, providerName, eventName, runtimeFlavor)
             WriteEventImpl.append(body)
-            if runtimeFlavor == RuntimeFlavor.coreclr:
+            if runtimeFlavor.coreclr:
                 WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
-            elif runtimeFlavor == RuntimeFlavor.mono:
+            elif runtimeFlavor.mono:
                 WriteEventImpl.append("}\n\n")
         else:
-            if runtimeFlavor == RuntimeFlavor.coreclr:
+            if runtimeFlavor.coreclr:
                 WriteEventImpl.append(
                     "    EventPipeAdapter::WriteEvent(EventPipeEvent" +
                     eventName +
                     ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
-            elif runtimeFlavor == RuntimeFlavor.mono:
+            elif runtimeFlavor.mono:
                 WriteEventImpl.append(
                     "    ep_write_event (EventPipeEvent" +
                     eventName +
@@ -168,10 +168,10 @@ def generateClrEventPipeWriteEventsImpl(
     # EventPipeProvider and EventPipeEvent initialization
     callbackName = ""
     createProviderFunc = ""
-    if runtimeFlavor == RuntimeFlavor.coreclr:
+    if runtimeFlavor.coreclr:
         callbackName = 'EventPipeEtwCallback' + providerPrettyName
         createProviderFunc = "EventPipeAdapter::CreateProvider"
-    elif runtimeFlavor == RuntimeFlavor.mono:
+    elif runtimeFlavor.mono:
         callbackName = "NULL"
         createProviderFunc = "create_provider"
 
@@ -213,9 +213,9 @@ def generateClrEventPipeWriteEventsImpl(
                 needStack = "false"
 
         addEventFunc = ""
-        if runtimeFlavor == RuntimeFlavor.coreclr:
+        if runtimeFlavor.coreclr:
             addEventFunc = "EventPipeAdapter::AddEvent"
-        elif runtimeFlavor == RuntimeFlavor.mono:
+        elif runtimeFlavor.mono:
             addEventFunc = "provider_add_event"
 
         initEvent = """    EventPipeEvent%s = %s(EventPipeProvider%s,%s,%s,%s,%s,%s);
@@ -247,11 +247,11 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
         parameter = fnSig.getParam(paramName)
 
         if parameter.winType == "win:UnicodeString":
-            if runtimeFlavor == RuntimeFlavor.coreclr:
+            if runtimeFlavor.coreclr:
                 pack_list.append(
                     "    if (!%s) { %s = W(\"NULL\"); }" %
                     (parameter.name, parameter.name))
-            elif runtimeFlavor == RuntimeFlavor.mono:
+            elif runtimeFlavor.mono:
                 pack_list.append(
                     "    if (!%s) { %s = \"NULL\"; }" %
                     (parameter.name, parameter.name))
@@ -264,11 +264,11 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 paramName, parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
-            if runtimeFlavor == RuntimeFlavor.mono:
+            if runtimeFlavor.mono:
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
-            elif runtimeFlavor == RuntimeFlavor.coreclr:
+            elif runtimeFlavor.coreclr:
                 pack_list.append(
                     "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
                     (paramName, size))
@@ -278,15 +278,15 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
-            if runtimeFlavor == RuntimeFlavor.mono:
+            if runtimeFlavor.mono:
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
-            elif runtimeFlavor == RuntimeFlavor.coreclr:
+            elif runtimeFlavor.coreclr:
                 pack_list.append(
                     "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
                     (paramName, size))
-        elif parameter.winType == "win:GUID" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:GUID" and runtimeFlavor.mono:
             pack_list.append(
                 "    success &= write_buffer_guid_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                 (parameter.name,))
@@ -294,51 +294,51 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             pack_list.append(
                 "    success &= WriteToBuffer(*%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
-        elif parameter.winType == "win:AnsiString" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:AnsiString" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_string_utf8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:UnicodeString" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:UnicodeString" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_string_utf8_to_utf16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:UInt8" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:UInt8" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:UInt16" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:UInt16" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:Int32" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:Int32" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_int32_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:UInt32" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:UInt32" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint32_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:Int64" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:Int64" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_int64_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:UInt64" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:UInt64" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint64_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:Boolean" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:Boolean" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_bool_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif parameter.winType == "win:Double" and runtimeFlavor == RuntimeFlavor.mono:
+        elif parameter.winType == "win:Double" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_double_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
-        elif runtimeFlavor == RuntimeFlavor.mono:
+        elif runtimeFlavor.mono:
             pack_list.append(
                 "    success &= write_buffer((const uint8_t *)%s, sizeof(%s), &buffer, &offset, &size, &fixedBuffer);" %
                 (parameter.name,parameter.name,))
-        elif runtimeFlavor == RuntimeFlavor.coreclr:
+        elif runtimeFlavor.coreclr:
             pack_list.append(
                 "    success &= WriteToBuffer(%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
@@ -346,31 +346,31 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
     code = "\n".join(pack_list) + "\n\n"
 
     checking = ""
-    if runtimeFlavor == RuntimeFlavor.coreclr:
+    if runtimeFlavor.coreclr:
         checking = """    if (!success)
     {
         if (!fixedBuffer)
             delete[] buffer;
         return ERROR_WRITE_FAULT;
     }\n\n"""
-    elif runtimeFlavor == RuntimeFlavor.mono:
+    elif runtimeFlavor.mono:
         checking = """    ep_raise_error_if_nok (success);\n\n"""
 
     body = ""
-    if runtimeFlavor == RuntimeFlavor.coreclr:
+    if runtimeFlavor.coreclr:
         body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
             eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
-    elif runtimeFlavor == RuntimeFlavor.mono:
+    elif runtimeFlavor.mono:
         body = "    ep_write_event (EventPipeEvent" + \
             eventName + ", (uint8_t *)buffer, (uint32_t)offset, ActivityId, RelatedActivityId);\n"
 
     footer = ""
-    if runtimeFlavor == RuntimeFlavor.coreclr:
+    if runtimeFlavor.coreclr:
         footer = """
     if (!fixedBuffer)
         delete[] buffer;
 """
-    elif runtimeFlavor == RuntimeFlavor.mono:
+    elif runtimeFlavor.mono:
         footer = """
 ep_on_exit:
     if (!fixedBuffer)
@@ -621,9 +621,9 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
     else:
         with open_for_update(eventpipehelpersPath) as helper:
             helper.write(stdprolog_cpp)
-            if runtimeFlavor == RuntimeFlavor.coreclr:
+            if runtimeFlavor.coreclr:
                 helper.write(getCoreCLREventPipeHelperFileImplPrefix())
-            elif runtimeFlavor == RuntimeFlavor.mono:
+            elif runtimeFlavor.mono:
                 helper.write(getMonoEventPipeHelperFileImplPrefix())
 
             tree = DOM.parse(etwmanifest)
@@ -653,9 +653,9 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
                 helper.write("    Init" + providerPrettyName + "();\n")
             helper.write("}\n")
 
-            if runtimeFlavor == RuntimeFlavor.coreclr:
+            if runtimeFlavor.coreclr:
                 helper.write(getCoreCLREventPipeHelperFileImplSuffix())
-            elif runtimeFlavor == RuntimeFlavor.mono:
+            elif runtimeFlavor.mono:
                 helper.write(getMonoEventPipeHelperFileImplSuffix())
 
         helper.close()
@@ -922,9 +922,9 @@ def generateEventPipeImplFiles(
             with open_for_update(eventpipefile) as eventpipeImpl:
                 eventpipeImpl.write(stdprolog_cpp)
                 header = ""
-                if runtimeFlavor == RuntimeFlavor.coreclr:
+                if runtimeFlavor.coreclr:
                     header = getCoreCLREventPipeImplFilePrefix()
-                elif runtimeFlavor == RuntimeFlavor.mono:
+                elif runtimeFlavor.mono:
                     header = getMonoEventPipeImplFilePrefix()
 
                 eventpipeImpl.write(header + "\n")
@@ -953,9 +953,9 @@ def generateEventPipeImplFiles(
                         inclusionList,
                         exclusionList) + "\n")
 
-                if runtimeFlavor == RuntimeFlavor.coreclr:
+                if runtimeFlavor.coreclr:
                     eventpipeImpl.write(getCoreCLREventPipeImplFileSuffix())
-                elif runtimeFlavor == RuntimeFlavor.mono:
+                elif runtimeFlavor.mono:
                     eventpipeImpl.write(getMonoEventPipeImplFileSuffix())
 
 def generateEventPipeFiles(
@@ -1020,12 +1020,12 @@ def main(argv):
     exclusion_filename = args.exc
     inclusion_filename = args.inc
     intermediate = args.intermediate
-    runtimeFlavor = RuntimeFlavor[args.runtimeFlavor.lower()]
+    runtimeFlavor = RuntimeFlavor(args.runtimeFlavor)
     extern = not args.nonextern
     dryRun = args.dry_run
 
     target_cpp = True
-    if runtimeFlavor == RuntimeFlavor.mono:
+    if runtimeFlavor.mono:
         target_cpp = False
 
     inclusion_list = parseInclusionList(inclusion_filename)

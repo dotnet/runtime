@@ -14,11 +14,18 @@ from __future__ import print_function
 import os
 import xml.dom.minidom as DOM
 from utilities import open_for_update
-import enum
 
-class RuntimeFlavor(enum.Enum):
-    coreclr = 1
-    mono = 2
+class RuntimeFlavor:
+    def __init__(self, runtime):
+        if runtime.lower() == "coreclr":
+            self.coreclr = True
+            self.mono = False
+        elif runtime.lower() == "mono":
+            self.coreclr = False
+            self.mono = True
+        else:
+            self.coreclr = True
+            self.mono = False
 
 stdprolog="""
 // Licensed to the .NET Foundation under one or more agreements.
@@ -97,15 +104,15 @@ monoEventPipeDataTypeMapping={
 }
 
 def getEventPipeDataTypeMapping(runtimeFlavor):
-    if runtimeFlavor == RuntimeFlavor.coreclr:
+    if runtimeFlavor.coreclr:
         return coreCLRPalDataTypeMapping
-    elif runtimeFlavor == RuntimeFlavor.mono:
+    elif runtimeFlavor.mono:
         return monoEventPipeDataTypeMapping
 
 def getPalDataTypeMapping(runtimeFlavor):
-    if runtimeFlavor == RuntimeFlavor.coreclr:
+    if runtimeFlavor.coreclr:
         return coreCLRPalDataTypeMapping
-    elif runtimeFlavor == RuntimeFlavor.mono:
+    elif runtimeFlavor.mono:
         return monoPalDataTypeMapping
 
 def getCoreCLRMonoTypeAdaptionDefines():
@@ -348,7 +355,7 @@ def generateClrallEvents(eventNodes,allTemplates, target_cpp, runtimeFlavor, wri
         clrallEvents.append("() {return ")
         clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
 
-        if runtimeFlavor == RuntimeFlavor.coreclr or write_xplatheader:
+        if runtimeFlavor.coreclr or write_xplatheader:
             if os.name == 'posix':
                 clrallEvents.append(" || (XplatEventLogger" +
                 ("::" if target_cpp else "_") +
@@ -422,7 +429,7 @@ def generateClrallEvents(eventNodes,allTemplates, target_cpp, runtimeFlavor, wri
 
         fnbody.append("ActivityId,RelatedActivityId);\n")
 
-        if runtimeFlavor == RuntimeFlavor.coreclr or write_xplatheader:
+        if runtimeFlavor.coreclr or write_xplatheader:
             fnbody.append(lindent)
             fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
 
@@ -687,16 +694,16 @@ typedef struct _DOTNET_TRACE_CONTEXT
     is_windows = os.name == 'nt'
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
-        if runtimeFlavor == RuntimeFlavor.mono:
+        if runtimeFlavor.mono:
             Clrallevents.write(getCoreCLRMonoTypeAdaptionDefines() + "\n")
-        if runtimeFlavor == RuntimeFlavor.coreclr or write_xplatheader:
+        if runtimeFlavor.coreclr or write_xplatheader:
             Clrallevents.write('#include "clrxplatevents.h"\n')
         Clrallevents.write('#include "clreventpipewriteevents.h"\n')
 
         # define DOTNET_TRACE_CONTEXT depending on the platform
         if is_windows:
             Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
-            if runtimeFlavor == RuntimeFlavor.coreclr or write_xplatheader:
+            if runtimeFlavor.coreclr or write_xplatheader:
                 Clrallevents.write(dotnet_trace_context_typedef_windows + "\n")
             else:
                 Clrallevents.write("\n")
@@ -829,12 +836,12 @@ def main(argv):
     sClrEtwAllMan     = args.man
     incdir            = args.inc
     etmDummyFile      = args.dummy
-    runtimeFlavor     = RuntimeFlavor[args.runtimeFlavor.lower()]
+    runtimeFlavor     = RuntimeFlavor(args.runtimeFlavor)
     extern            = not args.nonextern
     write_xplatheader = not args.noxplatheader
 
     target_cpp = True
-    if runtimeFlavor == RuntimeFlavor.mono:
+    if runtimeFlavor.mono:
         target_cpp = False
         write_xplatheader = False
 
