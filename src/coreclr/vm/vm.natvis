@@ -7,5 +7,10 @@ The .NET Foundation licenses this file to you under the MIT license.
 
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-
+    <Type Name="HolderBase&lt;*&gt;">
+        <DisplayString>{*m_value}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_value</ExpandedItem>
+        </Expand>
+    </Type>
 </AutoVisualizer>
