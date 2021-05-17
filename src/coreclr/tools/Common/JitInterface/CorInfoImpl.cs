@@ -637,38 +637,24 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray)
+        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, out bool suppressGCTransition)
         {
+            suppressGCTransition = false;
             CorInfoCallConvExtension callConv = (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
-
-            ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
-            foreach (var arg in attributeWithCallConvsArray.NamedArguments)
-            {
-                if (arg.Name == "CallConvs")
-                {
-                    callConvArray = (ImmutableArray<CustomAttributeTypedArgument<TypeDesc>>)arg.Value;
-                }
-            }
-
-            // No calling convention was specified in the attribute, so return the default.
-            if (callConvArray.IsDefault)
-            {
-                return callConv;
-            }
 
             bool found = false;
             bool memberFunctionVariant = false;
-            foreach (CustomAttributeTypedArgument<TypeDesc> type in callConvArray)
+            foreach (DefType defType in CallConvHelper.EnumerateCallConvsFromAttribute(attributeWithCallConvsArray))
             {
-                if (!(type.Value is DefType defType))
-                    continue;
-
-                if (defType.Namespace != "System.Runtime.CompilerServices")
-                    continue;
-
                 if (defType.Name == "CallConvMemberFunction")
                 {
                     memberFunctionVariant = true;
+                    continue;
+                }
+
+                if (defType.Name == "CallConvSuppressGCTransition")
+                {
+                    suppressGCTransition = true;
                     continue;
                 }
 
@@ -1258,7 +1244,7 @@ namespace Internal.JitInterface
             {
                 if (methodDesc.IsPInvoke)
                 {
-                    suppressGCTransition = methodDesc.IsSuppressGCTransition();
+                    suppressGCTransition = methodDesc.HasSuppressGCTransitionAttribute();
                     MethodSignatureFlags unmanagedCallConv = methodDesc.GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
 
                     if (unmanagedCallConv == MethodSignatureFlags.None)
@@ -1272,7 +1258,10 @@ namespace Internal.JitInterface
                         CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)methodDescLocal).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
                         if (unmanagedCallConvAttribute != null)
                         {
-                            return GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value);
+                            bool suppressGCTransitionLocal;
+                            CorInfoCallConvExtension callConvFromAttribute = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value, out suppressGCTransitionLocal);
+                            suppressGCTransition |= suppressGCTransitionLocal;
+                            return callConvFromAttribute;
                         }
 
                         unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
@@ -1289,7 +1278,7 @@ namespace Internal.JitInterface
                 {
                     Debug.Assert(methodDesc.IsUnmanagedCallersOnly);
                     CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)methodDesc).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
-                    return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
+                    return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, out _);
                 }
             }
             return GetUnmanagedCallConv(methodDesc.Signature, out suppressGCTransition);
