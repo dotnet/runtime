@@ -345,6 +345,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
   set(HOST_ARM64 1)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
   set(HOST_ARM 1)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
+  set(HOST_S390X 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm")
   set(HOST_WASM 1)
 else()
@@ -395,6 +397,11 @@ elseif(TARGET_ARCH MATCHES "arm")
   add_definitions("-DARM_FPU_VFP=1")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
+elseif(TARGET_ARCH STREQUAL "s390x")
+  set(TARGET_S390X 1)
+  set(MONO_ARCHITECTURE "\"s390x\"")
+  set(TARGET_SIZEOF_VOID_P 8)
+  set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "wasm")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
@@ -604,6 +611,14 @@ if(GCC)
   endif()
 endif()
 
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+
+if(IS_BIG_ENDIAN)
+  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
+else()
+  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
+endif()
+
 if(IS_BIG_ENDIAN)
   set(ORDER G_BIG_ENDIAN)
 else()
@@ -631,14 +646,6 @@ set(GSSIZE "ptrdiff_t")
 #
 # END OF EGLIB CHECKS
 #
-
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
-  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
-else()
-  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
-endif()
 
 ######################################
 # DEBUG BUILD CHECKS
