@@ -13,5 +13,9 @@ The .NET Foundation licenses this file to you under the MIT license.
         <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ASCII">[ASCII] {m_buffer,s}</DisplayString>
         <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UTF8">[UTF8] {m_buffer,s8}</DisplayString>
         <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ANSI">[ANSI] {m_buffer,s}</DisplayString>
+        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UNICODE">m_buffer,su</StringView>
+        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ASCII">m_buffer,s</StringView>
+        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UTF8">m_buffer,s8</StringView>
+        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ANSI">m_buffer,s</StringView>
     </Type>
 </AutoVisualizer>
