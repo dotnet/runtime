@@ -31,7 +31,7 @@ stdprolog_cmake = """#
 eventpipe_dirname = "eventpipe"
 
 def generateMethodSignatureEnabled(eventName, runtimeFlavor):
-    return "%s EventPipeEventEnabled%s()" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
+    return "%s EventPipeEventEnabled%s(void)" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
 
 def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces = []
@@ -119,7 +119,8 @@ def generateClrEventPipeWriteEventsImpl(
             eventIsEnabledFunc = "ep_event_is_enabled"
 
         # generate EventPipeEventEnabled function
-        eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
+        eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor) + ";\n\n"
+        eventEnabledImpl = eventEnabledImpl + generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
 {
     return %s(EventPipeEvent%s);
 }
@@ -135,7 +136,10 @@ def generateClrEventPipeWriteEventsImpl(
         else:
             template = None
 
-        fnptype.append(generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor))
+        writeSignature = generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor)
+        fnptype.append(writeSignature)
+        fnptype.append(";\n\n")
+        fnptype.append(writeSignature)
         fnptype.append("\n{\n")
         checking = """    if (!EventPipeEventEnabled%s())
         return ERROR_SUCCESS;
@@ -185,7 +189,12 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "void Init" +
         providerPrettyName +
-        "()\n{\n")
+        "(void);\n\n")
+    if extern: WriteEventImpl.append('extern "C" ')
+    WriteEventImpl.append(
+        "void Init" +
+        providerPrettyName +
+        "(void)\n{\n")
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
@@ -229,14 +238,14 @@ def generateClrEventPipeWriteEventsImpl(
 
 def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
     header = """
-    char stackBuffer[%s];
-    char *buffer = stackBuffer;
+    %s stackBuffer[%s];
+    %s *buffer = stackBuffer;
     size_t offset = 0;
     size_t size = %s;
     bool fixedBuffer = true;
     bool success = true;
 
-""" % (template.estimated_size, template.estimated_size)
+""" % (getEventPipeDataTypeMapping(runtimeFlavor)["BYTE"], template.estimated_size,  getEventPipeDataTypeMapping(runtimeFlavor)["BYTE"], template.estimated_size)
 
     fnSig = template.signature
     pack_list = []
@@ -253,7 +262,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                     (parameter.name, parameter.name))
             elif runtimeFlavor.mono:
                 pack_list.append(
-                    "    if (!%s) { %s = \"NULL\"; }" %
+                    "    if (!%s) { %s = (const ep_char8_t *)\"NULL\"; }" %
                     (parameter.name, parameter.name))
 
     for paramName in fnSig.paramlist:
@@ -499,6 +508,39 @@ resize_buffer (
     size_t *size,
     size_t current_size,
     size_t new_size,
+    bool *fixed_buffer);
+
+bool
+write_buffer (
+    const uint8_t *value,
+    size_t value_size,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer);
+
+bool
+write_buffer_string_utf8_to_utf16_t (
+    const ep_char8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer);
+
+bool
+write_buffer_string_utf8_t (
+    const ep_char8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer);
+
+bool
+resize_buffer (
+    uint8_t **buffer,
+    size_t *size,
+    size_t current_size,
+    size_t new_size,
     bool *fixed_buffer)
 {
     EP_ASSERT (buffer != NULL);
@@ -639,12 +681,12 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
                 helper.write(
                     "void Init" +
                     providerPrettyName +
-                    "();\n\n")
+                    "(void);\n\n")
 
             if extern: helper.write(
                 'extern "C" '
             )
-            helper.write("void InitProvidersAndEvents()\n{\n")
+            helper.write("void InitProvidersAndEvents(void)\n{\n")
             for providerNode in tree.getElementsByTagName('provider'):
                 providerName = providerNode.getAttribute('name')
                 providerPrettyName = providerName.replace("Windows-", '')
@@ -835,7 +877,7 @@ write_buffer_double_t (
     size_t *size,
     bool *fixed_buffer)
 {
-    return write_buffer ((const uint8_t *)&value, sizeof (double_t), buffer, offset, size, fixed_buffer);
+    return write_buffer ((const uint8_t *)&value, sizeof (double), buffer, offset, size, fixed_buffer);
 }
 
 static
@@ -869,14 +911,22 @@ static
 inline
 EventPipeProvider *
 create_provider (
-    const ep_char16_t *provider_name,
+    const wchar_t *provider_name,
     EventPipeCallback callback_func)
 {
-    ep_char8_t *provider_name_utf8 = ep_rt_utf16_to_utf8_string (provider_name, -1);
-    ep_return_null_if_nok(provider_name_utf8 != NULL);
+    ep_char8_t *provider_name_utf8 = NULL;
+
+#if WCHAR_MAX == 0xFFFF
+    provider_name_utf8 = g_utf16_to_utf8 ((const gunichar2 *)provider_name, -1, NULL, NULL, NULL);
+#else
+    provider_name_utf8 = g_ucs4_to_utf8 ((const gunichar *)provider_name, -1, NULL, NULL, NULL);
+#endif
+
+    ep_return_null_if_nok (provider_name_utf8 != NULL);
 
     EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL, NULL);
-    ep_rt_utf8_string_free (provider_name_utf8);
+
+    g_free (provider_name_utf8);
     return provider;
 }
 """ % (getCoreCLRMonoTypeAdaptionDefines())
@@ -935,6 +985,7 @@ def generateEventPipeImplFiles(
                         providerName
                     )
                 )
+
                 eventpipeImpl.write(
                     "EventPipeProvider *EventPipeProvider" + providerPrettyName + 
                     (" = nullptr;\n" if target_cpp else " = NULL;\n")
@@ -1026,6 +1077,7 @@ def main(argv):
 
     target_cpp = True
     if runtimeFlavor.mono:
+        extern = False
         target_cpp = False
 
     inclusion_list = parseInclusionList(inclusion_filename)

@@ -70,6 +70,7 @@ coreCLREventPipeDataTypeMapping={
     "ULONG"             : "ULONG",
     "ULONGLONG"         : "ULONGLONG",
     "WCHAR"             : "WCHAR",
+    "BYTE"              : "BYTE",
 }
 
 monoPalDataTypeMapping={
@@ -81,8 +82,8 @@ monoPalDataTypeMapping={
     "win:Struct"        :"const void",
     #actual spec
     "win:GUID"          :"const uint8_t",
-    "win:AnsiString"    :"char*",
-    "win:UnicodeString" :"ep_char8_t*",
+    "win:AnsiString"    :"const char*",
+    "win:UnicodeString" :"const ep_char8_t*",
     "win:Double"        :"const double",
     "win:Int32"         :"const int32_t",
     "win:Boolean"       :"const bool",
@@ -96,11 +97,12 @@ monoPalDataTypeMapping={
 
 monoEventPipeDataTypeMapping={
     "BOOL"              : "bool",
-    "LPCGUID"           : "const uint8_t *",
+    "LPCGUID"           : "const uint8_t*",
     "UCHAR"             : "uint8_t",
     "ULONG"             : "uint32_t",
     "ULONGLONG"         : "uint64_t",
-    "WCHAR"             : "ep_char16_t",
+    "WCHAR"             : "wchar_t",
+    "BYTE"              : "uint8_t",
 }
 
 def getEventPipeDataTypeMapping(runtimeFlavor):
@@ -842,6 +844,7 @@ def main(argv):
 
     target_cpp = True
     if runtimeFlavor.mono:
+        extern = False
         target_cpp = False
         write_xplatheader = False
 
