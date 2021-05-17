@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if HAVE_PTRACE_ENUM_ARGUMENT
+#ifdef HAVE_PTRACE_ENUM_ARGUMENT
 typedef __ptrace_request ptrace_arg_t;
 #else
 typedef int ptrace_arg_t;
