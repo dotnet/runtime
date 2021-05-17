@@ -29,7 +29,7 @@ namespace System.IO.Tests
 
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
 
-        public TimeFunction TimeFunction(string name, bool requiresRoundtripping = false)
+        public TimeFunction GetTimeFunction(string name, bool requiresRoundtripping = false)
         {
             //if this returns null, it means that the function is not supported on the platform (eg. creation time on linux)
             return TimeFunctions(requiresRoundtripping: name).FirstOrDefault((x) => x.Name == name);
@@ -106,10 +106,10 @@ namespace System.IO.Tests
             // possibilities of that in the future by having a proper test for it. Also, it should
             // be noted that the combination (A, B, false) is not the same as (B, A, true).
 
-            var function1 = TimeFunction(function1Name, requiresRoundtripping: true);
+            var function1 = GetTimeFunction(function1Name, requiresRoundtripping: true);
             if (function1 == null) return;
 
-            var function2 = TimeFunction(function2Name, requiresRoundtripping: true);
+            var function2 = GetTimeFunction(function2Name, requiresRoundtripping: true);
             if (function2 == null) return;
 
             // Checking that milliseconds are not dropped after setter.
