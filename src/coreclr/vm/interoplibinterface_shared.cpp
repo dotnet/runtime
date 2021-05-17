@@ -50,7 +50,7 @@ bool Interop::ShouldCheckForPendingException(
             return false;
     }
 
-    if (ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
+    if (ObjCMarshalNative::IsRuntimeMessageSendFunction(libraryName, entrypointName))
         return true;
 #endif // FEATURE_OBJCMARSHAL
 

@@ -147,7 +147,7 @@ public: // Instance inspection
     static bool IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced);
 
 public: // Identification
-    static bool IsRuntimeMsgSendFunctionOverridden(
+    static bool IsRuntimeMessageSendFunction(
         _In_z_ const char* libraryName,
         _In_z_ const char* entrypointName);
 
