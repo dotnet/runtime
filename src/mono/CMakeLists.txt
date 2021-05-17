@@ -177,6 +177,7 @@ endif()
 ######################################
 
 message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message ("CMAKE_SYSTEM_VARIANT=${CMAKE_SYSTEM_VARIANT}")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
@@ -279,6 +280,9 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(TARGET_MACCAT 1)
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -341,6 +345,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
   set(HOST_ARM64 1)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
   set(HOST_ARM 1)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
+  set(HOST_S390X 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm")
   set(HOST_WASM 1)
 else()
@@ -391,6 +397,11 @@ elseif(TARGET_ARCH MATCHES "arm")
   add_definitions("-DARM_FPU_VFP=1")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
+elseif(TARGET_ARCH STREQUAL "s390x")
+  set(TARGET_S390X 1)
+  set(MONO_ARCHITECTURE "\"s390x\"")
+  set(TARGET_SIZEOF_VOID_P 8)
+  set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "wasm")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
@@ -526,7 +537,7 @@ endif()
 ######################################
 set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
-elseif(HOST_OSX)
+elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
@@ -541,7 +552,7 @@ elseif(HOST_WASM)
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_MACCAT)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
@@ -600,6 +611,14 @@ if(GCC)
   endif()
 endif()
 
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+
+if(IS_BIG_ENDIAN)
+  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
+else()
+  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
+endif()
+
 if(IS_BIG_ENDIAN)
   set(ORDER G_BIG_ENDIAN)
 else()
@@ -627,14 +646,6 @@ set(GSSIZE "ptrdiff_t")
 #
 # END OF EGLIB CHECKS
 #
-
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
-  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
-else()
-  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
-endif()
 
 ######################################
 # DEBUG BUILD CHECKS
@@ -722,7 +733,7 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(TARGET_IOS OR TARGET_ANDROID)
+if(TARGET_IOS OR TARGET_ANDROID OR TARGET_MACCAT)
   # FIXME: the mobile products use mono_dllmap_insert so allow this
   unset(DISABLE_DLLMAP)
 else()

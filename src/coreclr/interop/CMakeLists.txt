@@ -19,14 +19,14 @@ set(INTEROP_HEADERS
     ${INTEROP_COMMON_HEADERS}
 )
 
-if (WIN32)
+if (FEATURE_COMWRAPPERS)
     list(APPEND INTEROP_SOURCES
         ${INTEROP_HEADERS}
         comwrappers.cpp
         comwrappers.hpp
         trackerobjectmanager.cpp
         referencetrackertypes.hpp)
-endif(WIN32)
+endif(FEATURE_COMWRAPPERS)
 
 convert_to_absolute_path(INTEROP_SOURCES ${INTEROP_SOURCES})
 

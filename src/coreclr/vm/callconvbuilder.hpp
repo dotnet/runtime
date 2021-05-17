@@ -85,7 +85,7 @@ namespace CallConv
     //
     // Returns:
     //   true  - No errors
-    //   false - Invalid (more than one calling convention specified)
+    //   false - Not specified or invalid (more than one calling convention specified)
     //-------------------------------------------------------------------------
     bool TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* pMD, _Out_ CorInfoCallConvExtension* callConv);
 }

@@ -368,57 +368,56 @@ namespace System.Text.Json.Serialization.Metadata
         {
             object propValue = GetValueAsObject(obj)!;
 
-            if (propValue is IDictionary<string, object?> dictionaryObject)
+            if (propValue is IDictionary<string, object?> dictionaryObjectValue)
             {
-                // Handle case where extension property is System.Object-based.
-
                 if (reader.TokenType == JsonTokenType.Null)
                 {
                     // A null JSON value is treated as a null object reference.
-                    dictionaryObject[state.Current.JsonPropertyNameAsString!] = null;
+                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = null;
                 }
                 else
                 {
-                    JsonConverter converter;
-                    JsonTypeInfo? dictionaryValueInfo = RuntimeTypeInfo.ElementTypeInfo;
-                    if (dictionaryValueInfo != null)
-                    {
-                        // Fast path when there is a generic type such as Dictionary<string, object>.
-                        converter = dictionaryValueInfo.PropertyInfoForTypeInfo.ConverterBase;
-                    }
-                    else
-                    {
-                        // Slower path for non-generic types that implement IDictionary<string, object>.
-                        converter = JsonMetadataServices.ObjectConverter;
-                    }
-
-                    if (!converter.TryReadAsObject(ref reader, Options, ref state, out object? value))
-                    {
-                        return false;
-                    }
-
-                    dictionaryObject[state.Current.JsonPropertyNameAsString!] = value;
+                    JsonConverter<object> converter = (JsonConverter<object>)GetDictionaryValueConverter(JsonTypeInfo.ObjectType);
+                    object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
+                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = value;
                 }
             }
-            else if (propValue is IDictionary<string, JsonElement> dictionaryJsonElement)
+            else if (propValue is IDictionary<string, JsonElement> dictionaryElementValue)
             {
-                JsonConverter<JsonElement> converter = JsonMetadataServices.JsonElementConverter;
-                if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
-                {
-                    return false;
-                }
-
-                dictionaryJsonElement[state.Current.JsonPropertyNameAsString!] = value;
+                Type elementType = typeof(JsonElement);
+                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)GetDictionaryValueConverter(elementType);
+                JsonElement value = converter.Read(ref reader, elementType, Options);
+                dictionaryElementValue[state.Current.JsonPropertyNameAsString!] = value;
             }
             else
             {
                 // Avoid a type reference to JsonObject and its converter to support trimming.
                 Debug.Assert(propValue is Nodes.JsonObject);
-
                 ConverterBase.ReadElementAndSetProperty(propValue, state.Current.JsonPropertyNameAsString!, ref reader, Options, ref state);
             }
 
             return true;
+
+            JsonConverter GetDictionaryValueConverter(Type dictionaryValueType)
+            {
+                JsonConverter converter;
+                JsonTypeInfo? dictionaryValueInfo = RuntimeTypeInfo.ElementTypeInfo;
+                if (dictionaryValueInfo != null)
+                {
+                    // Fast path when there is a generic type such as Dictionary<,>.
+                    converter = dictionaryValueInfo.PropertyInfoForTypeInfo.ConverterBase;
+                }
+                else
+                {
+                    // Slower path for non-generic types that implement IDictionary<,>.
+                    // It is possible to cache this converter on JsonTypeInfo if we assume the property value
+                    // will always be the same type for all instances.
+                    converter = Options.GetConverterInternal(dictionaryValueType);
+                }
+
+                Debug.Assert(converter != null);
+                return converter;
+            }
         }
 
         internal abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);

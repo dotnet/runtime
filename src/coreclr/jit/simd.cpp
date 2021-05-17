@@ -271,7 +271,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
             int    len            = _countof(className);
-            info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, TRUE, FALSE, FALSE);
+            info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
             noway_assert(pbuf < &className[256]);
             JITDUMP("SIMD Candidate Type %S\n", className);
 

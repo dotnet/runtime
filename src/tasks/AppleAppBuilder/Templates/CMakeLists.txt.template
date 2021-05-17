@@ -22,12 +22,16 @@ add_executable(
 
 include_directories("%MonoInclude%")
 
+set_target_properties(%ProjectName% %AotTargetsList% PROPERTIES
+    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
+)
+
 set_target_properties(%ProjectName% PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING "NO"
-    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
+    XCODE_EMIT_EFFECTIVE_PLATFORM_NAME "YES"
     RESOURCE "${APP_RESOURCES}"
 )
 
@@ -43,6 +47,10 @@ if("${HARDENED_RUNTIME}")
   set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES")
   if("${HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE}")
     set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
+    add_custom_command(
+      TARGET %ProjectName% POST_BUILD
+      COMMAND if test \"$CODE_SIGN_IDENTITY\"\; then codesign -fs \"$CODE_SIGN_IDENTITY\" $CODESIGNING_FOLDER_PATH/Contents/Resources/*.dylib\; fi
+      )
   endif()
 endif()
 

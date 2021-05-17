@@ -1580,6 +1580,12 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     }
 #endif // FEATURE_SIMD
 
+#ifdef TARGET_ARM64
+    if (IsContainableImmed(storeLoc, op1))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
+#else
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
@@ -1588,7 +1594,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     {
         MakeSrcContained(storeLoc, op1);
     }
-#ifdef TARGET_ARM
     else if (op1->OperGet() == GT_LONG)
     {
         MakeSrcContained(storeLoc, op1);

@@ -2,13 +2,9 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.Pipes.AccessControl.csproj">
-      <SupportedFramework>$(NetCoreAppCurrent)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj" />
-    <HarvestIncludePaths Include="ref/net461;lib/net461;runtimes/win/lib/net461" />
-    <HarvestIncludePaths Include="ref/netstandard2.0;lib/netstandard2.0" />
-    <HarvestIncludePaths Include="runtimes/win/lib/netcoreapp2.1" />
-    <HarvestIncludePaths Include="ref/net5.0;lib/net5.0;runtimes/win/lib/net5.0" />
     <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
     <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore50;uap10.0;net46" />
   </ItemGroup>

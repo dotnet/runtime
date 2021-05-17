@@ -7,10 +7,13 @@
     <DebugOptimization Condition="'$(Configuration)' == 'Release'">OPT</DebugOptimization>
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateVersionFile</CoreCompileDependsOn>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
-    <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
     <IlasmFlags>$(IlasmFlags) -DEBUG=$(DebugOptimization)</IlasmFlags>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
     <CoreAssembly>System.Runtime</CoreAssembly>
     <CoreAssembly Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard</CoreAssembly>
+    <DisableImplicitFrameworkReferences Condition="'$(TargetFramework)' == 'netstandard1.0'">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <CoreAssembly>mscorlib</CoreAssembly>
@@ -23,6 +26,9 @@
     <!-- mscorlib is passed in as an explicit reference from C# targets but not via the IL SDK. -->
     <Reference Include="$(CoreAssembly)"
                Condition="!$(TargetFramework.StartsWith('netstandard'))" />
+
+    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)"
+                      Condition="'$(TargetFramework)' == 'netstandard1.0'" />
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"

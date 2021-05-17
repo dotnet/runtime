@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO.Strategies;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -21,24 +22,28 @@ namespace System.IO
 
         private readonly FileStreamStrategy _strategy;
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
             : this(handle, access, true, DefaultBufferSize, false)
         {
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
             : this(handle, access, ownsHandle, DefaultBufferSize, false)
         {
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
             : this(handle, access, ownsHandle, bufferSize, false)
         {
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
@@ -197,7 +202,9 @@ namespace System.IO
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual IntPtr Handle => _strategy.Handle;
 
+        [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
+        [UnsupportedOSPlatform("tvos")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -212,7 +219,9 @@ namespace System.IO
             _strategy.Lock(position, length);
         }
 
+        [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
+        [UnsupportedOSPlatform("tvos")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)

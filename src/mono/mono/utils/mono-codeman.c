@@ -47,7 +47,7 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
 
 #define MIN_PAGES 16
 
-#if _WIN32 // These are the same.
+#if defined(_WIN32) && (defined(_M_IX86) || defined(_M_X64)) // These are the same.
 #define MIN_ALIGN MEMORY_ALLOCATION_ALIGNMENT
 #elif defined(__x86_64__)
 /*
@@ -362,7 +362,7 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 {
 	CodeChunk *chunk;
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 	int fill_value = 0xcc; /* x86 break */
 #else
 	int fill_value = 0x2a;
