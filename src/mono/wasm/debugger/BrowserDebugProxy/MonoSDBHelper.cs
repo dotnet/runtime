@@ -191,6 +191,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         APPLY_CHANGES = 2,
     }
 
+    internal enum CmdPointer{
+        GET_VALUE = 1
+    }
+
     internal enum CmdMethod {
         GET_NAME = 1,
         GET_DECLARING_TYPE = 2,
@@ -465,9 +469,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             valueTypeAutoExpand = expand_properties;
         }
     }
+    internal class PointerValue
+    {
+        public int typeId;
+        public string varName;
+        public PointerValue(int typeId, string varName)
+        {
+            this.typeId = typeId;
+            this.varName = varName;
+        }
+
+    }
     internal class MonoSDBHelper
     {
         private Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
+        private Dictionary<long, PointerValue> pointerValues = new Dictionary<long, PointerValue>();
         private static int valuetype_id;
         private static int cmd_id;
         private static int GetId() {return cmd_id++;}
@@ -679,6 +695,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             className = className.Replace("System.Char", "char");
             className = className.Replace("System.Int32", "int");
             className = className.Replace("System.Object", "object");
+            className = className.Replace("System.Void", "void");
             return className;
         }
         public async Task<string> GetTypeName(SessionId sessionId, int type_id, CancellationToken token)
@@ -818,6 +835,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ret.Add(propRet);
             }
             return ret;
+        }
+        public async Task<JObject> GetPointerContent(SessionId sessionId, long address, CancellationToken token)
+        {
+            var ret = new List<string>();
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.WriteLong(address);
+            command_params_writer.Write(pointerValues[address].typeId);
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.POINTER, (int) CmdPointer.GET_VALUE, command_params, token);
+            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "*" + pointerValues[address].varName, token);
         }
         public async Task<JArray> GetPropertiesValuesOfValueType(SessionId sessionId, int valueTypeId, CancellationToken token)
         {
@@ -1017,7 +1044,37 @@ namespace Microsoft.WebAssembly.Diagnostics
                     // FIXME: The client and the debuggee might have different word sizes
                     return new JObject{{"Type", "void"}};
                 case ElementType.Ptr:
-                    return new JObject{{"Type", "void"}};
+                {
+                    string type;
+                    string value;
+                    long valueAddress = ret_debugger_cmd_reader.ReadLong();
+                    var typeId = ret_debugger_cmd_reader.ReadInt32();
+                    var className = "(" + await GetTypeName(sessionId, typeId, token) + ")";
+                    if (valueAddress != 0 && className != "(void*)")
+                    {
+                        type = "object";
+                        value =  className;
+                        pointerValues[valueAddress] = new PointerValue(typeId, name);
+                    }
+                    else
+                    {
+                        type = "symbol";
+                        value = className + " " + valueAddress;
+                    }
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type,
+                                __custom_type = "pointer",
+                                value = value,
+                                description = value,
+                                className,
+                                objectId = $"dotnet:pointer:{valueAddress}"
+                            },
+                            writable = false,
+                            name
+                        });
+                }
                 case ElementType.String:
                 {
                     var string_id = ret_debugger_cmd_reader.ReadInt32();

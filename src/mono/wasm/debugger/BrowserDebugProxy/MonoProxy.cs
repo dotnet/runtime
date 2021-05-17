@@ -580,6 +580,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
                     return res2;
                 }
+                if (objectId.Scheme == "pointer")
+                {
+                    var ret = new JArray(await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token));
+                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                    return res2;
+                }
             }
             catch (Exception) {
                 Result res2 = Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
