@@ -36,6 +36,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static TextReader In
         {
@@ -62,6 +63,7 @@ namespace System
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public static Encoding InputEncoding
@@ -121,6 +123,7 @@ namespace System
             }
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             set
             {
@@ -166,6 +169,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static ConsoleKeyInfo ReadKey()
         {
@@ -175,6 +179,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
@@ -298,6 +303,7 @@ namespace System
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.CursorSize; }
             [SupportedOSPlatform("windows")]
@@ -321,6 +327,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static ConsoleColor BackgroundColor
         {
@@ -331,6 +338,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static ConsoleColor ForegroundColor
         {
@@ -341,6 +349,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static void ResetColor()
         {
@@ -352,6 +361,7 @@ namespace System
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.BufferWidth; }
             [SupportedOSPlatform("windows")]
@@ -363,6 +373,7 @@ namespace System
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.BufferHeight; }
             [SupportedOSPlatform("windows")]
@@ -394,6 +405,7 @@ namespace System
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
@@ -426,6 +438,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static int LargestWindowWidth
         {
@@ -435,6 +448,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static int LargestWindowHeight
         {
@@ -448,6 +462,7 @@ namespace System
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             set { ConsolePal.CursorVisible = value; }
         }
@@ -465,6 +480,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static int CursorTop
         {
@@ -480,6 +496,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static (int Left, int Top) GetCursorPosition()
         {
@@ -493,6 +510,7 @@ namespace System
             [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
             [UnsupportedOSPlatform("tvos")]
             set
             {
@@ -503,6 +521,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static void Beep()
         {
@@ -529,6 +548,7 @@ namespace System
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static void Clear()
         {
@@ -538,6 +558,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static void SetCursorPosition(int left, int top)
         {
@@ -553,6 +574,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static event ConsoleCancelEventHandler? CancelKeyPress
         {
@@ -590,6 +612,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static bool TreatControlCAsInput
         {
@@ -651,6 +674,7 @@ namespace System
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static void SetIn(TextReader newIn)
         {
