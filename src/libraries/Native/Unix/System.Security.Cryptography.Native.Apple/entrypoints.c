@@ -1,26 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
-
 #include "../../AnyOS/entrypoints.h"
 
 // Include System.Security.Cryptography.Native.Apple headers
 #include "pal_digest.h"
 #include "pal_ecc.h"
 #include "pal_hmac.h"
-#include "pal_keychain.h"
+#include "pal_keychain_macos.h"
 #include "pal_random.h"
 #include "pal_rsa.h"
 #include "pal_sec.h"
 #include "pal_seckey.h"
+#include "pal_seckey_macos.h"
 #include "pal_signverify.h"
 #include "pal_ssl.h"
 #include "pal_symmetric.h"
-#include "pal_trust.h"
+#include "pal_trust_macos.h"
 #include "pal_x509.h"
+#include "pal_x509_macos.h"
 #include "pal_x509chain.h"
-#include "pal_keyderivation.h"
+#include "pal_keyderivation_macos.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
@@ -53,7 +53,6 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_RsaEncryptOaep)
     DllImportEntry(AppleCryptoNative_RsaEncryptPkcs)
     DllImportEntry(AppleCryptoNative_RsaSignaturePrimitive)
-    DllImportEntry(AppleCryptoNative_RsaDecryptionPrimitive)
     DllImportEntry(AppleCryptoNative_RsaEncryptionPrimitive)
     DllImportEntry(AppleCryptoNative_RsaVerificationPrimitive)
     DllImportEntry(AppleCryptoNative_SecCopyErrorMessageString)
@@ -114,5 +113,3 @@ EXTERN_C const void* CryptoAppleResolveDllImport(const char* name)
 {
     return ResolveDllImport(s_cryptoAppleNative, lengthof(s_cryptoAppleNative), name);
 }
-
-#endif // !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)

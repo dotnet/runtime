@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+-->
+
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Compiler">
+    <DisplayString>[{info.compFullName,sb} ({info.compMethodHashPrivate,x})]</DisplayString>
+    <StringView>info.compFullName,sb</StringView>
+  </Type>
+
+  <Type Name="BasicBlock">
+    <DisplayString Condition="bbJumpKind==BBJ_COND || bbJumpKind==BBJ_ALWAYS || bbJumpKind==BBJ_LEAVE || bbJumpKind==BBJ_EHCATCHRET || bbJumpKind==BBJ_CALLFINALLY">BB{bbNum,d}->BB{bbJumpDest->bbNum,d}; {bbJumpKind,en}</DisplayString>
+    <DisplayString>BB{bbNum,d}; {bbJumpKind,en}</DisplayString>
+  </Type>
+
+  <Type Name="EHblkDsc">
+    <DisplayString>type={ebdHandlerType}</DisplayString>
+  </Type>
+
+  <!-- GenTree -->
+  <Type Name="GenTree">
+    <DisplayString>[{gtOper,en}, {gtType,en}}]</DisplayString>
+  </Type>
+  <Type Name="GenTreeIntCon">
+    <DisplayString>[IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}]</DisplayString>
+  </Type>
+  <Type Name="GenTreeDblCon">
+    <DisplayString>[DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}]</DisplayString>
+  </Type>
+  <Type Name="GenTreeStrCon">
+    <DisplayString>CNS_STR</DisplayString>
+  </Type>
+  <Type Name="GenTreeLngCon">
+    <DisplayString>[LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>
+  </Type>
+  <Type Name="GenTreeOp">
+    <DisplayString Condition="this->gtOper==GT_ASG">[{this-&gt;gtOp1,na}={this-&gt;gtOp2,na}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_CAST">[{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>
+    <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
+  </Type>
+
+  <Type Name="LclVarDsc">
+    <DisplayString Condition="lvReason==0">[{lvType,en}]</DisplayString>
+    <DisplayString>[{lvType,en}-{lvReason,s}]</DisplayString>
+  </Type>
+
+  <Type Name="GenTreeLclVar" Inheritable="false">
+    <DisplayString>[{gtOper,en}, {gtType,en} V{((GenTreeLclVar*)this)-&gt;_gtLclNum,u}]</DisplayString>
+  </Type>
+
+  <!-- Register allocation -->
+  <Type Name="LinearScan">
+    <DisplayString>LinearScan</DisplayString>
+    <Expand>
+        <Item Name="AvailableRegs mask">this-&gt;m_AvailableRegs</Item>
+        <CustomListItems>
+          <Variable Name="reg" InitialValue="this->m_AvailableRegs" />
+          <Variable Name="regIndex" InitialValue="0" />
+          <Loop Condition="reg != 0">
+            <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
+            <Exec>regIndex++</Exec>
+            <Exec>reg = reg >> 1</Exec>
+          </Loop>
+        </CustomListItems>
+        <Item Name="RegistersWithConstants mask">this-&gt;m_RegistersWithConstants</Item>
+        <CustomListItems>
+          <Variable Name="reg" InitialValue="this->m_RegistersWithConstants" />
+          <Variable Name="regIndex" InitialValue="0" />
+          <Loop Condition="reg != 0">
+            <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
+            <Exec>regIndex++</Exec>
+            <Exec>reg = reg >> 1</Exec>
+          </Loop>
+        </CustomListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="RefPosition">
+    <DisplayString>[#{rpNum,d} - {refType,en}]</DisplayString>
+    <Expand>
+        <Item Name="Referent" Condition="this->isPhysRegRef">(RegRecord*)this-&gt;referent</Item>
+        <Item Name="Referent" Condition="!this->isPhysRegRef">(Interval*)this-&gt;referent</Item>
+        <CustomListItems>
+          <Variable Name="reg" InitialValue="this->registerAssignment" />
+          <Variable Name="regIndex" InitialValue="0" />
+          <Loop Condition="reg != 0">
+            <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
+            <Exec>regIndex++</Exec>
+            <Exec>reg = reg >> 1</Exec>
+          </Loop>
+        </CustomListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Interval">
+    <DisplayString Condition="this->isLocalVar">[V{this->varNum,d}, #{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
+    <DisplayString Condition="this->isConstant">[C{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
+    <DisplayString>[I{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
+  </Type>
+
+  <Type Name="RegRecord">
+    <DisplayString>[reg={((regNumber)regNum),en}, type={registerType, en}]</DisplayString>
+    <Expand>
+      <Item Name="[Assigned]">assignedInterval</Item>
+      <Item Name="[Previous]">previousInterval</Item>
+    </Expand>
+  </Type>
+
+  <!-- Emitter -->
+  <Type Name="insGroup">
+    <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d} [extend]</DisplayString>
+    <DisplayString>IG{igNum,d}</DisplayString>
+  </Type>
+
+  <!-- utils -->
+   <Type Name="jitstd::list&lt;*&gt;">
+    <DisplayString Condition="m_nSize > 0">Size={m_nSize}</DisplayString>
+    <DisplayString Condition="m_nSize == 0">Empty</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <Size>m_nSize</Size>
+        <HeadPointer>this->m_pHead</HeadPointer>
+        <NextPointer>this-&gt;m_pNext</NextPointer>
+        <ValueNode>this-&gt;m_value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

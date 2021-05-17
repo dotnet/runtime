@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -855,7 +856,7 @@ namespace System.Data
         /// <summary>
         /// Gets a value indicating whether the current <see cref='System.Data.ForeignKeyConstraint'/> is identical to the specified object.
         /// </summary>
-        public override bool Equals(object? key)
+        public override bool Equals([NotNullWhen(true)] object? key)
         {
             if (!(key is ForeignKeyConstraint))
             {

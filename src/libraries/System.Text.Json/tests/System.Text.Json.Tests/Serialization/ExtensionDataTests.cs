@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Xunit;
 
@@ -1239,7 +1239,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(Json, options);
             JsonElement overflowProp = obj.MyOverflow["hello"];
-            Assert.Equal(JsonValueKind.String, overflowProp.ValueKind);
+            Assert.Equal(JsonValueKind.Undefined, overflowProp.ValueKind);
 
             string newJson = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"hello\":{\"Hi\":\"There\"}}", newJson);
