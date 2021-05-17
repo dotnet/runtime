@@ -425,6 +425,31 @@ FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* re
 }
 FCIMPLEND
 
+#ifdef _DEBUG
+namespace
+{
+    BOOL STDMETHODCALLTYPE IsInCooperativeGCMode()
+    {
+        return GetThread()->PreemptiveGCDisabled();
+    }
+}
+
+MarshalNative::IsInCooperativeGCMode_fn QCALLTYPE MarshalNative::GetIsInCooperativeGCModeFunctionPointer()
+{
+    QCALL_CONTRACT;
+
+    MarshalNative::IsInCooperativeGCMode_fn ret = NULL;
+
+    BEGIN_QCALL;
+
+    ret = IsInCooperativeGCMode;
+
+    END_QCALL;
+
+    return ret;
+}
+#endif
+
 /************************************************************************
  * Marshal.GetLastPInvokeError
  */

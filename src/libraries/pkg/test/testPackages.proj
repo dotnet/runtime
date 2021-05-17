@@ -82,7 +82,7 @@
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
 
-  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageValidationAssembly)"/>
+  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageTestingAssembly)"/>
 
   <Target Name="GetSupportedPackages">
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)">
