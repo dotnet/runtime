@@ -2551,7 +2551,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 //    info - associated block info
 //
 // Notes:
-//    We do this during reconstructdion because we have a clean look at the edge
+//    We do this during reconstruction because we have a clean look at the edge
 //    weights. If we defer until we recompute edge weights later we may fail to solve
 //    for them.
 //
@@ -2590,7 +2590,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
 {
     assert(block->bbJumpKind == BBJ_SWITCH);
 
-    const BasicBlock::weight_t sufficientSamples  = 100.0f;
+    const BasicBlock::weight_t sufficientSamples  = 30.0f;
     const BasicBlock::weight_t sufficientFraction = 0.3f;
 
     if (info->m_weight < sufficientSamples)

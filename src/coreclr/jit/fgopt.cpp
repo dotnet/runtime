@@ -3836,12 +3836,39 @@ bool Compiler::fgOptimizeSwitchJumps()
         blockToTargetEdge->setEdgeWeights(blockToTargetWeight, blockToTargetWeight, dominantTarget);
         blockToNewBlockEdge->setEdgeWeights(blockToNewBlockWeight, blockToNewBlockWeight, block);
 
+        // There may be other switch cases that lead to this same block, but there's just
+        // one edge in the flowgraph. So we need to subtract off the profile data that now flows
+        // along the peeled edge.
+        //
         for (flowList* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->flNext)
         {
             if (pred->getBlock() == newBlock)
             {
-                assert(pred->flDupCount == 1);
-                pred->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT, block);
+                if (pred->flDupCount == 1)
+                {
+                    // The only switch case leading to the dominant target was the one we peeled.
+                    // So the edge from the switch now has zero weight.
+                    //
+                    pred->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT, dominantTarget);
+                }
+                else
+                {
+                    // Other switch cases also lead to the dominant target.
+                    // Subtract off the weight we transferred to the peel.
+                    //
+                    BasicBlock::weight_t newMinWeight = pred->edgeWeightMin() - blockToTargetWeight;
+                    BasicBlock::weight_t newMaxWeight = pred->edgeWeightMax() - blockToTargetWeight;
+
+                    if (newMinWeight < BB_ZERO_WEIGHT)
+                    {
+                        newMinWeight = BB_ZERO_WEIGHT;
+                    }
+                    if (newMaxWeight < BB_ZERO_WEIGHT)
+                    {
+                        newMaxWeight = BB_ZERO_WEIGHT;
+                    }
+                    pred->setEdgeWeights(newMinWeight, newMaxWeight, dominantTarget);
+                }
             }
         }
 
