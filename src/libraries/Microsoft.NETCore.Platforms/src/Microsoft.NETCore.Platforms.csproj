@@ -21,6 +21,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Compile Include="BuildTask.Desktop.cs" />
     <Compile Include="AssemblyResolver.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>

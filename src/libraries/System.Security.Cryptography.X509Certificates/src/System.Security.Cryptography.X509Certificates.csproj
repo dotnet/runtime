@@ -406,6 +406,8 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
              Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs"

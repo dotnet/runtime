@@ -1321,6 +1321,36 @@ int GetCurrentProcessCpuCount()
                     count = 64;
             }
         }
+
+        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
+
+        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
+            sizeof(cpuRateControl), NULL))
+        {
+            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
+            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
+            DWORD maxRate = 0;
+
+            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
+            {
+                maxRate = cpuRateControl.CpuRate;
+            }
+            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
+            {
+                maxRate = cpuRateControl.MaxRate;
+            }
+
+            // The rate is the percentage times 100
+            const DWORD MAXIMUM_CPU_RATE = 10000;
+
+            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
+            {
+                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                if (cpuLimit < count)
+                    count = cpuLimit;
+            }
+        }
+
 #else // HOST_WINDOWS
         count = PAL_GetLogicalCpuCountFromOS();
 

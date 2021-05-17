@@ -28,7 +28,7 @@ namespace System.IO.IsolatedStorage
             return dataDirectory;
         }
 
-        [SuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Code handles single-file deployment by using the information of the .exe file")]
         internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {

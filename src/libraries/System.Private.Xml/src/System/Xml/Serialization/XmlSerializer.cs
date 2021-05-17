@@ -629,7 +629,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateSerializerToStream")]
-        [SuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Code is used on diagnostics so we fallback to print assembly.FullName if assembly.Location is empty")]
         internal static bool GenerateSerializer(Type[]? types, XmlMapping[] mappings, Stream stream)
         {

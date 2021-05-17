@@ -155,6 +155,6 @@ namespace System.Reflection
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => typeImpl.GetCustomAttributes(attributeType, inherit);
 
         public override bool IsDefined(Type attributeType, bool inherit) => typeImpl.IsDefined(attributeType, inherit);
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType) => typeImpl.GetInterfaceMap(interfaceType);
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => typeImpl.GetInterfaceMap(interfaceType);
     }
 }

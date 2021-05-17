@@ -14091,7 +14091,8 @@ DONE_MORPHING_CHILDREN:
             }
 
             // Fold "cmp & 1" to just "cmp"
-            if (tree->OperIs(GT_AND) && tree->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1))
+            if (tree->OperIs(GT_AND) && tree->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1) &&
+                !gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(op2))
             {
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(tree);
@@ -19331,6 +19332,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
     //  1) ret(void)
     //  2) ret(cast*(callResultLclVar))
     //  3) lclVar = callResultLclVar, the actual ret(lclVar) in another block
+    //  4) nop
     if (nextMorphStmt != nullptr)
     {
         GenTree* callExpr = callStmt->GetRootNode();
@@ -19357,8 +19359,13 @@ bool Compiler::fgCheckStmtAfterTailCall()
             //
             // And if we're returning a small type we may see a cast
             // on the source side.
-            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG)))
+            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG, GT_NOP)))
             {
+                if (nextMorphStmt->GetRootNode()->OperIs(GT_NOP))
+                {
+                    nextMorphStmt = nextMorphStmt->GetNextStmt();
+                    continue;
+                }
                 Statement* moveStmt = nextMorphStmt;
                 GenTree*   moveExpr = nextMorphStmt->GetRootNode();
                 GenTree*   moveDest = moveExpr->gtGetOp1();

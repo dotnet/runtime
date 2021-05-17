@@ -692,7 +692,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        [SuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "The code handles if the path is null by calling AppContext.BaseDirectory")]
         internal static string GetDllPath(string machineName)
         {

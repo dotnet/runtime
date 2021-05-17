@@ -10,6 +10,9 @@ using TestLibrary;
 
 unsafe static class SuppressGCTransitionNative
 {
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl)]
+    public static extern unsafe void SetIsInCooperativeModeFunction(delegate* unmanaged<int> fn);
+
     [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     [SuppressGCTransition]
     public static extern unsafe int NextUInt_Inline_NoGCTransition(int* n);
@@ -106,13 +109,41 @@ unsafe static class SuppressGCTransitionNative
 
 unsafe class SuppressGCTransitionTest
 {
+    private static bool ExplicitModeCheckEnabled = false;
+    private static void InitializeExplicitModeCheck()
+    {
+        // GetIsInCooperativeGCModeFunctionPointer is conditionally included based on the runtime build configuration,
+        // so we check for its existence and only do the explicit mode validation if it is available.
+        Type marshalType = typeof(object).Assembly.GetType(typeof(System.Runtime.InteropServices.Marshal).FullName);
+        MethodInfo getFunctionPtr = marshalType.GetMethod("GetIsInCooperativeGCModeFunctionPointer", BindingFlags.NonPublic | BindingFlags.Static);
+        if (getFunctionPtr != null)
+        {
+            var isInCooperativeModeFunc = (delegate* unmanaged<int>)(IntPtr)getFunctionPtr.Invoke(null, null);
+            SuppressGCTransitionNative.SetIsInCooperativeModeFunction(isInCooperativeModeFunc);
+            ExplicitModeCheckEnabled = true;
+            Console.WriteLine("Explicit GC mode check is enabled");
+        }
+    }
+
+    private static void ValidateMode(bool transitionSuppressed, int inCooperativeMode)
+        => ValidateMode(transitionSuppressed, inCooperativeMode != 0);
+
+    private static void ValidateMode(bool transitionSuppressed, bool inCooperativeMode)
+    {
+        if (!ExplicitModeCheckEnabled)
+            return;
+
+        Assert.AreEqual(transitionSuppressed, inCooperativeMode, $"GC transition should{(transitionSuppressed ? "" : " not")} have been suppressed");
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Inline_NoGCTransition(int expected)
     {
         Console.WriteLine($"{nameof(Inline_NoGCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.NextUInt_Inline_NoGCTransition(&n);
+        int ret = SuppressGCTransitionNative.NextUInt_Inline_NoGCTransition(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: true, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -120,8 +151,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(Inline_GCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.NextUInt_Inline_GCTransition(&n);
+        int ret = SuppressGCTransitionNative.NextUInt_Inline_GCTransition(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: false, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -129,8 +161,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(NoInline_NoGCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.NextUInt_NoInline_NoGCTransition(&n);
+        bool ret = SuppressGCTransitionNative.NextUInt_NoInline_NoGCTransition(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: true, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -138,8 +171,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(NoInline_GCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
+        bool ret = SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: false, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -147,14 +181,23 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(Mixed)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
-        Assert.AreEqual(expected++, n);
-        SuppressGCTransitionNative.NextUInt_NoInline_NoGCTransition(&n);
-        Assert.AreEqual(expected++, n);
-        SuppressGCTransitionNative.NextUInt_Inline_GCTransition(&n);
-        Assert.AreEqual(expected++, n);
-        SuppressGCTransitionNative.NextUInt_Inline_NoGCTransition(&n);
-        Assert.AreEqual(expected++, n);
+
+        {
+            bool ret = SuppressGCTransitionNative.NextUInt_NoInline_GCTransition(&n);
+            Assert.AreEqual(expected++, n);
+            ValidateMode(transitionSuppressed: false, ret);
+            ret = SuppressGCTransitionNative.NextUInt_NoInline_NoGCTransition(&n);
+            Assert.AreEqual(expected++, n);
+            ValidateMode(transitionSuppressed: true, ret);
+        }
+        {
+            int ret = SuppressGCTransitionNative.NextUInt_Inline_GCTransition(&n);
+            Assert.AreEqual(expected++, n);
+            ValidateMode(transitionSuppressed: false, ret);
+            ret = SuppressGCTransitionNative.NextUInt_Inline_NoGCTransition(&n);
+            Assert.AreEqual(expected++, n);
+            ValidateMode(transitionSuppressed: true, ret);
+        }
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -179,8 +222,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(Inline_NoGCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_NoGCTransition()(&n);
+        int ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_NoGCTransition()(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: true, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -188,8 +232,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(Inline_GCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_GCTransition()(&n);
+        int ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_GCTransition()(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: false, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -197,8 +242,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(NoInline_NoGCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_NoGCTransition()(&n);
+        bool ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_NoGCTransition()(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: true, ret);
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -206,8 +252,9 @@ unsafe class SuppressGCTransitionTest
     {
         Console.WriteLine($"{nameof(NoInline_GCTransition)} ({expected}) ...");
         int n;
-        SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_GCTransition()(&n);
+        bool ret = SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_GCTransition()(&n);
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: false, ret);
         return n + 1;
     }
 
@@ -223,8 +270,9 @@ unsafe class SuppressGCTransitionTest
         object boxedN = Pointer.Box(pn, typeof(int*));
 
         MethodInfo callNextUInt = typeof(FunctionPointer).GetMethod("Call_NextUInt");
-        callNextUInt.Invoke(null, new object[] { fptr, boxedN });
+        int ret = (int)callNextUInt.Invoke(null, new object[] { fptr, boxedN });
         Assert.AreEqual(expected, n);
+        ValidateMode(transitionSuppressed: false, ret);
         return n + 1;
     }
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -303,6 +351,8 @@ unsafe class SuppressGCTransitionTest
     {
         try
         {
+            InitializeExplicitModeCheck();
+
             int n = 1;
             n = Inline_NoGCTransition(n);
             n = Inline_GCTransition(n);

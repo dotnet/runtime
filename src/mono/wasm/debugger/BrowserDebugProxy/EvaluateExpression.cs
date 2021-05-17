@@ -211,7 +211,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        [SuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/51202")]
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {

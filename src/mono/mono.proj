@@ -230,6 +230,13 @@
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
     </ItemGroup>
 
+    <!-- s390x Linux cross build options -->
+    <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 's390x'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=s390x" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/s390x-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
     <!-- Windows specific options -->
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_MonoCPPFLAGS Include="-DWIN32" />
