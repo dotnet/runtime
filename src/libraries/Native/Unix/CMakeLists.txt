@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-     # CMake 3.14.5 contains bug fixes for iOS
-     cmake_minimum_required(VERSION 3.14.5)
- endif()
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    # CMake 3.14.5 contains bug fixes for iOS
+    cmake_minimum_required(VERSION 3.14.5)
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    # CMake 3.18.1 properly generates MacCatalyst C and CXX compilers
+    cmake_minimum_required(VERSION 3.18.1)
+endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
