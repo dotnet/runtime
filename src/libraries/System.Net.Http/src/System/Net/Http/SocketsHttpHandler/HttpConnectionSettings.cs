@@ -70,7 +70,8 @@ namespace System.Net.Http
         internal TimeSpan? _fakeRtt;
 
         internal int _initialStreamWindowSize = 65535;
-        internal int _streamWindowUpdateRatio = 8;
+        internal int _streamWindowUpdateSendRatio = 8;
+        internal int _streamWindowExtensionRatio = 8;
         internal int _streamWindowMagicMultiplier = 1;
 
         public HttpConnectionSettings()
@@ -128,7 +129,8 @@ namespace System.Net.Http
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _fakeRtt = _fakeRtt,
                 _initialStreamWindowSize = _initialStreamWindowSize,
-                _streamWindowUpdateRatio = _streamWindowUpdateRatio,
+                _streamWindowUpdateSendRatio = _streamWindowUpdateSendRatio,
+                _streamWindowExtensionRatio = _streamWindowExtensionRatio,
                 _streamWindowMagicMultiplier = _streamWindowMagicMultiplier
             };
 

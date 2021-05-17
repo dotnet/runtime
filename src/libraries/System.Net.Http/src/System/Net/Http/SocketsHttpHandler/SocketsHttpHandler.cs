@@ -66,10 +66,16 @@ namespace System.Net.Http
             set => _settings._initialStreamWindowSize = value;
         }
 
-        public int StreamWindowUpdateRatio
+        public int StreamWindowUpdateSendRatio
         {
-            get => _settings._streamWindowUpdateRatio;
-            set => _settings._streamWindowUpdateRatio = value;
+            get => _settings._streamWindowUpdateSendRatio;
+            set => _settings._streamWindowUpdateSendRatio = value;
+        }
+
+        public int StreamWindowExtensionRatio
+        {
+            get => _settings._streamWindowExtensionRatio;
+            set => _settings._streamWindowExtensionRatio = value;
         }
 
         public int StreamWindowMagicMultiplier

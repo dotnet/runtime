@@ -36,7 +36,13 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public int StreamWindowUpdateRatio
+        public int StreamWindowUpdateSendRatio
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public int StreamWindowExtensionRatio
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
