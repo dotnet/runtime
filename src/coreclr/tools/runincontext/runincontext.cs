@@ -22,6 +22,7 @@ public class ArgInput
     public int StressModeCount = 2000;
     public int MaxRestarts = 10;
     public int IterationCount = 1;
+    public int IterationCountMain = 1;
     public bool MonitorMode = false;
     public int IterationsToSkip = 500;
     public string ReferencesPath = null;
@@ -37,6 +38,7 @@ public class ArgInput
         Console.WriteLine("    /collectstress:<n>        Emit in collectible assembly n times, checking for memory leaks(def:2000)");
         Console.WriteLine("    /maxstressrestarts:<n>    Maximum allowed stress run restarts when memory usage increases (def:10)");
         Console.WriteLine("    /iterationcount:<n>       Number of iterations in non-stress mode (def:1)");
+        Console.WriteLine("    /iterationcountmain:<n>   Number of iterations to invoke Main in the same ALC in non-stress mode (def:1)");
         Console.WriteLine("    /memorymonitor:<skip>     Monitor memory usage closely. skip: number of iterations to skip before monitoring memory.");
         Console.WriteLine("    /referencespath:<path>    Path to resolve assemblies referenced by the main assembly");
         Console.WriteLine("    /breakbeforerun           Break into debugger before executing the assembly");
@@ -69,6 +71,10 @@ public class ArgInput
             else if (option.StartsWith("/iterationcount:"))
             {
                 IterationCount = int.Parse(option.Substring(16));
+            }
+            else if (option.StartsWith("/iterationcountmain:"))
+            {
+                IterationCountMain = int.Parse(option.Substring(20));
             }
             else if (option.StartsWith("/breakbeforerun"))
             {
@@ -368,8 +374,6 @@ public class TestRunner
     public int ExecuteAssemblyEntryPoint(MethodInfo entryPoint)
     {
         int result = 0;
-
-        object res;
         object[] args = (entryPoint.GetParameters().Length != 0) ? new object[] { _input.EntryArgs } : null;
         string argsStr = (args == null) ? "" : _input.EntryArgStr.ToString();
 
@@ -378,9 +382,47 @@ public class TestRunner
             Console.WriteLine($"Invoking Main({argsStr})\n");
         }
 
-        res = entryPoint.Invoke(null, args);
+        if (_input.IterationCountMain > 1 && entryPoint.ReturnType == typeof(int))
+        {
+            for (int i = 0; i < _input.IterationCountMain; i++)
+            {
+                Exception exception = null;
+                try
+                {
+                    result = (int)entryPoint.Invoke(null, args);
+                }
+                catch (Exception exc)
+                {
+                    exception = exc;
+                }
 
-        result = (entryPoint.ReturnType == typeof(void)) ? Environment.ExitCode : Convert.ToInt32(res);
+                if (exception != null || result != 100)
+                {
+                    if (i < 2)
+                    {
+                        // An error during the first two iterations most likely means the test doesn't expect
+                        // Main to be invoked more than once. TODO: triage
+                        return 100;
+                    }
+                    if (exception != null)
+                    {
+                        Console.WriteLine($"Main() threw an exception ({exception}) at {i}th iteration.");
+                        return -1;
+                    }
+                    if (result != 100)
+                    {
+
+                        Console.WriteLine($"Main() returned {result} (expected: 100) at {i}th iteration.");
+                        return result;
+                    }
+                }
+            }
+        }
+        else
+        {
+            object res = entryPoint.Invoke(null, args);
+            result = (entryPoint.ReturnType == typeof(void)) ? Environment.ExitCode : Convert.ToInt32(res);
+        }
 
         return result;
     }
