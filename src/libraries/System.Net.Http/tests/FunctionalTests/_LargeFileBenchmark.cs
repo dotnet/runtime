@@ -14,6 +14,10 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public class LargeFileBenchmark_ShouldNotBeParallell { }
+
+    [Collection(nameof(LargeFileBenchmark_ShouldNotBeParallell))]
     public class LargeFileBenchmark : IDisposable
     {
         private readonly ITestOutputHelper _output;
@@ -27,26 +31,63 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 5;
+        private const double LengthMb = 50;
+        private const string BenchmarkServer = "10.194.114.94";
 
         [Theory]
-        [InlineData("10.194.114.94")]
-        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, LengthMb);
+        [InlineData(BenchmarkServer)]
+        public Task Download11_Run1(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run1", hostName, false, LengthMb);
 
         [Theory]
-        [InlineData("10.194.114.94")]
-        public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb);
+        [InlineData(BenchmarkServer)]
+        public Task Download11_Run2(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run2", hostName, false, LengthMb);
+
+        // [Theory]
+        // [InlineData("10.194.114.94")]
+        // public Task Download20_DefaultWindow(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb);
 
         [Theory]
-        [InlineData("10.194.114.94", 256)]
-        [InlineData("10.194.114.94", 2 * 1024)]
-        public Task Download20_LargeWindow(string hostName, int initialWindowKbytes)
+        [InlineData(BenchmarkServer, 64)]
+        public Task Download20_SpecificWindow_Run0(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 256)]
+        [InlineData(BenchmarkServer, 384)]
+        public Task Download20_SpecificWindow_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 512)]
+        [InlineData(BenchmarkServer, 768)]
+        public Task Download20_SpecificWindow_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 1024)]
+        [InlineData(BenchmarkServer, 1280)]
+        [InlineData(BenchmarkServer, 1536)]
+        public Task Download20_SpecificWindow_Run3(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 1792)]
+        [InlineData(BenchmarkServer, 2048)]
+        [InlineData(BenchmarkServer, 2560)]
+        [InlineData(BenchmarkServer, 3072)]
+        [InlineData(BenchmarkServer, 4096)]
+        [InlineData(BenchmarkServer, 5120)]
+        [InlineData(BenchmarkServer, 6144)]
+        [InlineData(BenchmarkServer, 8192)]
+        [InlineData(BenchmarkServer, 10240)]
+        [InlineData(BenchmarkServer, 12288)]
+        [InlineData(BenchmarkServer, 14336)]
+        [InlineData(BenchmarkServer, 16384)]
+        public Task Download20_SpecificWindow_Run4(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        private Task Download20_SpecificWindow(string hostName, int initialWindowKbytes)
         {
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
                 InitialStreamWindowSize = initialWindowKbytes * 1024
             };
-            return TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb, handler);
+            return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler);
         }
 
 
@@ -54,8 +95,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("10.194.114.94")]
         public async Task Download20_Dynamic(string hostName)
         {
-            _listener.Enabled = true;
-            _listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync") || m.Contains("Rtt estimation updated");
+            //_listener.Enabled = true;
+            //_listener.Filter = m => m.Contains("No adjustment") || m.Contains("Updated StreamWindowSize") || m.Contains("SendWindowUpdateAsync");
 
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
@@ -68,6 +109,7 @@ namespace System.Net.Http.Functional.Tests
         {
             handler ??= new SocketsHttpHandler();
             using var client = new HttpClient(handler, true);
+            client.Timeout = TimeSpan.FromMinutes(2);
             var message = GenerateRequestMessage(hostName, http2, lengthMb);
             _output.WriteLine($"{info} / {lengthMb} MB from {hostName}");
             Stopwatch sw = Stopwatch.StartNew();
