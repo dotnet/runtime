@@ -7,7 +7,7 @@ This document provides the steps you need to take to update the reference assemb
 3. Navigate to the ref directory and build the reference assembly.
 4. Add, build, and run tests.
 
-** **Note:** If you already added the new API to the reference source, re-generating it (after building the source assembly) will update it to be fully qualified  and placed in the correct order. This can be done by running the `GenerateReferenceAssemblySource` command from the ref directory.
+** **Note:** If you already added the new API to the reference source, re-generating it (after building the source assembly) will update it to be fully qualified and placed in the correct order. This can be done by running the `GenerateReferenceAssemblySource` command from the ref directory.
 
 ## For System.Runtime
 
@@ -26,4 +26,4 @@ dotnet msbuild /t:GenerateReferenceAssemblySource /p:GenAPIAdditionalParameters=
 
 ## For .NETFramework Facade Assemblies
 
-Many assemblies expose reference assemblies on .NETStandard and .NETCore which define types but require facades on .NETFramework to forward types to their existing location in .NETFramework.  In these cases we need to add type forwards manually to the reference assembly.  TypeForwards must be added for every type in the compatible .NETStandard reference assembly that exists in the .NETFramework, types which are defined in the .NETFramework reference should be factored into a shared source file.
+Some assemblies define types in .NETStandard and .NETCore but require facades on .NETFramework to forward types to their existing location in .NETFramework. In these cases we need to add type forwards manually to the .NETFramework build of the reference assembly. TypeForwards must be added for every type in the compatible .NETStandard reference assembly that exists in the .NETFramework, types which are defined in the .NETFramework reference should be factored into a shared source file.
