@@ -301,6 +301,12 @@ protected:
         return m_pEndReservedRegion - m_pAllocPtr;
     }
 
+    PTR_BYTE UnlockedGetAllocPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAllocPtr;
+    }
+
 private:
     // Get some more committed pages - either commit some more in the current reserved region, or, if it
     // has run out, reserve another set of pages
@@ -847,6 +853,18 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         return UnlockedGetReservedBytesFree();
+    }
+
+    PTR_BYTE GetAllocPtr()
+    {
+        WRAPPER_NO_CONTRACT;
+        return UnlockedGetAllocPtr();
+    }
+
+    void ReservePages(size_t size)
+    {
+        WRAPPER_NO_CONTRACT;
+        UnlockedReservePages(size);
     }
 };
 
