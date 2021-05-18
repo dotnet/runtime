@@ -3,7 +3,7 @@
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
-    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS) /p:OfficialBuildId=$(OfficialBuildId)</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>

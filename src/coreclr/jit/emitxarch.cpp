@@ -8499,8 +8499,58 @@ void emitter::emitDispIns(
     }
     else
     {
-        attr = id->idOpSize();
-        sstr = codeGen->genSizeStr(attr);
+        emitAttr sizeAttr = id->idOpSize();
+        attr              = sizeAttr;
+
+        switch (ins)
+        {
+            case INS_vextractf128:
+            case INS_vextracti128:
+            case INS_vinsertf128:
+            case INS_vinserti128:
+            {
+                sizeAttr = EA_16BYTE;
+                break;
+            }
+
+            case INS_pextrb:
+            case INS_pinsrb:
+            {
+                sizeAttr = EA_1BYTE;
+                break;
+            }
+
+            case INS_pextrw:
+            case INS_pextrw_sse41:
+            case INS_pinsrw:
+            {
+                sizeAttr = EA_2BYTE;
+                break;
+            }
+
+            case INS_extractps:
+            case INS_insertps:
+            case INS_pextrd:
+            case INS_pinsrd:
+            {
+                sizeAttr = EA_4BYTE;
+                break;
+            }
+
+            case INS_pextrq:
+            case INS_pinsrq:
+            {
+                sizeAttr = EA_8BYTE;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        sstr = codeGen->genSizeStr(sizeAttr);
 
         if (ins == INS_lea)
         {
@@ -9031,6 +9081,36 @@ void emitter::emitDispIns(
             assert(IsThreeOperandAVXInstruction(ins));
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(id->idReg2(), attr));
+
+            switch (ins)
+            {
+                case INS_vinsertf128:
+                case INS_vinserti128:
+                {
+                    attr = EA_16BYTE;
+                    break;
+                }
+
+                case INS_pinsrb:
+                case INS_pinsrw:
+                case INS_pinsrd:
+                {
+                    attr = EA_4BYTE;
+                    break;
+                }
+
+                case INS_pinsrq:
+                {
+                    attr = EA_8BYTE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
             printf("%s, ", emitRegName(id->idReg3(), attr));
             val = emitGetInsSC(id);
             goto PRINT_CONSTANT;
@@ -9044,7 +9124,55 @@ void emitter::emitDispIns(
             printf("%s", emitRegName(id->idReg4(), attr));
             break;
         case IF_RRW_RRW_CNS:
-            printf("%s,", emitRegName(id->idReg1(), attr));
+        {
+            emitAttr tgtAttr = attr;
+
+            switch (ins)
+            {
+                case INS_vextractf128:
+                case INS_vextracti128:
+                {
+                    tgtAttr = EA_16BYTE;
+                    break;
+                }
+
+                case INS_extractps:
+                case INS_pextrb:
+                case INS_pextrw:
+                case INS_pextrw_sse41:
+                case INS_pextrd:
+                {
+                    tgtAttr = EA_4BYTE;
+                    break;
+                }
+
+                case INS_pextrq:
+                {
+                    tgtAttr = EA_8BYTE;
+                    break;
+                }
+
+                case INS_pinsrb:
+                case INS_pinsrw:
+                case INS_pinsrd:
+                {
+                    attr = EA_4BYTE;
+                    break;
+                }
+
+                case INS_pinsrq:
+                {
+                    attr = EA_8BYTE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            printf("%s,", emitRegName(id->idReg1(), tgtAttr));
             printf(" %s", emitRegName(id->idReg2(), attr));
             val = emitGetInsSC(id);
 #ifdef TARGET_AMD64
@@ -9061,6 +9189,7 @@ void emitter::emitDispIns(
                 goto PRINT_CONSTANT;
             }
             break;
+        }
 
         case IF_RRD:
         case IF_RWR:
