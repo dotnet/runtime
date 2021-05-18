@@ -24,16 +24,11 @@ namespace Microsoft.Interop
 
         public void Execute(GeneratorExecutionContext context)
         {
-            var synRec = context.SyntaxReceiver as SyntaxReceiver;
-            if (synRec is null || !synRec.Methods.Any())
+            if (context.SyntaxContextReceiver is not SyntaxContextReceiver synRec
+                || !synRec.Methods.Any())
             {
                 return;
             }
-
-            // Get the symbol for GeneratedDllImportAttribute. If it doesn't exist in the compilation, the generator has nothing to do.
-            INamedTypeSymbol? generatedDllImportAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute);
-            if (generatedDllImportAttrType == null)
-                return;
 
             INamedTypeSymbol? lcidConversionAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
 
@@ -48,8 +43,7 @@ namespace Microsoft.Interop
 
             var generatorDiagnostics = new GeneratorDiagnostics(context);
 
-            Version targetFrameworkVersion;
-            bool isSupported = IsSupportedTargetFramework(context.Compilation, out targetFrameworkVersion);
+            bool isSupported = IsSupportedTargetFramework(context.Compilation, out Version targetFrameworkVersion);
             if (!isSupported)
             {
                 // We don't return early here, letting the source generation continue.
@@ -79,7 +73,8 @@ namespace Microsoft.Interop
                 AttributeData? lcidConversionAttr = null;
                 foreach (var attr in methodSymbolInfo.GetAttributes())
                 {
-                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generatedDllImportAttrType))
+                    if (attr.AttributeClass is not null
+                        && attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
                     {
                         generatedDllImportAttr = attr;
                     }
@@ -124,7 +119,7 @@ namespace Microsoft.Interop
 
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+            context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver());
         }
 
         private SyntaxTokenList StripTriviaFromModifiers(SyntaxTokenList tokenList)
@@ -175,7 +170,7 @@ namespace Microsoft.Interop
             MemberDeclarationSyntax toPrint = containingType;
 
             // Add type to the containing namespace
-            if (!(stub.StubTypeNamespace is null))
+            if (stub.StubTypeNamespace is not null)
             {
                 toPrint = NamespaceDeclaration(IdentifierName(stub.StubTypeNamespace))
                     .AddMembers(toPrint);
@@ -199,27 +194,6 @@ namespace Microsoft.Interop
                 "System.Runtime" or "System.Private.CoreLib" => version >= MinimumSupportedFrameworkVersion,
                 _ => false,
             };
-        }
-
-        private static bool IsGeneratedDllImportAttribute(AttributeSyntax attrSyntaxMaybe)
-        {
-            var attrName = attrSyntaxMaybe.Name.ToString();
-
-            if (attrName.Length == GeneratedDllImport.Length)
-            {
-                return attrName.Equals(GeneratedDllImport);
-            }
-            else if (attrName.Length == GeneratedDllImportAttribute.Length)
-            {
-                return attrName.Equals(GeneratedDllImportAttribute);
-            }
-
-            // Handle the case where the user defines an attribute with
-            // the same name but adds a prefix.
-            const string PrefixedGeneratedDllImport = "." + GeneratedDllImport;
-            const string PrefixedGeneratedDllImportAttribute = "." + GeneratedDllImportAttribute;
-            return attrName.EndsWith(PrefixedGeneratedDllImport)
-                || attrName.EndsWith(PrefixedGeneratedDllImportAttribute);
         }
 
         private DllImportStub.GeneratedDllImportData ProcessGeneratedDllImportAttribute(AttributeData attrData)
@@ -284,12 +258,14 @@ namespace Microsoft.Interop
         }
 
 
-        private class SyntaxReceiver : ISyntaxReceiver
+        private class SyntaxContextReceiver : ISyntaxContextReceiver
         {
             public ICollection<SyntaxReference> Methods { get; } = new List<SyntaxReference>();
 
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+            public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
+                SyntaxNode syntaxNode = context.Node;
+
                 // We only support C# method declarations.
                 if (syntaxNode.Language != LanguageNames.CSharp
                     || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
@@ -314,7 +290,9 @@ namespace Microsoft.Interop
                 {
                     foreach (AttributeSyntax attrSyntax in listSyntax.Attributes)
                     {
-                        if (IsGeneratedDllImportAttribute(attrSyntax))
+                        SymbolInfo info = context.SemanticModel.GetSymbolInfo(attrSyntax);
+                        if (info.Symbol is IMethodSymbol attrConstructor
+                            && attrConstructor.ContainingType.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
                         {
                             this.Methods.Add(syntaxNode.GetReference());
                             return;
