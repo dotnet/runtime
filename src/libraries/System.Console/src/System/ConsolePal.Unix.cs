@@ -961,10 +961,10 @@ namespace System
                         s_veolCharacter = controlCharacterValues[1];
                         s_veol2Character = controlCharacterValues[2];
                         s_veofCharacter = controlCharacterValues[3];
-
-                        // Mark us as initialized
-                        s_initialized = true;
                     }
+
+                    // Mark us as initialized
+                    s_initialized = true;
                 }
             }
         }
@@ -1448,7 +1448,7 @@ namespace System
 
             internal unsafe void Register()
             {
-                EnsureConsoleInitialized();
+                Debug.Assert(s_initialized); // by CancelKeyPress add.
 
                 Debug.Assert(!_handlerRegistered);
                 Interop.Sys.RegisterForCtrl(&OnBreakEvent);
