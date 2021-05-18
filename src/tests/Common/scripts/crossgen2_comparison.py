@@ -480,7 +480,6 @@ g_Framework_Assemblies = [
     'System.Threading.Timer.dll',
     'System.Transactions.dll',
     'System.Transactions.Local.dll',
-    'System.Utf8String.Experimental.dll',
     'System.ValueTuple.dll',
     'System.Web.dll',
     'System.Web.HttpUtility.dll',
