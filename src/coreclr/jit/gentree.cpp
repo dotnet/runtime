@@ -5217,6 +5217,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
+        case GT_INC_SATURATE:
             if (def == this->AsUnOp()->gtOp1)
             {
                 *use = &this->AsUnOp()->gtOp1;
@@ -9315,6 +9316,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
+        case GT_INC_SATURATE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
