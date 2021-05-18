@@ -27,7 +27,7 @@ const char* CryptoNative_GetX509RootStoreFile(uint8_t* defaultPath)
     assert(defaultPath != NULL);
 
     const char* file = getenv(X509_get_default_cert_file_env());
-    *defaultPath = 0
+    *defaultPath = 0;
 
     if (!file)
     {
