@@ -3,6 +3,7 @@
 #include <mono/mini/jit.h>
 
 #define TEST_FILE "./ep_test_create_file.txt"
+#define TEST_FILE_2 "./ep_test_create_file_2.txt"
 
 extern MonoDomain *eventpipe_test_domain;
 

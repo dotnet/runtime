@@ -15,7 +15,6 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/metadata/profiler.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
@@ -47,6 +46,9 @@ char *_ep_rt_mono_managed_cmd_line = NULL;
 // Sample profiler.
 static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
 static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
+
+// Mono profiler.
+static MonoProfilerHandle _ep_rt_mono_profiler = NULL;
 
 // Rundown types.
 typedef
@@ -227,6 +229,25 @@ void
 profiler_eventpipe_thread_exited (
 	MonoProfiler *prof,
 	uintptr_t tid);
+
+static
+void
+profiler_jit_begin (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+profiler_jit_failed (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+profiler_jit_done (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoJitInfo *ji);
 
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
@@ -793,8 +814,8 @@ ep_rt_mono_init (void)
 
 	_ep_rt_mono_initialized = TRUE;
 
-	MonoProfilerHandle profiler = mono_profiler_create (NULL);
-	mono_profiler_set_thread_stopped_callback (profiler, profiler_eventpipe_thread_exited);
+	_ep_rt_mono_profiler = mono_profiler_create (NULL);
+	mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_eventpipe_thread_exited);
 }
 
 void
@@ -1347,6 +1368,275 @@ ep_rt_mono_write_event_ee_startup_start (void)
 		clr_instance_get_id (),
 		NULL,
 		NULL);
+}
+
+bool
+ep_rt_mono_write_event_jit_start (MonoMethod *method)
+{
+	if (!EventEnabledMethodJittingStarted_V1 ())
+		return true;
+
+	//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
+	if (method) {
+		uint64_t method_id = 0;
+		uint64_t module_id = 0;
+		uint32_t code_size = 0;
+		uint32_t method_token = 0;
+		char *method_namespace = NULL;
+		const char *method_name = NULL;
+		char *method_signature = NULL;
+
+		//TODO: SendMethodDetailsEvent
+
+		method_id = (uint64_t)method;
+
+		if (!method->dynamic)
+			method_token = method->token;
+
+		if (!mono_method_has_no_body (method)) {
+			ERROR_DECL (error);
+			MonoMethodHeader *header = mono_method_get_header_internal (method, error);
+			if (header)
+				code_size = header->code_size;
+		}
+
+		method_name = method->name;
+		method_signature = mono_signature_full_name (method->signature);
+
+		if (method->klass) {
+			module_id = (uint64_t)m_class_get_image (method->klass);
+			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
+		}
+
+		FireEtwMethodJittingStarted_V1 (
+			method_id,
+			module_id,
+			method_token,
+			code_size,
+			method_namespace,
+			method_name,
+			method_signature,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		g_free (method_namespace);
+		g_free (method_signature);
+	}
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_method_load (
+	MonoMethod *method,
+	MonoJitInfo *ji)
+{
+	if (!EventEnabledMethodLoad_V1 () && !EventEnabledMethodLoadVerbose_V1())
+		return true;
+
+	//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
+	if (method) {
+		uint64_t method_id = 0;
+		uint64_t module_id = 0;
+		uint64_t method_code_start = (uint64_t)ji->code_start;
+		uint32_t method_code_size = (uint32_t)ji->code_size;
+		uint32_t method_token = 0;
+		uint32_t method_flags = 0;
+		uint8_t kind = MONO_CLASS_DEF;
+		char *method_namespace = NULL;
+		const char *method_name = NULL;
+		char *method_signature = NULL;
+		bool verbose = (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.Level >= (uint8_t)EP_EVENT_LEVEL_VERBOSE);
+
+		method_id = (uint64_t)method;
+
+		if (!method->dynamic)
+			method_token = method->token;
+
+		if (mono_jit_info_get_generic_sharing_context (ji)) {
+			method_flags |= METHOD_FLAGS_SHARED_GENERIC_METHOD;
+			verbose = true;
+		}
+
+		if (method->dynamic) {
+			method_flags |= METHOD_FLAGS_DYNAMIC_METHOD;
+			verbose = true;
+		}
+
+		if (!ji->from_aot && !ji->from_llvm) {
+			method_flags |= METHOD_FLAGS_JITTED_METHOD;
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				method_flags |= METHOD_FLAGS_JITTED_HELPER_METHOD;
+		}
+
+		if (method->is_generic || method->is_inflated) {
+			method_flags |= METHOD_FLAGS_GENERIC_METHOD;
+			verbose = true;
+		}
+
+		if (method->klass) {
+			module_id = (uint64_t)m_class_get_image (method->klass);
+			kind = m_class_get_class_kind (method->klass);
+			if (kind == MONO_CLASS_GTD || kind == MONO_CLASS_GINST)
+				method_flags |= METHOD_FLAGS_GENERIC_METHOD;
+		}
+
+		//TODO: SendMethodDetailsEvent
+
+		if (verbose) {
+			method_name = method->name;
+			method_signature = mono_signature_full_name (method->signature);
+
+			if (method->klass)
+				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
+
+			FireEtwMethodLoadVerbose_V1 (
+				method_id,
+				module_id,
+				method_code_start,
+				method_code_size,
+				method_token,
+				method_flags,
+				method_namespace,
+				method_name,
+				method_signature,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
+		} else {
+			FireEtwMethodLoad_V1 (
+				method_id,
+				module_id,
+				method_code_start,
+				method_code_size,
+				method_token,
+				method_flags,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
+		}
+
+		g_free (method_namespace);
+		g_free (method_signature);
+	}
+
+	return true;
+}
+
+static
+void
+profiler_jit_begin (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	ep_rt_mono_write_event_jit_start (method);
+}
+
+static
+void
+profiler_jit_failed (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	//TODO: CoreCLR doesn't have this case, so no failure event currently exists.
+}
+
+static
+void
+profiler_jit_done (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoJitInfo *ji)
+{
+	ep_rt_mono_write_event_method_load (method, ji);
+	//TODO: Fire MethodILToNativeMap
+}
+
+void
+EventPipeEtwCallbackDotNETRuntime (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data)
+{
+	ep_rt_config_requires_lock_not_held ();
+
+	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
+	EP_ASSERT (_ep_rt_mono_profiler != NULL);
+
+	EP_LOCK_ENTER (section1)
+		if (is_enabled == 1 && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
+			// Add profiler callbacks relevant for DotNETRuntime provider.
+			mono_profiler_set_jit_begin_callback (_ep_rt_mono_profiler, profiler_jit_begin);
+			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, profiler_jit_failed);
+			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, profiler_jit_done);
+		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
+			// Add profiler callbacks relevant for DotNETRuntime provider.
+			mono_profiler_set_jit_begin_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, NULL);
+		}
+	EP_LOCK_EXIT (section1)
+
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.Level = level;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+
+ep_on_exit:
+	ep_rt_config_requires_lock_not_held ();
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+
+void
+EventPipeEtwCallbackDotNETRuntimeRundown (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data)
+{
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = level;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+}
+
+void
+EventPipeEtwCallbackDotNETRuntimePrivate (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data)
+{
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context.Level = level;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+}
+
+void
+EventPipeEtwCallbackDotNETRuntimeStress (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data)
+{
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.Level = level;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
 }
 
 #endif /* ENABLE_PERFTRACING */

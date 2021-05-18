@@ -2144,5 +2144,58 @@ ep_rt_volatile_store_ptr_without_barrier (
 bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
+bool
+ep_rt_mono_write_event_jit_start (MonoMethod *method);
+
+bool
+ep_rt_mono_write_event_method_load (
+	MonoMethod *method,
+	MonoJitInfo *ji);
+
+/*
+* EventPipe provider callbacks.
+*/
+
+void
+EventPipeEtwCallbackDotNETRuntime (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+void
+EventPipeEtwCallbackDotNETRuntimeRundown (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+void
+EventPipeEtwCallbackDotNETRuntimePrivate (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+void
+EventPipeEtwCallbackDotNETRuntimeStress (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_MONO_H__ */

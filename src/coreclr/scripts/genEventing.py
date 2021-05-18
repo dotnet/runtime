@@ -727,7 +727,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 
             if is_windows:
                 eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
-                Clrallevents.write(('constexpr ' if target_cpp else 'const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                Clrallevents.write(('constexpr ' if target_cpp else '') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
