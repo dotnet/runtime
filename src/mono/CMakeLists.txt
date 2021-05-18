@@ -420,6 +420,17 @@ else()
 endif()
 
 ######################################
+# ARCH CHECKS
+######################################
+
+if(HOST_ARM OR TARGET_ARM)
+  # wish: this should be two separate defines, but they're used for both host
+  # and target in the runtime.
+  set(NO_UNALIGNED_ACCESS 1)
+endif()
+
+
+######################################
 # HEADER/FUNCTION CHECKS
 ######################################
 include(configure)
