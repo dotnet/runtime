@@ -303,6 +303,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef TARGET_ARM64
 
+        case GT_INC_SATURATE:
+            genCodeForIncSaturate(treeNode);
+            break;
+
         case GT_MULHI:
             genCodeForMulHi(treeNode->AsOp());
             break;

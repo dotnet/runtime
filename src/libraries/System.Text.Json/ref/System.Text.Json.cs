@@ -841,7 +841,6 @@ namespace System.Text.Json.Serialization.Metadata
     public partial class JsonTypeInfo
     {
         internal JsonTypeInfo() { }
-        public static readonly System.Type ObjectType;
     }
     public abstract partial class JsonTypeInfo<T> : System.Text.Json.Serialization.Metadata.JsonTypeInfo
     {

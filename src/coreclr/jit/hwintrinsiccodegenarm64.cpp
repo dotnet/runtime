@@ -796,15 +796,127 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
+            {
+                assert(intrin.numOperands == 2);
+
+                var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+
+                if (simdType == TYP_SIMD12)
+                {
+                    // op1 of TYP_SIMD12 should be considered as TYP_SIMD16
+                    simdType = TYP_SIMD16;
+                }
+
+                if (!intrin.op2->OperIsConst())
+                {
+                    assert(!intrin.op2->isContained());
+
+                    emitAttr baseTypeSize  = emitTypeSize(intrin.baseType);
+                    unsigned baseTypeScale = genLog2(EA_SIZE_IN_BYTES(baseTypeSize));
+
+                    regNumber baseReg;
+                    regNumber indexReg = op2Reg;
+
+                    // Optimize the case of op1 is in memory and trying to access ith element.
+                    if (!intrin.op1->isUsedFromReg())
+                    {
+                        assert(intrin.op1->isContained());
+
+                        if (intrin.op1->OperIsLocal())
+                        {
+                            unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
+                            baseReg         = node->ExtractTempReg();
+
+                            // Load the address of varNum
+                            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);
+                        }
+                        else
+                        {
+                            // Require GT_IND addr to be not contained.
+                            assert(intrin.op1->OperIs(GT_IND));
+
+                            GenTree* addr = intrin.op1->AsIndir()->Addr();
+                            assert(!addr->isContained());
+                            baseReg = addr->GetRegNum();
+                        }
+                    }
+                    else
+                    {
+                        unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
+                        noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
+
+                        baseReg = node->ExtractTempReg();
+
+                        // Load the address of simdInitTempVarNum
+                        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, simdInitTempVarNum, 0);
+
+                        // Store the vector to simdInitTempVarNum
+                        GetEmitter()->emitIns_R_R(INS_str, emitTypeSize(simdType), op1Reg, baseReg);
+                    }
+
+                    assert(genIsValidIntReg(indexReg));
+                    assert(genIsValidIntReg(baseReg));
+                    assert(baseReg != indexReg);
+
+                    // Load item at baseReg[index]
+                    GetEmitter()->emitIns_R_R_R_Ext(ins_Load(intrin.baseType), baseTypeSize, targetReg, baseReg,
+                                                    indexReg, INS_OPTS_LSL, baseTypeScale);
+                }
+                else if (!GetEmitter()->isValidVectorIndex(emitTypeSize(simdType), emitTypeSize(intrin.baseType),
+                                                           intrin.op2->AsIntCon()->IconValue()))
+                {
+                    // We only need to generate code for the get if the index is valid
+                    // If the index is invalid, previously generated for the range check will throw
+                }
+                else if (!intrin.op1->isUsedFromReg())
+                {
+                    assert(intrin.op1->isContained());
+                    assert(intrin.op2->IsCnsIntOrI());
+
+                    int         offset = (int)intrin.op2->AsIntCon()->IconValue() * genTypeSize(intrin.baseType);
+                    instruction ins    = ins_Load(intrin.baseType);
+
+                    assert(!intrin.op1->isUsedFromReg());
+
+                    if (intrin.op1->OperIsLocal())
+                    {
+                        unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
+                        GetEmitter()->emitIns_R_S(ins, emitActualTypeSize(intrin.baseType), targetReg, varNum, offset);
+                    }
+                    else
+                    {
+                        assert(intrin.op1->OperIs(GT_IND));
+
+                        GenTree* addr = intrin.op1->AsIndir()->Addr();
+                        assert(!addr->isContained());
+                        regNumber baseReg = addr->GetRegNum();
+
+                        // ldr targetReg, [baseReg, #offset]
+                        GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(intrin.baseType), targetReg, baseReg,
+                                                    offset);
+                    }
+                }
+                else
+                {
+                    assert(intrin.op2->IsCnsIntOrI());
+                    ssize_t indexValue = intrin.op2->AsIntCon()->IconValue();
+
+                    // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
+                    if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
+                    {
+                        break;
+                    }
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                                                INS_OPTS_NONE);
+                }
+                break;
+            }
+
             case NI_Vector64_ToScalar:
             case NI_Vector128_ToScalar:
             {
-                ssize_t indexValue = 0;
-                if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
-                {
-                    assert(intrin.op2->IsCnsIntOrI());
-                    indexValue = intrin.op2->AsIntCon()->gtIconVal;
-                }
+                const ssize_t indexValue = 0;
 
                 // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
                 if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))

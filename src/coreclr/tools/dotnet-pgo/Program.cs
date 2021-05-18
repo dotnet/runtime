@@ -70,13 +70,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return new TypeSystemEntityOrUnknown(0);
 
             TypeDesc type = null;
-            
+
             try
             {
                 type = _idParser.ResolveTypeHandle(input, false);
             }
             catch
-            {}
+            { }
             if (type != null)
             {
                 return new TypeSystemEntityOrUnknown(type);
@@ -115,7 +115,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
     class Program
     {
         static Logger s_logger = new Logger();
-        static int Main(string []args)
+        static int Main(string[] args)
         {
             var options = CommandLineOptions.ParseCommandLine(args);
 
@@ -162,31 +162,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public static void PrintOutput(string output)
         {
             s_logger.PrintOutput(output);
-        }
-
-        struct InstructionPointerRange : IComparable<InstructionPointerRange>
-        {
-            public InstructionPointerRange(ulong startAddress, int size)
-            {
-                StartAddress = startAddress;
-                EndAddress = startAddress + (ulong)size;
-            }
-
-            public ulong StartAddress;
-            public ulong EndAddress;
-
-            public int CompareTo(InstructionPointerRange other)
-            {
-                if (StartAddress < other.StartAddress)
-                {
-                    return -1;
-                }
-                if (StartAddress > other.StartAddress)
-                {
-                    return 1;
-                }
-                return (int)((long)EndAddress - (long)other.EndAddress);
-            }
         }
 
         internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log)
@@ -252,10 +227,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerMergeMain(commandLineOptions);
             }
-            else
+            if (commandLineOptions.CompareMibc != null)
             {
-                return InnerProcessTraceFileMain(commandLineOptions);
+                return InnerCompareMibcMain(commandLineOptions);
             }
+
+            return InnerProcessTraceFileMain(commandLineOptions);
         }
 
         static int InnerDumpMain(CommandLineOptions commandLineOptions)
@@ -278,6 +255,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             PrintDetailedMessage($"Parsing {commandLineOptions.InputFileToDump}");
             var profileData = MIbcProfileParser.ParseMIbcFile(tsc, mibcPeReader, null, onlyDefinedInAssembly: null);
+            PrintMibcStats(profileData);
 
             using (FileStream outputFile = new FileStream(commandLineOptions.OutputFileName.FullName, FileMode.Create, FileAccess.Write))
             {
@@ -411,8 +389,244 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
+        static int InnerCompareMibcMain(CommandLineOptions options)
+        {
+            // Command line parser should require exactly 2 files
+            Trace.Assert(options.CompareMibc?.Count == 2);
+            FileInfo file1 = options.CompareMibc[0];
+            FileInfo file2 = options.CompareMibc[1];
+
+            PEReader mibc1 = MIbcProfileParser.OpenMibcAsPEReader(file1.FullName);
+            PEReader mibc2 = MIbcProfileParser.OpenMibcAsPEReader(file2.FullName);
+            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(new PEReader[] { mibc1, mibc2 });
+
+            ProfileData profile1 = MIbcProfileParser.ParseMIbcFile(tsc, mibc1, null, onlyDefinedInAssembly: null);
+            ProfileData profile2 = MIbcProfileParser.ParseMIbcFile(tsc, mibc2, null, onlyDefinedInAssembly: null);
+            PrintOutput($"Comparing {file1.Name} to {file2.Name}");
+            PrintOutput($"Statistics for {file1.Name}");
+            PrintStats(profile1, file1.Name, profile2, file2.Name);
+            PrintOutput("");
+            PrintOutput($"Statistics for {file2.Name}");
+            PrintStats(profile2, file2.Name, profile1, file1.Name);
+
+            static void PrintStats(ProfileData self, string selfName, ProfileData other, string otherName)
+            {
+                var methods = self.GetAllMethodProfileData().ToList();
+                var profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
+                var otherMethods = other.GetAllMethodProfileData().ToList();
+                var otherProfiledMethods = otherMethods.Where(spd => spd.SchemaData != null).ToList();
+                PrintMibcStats(self);
+                PrintOutput($"# Profiled methods in {selfName} not in {otherName}: {profiledMethods.Select(m => m.Method).Except(otherProfiledMethods.Select(m => m.Method)).Count()}");
+            }
+
+            PrintOutput("");
+            PrintOutput("Comparison");
+            var methods1 = profile1.GetAllMethodProfileData().ToList();
+            var methods2 = profile2.GetAllMethodProfileData().ToList();
+            var profiledMethods1 = methods1.Where(m => m.SchemaData != null).ToList();
+            var profiledMethods2 = methods2.Where(m => m.SchemaData != null).ToList();
+
+            PrintOutput($"# Methods with profile data in both .mibc files: {profiledMethods1.Select(m => m.Method).Intersect(profiledMethods2.Select(m => m.Method)).Count()}");
+            var fgMatches = new List<(MethodProfileData prof1, MethodProfileData prof2)>();
+            var fgMismatches = new List<(MethodProfileData prof1, MethodProfileData prof2, List<string> mismatches)>();
+
+            foreach (MethodProfileData prof1 in profiledMethods1)
+            {
+                MethodProfileData prof2 = profile2.GetMethodProfileData(prof1.Method);
+                if (prof2?.SchemaData == null)
+                    continue;
+
+                Dictionary<int, PgoSchemaElem> GroupBlocks(MethodProfileData data)
+                    => data.SchemaData
+                       .Where(e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount || e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount)
+                       .ToDictionary(e => e.ILOffset);
+
+                Dictionary<(int, int), PgoSchemaElem> GroupEdges(MethodProfileData data)
+                    => data.SchemaData
+                       .Where(e => e.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || e.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
+                       .ToDictionary(e => (e.ILOffset, e.Other));
+
+                var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
+                var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
+
+                List<string> mismatches = new List<string>();
+                if (blocks1.Count > 0 && blocks2.Count > 0)
+                {
+                    var in1 = blocks1.Keys.Where(k => !blocks2.ContainsKey(k)).ToList();
+                    var in2 = blocks2.Keys.Where(k => !blocks1.ContainsKey(k)).ToList();
+
+                    foreach (var m1 in in1)
+                        mismatches.Add($"{file1.Name} has a block at {m1:x} not present in {file2.Name}");
+                    foreach (var m2 in in2)
+                        mismatches.Add($"{file2.Name} has a block at {m2:x} not present in {file1.Name}");
+                }
+
+                if (edges1.Count > 0 && edges2.Count > 0)
+                {
+                    var in1 = edges1.Keys.Where(k => !edges2.ContainsKey(k)).ToList();
+                    var in2 = edges2.Keys.Where(k => !edges1.ContainsKey(k)).ToList();
+
+                    foreach (var (from, to) in in1)
+                        mismatches.Add($"{file1.Name} has an edge {from:x}->{to:x} not present in {file2.Name}");
+                    foreach (var (from, to) in in2)
+                        mismatches.Add($"{file2.Name} has an edge {from:x}->{to:x} not present in {file1.Name}");
+                }
+
+                if (mismatches.Count > 0)
+                    fgMismatches.Add((prof1, prof2, mismatches));
+                else
+                    fgMatches.Add((prof1, prof2));
+            }
+
+            PrintOutput($"  Of these, {fgMatches.Count} have matching flow-graphs and the remaining {fgMismatches.Count} do not");
+
+            if (fgMismatches.Count > 0)
+            {
+                PrintOutput("");
+                PrintOutput("Methods with mismatched flow-graphs:");
+                foreach ((MethodProfileData prof1, MethodProfileData prof2, List<string> mismatches) in fgMismatches)
+                {
+                    PrintOutput($"{prof1.Method}");
+                    foreach (string s in mismatches)
+                        PrintOutput($"  {s}");
+                }
+            }
+
+            if (fgMatches.Count > 0)
+            {
+                PrintOutput("");
+                PrintOutput($"When comparing the flow-graphs of the matching methods, their overlaps break down as follows:");
+
+                List<double> blockOverlaps = new List<double>();
+                List<double> edgeOverlaps = new List<double>();
+
+                foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
+                {
+                    var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
+                    var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
+
+                    double Overlap<TKey>(Dictionary<TKey, PgoSchemaElem> left, Dictionary<TKey, PgoSchemaElem> right)
+                    {
+                        long leftTotal = left.Values.Sum(e => e.DataLong);
+                        long rightTotal = right.Values.Sum(e => e.DataLong);
+                        Debug.Assert(left.Keys.All(k => right.ContainsKey(k)));
+                        Debug.Assert(right.Keys.All(k => left.ContainsKey(k)));
+
+                        var leftPW = left.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)leftTotal);
+                        var rightPW = right.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)rightTotal);
+
+                        double overlap = leftPW.Sum(k => Math.Min(k.Value, rightPW[k.Key]));
+                        return overlap;
+                    }
+
+                    if (blocks1.Count > 0 && blocks2.Count > 0)
+                        blockOverlaps.Add(Overlap(blocks1, blocks2));
+
+                    if (edges1.Count > 0 && edges2.Count > 0)
+                        edgeOverlaps.Add(Overlap(edges1, edges2));
+                }
+
+                void PrintHistogram(List<double> overlaps)
+                {
+                    int maxWidth = Console.WindowWidth - 10;
+                    const int maxLabelWidth = 4; // to print "100%".
+                    int barMaxWidth = maxWidth - (maxLabelWidth + 10); // Leave 10 chars for writing other things on the line
+                    const int bucketSize = 5;
+                    int width = Console.WindowWidth - 10;
+                    var sorted = overlaps.OrderByDescending(d => d).ToList();
+
+                    void PrintBar(string label, ref int curIndex, Func<double, bool> include, bool forcePrint)
+                    {
+                        int count = 0;
+                        while (curIndex < sorted.Count && include(sorted[curIndex]))
+                        {
+                            count++;
+                            curIndex++;
+                        }
+
+                        if (count == 0 && !forcePrint)
+                            return;
+
+                        double proportion = count / (double)sorted.Count;
+
+                        int numFullBlocks = (int)(proportion * barMaxWidth);
+                        double fractionalPart = proportion * barMaxWidth - numFullBlocks;
+
+                        const char fullBlock = '\u2588';
+                        string bar = new string(fullBlock, numFullBlocks);
+                        if ((int)(fractionalPart * 8) != 0)
+                        {
+                            // After full block comes a 7/8 block, then 6/8, then 5/8 etc.
+                            bar += (char)(fullBlock + (8 - (int)(fractionalPart * 8)));
+                        }
+
+                        // If empty, use the left one-eight block to show a line of where 0 is.
+                        if (bar == "")
+                            bar = "\u258f";
+
+                        string line = FormattableString.Invariant($"{label,-maxLabelWidth} {bar} ({proportion*100:F1}%)");
+                        PrintOutput(line);
+                    }
+
+                    // If there are any at 100%, then print those separately
+                    int curIndex = 0;
+                    PrintBar("100%", ref curIndex, d => d >= (1 - 0.000000001), false);
+                    for (int proportion = 100 - bucketSize; proportion >= 0; proportion -= bucketSize)
+                        PrintBar($">{(int)proportion,2}%", ref curIndex, d => d * 100 > proportion, true);
+                    PrintBar("0%", ref curIndex, d => true, false);
+                }
+
+                // Need UTF8 for the block chars.
+                Console.OutputEncoding = Encoding.UTF8;
+                if (blockOverlaps.Count > 0)
+                {
+                    PrintHistogram(blockOverlaps);
+                    PrintOutput("(using block counts)");
+                }
+
+                if (edgeOverlaps.Count > 0)
+                {
+                    if (blockOverlaps.Count > 0)
+                        PrintOutput("");
+
+                    PrintHistogram(edgeOverlaps);
+                    PrintOutput("(using edge counts)");
+                }
+            }
+
+            return 0;
+        }
+
+        static void PrintMibcStats(ProfileData data)
+        {
+            List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
+            List<MethodProfileData> profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
+            PrintOutput($"# Methods: {methods.Count}");
+            PrintOutput($"# Methods with any profile data: {profiledMethods.Count(spd => spd.SchemaData.Length > 0)}");
+            PrintOutput($"# Methods with 32-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount))}");
+            PrintOutput($"# Methods with 64-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount))}");
+            PrintOutput($"# Methods with 32-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount))}");
+            PrintOutput($"# Methods with 64-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount))}");
+            PrintOutput($"# Methods with type handle histograms: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle))}");
+            PrintOutput($"# Methods with GetLikelyClass data: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass))}");
+        }
+
+        private static Dictionary<int, PgoSchemaElem> GroupBlocks(MethodProfileData data)
+        {
+            return data.SchemaData
+               .Where(e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount || e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount)
+               .ToDictionary(e => e.ILOffset);
+        }
+
+        private static Dictionary<(int, int), PgoSchemaElem> GroupEdges(MethodProfileData data)
+        {
+            return data.SchemaData
+               .Where(e => e.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || e.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
+               .ToDictionary(e => (e.ILOffset, e.Other));
+        }
+
         static int InnerProcessTraceFileMain(CommandLineOptions commandLineOptions)
-        { 
+        {
             if (commandLineOptions.TraceFile == null)
             {
                 PrintUsage(commandLineOptions, "--trace must be specified");
@@ -425,33 +639,30 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return -8;
             }
 
-            if (commandLineOptions.OutputFileName != null)
+            if (!commandLineOptions.FileType.HasValue)
             {
-                if (!commandLineOptions.FileType.HasValue)
+                PrintUsage(commandLineOptions, $"--pgo-file-type must be specified");
+                return -9;
+            }
+            if ((commandLineOptions.FileType.Value != PgoFileType.jittrace) && (commandLineOptions.FileType != PgoFileType.mibc))
+            {
+                PrintUsage(commandLineOptions, $"Invalid output pgo type {commandLineOptions.FileType} specified.");
+                return -9;
+            }
+            if (commandLineOptions.FileType == PgoFileType.jittrace)
+            {
+                if (!commandLineOptions.OutputFileName.Name.EndsWith(".jittrace"))
                 {
-                    PrintUsage(commandLineOptions, $"--pgo-file-type must be specified");
+                    PrintUsage(commandLineOptions, $"jittrace output file name must end with .jittrace");
                     return -9;
                 }
-                if ((commandLineOptions.FileType.Value != PgoFileType.jittrace) && (commandLineOptions.FileType != PgoFileType.mibc))
+            }
+            if (commandLineOptions.FileType == PgoFileType.mibc)
+            {
+                if (!commandLineOptions.OutputFileName.Name.EndsWith(".mibc"))
                 {
-                    PrintUsage(commandLineOptions, $"Invalid output pgo type {commandLineOptions.FileType} specified.");
+                    PrintUsage(commandLineOptions, $"mibc output file name must end with .mibc");
                     return -9;
-                }
-                if (commandLineOptions.FileType == PgoFileType.jittrace)
-                {
-                    if (!commandLineOptions.OutputFileName.Name.EndsWith(".jittrace"))
-                    {
-                        PrintUsage(commandLineOptions, $"jittrace output file name must end with .jittrace");
-                        return -9;
-                    }
-                }
-                if (commandLineOptions.FileType == PgoFileType.mibc)
-                {
-                    if (!commandLineOptions.OutputFileName.Name.EndsWith(".mibc"))
-                    {
-                        PrintUsage(commandLineOptions, $"mibc output file name must end with .mibc");
-                        return -9;
-                    }
                 }
             }
 
@@ -460,7 +671,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 if (commandLineOptions.TraceFile.FullName.EndsWith(nettraceExtension))
                 {
-                    etlFileName = commandLineOptions.TraceFile.FullName.Substring(0, commandLineOptions.TraceFile.FullName.Length - nettraceExtension.Length) + ".etlx";
+                    etlFileName = Path.ChangeExtension(commandLineOptions.TraceFile.FullName, ".etlx");
                     PrintMessage($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
                     TraceLog.CreateFromEventPipeDataFile(commandLineOptions.TraceFile.FullName, etlFileName);
                 }
@@ -469,14 +680,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             string lttngExtension = ".trace.zip";
             if (commandLineOptions.TraceFile.FullName.EndsWith(lttngExtension))
             {
-                etlFileName = commandLineOptions.TraceFile.FullName.Substring(0, commandLineOptions.TraceFile.FullName.Length - lttngExtension.Length) + ".etlx";
+                etlFileName = Path.ChangeExtension(commandLineOptions.TraceFile.FullName, ".etlx");
                 PrintMessage($"Creating ETLX file {etlFileName} from {commandLineOptions.TraceFile.FullName}");
                 TraceLog.CreateFromLttngTextDataFile(commandLineOptions.TraceFile.FullName, etlFileName);
             }
 
             UnZipIfNecessary(ref etlFileName, commandLineOptions.BasicProgressMessages ? Console.Out : new StringWriter());
 
-            using (var traceLog = TraceLog.OpenOrConvert(etlFileName))
+            // For SPGO we need to be able to map raw IPs back to IL offsets in methods.
+            // Normally TraceEvent facilitates this remapping automatically and discards the IL<->IP mapping table events.
+            // However, we have found TraceEvent's remapping to be imprecise (see https://github.com/microsoft/perfview/issues/1410).
+            // Thus, when SPGO is requested, we need to keep these events.
+            // Note that we always request these events to be kept because if one switches back and forth between SPGO and non-SPGO,
+            // the cached .etlx file will not update.
+            using (var traceLog = TraceLog.OpenOrConvert(etlFileName, new TraceLogOptions { KeepAllEvents = true }))
             {
                 if ((!commandLineOptions.Pid.HasValue && commandLineOptions.ProcessName == null) && traceLog.Processes.Count != 1)
                 {
@@ -720,6 +937,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
+                MethodMemoryMap methodMemMap = null;
+                MethodMemoryMap GetMethodMemMap()
+                {
+                    if (methodMemMap == null)
+                    {
+                        methodMemMap = new MethodMemoryMap(
+                            p,
+                            tsc,
+                            idParser,
+                            clrInstanceId.Value);
+                    }
+
+                    return methodMemMap;
+                }
+
                 Dictionary<MethodDesc, Dictionary<MethodDesc, int>> callGraph = null;
                 Dictionary<MethodDesc, int> exclusiveSamples = null;
                 if (commandLineOptions.GenerateCallGraph)
@@ -732,93 +964,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     callGraph = new Dictionary<MethodDesc, Dictionary<MethodDesc, int>>();
                     exclusiveSamples = new Dictionary<MethodDesc, int>();
-                    // Capture the addresses of jitted code
-                    List<ValueTuple<InstructionPointerRange, MethodDesc>> codeLocations = new List<(InstructionPointerRange, MethodDesc)>();
-                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadTraceData>())
-                    {
-                        if (e.ClrInstanceID != clrInstanceId.Value)
-                        {
-                            continue;
-                        }
 
-                        MethodDesc method = null;
-                        try
-                        {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
-                        }
-                        catch (Exception)
-                        {
-                        }
-
-                        if (method != null)
-                        {
-                            codeLocations.Add((new InstructionPointerRange(e.MethodStartAddress, e.MethodSize), method));
-                        }
-                    }
-                    foreach (var e in p.EventsInProcess.ByEventType<MethodLoadUnloadVerboseTraceData>())
-                    {
-                        if (e.ClrInstanceID != clrInstanceId.Value)
-                        {
-                            continue;
-                        }
-
-                        MethodDesc method = null;
-                        try
-                        {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
-                        }
-                        catch (Exception)
-                        {
-                        }
-
-                        if (method != null)
-                        {
-                            codeLocations.Add((new InstructionPointerRange(e.MethodStartAddress, e.MethodSize), method));
-                        }
-                    }
-
-                    var sigProvider = new R2RSignatureTypeProvider(tsc);
-                    foreach (var module in p.LoadedModules)
-                    {
-                        if (module.FilePath == "")
-                            continue;
-
-                        if (!File.Exists(module.FilePath))
-                            continue;
-
-                        try
-                        {
-                            byte[] image = File.ReadAllBytes(module.FilePath);
-                            using (FileStream fstream = new FileStream(module.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                            {
-                                var r2rCheckPEReader = new System.Reflection.PortableExecutable.PEReader(fstream, System.Reflection.PortableExecutable.PEStreamOptions.LeaveOpen);
-
-                                if (!ILCompiler.Reflection.ReadyToRun.ReadyToRunReader.IsReadyToRunImage(r2rCheckPEReader))
-                                    continue;
-                            }
-
-                            var reader = new ILCompiler.Reflection.ReadyToRun.ReadyToRunReader(tsc, module.FilePath);
-                            foreach (var methodEntry in reader.GetCustomMethodToRuntimeFunctionMapping<TypeDesc, MethodDesc, R2RSigProviderContext>(sigProvider))
-                            {
-                                foreach (var runtimeFunction in methodEntry.Value.RuntimeFunctions)
-                                {
-                                    codeLocations.Add((new InstructionPointerRange(module.ImageBase + (ulong)runtimeFunction.StartAddress, runtimeFunction.Size), methodEntry.Key));
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-
-                    InstructionPointerRange[] instructionPointerRanges = new InstructionPointerRange[codeLocations.Count];
-                    MethodDesc[] methods = new MethodDesc[codeLocations.Count];
-                    for (int i = 0; i < codeLocations.Count; i++)
-                    {
-                        instructionPointerRanges[i] = codeLocations[i].Item1;
-                        methods[i] = codeLocations[i].Item2;
-                    }
-
-                    Array.Sort(instructionPointerRanges, methods);
-
+                    MethodMemoryMap mmap = GetMethodMemMap();
                     foreach (var e in p.EventsInProcess.ByEventType<SampledProfileTraceData>())
                     {
                         var callstack = e.CallStack();
@@ -826,12 +973,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
 
                         ulong address1 = callstack.CodeAddress.Address;
-                        MethodDesc topOfStackMethod = LookupMethodByAddress(address1);
+                        MethodDesc topOfStackMethod = mmap.GetMethod(address1);
                         MethodDesc nextMethod = null;
                         if (callstack.Caller != null)
                         {
                             ulong address2 = callstack.Caller.CodeAddress.Address;
-                            nextMethod = LookupMethodByAddress(address2);
+                            nextMethod = mmap.GetMethod(address2);
                         }
 
                         if (topOfStackMethod != null)
@@ -873,45 +1020,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             {
                                 innerDictionary[topOfStackMethod] = 1;
                             }
-                        }
-                    }
-
-                    MethodDesc LookupMethodByAddress(ulong address)
-                    {
-                        int index = Array.BinarySearch(instructionPointerRanges, new InstructionPointerRange(address, 1));
-
-                        if (index >= 0)
-                        {
-                            return methods[index];
-                        }
-                        else
-                        {
-                            index = ~index;
-                            if (index >= instructionPointerRanges.Length)
-                                return null;
-
-                            if (instructionPointerRanges[index].StartAddress < address)
-                            {
-                                if (instructionPointerRanges[index].EndAddress > address)
-                                {
-                                    return methods[index];
-                                }
-                            }
-
-                            if (index == 0)
-                                return null;
-
-                            index--;
-
-                            if (instructionPointerRanges[index].StartAddress < address)
-                            {
-                                if (instructionPointerRanges[index].EndAddress > address)
-                                {
-                                    return methods[index];
-                                }
-                            }
-
-                            return null;
                         }
                     }
                 }
@@ -965,6 +1073,226 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
+                Dictionary<MethodDesc, SampleProfile> sampleProfiles = new Dictionary<MethodDesc, SampleProfile>();
+                if (commandLineOptions.Spgo)
+                {
+                    MethodMemoryMap mmap = GetMethodMemMap();
+                    Dictionary<MethodDesc, MethodIL> ils = new Dictionary<MethodDesc, MethodIL>();
+                    Dictionary<MethodDesc, FlowGraph> flowGraphs = new Dictionary<MethodDesc, FlowGraph>();
+
+                    MethodIL GetMethodIL(MethodDesc desc)
+                    {
+                        if (!ils.TryGetValue(desc, out MethodIL il))
+                        {
+                            il = desc switch
+                            {
+                                EcmaMethod em => EcmaMethodIL.Create(em),
+                                var m => new InstantiatedMethodIL(m, EcmaMethodIL.Create((EcmaMethod)m.GetTypicalMethodDefinition())),
+                            };
+
+                            ils.Add(desc, il);
+                        }
+
+                        return il;
+                    }
+
+                    FlowGraph GetFlowGraph(MethodDesc desc)
+                    {
+                        if (!flowGraphs.TryGetValue(desc, out FlowGraph fg))
+                        {
+                            flowGraphs.Add(desc, fg = FlowGraph.Create(GetMethodIL(desc)));
+                        }
+
+                        return fg;
+                    }
+
+                    Guid lbrGuid = Guid.Parse("99134383-5248-43fc-834b-529454e75df3");
+                    bool hasLbr = traceLog.Events.Any(e => e.TaskGuid == lbrGuid);
+
+                    if (!hasLbr)
+                    {
+                        // No LBR data, use standard IP samples. First convert each sample to a tuple of (Method, raw IP, IL offset).
+                        (MethodDesc Method, ulong IP, int Offset) GetTuple(SampledProfileTraceData e)
+                        {
+                            MemoryRegionInfo info = mmap.GetInfo(e.InstructionPointer);
+                            if (info == null)
+                                return (null, e.InstructionPointer, -1);
+
+                            int offset = info.NativeToILMap?.Lookup(checked((uint)(e.InstructionPointer - info.StartAddress))) ?? -1;
+                            return (info.Method, e.InstructionPointer, offset);
+                        }
+
+                        var samples =
+                            p.EventsInProcess.ByEventType<SampledProfileTraceData>()
+                            .Select(GetTuple)
+                            .Where(t => t.Method != null && t.Offset >= 0)
+                            .ToList();
+
+                        // Now find all samples in each method.
+                        foreach (var g in samples.GroupBy(t => t.Method))
+                        {
+                            // SPGO is quite sensitive with low counts, so check if we should not generate SPGO data for this function.
+                            if (g.Count() < commandLineOptions.SpgoMinSamples)
+                                continue;
+
+                            MethodIL il = GetMethodIL(g.Key);
+                            SampleProfile sp = SampleProfile.Create(il, GetFlowGraph(g.Key), g.Select(t => t.Offset));
+                            sampleProfiles.Add(g.Key, sp);
+                        }
+                    }
+                    else
+                    {
+                        // We have LBR data. We use the LBR data to collect straight-line runs that the CPU did in this process inside managed methods.
+                        // That is, if we first see a branch from A -> B followed by a branch from C -> D, then we can conclude that the CPU executed
+                        // code from B -> C. We call this a 'run' and collect each run and its multiplicity.
+                        // Later, we will find all IL offsets on this path and assign samples to the distinct basic blocks corresponding to those IL offsets.
+                        Dictionary<(ulong startRun, ulong endRun), long> runs = new Dictionary<(ulong startRun, ulong endRun), long>();
+                        List<(ulong start, ulong end)> lbrRuns = new List<(ulong start, ulong end)>();
+                        LbrEntry64[] lbr64Arr = null;
+                        foreach (var e in traceLog.Events)
+                        {
+                            if (e.TaskGuid != lbrGuid)
+                                continue;
+
+                            // Opcode is always 32 for the LBR event.
+                            if (e.Opcode != (TraceEventOpcode)32)
+                                continue;
+
+                            unsafe
+                            {
+                                Span<LbrEntry64> lbr;
+                                if (traceLog.PointerSize == 4)
+                                {
+                                    // For 32-bit machines we convert the data into a 64-bit format first.
+                                    LbrTraceEventData32* data = (LbrTraceEventData32*)e.DataStart;
+                                    if (data->ProcessId != p.ProcessID)
+                                        continue;
+
+                                    Span<LbrEntry32> lbr32 = data->Entries(e.EventDataLength);
+                                    if (lbr64Arr == null || lbr64Arr.Length < lbr32.Length)
+                                        lbr64Arr = new LbrEntry64[lbr32.Length];
+
+                                    for (int i = 0; i < lbr32.Length; i++)
+                                    {
+                                        ref LbrEntry64 entry = ref lbr64Arr[i];
+                                        entry.FromAddress = lbr32[i].FromAddress;
+                                        entry.ToAddress = lbr32[i].ToAddress;
+                                        entry.Reserved = lbr32[i].Reserved;
+                                    }
+
+                                    lbr = lbr64Arr[0..lbr32.Length];
+                                }
+                                else
+                                {
+                                    Trace.Assert(traceLog.PointerSize == 8, $"Unexpected PointerSize {traceLog.PointerSize}");
+
+                                    LbrTraceEventData64* data = (LbrTraceEventData64*)e.DataStart;
+                                    // TODO: The process ID check is not sufficient as PIDs can be reused, so we need to use timestamps too,
+                                    // but we do not have access to PerfView functions to convert it. Hopefully TraceEvent will handle this
+                                    // for us in the future.
+                                    if (data->ProcessId != p.ProcessID)
+                                        continue;
+
+                                    lbr = data->Entries(e.EventDataLength);
+                                }
+
+                                // Store runs. LBR is chronological with most recent branches first.
+                                // To avoid double-counting blocks containing calls when the LBR buffer contains
+                                // both the call and the return from the call, we have to do some fancy things
+                                // when seeing cross-function branches, so we use a temporary list of runs
+                                // that we assign into the global dictionary.
+                                lbrRuns.Clear();
+                                for (int i = lbr.Length - 2; i >= 0; i--)
+                                {
+                                    ulong prevFrom = lbr[i + 1].FromAddress;
+                                    ulong prevTo = lbr[i + 1].ToAddress;
+                                    ulong curFrom = lbr[i].FromAddress;
+                                    MemoryRegionInfo prevFromMeth = methodMemMap.GetInfo(prevFrom);
+                                    MemoryRegionInfo prevToMeth = methodMemMap.GetInfo(prevTo);
+                                    MemoryRegionInfo curFromMeth = methodMemMap.GetInfo(curFrom);
+                                    // If this run is not in the same function then ignore it.
+                                    if (prevToMeth == null || prevToMeth != curFromMeth)
+                                        continue;
+
+                                    // Otherwise, if this run follows right after jumping back into the function, we might need to extend
+                                    // a previous run instead. This happens if we previously did a call out of this function and now returned back.
+                                    // TODO: Handle recursion here. The same function could return to itself and we wouldn't realize it from this check.
+                                    if (prevFromMeth != prevToMeth)
+                                    {
+                                        bool extendedPrevRun = false;
+                                        // Try to find a previous run. Iterate in reverse to simulate stack behavior of calls.
+                                        FlowGraph toFG = null;
+                                        for (int j = lbrRuns.Count - 1; j >= 0; j--)
+                                        {
+                                            MemoryRegionInfo endRunMeth = methodMemMap.GetInfo(lbrRuns[j].end);
+                                            if (endRunMeth != prevToMeth)
+                                                continue;
+
+                                            // Same function at least, check for same basic block
+                                            toFG ??= GetFlowGraph(endRunMeth.Method);
+                                            BasicBlock endRunBB = toFG.Lookup(endRunMeth.NativeToILMap.Lookup((uint)(lbrRuns[j].end - endRunMeth.StartAddress)));
+                                            BasicBlock toBB = toFG.Lookup(endRunMeth.NativeToILMap.Lookup((uint)(prevTo - endRunMeth.StartAddress)));
+                                            if (endRunBB == toBB && prevTo > lbrRuns[j].end)
+                                            {
+                                                // Same BB and the jump is to after where the previous run ends. Take that as a return to after that call and extend the previous run.
+                                                lbrRuns[j] = (lbrRuns[j].start, curFrom);
+                                                extendedPrevRun = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (extendedPrevRun)
+                                            continue;
+                                    }
+
+                                    lbrRuns.Add((prevTo, curFrom));
+                                }
+
+                                // Now insert runs.
+                                foreach (var pair in lbrRuns)
+                                {
+                                    if (runs.TryGetValue(pair, out long count))
+                                        runs[pair] = count + 1;
+                                    else
+                                        runs.Add(pair, 1);
+                                }
+                            }
+                        }
+
+                        // Group runs by memory region info, which corresponds to each .NET method.
+                        var groupedRuns =
+                            runs
+                            .Select(r => (start: r.Key.startRun, end: r.Key.endRun, count: r.Value, info: methodMemMap.GetInfo(r.Key.startRun)))
+                            .GroupBy(t => t.info);
+
+                        foreach (var g in groupedRuns)
+                        {
+                            if (g.Key == null || g.Key.NativeToILMap == null)
+                                continue;
+
+                            // Collect relative IPs of samples. Note that we cannot translate the end-points of runs from IPs to IL offsets
+                            // as we cannot assume that a straight-line execution between two IPs corresponds to a straight-line execution between
+                            // two IL offsets. SampleProfile.CreateFromLbr will be responsible for assigning samples based on the flow graph relative IPs,
+                            // the IP<->IL mapping and the flow graph.
+                            List<(uint start, uint end, long count)> samples =
+                                g
+                                .Where(t => t.end >= t.start && t.end < g.Key.EndAddress)
+                                .Select(t => ((uint)(t.start - g.Key.StartAddress), (uint)(t.end - g.Key.StartAddress), t.count))
+                                .ToList();
+
+                            if (samples.Sum(t => t.count) < commandLineOptions.SpgoMinSamples)
+                                continue;
+
+                            SampleProfile ep = SampleProfile.CreateFromLbr(
+                                GetMethodIL(g.Key.Method),
+                                GetFlowGraph(g.Key.Method),
+                                g.Key.NativeToILMap,
+                                samples);
+
+                            sampleProfiles.Add(g.Key.Method, ep);
+                        }
+                    }
+                }
 
                 if (commandLineOptions.DisplayProcessedEvents)
                 {
@@ -1019,6 +1347,42 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             var intDecompressor = new PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
                             methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
                         }
+                        else if (sampleProfiles.TryGetValue(methodData.Method, out SampleProfile sp))
+                        {
+                            IEnumerable<PgoSchemaElem> schema = Enumerable.Empty<PgoSchemaElem>();
+
+                            if (commandLineOptions.SpgoIncludeBlockCounts)
+                            {
+                                schema = schema.Concat(
+                                    sp.SmoothedSamples
+                                    .Select(kvp =>
+                                        new PgoSchemaElem
+                                        {
+                                            InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.BasicBlockLongCount : PgoInstrumentationKind.BasicBlockIntCount,
+                                            ILOffset = kvp.Key.Start,
+                                            Count = 1,
+                                            DataLong = kvp.Value,
+                                        }));
+                            }
+
+                            if (commandLineOptions.SpgoIncludeEdgeCounts)
+                            {
+                                schema = schema.Concat(
+                                    sp.SmoothedEdgeSamples
+                                    .Select(kvp =>
+                                        new PgoSchemaElem
+                                        {
+                                            InstrumentationKind = kvp.Value > uint.MaxValue ? PgoInstrumentationKind.EdgeLongCount : PgoInstrumentationKind.EdgeIntCount,
+                                            ILOffset = kvp.Key.Item1.Start,
+                                            Other = kvp.Key.Item2.Start,
+                                            Count = 1,
+                                            DataLong = kvp.Value
+                                        }));
+                            }
+
+                            methodData.InstrumentationData = schema.ToArray();
+                        }
+
                         methodsUsedInProcess.Add(methodData);
                     }
                 }
