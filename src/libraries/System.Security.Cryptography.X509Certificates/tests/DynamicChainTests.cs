@@ -631,7 +631,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (OperatingSystem.IsLinux())
                 {
                     Assert.False(chain.Build(endEntityCert), "chain.Build");
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());

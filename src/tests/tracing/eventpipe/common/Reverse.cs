@@ -70,7 +70,7 @@ namespace Tracing.Tests.Common
     {
         public static string MakeServerAddress()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return "DOTNET_TRACE_TESTS_" + Path.GetRandomFileName();
             }
@@ -89,7 +89,7 @@ namespace Tracing.Tests.Common
         {
             _serverAddress = serverAddress;
             _bufferSize = bufferSize;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 _server = GetNewNamedPipeServer();
             }
@@ -135,7 +135,7 @@ namespace Tracing.Tests.Common
 
         private NamedPipeServerStream GetNewNamedPipeServer()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return new NamedPipeServerStream(
                     _serverAddress,

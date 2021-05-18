@@ -312,8 +312,8 @@ namespace System.Net.Sockets.Tests
             if (copy.IsBound)
             {
                 // On Unix, we may successfully obtain an (empty) local end point, even though Bind wasn't called.
-                Debug.Assert(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
+                Debug.Assert(!OperatingSystem.IsWindows());
+                if (OperatingSystem.IsLinux()) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
                 {
                     switch (addressFamily)
                     {
