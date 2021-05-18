@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.Tests
 
             // Override message send function
             //
-            // We are using the overriding mechanism to enabling validating in the Libraries test suite.
+            // We are using the overriding mechanism to enable validating in the Libraries test suite.
             // Technically any Objective-C code that is entered via msgSend could call the managed SetMessageSendPendingException()
             // and it would be thrown when returning from the P/Invoke. This approach avoids us having to
             // create a pure Objective-C library for testing this behavior.
