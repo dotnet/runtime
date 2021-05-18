@@ -203,7 +203,7 @@ namespace System
             {
                 if (result < minInclusive || result >= maxExclusive)
                 {
-                    Debug.Assert(false, $"Expected {minInclusive} <= {result} < {maxExclusive}");
+                    Debug.Fail($"Expected {minInclusive} <= {result} < {maxExclusive}");
                 }
             }
             else
