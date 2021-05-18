@@ -37,7 +37,7 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -45,7 +45,7 @@ namespace System.IO.Strategies
             _access = access;
             _share = share;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
+            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {

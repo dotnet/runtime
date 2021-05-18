@@ -21,6 +21,8 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
 | EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
 | BuiltInComInteropSupport | System.Runtime.InteropServices.BuiltInComInterop.IsSupported | Built-in COM support is trimmed when set to false. |
+| EnableCPlusPlusCLIHostActivation | Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported | C++/CLI host activation code is disabled when set to false and related functionality can be trimmed. |
+| _EnableCallingManagedFunctionFromNativeHosting | Internal.Runtime.InteropServices.ComponentActivator.IsSupported | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name
