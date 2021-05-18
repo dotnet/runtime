@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -21,6 +22,8 @@ namespace Microsoft.NET.HostModel.Bundle
     {
         public const uint BundlerMajorVersion = 6;
         public const uint BundlerMinorVersion = 0;
+        //Same as Path.GetRandomFileName
+        private const int BundleIdLength = 8;
 
         private readonly string HostName;
         private readonly string OutputDir;
@@ -276,6 +279,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             long headerOffset = 0;
             using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(bundlePath)))
+            using (SHA256 hashAlg = SHA256Managed.Create())
             {
                 Stream bundle = writer.BaseStream;
                 bundle.Position = bundle.Length;
@@ -324,9 +328,17 @@ namespace Microsoft.NET.HostModel.Bundle
                         FileType targetType = Target.TargetSpecificFileType(type);
                         (long startOffset, long compressedSize) = AddToBundle(bundle, file, targetType);
                         FileEntry entry = BundleManifest.AddEntry(targetType, relativePath, startOffset, file.Length, compressedSize, Target.BundleMajorVersion);
+                        file.Position = 0;
+                        byte[] hashBytes = SHA256Managed.Create().ComputeHash(file);
+                        hashAlg.TransformBlock(hashBytes, 0, hashBytes.Length, hashBytes, 0);
                         Tracer.Log($"Embed: {entry}");
                     }
                 }
+
+
+                hashAlg.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                byte[] manifestHash = hashAlg.Hash;
+                BundleManifest.BundleID = Convert.ToBase64String(manifestHash).Substring(BundleIdLength).Replace('/', '_');
 
                 // Write the bundle manifest
                 headerOffset = BundleManifest.Write(writer);

@@ -65,7 +65,7 @@ namespace Microsoft.NET.HostModel.Bundle
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
-        public readonly string BundleID;
+        public string BundleID { get; internal set; } = Path.GetRandomFileName();
         public readonly uint BundleMajorVersion;
         // The Minor version is currently unused, and is always zero
         public const uint BundleMinorVersion = 0;
@@ -79,7 +79,6 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             BundleMajorVersion = bundleMajorVersion;
             Files = new List<FileEntry>();
-            BundleID = Path.GetRandomFileName();
             Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode : HeaderFlags.None;
         }
 

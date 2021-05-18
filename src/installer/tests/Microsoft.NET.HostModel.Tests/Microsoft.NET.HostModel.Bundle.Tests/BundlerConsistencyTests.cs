@@ -144,6 +144,38 @@ namespace Microsoft.NET.HostModel.Tests
             bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.Repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
         }
 
+        private string CreateSampleBundle()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var bundleDir = Directory.CreateDirectory(
+                Path.Combine(BundleHelper.GetBundleDir(fixture).FullName, Path.GetRandomFileName()));
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+
+            // Generate a file specification with duplicate entries
+            var fileSpecs = new List<FileSpec>();
+            fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
+            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat.dll"));
+            fileSpecs.Add(new FileSpec(Path.Join(BundleHelper.GetPublishPath(fixture), "System.dll"), "rel/app.Repeat.dll"));
+
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
+            return bundler.GenerateBundle(fileSpecs);
+        }
+
+        [Fact]
+        public void TestWithIdenticalBundlesShouldBeBinaryEqualPasses()
+        {
+            string firstBundle = CreateSampleBundle();
+            byte[] firstBundleContent = File.ReadAllBytes(firstBundle);
+            string secondBundle = CreateSampleBundle();
+            byte[] secondBundleContent = File.ReadAllBytes(secondBundle);
+
+            firstBundleContent.ShouldBeEquivalentTo(secondBundleContent,
+                "Deterministic/Reproducible build should produce identical binary for identical inputs");
+        }
+
         [Fact]
         public void TestWithMultipleDuplicateEntriesFails()
         {
