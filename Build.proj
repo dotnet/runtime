@@ -1,10 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup>
-    <!-- Build for NetCoreAppCurrent by default if no BuildTargetFramework is supplied or if not all configurations are built. -->
-    <TraversalGlobalProperties Condition="'$(BuildAllConfigurations)' != 'true'">BuildTargetFramework=$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TraversalGlobalProperties>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Subsets are already imported by Directory.Build.props. -->
     <ProjectReference Include="@(ProjectToBuild)" />
