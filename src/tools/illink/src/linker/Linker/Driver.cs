@@ -595,7 +595,7 @@ namespace Mono.Linker
 								return -1;
 							}
 
-							inputs.Add (new ResolveFromXmlStep (new XPathDocument (xmlFile), xmlFile));
+							inputs.Add (new ResolveFromXmlStep (File.OpenRead (xmlFile), xmlFile));
 							continue;
 						}
 					case "a": {
@@ -822,17 +822,17 @@ namespace Mono.Linker
 
 		protected virtual void AddResolveFromXmlStep (Pipeline pipeline, string file)
 		{
-			pipeline.PrependStep (new ResolveFromXmlStep (new XPathDocument (file), file));
+			pipeline.PrependStep (new ResolveFromXmlStep (File.OpenRead (file), file));
 		}
 
 		protected virtual void AddLinkAttributesStep (Pipeline pipeline, string file)
 		{
-			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (new XPathDocument (file), file));
+			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (File.OpenRead (file), file));
 		}
 
 		static void AddBodySubstituterStep (Pipeline pipeline, string file)
 		{
-			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (new XPathDocument (file), file));
+			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (File.OpenRead (file), file));
 		}
 
 		protected virtual void AddXmlDependencyRecorder (LinkContext context, string fileName)

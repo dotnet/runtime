@@ -7,20 +7,20 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[SetupLinkerDescriptorFile ("LinkXmlErrorCases.xml")]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 
-	[ExpectedWarning ("IL2007", "NonExistentAssembly", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2008", "NonExistentType", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2009", "NonExistentMethod", "TypeWithNoMethods", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2012", "NonExistentField", "TypeWithNoFields", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2016", "NonExistentEvent", "TypeWithNoEvents", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2017", "NonExistentProperty", "TypeWithNoProperties", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2018", "SetOnlyProperty", "TypeWithProperties", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2019", "GetOnlyProperty", "TypeWithProperties", FileName = "LinkXmlErrorCases.xml")]
+	[ExpectedWarning ("IL2007", "NonExistentAssembly", FileName = "LinkXmlErrorCases.xml", SourceLine = 47, SourceColumn = 4)]
+	[ExpectedWarning ("IL2008", "NonExistentType", FileName = "LinkXmlErrorCases.xml", SourceLine = 6, SourceColumn = 6)]
+	[ExpectedWarning ("IL2009", "NonExistentMethod", "TypeWithNoMethods", FileName = "LinkXmlErrorCases.xml", SourceLine = 9, SourceColumn = 8)]
+	[ExpectedWarning ("IL2012", "NonExistentField", "TypeWithNoFields", FileName = "LinkXmlErrorCases.xml", SourceLine = 13, SourceColumn = 8)]
+	[ExpectedWarning ("IL2016", "NonExistentEvent", "TypeWithNoEvents", FileName = "LinkXmlErrorCases.xml", SourceLine = 17, SourceColumn = 8)]
+	[ExpectedWarning ("IL2017", "NonExistentProperty", "TypeWithNoProperties", FileName = "LinkXmlErrorCases.xml", SourceLine = 21, SourceColumn = 8)]
+	[ExpectedWarning ("IL2018", "SetOnlyProperty", "TypeWithProperties", FileName = "LinkXmlErrorCases.xml", SourceLine = 25, SourceColumn = 8)]
+	[ExpectedWarning ("IL2019", "GetOnlyProperty", "TypeWithProperties", FileName = "LinkXmlErrorCases.xml", SourceLine = 26, SourceColumn = 8)]
 
-	[ExpectedWarning ("IL2025", "Method", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2025", "Event", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2025", "Field", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2025", "Property", FileName = "LinkXmlErrorCases.xml")]
-	[ExpectedWarning ("IL2100", FileName = "LinkXmlErrorCases.xml")]
+	[ExpectedWarning ("IL2025", "Method", FileName = "LinkXmlErrorCases.xml", SourceLine = 39, SourceColumn = 8)]
+	[ExpectedWarning ("IL2025", "Event", FileName = "LinkXmlErrorCases.xml", SourceLine = 40, SourceColumn = 8)]
+	[ExpectedWarning ("IL2025", "Field", FileName = "LinkXmlErrorCases.xml", SourceLine = 41, SourceColumn = 8)]
+	[ExpectedWarning ("IL2025", "Property", FileName = "LinkXmlErrorCases.xml", SourceLine = 42, SourceColumn = 8)]
+	[ExpectedWarning ("IL2100", FileName = "LinkXmlErrorCases.xml", SourceLine = 50, SourceColumn = 4)]
 	class LinkXmlErrorCases
 	{
 		public static void Main ()

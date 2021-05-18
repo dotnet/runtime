@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Xml.XPath;
 
@@ -22,13 +23,13 @@ namespace Mono.Linker.Steps
 		static readonly string[] _accessorsAll = new string[] { "all" };
 		static readonly char[] _accessorsSep = new char[] { ';' };
 
-		public DescriptorMarker (LinkContext context, XPathDocument document, string xmlDocumentLocation)
-			: base (context, document, xmlDocumentLocation)
+		public DescriptorMarker (LinkContext context, Stream documentStream, string xmlDocumentLocation)
+			: base (context, documentStream, xmlDocumentLocation)
 		{
 		}
 
-		public DescriptorMarker (LinkContext context, XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
-			: base (context, document, resource, resourceAssembly, xmlDocumentLocation)
+		public DescriptorMarker (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
+			: base (context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
 		{
 		}
 
@@ -72,7 +73,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					_context.LogWarning ($"Could not find any type in namespace '{fullname}'", 2044, _xmlDocumentLocation);
+					LogWarning ($"Could not find any type in namespace '{fullname}'", 2044, iterator.Current);
 				}
 			}
 		}
@@ -135,7 +136,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			if (_context.Annotations.IsMarked (field))
-				_context.LogWarning ($"Duplicate preserve of '{field.FullName}'", 2025, _xmlDocumentLocation);
+				LogWarning ($"Duplicate preserve of '{field.FullName}'", 2025, nav);
 
 			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
@@ -143,7 +144,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
 		{
 			if (_context.Annotations.IsMarked (method))
-				_context.LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}'", 2025, _xmlDocumentLocation);
+				LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}'", 2025, nav);
 
 			_context.Annotations.MarkIndirectlyCalledMethod (method);
 			_context.Annotations.SetAction (method, MethodAction.Parse);
@@ -155,12 +156,12 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, object customData)
+		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
 		{
 			if (method == null)
 				return;
 
-			ProcessMethod (type, method, null, customData);
+			ProcessMethod (type, method, nav, customData);
 		}
 
 		protected override MethodDefinition GetMethod (TypeDefinition type, string signature)
@@ -200,11 +201,11 @@ namespace Mono.Linker.Steps
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
 		{
 			if (_context.Annotations.IsMarked (@event))
-				_context.LogWarning ($"Duplicate preserve of '{@event.FullName}'", 2025, _xmlDocumentLocation);
+				LogWarning ($"Duplicate preserve of '{@event.FullName}'", 2025, nav);
 
-			ProcessMethod (type, @event.AddMethod, null, customData);
-			ProcessMethod (type, @event.RemoveMethod, null, customData);
-			ProcessMethodIfNotNull (type, @event.InvokeMethod, customData);
+			ProcessMethod (type, @event.AddMethod, nav, customData);
+			ProcessMethod (type, @event.RemoveMethod, nav, customData);
+			ProcessMethodIfNotNull (type, @event.InvokeMethod, nav, customData);
 		}
 
 		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature)
@@ -212,28 +213,23 @@ namespace Mono.Linker.Steps
 			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
 			if (_context.Annotations.IsMarked (property))
-				_context.LogWarning ($"Duplicate preserve of '{property.FullName}'", 2025, _xmlDocumentLocation);
+				LogWarning ($"Duplicate preserve of '{property.FullName}'", 2025, nav);
 
-			ProcessPropertyAccessors (type, property, accessors, customData);
-		}
-
-		void ProcessPropertyAccessors (TypeDefinition type, PropertyDefinition property, string[] accessors, object customData)
-		{
 			if (Array.IndexOf (accessors, "all") >= 0) {
-				ProcessMethodIfNotNull (type, property.GetMethod, customData);
-				ProcessMethodIfNotNull (type, property.SetMethod, customData);
+				ProcessMethodIfNotNull (type, property.GetMethod, nav, customData);
+				ProcessMethodIfNotNull (type, property.SetMethod, nav, customData);
 				return;
 			}
 
 			if (property.GetMethod != null && Array.IndexOf (accessors, "get") >= 0)
-				ProcessMethod (type, property.GetMethod, null, customData);
+				ProcessMethod (type, property.GetMethod, nav, customData);
 			else if (property.GetMethod == null)
-				_context.LogWarning ($"Could not find the get accessor of property '{property.Name}' on type '{type.FullName}'", 2018, _xmlDocumentLocation);
+				LogWarning ($"Could not find the get accessor of property '{property.Name}' on type '{type.FullName}'", 2018, nav);
 
 			if (property.SetMethod != null && Array.IndexOf (accessors, "set") >= 0)
-				ProcessMethod (type, property.SetMethod, null, customData);
+				ProcessMethod (type, property.SetMethod, nav, customData);
 			else if (property.SetMethod == null)
-				_context.LogWarning ($"Could not find the set accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2019, _xmlDocumentLocation);
+				LogWarning ($"Could not find the set accessor of property '{property.Name}' in type '{type.FullName}'", 2019, nav);
 		}
 
 		static bool IsRequired (XPathNavigator nav)
