@@ -5412,6 +5412,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (!MONO_IS_PHI (ins))
 			break;
 
+		if (cfg->interp_entry_only)
+			break;
+
 		int i;
 		gboolean empty = TRUE;
 
@@ -11543,7 +11546,7 @@ emit_method_inner (EmitContext *ctx)
 	}
 
 #ifdef TARGET_WASM
-	if (ctx->module->interp && cfg->header->code_size > 100000) {
+	if (ctx->module->interp && cfg->header->code_size > 100000 && !cfg->interp_entry_only) {
 		/* Large methods slow down llvm too much */
 		set_failure (ctx, "il code too large.");
 		return;
@@ -11692,6 +11695,9 @@ emit_method_inner (EmitContext *ctx)
 
 				if (!ctx_ok (ctx))
 					return;
+
+				if (cfg->interp_entry_only)
+					break;
 
 				if (ins->opcode == OP_VPHI) {
 					/* Treat valuetype PHI nodes as operating on the address itself */

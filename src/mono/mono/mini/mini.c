@@ -3748,9 +3748,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 				//g_free (nm);
 			}
-			if (cfg->llvm_only && cfg->interp) {
+			if (cfg->llvm_only && cfg->interp && !interp_entry_only) {
 				// If interp support is enabled, restart compilation, generating interp entry code only
-				g_assert (!interp_entry_only);
 				interp_entry_only = TRUE;
 				mono_destroy_compile (cfg);
 				goto restart_compile;
