@@ -910,7 +910,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
     CONTRACTL_END;
 
-    m_pCurBlock                  = NULL;
     m_pFirstBlock                = NULL;
 
     m_dwReserveBlockSize         = dwReserveBlockSize;
@@ -1173,23 +1172,11 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;
-    pNewBlock->pNext            = NULL;
+    pNewBlock->pNext            = m_pFirstBlock;
     pNewBlock->m_fReleaseMemory = fReleaseMemory;
 
-    LoaderHeapBlock *pCurBlock = m_pCurBlock;
-
-    // Add to linked list
-    while (pCurBlock != NULL &&
-           pCurBlock->pNext != NULL)
-        pCurBlock = pCurBlock->pNext;
-
-    if (pCurBlock != NULL)
-        pCurBlock->pNext = pNewBlock;
-    else
-        m_pFirstBlock = pNewBlock;
-
-    // If we want to use the memory immediately...
-    m_pCurBlock = pNewBlock;
+    // Add to the linked list
+    m_pFirstBlock = pNewBlock;
 
     SETUP_NEW_BLOCK(pData, dwSizeToCommit, dwSizeToReserve);
 

@@ -201,8 +201,6 @@ private:
     PTR_BYTE            m_pPtrToEndOfCommittedRegion;
     PTR_BYTE            m_pEndReservedRegion;
 
-    PTR_LoaderHeapBlock m_pCurBlock;
-
     // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
     DWORD               m_dwReserveBlockSize;
 

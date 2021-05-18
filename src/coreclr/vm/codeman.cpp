@@ -1838,9 +1838,20 @@ CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKi
 
 void CodeFragmentHeap::AddBlock(VOID * pMem, size_t dwSize)
 {
-    LIMITED_METHOD_CONTRACT;
+     CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
-    FreeBlock * pBlock = (FreeBlock *)malloc(sizeof(FreeBlock));
+    // The new "nothrow" below failure is handled in a non-fault way, so
+    // make sure that callers with FORBID_FAULT can call this method without
+    // firing the contract violation assert.
+    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
+
+    FreeBlock * pBlock = new (nothrow) FreeBlock;
     // In the OOM case we don't add the block to the list of free blocks
     // as we are in a FORBID_FAULT code path.
     if (pBlock != NULL)
@@ -1857,7 +1868,7 @@ void CodeFragmentHeap::RemoveBlock(FreeBlock ** ppBlock)
     LIMITED_METHOD_CONTRACT;
     FreeBlock * pBlock = *ppBlock;
     *ppBlock = pBlock->m_pNext;
-    free(pBlock);
+    delete pBlock;
 }
 
 CodeFragmentHeap::~CodeFragmentHeap()
@@ -1866,7 +1877,7 @@ CodeFragmentHeap::~CodeFragmentHeap()
     while (pBlock != NULL)
     {
         FreeBlock *pNextBlock = pBlock->m_pNext;
-        free(pBlock);
+        delete pBlock;
         pBlock = pNextBlock;
     }
 }
