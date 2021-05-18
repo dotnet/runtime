@@ -22,49 +22,40 @@ namespace System.IO.Tests
                 yield return TimeFunction.Create(
                     ((testDir, time) => {testDir.CreationTime = time; }),
                     ((testDir) => testDir.CreationTime),
-                    DateTimeKind.Local,
-                    "CreationTime_Local");
+                    DateTimeKind.Local);
                 yield return TimeFunction.Create(
                     ((testDir, time) => {testDir.CreationTimeUtc = time; }),
                     ((testDir) => testDir.CreationTimeUtc),
-                    DateTimeKind.Unspecified,
-                    "CreationTime_Unspecified");
+                    DateTimeKind.Unspecified);
                 yield return TimeFunction.Create(
                      ((testDir, time) => { testDir.CreationTimeUtc = time; }),
                      ((testDir) => testDir.CreationTimeUtc),
-                     DateTimeKind.Utc,
-                    "CreationTime_Utc");
+                     DateTimeKind.Utc);
             }
             yield return TimeFunction.Create(
                 ((testDir, time) => {testDir.LastAccessTime = time; }),
                 ((testDir) => testDir.LastAccessTime),
-                DateTimeKind.Local,
-                "LastAccessTime_Local");
+                DateTimeKind.Local);
             yield return TimeFunction.Create(
                 ((testDir, time) => {testDir.LastAccessTimeUtc = time; }),
                 ((testDir) => testDir.LastAccessTimeUtc),
-                DateTimeKind.Unspecified,
-                "LastAccessTime_Unspecified");
+                DateTimeKind.Unspecified);
             yield return TimeFunction.Create(
                 ((testDir, time) => { testDir.LastAccessTimeUtc = time; }),
                 ((testDir) => testDir.LastAccessTimeUtc),
-                DateTimeKind.Utc,
-                "LastAccessTime_Utc");
+                DateTimeKind.Utc);
             yield return TimeFunction.Create(
                 ((testDir, time) => {testDir.LastWriteTime = time; }),
                 ((testDir) => testDir.LastWriteTime),
-                DateTimeKind.Local,
-                "LastWriteTime_Local");
+                DateTimeKind.Local);
             yield return TimeFunction.Create(
                 ((testDir, time) => {testDir.LastWriteTimeUtc = time; }),
                 ((testDir) => testDir.LastWriteTimeUtc),
-                DateTimeKind.Unspecified,
-                "LastWriteTime_Unspecified");
+                DateTimeKind.Unspecified);
             yield return TimeFunction.Create(
                 ((testDir, time) => { testDir.LastWriteTimeUtc = time; }),
                 ((testDir) => testDir.LastWriteTimeUtc),
-                DateTimeKind.Utc,
-                "LastWriteTime_Utc");
+                DateTimeKind.Utc);
         }
 
         protected override DirectoryInfo CreateSymlinkToItem(DirectoryInfo item)
