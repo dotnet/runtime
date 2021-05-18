@@ -404,11 +404,11 @@ stderr_log_path="$HELIX_WORKITEM_UPLOAD_ROOT/$__Category-$(MsBuildProjectName).e
 mv "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.log" "$stdout_log_path"
 mv "$HELIX_WORKITEM_UPLOAD_ROOT/net.dot.$__Category.err.log" "$stderr_log_path"
 echo "======== STDOUT ======== $stdout_log_path ({["
-cat "$stdout_log_path" 2>/dev/null
+cat "$stdout_log_path"
 echo ']})'
 echo ''
 echo "======== STDERR ======== $stderr_log_path ({["
-cat "$stderr_log_path" 2>/dev/null
+cat "$stderr_log_path"
 echo ']})'
 echo ''
 
