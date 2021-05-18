@@ -2,15 +2,15 @@
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;mips64</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;mips64;s390x</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux">
       <Parent>unix</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;mips64</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;mips64;s390x</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
-      <Architectures>x64;x86;arm;armel;arm64</Architectures>
+      <Architectures>x64;x86;arm;armel;arm64;s390x</Architectures>
     </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">
