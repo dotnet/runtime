@@ -1158,7 +1158,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
             if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
             {
-                assert(op2DelayFree == false);
+                assert(!op2DelayFree);
 
                 if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
                 {
