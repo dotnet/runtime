@@ -127,6 +127,14 @@ set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
 
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+
+if(IS_BIG_ENDIAN)
+  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
+else()
+  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
+endif()
+
 ######################################
 # AOT CROSS COMPILER SUPPORT
 ######################################
@@ -600,48 +608,39 @@ endif()
 # EGLIB CHECKS
 ######################################
 
-set(GNUC_PRETTY)
-set(GNUC_UNUSED)
-set(BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
-if(GCC)
-  set(GNUC_UNUSED "__attribute__((__unused__))")
-  set(GNUC_NORETURN "__attribute__((__noreturn__))")
-  if(HOST_AMD64 OR HOST_X86)
-    set(BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
-  endif()
-endif()
-
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
-  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
-else()
-  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
-endif()
-
-if(IS_BIG_ENDIAN)
-  set(ORDER G_BIG_ENDIAN)
-else()
-  set(ORDER G_LITTLE_ENDIAN)
-endif()
+set(EGLIB_GNUC_PRETTY)
+set(EGLIB_GNUC_UNUSED)
 
 if(HOST_WIN32)
-  set(PATHSEP "\\")
-  set(SEARCHSEP ";")
-  set(OS "WIN32")
-  set(PIDTYPE "void *")
+  set(EGLIB_GNUC_PRETTY "__FUNCTION__")
+  set(EGLIB_BREAKPOINT "__debugbreak()")
+  set(EGLIB_PATHSEP "\\\\")
+  set(EGLIB_SEARCHSEP ";")
+  set(EGLIB_OS "WIN32")
+  set(EGLIB_PIDTYPE "void *")
+  if(HOST_AMD64 OR HOST_ARM64)
+    set(EGLIB_GSIZE_FORMAT "\"Iu\"")
+  else()
+    set(EGLIB_GSIZE_FORMAT "\"u\"")
+  endif()
 else()
-  set(PATHSEP "/")
-  set(SEARCHSEP ":")
-  set(OS "UNIX")
-  set(PIDTYPE "int")
+  set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
+  if(GCC)
+    set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
+    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
+    if(HOST_AMD64 OR HOST_X86)
+      set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
+    endif()
+  endif()
+  set(EGLIB_PATHSEP "/")
+  set(EGLIB_SEARCHSEP ":")
+  set(EGLIB_OS "UNIX")
+  set(EGLIB_PIDTYPE "int")
+  set(EGLIB_GSIZE_FORMAT "\"lu\"")
 endif()
 
-# FIXME:
-set(GSIZE_FORMAT "\"lu\"")
-
-set(GSIZE "size_t")
-set(GSSIZE "ptrdiff_t")
+set(EGLIB_GSIZE "size_t")
+set(EGLIB_GSSIZE "ptrdiff_t")
 
 #
 # END OF EGLIB CHECKS
@@ -752,4 +751,4 @@ if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOM
 endif()
 
 configure_file(cmake/config.h.in config.h)
-configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)  # TODO: eglib-config.h is not needed, we're using hardcoded eglib-config.hw
+configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)
