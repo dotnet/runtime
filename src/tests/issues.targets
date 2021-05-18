@@ -2968,6 +2968,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_36614/GitHub_36614/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.assert, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
+            <Issue>System.DllNotFoundException: GCPollNative</Issue>
+        </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>System.ArgumentNullException: Value cannot be null. (Parameter 'path1')</Issue>
@@ -2986,6 +2989,15 @@
 
         <ExcludeList Include = "$(XunitTestBinBase)/GC/API/WeakReference/multipleWRs/**">
             <Issue>USAGE: MultipleWR.exe num objects [track]</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/WeakReference/multipleWRs_1/**">
+            <Issue>USAGE: MultipleWR.exe num objects [track]</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/GC/Collect_Optimized_2/**">
+            <Issue>GC_API 0|1|2</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/GC/Collect_Optimized_3/**">
+            <Issue>GC_API 0|1|2</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
@@ -3011,6 +3023,12 @@
             <Issue>System.DllNotFoundException: ThisCallNative</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
         </ExcludeList>
 
