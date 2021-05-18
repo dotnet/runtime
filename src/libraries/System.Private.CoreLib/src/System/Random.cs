@@ -210,8 +210,14 @@ namespace System
         }
 
         [Conditional("DEBUG")]
-        private static void AssertInRange(double result) =>
-            Debug.Assert(result >= 0.0 && result < 1.0f, $"Expected 0.0 <= {result} < 1.0");
+        private static void AssertInRange(double result)
+        {
+            if (result < 0.0 || result >= 1.0)
+            {
+                // Avoid calling result.ToString() when the Assert condition is not met
+                Debug.Assert(false, $"Expected 0.0 <= {result} < 1.0");
+            }
+        }
 
         /// <summary>Random implementation that delegates all calls to a ThreadStatic Impl instance.</summary>
         private sealed class ThreadSafeRandom : Random
