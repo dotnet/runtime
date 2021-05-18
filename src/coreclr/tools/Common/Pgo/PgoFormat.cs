@@ -34,6 +34,7 @@ namespace Internal.Pgo
         AlignMask = 0x30,
 
         DescriptorMin = 0x40,
+        DescriptorMask = ~(MarshalMask | AlignMask),
 
         Done = None, // All instrumentation schemas must end with a record which is "Done"
         BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
@@ -474,29 +475,22 @@ namespace Internal.Pgo
         {
             public static PgoSchemaMergeComparer Singleton = new PgoSchemaMergeComparer();
 
-            private static bool SchemaMergesItemsWithDifferentOtherFields(PgoInstrumentationKind kind)
-            {
-                switch (kind)
-                {
-                    //
-                    default:
-                        // All non-specified kinds are not distinguishable by Other field
-                        return false;
-                }
-            }
-
             public int Compare(PgoSchemaElem x, PgoSchemaElem y)
             {
                 if (x.ILOffset != y.ILOffset)
                 {
                     return x.ILOffset.CompareTo(y.ILOffset);
                 }
-                if (x.InstrumentationKind != y.InstrumentationKind)
+                PgoInstrumentationKind xdescr = x.InstrumentationKind & PgoInstrumentationKind.DescriptorMask;
+                PgoInstrumentationKind ydescr = y.InstrumentationKind & PgoInstrumentationKind.DescriptorMask;
+                if (xdescr != ydescr)
                 {
-                    return x.InstrumentationKind.CompareTo(y.InstrumentationKind);
+                    return xdescr.CompareTo(ydescr);
                 }
-                // Some InstrumentationKinds may be compared based on the Other field, some may not
-                if (x.Other != y.Other && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
+                // We usually merge the Other field, except for edges, where we take care only to merge
+                // edges with equal ILOffset _and_ equal Other fields.
+                if ((x.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || x.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
+                    && x.Other != y.Other)
                 {
                     return x.Other.CompareTo(y.Other);
                 }
@@ -505,16 +499,8 @@ namespace Internal.Pgo
             }
 
             public bool Equals(PgoSchemaElem x, PgoSchemaElem y)
-            {
-                if (x.ILOffset != y.ILOffset)
-                    return false;
-                if (x.InstrumentationKind != y.InstrumentationKind)
-                    return false;
-                if (x.InstrumentationKind != y.InstrumentationKind && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
-                    return false;
-                return true;
-            }
-            int IEqualityComparer<PgoSchemaElem>.GetHashCode(PgoSchemaElem obj) => obj.ILOffset ^ ((int)obj.InstrumentationKind << 20);
+                => Compare(x, y) == 0;
+            int IEqualityComparer<PgoSchemaElem>.GetHashCode(PgoSchemaElem obj) => obj.ILOffset ^ ((int)(obj.InstrumentationKind & PgoInstrumentationKind.DescriptorMask) << 20);
         }
 
         public static PgoSchemaElem[] Merge<TType>(ReadOnlySpan<PgoSchemaElem[]> schemasToMerge)
@@ -562,7 +548,9 @@ namespace Internal.Pgo
                     switch (existingSchemaItem.InstrumentationKind)
                     {
                         case PgoInstrumentationKind.BasicBlockIntCount:
+                        case PgoInstrumentationKind.BasicBlockLongCount:
                         case PgoInstrumentationKind.EdgeIntCount:
+                        case PgoInstrumentationKind.EdgeLongCount:
                         case PgoInstrumentationKind.TypeHandleHistogramCount:
                             if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {

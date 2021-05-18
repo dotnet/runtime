@@ -64,6 +64,7 @@ namespace System.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52910", TestRuntimes.Mono)]
         [InlineData(8000, 0, null)]
         [InlineData(8000, 2000, null)]
         [InlineData(8000, 0, "1")]
