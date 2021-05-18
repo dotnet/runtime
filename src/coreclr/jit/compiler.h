@@ -10793,7 +10793,6 @@ public:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
             case GT_KEEPALIVE:
-            case GT_INC_SATURATE:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

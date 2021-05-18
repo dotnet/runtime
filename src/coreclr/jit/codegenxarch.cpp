@@ -605,27 +605,6 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     genProduceReg(tree);
 }
 
-// Produce code for a GT_INC_SATURATE node.
-void CodeGen::genCodeForIncSaturate(GenTree* tree)
-{
-    regNumber targetReg  = tree->GetRegNum();
-    var_types targetType = tree->TypeGet();
-
-    GenTree* operand = tree->gtGetOp1();
-    assert(operand->isUsedFromReg());
-    regNumber operandReg = genConsumeReg(operand);
-
-    if (operandReg != targetReg)
-    {
-        inst_RV_RV(INS_mov, targetReg, operandReg, targetType);
-    }
-
-    inst_RV_IV(INS_add, targetReg, 1, emitActualTypeSize(targetType));
-    inst_RV_IV(INS_sbb, targetReg, 0, emitActualTypeSize(targetType));
-
-    genProduceReg(tree);
-}
-
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
@@ -1627,10 +1606,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
-            break;
-
-        case GT_INC_SATURATE:
-            genCodeForIncSaturate(treeNode);
             break;
 
         case GT_MULHI:
