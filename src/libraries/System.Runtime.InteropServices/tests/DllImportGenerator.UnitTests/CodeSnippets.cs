@@ -511,14 +511,6 @@ struct MyStruct
     private int i;
     private short s;
 }";
-        public static string GenericBlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct<int>") + @"
-#pragma warning disable CS0169
-[BlittableType]
-struct MyStruct<T>
-{
-    private T t;
-    private short s;
-}";
 
         public static string ArrayParametersAndModifiers(string elementType) => $@"
 using System.Runtime.InteropServices;
@@ -1040,5 +1032,56 @@ partial class Test
 #endif
     public static int Foo() => throw null;
 }}";
+
+        public static string MaybeBlittableGenericTypeParametersAndModifiers(string typeArgument) => BasicParametersAndModifiers($"Generic<{typeArgument}>") + @"
+[BlittableType]
+struct Generic<T>
+{
+#pragma warning disable CS0649
+    public T field;
+}
+";
+
+        public static string MaybeBlittableGenericTypeParametersAndModifiers<T>() =>
+            MaybeBlittableGenericTypeParametersAndModifiers(typeof(T).ToString());
+
+        public static string ImplicitlyBlittableStructParametersAndModifiers(string visibility = "") => BasicParametersAndModifiers("ImplicitBlittable") + $@"
+#pragma warning disable CS0649
+#pragma warning disable CS0169
+{visibility} struct ImplicitBlittable
+{{
+    int i;
+}}";
+
+        public static string ImplicitlyBlittableGenericTypeParametersAndModifiers(string typeArgument, string visibility = "") => BasicParametersAndModifiers($"Generic<{typeArgument}>") + $@"
+{visibility} struct Generic<T>
+{{
+#pragma warning disable CS0649
+#pragma warning disable CS0169
+    public T field;
+}}
+";
+
+        public static string ImplicitlyBlittableGenericTypeParametersAndModifiers<T>(string visibility = "") =>
+            ImplicitlyBlittableGenericTypeParametersAndModifiers(typeof(T).ToString(), visibility);
+
+        public static string RecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct") + @"
+struct RecursiveStruct
+{
+    RecursiveStruct s;
+    int i;
+}";
+        public static string MutuallyRecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct1") + @"
+struct RecursiveStruct1
+{
+    RecursiveStruct2 s;
+    int i;
+}
+
+struct RecursiveStruct2
+{
+    RecursiveStruct1 s;
+    int i;
+}";
     }
 }

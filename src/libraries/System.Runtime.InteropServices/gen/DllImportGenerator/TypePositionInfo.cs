@@ -153,7 +153,12 @@ namespace Microsoft.Interop
 
                 if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.BlittableTypeAttribute), attributeClass))
                 {
-                    return new BlittableTypeAttributeInfo();
+                    // If type is generic, then we need to re-evaluate that it is blittable at usage time.
+                    if (type is INamedTypeSymbol { IsGenericType: false } || type.HasOnlyBlittableFields())
+                    {
+                        return new BlittableTypeAttributeInfo();
+                    }
+                    break;
                 }
                 else if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.NativeMarshallingAttribute), attributeClass))
                 {
@@ -335,6 +340,16 @@ namespace Microsoft.Interop
                     marshallingInfo = new ArrayMarshallingInfo(GetMarshallingInfo(elementType, Array.Empty<AttributeData>(), defaultInfo, compilation, diagnostics, scopeSymbol));
                     return true;
                 }
+
+                if (type is INamedTypeSymbol { IsValueType: true } valueType
+                    && !valueType.IsExposedOutsideOfCurrentCompilation()
+                    && valueType.IsConsideredBlittable())
+                {
+                    // Allow implicit [BlittableType] on internal value types.
+                    marshallingInfo = new BlittableTypeAttributeInfo();
+                    return true;
+                }
+
                 marshallingInfo = NoMarshallingInfo.Instance;
                 return false;
             }

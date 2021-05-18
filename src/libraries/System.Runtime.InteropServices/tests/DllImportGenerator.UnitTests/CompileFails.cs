@@ -95,6 +95,15 @@ namespace DllImportGenerator.UnitTests
 
             // Abstract SafeHandle type by reference
             yield return new object[] { CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
+
+            // Non-blittable instantiation of generic type
+            yield return new object[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<bool>(), 5, 0 };
+
+            // No marshalling annotations
+
+            yield return new object[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers("public"), 5, 0 };
+            yield return new object[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<bool>(), 5, 0 };
+            yield return new object[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>("public"), 5, 0 };
         }
 
         [Theory]
@@ -103,6 +112,29 @@ namespace DllImportGenerator.UnitTests
         {
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+
+            // Verify the compilation failed with errors.
+            int generatorErrors = generatorDiags.Count(d => d.Severity == DiagnosticSeverity.Error);
+            Assert.Equal(expectedGeneratorErrors, generatorErrors);
+
+            int compilerErrors = newComp.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error);
+            Assert.Equal(expectedCompilerErrors, compilerErrors);
+        }
+
+        public static IEnumerable<object[]> CodeSnippetsToCompile_InvalidCode()
+        {
+            yield return new object[] { CodeSnippets.RecursiveImplicitlyBlittableStruct, 5, 1 };
+            yield return new object[] { CodeSnippets.MutuallyRecursiveImplicitlyBlittableStruct, 5, 2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
+        public async Task ValidateSnippets_InvalidCodeGracefulFailure(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
+        {
+            // Do not validate that the compilation has no errors that the generator will not fix.
+            Compilation comp = await TestUtils.CreateCompilation(source);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
 

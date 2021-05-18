@@ -131,7 +131,6 @@ namespace DllImportGenerator.UnitTests
 
             // Structs
             yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers };
-            yield return new[] { CodeSnippets.GenericBlittableStructParametersAndModifiers };
 
             // SafeHandle
             yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
@@ -184,6 +183,26 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ByValueParameterWithName("Method", "@event") };
             yield return new[] { CodeSnippets.ByValueParameterWithName("Method", "@var") };
             yield return new[] { CodeSnippets.ByValueParameterWithName("@params", "i") };
+
+            // Generics
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<byte>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<sbyte>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<short>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<ushort>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<uint>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<long>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<ulong>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<float>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<double>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<IntPtr>() };
+            yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<UIntPtr>() };
+
+            // Implicit blittable types
+            yield return new[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers() };
+            yield return new[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers("internal") };
+            yield return new[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>("internal") };
         }
 
         [Theory]
