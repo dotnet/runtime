@@ -959,7 +959,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	ERROR_DECL (error);
 	MonoLMFExt ext;
 
-	interp_push_lmf (&ext, frame);
 	/*
 	 * When explicitly throwing exception we pass the ip of the instruction that throws the exception.
 	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
@@ -985,29 +984,17 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 * Since ctx.ip is 0, this will start unwinding from the LMF frame
 	 * pushed above, which points to our frames.
 	 */
-	HandleExceptionCbData cb_data = { ex, &ctx };
-	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-		gboolean thrown = FALSE;
-		/*
-		 * If the exception is uncaught in interpreter code, mono_handle_exception_internal () will rethrow it.
-		 * Catch and rethrow it here again so we can pop the LMF.
-		 */
-		mono_llvm_cpp_catch_exception (handle_exception_cb, &cb_data, &thrown);
-		if (thrown) {
-			interp_pop_lmf (&ext);
-			mono_llvm_rethrow_exception ((MonoObject*)ex);
-		}
-	} else {
-		handle_exception_cb (&cb_data);
-	}
+	interp_push_lmf (&ext, frame);
+
+	mono_handle_exception (&ctx, (MonoObject*)ex);
+
+	interp_pop_lmf (&ext);
 
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */
 		mono_restore_context (&ctx);
 		g_assert_not_reached ();
 	}
-
-	interp_pop_lmf (&ext);
 
 	g_assert (context->has_resume_state);
 }
@@ -1982,7 +1969,6 @@ interp_entry (InterpEntryData *data)
 
 	context->stack_pointer = (guchar*)sp;
 
-	g_assert (!context->has_resume_state);
 	g_assert (!context->safepoint_frame);
 
 	if (rmethod->needs_thread_attach)
