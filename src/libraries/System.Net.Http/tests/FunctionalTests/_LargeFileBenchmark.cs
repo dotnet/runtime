@@ -2,6 +2,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -135,6 +136,10 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine($"{info} / {lengthMb} MB from {hostName}");
             Stopwatch sw = Stopwatch.StartNew();
             var response = await client.SendAsync(message);
+
+            using Stream responseStream = await response.Content.ReadAsStreamAsync();
+            await responseStream.CopyToAsync(Stream.Null);
+
             long elapsedMs = sw.ElapsedMilliseconds;
 
             _output.WriteLine($"{info}: {response.StatusCode} in {elapsedMs} ms");
