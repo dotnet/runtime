@@ -662,12 +662,6 @@ public:
         }
 #endif // PROFILING_SUPPORTED
 
-        if (SF_IsCheckPendingException(m_dwStubFlags)
-            && SF_IsForwardStub(m_dwStubFlags))
-        {
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__CLEAR_PENDING_EXCEPTION_OBJECT, 0, 0);
-        }
-
         // For CoreClr, clear the last error before calling the target that returns last error.
         // There isn't always a way to know the function have failed without checking last error,
         // in particular on Unix.
