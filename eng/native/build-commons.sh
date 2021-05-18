@@ -433,6 +433,10 @@ while :; do
             __BuildArch=x64
             ;;
 
+        s390x|-s390x)
+            __BuildArch=s390x
+            ;;
+
         wasm|-wasm)
             __BuildArch=wasm
             ;;

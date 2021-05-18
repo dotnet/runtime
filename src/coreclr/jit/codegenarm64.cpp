@@ -1753,6 +1753,27 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
     }
 }
 
+// Produce code for a GT_INC_SATURATE node.
+void CodeGen::genCodeForIncSaturate(GenTree* tree)
+{
+    regNumber targetReg = tree->GetRegNum();
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(!tree->isContained());
+    // The dst can only be a register.
+    assert(targetReg != REG_NA);
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber operandReg = genConsumeReg(operand);
+
+    GetEmitter()->emitIns_R_R_I(INS_adds, emitActualTypeSize(tree), targetReg, operandReg, 1);
+    GetEmitter()->emitIns_R_R_COND(INS_cinv, emitActualTypeSize(tree), targetReg, targetReg, INS_COND_HS);
+
+    genProduceReg(tree);
+}
+
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
@@ -3873,17 +3894,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicBinOp(simdNode);
             break;
 
-        case SIMDIntrinsicGetItem:
-            genSIMDIntrinsicGetItem(simdNode);
-            break;
-
-        case SIMDIntrinsicSetX:
-        case SIMDIntrinsicSetY:
-        case SIMDIntrinsicSetZ:
-        case SIMDIntrinsicSetW:
-            genSIMDIntrinsicSetItem(simdNode);
-            break;
-
         case SIMDIntrinsicUpperSave:
             genSIMDIntrinsicUpperSave(simdNode);
             break;
@@ -4342,242 +4352,6 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     GetEmitter()->emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, opt);
-
-    genProduceReg(simdNode);
-}
-
-//------------------------------------------------------------------------------------
-// genSIMDIntrinsicGetItem: Generate code for SIMD Intrinsic get element at index i.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGetItem);
-
-    GenTree*  op1      = simdNode->gtGetOp1();
-    GenTree*  op2      = simdNode->gtGetOp2();
-    var_types simdType = op1->TypeGet();
-    assert(varTypeIsSIMD(simdType));
-
-    // op1 of TYP_SIMD12 should be considered as TYP_SIMD16
-    if (simdType == TYP_SIMD12)
-    {
-        simdType = TYP_SIMD16;
-    }
-
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-    assert(targetType == genActualType(baseType));
-
-    // GetItem has 2 operands:
-    // - the source of SIMD type (op1)
-    // - the index of the value to be returned.
-    genConsumeOperands(simdNode);
-
-    emitAttr baseTypeSize  = emitTypeSize(baseType);
-    unsigned baseTypeScale = genLog2(EA_SIZE_IN_BYTES(baseTypeSize));
-
-    if (op2->IsCnsIntOrI())
-    {
-        assert(op2->isContained());
-
-        ssize_t index = op2->AsIntCon()->gtIconVal;
-
-        // We only need to generate code for the get if the index is valid
-        // If the index is invalid, previously generated for the range check will throw
-        if (GetEmitter()->isValidVectorIndex(emitTypeSize(simdType), baseTypeSize, index))
-        {
-            if (op1->isContained())
-            {
-                int         offset = (int)index * genTypeSize(baseType);
-                instruction ins    = ins_Load(baseType);
-
-                assert(!op1->isUsedFromReg());
-
-                if (op1->OperIsLocal())
-                {
-                    unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
-
-                    GetEmitter()->emitIns_R_S(ins, emitActualTypeSize(baseType), targetReg, varNum, offset);
-                }
-                else
-                {
-                    assert(op1->OperGet() == GT_IND);
-
-                    GenTree* addr = op1->AsIndir()->Addr();
-                    assert(!addr->isContained());
-                    regNumber baseReg = addr->GetRegNum();
-
-                    // ldr targetReg, [baseReg, #offset]
-                    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(baseType), targetReg, baseReg, offset);
-                }
-            }
-            else
-            {
-                assert(op1->isUsedFromReg());
-                regNumber srcReg = op1->GetRegNum();
-
-                instruction ins;
-                if (varTypeIsFloating(baseType))
-                {
-                    assert(genIsValidFloatReg(targetReg));
-                    // dup targetReg, srcReg[#index]
-                    ins = INS_dup;
-                }
-                else
-                {
-                    assert(genIsValidIntReg(targetReg));
-                    if (varTypeIsUnsigned(baseType) || (baseTypeSize == EA_8BYTE))
-                    {
-                        // umov targetReg, srcReg[#index]
-                        ins = INS_umov;
-                    }
-                    else
-                    {
-                        // smov targetReg, srcReg[#index]
-                        ins = INS_smov;
-                    }
-                }
-                GetEmitter()->emitIns_R_R_I(ins, baseTypeSize, targetReg, srcReg, index);
-            }
-        }
-    }
-    else
-    {
-        assert(!op2->isContained());
-
-        regNumber baseReg  = REG_NA;
-        regNumber indexReg = op2->GetRegNum();
-
-        if (op1->isContained())
-        {
-            // Optimize the case of op1 is in memory and trying to access ith element.
-            assert(!op1->isUsedFromReg());
-            if (op1->OperIsLocal())
-            {
-                unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
-
-                baseReg = simdNode->ExtractTempReg();
-
-                // Load the address of varNum
-                GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);
-            }
-            else
-            {
-                // Require GT_IND addr to be not contained.
-                assert(op1->OperGet() == GT_IND);
-
-                GenTree* addr = op1->AsIndir()->Addr();
-                assert(!addr->isContained());
-
-                baseReg = addr->GetRegNum();
-            }
-        }
-        else
-        {
-            assert(op1->isUsedFromReg());
-            regNumber srcReg = op1->GetRegNum();
-
-            unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
-            noway_assert(compiler->lvaSIMDInitTempVarNum != BAD_VAR_NUM);
-
-            baseReg = simdNode->ExtractTempReg();
-
-            // Load the address of simdInitTempVarNum
-            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, simdInitTempVarNum, 0);
-
-            // Store the vector to simdInitTempVarNum
-            GetEmitter()->emitIns_R_R(INS_str, emitTypeSize(simdType), srcReg, baseReg);
-        }
-
-        assert(genIsValidIntReg(indexReg));
-        assert(genIsValidIntReg(baseReg));
-        assert(baseReg != indexReg);
-
-        // Load item at baseReg[index]
-        GetEmitter()->emitIns_R_R_R_Ext(ins_Load(baseType), baseTypeSize, targetReg, baseReg, indexReg, INS_OPTS_LSL,
-                                        baseTypeScale);
-    }
-
-    genProduceReg(simdNode);
-}
-
-//------------------------------------------------------------------------------------
-// genSIMDIntrinsicSetItem: Generate code for SIMD Intrinsic set element at index i.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
-{
-    // Determine index based on intrinsic ID
-    int index = -1;
-    switch (simdNode->gtSIMDIntrinsicID)
-    {
-        case SIMDIntrinsicSetX:
-            index = 0;
-            break;
-        case SIMDIntrinsicSetY:
-            index = 1;
-            break;
-        case SIMDIntrinsicSetZ:
-            index = 2;
-            break;
-        case SIMDIntrinsicSetW:
-            index = 3;
-            break;
-
-        default:
-            unreached();
-    }
-    assert(index != -1);
-
-    // op1 is the SIMD vector
-    // op2 is the value to be set
-    GenTree* op1 = simdNode->gtGetOp1();
-    GenTree* op2 = simdNode->gtGetOp2();
-
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-    assert(varTypeIsSIMD(targetType));
-
-    assert(op2->TypeGet() == baseType);
-    assert(simdNode->GetSimdSize() >= ((index + 1) * genTypeSize(baseType)));
-
-    genConsumeOperands(simdNode);
-    regNumber op1Reg = op1->GetRegNum();
-    regNumber op2Reg = op2->GetRegNum();
-
-    assert(genIsValidFloatReg(targetReg));
-    assert(genIsValidFloatReg(op1Reg));
-    assert(genIsValidIntReg(op2Reg) || genIsValidFloatReg(op2Reg));
-    assert(targetReg != op2Reg);
-
-    emitAttr attr = emitTypeSize(baseType);
-
-    // Insert mov if register assignment requires it
-    GetEmitter()->emitIns_Mov(INS_mov, EA_16BYTE, targetReg, op1Reg, /* canSkip */ false);
-
-    if (genIsValidIntReg(op2Reg))
-    {
-        GetEmitter()->emitIns_R_R_I(INS_ins, attr, targetReg, op2Reg, index);
-    }
-    else
-    {
-        GetEmitter()->emitIns_R_R_I_I(INS_ins, attr, targetReg, op2Reg, index, 0);
-    }
 
     genProduceReg(simdNode);
 }

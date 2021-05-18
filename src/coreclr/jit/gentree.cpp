@@ -5217,6 +5217,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
+        case GT_INC_SATURATE:
             if (def == this->AsUnOp()->gtOp1)
             {
                 *use = &this->AsUnOp()->gtOp1;
@@ -9315,6 +9316,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
+        case GT_INC_SATURATE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
@@ -19264,6 +19266,170 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdGetElementNode(var_types   type,
+                                                      GenTree*    op1,
+                                                      GenTree*    op2,
+                                                      CorInfoType simdBaseJitType,
+                                                      unsigned    simdSize,
+                                                      bool        isSimdAsHWIntrinsic)
+{
+    NamedIntrinsic intrinsicId  = NI_Vector128_GetElement;
+    var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
+    assert(varTypeIsArithmetic(simdBaseType));
+
+#if defined(TARGET_XARCH)
+    switch (simdBaseType)
+    {
+        // Using software fallback if simdBaseType is not supported by hardware
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_LONG:
+        case TYP_ULONG:
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+            break;
+
+        case TYP_DOUBLE:
+        case TYP_FLOAT:
+        case TYP_SHORT:
+        case TYP_USHORT:
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+            break;
+
+        default:
+            unreached();
+    }
+
+    if (simdSize == 32)
+    {
+        intrinsicId = NI_Vector256_GetElement;
+    }
+#elif defined(TARGET_ARM64)
+    if (simdSize == 8)
+    {
+        intrinsicId = NI_Vector64_GetElement;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    int  immUpperBound    = getSIMDVectorLength(simdSize, simdBaseType) - 1;
+    bool rangeCheckNeeded = !op2->OperIsConst();
+
+    if (!rangeCheckNeeded)
+    {
+        ssize_t imm8     = op2->AsIntCon()->IconValue();
+        rangeCheckNeeded = (imm8 < 0) || (imm8 > immUpperBound);
+    }
+
+    if (rangeCheckNeeded)
+    {
+        op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+    }
+
+    if (isSimdAsHWIntrinsic)
+    {
+        return gtNewSimdAsHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize);
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdWithElementNode(var_types   type,
+                                                       GenTree*    op1,
+                                                       GenTree*    op2,
+                                                       GenTree*    op3,
+                                                       CorInfoType simdBaseJitType,
+                                                       unsigned    simdSize,
+                                                       bool        isSimdAsHWIntrinsic)
+{
+    NamedIntrinsic hwIntrinsicID = NI_Vector128_WithElement;
+    var_types      simdBaseType  = JitType2PreciseVarType(simdBaseJitType);
+
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(op2->OperIsConst());
+
+    ssize_t imm8  = op2->AsIntCon()->IconValue();
+    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+    assert(0 <= imm8 && imm8 < count);
+
+#if defined(TARGET_XARCH)
+    switch (simdBaseType)
+    {
+        // Using software fallback if simdBaseType is not supported by hardware
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_INT:
+        case TYP_UINT:
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+            break;
+
+        case TYP_LONG:
+        case TYP_ULONG:
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
+            break;
+
+        case TYP_DOUBLE:
+        case TYP_FLOAT:
+        case TYP_SHORT:
+        case TYP_USHORT:
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+            break;
+
+        default:
+            unreached();
+    }
+
+    if (simdSize == 32)
+    {
+        hwIntrinsicID = NI_Vector256_WithElement;
+    }
+#elif defined(TARGET_ARM64)
+    switch (simdBaseType)
+    {
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+            if (simdSize == 8)
+            {
+                if (isSimdAsHWIntrinsic)
+                {
+                    return gtNewSimdAsHWIntrinsicNode(type, op3, NI_Vector64_Create, simdBaseJitType, simdSize);
+                }
+
+                return gtNewSimdHWIntrinsicNode(type, op3, NI_Vector64_Create, simdBaseJitType, simdSize);
+            }
+            break;
+
+        case TYP_FLOAT:
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_UINT:
+            break;
+
+        default:
+            unreached();
+    }
+
+    hwIntrinsicID = NI_AdvSimd_Insert;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (isSimdAsHWIntrinsic)
+    {
+        return gtNewSimdAsHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)

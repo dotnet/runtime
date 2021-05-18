@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -41,58 +42,112 @@ namespace System.IO.Strategies
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             if (UseNet5CompatStrategy)
             {
-                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
+                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, preallocationSize);
             }
 
             WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
-                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options)
-                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options);
+                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize)
+                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
 
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        // TODO: we might want to consider strategy.IsPipe here and never enable buffering for async pipes
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
             => bufferSize == 1 ? strategy : new BufferedFileStreamStrategy(strategy, bufferSize);
 
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
-            => CreateFileOpenHandle(path, mode, access, share, options);
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+            => CreateFileOpenHandle(path, mode, access, share, options, preallocationSize);
 
-        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
-
-            int fAccess =
-                ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
-                ((access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
-
-            // Our Inheritable bit was stolen from Windows, but should be set in
-            // the security attributes class.  Don't leave this bit set.
-            share &= ~FileShare.Inheritable;
-
-            // Must use a valid Win32 constant here...
-            if (mode == FileMode.Append)
-                mode = FileMode.OpenOrCreate;
-
-            int flagsAndAttributes = (int)options;
-
-            // For mitigating local elevation of privilege attack through named pipes
-            // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
-            // named pipe server can't impersonate a high privileged client security context
-            // (note that this is the effective default on CreateFile2)
-            flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
-
             using (DisableMediaInsertionPrompt.Create())
             {
                 Debug.Assert(path != null);
-                return ValidateFileHandle(
+
+                if (ShouldPreallocate(preallocationSize, access, mode))
+                {
+                    IntPtr fileHandle = NtCreateFile(path, mode, access, share, options, preallocationSize);
+
+                    return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
+                }
+
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
+
+                int fAccess =
+                    ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
+                    ((access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
+
+                // Our Inheritable bit was stolen from Windows, but should be set in
+                // the security attributes class.  Don't leave this bit set.
+                share &= ~FileShare.Inheritable;
+
+                // Must use a valid Win32 constant here...
+                if (mode == FileMode.Append)
+                    mode = FileMode.OpenOrCreate;
+
+                int flagsAndAttributes = (int)options;
+
+                // For mitigating local elevation of privilege attack through named pipes
+                // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
+                // named pipe server can't impersonate a high privileged client security context
+                // (note that this is the effective default on CreateFile2)
+                flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
+
+                SafeFileHandle safeFileHandle = ValidateFileHandle(
                     Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero),
                     path,
                     (options & FileOptions.Asynchronous) != 0);
+
+                return safeFileHandle;
+            }
+        }
+
+        private static IntPtr NtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        {
+            uint ntStatus;
+            IntPtr fileHandle;
+
+            const string mandatoryNtPrefix = @"\??\";
+            if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
+            {
+                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(fullPath, mode, access, share, options, preallocationSize);
+            }
+            else
+            {
+                var vsb = new ValueStringBuilder(stackalloc char[1024]);
+                vsb.Append(mandatoryNtPrefix);
+
+                if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
+                {
+                    vsb.Append(fullPath.AsSpan(4));
+                }
+                else
+                {
+                    vsb.Append(fullPath);
+                }
+
+                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
+                vsb.Dispose();
+            }
+
+            switch (ntStatus)
+            {
+                case 0:
+                    return fileHandle;
+                case Interop.NtDll.NT_ERROR_STATUS_DISK_FULL:
+                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
+                // NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
+                // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
+                case Interop.NtDll.NT_STATUS_INVALID_PARAMETER:
+                case Interop.NtDll.NT_ERROR_STATUS_FILE_TOO_LARGE:
+                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
+                default:
+                    int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
+                    throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
             }
         }
 
@@ -136,7 +191,7 @@ namespace System.IO.Strategies
             }
 
             // If either of these two flags are set, the file handle is synchronous (not overlapped)
-            return (fileMode & (Interop.NtDll.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
+            return (fileMode & (uint)(Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
         }
 
         internal static void VerifyHandleIsSync(SafeFileHandle handle)
