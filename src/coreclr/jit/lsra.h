@@ -1194,98 +1194,99 @@ private:
 
     class RegisterSelection
     {
-        public:
-            RegisterSelection(LinearScan* linearScan);
+    public:
+        RegisterSelection(LinearScan* linearScan);
 
-            // Perform register selection and update currentInterval or refPosition TODO:
-            FORCEINLINE regMaskTP select(Interval* currentInterval, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+        // Perform register selection and update currentInterval or refPosition TODO:
+        FORCEINLINE regMaskTP select(Interval*    currentInterval,
+                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-            // If the register is from unassigned set such that it was not already
-            // assigned to the current interval
-            FORCEINLINE bool foundUnassignedReg()
-            {
-                assert(found && isSingleRegister(foundRegBit));
-                bool isUnassignedReg = ((foundRegBit & unassignedSet) != RBM_NONE);
-                return isUnassignedReg && !isAlreadyAssigned();
-            }
+        // If the register is from unassigned set such that it was not already
+        // assigned to the current interval
+        FORCEINLINE bool foundUnassignedReg()
+        {
+            assert(found && isSingleRegister(foundRegBit));
+            bool isUnassignedReg = ((foundRegBit & unassignedSet) != RBM_NONE);
+            return isUnassignedReg && !isAlreadyAssigned();
+        }
 
-            // Did register selector decide to spill this interval
-            FORCEINLINE bool isSpilling()
-            {
-                return (foundRegBit & freeCandidates) == RBM_NONE;
-            }
+        // Did register selector decide to spill this interval
+        FORCEINLINE bool isSpilling()
+        {
+            return (foundRegBit & freeCandidates) == RBM_NONE;
+        }
 
-            // Is the value one of the constant that is already in a register
-            FORCEINLINE bool isMatchingConstant()
-            {
-                assert(found && isSingleRegister(foundRegBit));
-                return (matchingConstants & foundRegBit) != RBM_NONE;
-            }
+        // Is the value one of the constant that is already in a register
+        FORCEINLINE bool isMatchingConstant()
+        {
+            assert(found && isSingleRegister(foundRegBit));
+            return (matchingConstants & foundRegBit) != RBM_NONE;
+        }
 
-            // Did we apply CONST_AVAILABLE heuristics
-            FORCEINLINE bool isConstAvailable()
-            {
-                return (score & CONST_AVAILABLE) != 0;
-            }
+        // Did we apply CONST_AVAILABLE heuristics
+        FORCEINLINE bool isConstAvailable()
+        {
+            return (score & CONST_AVAILABLE) != 0;
+        }
 
-        private:
+    private:
 #ifdef DEBUG
-            RegisterScore RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {NONE};
-            ScoreMappingTable* mappingTable = nullptr;
+        RegisterScore      RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {NONE};
+        ScoreMappingTable* mappingTable                                 = nullptr;
 #endif
-            LinearScan*  linearScan      = nullptr;
-            int          score           = 0;
-            Interval*    currentInterval = nullptr;
-            RefPosition* refPosition     = nullptr;
+        LinearScan*  linearScan      = nullptr;
+        int          score           = 0;
+        Interval*    currentInterval = nullptr;
+        RefPosition* refPosition     = nullptr;
 
-            RegisterType regType         = RegisterType::TYP_UNKNOWN;
-            LsraLocation currentLocation = MinLocation;
-            RefPosition* nextRefPos      = nullptr;
+        RegisterType regType         = RegisterType::TYP_UNKNOWN;
+        LsraLocation currentLocation = MinLocation;
+        RefPosition* nextRefPos      = nullptr;
 
-            regMaskTP candidates;
-            regMaskTP preferences = RBM_NONE;
-            Interval* relatedInterval = nullptr;
+        regMaskTP candidates;
+        regMaskTP preferences     = RBM_NONE;
+        Interval* relatedInterval = nullptr;
 
-            regMaskTP    relatedPreferences = RBM_NONE;
-            LsraLocation rangeEndLocation;
-            LsraLocation relatedLastLocation;
-            bool         preferCalleeSave = false;
-            RefPosition* rangeEndRefPosition;
-            RefPosition* lastRefPosition;
-            regMaskTP    callerCalleePrefs = RBM_NONE;
-            LsraLocation lastLocation;
-            RegRecord*   prevRegRec = nullptr;
+        regMaskTP    relatedPreferences = RBM_NONE;
+        LsraLocation rangeEndLocation;
+        LsraLocation relatedLastLocation;
+        bool         preferCalleeSave = false;
+        RefPosition* rangeEndRefPosition;
+        RefPosition* lastRefPosition;
+        regMaskTP    callerCalleePrefs = RBM_NONE;
+        LsraLocation lastLocation;
+        RegRecord*   prevRegRec = nullptr;
 
-            regMaskTP prevRegBit = RBM_NONE;
+        regMaskTP prevRegBit = RBM_NONE;
 
-            // These are used in the post-selection updates, and must be set for any selection.
-            regMaskTP freeCandidates;
-            regMaskTP matchingConstants;
-            regMaskTP unassignedSet;
-            regMaskTP foundRegBit;
+        // These are used in the post-selection updates, and must be set for any selection.
+        regMaskTP freeCandidates;
+        regMaskTP matchingConstants;
+        regMaskTP unassignedSet;
+        regMaskTP foundRegBit;
 
-            // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
-            // as they all require similar computation.
-            regMaskTP coversSet;
-            regMaskTP preferenceSet;
-            regMaskTP coversRelatedSet;
-            regMaskTP coversFullSet;
-            bool      coversSetsCalculated = false;
-            bool      found                = false;
-            bool      skipAllocation       = false;
-            regNumber foundReg             = REG_NA;
+        // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
+        // as they all require similar computation.
+        regMaskTP coversSet;
+        regMaskTP preferenceSet;
+        regMaskTP coversRelatedSet;
+        regMaskTP coversFullSet;
+        bool      coversSetsCalculated = false;
+        bool      found                = false;
+        bool      skipAllocation       = false;
+        regNumber foundReg             = REG_NA;
 
-            // If the selected register is already assigned to the current internal
-            FORCEINLINE bool isAlreadyAssigned()
-            {
-                assert(found && isSingleRegister(candidates));
-                return (prevRegBit & preferences) == foundRegBit;
-            }
+        // If the selected register is already assigned to the current internal
+        FORCEINLINE bool isAlreadyAssigned()
+        {
+            assert(found && isSingleRegister(candidates));
+            return (prevRegBit & preferences) == foundRegBit;
+        }
 
-            bool             applySelection(int selectionScore, regMaskTP selectionCandidates);
-            bool             applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
-            FORCEINLINE void calculateCoversSets();
-            FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
+        bool applySelection(int selectionScore, regMaskTP selectionCandidates);
+        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        FORCEINLINE void calculateCoversSets();
+        FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
 #include "lsra_score.h"

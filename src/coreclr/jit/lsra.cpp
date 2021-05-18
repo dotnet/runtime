@@ -626,7 +626,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
-    regSelector = new (theCompiler, CMK_LSRA) RegisterSelection(this);
+    regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
 
 #ifdef DEBUG
@@ -2757,7 +2757,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
-    regMaskTP  foundRegBit            = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
+    regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
     if (foundRegBit == REG_NA)
     {
         return REG_NA;
@@ -8572,9 +8572,9 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 {
     switch (registerScore)
     {
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId)           \
-        case RegisterScore::stat:                                 \
-            return LsraStat::STAT_##stat;
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
+    case RegisterScore::stat:                                                                                          \
+        return LsraStat::STAT_##stat;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
         default:
@@ -10800,7 +10800,6 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
 }
 #endif // DEBUG
 
-
 LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 {
     this->linearScan = linearScan;
@@ -11474,7 +11473,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //  Return Values:
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
-regMaskTP LinearScan::RegisterSelection::select(Interval*                currentInterval,
+regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
@@ -11792,7 +11791,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
         }
     }
 #else // RELEASE
-    // In release, just invoke the default order
+// In release, just invoke the default order
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \
