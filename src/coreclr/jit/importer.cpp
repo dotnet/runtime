@@ -1279,8 +1279,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree* dest      = nullptr;
-    unsigned destFlags = 0;
+    GenTree*     dest      = nullptr;
+    GenTreeFlags destFlags = GTF_EMPTY;
 
     if (ilOffset == BAD_IL_OFFSET)
     {
@@ -1974,9 +1974,9 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 // at compile-time.
 //
 GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    BOOL*                   pRuntimeLookup /* = NULL */,
-                                    BOOL                    mustRestoreHandle /* = FALSE */,
-                                    BOOL                    importParent /* = FALSE */)
+                                    bool*                   pRuntimeLookup /* = NULL */,
+                                    bool                    mustRestoreHandle /* = false */,
+                                    bool                    importParent /* = false */)
 {
     assert(!fgGlobalMorph);
 
@@ -2025,7 +2025,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                    CORINFO_LOOKUP*         pLookup,
-                                   unsigned                handleFlags,
+                                   GenTreeFlags            handleFlags,
                                    void*                   compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
@@ -2086,7 +2086,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 #ifdef FEATURE_READYTORUN_COMPILER
 GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
-                                             unsigned              handleFlags,
+                                             GenTreeFlags          handleFlags,
                                              void*                 compileTimeHandle)
 {
     CORINFO_GENERIC_HANDLE handle       = nullptr;
@@ -2626,7 +2626,7 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
         GenTree* lclVarTree;
 
         if ((tree->gtFlags & spillFlags) != 0 ||
-            (spillGlobEffects &&                        // Only consider the following when  spillGlobEffects == TRUE
+            (spillGlobEffects &&                        // Only consider the following when  spillGlobEffects == true
              !impIsAddressInLocal(tree, &lclVarTree) && // No need to spill the GT_ADDR node on a local.
              gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                            // lvAddrTaken flag.
@@ -4018,7 +4018,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
                     impPopStack();
                     GenTree* typeHandleOp =
-                        impTokenToHandle(pConstrainedResolvedToken, nullptr, TRUE /* mustRestoreHandle */);
+                        impTokenToHandle(pConstrainedResolvedToken, nullptr, true /* mustRestoreHandle */);
                     if (typeHandleOp == nullptr)
                     {
                         assert(compDonotInline());
@@ -5912,7 +5912,7 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
 
                 if (actualMethodAttribs & CORINFO_FLG_PROTECTED)
                 {
-                    BOOL targetIsStatic = actualMethodAttribs & CORINFO_FLG_STATIC;
+                    bool targetIsStatic = actualMethodAttribs & CORINFO_FLG_STATIC;
 
                     Verify(targetIsStatic || !isOpenDelegate,
                            "Unverifiable creation of an open instance delegate for a protected member.");
@@ -6174,15 +6174,15 @@ typeInfo Compiler::verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType
 }
 
 // Verify that the field is used properly.  'tiThis' is NULL for statics,
-// 'fieldFlags' is the fields attributes, and mutator is TRUE if it is a
+// 'fieldFlags' is the fields attributes, and mutator is true if it is a
 // ld*flda or a st*fld.
 // 'enclosingClass' is given if we are accessing a field in some specific type.
 
 void Compiler::verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
                               const CORINFO_FIELD_INFO& fieldInfo,
                               const typeInfo*           tiThis,
-                              BOOL                      mutator,
-                              BOOL                      allowPlainStructAsThis)
+                              bool                      mutator,
+                              bool                      allowPlainStructAsThis)
 {
     CORINFO_CLASS_HANDLE enclosingClass = pResolvedToken->hClass;
     unsigned             fieldFlags     = fieldInfo.fieldFlags;
@@ -6287,7 +6287,7 @@ void Compiler::verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsig
             case CEE_CGT_UN:
                 break;
             default:
-                Verify(FALSE, "Cond not allowed on object types");
+                Verify(false, "Cond not allowed on object types");
         }
         Verify(tiOp2.IsObjRef(), "Cond type mismatch");
     }
@@ -6716,7 +6716,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // the opcode stack becomes empty
         impBoxTempInUse = true;
 
-        const BOOL useParent = FALSE;
+        const bool useParent = false;
         op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
         if (op1 == nullptr)
         {
@@ -6794,7 +6794,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         assert(operCls != nullptr);
 
         // Ensure that the value class is restored
-        op2 = impTokenToHandle(pResolvedToken, nullptr, TRUE /* mustRestoreHandle */);
+        op2 = impTokenToHandle(pResolvedToken, nullptr, true /* mustRestoreHandle */);
         if (op2 == nullptr)
         {
             // We must be backing out of an inline.
@@ -7433,7 +7433,7 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     {
         return nullptr;
     }
-    BOOL runtimeLookup;
+    bool runtimeLookup;
 
     GenTree* node = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
 
@@ -7566,7 +7566,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 #ifdef FEATURE_READYTORUN_COMPILER
             if (opts.IsReadyToRun())
             {
-                unsigned callFlags = 0;
+                GenTreeFlags callFlags = GTF_EMPTY;
 
                 if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
                 {
@@ -7604,7 +7604,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             GenTree*          ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
             GenTreeCall::Use* args    = gtNewCallArgs(ctxTree);
 
-            unsigned callFlags = 0;
+            GenTreeFlags callFlags = GTF_EMPTY;
 
             if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
             {
@@ -8230,7 +8230,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         constraintCallThisTransform    = callInfo->thisTransform;
         exactContextHnd                = callInfo->contextHandle;
-        exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup == TRUE;
+        exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup;
 
         switch (callInfo->kind)
         {
@@ -8716,7 +8716,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         assert(opcode != CEE_CALLI);
 
         GenTree* instParam;
-        BOOL     runtimeLookup;
+        bool     runtimeLookup;
 
         // Instantiated generic method
         if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
@@ -8748,7 +8748,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             else
             {
-                instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
+                instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
                 if (instParam == nullptr)
                 {
                     assert(compDonotInline());
@@ -8803,12 +8803,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // because pResolvedToken is an interface method and interface types make a poor generic context.
                 if (pConstrainedResolvedToken)
                 {
-                    instParam = impTokenToHandle(pConstrainedResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/,
-                                                 FALSE /* importParent */);
+                    instParam = impTokenToHandle(pConstrainedResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/,
+                                                 false /* importParent */);
                 }
                 else
                 {
-                    instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
+                    instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
                 }
 
                 if (instParam == nullptr)
@@ -13903,7 +13903,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
+                eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
                               addVerifyFlag(combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN)),
                               &callInfo);
 
@@ -14074,9 +14074,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 {
                     OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
-                    if (actualOpcode != CEE_CALLVIRT)
+                    if (actualOpcode != CEE_CALLVIRT && actualOpcode != CEE_CALL && actualOpcode != CEE_LDFTN)
                     {
-                        BADCODE("constrained. has to be followed by callvirt");
+                        BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                     }
                 }
 
@@ -14306,7 +14306,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
-                        const BOOL useParent = TRUE;
+                        const bool useParent = true;
                         op1                  = gtNewAllocObjNode(&resolvedToken, useParent);
                         if (op1 == nullptr)
                         {
@@ -14544,8 +14544,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDSFLDA:
             {
 
-                BOOL isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
-                BOOL isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
+                bool isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
+                bool isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
 
                 /* Get the CP_Fieldref index */
                 assertImp(sz == sizeof(unsigned));
@@ -14640,10 +14640,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (tiVerificationNeeded)
                 {
                     // You can also pass the unboxed struct to  LDFLD
-                    BOOL bAllowPlainValueTypeAsThis = FALSE;
+                    bool bAllowPlainValueTypeAsThis = false;
                     if (opcode == CEE_LDFLD && impIsValueType(tiObj))
                     {
-                        bAllowPlainValueTypeAsThis = TRUE;
+                        bAllowPlainValueTypeAsThis = true;
                     }
 
                     verVerifyField(&resolvedToken, fieldInfo, tiObj, isLoadAddress, bAllowPlainValueTypeAsThis);
@@ -14921,7 +14921,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STSFLD:
             {
 
-                BOOL isStoreStatic = (opcode == CEE_STSFLD);
+                bool isStoreStatic = (opcode == CEE_STSFLD);
 
                 CORINFO_CLASS_HANDLE fieldClsHnd; // class of the field (if it's a ref type)
 
@@ -14995,7 +14995,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (tiVerificationNeeded)
                 {
-                    verVerifyField(&resolvedToken, fieldInfo, tiObj, TRUE);
+                    verVerifyField(&resolvedToken, fieldInfo, tiObj, true);
                     typeInfo fieldType = verMakeTypeInfo(ciType, fieldClsHnd);
                     Verify(tiCompatibleWith(tiVal, fieldType.NormaliseForStack(), true), "type mismatch");
                 }
@@ -15267,7 +15267,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!opts.IsReadyToRun())
                 {
                     // Need to restore array classes before creating array objects on the heap
-                    op1 = impTokenToHandle(&resolvedToken, nullptr, TRUE /*mustRestoreHandle*/);
+                    op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
                     if (op1 == nullptr)
                     { // compDonotInline()
                         return;
@@ -15330,7 +15330,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
                         // Need to restore array classes before creating array objects on the heap
-                        op1 = impTokenToHandle(&resolvedToken, nullptr, TRUE /*mustRestoreHandle*/);
+                        op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
                         if (op1 == nullptr)
                         { // compDonotInline()
                             return;
@@ -15489,7 +15489,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!opts.IsReadyToRun())
                 {
-                    op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                    op2 = impTokenToHandle(&resolvedToken, nullptr, false);
                     if (op2 == nullptr)
                     { // compDonotInline()
                         return;
@@ -15536,7 +15536,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //      3) Perform the 'is instance' check on the input object
                             // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                            op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                            op2 = impTokenToHandle(&resolvedToken, nullptr, false);
                             if (op2 == nullptr)
                             { // compDonotInline()
                                 return;
@@ -15661,7 +15661,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 tokenType = info.compCompHnd->getTokenTypeAsHandle(&resolvedToken);
 
-                op1 = impTokenToHandle(&resolvedToken, nullptr, TRUE);
+                op1 = impTokenToHandle(&resolvedToken, nullptr, true);
                 if (op1 == nullptr)
                 { // compDonotInline()
                     return;
@@ -15706,7 +15706,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                BOOL runtimeLookup;
+                bool runtimeLookup;
                 op2 = impTokenToHandle(&resolvedToken, &runtimeLookup);
                 if (op2 == nullptr)
                 {
@@ -16077,7 +16077,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!opts.IsReadyToRun())
                 {
-                    op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                    op2 = impTokenToHandle(&resolvedToken, nullptr, false);
                     if (op2 == nullptr)
                     { // compDonotInline()
                         return;
@@ -16131,7 +16131,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //      3) Check the object on the stack for the type-cast
                             // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                            op2 = impTokenToHandle(&resolvedToken, nullptr, FALSE);
+                            op2 = impTokenToHandle(&resolvedToken, nullptr, false);
                             if (op2 == nullptr)
                             { // compDonotInline()
                                 return;
@@ -16440,7 +16440,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                op2 = impTokenToHandle(&resolvedToken, nullptr, TRUE);
+                op2 = impTokenToHandle(&resolvedToken, nullptr, true);
                 if (op2 == nullptr)
                 { // compDonotInline()
                     return;
@@ -18494,7 +18494,7 @@ StackEntry* BasicBlock::bbStackOnEntry()
 
 void Compiler::verInitCurrentState()
 {
-    verTrackObjCtorInitState        = FALSE;
+    verTrackObjCtorInitState        = false;
     verCurrentState.thisInitialized = TIS_Bottom;
 
     if (tiVerificationNeeded)
@@ -18502,7 +18502,7 @@ void Compiler::verInitCurrentState()
         // Track this ptr initialization
         if (!info.compIsStatic && (info.compFlags & CORINFO_FLG_CONSTRUCTOR) && lvaTable[0].lvVerTypeInfo.IsObjRef())
         {
-            verTrackObjCtorInitState        = TRUE;
+            verTrackObjCtorInitState        = true;
             verCurrentState.thisInitialized = TIS_Uninit;
         }
     }
@@ -18759,7 +18759,7 @@ bool Compiler::impIsValueType(typeInfo* pTypeInfo)
  *  Check to see if the tree is the address of a local or
     the address of a field in a local.
 
-    *lclVarTreeOut will contain the GT_LCL_VAR tree when it returns TRUE.
+    *lclVarTreeOut will contain the GT_LCL_VAR tree when it returns true.
 
  */
 
@@ -21007,6 +21007,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (isExplicitTailCall)
         {
             JITDUMP("Have a direct explicit tail call to boxed entry point; can't optimize further\n");
+        }
+        else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            // Per https://github.com/dotnet/runtime/issues/52483, crossgen2 seemingly gets
+            // confused about whether the unboxed entry requires an extra arg.
+            // So defer further optimization for now.
+            //
+            JITDUMP("Have a direct boxed entry point, prejitting. Can't optimize further yet.\n");
         }
         else
         {

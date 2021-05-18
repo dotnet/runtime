@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -20,6 +19,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Socket).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -35,29 +35,29 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Sockets", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                    listener.RunWithCallback(events.Enqueue, () =>
+                    await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
-                        new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
-                        new NetworkStreamTest().Timeout_Roundtrips().GetAwaiter().GetResult();
+                        await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true);
+                        await new NetworkStreamTest().Timeout_Roundtrips();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);

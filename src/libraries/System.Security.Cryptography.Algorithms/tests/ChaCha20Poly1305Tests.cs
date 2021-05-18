@@ -447,6 +447,12 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 // The test queries the OS directly to ensure our version check is correct.
                 expectedIsSupported = CngUtility.IsAlgorithmSupported("CHACHA20_POLY1305");
             }
+            else if (PlatformDetection.OpenSslPresentOnSystem &&
+                (PlatformDetection.IsOSX || PlatformDetection.IsOpenSslSupported))
+            {
+                const int OpenSslChaChaMinimumVersion = 0x1_01_00_00_F; //major_minor_fix_patch_status
+                expectedIsSupported = SafeEvpPKeyHandle.OpenSslVersion >= OpenSslChaChaMinimumVersion;
+            }
 
             Assert.Equal(expectedIsSupported, ChaCha20Poly1305.IsSupported);
         }

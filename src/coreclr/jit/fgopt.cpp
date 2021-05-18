@@ -858,7 +858,7 @@ void Compiler::fgComputeDoms()
     bbRoot.bbNum          = 0;
     bbRoot.bbIDom         = &bbRoot;
     bbRoot.bbPostOrderNum = 0;
-    bbRoot.bbFlags        = 0;
+    bbRoot.bbFlags        = BBF_EMPTY;
 
     flowList flRoot(&bbRoot, nullptr);
 

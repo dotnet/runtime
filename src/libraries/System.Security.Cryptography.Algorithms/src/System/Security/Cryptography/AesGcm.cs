@@ -15,20 +15,22 @@ namespace System.Security.Cryptography
 
         public AesGcm(ReadOnlySpan<byte> key)
         {
+            ThrowIfNotSupported();
+
             AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
         public AesGcm(byte[] key)
         {
+            ThrowIfNotSupported();
+
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
             AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
-
-        public static bool IsSupported => true;
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
@@ -78,6 +80,14 @@ namespace System.Security.Cryptography
 
             if (!tag.Length.IsLegalSize(TagByteSizes))
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tag));
+        }
+
+        private static void ThrowIfNotSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(AesGcm)));
+            }
         }
     }
 }

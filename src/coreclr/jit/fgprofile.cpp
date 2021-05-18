@@ -2577,7 +2577,26 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
                                        BasicBlock::weight_t slop,
                                        bool*                wbUsedSlop)
 {
+    // Negative weights are nonsensical.
+    //
+    // If we can't cover the deficit with slop, fail.
+    // If we can, set the new weight to zero.
+    //
+    bool usedSlop = false;
+
+    if (newWeight < BB_ZERO_WEIGHT)
+    {
+        if ((newWeight + slop) < BB_ZERO_WEIGHT)
+        {
+            return false;
+        }
+
+        newWeight = BB_ZERO_WEIGHT;
+        usedSlop  = true;
+    }
+
     bool result = false;
+
     if ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin))
     {
         flEdgeWeightMin = newWeight;
@@ -2592,18 +2611,14 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             // is less than newWeight, so we just allow for the slop
             if (newWeight <= (flEdgeWeightMax + slop))
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will raise flEdgeWeightMin and Max towards newWeight
                     flEdgeWeightMin = flEdgeWeightMax;
                     flEdgeWeightMax = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
                 }
             }
         }
@@ -2613,31 +2628,32 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             // is more than newWeight, so we just allow for the slop
             if ((newWeight + slop) >= flEdgeWeightMin)
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will lower flEdgeWeightMin towards newWeight
-                    flEdgeWeightMin = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
+                    // But not below zero.
+                    //
+                    flEdgeWeightMin = max(BB_ZERO_WEIGHT, newWeight);
                 }
             }
         }
 
         // If we are returning true then we should have adjusted the range so that
         // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero.
-        // Also we should have set wbUsedSlop to true.
+        //
         if (result)
         {
             assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
                    ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
-
-            assert((wbUsedSlop == nullptr) || (*wbUsedSlop));
         }
+    }
+
+    if (result && usedSlop && (wbUsedSlop != nullptr))
+    {
+        *wbUsedSlop = true;
     }
 
 #if DEBUG
@@ -2677,7 +2693,26 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
                                        BasicBlock::weight_t slop,
                                        bool*                wbUsedSlop)
 {
+    // Negative weights are nonsensical.
+    //
+    // If we can't cover the deficit with slop, fail.
+    // If we can, set the new weight to zero.
+    //
+    bool usedSlop = false;
+
+    if (newWeight < BB_ZERO_WEIGHT)
+    {
+        if ((newWeight + slop) < BB_ZERO_WEIGHT)
+        {
+            return false;
+        }
+
+        newWeight = BB_ZERO_WEIGHT;
+        usedSlop  = true;
+    }
+
     bool result = false;
+
     if ((newWeight >= flEdgeWeightMin) && (newWeight <= flEdgeWeightMax))
     {
         flEdgeWeightMax = newWeight;
@@ -2692,17 +2727,13 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             // is less than newWeight, so we just allow for the slop
             if (newWeight <= (flEdgeWeightMax + slop))
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will allow this to raise flEdgeWeightMax towards newWeight
                     flEdgeWeightMax = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
                 }
             }
         }
@@ -2712,7 +2743,8 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             // is more than newWeight, so we just allow for the slop
             if ((newWeight + slop) >= flEdgeWeightMin)
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
@@ -2720,24 +2752,21 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
                     flEdgeWeightMax = flEdgeWeightMin;
                     flEdgeWeightMin = newWeight;
                 }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
-                }
             }
         }
 
         // If we are returning true then we should have adjusted the range so that
         // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero
-        // Also we should have set wbUsedSlop to true, unless it is NULL
         if (result)
         {
             assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
                    ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
-
-            assert((wbUsedSlop == nullptr) || (*wbUsedSlop));
         }
+    }
+
+    if (result && usedSlop && (wbUsedSlop != nullptr))
+    {
+        *wbUsedSlop = true;
     }
 
 #if DEBUG

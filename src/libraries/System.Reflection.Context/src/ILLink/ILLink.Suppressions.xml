@@ -451,5 +451,47 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterfaceMap(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2092</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterfaceMap(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterfaces</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2094</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2094</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterfaces</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
   </assembly>
 </linker>

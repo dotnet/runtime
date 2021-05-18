@@ -585,30 +585,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
 /*****************************************************************************
  *
- *  Given the beginBlock of the loop, return the index of this loop
- *  to the loop table.
- */
-
-unsigned Compiler::optFindLoopNumberFromBeginBlock(BasicBlock* begBlk)
-{
-    unsigned lnum = 0;
-
-    for (lnum = 0; lnum < optLoopCount; lnum++)
-    {
-        if (optLoopTable[lnum].lpHead->bbNext == begBlk)
-        {
-            // Found the loop.
-            return lnum;
-        }
-    }
-
-    noway_assert(!"Loop number not found.");
-
-    return optLoopCount;
-}
-
-/*****************************************************************************
- *
  *  Print loop info in an uniform way.
  */
 
@@ -1157,7 +1133,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
 
     optLoopTable[loopInd].lpAsgVars = AllVarSetOps::UninitVal();
 
-    optLoopTable[loopInd].lpFlags = 0;
+    optLoopTable[loopInd].lpFlags = LPFLG_EMPTY;
 
     // We haven't yet recorded any side effects.
     for (MemoryKind memoryKind : allMemoryKinds())
