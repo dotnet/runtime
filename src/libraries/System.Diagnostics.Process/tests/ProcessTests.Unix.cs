@@ -479,6 +479,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52882", TestPlatforms.MacCatalyst)]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -491,6 +492,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52882", TestPlatforms.MacCatalyst)]
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();

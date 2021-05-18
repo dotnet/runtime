@@ -194,6 +194,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX, "OSX doesn't support throwing on Process.Start")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52882", TestPlatforms.MacCatalyst)]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -1384,6 +1385,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52882", TestPlatforms.MacCatalyst)]
         public void TestStartWithMissingFile(bool fullPath)
         {
             string path = Guid.NewGuid().ToString("N");
