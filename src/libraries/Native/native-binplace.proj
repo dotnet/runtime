@@ -27,4 +27,5 @@
   </Target>
 
   <Target Name="Build" DependsOnTargets="BinPlace" />
+  <Target Name="CreateManifestResourceNames" />
 </Project>
