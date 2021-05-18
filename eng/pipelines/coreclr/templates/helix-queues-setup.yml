@@ -27,7 +27,7 @@ jobs:
     helixQueues:
 
     # iOS/tvOS simulator x64/x86
-    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86', 'tvOSSimulator_x64') }}:
+    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'tvOSSimulator_x64') }}:
       - OSX.1015.Amd64.Open
 
     # Android arm64
