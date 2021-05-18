@@ -179,6 +179,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         [InlineData("{0}", true)]
         [InlineData("{0}\n", true)]
         [InlineData("{0}\nSome other text", true)]
@@ -189,12 +190,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData("{0} ", false)]
         public void GetHostFxrPath_InstallLocationFile(string value, bool shouldPass)
         {
-            if (OperatingSystem.IsWindows())
-            {
-                // This test targets the install_location config file which is only used on Linux and macOS.
-                return;
-            }
-
             string installLocation = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))

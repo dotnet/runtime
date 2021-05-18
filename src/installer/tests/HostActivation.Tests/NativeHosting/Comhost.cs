@@ -23,17 +23,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         [InlineData(1, true)]
         [InlineData(10, true)]
         [InlineData(10, false)]
         public void ActivateClass(int count, bool synchronous)
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             string [] args = {
                 "comhost",
                 synchronous ? "synchronous" : "concurrent",
@@ -54,14 +49,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass_IgnoreAppLocalHostFxr()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             using (var fixture = sharedState.ComLibraryFixture.Copy())
             {
                 File.WriteAllText(Path.Combine(fixture.TestProject.BuiltApp.Location, "hostfxr.dll"), string.Empty);
@@ -87,14 +77,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass_ValidateIErrorInfoResult()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             using (var fixture = sharedState.ComLibraryFixture.Copy())
             {
                 string missingRuntimeConfig = Path.Combine(fixture.TestProject.BuiltApp.Location,
@@ -122,14 +107,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void LoadTypeLibraries()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             using (var fixture = sharedState.ComLibraryFixture.Copy())
             {
                 var comHost = Path.Combine(

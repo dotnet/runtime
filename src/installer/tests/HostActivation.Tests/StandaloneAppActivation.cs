@@ -237,14 +237,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void Running_AppHost_with_GUI_No_Console()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -263,14 +258,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void Running_AppHost_with_GUI_Traces()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 

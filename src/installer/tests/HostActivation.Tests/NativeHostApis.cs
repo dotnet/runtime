@@ -128,14 +128,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void Hostfxr_get_available_sdks_with_multilevel_lookup()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // multilevel lookup is not supported on non-Windows
-                return;
-            }
-
             var f = new SdkResolutionFixture(sharedTestState);
 
             // With multi-level lookup (windows only): get local and global sdks sorted by ascending version,
@@ -322,14 +317,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_with_dotnet_root()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // Only Windows supports multi-level lookup.
-                return;
-            }
-
             var f = new SdkResolutionFixture(sharedTestState);
             string expectedSdkVersions = string.Join(';', new[]
             {
@@ -406,14 +396,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // Only Windows supports multi-level lookup.
-                return;
-            }
-
             var f = new SdkResolutionFixture(sharedTestState);
             string expectedSdkVersions = string.Join(';', new[]
             {

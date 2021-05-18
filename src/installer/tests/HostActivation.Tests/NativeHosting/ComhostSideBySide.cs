@@ -23,14 +23,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             string [] args = {
                 "activation",
                 sharedState.ClsidString
@@ -47,14 +42,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void LocateEmbeddedTlb()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             string [] args = {
                 "typelib_lookup",
                 sharedState.TypeLibId
