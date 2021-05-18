@@ -2152,6 +2152,12 @@ ep_rt_mono_write_event_method_load (
 	MonoMethod *method,
 	MonoJitInfo *ji);
 
+bool
+ep_rt_mono_write_event_module_load (MonoImage *image);
+
+bool
+ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
+
 /*
 * EventPipe provider callbacks.
 */
