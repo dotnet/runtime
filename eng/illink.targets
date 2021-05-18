@@ -47,6 +47,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <NetCoreAppCurrentBuildSettings Condition="'$(NetCoreAppCurrentBuildSettings)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
     <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(NetCoreAppCurrentBuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
     <ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir>
     <ILLinkTrimAssemblyOOBSuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)oob-suppressions-xmls\</ILLinkTrimAssemblyOOBSuppressionsXmlsDir>
