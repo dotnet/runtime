@@ -19,6 +19,8 @@ enum MonoModifiableAssemblies {
 	MONO_MODIFIABLE_ASSM_DEBUG = 1,
 };
 
+typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);
+
 #ifdef ENABLE_METADATA_UPDATE
 
 gboolean
@@ -35,6 +37,21 @@ mono_metadata_update_get_thread_generation (void);
 
 void
 mono_metadata_update_cleanup_on_close (MonoImage *base_image);
+
+void
+mono_metadata_update_image_close_except_pools_all (MonoImage *base_image);
+
+void
+mono_metadata_update_image_close_all (MonoImage *base_image);
+
+gpointer
+mono_metadata_update_get_updated_method_rva (MonoImage *base_image, uint32_t idx);
+
+gboolean
+mono_metadata_update_table_bounds_check (MonoImage *base_image, int table_index, int token_index);
+
+gboolean
+mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
 
 #else /* ENABLE_METADATA_UPDATE */
 

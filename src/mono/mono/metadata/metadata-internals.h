@@ -880,6 +880,8 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 	/* returns true if given index is not in bounds with provided table/index pair */
 	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
+        if (G_LIKELY (!image->has_updates))
+                return TRUE;
 	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
 }
 #endif

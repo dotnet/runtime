@@ -74,6 +74,48 @@ mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t 
 	mono_component_hot_reload ()->apply_changes (base_image, dmeta, dmeta_len, dil, dil_len, error);
 }
 
+static void
+mono_image_close_except_pools_all_list (GList *images)
+{
+	for (GList *ptr = images; ptr; ptr = ptr->next) {
+		MonoImage *image = (MonoImage *)ptr->data;
+		if (image) {
+			if (!mono_image_close_except_pools (image))
+			    ptr->data = NULL;
+		}
+	}
+}
+
+void
+mono_metadata_update_image_close_except_pools_all (MonoImage *base_image)
+{
+        mono_component_hot_reload ()->image_close_except_pools_all (base_image);
+}
+
+void
+mono_metadata_update_image_close_all (MonoImage *base_image)
+{
+        mono_component_hot_reload ()->image_close_all (base_image);
+}
+
+gpointer
+mono_metadata_update_get_updated_method_rva (MonoImage *base_image, uint32_t idx)
+{
+        return mono_component_hot_reload ()->get_updated_method_rva (base_image, idx);
+}
+
+gboolean
+mono_metadata_update_table_bounds_check (MonoImage *base_image, int table_index, int token_index)
+{
+        return mono_component_hot_reload ()->table_bounds_check (base_image, table_index, token_index);
+}
+
+gboolean
+mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out)
+{
+        return mono_component_hot_reload ()->delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
+}
+
 #else /* ENABLE_METADATA_UPDATE */
 
 void
