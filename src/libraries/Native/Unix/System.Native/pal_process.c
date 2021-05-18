@@ -379,7 +379,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                 pal_sighandler oldhandler;
                 if (((unsigned int)sa_old.sa_flags) & SA_SIGINFO)
                 {
-                    oldhandler.action = (void (*)(int, siginfo_t *, void *))sa_old.sa_sigaction;
+                    oldhandler.action = sa_old.sa_sigaction;
                 }
                 else
                 {
