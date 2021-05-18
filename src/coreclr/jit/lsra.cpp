@@ -10815,7 +10815,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
     {
-        ordering = L"ABCDEFGHIJKLMNOPQ";
+        ordering = W("ABCDEFGHIJKLMNOPQ");
     }
 
     for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
@@ -10827,7 +10827,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
         {
 #define REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                                                           \
     case orderSeqId:                                                                                                   \
-        RegSelectionOrder[orderId] = RegisterScore::##enum_name;                                                       \
+        RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
