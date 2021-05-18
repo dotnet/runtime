@@ -10845,7 +10845,7 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 {
     currentInterval = interval;
     refPosition     = refPos;
-    score           = 0; // TODO:Kpathak - why is this used?
+    score           = 0;
 
     regType         = linearScan->getRegisterType(currentInterval, refPosition);
     currentLocation = refPosition->nodeLocation;
@@ -11162,7 +11162,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
 {
     assert(!found);
 
-    if (freeCandidates == RBM_NONE) // TODO: Kpathak, is this needed?
+    if (freeCandidates == RBM_NONE)
     {
         return;
     }
