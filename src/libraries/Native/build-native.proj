@@ -5,7 +5,8 @@
     <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
-    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(TargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
+    <OfficialBuildIdArg Condition="'$(OfficialBuildId)' != ''"> /p:OfficialBuildId="$(OfficialBuildId)"</OfficialBuildIdArg>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(TargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)$(OfficialBuildIdArg)</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
