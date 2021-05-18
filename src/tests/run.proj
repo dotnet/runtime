@@ -749,21 +749,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
     </ItemGroup>
 
-    <!--
-    <Message Importance="high" Text="exclusions? '$(HaveExcludes)'" />
-    <Message Importance="high" Text="%(TestExclusions.Identity)" />
-    <Message Importance="high" Text="    " />
-
-
-    <Message Importance="high" Text="   " />
-    <Message Importance="high" Text="===============" />
-    <Message Importance="high" Text="build dir = $(BuildDir)" />
-    <Message Importance="high" Text="AllTestScripts = %(AllTestScripts.Identity)" />
-    <Message Importance="high" Text="entry dll = %(Identity) test dlls = @(TestDlls) ..." />
-    <Message Importance="high" Text="extra dlls filename = %(TestDllFilename) dlls = @(ExtraDlls) ..." />
-    <Message Importance="high" Text="   " />
-    -->
-
     <RemoveDir Directories="$(BundleDir)" />
     <RemoveDir Directories="$(BuildDir)" />
 
@@ -802,8 +787,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
-  <!--
-    -->
 
     <!-- Apparently MSBuild cannot move directories and recursively copying a
          a directory requires writing some sort of recursive traversal
@@ -814,8 +797,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MakeDir Directories="$(FinalPath)" />
     <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
     <RemoveDir Directories="$(AppBundlePath)" />
-  <!--
-    -->
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
