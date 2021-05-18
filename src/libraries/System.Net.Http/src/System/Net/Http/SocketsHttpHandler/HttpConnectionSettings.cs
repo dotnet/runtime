@@ -122,9 +122,8 @@ namespace System.Net.Http
                 _plaintextStreamFilter = _plaintextStreamFilter
             };
 
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (HttpConnectionPool.IsHttp3Supported())
             {
                 settings._quicImplementationProvider = _quicImplementationProvider;
             }

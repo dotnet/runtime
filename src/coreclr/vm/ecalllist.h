@@ -208,6 +208,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetAttributes", RuntimeTypeHandle::GetAttributes)
     FCFuncElement("_GetMetadataImport", RuntimeTypeHandle::GetMetadataImport)
     FCFuncElement("GetNumVirtuals", RuntimeTypeHandle::GetNumVirtuals)
+    FCFuncElement("GetNumVirtualsAndStaticVirtuals", RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals)
     QCFuncElement("VerifyInterfaceIsImplemented", RuntimeTypeHandle::VerifyInterfaceIsImplemented)
     QCFuncElement("GetInterfaceMethodImplementation", RuntimeTypeHandle::GetInterfaceMethodImplementation)
     FCFuncElement("IsComObject", RuntimeTypeHandle::IsComObject)
@@ -762,6 +763,10 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
+
+#ifdef _DEBUG
+    QCFuncElement("GetIsInCooperativeGCModeFunctionPointer", MarshalNative::GetIsInCooperativeGCModeFunctionPointer)
+#endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)

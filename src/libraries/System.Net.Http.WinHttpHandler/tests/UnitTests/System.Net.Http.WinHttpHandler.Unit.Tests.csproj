@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -65,6 +65,8 @@
              Link="ProductionCode\WinHttpAuthHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs"
              Link="ProductionCode\WinHttpChannelBinding.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpChunkMode.cs"
+             Link="ProductionCode\WinHttpChunkMode.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs"
              Link="ProductionCode\WinHttpCookieContainerAdapter.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs"
