@@ -185,6 +185,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 Console.WriteLine("boxed value was of type " + boxed.GetType());
             _dateTimeValue = (DateTime)boxed;
         }
+        private static void InvokeDateTimeOffset(DateTimeOffset dto)
+        {
+            // FIXME
+            _dateTimeValue = dto.DateTime;
+        }
         private static void InvokeDateTimeByValue(DateTime dt)
         {
             _dateTimeValue = dt;

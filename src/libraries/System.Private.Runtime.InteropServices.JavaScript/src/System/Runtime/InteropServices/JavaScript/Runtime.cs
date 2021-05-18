@@ -276,7 +276,7 @@ namespace System.Runtime.InteropServices.JavaScript
             BOOL = 8,
             ENUM = 9,
             DATE = 20,
-            DATEOFFSET = 21,
+            DATEOFFSET = 4, // HACK, see driver.c
             URI = 22,
             SAFEHANDLE = 23,
             ARRAY_BYTE = 10,

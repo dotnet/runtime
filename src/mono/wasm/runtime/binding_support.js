@@ -1314,13 +1314,16 @@ var BindingSupportLib = {
 				case 7: // OBJECT
 					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.typePtr);
 					if (res) {
+						console.log(`res for type ${this.mono_wasm_get_type_name(paramRecord.typePtr)} == ${res}`);
 						result.convert = res;
 						break;
+					} else if (result.needs_unbox) {
+						throw new Error(`found no automatic converter for type ${this.mono_wasm_get_type_name(paramRecord.typePtr)}`);
 					}
 					; // FIXME: Fall-through
 				default:
 					// FIXME
-					// console.log("found no automatic converter for mtype", paramRecord.marshalType);
+					console.log(`found no automatic converter for mtype ${paramRecord.marshalType} type ${this.mono_wasm_get_type_name(paramRecord.typePtr)}`);
 					result.convert = this.js_to_mono_obj.bind(this);
 					break;
 			}

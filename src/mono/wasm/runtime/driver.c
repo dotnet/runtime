@@ -806,7 +806,8 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_BOOL 8
 #define MARSHAL_TYPE_ENUM 9
 #define MARSHAL_TYPE_DATE 20
-#define MARSHAL_TYPE_DATEOFFSET 21
+// HACK: Necessary to fall back to struct marshaling for the new managed marshalers
+#define MARSHAL_TYPE_DATEOFFSET MARSHAL_TYPE_VT
 #define MARSHAL_TYPE_URI 22
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
