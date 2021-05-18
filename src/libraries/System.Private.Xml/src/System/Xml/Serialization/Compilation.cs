@@ -158,7 +158,7 @@ namespace System.Xml.Serialization
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
 
-                serializer = LoadAssemblyByName(name);
+                serializer = Assembly.Load(name);
                 serializer ??= LoadAssemblyByPath(type, serializerName);
 
                 if (serializer == null)
@@ -187,9 +187,7 @@ namespace System.Xml.Serialization
                 if (assemblyAttribute.AssemblyName != null)
                 {
                     serializerName = assemblyAttribute.AssemblyName;
-#pragma warning disable 618
-                    serializer = Assembly.LoadWithPartialName(serializerName);
-#pragma warning restore 618
+                    serializer = Assembly.Load(serializerName); // LoadWithPartialName just does this in .Net Core; changing the obsolete call.
                 }
                 else if (assemblyAttribute.CodeBase != null && assemblyAttribute.CodeBase.Length > 0)
                 {
@@ -212,34 +210,6 @@ namespace System.Xml.Serialization
                 return serializer;
 
             return null;
-        }
-
-        private static Assembly? LoadAssemblyByName(AssemblyName name)
-        {
-            Assembly? assembly = null;
-
-            try
-            {
-                assembly = Assembly.Load(name);
-            }
-            catch (Exception e)
-            {
-                if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
-                {
-                    throw;
-                }
-                byte[]? token = name.GetPublicKeyToken();
-                if (token != null && token.Length > 0)
-                {
-                    // the parent assembly was signed, so do not try to LoadWithPartialName
-                    return null;
-                }
-#pragma warning disable 618
-                assembly = Assembly.LoadWithPartialName(name.Name!);
-#pragma warning restore 618
-            }
-
-            return assembly;
         }
 
         [RequiresUnreferencedCode("calls LoadFile")]
@@ -283,33 +253,6 @@ namespace System.Xml.Serialization
 
             return assembly;
         }
-
-        /*
-                // If that didn't work, see if we can figure out the location of the assembly and load it that way
-                if (serializer == null)
-                {
-                    if (!string.IsNullOrEmpty(type.Assembly.Location))
-                    {
-                        serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, serializerName + ".dll");
-                    }
-
-                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly()?.Location))
-                    {
-                        serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, serializerName + ".dll");
-                    }
-
-                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(AppContext.BaseDirectory))
-                    {
-                        serializerPath = Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory)!, serializerName + ".dll");
-                    }
-
-                    if (!string.IsNullOrEmpty(serializerPath))
-                    {
-                        serializer = Assembly.LoadFile(serializerPath);
-                    }
-                }
-
-         */
 
         private static bool IsSerializerVersionMatch(Assembly serializer, Type type, string? defaultNamespace)
         {
