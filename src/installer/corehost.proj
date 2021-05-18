@@ -30,7 +30,7 @@
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
       <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
-      <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor) /p:OfficialBuildId=$(OfficialBuildId)</BuildArgs>
+      <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
     </PropertyGroup>
 
     <!--
