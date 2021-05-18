@@ -42,10 +42,9 @@ namespace System.Tests
         [InlineData(1)] // setting ExitCode and exiting Main
         [InlineData(2)] // setting ExitCode both from Main and from an Unloading event handler.
         [InlineData(3)] // using Exit(exitCode)
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52858", TestPlatforms.MacCatalyst)]
         public static void ExitCode_VoidMainAppReturnsSetValue(int mode)
         {
             int expectedExitCode = 123;
