@@ -559,17 +559,18 @@ namespace System.Net.Sockets
 
             if (_bufferList == null)
             {
-                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span.Slice(_offset)))
                 {
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
 
-                    WSABuffer fixedBuffers = default;
+                    Span<WSABuffer> wsaBuffers = stackalloc WSABuffer[1];
 
-                    fixedBuffers.Pointer = (IntPtr)bufferPtr + _offset;
-                    fixedBuffers.Length = _count;
+                    wsaBuffers[0].Pointer = (IntPtr)bufferPtr;
+                    wsaBuffers[0].Length = _count;
 
-                    return Core(&fixedBuffers, 1);
+                    SocketError socketError = Core(wsaBuffers);
+                    return socketError;
                 }
             }
             else
@@ -578,17 +579,13 @@ namespace System.Net.Sockets
                 int count = _bufferListInternal!.Count;
                 WSABuffer[]? array = null;
 
-                Span<WSABuffer> wsaBuffers = count <= MaxStackWSABuffers
+                Span<WSABuffer> wsaBuffers = (uint)count <= MaxStackWSABuffers
                     ? stackalloc WSABuffer[count]
                     : (array = ArrayPool<WSABuffer>.Shared.Rent(count)).AsSpan(0, count);
 
                 SetupWsaBuffers(wsaBuffers);
 
-                SocketError socketError;
-                fixed (WSABuffer* buffersPtr = wsaBuffers)
-                {
-                    socketError = Core(buffersPtr, (uint)count);
-                }
+                SocketError socketError = Core(wsaBuffers);
 
                 if (array is not null)
                 {
@@ -600,7 +597,7 @@ namespace System.Net.Sockets
 
             // Fill in WSAMessageBuffer, run WSARecvMsg and process the IOCP result.
             // Logic is in a separate method so we can share code between the (pinned) single buffer and the multi-buffer case
-            SocketError Core(WSABuffer* fixedBuffers, uint count)
+            SocketError Core(Span<WSABuffer> buffers)
             {
                 IPAddress? ipAddress = (_socketAddress!.Family == AddressFamily.InterNetworkV6 ? _socketAddress.GetIPAddress() : null);
                 bool ipv4 = (_currentSocket!.AddressFamily == AddressFamily.InterNetwork || (ipAddress != null && ipAddress.IsIPv4MappedToIPv6)); // DualMode
@@ -619,41 +616,44 @@ namespace System.Net.Sockets
                 }
 
                 // Fill in WSAMessageBuffer.
-                Interop.Winsock.WSAMsg message = new Interop.Winsock.WSAMsg()
+                fixed (WSABuffer* bufferPtr = &MemoryMarshal.GetReference(buffers))
                 {
-                    socketAddress = PtrSocketAddressBuffer,
-                    addressLength = (uint)_socketAddress.Size,
-                    buffers = (IntPtr)fixedBuffers,
-                    count = count,
-                    flags = _socketFlags,
-                    controlBuffer = new WSABuffer
+                    Interop.Winsock.WSAMsg message = new Interop.Winsock.WSAMsg()
                     {
-                        Length = ipv6 ? sizeof(Interop.Winsock.ControlDataIPv6) : ipv4 ? sizeof(Interop.Winsock.ControlData) : 0,
-                        Pointer = controlBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(controlBuffer!, 0) : IntPtr.Zero
+                        socketAddress = PtrSocketAddressBuffer,
+                        addressLength = (uint)_socketAddress.Size,
+                        buffers = (IntPtr)bufferPtr,
+                        count = (uint)buffers.Length,
+                        flags = _socketFlags,
+                        controlBuffer = new WSABuffer
+                        {
+                            Length = ipv6 ? sizeof(Interop.Winsock.ControlDataIPv6) : ipv4 ? sizeof(Interop.Winsock.ControlData) : 0,
+                            Pointer = controlBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(controlBuffer!, 0) : IntPtr.Zero
+                        }
+                    };
+
+                    NativeOverlapped* overlapped = AllocateNativeOverlapped();
+                    try
+                    {
+                        SocketError socketError = socket.WSARecvMsg(
+                            handle,
+                            &message,
+                            out int bytesTransferred,
+                            overlapped,
+                            IntPtr.Zero);
+
+                        socketError = _bufferList == null ?
+                            ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken) :
+                            ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
+
+                        return socketError;
                     }
-                };
-
-                NativeOverlapped* overlapped = AllocateNativeOverlapped();
-                try
-                {
-                    SocketError socketError = socket.WSARecvMsg(
-                        handle,
-                        &message,
-                        out int bytesTransferred,
-                        overlapped,
-                        IntPtr.Zero);
-
-                    socketError = _bufferList == null ?
-                        ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken) :
-                        ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
-
-                    return socketError;
-                }
-                catch
-                {
-                    _singleBufferHandleState = SingleBufferHandleState.None;
-                    FreeNativeOverlapped(overlapped);
-                    throw;
+                    catch
+                    {
+                        _singleBufferHandleState = SingleBufferHandleState.None;
+                        FreeNativeOverlapped(overlapped);
+                        throw;
+                    }
                 }
             }
         }
