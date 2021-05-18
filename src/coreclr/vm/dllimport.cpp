@@ -3102,11 +3102,6 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
 
 // Either MD or signature & module must be given.
-//
-// N.B. This method can be called at a time when the associated NDirectMethodDesc
-// has not been fully populated. This means the optimized path for this call is to rely
-// on the most basic P/Invoke metadata. An example when this can happen is when the JIT
-// is compiling a method containing a P/Invoke that is being considered for inlining.
 /*static*/
 BOOL NDirect::MarshalingRequired(
     _In_opt_ MethodDesc* pMD,
