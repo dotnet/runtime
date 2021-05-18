@@ -2758,7 +2758,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
-    if (foundRegBit == REG_NA)
+    if (foundRegBit == RBM_NONE)
     {
         return REG_NA;
     }
@@ -11729,7 +11729,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     {
         assert(refPosition->RegOptional());
         currentInterval->assignedReg = nullptr;
-        return REG_NA;
+        return RBM_NONE;
     }
 
     // TODO-Cleanup: Previously, the "reverseSelect" stress mode reversed the order of the heuristics.
@@ -11749,7 +11749,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         if (!refPosition->IsActualRef())
         {
             currentInterval->assignedReg = nullptr;
-            return REG_NA;
+            return RBM_NONE;
         }
     }
     else
@@ -11804,7 +11804,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 Selection_Done:
     if (skipAllocation)
     {
-        return REG_NA;
+        return RBM_NONE;
     }
 
     calculateCoversSets();

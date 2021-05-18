@@ -1197,7 +1197,7 @@ private:
     public:
         RegisterSelection(LinearScan* linearScan);
 
-        // Perform register selection and update currentInterval or refPosition TODO:
+        // Perform register selection and update currentInterval or refPosition
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
