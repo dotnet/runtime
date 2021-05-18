@@ -74,8 +74,6 @@ namespace System.MathBenchmarks
             result += Test(singleTests.Tan);
             result += Test(singleTests.Tanh);
 
-            result += Test(DivideByConst.Test);
-
             return result;
         }
 

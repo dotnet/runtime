@@ -5171,48 +5171,31 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     if (!comp->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
-        bool   increment;
-        int    preShift;
-        int    postShift;
-        bool   simpleMul = false;
+        bool   add;
+        int    shift;
 
         if (type == TYP_INT)
         {
-            magic =
-                MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift, &postShift);
-
-#ifdef TARGET_64BIT
-            // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
-            if (increment || (preShift
-#ifdef TARGET_XARCH
-                              // IMUL reg,reg,imm32 can't be used if magic<0 because of sign-extension
-                              && static_cast<int32_t>(magic) < 0
-#endif
-                              ))
-            {
-                magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
-                                                        &postShift, 32);
-            }
-            // otherwise just widen to regular multiplication
-            else
-            {
-                postShift += 32;
-                simpleMul = true;
-            }
-#endif
+            magic = MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &add, &shift);
         }
         else
         {
 #ifdef TARGET_64BIT
-            magic =
-                MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift, &postShift);
+            magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &add, &shift);
 #else
             unreached();
 #endif
         }
         assert(divMod->MarkedDivideByConstOptimized());
 
-        const bool                 requiresDividendMultiuse = !isDiv;
+        // Depending on the "add" flag returned by GetUnsignedMagicNumberForDivide we need to generate:
+        // add == false (when divisor == 3 for example):
+        //     div = (dividend MULHI magic) RSZ shift
+        // add == true (when divisor == 7 for example):
+        //     mulhi = dividend MULHI magic
+        //     div   = (((dividend SUB mulhi) RSZ 1) ADD mulhi)) RSZ (shift - 1)
+        const bool                 requiresAdjustment       = add;
+        const bool                 requiresDividendMultiuse = requiresAdjustment || !isDiv;
         const BasicBlock::weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
@@ -5221,107 +5204,62 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             dividend = ReplaceWithLclVar(dividendUse);
         }
 
-        GenTree* firstNode        = nullptr;
-        GenTree* adjustedDividend = dividend;
-
-        // If "increment" flag is returned by GetUnsignedMagic we need to do Saturating Increment first
-        if (increment)
-        {
-            adjustedDividend = comp->gtNewOperNode(GT_INC_SATURATE, type, adjustedDividend);
-            BlockRange().InsertBefore(divMod, adjustedDividend);
-            firstNode = adjustedDividend;
-            assert(!preShift);
-        }
-        // if "preShift" is required, then do a right shift before
-        else if (preShift)
-        {
-            GenTree* preShiftBy = comp->gtNewIconNode(preShift, TYP_INT);
-            adjustedDividend    = comp->gtNewOperNode(GT_RSZ, type, adjustedDividend, preShiftBy);
-            BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
-            firstNode = preShiftBy;
-        }
-        else if (type != TYP_I_IMPL)
-        {
-            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
-            BlockRange().InsertBefore(divMod, adjustedDividend);
-            firstNode = adjustedDividend;
-        }
-
-#ifdef TARGET_XARCH
-        // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // reduntant copies otherwise
-        if (firstNode && !simpleMul)
-            adjustedDividend->SetRegNum(REG_RAX);
-#endif
-
-        divisor->gtType = TYP_I_IMPL;
+        // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
+        // The existing node will later be transformed into a GT_RSZ/GT_SUB that
+        // computes the final result. This way don't need to find and change the use
+        // of the existing node.
+        GenTree* mulhi = comp->gtNewOperNode(GT_MULHI, type, dividend, divisor);
+        mulhi->gtFlags |= GTF_UNSIGNED;
         divisor->AsIntCon()->SetIconValue(magic);
+        BlockRange().InsertBefore(divMod, mulhi);
+        GenTree* firstNode = mulhi;
 
-        if (isDiv && !postShift && type == TYP_I_IMPL)
+        if (requiresAdjustment)
         {
-            divMod->SetOper(GT_MULHI);
-            divMod->gtOp1 = adjustedDividend;
-            divMod->gtFlags |= GTF_UNSIGNED;
+            dividend     = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
+            GenTree* sub = comp->gtNewOperNode(GT_SUB, type, dividend, mulhi);
+            BlockRange().InsertBefore(divMod, dividend, sub);
+
+            GenTree* one = comp->gtNewIconNode(1, TYP_INT);
+            GenTree* rsz = comp->gtNewOperNode(GT_RSZ, type, sub, one);
+            BlockRange().InsertBefore(divMod, one, rsz);
+
+            LIR::Use mulhiUse(BlockRange(), &sub->AsOp()->gtOp2, sub);
+            mulhi = ReplaceWithLclVar(mulhiUse);
+
+            mulhi        = comp->gtNewLclvNode(mulhi->AsLclVar()->GetLclNum(), mulhi->TypeGet());
+            GenTree* add = comp->gtNewOperNode(GT_ADD, type, rsz, mulhi);
+            BlockRange().InsertBefore(divMod, mulhi, add);
+
+            mulhi = add;
+            shift -= 1;
+        }
+
+        GenTree* shiftBy = comp->gtNewIconNode(shift, TYP_INT);
+        BlockRange().InsertBefore(divMod, shiftBy);
+
+        if (isDiv)
+        {
+            divMod->SetOper(GT_RSZ);
+            divMod->gtOp1 = mulhi;
+            divMod->gtOp2 = shiftBy;
         }
         else
         {
-            // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
-            // The existing node will later be transformed into a GT_RSZ/GT_SUB that
-            // computes the final result. This way don't need to find and change the use
-            // of the existing node.
-            GenTree* mulhi = comp->gtNewOperNode(simpleMul ? GT_MUL : GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
-            mulhi->gtFlags |= GTF_UNSIGNED;
-            BlockRange().InsertBefore(divMod, mulhi);
-            if (!firstNode)
-                firstNode = mulhi;
+            GenTree* div = comp->gtNewOperNode(GT_RSZ, type, mulhi, shiftBy);
 
-            if (postShift)
-            {
-                GenTree* shiftBy = comp->gtNewIconNode(postShift, TYP_INT);
-                BlockRange().InsertBefore(divMod, shiftBy);
+            // divisor UMOD dividend = dividend SUB (div MUL divisor)
+            GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
+            GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
+            dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
-                if (isDiv && type == TYP_I_IMPL)
-                {
-                    divMod->SetOper(GT_RSZ);
-                    divMod->gtOp1 = mulhi;
-                    divMod->gtOp2 = shiftBy;
-                }
-                else
-                {
-                    mulhi = comp->gtNewOperNode(GT_RSZ, TYP_I_IMPL, mulhi, shiftBy);
-                    BlockRange().InsertBefore(divMod, mulhi);
-                }
-            }
+            divMod->SetOper(GT_SUB);
+            divMod->gtOp1 = dividend;
+            divMod->gtOp2 = mul;
 
-            if (!isDiv)
-            {
-                // divisor UMOD dividend = dividend SUB (div MUL divisor)
-                GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
-                GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, mulhi, divisor);
-                dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
-
-                divMod->SetOper(GT_SUB);
-                divMod->gtOp1 = dividend;
-                divMod->gtOp2 = mul;
-
-                BlockRange().InsertBefore(divMod, divisor, mul, dividend);
-            }
-            else if (type != TYP_I_IMPL)
-            {
-#ifdef TARGET_ARMARCH
-                divMod->SetOper(GT_CAST);
-                divMod->gtFlags |= GTF_UNSIGNED;
-                divMod->AsCast()->gtCastType = TYP_UINT;
-#else
-                divMod->SetOper(GT_BITCAST);
-#endif
-                divMod->gtOp1 = mulhi;
-                divMod->gtOp2 = nullptr;
-            }
+            BlockRange().InsertBefore(divMod, div, divisor, mul, dividend);
         }
-
-        if (firstNode)
-            ContainCheckRange(firstNode, divMod);
+        ContainCheckRange(firstNode, divMod);
         return true;
     }
 #endif
