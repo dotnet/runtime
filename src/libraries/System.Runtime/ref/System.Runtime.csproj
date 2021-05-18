@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FeatureGenericMath>true</FeatureGenericMath>
     <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <!-- disable warnings about obsolete APIs,
@@ -9,6 +10,9 @@
     <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />
