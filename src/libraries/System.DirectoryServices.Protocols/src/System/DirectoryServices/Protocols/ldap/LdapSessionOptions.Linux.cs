@@ -9,12 +9,7 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) { /* No op */ }
 
-        [SupportedOSPlatform("windows")]
-        public bool SecureSocketLayer
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
+        public bool SecureSocketLayer { get; set; }
 
         public int ProtocolVersion
         {

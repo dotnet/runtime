@@ -32,8 +32,20 @@ namespace System.DirectoryServices.Protocols
             // available during init.
             Debug.Assert(!_ldapHandle.IsInvalid);
 
-            string scheme = "ldap://";
+            string scheme = null;
             LdapDirectoryIdentifier directoryIdentifier = (LdapDirectoryIdentifier)_directoryIdentifier;
+            if (directoryIdentifier.Connectionless)
+            {
+                scheme = "cldap://";
+            }
+            else if (SessionOptions.SecureSocketLayer)
+            {
+                scheme = "ldaps://";
+            }
+            else
+            {
+                scheme = "ldap://";
+            }
 
             string uris = null;
             string[] servers = directoryIdentifier.Servers;
