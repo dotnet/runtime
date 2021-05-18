@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TargetFramework>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <PreviousNetCoreApp>net5.0</PreviousNetCoreApp>
@@ -22,15 +21,14 @@
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
   </ItemGroup>
 
-  <!-- Evaluate these properties inside a Target to gain access to TargetFrameworkIdentifier. -->
+  <!-- Evaluate these properties inside a Target to gain access to IntermediateOutputPath. -->
   <Target Name="SetApiCompatFiles">
     <PropertyGroup>
       <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
-      <ApiCompatTarget>$(TargetFrameworkIdentifier.Substring(1).ToLower())</ApiCompatTarget>
-      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
-      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
-      <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
-      <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
+      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.txt</ApiCompatBaselineFile>
+      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
+      <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandard.txt</ApiCompatNSBaselineFile>
+      <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
     </PropertyGroup>
   </Target>
 
@@ -53,14 +51,14 @@
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
     <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
+          Condition="'$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(TargetFramework)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(NetCoreAppCurrent)" />
 
 
     <!--

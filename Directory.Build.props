@@ -277,4 +277,8 @@
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <CustomAfterNoTargetsProps>$(RepositoryEngineeringDir)NoTargetsSdk.AfterProps.props</CustomAfterNoTargetsProps>
+  </PropertyGroup>
 </Project>
