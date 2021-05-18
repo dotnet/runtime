@@ -364,7 +364,7 @@ fi
 $__Command $HARNESS_RUNNER android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --output-directory="$__OutputDir" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
-# Exist code of xharness is zero when tests finished successfully
+# Exit code of xharness is zero when tests finished successfully
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
@@ -413,7 +413,7 @@ echo ']})'
 echo ''
 
 
-# Exist code of xharness is zero when tests finished successfully
+# Exit code of xharness is zero when tests finished successfully
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
