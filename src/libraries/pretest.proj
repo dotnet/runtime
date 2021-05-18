@@ -84,11 +84,11 @@
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateTestSharedFrameworkAssets"
           AfterTargets="BuildExternalsProject"
-          Inputs="$(NETCoreAppTestSharedFrameworkPath)*.*"
-          Outputs="$(NETCoreAppTestSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
+          Inputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)*.*"
+          Outputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
           Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
-    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
+    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
