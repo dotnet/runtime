@@ -89,10 +89,8 @@ namespace System.Net.Http
 
                 if (_magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
                 {
-                    int newWindowSize = _streamWindowSize * 2;
-                    windowSizeIncrement += newWindowSize - _streamWindowSize;
-
-                    _streamWindowSize = newWindowSize;
+                    windowSizeIncrement += _streamWindowSize;
+                    _streamWindowSize *= 2;
 
                     _stream.Trace($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
                 }
