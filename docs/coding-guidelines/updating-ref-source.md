@@ -16,10 +16,14 @@ These steps can also be applied to some unique assemblies which depend on change
 1) Run `dotnet build --no-incremental /t:GenerateReferenceSource` from the System.Runtime/src directory.
 2) Filter out all unrelated changes and extract the changes you care about (ignore certain attributes being removed). Generally, this step is not required for other reference assemblies.
 
-## For Full Facade Assemblies
+## For Full Facade Assemblies implementation assemblies
 
-For assemblies that are "full facades" over another assembly (ex. System.Runtime.Serialization.Json or System.Xml.XDocument), use the following command to generate the reference source code instead:
+For implementation assemblies that are "full facades" over another assembly but define types in the reference assembly (ex. System.Runtime.Serialization.Json or System.Xml.XDocument), use the following command to generate the reference source code instead:
 
 ```
 dotnet msbuild /t:GenerateReferenceAssemblySource /p:GenAPIAdditionalParameters=--follow-type-forwards
 ```
+
+## For .NETFramework Facade Assemblies
+
+Many assemblies expose reference assemblies on .NETStandard and .NETCore which define types but require facades on .NETFramework to forward types to their existing location in .NETFramework.  In these cases we need to add type forwards manually to the reference assembly.  TypeForwards must be added for every type in the compatible .NETStandard reference assembly that exists in the .NETFramework, types which are defined in the .NETFramework reference should be factored into a shared source file.
