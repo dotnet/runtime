@@ -189,7 +189,6 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
                 // Send SETTINGS frame.  Disable push promise & set initial window size.
-#if true
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2*FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
@@ -200,14 +199,6 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(2);
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)InitialStreamWindowSize);
                 _outgoingBuffer.Commit(4);
-#else
-                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
-                _outgoingBuffer.Commit(FrameHeader.Size);
-                BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
-                _outgoingBuffer.Commit(2);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
-                _outgoingBuffer.Commit(4);
-#endif
 
                 // Send initial connection-level WINDOW_UPDATE
                 uint windowUpdateAmount = (uint)(ConnectionWindowSize - InitialStreamWindowSize);
@@ -796,12 +787,6 @@ namespace System.Net.Http
 
             if (frameHeader.StreamId == 0)
             {
-                if (amount > 2147000000)
-                {
-                    amount++;
-                    amount--;
-                }
-
                 _connectionWindow.AdjustCredit(amount);
             }
             else
