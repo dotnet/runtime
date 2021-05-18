@@ -201,11 +201,17 @@ namespace System
         {
             if (maxExclusive > minInclusive)
             {
-                Debug.Assert(result >= minInclusive && result < maxExclusive, $"Expected {minInclusive} <= {result} < {maxExclusive}");
+                if (result < minInclusive || result >= maxExclusive)
+                {
+                    Debug.Assert(false, $"Expected {minInclusive} <= {result} < {maxExclusive}");
+                }
             }
             else
             {
-                Debug.Assert(result == minInclusive, $"Expected {minInclusive} == {result}");
+                if (result != minInclusive)
+                {
+                    Debug.Assert(false, $"Expected {minInclusive} == {result}");
+                }
             }
         }
 
