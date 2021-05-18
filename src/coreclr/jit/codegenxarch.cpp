@@ -615,11 +615,7 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     assert(operand->isUsedFromReg());
     regNumber operandReg = genConsumeReg(operand);
 
-    if (operandReg != targetReg)
-    {
-        inst_RV_RV(INS_mov, targetReg, operandReg, targetType);
-    }
-
+    inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
     inst_RV_IV(INS_add, targetReg, 1, emitActualTypeSize(targetType));
     inst_RV_IV(INS_sbb, targetReg, 0, emitActualTypeSize(targetType));
 
