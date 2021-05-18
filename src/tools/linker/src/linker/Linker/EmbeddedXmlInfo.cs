@@ -126,24 +126,17 @@ namespace Mono.Linker
 
 		static DescriptorMarker GetExternalResolveStep (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
 		{
-			return new DescriptorMarker (context, GetExternalDescriptor (resource), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
+			return new DescriptorMarker (context, resource.GetResourceStream (), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
 		static BodySubstitutionParser GetExternalSubstitutionParser (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
 		{
-			return new BodySubstitutionParser (context, GetExternalDescriptor (resource), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
+			return new BodySubstitutionParser (context, resource.GetResourceStream (), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
 		static LinkAttributesParser GetExternalLinkAttributesParser (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
 		{
-			return new LinkAttributesParser (context, GetExternalDescriptor (resource), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
-		}
-
-		static XPathDocument GetExternalDescriptor (EmbeddedResource resource)
-		{
-			using (var sr = new StreamReader (resource.GetResourceStream ())) {
-				return new XPathDocument (sr);
-			}
+			return new LinkAttributesParser (context, resource.GetResourceStream (), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 	}
 }

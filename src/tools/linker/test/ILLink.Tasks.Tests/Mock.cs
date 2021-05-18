@@ -140,7 +140,7 @@ namespace ILLink.Tasks.Tests
 		protected override void AddResolveFromXmlStep (Pipeline pipeline, string file)
 		{
 			// Don't try to load an xml file - just pretend it exists.
-			pipeline.PrependStep (new ResolveFromXmlStep (document: null, file));
+			pipeline.PrependStep (new ResolveFromXmlStep (documentStream: null, file));
 		}
 
 		protected override void AddXmlDependencyRecorder (LinkContext context, string file)

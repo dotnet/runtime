@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.XPath;
@@ -15,13 +16,13 @@ namespace Mono.Linker.Steps
 	{
 		AttributeInfo _attributeInfo;
 
-		public LinkAttributesParser (LinkContext context, XPathDocument document, string xmlDocumentLocation)
-			: base (context, document, xmlDocumentLocation)
+		public LinkAttributesParser (LinkContext context, Stream documentStream, string xmlDocumentLocation)
+			: base (context, documentStream, xmlDocumentLocation)
 		{
 		}
 
-		public LinkAttributesParser (LinkContext context, XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
-			: base (context, document, resource, resourceAssembly, xmlDocumentLocation)
+		public LinkAttributesParser (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
+			: base (context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
 		{
 		}
 
@@ -49,13 +50,13 @@ namespace Mono.Linker.Steps
 
 					// TODO: Replace with IsAttributeType check once we have it
 					if (provider is not TypeDefinition) {
-						_context.LogWarning ($"Internal attribute '{attributeType.Name}' can only be used on attribute types", 2048, _xmlDocumentLocation);
+						LogWarning ($"Internal attribute '{attributeType.Name}' can only be used on attribute types", 2048, iterator.Current);
 						continue;
 					}
 				} else {
 					string attributeFullName = GetFullName (iterator.Current);
 					if (string.IsNullOrEmpty (attributeFullName)) {
-						_context.LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty", 2029, _xmlDocumentLocation);
+						LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty", 2029, iterator.Current);
 						continue;
 					}
 
@@ -136,10 +137,10 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition constructor = FindBestMatchingConstructor (attributeType, arguments);
 			if (constructor == null) {
-				_context.LogWarning (
+				LogWarning (
 					$"Could not find matching constructor for custom attribute '{attributeType.GetDisplayName ()}' arguments",
 					2022,
-					_xmlDocumentLocation);
+					iterator.Current);
 				return null;
 			}
 
@@ -185,13 +186,13 @@ namespace Mono.Linker.Steps
 			while (iterator.MoveNext ()) {
 				string propertyName = GetName (iterator.Current);
 				if (string.IsNullOrEmpty (propertyName)) {
-					_context.LogWarning ($"Property element does not contain attribute 'name'", 2051, _xmlDocumentLocation);
+					LogWarning ($"Property element does not contain attribute 'name'", 2051, iterator.Current);
 					continue;
 				}
 
 				PropertyDefinition property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
 				if (property == null) {
-					_context.LogWarning ($"Property '{propertyName}' could not be found", 2052, _xmlDocumentLocation);
+					LogWarning ($"Property '{propertyName}' could not be found", 2052, iterator.Current);
 					continue;
 				}
 
@@ -274,7 +275,7 @@ namespace Mono.Linker.Steps
 
 				TypeReference type = _context.TypeNameResolver.ResolveTypeName (svalue, memberWithAttribute, out _);
 				if (type == null) {
-					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'", 1044, _xmlDocumentLocation);
+					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'", 1044, origin: GetMessageOriginForPosition (iterator.Current));
 					return null;
 				}
 
@@ -293,7 +294,7 @@ namespace Mono.Linker.Steps
 
 				TypeReference typeref = _context.TypeNameResolver.ResolveTypeName (typeName, memberWithAttribute, out _);
 				if (typeref == null) {
-					_context.LogError ($"The type '{typeName}' used with attribute value '{iterator.Current.Value}' could not be found", 1041, _xmlDocumentLocation);
+					_context.LogError ($"The type '{typeName}' used with attribute value '{iterator.Current.Value}' could not be found", 1041, origin: GetMessageOriginForPosition (iterator.Current));
 					return null;
 				}
 
@@ -366,12 +367,12 @@ namespace Mono.Linker.Steps
 				try {
 					assembly = _context.TryResolve (AssemblyNameReference.Parse (assemblyName));
 					if (assembly == null) {
-						_context.LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, _xmlDocumentLocation);
+						LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, iterator.Current);
 						attributeType = default;
 						return false;
 					}
 				} catch (Exception) {
-					_context.LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, _xmlDocumentLocation);
+					LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, iterator.Current);
 					attributeType = default;
 					return false;
 				}
@@ -380,7 +381,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (attributeType == null) {
-				_context.LogWarning ($"Attribute type '{attributeFullName}' could not be found", 2031, _xmlDocumentLocation);
+				LogWarning ($"Attribute type '{attributeFullName}' could not be found", 2031, iterator.Current);
 				return false;
 			}
 
@@ -447,9 +448,9 @@ namespace Mono.Linker.Steps
 					foreach (ParameterDefinition parameter in method.Parameters) {
 						if (paramName == parameter.Name) {
 							if (parameter.HasCustomAttributes || _attributeInfo.CustomAttributes.ContainsKey (parameter))
-								_context.LogWarning (
+								LogWarning (
 									$"More than one value specified for parameter '{paramName}' of method '{method.GetDisplayName ()}'",
-									2024, _xmlDocumentLocation);
+									2024, iterator.Current);
 							_attributeInfo.AddCustomAttributes (parameter, attributes);
 							break;
 						}
@@ -467,9 +468,9 @@ namespace Mono.Linker.Steps
 					firstAppearance = false;
 					PopulateAttributeInfo (method.MethodReturnType, iterator.Current);
 				} else {
-					_context.LogWarning (
+					LogWarning (
 						$"There is more than one 'return' child element specified for method '{method.GetDisplayName ()}'",
-						2023, _xmlDocumentLocation);
+						2023, iterator.Current);
 				}
 			}
 		}

@@ -10,9 +10,9 @@ namespace Mono.Linker
 		internal const string TargetProperty = "Target";
 		internal const string MessageIdProperty = "MessageId";
 
-		private readonly LinkContext _context;
-		private readonly Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> _suppressions;
-		private HashSet<AssemblyDefinition> InitializedAssemblies { get; }
+		readonly LinkContext _context;
+		readonly Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> _suppressions;
+		HashSet<AssemblyDefinition> InitializedAssemblies { get; }
 
 		public UnconditionalSuppressMessageAttributeState (LinkContext context)
 		{
@@ -30,7 +30,7 @@ namespace Mono.Linker
 			AddSuppression (info, provider);
 		}
 
-		private void AddSuppression (SuppressMessageInfo info, ICustomAttributeProvider provider)
+		void AddSuppression (SuppressMessageInfo info, ICustomAttributeProvider provider)
 		{
 			if (!_suppressions.TryGetValue (provider, out var suppressions)) {
 				suppressions = new Dictionary<int, SuppressMessageInfo> ();
@@ -67,7 +67,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		private bool IsSuppressed (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
+		bool IsSuppressed (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
 		{
 			info = default;
 			if (provider == null)
@@ -77,7 +77,7 @@ namespace Mono.Linker
 				suppressions.TryGetValue (id, out info);
 		}
 
-		private static bool TryDecodeSuppressMessageAttributeData (CustomAttribute attribute, out SuppressMessageInfo info)
+		static bool TryDecodeSuppressMessageAttributeData (CustomAttribute attribute, out SuppressMessageInfo info)
 		{
 			info = default;
 
@@ -138,7 +138,7 @@ namespace Mono.Linker
 			}
 		}
 
-		private void DecodeModuleLevelAndGlobalSuppressMessageAttributes (ModuleDefinition module)
+		void DecodeModuleLevelAndGlobalSuppressMessageAttributes (ModuleDefinition module)
 		{
 			AssemblyDefinition assembly = module.Assembly;
 			if (InitializedAssemblies.Add (assembly)) {

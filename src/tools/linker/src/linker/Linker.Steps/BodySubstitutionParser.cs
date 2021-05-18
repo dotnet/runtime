@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Xml.XPath;
 using Mono.Cecil;
@@ -10,13 +11,13 @@ namespace Mono.Linker.Steps
 	{
 		SubstitutionInfo _substitutionInfo;
 
-		public BodySubstitutionParser (LinkContext context, XPathDocument document, string xmlDocumentLocation)
-			: base (context, document, xmlDocumentLocation)
+		public BodySubstitutionParser (LinkContext context, Stream documentStream, string xmlDocumentLocation)
+			: base (context, documentStream, xmlDocumentLocation)
 		{
 		}
 
-		public BodySubstitutionParser (LinkContext context, XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "")
-			: base (context, document, resource, resourceAssembly, xmlDocumentLocation)
+		public BodySubstitutionParser (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "")
+			: base (context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
 		{
 		}
 
@@ -77,7 +78,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				_context.LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'", 2009, _xmlDocumentLocation);
+				LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'", 2009, iterator.Current);
 				return;
 			}
 
@@ -90,7 +91,7 @@ namespace Mono.Linker.Steps
 				string value = GetAttribute (iterator.Current, "value");
 				if (!string.IsNullOrEmpty (value)) {
 					if (!TryConvertValue (value, method.ReturnType, out object res)) {
-						_context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
+						LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, iterator.Current);
 						return;
 					}
 
@@ -100,7 +101,7 @@ namespace Mono.Linker.Steps
 				_substitutionInfo.SetMethodAction (method, MethodAction.ConvertToStub);
 				return;
 			default:
-				_context.LogWarning ($"Unknown body modification '{action}' for '{method.GetDisplayName ()}'", 2011, _xmlDocumentLocation);
+				LogWarning ($"Unknown body modification '{action}' for '{method.GetDisplayName ()}'", 2011, iterator.Current);
 				return;
 			}
 		}
@@ -113,22 +114,22 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				_context.LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'", 2012, _xmlDocumentLocation);
+				LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'", 2012, iterator.Current);
 				return;
 			}
 
 			if (!field.IsStatic || field.IsLiteral) {
-				_context.LogWarning ($"Substituted field '{field.GetDisplayName ()}' needs to be static field.", 2013, _xmlDocumentLocation);
+				LogWarning ($"Substituted field '{field.GetDisplayName ()}' needs to be static field.", 2013, iterator.Current);
 				return;
 			}
 
 			string value = GetAttribute (iterator.Current, "value");
 			if (string.IsNullOrEmpty (value)) {
-				_context.LogWarning ($"Missing 'value' attribute for field '{field.GetDisplayName ()}'.", 2014, _xmlDocumentLocation);
+				LogWarning ($"Missing 'value' attribute for field '{field.GetDisplayName ()}'.", 2014, iterator.Current);
 				return;
 			}
 			if (!TryConvertValue (value, field.FieldType, out object res)) {
-				_context.LogWarning ($"Invalid value '{value}' for '{field.GetDisplayName ()}'.", 2015, _xmlDocumentLocation);
+				LogWarning ($"Invalid value '{value}' for '{field.GetDisplayName ()}'.", 2015, iterator.Current);
 				return;
 			}
 
@@ -150,19 +151,19 @@ namespace Mono.Linker.Steps
 
 				string name = GetAttribute (nav, "name");
 				if (String.IsNullOrEmpty (name)) {
-					_context.LogWarning ($"Missing 'name' attribute for resource.", 2038, _xmlDocumentLocation);
+					LogWarning ($"Missing 'name' attribute for resource.", 2038, iterator.Current);
 					continue;
 				}
 
 				string action = GetAttribute (nav, "action");
 				if (action != "remove") {
-					_context.LogWarning ($"Invalid value '{action}' for attribute 'action' for resource '{name}'.", 2039, _xmlDocumentLocation);
+					LogWarning ($"Invalid value '{action}' for attribute 'action' for resource '{name}'.", 2039, iterator.Current);
 					continue;
 				}
 
 				EmbeddedResource resource = assembly.FindEmbeddedResource (name);
 				if (resource == null) {
-					_context.LogWarning ($"Could not find embedded resource '{name}' to remove in assembly '{assembly.Name.Name}'.", 2040, _xmlDocumentLocation);
+					LogWarning ($"Could not find embedded resource '{name}' to remove in assembly '{assembly.Name.Name}'.", 2040, iterator.Current);
 					continue;
 				}
 

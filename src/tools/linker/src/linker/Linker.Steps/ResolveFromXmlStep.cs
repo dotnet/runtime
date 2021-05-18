@@ -28,20 +28,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Xml.XPath;
+using System.IO;
 
 namespace Mono.Linker.Steps
 {
 	public class ResolveFromXmlStep : ProcessLinkerXmlStepBase
 	{
-		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation)
-			: base (document, xmlDocumentLocation)
+		public ResolveFromXmlStep (Stream documentStream, string xmlDocumentLocation)
+			: base (documentStream, xmlDocumentLocation)
 		{
 		}
 
 		protected override void Process ()
 		{
-			new DescriptorMarker (Context, _document, _xmlDocumentLocation).Mark ();
+			new DescriptorMarker (Context, _documentStream, _xmlDocumentLocation).Mark ();
 		}
 	}
 }
