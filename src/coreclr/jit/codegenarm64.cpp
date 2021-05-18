@@ -1756,7 +1756,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Produce code for a GT_INC_SATURATE node.
 void CodeGen::genCodeForIncSaturate(GenTree* tree)
 {
-    regNumber targetReg  = tree->GetRegNum();
+    regNumber targetReg = tree->GetRegNum();
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(!tree->isContained());
