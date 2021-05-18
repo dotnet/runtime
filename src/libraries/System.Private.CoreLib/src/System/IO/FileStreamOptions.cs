@@ -22,7 +22,9 @@ namespace System.IO
         /// </summary>
         public FileOptions Options { get; set; }
         /// <summary>
-        /// The initial allocation size in bytes for the file. A value has no effect unless it's positive and a regular file is being created, overwritten, or replaced.
+        /// The initial allocation size in bytes for the file. A positive value is effective only when a regular file is being created, overwritten, or replaced.
+        /// When the value is negative, the <see cref="FileStream" /> constructor throws an <exception cref="T:System.ArgumentOutOfRangeException">.
+        /// In other cases (including the default 0 value), it's ignored.
         /// </summary>
         public long PreallocationSize { get; set; }
     }
