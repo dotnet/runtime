@@ -127,14 +127,13 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <param name="func">The function override.</param>
         /// <exception cref="InvalidOperationException">Thrown if the msgSend function has already been overridden.</exception>
         /// <remarks>
-        /// Providing an override can enable support for Objective-C
-        /// exception propagation and variadic argument support.
+        /// Providing an override can enable support for Objective-C variadic argument support.
         /// </remarks>
         public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, IntPtr func)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
-        /// Sets a pending exception to be thrown the next time the runtime is entered from an overridden msgSend P/Invoke.
+        /// Sets a pending exception to be thrown the next time the runtime is entered from an Objective-C msgSend P/Invoke.
         /// </summary>
         /// <param name="exception">The exception.</param>
         /// <remarks>
