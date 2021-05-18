@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Logging
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "IConfiguration.GetValue<T> is safe when T is not generic. In this case, T is bool.")]
+                Justification = "IConfiguration.GetValue is safe when T is a bool.")]
             bool GetCaptureScopesValue(LoggerFilterOptions options) => _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
         }
 

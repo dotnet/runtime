@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
     public static class ConfigurationBinder
     {
         private const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
-        private const string TrimmingWarningMessage = "In case the type is Generic, the trimmer cannot statically analyze the generic type arguments so their members may be trimmed.";
+        private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
 
