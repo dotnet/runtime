@@ -8559,7 +8559,7 @@ const char* LinearScan::getStatName(unsigned stat)
 #define LSRA_STAT_DEF(stat, name) name,
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
-#define REG_SEL_DEF(stat, value, shortname) #stat,
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
 #include "lsra_score.h"
 #undef REG_SEL_DEF
     };
@@ -8572,8 +8572,8 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 {
     switch (registerScore)
     {
-#define REG_SEL_DEF(stat, value, shortname)           \
-        case RegisterScore::stat:                     \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)           \
+        case RegisterScore::stat:                                 \
             return LsraStat::STAT_##stat;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
@@ -8852,7 +8852,7 @@ const char* LinearScan::getScoreName(RegisterScore score)
 {
     switch (score)
     {
-#define REG_SEL_DEF(stat, value, shortname)                                                                            \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case stat:                                                                                                         \
         return shortname;
 #include "lsra_score.h"
@@ -10808,29 +10808,40 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #ifdef DEBUG
     mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
 
-#define REG_SEL_DEF(stat, value, shortname) mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
+    mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
 #include "lsra_score.h"
 #undef REG_SEL_DEF
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
-
     if (ordering == nullptr)
     {
-        memcpy(RegSelectionOrder, DefaultOrder, sizeof(RegisterScore) * REGSELECT_HEURISTIC_COUNT);
+        ordering = L"ABCDEFGHIJKLMNOPQ";
     }
-    else
-    {
-        for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
-        {
-            // Make sure we do not set repeated entries
-            assert(RegSelectionOrder[orderId] == NONE);
 
-            RegSelectionOrder[orderId] = DefaultOrder[ordering[orderId] - 'A'];
+    for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
+    {
+        // Make sure we do not set repeated entries
+        assert(RegSelectionOrder[orderId] == NONE);
+
+        switch (ordering[orderId])
+        {
+#define REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                                                           \
+    case orderSeqId:                                                                                                   \
+        RegSelectionOrder[orderId] = RegisterScore::##enum_name;                                                       \
+        break;
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+            default:
+                assert(!"Invalid lsraOrdering value.");
         }
     }
 #endif // DEBUG
 }
 
+// ----------------------------------------------------------
+//  reset: Resets the values of all the fields used for register selection.
+//
 void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPos)
 {
     currentInterval = interval;
@@ -10849,7 +10860,7 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     relatedPreferences = (relatedInterval == nullptr) ? RBM_NONE : relatedInterval->getCurrentPreferences();
 
     rangeEndLocation    = refPosition->getRangeEndLocation();
-    relatedLastLocation = rangeEndLocation; // TODO:kpathak - need to see why this is not used after refactor?
+    relatedLastLocation = rangeEndLocation;
     preferCalleeSave    = currentInterval->preferCalleeSave;
     rangeEndRefPosition = nullptr;
     lastRefPosition     = currentInterval->lastRefPosition;
@@ -10872,6 +10883,16 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     coversSetsCalculated = false;
 }
 
+// ----------------------------------------------------------
+//  applySelection: Apply the heuristic to the candidates.
+//
+// Arguments:
+//  selectionScore:         The score corresponding to the heuristics we apply.
+//  selectionCandidates:    The possible candidates for the heuristic to apply.
+//
+//  Return Values:
+//      'true' if there was a single register candidate available after the heuristic is applied.
+//
 bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP selectionCandidates)
 {
     regMaskTP newCandidates = candidates & selectionCandidates;
@@ -10884,8 +10905,16 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP
     return false;
 }
 
-// Select a single register, if it is in the candidate set.
-// Return true if so.
+// ----------------------------------------------------------
+//  applySingleRegSelection: Select a single register, if it is in the candidate set.
+//
+// Arguments:
+//  selectionScore:         The score corresponding to the heuristics we apply.
+//  selectionCandidates:    The possible candidates for the heuristic to apply.
+//
+//  Return Values:
+//      'true' if there was a single register candidate available after the heuristic is applied.
+//
 bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
 {
     assert(LinearScan::isSingleRegister(selectionCandidate));
@@ -10898,6 +10927,9 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
     return false;
 }
 
+// ----------------------------------------------------------
+//  try_FREE: Apply the FREE heuristic.
+//
 void LinearScan::RegisterSelection::try_FREE()
 {
     assert(!found);
@@ -10909,8 +10941,11 @@ void LinearScan::RegisterSelection::try_FREE()
     found = applySelection(FREE, freeCandidates);
 }
 
-// Apply the CONST_AVAILABLE (matching constant) heuristic.
-// Note that we always need to define the 'matchingConstants' set.
+// ----------------------------------------------------------
+//  try_CONST_AVAILABLE: Apply the CONST_AVAILABLE (matching constant) heuristic.
+//
+//  Note: we always need to define the 'matchingConstants' set.
+//
 void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 {
     assert(!found);
@@ -10925,7 +10960,9 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
     }
 }
 
-// Apply the THIS_ASSIGNED heuristic.
+// ----------------------------------------------------------
+//  try_THIS_ASSIGNED: Apply the THIS_ASSIGNED heuristic.
+//
 void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
 {
     assert(!found);
@@ -10940,42 +10977,51 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
     }
 }
 
-// Apply the COVERS heuristic.
+// ----------------------------------------------------------
+//  try_COVERS: Apply the COVERS heuristic.
+//
 void LinearScan::RegisterSelection::try_COVERS()
 {
     assert(!found);
 
-    calculateSets();
+    calculateCoversSets();
 
     found = applySelection(COVERS, coversSet & preferenceSet);
 }
 
-// Apply the OWN_PREFERENCE heuristic.
-// Note that 'preferenceSet' already includes only freeCandidates.
+// ----------------------------------------------------------
+//  try_OWN_PREFERENCE: Apply the OWN_PREFERENCE heuristic.
+//
+//  Note: 'preferenceSet' already includes only freeCandidates.
+//
 void LinearScan::RegisterSelection::try_OWN_PREFERENCE()
 {
     assert(!found);
 
 #ifdef DEBUG
-    calculateSets();
+    calculateCoversSets();
 #endif
 
     found = applySelection(OWN_PREFERENCE, (preferenceSet & freeCandidates));
 }
 
-// Apply the COVERS_RELATED heuristic.
+// ----------------------------------------------------------
+//  try_COVERS_RELATED: Apply the COVERS_RELATED heuristic.
+//
 void LinearScan::RegisterSelection::try_COVERS_RELATED()
 {
     assert(!found);
 
 #ifdef DEBUG
-    calculateSets();
+    calculateCoversSets();
 #endif
 
     found = applySelection(COVERS_RELATED, (coversRelatedSet & freeCandidates));
 }
 
-// Apply the RELATED_PREFERENCE heuristic.
+// ----------------------------------------------------------
+//  try_RELATED_PREFERENCE: Apply the RELATED_PREFERENCE heuristic.
+//
 void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
 {
     assert(!found);
@@ -10983,7 +11029,9 @@ void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
     found = applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates);
 }
 
-// Apply the CALLER_CALLEE heuristic.
+// ----------------------------------------------------------
+//  try_CALLER_CALLEE: Apply the CALLER_CALLEE heuristic.
+//
 void LinearScan::RegisterSelection::try_CALLER_CALLEE()
 {
     assert(!found);
@@ -10991,30 +11039,37 @@ void LinearScan::RegisterSelection::try_CALLER_CALLEE()
     found = applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates);
 }
 
-// Apply the UNASSIGNED heuristic.
+// ----------------------------------------------------------
+//  try_UNASSIGNED: Apply the UNASSIGNED heuristic.
+//
 void LinearScan::RegisterSelection::try_UNASSIGNED()
 {
     assert(!found);
 
 #ifdef DEBUG
-    calculateSets();
+    calculateCoversSets();
 #endif
 
     found = applySelection(UNASSIGNED, unassignedSet);
 }
 
-// Apply the COVERS_FULL heuristic.
+// ----------------------------------------------------------
+//  try_COVERS_FULL: Apply the COVERS_FULL heuristic.
+//
 void LinearScan::RegisterSelection::try_COVERS_FULL()
 {
     assert(!found);
 
 #ifdef DEBUG
-    calculateSets();
+    calculateCoversSets();
 #endif
 
     found = applySelection(COVERS_FULL, (coversFullSet & freeCandidates));
 }
 
+// ----------------------------------------------------------
+//  try_BEST_FIT: Apply the BEST_FIT heuristic.
+//
 void LinearScan::RegisterSelection::try_BEST_FIT()
 {
     assert(!found);
@@ -11086,8 +11141,12 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     found = applySelection(BEST_FIT, bestFitSet);
 }
 
-// Apply the IS_PREV_REG heuristic. TODO: Check if Only applies if we have freeCandidates.
-// Oddly, the previous heuristics only considered this if it covered the range.
+// ----------------------------------------------------------
+//  try_IS_PREV_REG: Apply the IS_PREV_REG heuristic.
+//
+//  Note:  Oddly, the previous heuristics only considered this if it covered the range.
+//  TODO: Check if Only applies if we have freeCandidates.
+//
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
     // TODO: We do not check found here.
@@ -11097,7 +11156,9 @@ void LinearScan::RegisterSelection::try_IS_PREV_REG()
     }
 }
 
-// Apply the REG_ORDER heuristic. Only applies if we have freeCandidates.
+// ----------------------------------------------------------
+//  try_REG_ORDER: Apply the REG_ORDER heuristic. Only applies if we have freeCandidates.
+//
 void LinearScan::RegisterSelection::try_REG_ORDER()
 {
     assert(!found);
@@ -11128,6 +11189,9 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     found = applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
 }
 
+// ----------------------------------------------------------
+//  try_SPILL_COST: Apply the SPILL_COST heuristic.
+//
 void LinearScan::RegisterSelection::try_SPILL_COST()
 {
     assert(!found);
@@ -11199,7 +11263,9 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     found = applySelection(SPILL_COST, lowestCostSpillSet);
 }
 
-// Apply the FAR_NEXT_REF heuristic.
+// ----------------------------------------------------------
+//  try_FAR_NEXT_REF: Apply the FAR_NEXT_REF heuristic.
+//
 void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
 {
     assert(!found);
@@ -11231,7 +11297,9 @@ void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
     found = applySelection(FAR_NEXT_REF, farthestSet);
 }
 
-// Apply the PREV_REG_OPT heuristic.
+// ----------------------------------------------------------
+//  try_PREV_REG_OPT: Apply the PREV_REG_OPT heuristic.
+//
 void LinearScan::RegisterSelection::try_PREV_REG_OPT()
 {
     assert(!found);
@@ -11310,7 +11378,9 @@ void LinearScan::RegisterSelection::try_PREV_REG_OPT()
     found = applySelection(PREV_REG_OPT, prevRegOptSet);
 }
 
-// Apply the REG_NUM heuristic.
+// ----------------------------------------------------------
+//  try_REG_NUM: Apply the REG_NUM heuristic.
+//
 void LinearScan::RegisterSelection::try_REG_NUM()
 {
     assert(!found);
@@ -11318,7 +11388,11 @@ void LinearScan::RegisterSelection::try_REG_NUM()
     found = applySingleRegSelection(REG_NUM, genFindLowestBit(candidates));
 }
 
-void LinearScan::RegisterSelection::calculateSets()
+// ----------------------------------------------------------
+//  calculateCoversSets: Calculate the necessary covers set registers to be used
+//      for heuristics lke COVERS, COVERS_RELATED, COVERS_FULL.
+//
+void LinearScan::RegisterSelection::calculateCoversSets()
 {
     if (freeCandidates == RBM_NONE || coversSetsCalculated)
     {
@@ -11359,7 +11433,7 @@ void LinearScan::RegisterSelection::calculateSets()
             }
             if ((coversCandidateBit & relatedPreferences) != RBM_NONE)
             {
-                if (coversCandidateLocation > relatedInterval->lastRefPosition->nodeLocation)
+                if (coversCandidateLocation > relatedLastLocation)
                 {
                     coversRelatedSet |= coversCandidateBit;
                 }
@@ -11390,6 +11464,16 @@ void LinearScan::RegisterSelection::calculateSets()
     coversSetsCalculated = true;
 }
 
+// ----------------------------------------------------------
+//  select: For given `currentInterval` and `refPosition`, selects a register to be assigned.
+//
+// Arguments:
+//   currentInterval - Current interval for which register needs to be selected.
+//   refPosition     - Refposition within the interval for which register needs to be selected.
+//
+//  Return Values:
+//      Register bit selected (a single register) and REG_NA if no register was selected.
+//
 regMaskTP LinearScan::RegisterSelection::select(Interval*                currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
@@ -11684,7 +11768,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
 
 #ifdef DEBUG
     HeuristicFn fn;
-    for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT /*heuristicsCount*/; orderId++)
+    for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
     {
         IF_FOUND_GOTO_DONE
 
@@ -11710,7 +11794,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
 #else // RELEASE
     // In release, just invoke the default order
 
-#define REG_SEL_DEF(stat, value, shortname)                                                                            \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \
     IF_FOUND_GOTO_DONE
 #include "lsra_score.h"
@@ -11724,7 +11808,7 @@ Selection_Done:
         return REG_NA;
     }
 
-    calculateSets();
+    calculateCoversSets();
 
     assert(found && isSingleRegister(candidates));
     foundRegBit = candidates;
