@@ -329,7 +329,7 @@ namespace Microsoft.NET.HostModel.Bundle
                         (long startOffset, long compressedSize) = AddToBundle(bundle, file, targetType);
                         FileEntry entry = BundleManifest.AddEntry(targetType, relativePath, startOffset, file.Length, compressedSize, Target.BundleMajorVersion);
                         file.Position = 0;
-                        byte[] hashBytes = SHA256Managed.Create().ComputeHash(file);
+                        byte[] hashBytes = ComputeSha256Hash(file);
                         hashAlg.TransformBlock(hashBytes, 0, hashBytes.Length, hashBytes, 0);
                         Tracer.Log($"Embed: {entry}");
                     }
@@ -350,6 +350,14 @@ namespace Microsoft.NET.HostModel.Bundle
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
             return bundlePath;
+        }
+
+        private static byte[] ComputeSha256Hash(Stream stream)
+        {
+            using (SHA256 sha = new SHA256Managed())
+            {
+                return sha.ComputeHash(stream);
+            }
         }
     }
 }
