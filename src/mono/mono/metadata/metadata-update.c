@@ -10,20 +10,11 @@
 #include <config.h>
 #include "mono/utils/mono-compiler.h"
 
-#ifdef ENABLE_METADATA_UPDATE
-
-#include <glib.h>
-#include "mono/metadata/assembly-internals.h"
-#include "mono/metadata/components.h"
-#include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
-#include "mono/metadata/object-internals.h"
-#include "mono/metadata/tokentype.h"
-#include "mono/utils/mono-coop-mutex.h"
-#include "mono/utils/mono-error-internals.h"
-#include "mono/utils/mono-lazy-init.h"
-#include "mono/utils/mono-logger-internals.h"
-#include "mono/utils/mono-path.h"
+#include "mono/metadata/components.h"
+#include "mono/component/hot_reload.h"
+
+#ifdef ENABLE_METADATA_UPDATE
 
 MonoMetadataUpdateData mono_metadata_update_data_private;
 

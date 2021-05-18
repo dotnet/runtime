@@ -522,22 +522,8 @@ struct _MonoImage {
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
 
-#ifdef ENABLE_METADATA_UPDATE
-	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
-	GList *delta_image;
-	/* Tail of delta_image for fast appends */
-	GList *delta_image_last;
-
-	/* Metadata delta images only */
-	uint32_t generation; /* global update ID that added this delta image */
-
-	/* Maps MethodDef token indices to something. In base images a boolean
-	 * flag that there's an update for the method; in delta images a
-	 * pointer into the RVA of the delta IL */
-	GHashTable *method_table_update;
-
-
-#endif
+        /* baseline images only: whether any metadata updates have been applied to this image */
+        gboolean has_updates;
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
@@ -799,6 +785,13 @@ mono_install_image_loader (const MonoImageLoader *loader);
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
+typedef struct _MonoMetadataUpdateData MonoMetadataUpdateData;
+
+struct _MonoMetadataUpdateData {
+	int has_updates;
+};
+
+
 #ifndef ENABLE_METADATA_UPDATE
 static inline gboolean
 mono_metadata_has_updates (void)
@@ -811,10 +804,6 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 }
 #else /* ENABLE_METADATA_UPDATE */
-
-typedef struct _MonoMetadataUpdateData {
-	int has_updates;
-} MonoMetadataUpdateData;
 
 extern MonoMetadataUpdateData mono_metadata_update_data_private;
 

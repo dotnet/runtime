@@ -12,14 +12,14 @@
 void
 mono_metadata_update_init (void);
 
-#ifdef ENABLE_METADATA_UPDATE
-
 enum MonoModifiableAssemblies {
 	/* modifiable assemblies are disabled */
 	MONO_MODIFIABLE_ASSM_NONE = 0,
 	/* assemblies with the Debug flag are modifiable */
 	MONO_MODIFIABLE_ASSM_DEBUG = 1,
 };
+
+#ifdef ENABLE_METADATA_UPDATE
 
 gboolean
 mono_metadata_update_enabled (int *modifiable_assemblies_out);
