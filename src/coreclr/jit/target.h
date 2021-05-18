@@ -249,7 +249,6 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 /*****************************************************************************/
 
 #define BITS_PER_BYTE              8
-#define REGNUM_MASK              ((1 << REGNUM_BITS) - 1)     // a n-bit mask use to encode multiple REGNUMs into a unsigned int
 #define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
