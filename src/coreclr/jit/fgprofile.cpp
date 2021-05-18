@@ -2590,35 +2590,48 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
 {
     assert(block->bbJumpKind == BBJ_SWITCH);
 
+    // Thresholds for detecting a dominant switch case.
+    //
+    // We need to see enough hits on the switch to have a plausible sense of the distribution of cases.
+    // We also want to enable peeling for switches that are executed at least once per call.
+    // By default, we're guaranteed to see at least 30 calls to instrumented method, for dynamic PGO.
+    // Hence we require at least 30 observed switch executions.
+    //
+    // The profitabilty of peeling is related to the dominant fraction. The cost has a constant portion
+    // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
+    // So we don't want to peel in cases where the dominant fraction is too small.
+    //
     const BasicBlock::weight_t sufficientSamples  = 30.0f;
-    const BasicBlock::weight_t sufficientFraction = 0.3f;
+    const BasicBlock::weight_t sufficientFraction = 0.55f;
 
     if (info->m_weight < sufficientSamples)
     {
+        JITDUMP("Switch in " FMT_BB " was hit " FMT_WT " < " FMT_WT " times, NOT checking for dominant edge\n",
+                block->bbNum, info->m_weight, sufficientSamples);
         return;
     }
 
     JITDUMP("Switch in " FMT_BB " was hit " FMT_WT " >= " FMT_WT " times, checking for dominant edge\n", block->bbNum,
             info->m_weight, sufficientSamples);
-    Edge* dominantEdge = info->m_outgoingEdges;
+    Edge* dominantEdge = nullptr;
 
-    for (Edge* edge = dominantEdge->m_nextOutgoingEdge; edge != nullptr; edge = edge->m_nextOutgoingEdge)
+    // We don't expect to see any unknown edge weights; if we do, just bail out.
+    //
+    for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
-        if (edge->m_weightKnown)
+        if (!edge->m_weightKnown)
         {
-            if (!dominantEdge->m_weightKnown || (edge->m_weight > dominantEdge->m_weight))
-            {
-                dominantEdge = edge;
-            }
+            JITDUMP("Found edge with unknown weight.\n");
+            return;
+        }
+
+        if ((dominantEdge == nullptr) || (edge->m_weight > dominantEdge->m_weight))
+        {
+            dominantEdge = edge;
         }
     }
 
-    if (!dominantEdge->m_weightKnown)
-    {
-        JITDUMP("No edges with known counts, sorry\n");
-        return;
-    }
-
+    assert(dominantEdge != nullptr);
     BasicBlock::weight_t fraction = dominantEdge->m_weight / info->m_weight;
 
     // Because of count inconsistency we can see nonsensical ratios. Cap these.

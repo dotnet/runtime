@@ -1805,7 +1805,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     // If either block or bNext has a profile weight
     // or if both block and bNext have non-zero weights
-    // then we wil use the max weight for the block.
+    // then we will use the max weight for the block.
     //
     const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
     const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
@@ -3745,17 +3745,17 @@ bool Compiler::fgOptimizeSwitchJumps()
 
     for (BasicBlock* block = fgFirstBB; block != NULL; block = block->bbNext)
     {
-        if (block->IsLIR())
-        {
-            break;
-        }
+        // Lowering expands switches, so calling this method on lowered IR
+        // does not make sense.
+        //
+        assert(!block->IsLIR());
 
-        if (block->isRunRarely())
+        if (block->bbJumpKind != BBJ_SWITCH)
         {
             continue;
         }
 
-        if (block->bbJumpKind != BBJ_SWITCH)
+        if (block->isRunRarely())
         {
             continue;
         }

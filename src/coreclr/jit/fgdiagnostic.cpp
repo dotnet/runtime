@@ -1933,19 +1933,33 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_SWITCH:
+            {
                 printf("->");
 
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-                int switchWidth;
-                switchWidth = 0;
-                do
+                const BBswtDesc* const bbJumpSwt   = block->bbJumpSwt;
+                const unsigned         jumpCnt     = bbJumpSwt->bbsCount;
+                BasicBlock** const     jumpTab     = bbJumpSwt->bbsDstTab;
+                int                    switchWidth = 0;
+
+                for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c" FMT_BB, (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
-                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits((*jumpTab)->bbNum), 2);
-                } while (++jumpTab, --jumpCnt);
+                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+
+                    const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    if (isDefault)
+                    {
+                        printf("[def]");
+                        switchWidth += 5;
+                    }
+
+                    const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                    if (isDominant)
+                    {
+                        printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                        switchWidth += 10;
+                    }
+                }
 
                 if (switchWidth < 7)
                 {
@@ -1953,7 +1967,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 }
 
                 printf(" (switch)");
-                break;
+            }
+            break;
         }
     }
 
