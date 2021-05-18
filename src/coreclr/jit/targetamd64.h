@@ -89,7 +89,6 @@
 #endif // !UNIX_AMD64_ABI
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
-  #define REGMASK_BITS             32      // number of bits in a REGNUM_MASK
   #define REGSIZE_BYTES            8       // number of bytes in one register
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes

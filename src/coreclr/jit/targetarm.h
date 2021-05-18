@@ -52,7 +52,6 @@
   #define LAST_FP_ARGREG           REG_F15
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
-  #define REGMASK_BITS             64      // number of bits in a REGNUM_MASK
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
