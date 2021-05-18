@@ -1218,25 +1218,27 @@ public:
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count = 1;
-        schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+        schemaElem.Other = ICorJitInfo::ClassProfile32::CLASS_FLAG;
         if (call->IsVirtualStub())
         {
-            schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+            schemaElem.Other |= ICorJitInfo::ClassProfile32::INTERFACE_FLAG;
         }
         else
         {
             assert(call->IsVirtualVtable());
         }
 
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
-        schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-        schemaElem.Offset              = 0;
+        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
         schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-        schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+        schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -1283,8 +1285,11 @@ public:
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
-        assert(m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-               ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+        bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
+        assert(is32 || is64);
 
         // Figure out where the table is located.
         //
@@ -1301,10 +1306,12 @@ public:
         GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
         GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const helperCallNode = compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const          helperCallNode =
+            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
+                                          args);
+        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
         GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
@@ -1757,7 +1764,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
