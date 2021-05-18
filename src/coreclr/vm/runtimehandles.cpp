@@ -605,7 +605,50 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject *pTypeU
     if (pMT)
         return (INT32)pMT->GetNumVirtuals();
     else
-        return 0; //REVIEW: should this return the number of methods in Object?
+        return 0;
+}
+FCIMPLEND
+
+FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+
+    if (refType == NULL)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    TypeHandle typeHandle = refType->GetType();
+
+    if (typeHandle.IsGenericVariable())
+        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+
+    INT32 numVirtuals = 0;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+    MethodTable *pMT = typeHandle.GetMethodTable();
+    if (pMT)
+    {
+        numVirtuals = (INT32)pMT->GetNumVirtuals();
+
+        if (pMT->HasVirtualStaticMethods())
+        {
+            for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
+            {
+                MethodDesc *pMD = it.GetMethodDesc();
+                if (pMD->IsVirtual() &&
+                    pMD->IsStatic())
+                {
+                    numVirtuals++;
+                }
+            }
+        }
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return numVirtuals;
 }
 FCIMPLEND
 
@@ -627,11 +670,46 @@ FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pT
     if (typeHandle.IsGenericVariable())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    if (slot < 0 || slot >= (INT32)typeHandle.GetMethodTable()->GetNumVirtuals())
-        FCThrowRes(kArgumentException, W("Arg_ArgumentOutOfRangeException"));
-
     HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    pRetMethod = typeHandle.GetMethodTable()->GetMethodDescForSlot((DWORD)slot);
+
+    MethodTable *pMT = typeHandle.GetMethodTable();
+    INT32 numVirtuals = (INT32)pMT->GetNumVirtuals();
+
+    if (slot < 0)
+        COMPlusThrow(kArgumentException, W("Arg_ArgumentOutOfRangeException"));
+    else if (slot < numVirtuals)
+    {
+        pRetMethod = pMT->GetMethodDescForSlot((DWORD)slot);
+    }
+    else
+    {
+        // Search for virtual static via linear search
+        INT32 curVirtualIndex = numVirtuals;
+        if (pMT->HasVirtualStaticMethods() && pMT->IsInterface())
+        {
+            for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
+            {
+                MethodDesc *pMD = it.GetMethodDesc();
+                if (pMD->IsVirtual() &&
+                    pMD->IsStatic())
+                {
+                    if (slot == curVirtualIndex)
+                    {
+                        pRetMethod = pMD;
+                        break;
+                    }
+                    curVirtualIndex++;
+                }
+            }
+        }
+
+        // If search continues past end of virtual static list, fail with exception
+        if (pRetMethod == NULL)
+        {
+            COMPlusThrow(kArgumentException, W("Arg_ArgumentOutOfRangeException"));
+        }
+    }
+
     HELPER_METHOD_FRAME_END();
 
     return pRetMethod;
@@ -1138,14 +1216,21 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(QCall:
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
     TypeHandle thOwnerOfMD = pOwner.AsTypeHandle();
 
-    // Ok to have INVALID_SLOT in the case where abstract class does not implement an interface method.
-    // This case can not be reproed using C# "implements" all interface methods
-    // with at least an abstract method. b19897_GetInterfaceMap_Abstract.exe tests this case.
-    //@TODO:STUBDISPATCH: Don't need to track down the implementation, just the declaration, and this can
-    //@TODO:              be done faster - just need to make a function FindDispatchDecl.
-    DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, FALSE /* throwOnConflict */));
-    if (!slot.IsNull())
-        pResult = slot.GetMethodDesc();
+    if (pMD->IsStatic())
+    {
+        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* checkDuplicates*/ FALSE, /*allowVariantMatches */ TRUE);
+    }
+    else
+    {
+        // Ok to have INVALID_SLOT in the case where abstract class does not implement an interface method.
+        // This case can not be reproed using C# "implements" all interface methods
+        // with at least an abstract method. b19897_GetInterfaceMap_Abstract.exe tests this case.
+        //@TODO:STUBDISPATCH: Don't need to track down the implementation, just the declaration, and this can
+        //@TODO:              be done faster - just need to make a function FindDispatchDecl.
+        DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, FALSE /* throwOnConflict */));
+        if (!slot.IsNull())
+            pResult = slot.GetMethodDesc();
+    }
 
     END_QCALL;
 

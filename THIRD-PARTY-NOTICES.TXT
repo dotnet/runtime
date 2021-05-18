@@ -942,3 +942,13 @@ OF SUCH DAMAGES.
 You acknowledge that this software is not designed, licensed or
 intended  for  use  in  the  design, construction, operation or
 maintenance of any nuclear facility.
+
+
+License notice for "Faster Unsigned Division by Constants"
+------------------------------
+
+Reference implementations of computing and using the "magic number" approach to dividing
+by constants, including codegen instructions. The unsigned division incorporates the
+"round down" optimization per ridiculous_fish.
+
+This is free and unencumbered software. Any copyright is dedicated to the Public Domain.

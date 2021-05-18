@@ -14,7 +14,7 @@ namespace System.IO
     public class FileStream : Stream
     {
         internal const int DefaultBufferSize = 4096;
-        private const FileShare DefaultShare = FileShare.Read;
+        internal const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
 
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
@@ -135,6 +135,43 @@ namespace System.IO
         }
 
         public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            : this(path, mode, access, share, bufferSize, options, 0)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size,  additional file options and the allocation size.
+        /// </summary>
+        /// <param name="path">A relative or absolute path for the file that the current <see cref="System.IO.FileStream" /> instance will encapsulate.</param>
+        /// <param name="options">An object that describes optional <see cref="System.IO.FileStream" /> parameters to use.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
+        /// -or-
+        /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
+        /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><see cref="System.IO.FileStreamOptions.PreallocationSize" /> is negative.
+        /// -or-
+        /// <see cref="System.IO.FileStreamOptions.Mode" />, <see cref="System.IO.FileStreamOptions.Access" />, or <see cref="System.IO.FileStreamOptions.Share" /> contain an invalid value.</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="System.IO.FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
+        /// <exception cref="T:System.IO.IOException">An I/O error, such as specifying <see langword="FileMode.CreateNew" /> when the file specified by <paramref name="path" /> already exists, occurred.
+        ///  -or-
+        ///  The stream has been closed.
+        ///  -or-
+        ///  The disk was full (when <see cref="System.IO.FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).
+        ///  -or-
+        ///  The file was too large (when <see cref="System.IO.FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).</exception>
+        /// <exception cref="T:System.Security.SecurityException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid, such as being on an unmapped drive.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The <see cref="System.IO.FileStreamOptions.Access" /> requested is not permitted by the operating system for the specified <paramref name="path" />, such as when <see cref="System.IO.FileStreamOptions.Access" />  is <see cref="System.IO.FileAccess.Write" /> or <see cref="System.IO.FileAccess.ReadWrite" /> and the file or directory is set for read-only access.
+        ///  -or-
+        /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <see cref="System.IO.FileStreamOptions.Options" /> , but file encryption is not supported on the current platform.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
+        public FileStream(string path, FileStreamOptions options)
+            : this(path, options.Mode, options.Access, options.Share, DefaultBufferSize, options.Options, options.PreallocationSize)
+        {
+        }
+
+        private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             if (path == null)
             {
@@ -176,6 +213,10 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
+            else if (preallocationSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(preallocationSize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
 
             // Write access validation
             if ((access & FileAccess.Write) == 0)
@@ -196,7 +237,7 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]

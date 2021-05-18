@@ -739,7 +739,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CallSitesAreUniquePerServiceTypeAndSlot()
         {
             // Connected graph
@@ -747,7 +747,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Class4 -> Class3
             // Class5 -> Class2 -> Class3
             var types = new Type[] { typeof(Class1), typeof(Class2), typeof(Class3), typeof(Class4), typeof(Class5) };
-
 
             for (int i = 0; i < 100; i++)
             {
@@ -776,7 +775,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CallSitesAreUniquePerServiceTypeAndSlotWithOpenGenericInGraph()
         {
             // Connected graph

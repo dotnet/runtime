@@ -17,10 +17,10 @@ namespace System.IO.Strategies
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
             => new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+            => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, preallocationSize);
 
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             // Translate the arguments into arguments for an open call.
             Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
@@ -34,7 +34,6 @@ namespace System.IO.Strategies
                 Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
                 Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
 
-            // Open the file and store the safe handle.
             return SafeFileHandle.Open(path!, openFlags, (int)OpenPermissions);
         }
 
