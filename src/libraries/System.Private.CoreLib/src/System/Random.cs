@@ -210,7 +210,7 @@ namespace System
             {
                 if (result != minInclusive)
                 {
-                    Debug.Assert(false, $"Expected {minInclusive} == {result}");
+                    Debug.Fail($"Expected {minInclusive} == {result}");
                 }
             }
         }
@@ -221,7 +221,7 @@ namespace System
             if (result < 0.0 || result >= 1.0)
             {
                 // Avoid calling result.ToString() when the Assert condition is not met
-                Debug.Assert(false, $"Expected 0.0 <= {result} < 1.0");
+                Debug.Fail($"Expected 0.0 <= {result} < 1.0");
             }
         }
 
