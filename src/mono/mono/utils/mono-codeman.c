@@ -695,7 +695,10 @@ void
 mono_codeman_disable_write (void)
 {
 #ifdef USE_WRITE_PROTECT
-	if (JIT_WRITE_PROTECT_AVAIL()) {
+#ifdef CHECK_WRITE_PROTECT_AVAIL
+	if (__builtin_available (macOS 11, *))
+#endif
+	{
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		g_assert (level);
 		level --;
