@@ -26,12 +26,17 @@ namespace Profiler.Tests
                               Guid profilerClsid,
                               string profileeArguments = "",
                               ProfileeOptions profileeOptions = ProfileeOptions.None,
+                              Dictionary<string, string> envVars = null,
                               string reverseServerName = null)
         {
             string arguments;
             string program;
-            Dictionary<string, string> envVars = new Dictionary<string, string>();
             string profileeAppDir = Path.GetDirectoryName(profileePath);
+
+            if (envVars == null)
+            {
+                envVars = new Dictionary<string, string>();
+            }
 
             arguments = profileePath + " RunTest " + profileeArguments;
             program = GetCorerunPath();

@@ -1903,6 +1903,35 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                     // if a concrete type can be cast to the constraint, then this constraint will be satisifed
                     if (thElem.CanCastTo(thConstraint))
                     {
+                        // Static virtual methods need an extra check when an abstract type is used for instantiation
+                        // to ensure that the implementation of the constraint is complete
+                        //
+                        // Do not apply this check when the generic argument is exactly a generic variable, as those
+                        // do not hold the correct detail for checking, and do not need to do so. This constraint rule 
+                        // is only applicable for generic arguments which have been specialized to some extent
+                        if (!thArg.IsGenericVariable() &&
+                            !thElem.IsTypeDesc() &&
+                            thElem.AsMethodTable()->IsAbstract() &&
+                            thConstraint.IsInterface() &&
+                            thConstraint.AsMethodTable()->HasVirtualStaticMethods())
+                        {
+                            MethodTable *pInterfaceMT = thConstraint.AsMethodTable();
+                            bool virtualStaticResolutionCheckFailed = false;
+                            for (MethodTable::MethodIterator it(pInterfaceMT); it.IsValid(); it.Next())
+                            {
+                                MethodDesc *pMD = it.GetMethodDesc();
+                                if (pMD->IsVirtual() &&
+                                    pMD->IsStatic() &&
+                                    !thElem.AsMethodTable()->ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* checkDuplicates */ TRUE))
+                                {
+                                    virtualStaticResolutionCheckFailed = true;
+                                    break;
+                                }
+                            }
+
+                            if (virtualStaticResolutionCheckFailed)
+                                continue;
+                        }
                         fCanCast = TRUE;
                         break;
                     }

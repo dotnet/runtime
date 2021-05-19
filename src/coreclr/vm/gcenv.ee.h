@@ -33,8 +33,8 @@ public:
     void RestartEE(bool bFinishedGC);
     void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
     void GcStartWork(int condemned, int max_gen);
+    void BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent);
     void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc);
-    void GcBeforeBGCSweepWork();
     void GcDone(int condemned);
     bool RefCountedHandleCallbacks(Object * pObject);
     void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
@@ -84,6 +84,7 @@ public:
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
 
     void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg);
+    uint32_t GetCurrentProcessCpuCount();
 };
 
 } // namespace standalone

@@ -435,7 +435,9 @@ DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  GET_INTERFACE_IMPLEMENTATION,   
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
 DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,               IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
 DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterfaceResult)
+#endif //FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
 DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
 DEFINE_CLASS(CREATECOMINTERFACEFLAGS,     Interop,          CreateComInterfaceFlags)
 DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
@@ -444,7 +446,13 @@ DEFINE_METHOD(COMWRAPPERS,                COMPUTE_VTABLES,  CallComputeVtables, 
 DEFINE_METHOD(COMWRAPPERS,                CREATE_OBJECT,    CallCreateObject,           SM_Scenario_ComWrappers_IntPtr_CreateFlags_RetObj)
 DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects,         SM_ComWrappers_IEnumerable_RetVoid)
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
-#endif //FEATURE_COMINTEROP
+#endif //FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
+DEFINE_METHOD(OBJCMARSHAL,   AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION, AvailableUnhandledExceptionPropagation, SM_RetBool)
+DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_Exception_Obj_RefIntPtr_RetVoidPtr)
+#endif // FEATURE_OBJCMARSHAL
 
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
@@ -989,6 +997,7 @@ DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToClea
 DEFINE_METHOD(STUBHELPERS,          KEEP_ALIVE_VIA_CLEANUP_LIST,    KeepAliveViaCleanupList,       SM_RefCleanupWorkListElement_Obj_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
+DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExceptionObject,      SM_RetException)
 DEFINE_METHOD(STUBHELPERS,          CREATE_CUSTOM_MARSHALER_HELPER, CreateCustomMarshalerHelper, SM_IntPtr_Int_IntPtr_RetIntPtr)
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)

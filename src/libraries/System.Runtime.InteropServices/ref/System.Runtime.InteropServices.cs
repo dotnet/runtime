@@ -497,6 +497,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr AllocHGlobal(int cb) { throw null; }
         public static System.IntPtr AllocHGlobal(System.IntPtr cb) { throw null; }
         public static bool AreComObjectsAvailableForCleanup() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object BindToMoniker(string monikerName) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -1799,6 +1800,43 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
         VAR_CONST = 2,
         VAR_DISPATCH = 3,
+    }
+}
+namespace System.Runtime.InteropServices.ObjectiveC
+{
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ObjectiveCTrackedTypeAttribute : System.Attribute
+    {
+        public ObjectiveCTrackedTypeAttribute() { }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.CLSCompliantAttribute(false)]
+    public static class ObjectiveCMarshal
+    {
+        public unsafe delegate delegate* unmanaged<System.IntPtr, void> UnhandledExceptionPropagationHandler(
+            System.Exception exception,
+            System.RuntimeMethodHandle lastMethod,
+            out System.IntPtr context);
+        public static unsafe void Initialize(
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+        public static GCHandle CreateReferenceTrackingHandle(
+            object obj,
+            out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public enum MessageSendFunction
+        {
+            MsgSend,
+            MsgSendFpret,
+            MsgSendStret,
+            MsgSendSuper,
+            MsgSendSuperStret,
+        }
+        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
+        public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
 namespace System.Security
