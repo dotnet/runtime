@@ -154,11 +154,9 @@ namespace Microsoft.NET.HostModel.Tests
             var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
             var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
 
-            // Generate a file specification with duplicate entries
             var fileSpecs = new List<FileSpec>();
             fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
             fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat.dll"));
-            fileSpecs.Add(new FileSpec(Path.Join(BundleHelper.GetPublishPath(fixture), "System.dll"), "rel/app.Repeat.dll"));
 
             Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
             return bundler.GenerateBundle(fileSpecs);
