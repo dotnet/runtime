@@ -56,7 +56,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="@(SharedFrameworkRuntimeFile)"
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
                               PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
                               PackageVersion="$(ProductVersion)"
@@ -71,7 +71,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="@(SharedFrameworkRuntimeFile)"
           Outputs="$(MicrosoftNetCoreAppRefPackDataDir)PlatformManifest.txt"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
                               PackageId="$(MicrosoftNetCoreAppFrameworkName).Ref"
                               PackageVersion="$(ProductVersion)"
@@ -86,7 +86,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)*.*"
           Outputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
@@ -125,7 +125,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="@(RuntimePackLibFile);@(RuntimePackNativeFile)"
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ItemGroup>
       <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />

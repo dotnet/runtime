@@ -70,11 +70,6 @@
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
-                                           '$(BuildTargetFramework)' == ''">true</BuildingNETCoreAppVertical>
-  </PropertyGroup>
-
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
 

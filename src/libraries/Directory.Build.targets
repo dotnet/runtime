@@ -83,7 +83,7 @@
 
     <!-- binplace to directories for packages -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
-                              Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+                              Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
       <PackageFileNativePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileNativePath>
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
@@ -103,7 +103,7 @@
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
-                              Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+                              Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
       <NativePath >$(NetCoreAppCurrentTestHostSharedFrameworkPath)</NativePath>
       <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NetCoreAppCurrentTestHostSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>

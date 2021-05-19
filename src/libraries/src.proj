@@ -17,7 +17,7 @@
     <ManualShimProject Include="shims\manual\*.csproj" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and
-                                 '$(BuildingNETCoreAppVertical)' == 'true' and
+                                 ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == '') and
                                  '$(RunApiCompat)' != 'false'" />
   </ItemGroup>
 
@@ -48,7 +48,7 @@
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)illink-trimassemblies.targets"
-          Condition="'$(BuildingNetCoreAppVertical)' == 'true'" />
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"
