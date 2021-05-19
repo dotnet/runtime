@@ -1143,46 +1143,50 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		_get_shard_name: function (fileList) {
-			// Assumes that all filter files follow the naming convention:
-			// 		icudt_<feature>_<locale division>.json
-			// The more descriptors in a file name (separated by _) the granular the shard data is.
-
-			// Get a list of file name descriptor length 
-			var name_lengths = fileList.map(x => x.split("_").length);
-
-			// Choose the file with the most number of descriptors 
-			// Assuming that we want the most condensed version available
-			var shard_ix = name_lengths.indexOf(Math.max(...name_lengths));
-			return fileList[shard_ix];
+		_get_shard_name: function (shards, culture) {
+			// Get shard name that culture belongs to
+			for (var name in shards) {
+				if (culture.match(shards[name]))
+					return name
+			}
 		},
 
-		_get_list_of_icu_files: function (dictionary, culture, feature_shards=true) {
+		_get_list_of_icu_files: function (dictionary, culture, feature_shards=true, features="") {
+			console.log(dictionary)
 			var icu_files = []
 			if (dictionary === undefined)
 				return null;
 			if (culture == null || culture.length < 2) {
-				icu_files = [dictionary.complete];
+				icu_files = [dictionary.full];
 			} else {
-				var parent_culture = culture.includes('-') ? culture.split('-')[0] : culture;
-				console.log(parent_culture)
-				var files = dictionary[parent_culture];
+				var shard_name = this._get_shard_name(dictionary.shards, culture)
+				var files = dictionary.packs[shard_name];
 				if (!feature_shards) {
-					icu_files = [files.full];
+					icu_files = files.full;
 				} else {
-					icu_files.push(...files.essentials.reverse());
-					icu_files.push(this._get_shard_name(files.locales));
-					icu_files.push(this._get_shard_name(files.coll));
+					// Get base files first
+					files[files.extends].forEach(feature => icu_files.push(...files[files.extends][feature]))
+
+					// Adding shard specific core files such as collation and locales
+					icu_files.push(...files["core"])
+					
+					//	Add any additional features
+					if (features != "") {
+						features = features.split(",");
+						features.forEach(feat => {
+							icu_files.push(...files[feat])
+						})
+					}
 				}
 			}
-
+			console.log(JSON.stringify(icu_files))
 			icu_assets = [];
 			icu_files.forEach(file => icu_assets.push({
-																									"behavior": "icu",
-																									"name": file,
-																									"load_remote": false,
-																									"data_type": "common"
-																								}));
+														"behavior": "icu",
+														"name": file,
+														"load_remote": false,
+														"data_type": "common"
+													}));
 			return icu_assets;
 		},
 

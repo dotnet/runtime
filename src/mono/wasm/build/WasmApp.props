@@ -7,4 +7,6 @@
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Publish</WasmBuildAppAfterThisTarget>
     <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative;_WasmGenerateAppBundle;_AfterWasmBuildApp</WasmBuildAppDependsOn>
   </PropertyGroup>
+
+  <Import Project="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)ICU.DataFiles.props" Condition="'$(EnableSharding)' == 'true'" />
 </Project>

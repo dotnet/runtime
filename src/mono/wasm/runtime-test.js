@@ -2,6 +2,9 @@
 //
 // Run runtime tests under a JS shell or a browser
 //
+
+const { config } = require("node:process");
+
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
 
@@ -204,6 +207,7 @@ function loadScript (url)
 }
 
 loadScript ("mono-config.js");
+loadScript ("icu_dictionary.js")
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
@@ -278,7 +282,9 @@ var Module = {
 				})
 			}
 		};
+
 		if (config.enable_sharding) {
+			config.icu_dictionary = dictionary;
 			if (config.default_culture != null) {
 				config.application_culture = config.default_culture;
 			} else {

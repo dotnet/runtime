@@ -41,7 +41,7 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string? IcuDictionary { get; set; }
+    // public string? IcuDictionary { get; set; }
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -250,26 +250,26 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        if (!InvariantGlobalization)
-        {
-            if (!string.IsNullOrEmpty(IcuDictionary!))
-            {
-                try
-                {
-                    string? icuDictionary = File.ReadAllText(IcuDictionary!);
-                    config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
-                }
-                catch (Exception e)
-                {
-                    Log.LogError($"Error with opening ICU Dictionary {e.Message}");
-                    return false;
-                }
-            }
-            else
-            {
-                config.Assets.Add(new IcuData("icudt.dat") { LoadRemote = RemoteSources?.Length > 0 });
-            }
-        }
+        // if (!InvariantGlobalization)
+        // {
+        //     if (!string.IsNullOrEmpty(IcuDictionary!))
+        //     {
+        //         try
+        //         {
+        //             string? icuDictionary = File.ReadAllText(IcuDictionary!);
+        //             config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
+        //         }
+        //         catch (Exception e)
+        //         {
+        //             Log.LogError($"Error with opening ICU Dictionary {e.Message}");
+        //             return false;
+        //         }
+        //     }
+        //     else
+        //     {
+        //         config.Assets.Add(new IcuData("icudt.dat") { LoadRemote = RemoteSources?.Length > 0 });
+        //     }
+        // }
 
         string monoConfigPath = Path.Combine(AppDir, "mono-config.js");
         using (var sw = File.CreateText(monoConfigPath))
