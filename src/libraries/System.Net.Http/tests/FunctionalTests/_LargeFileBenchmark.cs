@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
             PingReply reply1 = await ping.SendPingAsync(addr);
             PingReply reply2 = await ping.SendPingAsync(addr);
-            TimeSpan rtt = new TimeSpan(reply1.RoundtripTime + reply2.RoundtripTime) / 2;
+            TimeSpan rtt = TimeSpan.FromMilliseconds(reply1.RoundtripTime + reply2.RoundtripTime) / 2;
             _output.WriteLine($"Estimated RTT: {rtt.TotalMilliseconds} ms");
             return rtt;
         }
@@ -172,7 +172,7 @@ namespace System.Net.Http.Functional.Tests
                 msg.Version = new Version(2, 0);
                 msg.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
             }
-
+                
             return msg;
         }
     }
