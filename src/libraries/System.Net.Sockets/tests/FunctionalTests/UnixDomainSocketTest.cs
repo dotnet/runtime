@@ -155,40 +155,38 @@ namespace System.Net.Sockets.Tests
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            using var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                server.Bind(endPoint);
+                server.Listen(1);
+                client.Connect(endPoint);
+
+                using (Socket accepted = server.Accept())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-                    client.Connect(endPoint);
+                    using var clientClone = new Socket(client.SafeHandle);
+                    using var acceptedClone = new Socket(accepted.SafeHandle);
 
-                    using (Socket accepted = server.Accept())
+                    _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                    _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+
+                    Assert.True(clientClone.Connected);
+                    Assert.True(acceptedClone.Connected);
+                    Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
+                    Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
+                    Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
+                    Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
+
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        using var clientClone = new Socket(client.SafeHandle);
-                        using var acceptedClone = new Socket(accepted.SafeHandle);
+                        data[0] = (byte)i;
 
-                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
-                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+                        acceptedClone.Send(data);
+                        data[0] = 0;
 
-                        Assert.True(clientClone.Connected);
-                        Assert.True(acceptedClone.Connected);
-                        Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
-                        Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
-                        Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
-                        Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
-
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
-
-                            acceptedClone.Send(data);
-                            data[0] = 0;
-
-                            Assert.Equal(1, clientClone.Receive(data));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, clientClone.Receive(data));
+                        Assert.Equal(i, data[0]);
                     }
                 }
             }
