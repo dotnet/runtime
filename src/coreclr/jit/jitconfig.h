@@ -55,7 +55,7 @@ public:
 
 private:
 #define CONFIG_INTEGER(name, key, defaultValue) int m_##name;
-#define CONFIG_STRING(name, key) const WCHAR* m_##name;
+#define CONFIG_STRING(name, key) const char16_t* m_##name;
 #define CONFIG_METHODSET(name, key) MethodSet m_##name;
 #include "jitconfigvalues.h"
 
@@ -66,7 +66,7 @@ public:
         return m_##name;                                                                                               \
     }
 #define CONFIG_STRING(name, key)                                                                                       \
-    inline const WCHAR* name() const                                                                                   \
+    inline const char16_t* name() const                                                                                   \
     {                                                                                                                  \
         return m_##name;                                                                                               \
     }
