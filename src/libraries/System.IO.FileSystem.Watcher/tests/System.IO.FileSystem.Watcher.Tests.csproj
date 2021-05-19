@@ -23,6 +23,7 @@
     <Compile Include="FileSystemWatcher.File.NotifyFilter.cs" />
     <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
     <Compile Include="FileSystemWatcher.MultipleWatchers.cs" />
+    <Compile Include="FileSystemWatcher.SymbolicLink.cs" />
     <Compile Include="FileSystemWatcher.WaitForChanged.cs" />
     <Compile Include="FileSystemWatcher.unit.cs" />
     <!-- Helpers -->
