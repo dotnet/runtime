@@ -743,7 +743,7 @@ namespace System
         /// Searches the installed OS languages for either an exact matching culture, or one that has the same parent.
         /// If not found, uses the preferred default OS UI language, to align with prior behavior.
         /// </summary>
-        private static string TryGetCachedFileMuiPath(string filePath, CultureInfo cultureInfo)
+        private static string GetCachedFileMuiPath(string filePath, CultureInfo cultureInfo)
         {
             string? result;
             string cacheKey = $"{cultureInfo.Name};{filePath}";
@@ -756,7 +756,7 @@ namespace System
                 }
             }
 
-            result = TryGetFileMuiPath(filePath, cultureInfo);
+            result = GetFileMuiPath(filePath, cultureInfo);
 
             lock (s_FileMuiPathCache)
             {
@@ -771,7 +771,7 @@ namespace System
         /// Searches the installed OS languages for either an exact matching culture, or one that has the same parent.
         /// If not found, uses the preferred default OS UI language, to align with prior behavior.
         /// </summary>
-        private static unsafe string TryGetFileMuiPath(string filePath, CultureInfo cultureInfo)
+        private static unsafe string GetFileMuiPath(string filePath, CultureInfo cultureInfo)
         {
             char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH];
             char* language = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
@@ -792,7 +792,7 @@ namespace System
                     // Recurse to search using the parent of the desired culture.
                     if (cultureInfo.Parent.Name != string.Empty)
                     {
-                        return TryGetFileMuiPath(filePath, cultureInfo.Parent);
+                        return GetFileMuiPath(filePath, cultureInfo.Parent);
                     }
 
                     // Final fallback, using the preferred installed UI language.
@@ -844,7 +844,7 @@ namespace System
         /// If a localized resource file exists, we LoadString resource ID "123" and
         /// return it to our caller.
         /// </summary>
-        private static string TryGetLocalizedNameByMuiNativeResource(string resource, CultureInfo? cultureInfo = null)
+        private static string GetLocalizedNameByMuiNativeResource(string resource, CultureInfo? cultureInfo = null)
         {
             if (string.IsNullOrEmpty(resource))
             {
@@ -884,7 +884,7 @@ namespace System
             }
 
             // Get the MUI File Path
-            string fileMuiPath = TryGetCachedFileMuiPath(filePath, cultureInfo);
+            string fileMuiPath = GetCachedFileMuiPath(filePath, cultureInfo);
             if (fileMuiPath == string.Empty)
             {
                 // not likely, but we could not resolve a MUI path
@@ -899,7 +899,7 @@ namespace System
             resourceId = -resourceId;
 
             // Finally, get the resource from the resource path
-            return TryGetLocalizedNameByNativeResource(fileMuiPath, resourceId);
+            return GetLocalizedNameByNativeResource(fileMuiPath, resourceId);
         }
 
         /// <summary>
@@ -909,7 +909,7 @@ namespace System
         /// "resource.dll" is a language-specific resource DLL.
         /// If the localized resource DLL exists, LoadString(resource) is returned.
         /// </summary>
-        private static unsafe string TryGetLocalizedNameByNativeResource(string filePath, int resource)
+        private static unsafe string GetLocalizedNameByNativeResource(string filePath, int resource)
         {
             IntPtr handle = IntPtr.Zero;
             try
@@ -959,17 +959,17 @@ namespace System
             // try to load the strings from the native resource DLL(s)
             if (!string.IsNullOrEmpty(displayNameMuiResource))
             {
-                displayName = TryGetLocalizedNameByMuiNativeResource(displayNameMuiResource);
+                displayName = GetLocalizedNameByMuiNativeResource(displayNameMuiResource);
             }
 
             if (!string.IsNullOrEmpty(standardNameMuiResource))
             {
-                standardName = TryGetLocalizedNameByMuiNativeResource(standardNameMuiResource);
+                standardName = GetLocalizedNameByMuiNativeResource(standardNameMuiResource);
             }
 
             if (!string.IsNullOrEmpty(daylightNameMuiResource))
             {
-                daylightName = TryGetLocalizedNameByMuiNativeResource(daylightNameMuiResource);
+                daylightName = GetLocalizedNameByMuiNativeResource(daylightNameMuiResource);
             }
 
             // fallback to using the standard registry keys
@@ -991,7 +991,7 @@ namespace System
         /// Helper function that takes a string representing a time_zone_name registry key name
         /// and returns a TimeZoneInfo instance.
         /// </summary>
-        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
+        private static TimeZoneInfoResult GetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
             e = null;
 
@@ -1093,7 +1093,7 @@ namespace System
                     // try to load the string from the native resource DLL(s)
                     if (!string.IsNullOrEmpty(standardNameMuiResource))
                     {
-                        standardDisplayName = TryGetLocalizedNameByMuiNativeResource(standardNameMuiResource);
+                        standardDisplayName = GetLocalizedNameByMuiNativeResource(standardNameMuiResource);
                     }
 
                     // fallback to using the standard registry key
