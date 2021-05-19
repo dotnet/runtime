@@ -56,24 +56,30 @@ namespace ILLink.Tasks
 
 		/// <summary>
 		/// Helper utility to track feature switch macros in header file
-		/// This type is used in a dictionary as a key and only uses
-		/// the feature name since value and default are not expected to change
+		/// This type is used in a dictionary as a key
 		/// </summary>
-		class FeatureSwitchMembers
+		readonly struct FeatureSwitchMembers
 		{
-			public string feature;
-			public string featureValue;
-			public string featureDefault;
+			public string Feature { get; }
+			public string FeatureValue { get; }
+			public string FeatureDefault { get; }
+
+			public FeatureSwitchMembers (string feature, string featureValue, string featureDefault)
+			{
+				Feature = feature;
+				FeatureValue = featureValue;
+				FeatureDefault = featureDefault;
+			}
 
 			public override int GetHashCode ()
 			{
-				return feature.GetHashCode ();
+				return HashCode.Combine (Feature, FeatureValue, FeatureDefault);
 			}
 
 			public override bool Equals (object obj)
 			{
-				FeatureSwitchMembers other = obj as FeatureSwitchMembers;
-				return other.feature.Equals (feature);
+				FeatureSwitchMembers other = (FeatureSwitchMembers) obj;
+				return other.Feature.Equals (Feature) && other.FeatureValue.Equals (FeatureValue) && other.FeatureDefault.Equals (FeatureDefault);
 			}
 		}
 
@@ -163,8 +169,7 @@ namespace ILLink.Tasks
 			string[] types = File.ReadAllLines (typeFile);
 			DefineTracker defineTracker = new DefineTracker (defineConstants, Log, typeFile);
 			string classId;
-			bool insideFeatureSwitch = false;
-			FeatureSwitchMembers currentFeatureSwitch = null;
+			FeatureSwitchMembers? currentFeatureSwitch = null;
 
 			foreach (string def in types) {
 				if (defineTracker.ProcessLine (def) || !defineTracker.IsActiveSection)
@@ -172,26 +177,22 @@ namespace ILLink.Tasks
 
 				//We will handle BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH
 				if (def.StartsWith ("BEGIN_ILLINK_FEATURE_SWITCH")) {
-					if (insideFeatureSwitch) {
+					if (currentFeatureSwitch.HasValue) {
 						Log.LogError ($"Could not figure out feature switch status in '{typeFile}' for line {def}");
 					} else {
-						insideFeatureSwitch = true;
 						char[] separators = { ',', '(', ')', ' ', '\t', '/' };
 						string[] featureSwitchElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
-						currentFeatureSwitch = new FeatureSwitchMembers ();
-						currentFeatureSwitch.feature = featureSwitchElements[1];
-						currentFeatureSwitch.featureValue = featureSwitchElements[2];
-						currentFeatureSwitch.featureDefault = featureSwitchElements[3];
-						if (!featureSwitchMembers.ContainsKey (currentFeatureSwitch)) {
-							featureSwitchMembers.Add (currentFeatureSwitch, new Dictionary<string, ClassMembers> ());
+						currentFeatureSwitch = new FeatureSwitchMembers (featureSwitchElements[1], featureSwitchElements[2], featureSwitchElements[3]);
+						if (!featureSwitchMembers.ContainsKey (currentFeatureSwitch.Value)) {
+							featureSwitchMembers.Add (currentFeatureSwitch.Value, new Dictionary<string, ClassMembers> ());
 						}
 					}
 				}
 				if (def.StartsWith ("END_ILLINK_FEATURE_SWITCH")) {
-					if (!insideFeatureSwitch) {
+					if (!currentFeatureSwitch.HasValue) {
 						Log.LogError ($"Could not figure out feature switch status in '{typeFile}' for line {def}");
 					} else {
-						insideFeatureSwitch = false;
+						currentFeatureSwitch = null;
 					}
 				}
 
@@ -206,7 +207,7 @@ namespace ILLink.Tasks
 					classId = defElements[1];               // APP_DOMAIN
 					string classNamespace = defElements[2]; // System
 					string className = defElements[3];      // AppDomain
-					AddClass (classNamespace, className, classId, false, insideFeatureSwitch, currentFeatureSwitch);
+					AddClass (classNamespace, className, classId, false, currentFeatureSwitch);
 				} else if (def.StartsWith ("DEFINE_CLASS_U(")) {
 					// E.g., DEFINE_CLASS_U(System,                 AppDomain,      AppDomainBaseObject)
 					string classNamespace = defElements[1]; // System
@@ -215,29 +216,29 @@ namespace ILLink.Tasks
 															// For these classes the sizes of managed and unmanaged classes and field offsets
 															// are compared so we need to preserve all fields.
 					const bool keepAllFields = true;
-					AddClass (classNamespace, className, classId, keepAllFields, insideFeatureSwitch, currentFeatureSwitch);
+					AddClass (classNamespace, className, classId, keepAllFields, currentFeatureSwitch);
 				} else if (def.StartsWith ("DEFINE_FIELD(")) {
 					// E.g., DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, IP,                _ip)
 					classId = defElements[1];          // ACCESS_VIOLATION_EXCEPTION
 					string fieldName = defElements[3]; // _ip
-					AddField (fieldName, classId, insideFeatureSwitch, currentFeatureSwitch);
+					AddField (fieldName, classId, currentFeatureSwitch);
 				} else if (def.StartsWith ("DEFINE_METHOD(")) {
 					// E.g., DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,        IM_Assembly_RetVoid)
 					string methodName = defElements[3]; // OnAssemblyLoadEvent
 					classId = defElements[1];           // APP_DOMAIN
-					AddMethod (methodName, classId, null, null, insideFeatureSwitch, currentFeatureSwitch);
+					AddMethod (methodName, classId, null, null, currentFeatureSwitch);
 				} else if (def.StartsWith ("DEFINE_PROPERTY(") || def.StartsWith ("DEFINE_STATIC_PROPERTY(")) {
 					// E.g., DEFINE_PROPERTY(ARRAY,              LENGTH,                 Length,                     Int)
 					// or    DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_THREAD,         CurrentThread,              Thread)
 					string propertyName = defElements[3];          // Length or CurrentThread
 					classId = defElements[1];                      // ARRAY or THREAD
-					AddMethod ("get_" + propertyName, classId, null, null, insideFeatureSwitch, currentFeatureSwitch);
+					AddMethod ("get_" + propertyName, classId, null, null, currentFeatureSwitch);
 				} else if (def.StartsWith ("DEFINE_SET_PROPERTY(")) {
 					// E.g., DEFINE_SET_PROPERTY(THREAD,         UI_CULTURE,             CurrentUICulture,           CultureInfo)
 					string propertyName = defElements[3]; // CurrentUICulture
 					classId = defElements[1];             // THREAD
-					AddMethod ("get_" + propertyName, classId, null, null, insideFeatureSwitch, currentFeatureSwitch);
-					AddMethod ("set_" + propertyName, classId, null, null, insideFeatureSwitch, currentFeatureSwitch);
+					AddMethod ("get_" + propertyName, classId, null, null, currentFeatureSwitch);
+					AddMethod ("set_" + propertyName, classId, null, null, currentFeatureSwitch);
 				}
 			}
 		}
@@ -300,55 +301,19 @@ namespace ILLink.Tasks
 					featureAssemblyNode.Attributes.Append (featureAssemblyFullName);
 
 					XmlAttribute featureName = doc.CreateAttribute ("feature");
-					featureName.Value = fsMembers.feature;
+					featureName.Value = fsMembers.Feature;
 					featureAssemblyNode.Attributes.Append (featureName);
 
 					XmlAttribute featureValue = doc.CreateAttribute ("featurevalue");
-					featureValue.Value = fsMembers.featureValue;
+					featureValue.Value = fsMembers.FeatureValue;
 					featureAssemblyNode.Attributes.Append (featureValue);
 
 					XmlAttribute featureDefault = doc.CreateAttribute ("featuredefault");
-					featureDefault.Value = fsMembers.featureDefault;
+					featureDefault.Value = fsMembers.FeatureDefault;
 					featureAssemblyNode.Attributes.Append (featureDefault);
 
 					foreach (string typeName in featureSwitchMembers[fsMembers].Keys) {
-						XmlNode typeNode = doc.CreateElement ("type");
-						XmlAttribute typeFullName = doc.CreateAttribute ("fullname");
-						typeFullName.Value = typeName;
-						typeNode.Attributes.Append (typeFullName);
-
-						ClassMembers members = featureSwitchMembers[fsMembers][typeName];
-
-						if (members.keepAllFields) {
-							XmlAttribute preserve = doc.CreateAttribute ("preserve");
-							preserve.Value = "fields";
-							typeNode.Attributes.Append (preserve);
-						} else if ((members.fields == null) && (members.methods == null)) {
-							XmlAttribute preserve = doc.CreateAttribute ("preserve");
-							preserve.Value = "nothing";
-							typeNode.Attributes.Append (preserve);
-						}
-
-						if (!members.keepAllFields && (members.fields != null)) {
-							foreach (string field in members.fields) {
-								XmlNode fieldNode = doc.CreateElement ("field");
-								XmlAttribute fieldName = doc.CreateAttribute ("name");
-								fieldName.Value = field;
-								fieldNode.Attributes.Append (fieldName);
-								typeNode.AppendChild (fieldNode);
-							}
-						}
-
-						if (members.methods != null) {
-							foreach (string method in members.methods) {
-								XmlNode methodNode = doc.CreateElement ("method");
-								XmlAttribute methodName = doc.CreateAttribute ("name");
-								methodName.Value = method;
-								methodNode.Attributes.Append (methodName);
-								typeNode.AppendChild (methodNode);
-							}
-						}
-						featureAssemblyNode.AppendChild (typeNode);
+						AddXmlTypeNode (doc, featureAssemblyNode, typeName, featureSwitchMembers[fsMembers]);
 					}
 					linkerNode.AppendChild (featureAssemblyNode);
 				}
@@ -357,85 +322,92 @@ namespace ILLink.Tasks
 			XmlNode assemblyNode = linkerNode["assembly"];
 
 			foreach (string typeName in classNamesToClassMembers.Keys) {
-				XmlNode typeNode = doc.CreateElement ("type");
-				XmlAttribute typeFullName = doc.CreateAttribute ("fullname");
-				typeFullName.Value = typeName;
-				typeNode.Attributes.Append (typeFullName);
-
-				ClassMembers members = classNamesToClassMembers[typeName];
-
-				// We need to keep everyting in System.Runtime.InteropServices.WindowsRuntime and
-				// System.Threading.Volatile.
-				if (!typeName.StartsWith ("System.Runtime.InteropServices.WindowsRuntime") &&
-					!typeName.StartsWith ("System.Threading.Volatile")) {
-					if (members.keepAllFields) {
-						XmlAttribute preserve = doc.CreateAttribute ("preserve");
-						preserve.Value = "fields";
-						typeNode.Attributes.Append (preserve);
-					} else if ((members.fields == null) && (members.methods == null)) {
-						XmlAttribute preserve = doc.CreateAttribute ("preserve");
-						preserve.Value = "nothing";
-						typeNode.Attributes.Append (preserve);
-					}
-
-					if (!members.keepAllFields && (members.fields != null)) {
-						foreach (string field in members.fields) {
-							XmlNode fieldNode = doc.CreateElement ("field");
-							XmlAttribute fieldName = doc.CreateAttribute ("name");
-							fieldName.Value = field;
-							fieldNode.Attributes.Append (fieldName);
-							typeNode.AppendChild (fieldNode);
-						}
-					}
-
-					if (members.methods != null) {
-						foreach (string method in members.methods) {
-							XmlNode methodNode = doc.CreateElement ("method");
-							XmlAttribute methodName = doc.CreateAttribute ("name");
-							methodName.Value = method;
-							methodNode.Attributes.Append (methodName);
-							typeNode.AppendChild (methodNode);
-						}
-					}
-				}
-				assemblyNode.AppendChild (typeNode);
+				AddXmlTypeNode (doc, assemblyNode, typeName, classNamesToClassMembers);
 			}
 			doc.Save (outputFileName);
 		}
 
-		void AddClass (string classNamespace, string className, string classId, bool keepAllFields = false, bool featureSwitchOn = false, FeatureSwitchMembers featureSwitch = null)
+		static void AddXmlTypeNode (XmlDocument doc, XmlNode assemblyNode, string typeName, Dictionary<string, ClassMembers> classToClassMems)
+		{
+			XmlNode typeNode = doc.CreateElement ("type");
+			XmlAttribute typeFullName = doc.CreateAttribute ("fullname");
+			typeFullName.Value = typeName;
+			typeNode.Attributes.Append (typeFullName);
+
+			ClassMembers members = classToClassMems[typeName];
+
+			// We need to keep everyting in System.Runtime.InteropServices.WindowsRuntime and
+			// System.Threading.Volatile.
+			if (!typeName.StartsWith ("System.Runtime.InteropServices.WindowsRuntime") &&
+				!typeName.StartsWith ("System.Threading.Volatile")) {
+				if (members.keepAllFields) {
+					XmlAttribute preserve = doc.CreateAttribute ("preserve");
+					preserve.Value = "fields";
+					typeNode.Attributes.Append (preserve);
+				} else if ((members.fields == null) && (members.methods == null)) {
+					XmlAttribute preserve = doc.CreateAttribute ("preserve");
+					preserve.Value = "nothing";
+					typeNode.Attributes.Append (preserve);
+				}
+
+				if (!members.keepAllFields && (members.fields != null)) {
+					foreach (string field in members.fields) {
+						XmlNode fieldNode = doc.CreateElement ("field");
+						XmlAttribute fieldName = doc.CreateAttribute ("name");
+						fieldName.Value = field;
+						fieldNode.Attributes.Append (fieldName);
+						typeNode.AppendChild (fieldNode);
+					}
+				}
+
+				if (members.methods != null) {
+					foreach (string method in members.methods) {
+						XmlNode methodNode = doc.CreateElement ("method");
+						XmlAttribute methodName = doc.CreateAttribute ("name");
+						methodName.Value = method;
+						methodNode.Attributes.Append (methodName);
+						typeNode.AppendChild (methodNode);
+					}
+				}
+			}
+			assemblyNode.AppendChild (typeNode);
+		}
+
+
+		void AddClass (string classNamespace, string className, string classId, bool keepAllFields = false, FeatureSwitchMembers? featureSwitch = null)
 		{
 			string fullClassName = GetFullClassName (classNamespace, className);
 			if (fullClassName != null) {
 				if ((classId != null) && (classId != "NoClass")) {
 					classIdsToClassNames[classId] = fullClassName;
 				}
-				if (!featureSwitchOn) {
-					if (!classNamesToClassMembers.TryGetValue (fullClassName, out ClassMembers members)) {
+
+				ClassMembers members;
+				if (!featureSwitch.HasValue) {
+					if (!classNamesToClassMembers.TryGetValue (fullClassName, out members)) {
 						members = new ClassMembers ();
 						classNamesToClassMembers[fullClassName] = members;
 					}
-					members.keepAllFields |= keepAllFields;
 				} else {
-					Dictionary<string, ClassMembers> currentFeatureSwitchMembers = featureSwitchMembers[featureSwitch];
-					if (!currentFeatureSwitchMembers.TryGetValue (fullClassName, out ClassMembers members)) {
+					Dictionary<string, ClassMembers> currentFeatureSwitchMembers = featureSwitchMembers[featureSwitch.Value];
+					if (!currentFeatureSwitchMembers.TryGetValue (fullClassName, out members)) {
 						members = new ClassMembers ();
 						currentFeatureSwitchMembers[fullClassName] = members;
 					}
-					members.keepAllFields |= keepAllFields;
 				}
+				members.keepAllFields |= keepAllFields;
 			}
 		}
 
-		void AddField (string fieldName, string classId, bool featureSwitchOn = false, FeatureSwitchMembers featureSwitch = null)
+		void AddField (string fieldName, string classId, FeatureSwitchMembers? featureSwitch = null)
 		{
 			string className = classIdsToClassNames[classId];
 			ClassMembers members;
 
-			if (!featureSwitchOn) {
+			if (!featureSwitch.HasValue) {
 				members = classNamesToClassMembers[className];
 			} else {
-				members = featureSwitchMembers[featureSwitch][className];
+				members = featureSwitchMembers[featureSwitch.Value][className];
 			}
 
 			if (members.fields == null) {
@@ -444,7 +416,7 @@ namespace ILLink.Tasks
 			members.fields.Add (fieldName);
 		}
 
-		void AddMethod (string methodName, string classId, string classNamespace = null, string className = null, bool featureSwitchOn = false, FeatureSwitchMembers featureSwitch = null)
+		void AddMethod (string methodName, string classId, string classNamespace = null, string className = null, FeatureSwitchMembers? featureSwitch = null)
 		{
 			string fullClassName;
 			if (classId != null) {
@@ -455,10 +427,10 @@ namespace ILLink.Tasks
 
 			ClassMembers members;
 
-			if (!featureSwitchOn) {
+			if (!featureSwitch.HasValue) {
 				members = classNamesToClassMembers[fullClassName];
 			} else {
-				members = featureSwitchMembers[featureSwitch][fullClassName];
+				members = featureSwitchMembers[featureSwitch.Value][fullClassName];
 			}
 
 			if (members.methods == null) {
