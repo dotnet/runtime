@@ -76,9 +76,8 @@
     <PropertyGroup>
       <UpdateNETStandardBaseline Condition="'$(UpdateNETStandardBaseline)' == ''">False</UpdateNETStandardBaseline>
       <UpdateNETStandardBaselineLocally Condition="'$(UpdateNETStandardBaselineLocally)' == ''">False</UpdateNETStandardBaselineLocally>
-      <_netStandardLibraryRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</_netStandardLibraryRefPath>
       <_netStandardLibrary20RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibraryVersion)', 'build', 'netstandard2.0', 'ref'))</_netStandardLibrary20RefPath>
-      <_netStandard21OnlyRef>$(_netStandardLibraryRefPath)netstandard.dll</_netStandard21OnlyRef>
+      <_netStandard21OnlyRef>$(NETStandard21RefPath)netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21OnlyRef Condition="$(UpdateNETStandardBaselineLocally)">$(MSBuildThisFileDirectory)..\..\..\standard\artifacts\bin\ref\netstandard\Debug\netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21BaselineModifer>--baseline</_netStandard21BaselineModifer>
       <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline) or $(UpdateNETStandardBaselineLocally)">&gt;</_netStandard21BaselineModifer>
