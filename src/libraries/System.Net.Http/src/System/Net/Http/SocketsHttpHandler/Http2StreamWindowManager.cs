@@ -111,7 +111,7 @@ namespace System.Net.Http
 
                 string GetDiagnostics()
                 {
-                    return "RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
+                    return $"RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
                         $"Magic*_delivered/dt = {_magic * _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
                 }
             }
