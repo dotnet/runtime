@@ -179,6 +179,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition/tests/System.ComponentModel.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/RefEmitLoadContext/System.Runtime.Loader.RefEmitLoadContext.Tests.csproj" />
     
+    <!-- Method not found: intptr SQLitePCL.sqlite3.get_ptr() -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions/tests/Microsoft.Extensions.Logging.Generators.Tests/Microsoft.Extensions.Logging.Generators.Tests.csproj" />
+
     <!-- Can't link -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
   
