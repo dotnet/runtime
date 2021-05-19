@@ -1572,7 +1572,8 @@ eventpipe_walk_managed_stack_for_thread (
 	MonoStackFrameInfo *frame,
 	MonoContext *ctx,
 	void *data,
-	bool *async_frame)
+	bool *async_frame,
+	bool *safe_point_frame)
 {
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
@@ -1583,6 +1584,7 @@ eventpipe_walk_managed_stack_for_thread (
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
 	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+	case FRAME_TYPE_INTERP_ENTRY:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
@@ -1590,10 +1592,15 @@ eventpipe_walk_managed_stack_for_thread (
 			return FALSE;
 		*async_frame |= frame->ji->async;
 		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
-		if (method && !m_method_is_wrapper (method))
+		if (method && m_method_is_wrapper (method)) {
+			WrapperInfo *wrapper = mono_marshal_get_wrapper_info(method);
+			if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll)
+				*safe_point_frame = true;
+		} else if (method && !m_method_is_wrapper (method)) {
 			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
-		else if (!method && frame->ji->async && !frame->ji->is_trampoline)
+		} else if (!method && frame->ji->async && !frame->ji->is_trampoline) {
 			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start), method);
+		}
 		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
 	default:
 		EP_UNREACHABLE ("eventpipe_walk_managed_stack_for_thread");
@@ -1608,8 +1615,9 @@ eventpipe_walk_managed_stack_for_thread_func (
 	MonoContext *ctx,
 	void *data)
 {
-	bool async_frame = FALSE;
-	return eventpipe_walk_managed_stack_for_thread (frame, ctx, data, &async_frame);
+	bool async_frame = false;
+	bool safe_point_frame = false;
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, data, &async_frame, &safe_point_frame);
 }
 
 static
@@ -1622,6 +1630,7 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
 
+	gboolean result = false;
 	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
 
 	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR) {
@@ -1631,7 +1640,11 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
 
-	return eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame);
+	bool safe_point_frame = false;
+	result = eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame, &safe_point_frame);
+	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && safe_point_frame)
+		sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+	return result;
 }
 
 static
