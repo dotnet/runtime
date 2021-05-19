@@ -12,7 +12,7 @@ public:
 #include "icorjithostimpl.h"
 
 private:
-    bool convertStringValueToInt(const char16_t* key, const char16_t* stringValue, int& result);
+    bool convertStringValueToInt(const wchar_t* key, const wchar_t* stringValue, int& result);
 
     JitInstance& jitInstance;
 };
