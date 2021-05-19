@@ -898,7 +898,7 @@ def compare_results(args):
             diff_result = diff_results_by_name[assembly_name]
             message = 'Expected nothing, got {0}'.format(json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
-            testresult.setAttribute('name', '{2}_Target_{0}_Omitted_vs_{1}'.format(args.target_arch_os, diff_result.compiler_arch_os, assembly_name))
+            testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_Omitted_vs_{1}'.format(args.target_arch_os, diff_result.compiler_arch_os, assembly_name))
             testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))
             testresult.setAttribute('method', diff_result.compiler_arch_os)
             testresult.setAttribute('time', '0')
@@ -920,7 +920,7 @@ def compare_results(args):
             base_result = diff_results_by_name[assembly_name]
             message = 'Expected {0} got nothing'.format(json.dumps(base_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
-            testresult.setAttribute('name', '{2}_Target_{0}_{1}_vs__Omitted'.format(args.target_arch_os, base_result.compiler_arch_os, assembly_name))
+            testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_{1}_vs__Omitted'.format(args.target_arch_os, base_result.compiler_arch_os, assembly_name))
             testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))
             testresult.setAttribute('method', base_result.compiler_arch_os)
             testresult.setAttribute('time', '0')
@@ -957,7 +957,7 @@ def compare_results(args):
             diff_result_string = json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2)
             message = 'Expected {0} got {1}'.format(base_result_string, diff_result_string)
             testresult = root.createElement('test')
-            testresult.setAttribute('name', '{3}_Target_{0}_{1}_vs_{2}'.format(args.target_arch_os, base_result.compiler_arch_os, diff_result.compiler_arch_os, assembly_name))
+            testresult.setAttribute('name', 'CrossgenCompile_{3}_Target_{0}_{1}_vs_{2}'.format(args.target_arch_os, base_result.compiler_arch_os, diff_result.compiler_arch_os, assembly_name))
             testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))
             testresult.setAttribute('method', '{0}_{1}'.format(base_result.compiler_arch_os, diff_result.compiler_arch_os))
             testresult.setAttribute('time', '0')
