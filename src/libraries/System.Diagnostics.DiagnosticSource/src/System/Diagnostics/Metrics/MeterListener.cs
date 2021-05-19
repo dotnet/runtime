@@ -196,35 +196,35 @@ namespace System.Diagnostics.Metrics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void NotifyMeasurement<T>(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
+        internal void NotifyMeasurement<T>(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) where T : struct
         {
-            if (measurement is byte byteMeasurement)
+            if (typeof(T) == typeof(byte))
             {
-                _byteMeasurementCallback(instrument, byteMeasurement, tags, state);
+                _byteMeasurementCallback(instrument, (byte)(object)measurement, tags, state);
             }
-            else if (measurement is short shortMeasurement)
+            if (typeof(T) == typeof(short))
             {
-                _shortMeasurementCallback(instrument, shortMeasurement, tags, state);
+                _shortMeasurementCallback(instrument, (short)(object)measurement, tags, state);
             }
-            else if (measurement is int intMeasurement)
+            if (typeof(T) == typeof(int))
             {
-                _intMeasurementCallback(instrument, intMeasurement, tags, state);
+                _intMeasurementCallback(instrument, (int)(object)measurement, tags, state);
             }
-            else if (measurement is long longMeasurement)
+            if (typeof(T) == typeof(long))
             {
-                _longMeasurementCallback(instrument, longMeasurement, tags, state);
+                _longMeasurementCallback(instrument, (long)(object)measurement, tags, state);
             }
-            else if (measurement is float floatMeasurement)
+            if (typeof(T) == typeof(float))
             {
-                _floatMeasurementCallback(instrument, floatMeasurement, tags, state);
+                _floatMeasurementCallback(instrument, (float)(object)measurement, tags, state);
             }
-            else if (measurement is double doubleMeasurement)
+            if (typeof(T) == typeof(double))
             {
-                _doubleMeasurementCallback(instrument, doubleMeasurement, tags, state);
+                _doubleMeasurementCallback(instrument, (double)(object)measurement, tags, state);
             }
-            else if (measurement is decimal decimalMeasurement)
+            if (typeof(T) == typeof(decimal))
             {
-                _decimalMeasurementCallback(instrument, decimalMeasurement, tags, state);
+                _decimalMeasurementCallback(instrument, (decimal)(object)measurement, tags, state);
             }
         }
     }
