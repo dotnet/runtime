@@ -499,7 +499,8 @@ check_c_source_compiles(
      "
      HAVE_GETNAMEINFO_SIGNED_FLAGS)
 
-check_cxx_source_compiles(
+set(CMAKE_REQUIRED_FLAGS "-Werror=incompatible-pointer-types")
+check_c_source_compiles(
     "
     #include <signal.h>
     int main(void)
