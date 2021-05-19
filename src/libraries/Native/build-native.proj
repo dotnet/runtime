@@ -3,15 +3,12 @@
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
-    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(TargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="native-binplace.proj"
-                      Condition="'$(BuildingNETCoreAppVertical)' == 'true'" />
+    <ProjectReference Include="native-binplace.proj" />
   </ItemGroup>
 
   <Target Name="BuildNativeUnix"
@@ -43,8 +40,7 @@
 
   <Target Name="BuildNativeWindows"
           BeforeTargets="Build"
-          Condition="$([MSBuild]::IsOsPlatform(Windows)) and
-                     '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+          Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
     </PropertyGroup>
