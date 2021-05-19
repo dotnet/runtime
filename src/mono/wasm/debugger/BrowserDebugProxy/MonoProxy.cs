@@ -542,14 +542,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
 
                         }
-                        /*if (objectId.Scheme == "array")
+                        if (objectId.Scheme == "array")
                         {
-                            args["details"]  = await sdbHelper.GetArrayProxy(id, int.Parse(objectId.Value), token);
+                            args["details"]  = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
                             Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
                             res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
-                            Console.WriteLine(res);
                             SendResponse(id, res, token);
-                        }*/
+                            return true;
+                        }
                         return false;
                     }
             }
@@ -569,8 +569,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             var varToSetValue = varIds.FirstOrDefault(v => v.Name == varName);
             if (varToSetValue == null)
                 return false;
-            Result res = await SendMonoCommand(id, MonoCommands.SetVariableValue(scopeId, varToSetValue.Index, varName, varValue["value"].Value<string>()), token);
-            if (res.IsOk)
+            var res = await sdbHelper.SetVariableValue(id, ctx.ThreadId, scopeId, varToSetValue.Index, varValue["value"].Value<string>(), token);
+            if (res)
                 SendResponse(id, Result.Ok(new JObject()), token);
             else
                 SendResponse(id, Result.Err($"Unable to set '{varValue["value"].Value<string>()}' to variable '{varName}'"), token);
@@ -598,7 +598,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 if (objectId.Scheme == "object")
                 {
-                    var ret = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, token);
+                    var ret = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, token);
                     Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
                     return res2;
                 }

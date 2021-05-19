@@ -180,11 +180,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetLoadedFiles() => new MonoCommands("MONO.mono_wasm_get_loaded_files()");
 
-        public static MonoCommands SetVariableValue(int scopeId, int index, string name, string newValue)
-        {
-            return new MonoCommands($"MONO.mono_wasm_set_variable_value({scopeId}, {index}, '{name}', '{newValue}')");
-        }
-
         public static MonoCommands EvaluateMemberAccess(int scopeId, string expr, params VarInfo[] vars)
         {
             var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
@@ -196,9 +191,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
         }
 
-        public static MonoCommands InvokeMethod(string command_parameters)
+        public static MonoCommands SendDebuggerAgentCommandWithParms(int id, int command_set, int command, string command_parameters, int len, int type, string parm)
         {
-            return new MonoCommands($"MONO.mono_wasm_invoke_method_debugger_agent ('{command_parameters}')");
+            return new MonoCommands($"MONO.mono_wasm_send_dbg_command_with_parms ({id}, {command_set}, {command},'{command_parameters}', {len}, {type}, '{parm}')");
         }
 
         public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"MONO.mono_wasm_release_object('{objectId}')");
