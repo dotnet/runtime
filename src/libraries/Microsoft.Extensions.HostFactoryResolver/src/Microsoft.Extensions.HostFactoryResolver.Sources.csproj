@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <!-- Avoid trying to binplace non existent documentation file.-->
-    <EnableBinPlacing>false</EnableBinPlacing>
+    <!-- The project doesn't compile anything therefore create the package during build. -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <IsSourcePackage>true</IsSourcePackage>
