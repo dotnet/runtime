@@ -25,6 +25,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The value to create.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         public static JsonValue? Create<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)]T>(T? value, JsonNodeOptions? options = null)
         {
             if (value == null)
@@ -42,7 +43,7 @@ namespace System.Text.Json.Nodes
                 VerifyJsonElementIsNotArrayOrObject(ref element);
             }
 
-            return new JsonValue<T>(value, options);
+            return new JsonValueNotTrimmable<T>(value, options);
         }
 
         /// <summary>
@@ -78,7 +79,7 @@ namespace System.Text.Json.Nodes
                 VerifyJsonElementIsNotArrayOrObject(ref element);
             }
 
-            return new JsonValue<T>(value, jsonTypeInfo, options);
+            return new JsonValueTrimmable<T>(value, jsonTypeInfo, options);
         }
 
         internal override void GetPath(List<string> path, JsonNode? child)

@@ -3,18 +3,14 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
     [DebuggerDisplay("{ToJsonString(),nq}")]
     [DebuggerTypeProxy(typeof(JsonValue<>.DebugView))]
-    internal sealed partial class JsonValue<TValue> : JsonValue
+    internal abstract partial class JsonValue<TValue> : JsonValue
     {
         public readonly TValue _value; // keep as a field for direct access to avoid copies
-        public readonly JsonTypeInfo<TValue>? _jsonTypeInfo;
-        public readonly JsonConverter<TValue>? _converter;
 
         public JsonValue(TValue value, JsonNodeOptions? options = null) : base(options)
         {
@@ -27,34 +23,6 @@ namespace System.Text.Json.Nodes
             }
 
             _value = value;
-        }
-
-        public JsonValue(TValue value, JsonTypeInfo<TValue> jsonTypeInfo, JsonNodeOptions? options = null) : base(options)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(!(value is JsonElement) || ((JsonElement)(object)value).ValueKind != JsonValueKind.Null);
-
-            if (value is JsonNode)
-            {
-                ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
-            }
-
-            _value = value;
-            _jsonTypeInfo = jsonTypeInfo;
-        }
-
-        public JsonValue(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options = null) : base(options)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(!(value is JsonElement) || ((JsonElement)(object)value).ValueKind != JsonValueKind.Null);
-
-            if (value is JsonNode)
-            {
-                ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
-            }
-
-            _value = value;
-            _converter = converter;
         }
 
         public TValue Value
@@ -103,43 +71,6 @@ namespace System.Text.Json.Nodes
             //  so attempting to cast here would throw InvalidCastException.
             value = default!;
             return false;
-        }
-
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            if (_value is JsonElement jsonElement)
-            {
-                jsonElement.WriteTo(writer);
-            }
-            else
-            {
-                if (_converter != null)
-                {
-                    options ??= JsonSerializerOptions.s_defaultOptions;
-
-                    if (_converter.IsInternalConverterForNumberType)
-                    {
-                        _converter.WriteNumberWithCustomHandling(writer, _value, options.NumberHandling);
-                    }
-                    else
-                    {
-                        _converter.Write(writer, _value, options);
-                    }
-                }
-                else if (_jsonTypeInfo != null)
-                {
-                    JsonSerializer.Serialize(writer, _value, _jsonTypeInfo);
-                }
-                else
-                {
-                    JsonSerializer.Serialize(writer, _value, options);
-                }
-            }
         }
 
         internal TypeToConvert ConvertJsonElement<TypeToConvert>()

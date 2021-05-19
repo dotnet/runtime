@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -81,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValue<JsonElement>(element, options);
+                    node = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
                     break;
             }
 
