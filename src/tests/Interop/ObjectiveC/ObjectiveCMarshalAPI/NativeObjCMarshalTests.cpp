@@ -99,7 +99,7 @@ namespace
     [[noreturn]]
     void ThrowInt(void* cxt)
     {
-        int val = (int)cxt;
+        int val = (int)(size_t)cxt;
         throw val;
     }
 
