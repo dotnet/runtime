@@ -587,7 +587,7 @@ namespace System.Net.Http
             {
                 // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
                 // the only other cause could be a timeout.  Treat it as such.
-                e = toThrow = new TaskCanceledException(string.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
             }
             else if (cts.IsCancellationRequested && e is HttpRequestException) // if cancellationToken is canceled, cts will also be canceled
             {

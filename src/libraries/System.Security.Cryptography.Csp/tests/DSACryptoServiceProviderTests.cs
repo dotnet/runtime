@@ -33,6 +33,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51331", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void PublicOnly_WithPrivateKey()
         {
             using (var dsa = new DSACryptoServiceProvider())

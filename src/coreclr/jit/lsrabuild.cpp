@@ -2145,8 +2145,9 @@ void LinearScan::buildIntervals()
 
         if (isCandidateVar(argDsc))
         {
-            Interval* interval = getIntervalForLocalVar(varIndex);
-            regMaskTP mask     = allRegs(TypeGet(argDsc));
+            Interval*       interval = getIntervalForLocalVar(varIndex);
+            const var_types regType  = argDsc->GetRegisterType();
+            regMaskTP       mask     = allRegs(regType);
             if (argDsc->lvIsRegArg)
             {
                 // Set this interval as currently assigned to that register
@@ -3207,7 +3208,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     }
 
     regMaskTP defCandidates = RBM_NONE;
-    var_types type          = varDsc->TypeGet();
+    var_types type          = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
     if (varTypeIsByte(type))
@@ -3337,12 +3338,11 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    RefPosition* internalFloatDef = nullptr;
     if (varTypeIsSIMD(storeLoc) && !op1->IsCnsIntOrI() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
         // Need an additional register to extract upper 4 bytes of Vector3,
         // it has to be float for x86.
-        internalFloatDef = buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+        buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
     }
 #endif // FEATURE_SIMD
 
@@ -3359,6 +3359,16 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         {
             BuildUse(op1, RBM_NONE, i);
         }
+#if defined(FEATURE_SIMD) && defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        {
+            if (varTypeIsSIMD(storeLoc) && op1->IsCall())
+            {
+                // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
+                buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+            }
+        }
+#endif // FEATURE_SIMD && TARGET_X86 && TARGET_WINDOWS
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {

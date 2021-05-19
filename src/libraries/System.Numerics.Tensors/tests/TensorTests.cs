@@ -2161,9 +2161,9 @@ namespace System.Numerics.Tensors.Tests
     }
 }";
 
-            Assert.Equal(expected, tensor.GetArrayString());
+            Assert.Equal(expected, tensor.GetArrayString(), ignoreLineEndingDifferences: !LineEndingsHelper.IsNewLineConsistent);
 
-            var expectedNoSpace = expected.Replace(Environment.NewLine, "").Replace(" ", "");
+            var expectedNoSpace = expected.Replace(LineEndingsHelper.CompiledNewline, "").Replace(" ", "");
             Assert.Equal(expectedNoSpace, tensor.GetArrayString(false));
         }
 

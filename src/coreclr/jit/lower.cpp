@@ -2800,19 +2800,19 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
     {
-        bool     useJCMP = false;
-        unsigned flags   = 0;
+        bool         useJCMP = false;
+        GenTreeFlags flags   = GTF_EMPTY;
 
         if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : 0;
+            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
             useJCMP = true;
         }
         else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
             // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-            flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : 0);
+            flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
             useJCMP = true;
         }
 
@@ -3120,6 +3120,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
     if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg && (src->OperGet() != GT_PHI))
     {
+        bool convertToStoreObj;
         if (src->OperGet() == GT_CALL)
         {
             GenTreeCall*       call    = src->AsCall();
@@ -3165,8 +3166,50 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 return;
             }
 #endif // !WINDOWS_AMD64_ABI
+            convertToStoreObj = false;
         }
-        else if (!src->OperIs(GT_LCL_VAR) || (varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF))
+        else if (!varDsc->IsEnregisterable())
+        {
+            convertToStoreObj = true;
+        }
+        else if (src->OperIs(GT_CNS_INT))
+        {
+            assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
+            var_types regType = varDsc->GetRegisterType();
+#ifdef FEATURE_SIMD
+            if (varTypeIsSIMD(regType))
+            {
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+                {
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(regType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
+                BlockRange().InsertAfter(src, simdTree);
+                LowerSIMD(simdTree);
+                src               = simdTree;
+                lclStore->gtOp1   = src;
+                convertToStoreObj = false;
+            }
+            else
+#endif // FEATURE_SIMD
+            {
+                convertToStoreObj = false;
+            }
+        }
+        else if (!src->OperIs(GT_LCL_VAR))
+        {
+            convertToStoreObj = true;
+        }
+        else
+        {
+            assert(src->OperIs(GT_LCL_VAR));
+            convertToStoreObj = false;
+        }
+
+        if (convertToStoreObj)
         {
             GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(lclStore->GetLclNum(), TYP_BYREF);
 
@@ -5128,31 +5171,48 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     if (!comp->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
-        bool   add;
-        int    shift;
+        bool   increment;
+        int    preShift;
+        int    postShift;
+        bool   simpleMul = false;
 
         if (type == TYP_INT)
         {
-            magic = MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &add, &shift);
+            magic =
+                MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift, &postShift);
+
+#ifdef TARGET_64BIT
+            // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
+            if (increment || (preShift
+#ifdef TARGET_XARCH
+                              // IMUL reg,reg,imm32 can't be used if magic<0 because of sign-extension
+                              && static_cast<int32_t>(magic) < 0
+#endif
+                              ))
+            {
+                magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
+                                                        &postShift, 32);
+            }
+            // otherwise just widen to regular multiplication
+            else
+            {
+                postShift += 32;
+                simpleMul = true;
+            }
+#endif
         }
         else
         {
 #ifdef TARGET_64BIT
-            magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &add, &shift);
+            magic =
+                MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift, &postShift);
 #else
             unreached();
 #endif
         }
         assert(divMod->MarkedDivideByConstOptimized());
 
-        // Depending on the "add" flag returned by GetUnsignedMagicNumberForDivide we need to generate:
-        // add == false (when divisor == 3 for example):
-        //     div = (dividend MULHI magic) RSZ shift
-        // add == true (when divisor == 7 for example):
-        //     mulhi = dividend MULHI magic
-        //     div   = (((dividend SUB mulhi) RSZ 1) ADD mulhi)) RSZ (shift - 1)
-        const bool                 requiresAdjustment       = add;
-        const bool                 requiresDividendMultiuse = requiresAdjustment || !isDiv;
+        const bool                 requiresDividendMultiuse = !isDiv;
         const BasicBlock::weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
@@ -5161,62 +5221,107 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             dividend = ReplaceWithLclVar(dividendUse);
         }
 
-        // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
-        // The existing node will later be transformed into a GT_RSZ/GT_SUB that
-        // computes the final result. This way don't need to find and change the use
-        // of the existing node.
-        GenTree* mulhi = comp->gtNewOperNode(GT_MULHI, type, dividend, divisor);
-        mulhi->gtFlags |= GTF_UNSIGNED;
-        divisor->AsIntCon()->SetIconValue(magic);
-        BlockRange().InsertBefore(divMod, mulhi);
-        GenTree* firstNode = mulhi;
+        GenTree* firstNode        = nullptr;
+        GenTree* adjustedDividend = dividend;
 
-        if (requiresAdjustment)
+        // If "increment" flag is returned by GetUnsignedMagic we need to do Saturating Increment first
+        if (increment)
         {
-            dividend     = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
-            GenTree* sub = comp->gtNewOperNode(GT_SUB, type, dividend, mulhi);
-            BlockRange().InsertBefore(divMod, dividend, sub);
-
-            GenTree* one = comp->gtNewIconNode(1, TYP_INT);
-            GenTree* rsz = comp->gtNewOperNode(GT_RSZ, type, sub, one);
-            BlockRange().InsertBefore(divMod, one, rsz);
-
-            LIR::Use mulhiUse(BlockRange(), &sub->AsOp()->gtOp2, sub);
-            mulhi = ReplaceWithLclVar(mulhiUse);
-
-            mulhi        = comp->gtNewLclvNode(mulhi->AsLclVar()->GetLclNum(), mulhi->TypeGet());
-            GenTree* add = comp->gtNewOperNode(GT_ADD, type, rsz, mulhi);
-            BlockRange().InsertBefore(divMod, mulhi, add);
-
-            mulhi = add;
-            shift -= 1;
+            adjustedDividend = comp->gtNewOperNode(GT_INC_SATURATE, type, adjustedDividend);
+            BlockRange().InsertBefore(divMod, adjustedDividend);
+            firstNode = adjustedDividend;
+            assert(!preShift);
+        }
+        // if "preShift" is required, then do a right shift before
+        else if (preShift)
+        {
+            GenTree* preShiftBy = comp->gtNewIconNode(preShift, TYP_INT);
+            adjustedDividend    = comp->gtNewOperNode(GT_RSZ, type, adjustedDividend, preShiftBy);
+            BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
+            firstNode = preShiftBy;
+        }
+        else if (type != TYP_I_IMPL)
+        {
+            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
+            BlockRange().InsertBefore(divMod, adjustedDividend);
+            firstNode = adjustedDividend;
         }
 
-        GenTree* shiftBy = comp->gtNewIconNode(shift, TYP_INT);
-        BlockRange().InsertBefore(divMod, shiftBy);
+#ifdef TARGET_XARCH
+        // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
+        // reduntant copies otherwise
+        if (firstNode && !simpleMul)
+            adjustedDividend->SetRegNum(REG_RAX);
+#endif
 
-        if (isDiv)
+        divisor->gtType = TYP_I_IMPL;
+        divisor->AsIntCon()->SetIconValue(magic);
+
+        if (isDiv && !postShift && type == TYP_I_IMPL)
         {
-            divMod->SetOper(GT_RSZ);
-            divMod->gtOp1 = mulhi;
-            divMod->gtOp2 = shiftBy;
+            divMod->SetOper(GT_MULHI);
+            divMod->gtOp1 = adjustedDividend;
+            divMod->gtFlags |= GTF_UNSIGNED;
         }
         else
         {
-            GenTree* div = comp->gtNewOperNode(GT_RSZ, type, mulhi, shiftBy);
+            // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
+            // The existing node will later be transformed into a GT_RSZ/GT_SUB that
+            // computes the final result. This way don't need to find and change the use
+            // of the existing node.
+            GenTree* mulhi = comp->gtNewOperNode(simpleMul ? GT_MUL : GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
+            mulhi->gtFlags |= GTF_UNSIGNED;
+            BlockRange().InsertBefore(divMod, mulhi);
+            if (!firstNode)
+                firstNode = mulhi;
 
-            // divisor UMOD dividend = dividend SUB (div MUL divisor)
-            GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
-            GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
-            dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
+            if (postShift)
+            {
+                GenTree* shiftBy = comp->gtNewIconNode(postShift, TYP_INT);
+                BlockRange().InsertBefore(divMod, shiftBy);
 
-            divMod->SetOper(GT_SUB);
-            divMod->gtOp1 = dividend;
-            divMod->gtOp2 = mul;
+                if (isDiv && type == TYP_I_IMPL)
+                {
+                    divMod->SetOper(GT_RSZ);
+                    divMod->gtOp1 = mulhi;
+                    divMod->gtOp2 = shiftBy;
+                }
+                else
+                {
+                    mulhi = comp->gtNewOperNode(GT_RSZ, TYP_I_IMPL, mulhi, shiftBy);
+                    BlockRange().InsertBefore(divMod, mulhi);
+                }
+            }
 
-            BlockRange().InsertBefore(divMod, div, divisor, mul, dividend);
+            if (!isDiv)
+            {
+                // divisor UMOD dividend = dividend SUB (div MUL divisor)
+                GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
+                GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, mulhi, divisor);
+                dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
+
+                divMod->SetOper(GT_SUB);
+                divMod->gtOp1 = dividend;
+                divMod->gtOp2 = mul;
+
+                BlockRange().InsertBefore(divMod, divisor, mul, dividend);
+            }
+            else if (type != TYP_I_IMPL)
+            {
+#ifdef TARGET_ARMARCH
+                divMod->SetOper(GT_CAST);
+                divMod->gtFlags |= GTF_UNSIGNED;
+                divMod->AsCast()->gtCastType = TYP_UINT;
+#else
+                divMod->SetOper(GT_BITCAST);
+#endif
+                divMod->gtOp1 = mulhi;
+                divMod->gtOp2 = nullptr;
+            }
         }
-        ContainCheckRange(firstNode, divMod);
+
+        if (firstNode)
+            ContainCheckRange(firstNode, divMod);
         return true;
     }
 #endif
@@ -5915,16 +6020,34 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* lclVar = &compiler->lvaTable[lclNum];
-#ifdef DEBUG
             if (node->TypeIs(TYP_SIMD12))
             {
                 assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(lclVar) || (lclVar->lvSize() == 12));
             }
-#endif // DEBUG
         }
         break;
 #endif // TARGET_64BIT
 #endif // SIMD
+
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        {
+            const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
+            const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
+            if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
+            {
+                // Emitter does not correctly handle live updates for LCL_VAR_ADDR
+                // when they are not contained, for example, `STOREIND byref(GT_LCL_VAR_ADDR not-contained)`
+                // would generate:
+                // add     r1, sp, 48   // r1 contains address of a lclVar V01.
+                // str     r0, [r1]     // a gc ref becomes live in V01, but emitter would not report it.
+                // Make sure that we use uncontained address nodes only for variables
+                // that will be marked as mustInit and will be alive throughout the whole block even when tracked.
+                assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
+                // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
+            }
+            break;
+        }
 
         default:
             break;

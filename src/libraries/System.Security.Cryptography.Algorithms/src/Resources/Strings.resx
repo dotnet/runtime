@@ -340,7 +340,7 @@
     <value>Method not supported. Derived class must override.</value>
   </data>
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
-    <value>Algorithms added to CryptoConfig must be accessable from outside their assembly.</value>
+    <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
   </data>
   <data name="Cryptography_AddNullOrEmptyName" xml:space="preserve">
     <value>CryptoConfig cannot add a mapping for a null or empty name.</value>

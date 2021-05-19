@@ -59,6 +59,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXmlHasCertificateVerifiableSignature()
         {
             using (X509Certificate2 x509cert = TestHelpers.GetSampleX509Certificate())

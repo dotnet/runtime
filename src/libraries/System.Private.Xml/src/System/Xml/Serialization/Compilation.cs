@@ -140,6 +140,9 @@ namespace System.Xml.Serialization
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         [RequiresUnreferencedCode("calls LoadFile")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Annotating this as dangerous will make the core of the serializer to be marked as not safe, instead " +
+            "this pattern is only dangerous if using sgen only. See https://github.com/dotnet/runtime/issues/50820")]
         internal static Assembly? LoadGeneratedAssembly(Type type, string? defaultNamespace, out XmlSerializerImplementation? contract)
         {
             Assembly? serializer = null;

@@ -229,6 +229,7 @@
     <Compile Include="System\Runtime\Serialization\SerializationExceptionTests.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContextTests.cs" />
     <Compile Include="System\Runtime\Versioning\OSPlatformAttributeTests.cs" />
+    <Compile Include="System\Runtime\Versioning\RequiresPreviewFeaturesAttributeTests.cs" />
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\Security\SecurityExceptionTests.cs" />
     <Compile Include="System\Text\StringBuilderTests.cs" />
@@ -263,6 +264,9 @@
     <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
              Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"

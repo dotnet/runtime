@@ -1000,8 +1000,9 @@ HRESULT AsmMan::EmitManifest()
                             m_fMResNew[m_dwMResNum] = TRUE;
                             m_dwMResNum++;
                         }
-                        CloseHandle(hFile);
                     }
+
+                    CloseHandle(hFile);
                 }
             }
             if(fOK || ((Assembler*)m_pAssembler)->OnErrGo)

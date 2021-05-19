@@ -10,6 +10,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"
+                      LogicalName="ILLink.Substitutions.xml"
+                      Condition="'$(EnableAggressiveTrimming)' == 'true'" />
+
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\AssertExtensions.cs" />
     <Compile Include="System\IO\StreamExtensions.cs" />
@@ -21,6 +25,7 @@
     <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferUtil.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
+    <Compile Include="System\LineEndingsHelper.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
     <Compile Include="System\AssemblyPathHelper.cs" />
@@ -59,6 +64,8 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs"
@@ -68,6 +75,8 @@
   </ItemGroup>
   <!-- Android imports -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
   </ItemGroup>

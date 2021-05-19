@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <PreviousNetCoreApp>net5.0</PreviousNetCoreApp>

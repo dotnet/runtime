@@ -15,8 +15,8 @@ typedef struct EC_KEY
     jobject keyPair;
 } EC_KEY;
 
-EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair);
-EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*/ publicKey, jobject /*ECPrivateKey*/ privateKey);
+ARGS_NON_NULL_ALL EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair);
+ARGS_NON_NULL(1,2) EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*/ publicKey, jobject /*ECPrivateKey*/ privateKey);
 
 /*
 Cleans up and deletes an EC_KEY instance.

@@ -4158,6 +4158,192 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     emitAdjustStackDepthPushPop(ins);
 }
 
+//------------------------------------------------------------------------
+// IsMovInstruction: Determines whether a give instruction is a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+bool emitter::IsMovInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_mov:
+        case INS_movapd:
+        case INS_movaps:
+        case INS_movd:
+        case INS_movdqa:
+        case INS_movdqu:
+        case INS_movsd:
+        case INS_movsdsse2:
+        case INS_movss:
+        case INS_movsx:
+        case INS_movupd:
+        case INS_movups:
+        case INS_movzx:
+        {
+            return true;
+        }
+
+#if defined(TARGET_AMD64)
+        case INS_movq:
+        case INS_movsxd:
+        {
+            return true;
+        }
+#endif // TARGET_AMD64
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// emitIns_Mov: Emits a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    dstReg    -- The destination register
+//    srcReg    -- The source register
+//    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
+//
+void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+{
+    // Only move instructions can use emitIns_Mov
+    assert(IsMovInstruction(ins));
+
+#if DEBUG
+    switch (ins)
+    {
+        case INS_mov:
+        case INS_movsx:
+        case INS_movzx:
+        {
+            assert(isGeneralRegister(dstReg) && isGeneralRegister(srcReg));
+            break;
+        }
+
+        case INS_movapd:
+        case INS_movaps:
+        case INS_movdqa:
+        case INS_movdqu:
+        case INS_movsd:
+        case INS_movsdsse2:
+        case INS_movss:
+        case INS_movupd:
+        case INS_movups:
+        {
+            assert(isFloatReg(dstReg) && isFloatReg(srcReg));
+            break;
+        }
+
+        case INS_movd:
+        {
+            assert(isFloatReg(dstReg) != isFloatReg(srcReg));
+            break;
+        }
+
+#if defined(TARGET_AMD64)
+        case INS_movq:
+        {
+            assert(isFloatReg(dstReg) && isFloatReg(srcReg));
+            break;
+        }
+
+        case INS_movsxd:
+        {
+            assert(isGeneralRegister(dstReg) && isGeneralRegister(srcReg));
+            break;
+        }
+#endif // TARGET_AMD64
+
+        default:
+        {
+            unreached();
+        }
+    }
+#endif
+
+    emitAttr size = EA_SIZE(attr);
+
+    assert(size <= EA_32BYTE);
+    noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
+
+    if (canSkip && (dstReg == srcReg))
+    {
+        switch (ins)
+        {
+            case INS_mov:
+            {
+                // These instructions have no side effect and can be skipped
+                return;
+            }
+
+            case INS_movapd:
+            case INS_movaps:
+            case INS_movdqa:
+            case INS_movdqu:
+            case INS_movupd:
+            case INS_movups:
+            {
+                // These instructions have no side effect and can be skipped
+                return;
+            }
+
+            case INS_movd:
+            case INS_movsd:
+            case INS_movsdsse2:
+            case INS_movss:
+            case INS_movsx:
+            case INS_movzx:
+            {
+                // These instructions have a side effect and shouldn't be skipped
+                // however existing codepaths were skipping these instructions in
+                // certain scenarios and so we skip them as well for back-compat.
+                //
+                // Long term, these paths should be audited and should likely be
+                // replaced with copies rather than extensions.
+                return;
+            }
+
+#if defined(TARGET_AMD64)
+            case INS_movq:
+            case INS_movsxd:
+            {
+                // These instructions have a side effect and shouldn't be skipped
+                // however existing codepaths were skipping these instructions in
+                // certain scenarios and so we skip them as well for back-compat.
+                //
+                // Long term, these paths should be audited and should likely be
+                // replaced with copies rather than extensions.
+                return;
+            }
+#endif // TARGET_AMD64
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
+    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+
+    instrDesc* id = emitNewInstrSmall(attr);
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idReg1(dstReg);
+    id->idReg2(srcReg);
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 /*****************************************************************************
  *
  *  Add an instruction with two register operands.
@@ -4165,18 +4351,13 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
 
 void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 {
+    if (IsMovInstruction(ins))
+    {
+        assert(!"Please use emitIns_Mov() to correctly handle move elision");
+        emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false);
+    }
+
     emitAttr size = EA_SIZE(attr);
-
-    /* We don't want to generate any useless mov instructions! */
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_AMD64
-    // Same-reg 4-byte mov can be useful because it performs a
-    // zero-extension to 8 bytes.
-    assert(ins != INS_mov || reg1 != reg2 || size == EA_4BYTE);
-#else
-    assert(ins != INS_mov || reg1 != reg2);
-#endif // TARGET_AMD64
 
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
@@ -5838,10 +6019,7 @@ void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targe
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_I(ins, attr, targetReg, ival);
     }
 }
@@ -5866,10 +6044,7 @@ void emitter::emitIns_SIMD_R_R_A(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_A(ins, attr, targetReg, indir);
     }
 }
@@ -5895,10 +6070,7 @@ void emitter::emitIns_SIMD_R_R_AR(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_AR(ins, attr, targetReg, base, offset);
     }
 }
@@ -5924,10 +6096,7 @@ void emitter::emitIns_SIMD_R_R_C(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
     }
 }
@@ -5952,14 +6121,19 @@ void emitter::emitIns_SIMD_R_R_R(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op2
-            assert(op2Reg != targetReg);
+        // Ensure we aren't overwriting op2
+        assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+
+        if (IsMovInstruction(ins))
+        {
+            emitIns_Mov(ins, attr, targetReg, op2Reg, /* canSkip */ false);
         }
-        emitIns_R_R(ins, attr, targetReg, op2Reg);
+        else
+        {
+            emitIns_R_R(ins, attr, targetReg, op2Reg);
+        }
     }
 }
 
@@ -5984,10 +6158,7 @@ void emitter::emitIns_SIMD_R_R_S(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_S(ins, attr, targetReg, varx, offs);
     }
 }
@@ -6014,10 +6185,7 @@ void emitter::emitIns_SIMD_R_R_A_I(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_A_I(ins, attr, targetReg, indir, ival);
     }
 }
@@ -6043,10 +6211,7 @@ void emitter::emitIns_SIMD_R_R_AR_I(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_AR_I(ins, attr, targetReg, base, 0, ival);
     }
 }
@@ -6078,10 +6243,7 @@ void emitter::emitIns_SIMD_R_R_C_I(instruction          ins,
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_C_I(ins, attr, targetReg, fldHnd, offs, ival);
     }
 }
@@ -6107,13 +6269,10 @@ void emitter::emitIns_SIMD_R_R_R_I(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op2
-            assert(op2Reg != targetReg);
+        // Ensure we aren't overwriting op2
+        assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R_I(ins, attr, targetReg, op2Reg, ival);
     }
 }
@@ -6140,10 +6299,7 @@ void emitter::emitIns_SIMD_R_R_S_I(
     }
     else
     {
-        if (op1Reg != targetReg)
-        {
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_S_I(ins, attr, targetReg, varx, offs, ival);
     }
 }
@@ -6166,14 +6322,10 @@ void emitter::emitIns_SIMD_R_R_R_A(
     assert(IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseVEXEncoding());
 
-    if (op1Reg != targetReg)
-    {
-        // Ensure we aren't overwriting op2
-        assert(op2Reg != targetReg);
+    // Ensure we aren't overwriting op2
+    assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
-        emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-    }
-
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
     emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir);
 }
 
@@ -6195,14 +6347,10 @@ void emitter::emitIns_SIMD_R_R_R_AR(
     assert(IsFMAInstruction(ins));
     assert(UseVEXEncoding());
 
-    if (op1Reg != targetReg)
-    {
-        // Ensure we aren't overwriting op2
-        assert(op2Reg != targetReg);
+    // Ensure we aren't overwriting op2
+    assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
-        emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-    }
-
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
     emitIns_R_R_AR(ins, attr, targetReg, op2Reg, base, 0);
 }
 
@@ -6230,14 +6378,10 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
     assert(IsFMAInstruction(ins));
     assert(UseVEXEncoding());
 
-    if (op1Reg != targetReg)
-    {
-        // Ensure we aren't overwriting op2
-        assert(op2Reg != targetReg);
+    // Ensure we aren't overwriting op2
+    assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
-        emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-    }
-
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
     emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs);
 }
 
@@ -6260,16 +6404,11 @@ void emitter::emitIns_SIMD_R_R_R_R(
     {
         assert(UseVEXEncoding());
 
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op2 or op3
+        // Ensure we aren't overwriting op2 or op3
+        assert((op2Reg != targetReg) || (op1Reg == targetReg));
+        assert((op3Reg != targetReg) || (op1Reg == targetReg));
 
-            assert(op2Reg != targetReg);
-            assert(op3Reg != targetReg);
-
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
-
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg);
     }
     else if (UseVEXEncoding())
@@ -6296,23 +6435,19 @@ void emitter::emitIns_SIMD_R_R_R_R(
     else
     {
         assert(isSse41Blendv(ins));
+
+        // Ensure we aren't overwriting op1 or op2
+        assert((op1Reg != REG_XMM0) || (op3Reg == REG_XMM0));
+        assert((op2Reg != REG_XMM0) || (op3Reg == REG_XMM0));
+
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-        if (op3Reg != REG_XMM0)
-        {
-            // Ensure we aren't overwriting op1 or op2
-            assert(op1Reg != REG_XMM0);
-            assert(op2Reg != REG_XMM0);
+        emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-            emitIns_R_R(INS_movaps, attr, REG_XMM0, op3Reg);
-        }
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op2 or oop3 (which should be REG_XMM0)
-            assert(op2Reg != targetReg);
-            assert(targetReg != REG_XMM0);
+        // Ensure we aren't overwriting op2 or oop3 (which should be REG_XMM0)
+        assert((op2Reg != targetReg) || (op1Reg == targetReg));
+        assert(targetReg != REG_XMM0);
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R(ins, attr, targetReg, op2Reg);
     }
 }
@@ -6336,14 +6471,10 @@ void emitter::emitIns_SIMD_R_R_R_S(
     assert(IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseVEXEncoding());
 
-    if (op1Reg != targetReg)
-    {
-        // Ensure we aren't overwriting op2
-        assert(op2Reg != targetReg);
+    // Ensure we aren't overwriting op2
+    assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
-        emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-    }
-
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
     emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs);
 }
 
@@ -6399,22 +6530,16 @@ void emitter::emitIns_SIMD_R_R_A_R(
     {
         assert(isSse41Blendv(ins));
 
+        // Ensure we aren't overwriting op1
+        assert(op1Reg != REG_XMM0);
+
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-        if (op3Reg != REG_XMM0)
-        {
-            // Ensure we aren't overwriting op1
-            assert(op1Reg != REG_XMM0);
+        emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-            emitIns_R_R(INS_movaps, attr, REG_XMM0, op3Reg);
-        }
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-            assert(targetReg != REG_XMM0);
+        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
+        assert(targetReg != REG_XMM0);
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
-
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_A(ins, attr, targetReg, indir);
     }
 }
@@ -6471,22 +6596,16 @@ void emitter::emitIns_SIMD_R_R_AR_R(
     {
         assert(isSse41Blendv(ins));
 
+        // Ensure we aren't overwriting op1
+        assert(op1Reg != REG_XMM0);
+
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-        if (op3Reg != REG_XMM0)
-        {
-            // Ensure we aren't overwriting op1
-            assert(op1Reg != REG_XMM0);
+        emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-            emitIns_R_R(INS_movaps, attr, REG_XMM0, op3Reg);
-        }
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-            assert(targetReg != REG_XMM0);
+        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
+        assert(targetReg != REG_XMM0);
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
-
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_AR(ins, attr, targetReg, base, 0);
     }
 }
@@ -6549,22 +6668,16 @@ void emitter::emitIns_SIMD_R_R_C_R(instruction          ins,
     {
         assert(isSse41Blendv(ins));
 
+        // Ensure we aren't overwriting op1
+        assert(op1Reg != REG_XMM0);
+
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-        if (op3Reg != REG_XMM0)
-        {
-            // Ensure we aren't overwriting op1
-            assert(op1Reg != REG_XMM0);
+        emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-            emitIns_R_R(INS_movaps, attr, REG_XMM0, op3Reg);
-        }
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-            assert(targetReg != REG_XMM0);
+        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
+        assert(targetReg != REG_XMM0);
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
-
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
     }
 }
@@ -6622,22 +6735,16 @@ void emitter::emitIns_SIMD_R_R_S_R(
     {
         assert(isSse41Blendv(ins));
 
+        // Ensure we aren't overwriting op1
+        assert(op1Reg != REG_XMM0);
+
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-        if (op3Reg != REG_XMM0)
-        {
-            // Ensure we aren't overwriting op1
-            assert(op1Reg != REG_XMM0);
+        emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-            emitIns_R_R(INS_movaps, attr, REG_XMM0, op3Reg);
-        }
-        if (op1Reg != targetReg)
-        {
-            // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-            assert(targetReg != REG_XMM0);
+        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
+        assert(targetReg != REG_XMM0);
 
-            emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
-        }
-
+        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_S(ins, attr, targetReg, varx, offs);
     }
 }
@@ -7910,13 +8017,13 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 /*****************************************************************************
  *
- *  Display an reloc value
- *  If we are formatting for an assembly listing don't print the hex value
+ *  Display a reloc value
+ *  If we are formatting for a diffable assembly listing don't print the hex value
  *  since it will prevent us from doing assembly diffs
  */
 void emitter::emitDispReloc(ssize_t value)
 {
-    if (emitComp->opts.disAsm)
+    if (emitComp->opts.disAsm && emitComp->opts.disDiffable)
     {
         printf("(reloc)");
     }
@@ -8397,8 +8504,58 @@ void emitter::emitDispIns(
     }
     else
     {
-        attr = id->idOpSize();
-        sstr = codeGen->genSizeStr(attr);
+        emitAttr sizeAttr = id->idOpSize();
+        attr              = sizeAttr;
+
+        switch (ins)
+        {
+            case INS_vextractf128:
+            case INS_vextracti128:
+            case INS_vinsertf128:
+            case INS_vinserti128:
+            {
+                sizeAttr = EA_16BYTE;
+                break;
+            }
+
+            case INS_pextrb:
+            case INS_pinsrb:
+            {
+                sizeAttr = EA_1BYTE;
+                break;
+            }
+
+            case INS_pextrw:
+            case INS_pextrw_sse41:
+            case INS_pinsrw:
+            {
+                sizeAttr = EA_2BYTE;
+                break;
+            }
+
+            case INS_extractps:
+            case INS_insertps:
+            case INS_pextrd:
+            case INS_pinsrd:
+            {
+                sizeAttr = EA_4BYTE;
+                break;
+            }
+
+            case INS_pextrq:
+            case INS_pinsrq:
+            {
+                sizeAttr = EA_8BYTE;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        sstr = codeGen->genSizeStr(sizeAttr);
 
         if (ins == INS_lea)
         {
@@ -8929,6 +9086,36 @@ void emitter::emitDispIns(
             assert(IsThreeOperandAVXInstruction(ins));
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(id->idReg2(), attr));
+
+            switch (ins)
+            {
+                case INS_vinsertf128:
+                case INS_vinserti128:
+                {
+                    attr = EA_16BYTE;
+                    break;
+                }
+
+                case INS_pinsrb:
+                case INS_pinsrw:
+                case INS_pinsrd:
+                {
+                    attr = EA_4BYTE;
+                    break;
+                }
+
+                case INS_pinsrq:
+                {
+                    attr = EA_8BYTE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
             printf("%s, ", emitRegName(id->idReg3(), attr));
             val = emitGetInsSC(id);
             goto PRINT_CONSTANT;
@@ -8942,7 +9129,55 @@ void emitter::emitDispIns(
             printf("%s", emitRegName(id->idReg4(), attr));
             break;
         case IF_RRW_RRW_CNS:
-            printf("%s,", emitRegName(id->idReg1(), attr));
+        {
+            emitAttr tgtAttr = attr;
+
+            switch (ins)
+            {
+                case INS_vextractf128:
+                case INS_vextracti128:
+                {
+                    tgtAttr = EA_16BYTE;
+                    break;
+                }
+
+                case INS_extractps:
+                case INS_pextrb:
+                case INS_pextrw:
+                case INS_pextrw_sse41:
+                case INS_pextrd:
+                {
+                    tgtAttr = EA_4BYTE;
+                    break;
+                }
+
+                case INS_pextrq:
+                {
+                    tgtAttr = EA_8BYTE;
+                    break;
+                }
+
+                case INS_pinsrb:
+                case INS_pinsrw:
+                case INS_pinsrd:
+                {
+                    attr = EA_4BYTE;
+                    break;
+                }
+
+                case INS_pinsrq:
+                {
+                    attr = EA_8BYTE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            printf("%s,", emitRegName(id->idReg1(), tgtAttr));
             printf(" %s", emitRegName(id->idReg2(), attr));
             val = emitGetInsSC(id);
 #ifdef TARGET_AMD64
@@ -8959,6 +9194,7 @@ void emitter::emitDispIns(
                 goto PRINT_CONSTANT;
             }
             break;
+        }
 
         case IF_RRD:
         case IF_RWR:
@@ -9275,7 +9511,7 @@ void emitter::emitDispIns(
  *  Output nBytes bytes of NOP instructions
  */
 
-static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
+static BYTE* emitOutputNOP(BYTE* dstRW, size_t nBytes)
 {
     assert(nBytes <= 15);
 
@@ -9289,49 +9525,49 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     switch (nBytes)
     {
         case 15:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 14:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 13:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 12:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 11:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 10:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 9:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 8:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 7:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 6:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 5:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 4:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 3:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 2:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             FALLTHROUGH;
         case 1:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             break;
         case 0:
             break;
@@ -9340,82 +9576,82 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     switch (nBytes)
     {
         case 2:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 1:
-            *dst++ = 0x90;
+            *dstRW++ = 0x90;
             break;
         case 0:
             break;
         case 3:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x00;
             break;
         case 4:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x40;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x40;
+            *dstRW++ = 0x00;
             break;
         case 6:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 5:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x44;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x44;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
             break;
         case 7:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x80;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x80;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
             break;
         case 15:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 7), 8);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 7), 8);
             break;
         case 14:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 7), 7);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 7), 7);
             break;
         case 13:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 5), 8);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 5), 8);
             break;
         case 12:
             // More than 3 prefixes is slower than just 2 NOPs
-            dst = emitOutputNOP(emitOutputNOP(dst, 4), 8);
+            dstRW = emitOutputNOP(emitOutputNOP(dstRW, 4), 8);
             break;
         case 11:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 10:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 9:
-            *dst++ = 0x66;
+            *dstRW++ = 0x66;
             FALLTHROUGH;
         case 8:
-            *dst++ = 0x0F;
-            *dst++ = 0x1F;
-            *dst++ = 0x84;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
-            *dst++ = 0x00;
+            *dstRW++ = 0x0F;
+            *dstRW++ = 0x1F;
+            *dstRW++ = 0x84;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
+            *dstRW++ = 0x00;
             break;
     }
 #endif // TARGET_AMD64
 
-    return dst;
+    return dstRW;
 }
 
 //--------------------------------------------------------------------
@@ -9459,7 +9695,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     emitComp->loopsAligned++;
 #endif
 
-    return emitOutputNOP(dst, paddingToAdd);
+    BYTE* dstRW = dst + writeableOffset;
+    dstRW       = emitOutputNOP(dstRW, paddingToAdd);
+    return dstRW - writeableOffset;
 }
 
 /*****************************************************************************
@@ -12780,7 +13018,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (ins == INS_nop)
             {
-                dst = emitOutputNOP(dst, id->idCodeSize());
+                BYTE* dstRW = dst + writeableOffset;
+                dstRW       = emitOutputNOP(dstRW, id->idCodeSize());
+                dst         = dstRW - writeableOffset;
                 break;
             }
 
@@ -13902,7 +14142,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 #endif
 
-            dst = emitOutputNOP(dst, diff);
+            BYTE* dstRW = dst + writeableOffset;
+            dstRW       = emitOutputNOP(dstRW, diff);
+            dst         = dstRW - writeableOffset;
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }

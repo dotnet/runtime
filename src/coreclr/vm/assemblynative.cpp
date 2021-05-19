@@ -94,11 +94,6 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     spec.SetCodeBase(NULL);
 
-    if (!spec.HasUniqueIdentity())
-    {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
-        EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
-    }
-
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
 

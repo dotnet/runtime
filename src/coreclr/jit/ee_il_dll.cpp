@@ -861,6 +861,8 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
+    // Estimate number of unique vars with debug info
+    //
     ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
     for (unsigned i = 0; i < cVars; i++)
     {
@@ -870,7 +872,8 @@ void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInf
             AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
         }
     }
-    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+
+    printf("; Variable debug info: %d live ranges, %d vars for method %s\n", cVars,
            AllVarSetOps::Count(this, uniqueVars), info.compFullName);
 
     for (unsigned i = 0; i < cVars; i++)
@@ -1012,13 +1015,13 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "TRUE" : "FALSE",
-               isColdCode ? "TRUE" : "FALSE", unwindSize);
+        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
+               isColdCode ? "true" : "false", unwindSize);
     }
 #endif // DEBUG
 
@@ -1408,7 +1411,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return nullptr;
     }
 
-    return (asString->chars);
+    return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
 

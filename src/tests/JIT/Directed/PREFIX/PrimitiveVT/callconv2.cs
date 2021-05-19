@@ -7,7 +7,15 @@ namespace PrimitiveVT
 
     unsafe class CallConv2
     {
-        static Random rand = new Random();
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        static Random rand = new Random(Seed);
         VT2A vt1a;
         static VT2A x;
 

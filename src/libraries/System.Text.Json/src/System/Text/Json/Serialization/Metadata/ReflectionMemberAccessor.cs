@@ -3,13 +3,15 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(Type type)
+        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Debug.Assert(type != null);
             ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
@@ -32,7 +34,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
+            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -72,7 +74,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
+            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -108,7 +110,7 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
-        public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
+        public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
         {
             Type collectionType = typeof(TCollection);
             Type elementType = JsonTypeInfo.ObjectType;
