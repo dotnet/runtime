@@ -773,72 +773,64 @@ namespace System
         /// </summary>
         private static unsafe string TryGetFileMuiPath(string filePath, CultureInfo cultureInfo)
         {
-            try
-            {
-                char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH];
-                char* language = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
-                uint fileMuiPathLength = Interop.Kernel32.MAX_PATH;
-                uint languageLength = Interop.Kernel32.LOCALE_NAME_MAX_LENGTH;
-                ulong enumerator = 0;
+            char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH];
+            char* language = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
+            uint fileMuiPathLength = Interop.Kernel32.MAX_PATH;
+            uint languageLength = Interop.Kernel32.LOCALE_NAME_MAX_LENGTH;
+            ulong enumerator = 0;
 
-                while (true)
+            while (true)
+            {
+                // Search all installed languages.  The enumerator is re-used between loop iterations.
+                bool succeeded = Interop.Kernel32.GetFileMUIPath(
+                    Interop.Kernel32.MUI_USE_INSTALLED_LANGUAGES,
+                    filePath, language, ref languageLength,
+                    fileMuiPath, ref fileMuiPathLength, ref enumerator);
+
+                if (!succeeded)
                 {
-                    // Search all installed languages.  The enumerator is re-used between loop iterations.
-                    bool succeeded = Interop.Kernel32.GetFileMUIPath(
-                        Interop.Kernel32.MUI_USE_INSTALLED_LANGUAGES,
+                    // Recurse to search using the parent of the desired culture.
+                    if (cultureInfo.Parent.Name != string.Empty)
+                    {
+                        return TryGetFileMuiPath(filePath, cultureInfo.Parent);
+                    }
+
+                    // Final fallback, using the preferred installed UI language.
+                    enumerator = 0;
+                    succeeded = Interop.Kernel32.GetFileMUIPath(
+                        Interop.Kernel32.MUI_USER_PREFERRED_UI_LANGUAGES,
                         filePath, language, ref languageLength,
                         fileMuiPath, ref fileMuiPathLength, ref enumerator);
 
-                    if (!succeeded)
-                    {
-                        // Recurse to search using the parent of the desired culture.
-                        if (cultureInfo.Parent.Name != string.Empty)
-                        {
-                            return TryGetFileMuiPath(filePath, cultureInfo.Parent);
-                        }
-
-                        // Final fallback, using the preferred installed UI language.
-                        enumerator = 0;
-                        succeeded = Interop.Kernel32.GetFileMUIPath(
-                            Interop.Kernel32.MUI_USER_PREFERRED_UI_LANGUAGES,
-                            filePath, language, ref languageLength,
-                            fileMuiPath, ref fileMuiPathLength, ref enumerator);
-
-                        if (succeeded)
-                        {
-                            return new string(fileMuiPath);
-                        }
-
-                        // Shouldn't get here, as there's always at least one language installed.
-                        return string.Empty;
-                    }
-
-                    // Lookup succeeded.  Check for exact match to the desired culture.
-                    var lang = new string(language);
-                    if (string.Equals(lang, cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
+                    if (succeeded)
                     {
                         return new string(fileMuiPath);
                     }
 
-                    // Check for match of any parent of the language returned to the desired culture.
-                    var ci = CultureInfo.GetCultureInfo(lang);
-                    while (ci.Parent.Name != string.Empty)
-                    {
-                        if (ci.Parent.Name.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return new string(fileMuiPath);
-                        }
+                    // Shouldn't get here, as there's always at least one language installed.
+                    return string.Empty;
+                }
 
-                        ci = ci.Parent;
+                // Lookup succeeded.  Check for exact match to the desired culture.
+                var lang = new string(language);
+                if (string.Equals(lang, cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new string(fileMuiPath);
+                }
+
+                // Check for match of any parent of the language returned to the desired culture.
+                var ci = CultureInfo.GetCultureInfo(lang);
+                while (ci.Parent.Name != string.Empty)
+                {
+                    if (ci.Parent.Name.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new string(fileMuiPath);
                     }
 
-                    // Not found yet.  Continue with next iteration.
+                    ci = ci.Parent;
                 }
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // Shouldn't get here, but was in previous implementation.
-                return string.Empty;
+
+                // Not found yet.  Continue with next iteration.
             }
         }
 
