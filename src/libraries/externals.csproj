@@ -4,7 +4,6 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Binplace properties -->
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <BinPlaceNative>true</BinPlaceNative>
