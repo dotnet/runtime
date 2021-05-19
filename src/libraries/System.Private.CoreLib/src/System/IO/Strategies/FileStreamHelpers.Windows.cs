@@ -59,7 +59,7 @@ namespace System.IO.Strategies
         }
 
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
-            => bufferSize <= 1 ? strategy : new BufferedFileStreamStrategy(strategy, bufferSize);
+            => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
             => CreateFileOpenHandle(path, mode, access, share, options, preallocationSize);

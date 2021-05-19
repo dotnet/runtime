@@ -31,6 +31,6 @@ namespace System.IO
         /// The size of the buffer used by <see cref="FileStream" /> for buffering. The default buffer size is 4096.
         /// 0 or 1 means that buffering should be disabled. Negative values are not allowed.
         /// </summary>
-        public int BufferSize { get; set; } = 4096;
+        public int BufferSize { get; set; } = FileStream.DefaultBufferSize;
     }
 }
