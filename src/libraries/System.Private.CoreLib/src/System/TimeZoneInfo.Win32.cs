@@ -36,7 +36,7 @@ namespace System
         private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
-        private static readonly Dictionary<int, string> s_FileMuiPathCache = new();
+        private static readonly Dictionary<string, string> s_FileMuiPathCache = new();
 
         private sealed partial class CachedData
         {
@@ -746,11 +746,11 @@ namespace System
         private static string TryGetCachedFileMuiPath(string filePath, CultureInfo cultureInfo)
         {
             string? result;
-            int hash = HashCode.Combine(filePath, cultureInfo);
+            string cacheKey = $"{cultureInfo.Name};{filePath}";
 
             lock (s_FileMuiPathCache)
             {
-                if (s_FileMuiPathCache.TryGetValue(hash, out result))
+                if (s_FileMuiPathCache.TryGetValue(cacheKey, out result))
                 {
                     return result;
                 }
@@ -760,7 +760,7 @@ namespace System
 
             lock (s_FileMuiPathCache)
             {
-                s_FileMuiPathCache.TryAdd(hash, result);
+                s_FileMuiPathCache.TryAdd(cacheKey, result);
             }
 
             return result;
