@@ -2035,6 +2035,9 @@ namespace System.Net.Http
                 memberName,                   // method name
                 message);                     // message
 
+        public void TraceFlowControl(string message, [CallerMemberName] string? memberName = null) =>
+                Trace("[FlowControl] " + message, memberName);
+
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception innerException) =>
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);

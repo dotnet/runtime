@@ -28,7 +28,7 @@ namespace System.Net.Http
                 _stream = stream;
                 _streamWindowSize = connection.InitialStreamWindowSize;
                 _streamWindowUpdateRatio = _connection._pool.Settings._streamWindowUpdateRatio;
-                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
+                _stream.TraceFlowControl($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
             }
 
             internal int StreamWindowSize => _streamWindowSize;
@@ -63,7 +63,8 @@ namespace System.Net.Http
 
         private class DynamicHttp2StreamWindowManager : Http2StreamWindowManager
         {
-            private DateTime _lastWindowUpdate = DateTime.Now;
+            private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+            private TimeSpan _lastWindowUpdate;
 
             private long _magic = 1;
 
@@ -71,7 +72,8 @@ namespace System.Net.Http
                 : base(connection, stream)
             {
                 _magic = connection._pool.Settings._streamWindowMagicMultiplier;
-                _stream.Trace($"magic:{_magic}");
+                _stream.TraceFlowControl($" magic:{_magic} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
+                _lastWindowUpdate = _stopwatch.Elapsed;
             }
 
             public override void AdjustWindow(int bytesConsumed)
@@ -83,7 +85,8 @@ namespace System.Net.Http
                 }
 
                 TimeSpan rtt = _connection._rttEstimator!.Rtt;
-                TimeSpan dt = DateTime.Now - _lastWindowUpdate;
+                TimeSpan currentTime = _stopwatch.Elapsed;
+                TimeSpan dt = currentTime - _lastWindowUpdate;
 
                 int windowSizeIncrement = _delivered;
 
@@ -92,22 +95,25 @@ namespace System.Net.Http
                     windowSizeIncrement += _streamWindowSize;
                     _streamWindowSize *= 2;
 
-                    _stream.Trace($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
+                    _stream.TraceFlowControl($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold} \n | {GetDiagnostics()}");
                 }
                 else
                 {
-                    string msg =
-                        $"No adjustment! | RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
-                        //$"_delivered * rtt.Ticks = {_delivered * rtt.Ticks} || StreamWindowThreshold * dt.Ticks = {StreamWindowThreshold * dt.Ticks} ||" +
-                        $"Magic*_delivered/dt = {_magic* _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
-                    _stream.Trace(msg);
+                    string msg = "No adjustment! |" + GetDiagnostics();
+                    _stream.TraceFlowControl(msg);
                 }
 
                 Task sendWindowUpdateTask = _connection.SendWindowUpdateAsync(_stream.StreamId, windowSizeIncrement);
                 _connection.LogExceptions(sendWindowUpdateTask);
 
                 _delivered = 0;
-                _lastWindowUpdate = DateTime.Now;
+                _lastWindowUpdate = currentTime;
+
+                string GetDiagnostics()
+                {
+                    return "RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
+                        $"Magic*_delivered/dt = {_magic * _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
+                }
             }
         }
 
@@ -137,7 +143,7 @@ namespace System.Net.Http
                 if (Interop.Winsock.GetTcpInfoV0(_socket.SafeHandle, out Interop.Winsock._TCP_INFO_v0 tcpInfo) == SocketError.Success)
                 {
                     Rtt = TimeSpan.FromTicks(10 * tcpInfo.RttUs);
-                    _connection.Trace($"Rtt estimation updated: Rtt={Rtt} || (initial fake:{_initialRtt} difference:{Rtt - _initialRtt}");
+                    _connection.TraceFlowControl($"Rtt estimation updated: Rtt={Rtt} || (initial fake:{_initialRtt} difference:{Rtt - _initialRtt}");
                 }
             }
 
