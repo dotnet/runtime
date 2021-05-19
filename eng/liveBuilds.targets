@@ -175,8 +175,8 @@
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
-        $(LibrariesNativeArtifactsPath)src\emcc-flags.txt;
-        $(LibrariesNativeArtifactsPath)src\emcc-version.txt;"
+        $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
+        $(LibrariesNativeArtifactsPath)src\Emcc.props;"
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
