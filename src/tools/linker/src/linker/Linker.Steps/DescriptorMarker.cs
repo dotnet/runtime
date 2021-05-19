@@ -101,8 +101,21 @@ namespace Mono.Linker.Steps
 			Debug.Assert (ShouldProcessElement (nav));
 
 			TypePreserve preserve = GetTypePreserve (nav);
-			if (preserve != TypePreserve.Nothing)
+			switch (preserve) {
+			case TypePreserve.Fields when !type.HasFields:
+				LogWarning ($"Type {type.GetDisplayName ()} has no fields to preserve", 2001, nav);
+				break;
+
+			case TypePreserve.Methods when !type.HasMethods:
+				LogWarning ($"Type {type.GetDisplayName ()} has no methods to preserve", 2002, nav);
+				break;
+
+			case TypePreserve.Fields:
+			case TypePreserve.Methods:
+			case TypePreserve.All:
 				_context.Annotations.SetPreserve (type, preserve);
+				break;
+			}
 
 			bool required = IsRequired (nav);
 			ProcessTypeChildren (type, nav, required);
