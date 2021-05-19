@@ -802,11 +802,6 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (!IsWildcardEndPoint(_rightEndPoint))
-            {
-                _localEndPoint = _rightEndPoint;
-            }
-
             // Save a copy of the EndPoint so we can use it for Create().
             // For UnixDomainSocketEndPoint, track the file to delete on Dispose.
             _rightEndPoint = endPointSnapshot is UnixDomainSocketEndPoint unixEndPoint ?
@@ -3615,13 +3610,9 @@ namespace System.Net.Sockets
             socket._protocolType = _protocolType;
             socket._remoteEndPoint = remoteEP;
 
-            // If the _rightEndpoint tracks a UnixDomainSocketEndPoint to delete,
-            // create a new EndPoint.
-            if (_localEndPoint != null)
-            {
-                socket._rightEndPoint = _localEndPoint;
-            }
-            else if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+            // If the _rightEndpoint tracks a UnixDomainSocketEndPoint to delete
+            // then create a new EndPoint.
+            if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
                      unixEndPoint.BoundFileName is not null)
             {
                 socket._rightEndPoint = unixEndPoint.CreateUnboundEndPoint();
