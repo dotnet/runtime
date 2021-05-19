@@ -7,6 +7,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[SetupLinkerDescriptorFile ("LinkXmlErrorCases.xml")]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 
+	[ExpectedWarning ("IL2001", "TypeWithNoFields", FileName = "LinkXmlErrorCases.xml", SourceLine = 3, SourceColumn = 6)]
+	[ExpectedWarning ("IL2002", "TypeWithNoMethods", FileName = "LinkXmlErrorCases.xml", SourceLine = 4, SourceColumn = 6)]
 	[ExpectedWarning ("IL2007", "NonExistentAssembly", FileName = "LinkXmlErrorCases.xml", SourceLine = 47, SourceColumn = 4)]
 	[ExpectedWarning ("IL2008", "NonExistentType", FileName = "LinkXmlErrorCases.xml", SourceLine = 6, SourceColumn = 6)]
 	[ExpectedWarning ("IL2009", "NonExistentMethod", "TypeWithNoMethods", FileName = "LinkXmlErrorCases.xml", SourceLine = 9, SourceColumn = 8)]
@@ -28,14 +30,12 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2001", "TypeWithNoFields")]
 		class TypeWithNoFields
 		{
 			private void Method () { }
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2002", "TypeWithNoMethods")]
 		struct TypeWithNoMethods
 		{
 		}
