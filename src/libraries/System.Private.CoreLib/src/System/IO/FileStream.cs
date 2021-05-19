@@ -149,7 +149,9 @@ namespace System.IO
         /// -or-
         /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
         /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><see cref="System.IO.FileStreamOptions.PreallocationSize" /> is negative.
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><see cref="System.IO.FileStreamOptions.BufferSize" /> is negative.
+        /// -or-
+        /// <see cref="System.IO.FileStreamOptions.PreallocationSize" /> is negative.
         /// -or-
         /// <see cref="System.IO.FileStreamOptions.Mode" />, <see cref="System.IO.FileStreamOptions.Access" />, or <see cref="System.IO.FileStreamOptions.Share" /> contain an invalid value.</exception>
         /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="System.IO.FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
@@ -167,7 +169,7 @@ namespace System.IO
         /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <see cref="System.IO.FileStreamOptions.Options" /> , but file encryption is not supported on the current platform.</exception>
         /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
         public FileStream(string path, FileStreamOptions options)
-            : this(path, options.Mode, options.Access, options.Share, DefaultBufferSize, options.Options, options.PreallocationSize)
+            : this(path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize)
         {
         }
 
@@ -209,7 +211,7 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
             }
-            else if (bufferSize <= 0)
+            else if (bufferSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }

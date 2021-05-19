@@ -7307,6 +7307,7 @@ namespace System.IO
         public System.IO.FileShare Share { get; set; }
         public System.IO.FileOptions Options { get; set; }
         public long PreallocationSize { get; set; }
+        public int BufferSize { get; set; }
     }
     public partial class FileStream : System.IO.Stream
     {
