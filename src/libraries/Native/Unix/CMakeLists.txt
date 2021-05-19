@@ -10,7 +10,7 @@ elseif(CLR_CMAKE_TARGET_MACCATALYST)
 endif()
 cmake_policy(SET CMP0042 NEW)
 
-project(CoreFX)
+project(CoreFX C)
 
 include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
