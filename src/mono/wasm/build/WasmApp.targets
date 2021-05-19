@@ -50,8 +50,15 @@
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Publish`.
 
-      - $(EmccFlags)                        - This sets the initial emcc flags.
       - $(EmccVerbose)                      - Set to false to disable verbose emcc output.
+
+      - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
+      - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+
+      - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
+      - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
+      - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
+
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -78,6 +85,17 @@
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
+
+    <_WasmNativeBuildDependsOn>
+        _CheckEmccIsExpectedVersion;
+        _PrepareForWasmBuildNative;
+        _GenerateDriverGenC;
+        _GeneratePInvokeTable;
+        _GenerateICallTable;
+        _WasmCompileNativeFiles;
+        _WasmLinkDotNet;
+        _CompleteWasmBuildNative
+    </_WasmNativeBuildDependsOn>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
@@ -166,7 +184,15 @@
     <ItemGroup>
       <!-- Add back the interpreter-only assemblies -->
       <_WasmAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+
+      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
+      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
+
+      <_WasmNativeFileForLinking Include="@(_BitcodeFile)" />
     </ItemGroup>
+
+    <Error Condition="@(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
+           Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
@@ -288,6 +314,8 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="_WasmBuildNative" DependsOnTargets="$(_WasmNativeBuildDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+
   <Target Name="_SetWasmBuildNativeDefaults">
     <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
@@ -352,50 +380,41 @@
     <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
   </Target>
 
-  <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
+  <Target Name="_PrepareForWasmBuildNative">
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
-    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
 
     <PropertyGroup>
       <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
+      <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
+      <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
+      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
+
+      <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
+
+      <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
+      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(_EmccOptimizationFlagDefault)</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(EmccFlagsFile)">
-        <Output TaskParameter="Lines" PropertyName="_DefaultEmccFlags" />
+      <Output TaskParameter="Lines" PropertyName="_DefaultEmccFlags" />
     </ReadLinesFromFile>
 
-    <PropertyGroup>
-      <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
-      <EmccFlags Condition="'$(EmccVerbose)' != 'false'">$(EmccFlags) -v</EmccFlags>
-      <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
-      <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
-      <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>
-      <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
-      <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
-    </PropertyGroup>
+    <ItemGroup>
+      <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
+      <_EmccCommonFlags Include="$(EmccFlags)" />
+      <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
+      <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
+      <_EmccCommonFlags Include="-DENABLE_AOT=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCommonFlags Include="-DDRIVER_GEN=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCommonFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_EmccCommonFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
+      <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
+    </ItemGroup>
 
-   <ItemGroup>
-      <_WasmPInvokeModules Include="libSystem.Native" />
-      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
-   </ItemGroup>
-   <PInvokeTableGenerator
-     Modules="@(_WasmPInvokeModules)"
-     Assemblies="@(_WasmAssembliesInternal)"
-     OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
-
-   <!-- ICall table generation -->
-   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmIntermediateOutputPath)runtime-icall-table.h"' />
-   <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
-     RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)runtime-icall-table.h"
-     Assemblies="@(_WasmAssembliesInternal)"
-     OutputPath="$(_WasmIntermediateOutputPath)icall-table.h" />
    <PropertyGroup>
-     <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
      <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
      <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
    </PropertyGroup>
@@ -409,49 +428,90 @@
      <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
 
      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
-
-     <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
-     <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
    </ItemGroup>
+  </Target>
 
-   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
-          Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
-
-   <ItemGroup>
-     <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
-     <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
-     <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
-   </ItemGroup>
-
-   <PropertyGroup>
-     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1</EmccCFlags>
-     <EmccCFlags>$(EmccCFlags) @(_EmccIncludePaths -> '&quot;-I%(Identity)&quot;', ' ')</EmccCFlags>
-     <EmccCFlags Condition="'$(WasmNativeDebugSymbols)' == 'true'">$(EmccCFlags) -g</EmccCFlags>
-
-     <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
-   </PropertyGroup>
-
-    <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
-    
+  <Target Name="_GeneratePInvokeTable">
     <ItemGroup>
-      <_EmccLinkerArguments Include="$(EmccLDFlags)" />
-      <_EmccLinkerArguments Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
-      <_EmccLinkerArguments Include="&quot;%(_BitcodeFile.Identity)&quot;" />
-      <_EmccLinkerArguments Include="&quot;%(_WasmObjects.Identity)&quot;" />
-      <_EmccLinkerArguments Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
+      <_WasmPInvokeModules Include="libSystem.Native" />
+      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+    </ItemGroup>
+
+    <PInvokeTableGenerator
+      Modules="@(_WasmPInvokeModules)"
+      Assemblies="@(_WasmAssembliesInternal)"
+      OutputPath="$(_WasmPInvokeTablePath)" />
+  </Target>
+
+  <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
+    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
+
+    <Exec Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
+    <IcallTableGenerator
+      RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
+      Assemblies="@(_WasmAssembliesInternal)"
+      OutputPath="$(_WasmICallTablePath)" />
+  </Target>
+
+  <Target Name="_WasmCompileNativeFiles">
+    <ItemGroup>
+      <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
+      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
+      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
+
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
+      <_EmccCFlags Include="@(_EmccCommonFlags)" />
+      <_EmccCFlags Include="-DCORE_BINDINGS" />
+      <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+      <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_EmccLinkerResponseFile>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkerResponseFile>
+      <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
     </PropertyGroup>
 
-    <WriteLinesToFile Lines="@(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" Overwrite="true" />
-    <Message Text="Running emcc with @(_EmccLinkerArguments->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command="emcc &quot;@$(_EmccLinkerResponseFile)&quot;" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+    <Exec Command='emcc "@$(_EmccCompileRsp)" "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+  </Target>
+
+  <Target Name="_WasmLinkDotNet">
+    <ItemGroup>
+      <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a" />
+      <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
+      <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
+
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
+      <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+      <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
+      <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
+
+      <_EmccLDFlags Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
+      <_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
+      <_EmccLDFlags Include="&quot;%(_WasmObjects.Identity)&quot;" />
+
+      <_EmccLDFlags Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
+    </PropertyGroup>
+
+    <WriteLinesToFile Lines="@(_EmccLDFlags)" File="$(_EmccLinkRsp)" Overwrite="true" />
+    <Message Text="Running emcc with @(_EmccLDFlags->'%(Identity)', ' ')" Importance="Low" />
+    <Exec Command='emcc "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
+  </Target>
 
+  <Target Name="_CompleteWasmBuildNative">
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />

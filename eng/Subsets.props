@@ -222,7 +222,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 

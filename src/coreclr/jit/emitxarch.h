@@ -94,6 +94,7 @@ code_t AddRexPrefix(instruction ins, code_t code);
 
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
+static bool IsMovInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
 
@@ -309,6 +310,8 @@ void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
 void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val);
+
+void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
 
