@@ -10,7 +10,7 @@
         _WasmResolveReferences;
         _WasmAotCompileApp;
         _WasmStripAOTAssemblies;
-        _WasmBuildNative;
+        _WasmBuildNativeCore;
         _WasmGenerateAppBundle;
         _AfterWasmBuildApp
     </WasmBuildAppDependsOn>
