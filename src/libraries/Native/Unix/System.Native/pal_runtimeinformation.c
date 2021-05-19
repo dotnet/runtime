@@ -55,6 +55,8 @@ int32_t SystemNative_GetOSArchitecture()
     return ARCH_X86;
 #elif defined(TARGET_WASM)
     return ARCH_WASM;
+#elif defined(TARGET_S390X)
+    return ARCH_S390X;
 #else
 #error Unidentified Architecture
 #endif
@@ -78,6 +80,8 @@ int32_t SystemNative_GetProcessArchitecture()
     return ARCH_X86;
 #elif defined(TARGET_WASM)
     return ARCH_WASM;
+#elif defined(TARGET_S390X)
+    return ARCH_S390X;
 #else
 #error Unidentified Architecture
 #endif
