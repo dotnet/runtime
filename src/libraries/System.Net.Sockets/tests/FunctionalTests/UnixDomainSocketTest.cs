@@ -108,7 +108,7 @@ namespace System.Net.Sockets.Tests
                     }
 
                     Assert.Equal(
-                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
+                        OperatingSystem.IsWindows() ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
                         args.SocketError);
                 }
             }
@@ -421,7 +421,7 @@ namespace System.Net.Sockets.Tests
             if (abstractAddress)
             {
                 // abstract socket addresses are a Linux feature.
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (!OperatingSystem.IsLinux())
                 {
                     return;
                 }
@@ -518,7 +518,7 @@ namespace System.Net.Sockets.Tests
         {
             get
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     try
                     {

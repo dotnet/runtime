@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <PropertyGroup>
     <HasSharedItems>true</HasSharedItems>
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
@@ -410,6 +410,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileShare.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\HandleInheritability.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\InvalidDataException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\IOException.cs" />
@@ -1351,6 +1352,15 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtCreateFile.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtCreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeleteFile.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.DeleteFile.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
@@ -1518,6 +1528,15 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs">
+      <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SecurityOptions.cs</Link>
@@ -1827,6 +1846,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PosixFAdvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAllocate.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PosixFAllocate.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>

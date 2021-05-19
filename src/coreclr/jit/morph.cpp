@@ -6014,7 +6014,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
-        GenTree* newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
+        GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
         if (newTree != tree)
         {
             newTree = fgMorphSmpOp(newTree);
@@ -12027,29 +12027,33 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
 }
 
 /*****************************************************************************
-*  If a read operation tries to access simd struct field, then transform the
-*  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
-*  Otherwise, return the old tree.
+*  If a read operation tries to access simd struct field, then transform the operation
+*  to the SimdGetElementNode, and return the new tree. Otherwise, return the old tree.
 *  Argument:
 *   tree - GenTree*. If this pointer points to simd struct which is used for simd
-*          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
+*          intrinsic, we will morph it as simd intrinsic NI_Vector128_GetElement.
 *  Return:
 *   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
 */
 
-GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
+GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
 {
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
     GenTree*    simdStructNode  = getSIMDStructFromField(tree, &simdBaseJitType, &index, &simdSize);
+
     if (simdStructNode != nullptr)
     {
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        GenTree*  op2          = gtNewIconNode(index, TYP_INT);
+
+        assert(simdSize <= 16);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
-        GenTree* op2 = gtNewIconNode(index);
-        tree = gtNewSIMDNode(simdBaseType, simdStructNode, op2, SIMDIntrinsicGetItem, simdBaseJitType, simdSize);
+
+        tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
+                                       /* isSimdAsHWIntrinsic */ true);
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -12058,9 +12062,8 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 }
 
 /*****************************************************************************
-*  Transform an assignment of a SIMD struct field to SIMD intrinsic
-*  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
-*  then return the old tree.
+*  Transform an assignment of a SIMD struct field to SimdWithElementNode, and
+*  return a new tree. If it is not such an assignment, then return the old tree.
 *  Argument:
 *   tree - GenTree*. If this pointer points to simd struct which is used for simd
 *          intrinsic, we will morph it as simd intrinsic set.
@@ -12069,46 +12072,32 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 *   return nullptr.
 */
 
-GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
+GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
 {
     assert(tree->OperGet() == GT_ASG);
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
 
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
-    GenTree*    simdOp1Struct   = getSIMDStructFromField(op1, &simdBaseJitType, &index, &simdSize);
-    if (simdOp1Struct != nullptr)
+    GenTree*    simdStructNode  = getSIMDStructFromField(tree->gtGetOp1(), &simdBaseJitType, &index, &simdSize);
+
+    if (simdStructNode != nullptr)
     {
+        var_types simdType     = simdStructNode->gtType;
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
-        // Generate the simd set intrinsic
+        assert(simdSize <= 16);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
 
-        SIMDIntrinsicID simdIntrinsicID = SIMDIntrinsicInvalid;
-        switch (index)
-        {
-            case 0:
-                simdIntrinsicID = SIMDIntrinsicSetX;
-                break;
-            case 1:
-                simdIntrinsicID = SIMDIntrinsicSetY;
-                break;
-            case 2:
-                simdIntrinsicID = SIMDIntrinsicSetZ;
-                break;
-            case 3:
-                simdIntrinsicID = SIMDIntrinsicSetW;
-                break;
-            default:
-                noway_assert(!"There is no set intrinsic for index bigger than 3");
-        }
+        GenTree*       op2         = gtNewIconNode(index, TYP_INT);
+        GenTree*       op3         = tree->gtGetOp2();
+        NamedIntrinsic intrinsicId = NI_Vector128_WithElement;
 
-        GenTree* target = gtClone(simdOp1Struct);
+        GenTree* target = gtClone(simdStructNode);
         assert(target != nullptr);
-        var_types simdType = target->gtType;
-        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, simdBaseJitType, simdSize);
+
+        GenTree* simdTree = gtNewSimdWithElementNode(simdType, simdStructNode, op2, op3, simdBaseJitType, simdSize,
+                                                     /* isSimdAsHWIntrinsic */ true);
 
         tree->AsOp()->gtOp1 = target;
         tree->AsOp()->gtOp2 = simdTree;
@@ -12258,7 +12247,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // We should check whether op2 should be assigned to a SIMD field or not.
                 // If it is, we should tranlate the tree to simd intrinsic.
                 assert(!fgGlobalMorph || ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0));
-                GenTree* newTree = fgMorphFieldAssignToSIMDIntrinsicSet(tree);
+                GenTree* newTree = fgMorphFieldAssignToSimdSetElement(tree);
                 typ              = tree->TypeGet();
                 op1              = tree->gtGetOp1();
                 op2              = tree->gtGetOp2();
