@@ -66,11 +66,10 @@ namespace Microsoft.NET.HostModel.Bundle
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
-        public string BundleID => GetDeterministicId();
-        private string bundleIdInternal;
+        public string BundleID { get; private set; }
         //Same as Path.GetRandomFileName
         private const int BundleIdLength = 12;
-        private SHA256 hashAlg = SHA256.Create();
+        private SHA256 bundleHash = SHA256.Create();
         public readonly uint BundleMajorVersion;
         // The Minor version is currently unused, and is always zero
         public const uint BundleMinorVersion = 0;
@@ -89,7 +88,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public FileEntry AddEntry(FileType type, FileStream fileContent, string relativePath, long offset, long compressedSize, uint bundleMajorVersion)
         {
-            if (hashAlg == null)
+            if (bundleHash == null)
             {
                 throw new InvalidOperationException("It is forbidden to change Manifest state after it was written or BundleId was obtained.");
             }
@@ -99,7 +98,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             fileContent.Position = 0;
             byte[] hashBytes = ComputeSha256Hash(fileContent);
-            hashAlg.TransformBlock(hashBytes, 0, hashBytes.Length, hashBytes, 0);
+            bundleHash.TransformBlock(hashBytes, 0, hashBytes.Length, hashBytes, 0);
 
             switch (entry.Type)
             {
@@ -128,22 +127,20 @@ namespace Microsoft.NET.HostModel.Bundle
             }
         }
 
-        private string GetDeterministicId()
+        private string GenerateDeterministicId()
         {
-            if (bundleIdInternal != null) return bundleIdInternal;
+            bundleHash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[] manifestHash = bundleHash.Hash;
+            bundleHash.Dispose();
+            bundleHash = null;
 
-            hashAlg.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[] manifestHash = hashAlg.Hash;
-            bundleIdInternal = Convert.ToBase64String(manifestHash).Substring(BundleIdLength).Replace('/', '_');
-
-            hashAlg.Dispose();
-            hashAlg = null;
-
-            return bundleIdInternal;
+            return Convert.ToBase64String(manifestHash).Substring(BundleIdLength).Replace('/', '_');
         }
 
         public long Write(BinaryWriter writer)
         {
+            BundleID = BundleID ?? GenerateDeterministicId();
+
             long startOffset = writer.BaseStream.Position;
 
             // Write the bundle header
