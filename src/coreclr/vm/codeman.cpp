@@ -3543,9 +3543,9 @@ void EEJitManager::DeleteCodeHeap(HeapList *pHeapList)
         pHp->SetNext(pHeapList->GetNext());
     }
 
-    DeleteEEFunctionTable((PVOID)pHeapList->mapBase);
+    DeleteEEFunctionTable((PVOID)pHeapList->GetModuleBase());
 
-    ExecutionManager::DeleteRange((TADDR)pHeapList->mapBase);
+    ExecutionManager::DeleteRange((TADDR)pHeapList->GetModuleBase());
 
     LOG((LF_JIT, LL_INFO100, "DeleteCodeHeap start" FMT_ADDR "end" FMT_ADDR "\n",
                               (const BYTE*)pHeapList->startAddress,

@@ -41,6 +41,7 @@ struct FakeHeapList
     DWORD_PTR           pHdrMap;        // changed from DWORD*
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
+    DWORD_PTR           CLRPersonalityRoutine;
 };
 
 typedef struct _FakeHpRealCodeHdr
