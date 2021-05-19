@@ -54,7 +54,7 @@ namespace System
         internal const string WebRequestMessage = "WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.";
         internal const string WebRequestDiagId = "SYSLIB0014";
 
-        internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications.";
+        internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+.";
         internal const string DisablePrivateReflectionAttributeDiagId = "SYSLIB0015";
 
         internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
@@ -83,5 +83,8 @@ namespace System
 
         internal const string AppDomainCreateUnloadMessage = "Creating and unloading AppDomains is not supported and throws an exception.";
         internal const string AppDomainCreateUnloadDiagId = "SYSLIB0024";
+
+        internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
+        internal const string SuppressIldasmAttributeDiagId = "SYSLIB0025";
     }
 }

@@ -23,8 +23,9 @@
          SYSLIB0021: Derived cryptographic types.
          SYSLIB0022: Rijndael types.
          SYSLIB0023: RNGCryptoServiceProvider.
+         SYSLIB0025: SuppressIldasmAttribute.
     -->
-    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023</NoWarn>
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
     <!-- Set the documentation output file globally. -->
