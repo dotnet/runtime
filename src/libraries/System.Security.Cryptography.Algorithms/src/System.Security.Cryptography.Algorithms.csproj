@@ -697,7 +697,7 @@
     <Compile Include="Internal\Cryptography\RC2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
-    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
