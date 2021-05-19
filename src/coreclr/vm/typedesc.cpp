@@ -1730,6 +1730,11 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     }
     CONTRACTL_END;
 
+    // During EEStartup, we cannot safely validate constraints, but we can also be confident that the code doesn't violate them
+    // Just skip validation and declare that the constraints are satisfied.
+    if (g_fEEInit)
+        return TRUE;
+
     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
     mdGenericParamConstraint tkConstraint;
 
