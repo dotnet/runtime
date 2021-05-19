@@ -278,7 +278,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CustomAfterNoTargetsProps>$(RepositoryEngineeringDir)NoTargetsSdk.AfterProps.props</CustomAfterNoTargetsProps>
+    <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
     <CustomAfterTraversalProps>$(RepositoryEngineeringDir)TraversalSdk.AfterProps.props</CustomAfterTraversalProps>
   </PropertyGroup>
 </Project>
