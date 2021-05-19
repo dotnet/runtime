@@ -134,7 +134,7 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(EnableAggressiveTrimming)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(EnableTrimming)' == 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/50724 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
@@ -178,7 +178,7 @@
     <!-- System.Reflection.Emit issues-->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition/tests/System.ComponentModel.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/RefEmitLoadContext/System.Runtime.Loader.RefEmitLoadContext.Tests.csproj" />
-
+    
     <!-- Can't link -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
   
