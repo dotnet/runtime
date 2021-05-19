@@ -905,10 +905,16 @@ def compare_results(args):
             testresult.setAttribute('result', 'Fail')
             collection.appendChild(testresult)
 
+            failureXml = root.createElement('failure')
+            failureXml.setAttribute('exception-type', 'OmittedFromBase')
+            testresult.appendChild(failureXml)
+
             messageXml = root.createElement('message')
             messageXml.appendChild(root.createTextNode(message))
-
-            testresult.appendChild(messageXml)
+            failureXml.appendChild(messageXml)
+            messageXml = root.createElement('output')
+            messageXml.appendChild(root.createTextNode(message))
+            failureXml.appendChild(messageXml)
 
         for assembly_name in omitted_from_diff_dir:
             base_result = diff_results_by_name[assembly_name]
@@ -921,10 +927,16 @@ def compare_results(args):
             testresult.setAttribute('result', 'Fail')
             collection.appendChild(testresult)
 
+            failureXml = root.createElement('failure')
+            failureXml.setAttribute('exception-type', 'OmittedFromDiff')
+            testresult.appendChild(failureXml)
+
             messageXml = root.createElement('message')
             messageXml.appendChild(root.createTextNode(message))
-
-            testresult.appendChild(messageXml)
+            failureXml.appendChild(messageXml)
+            messageXml = root.createElement('output')
+            messageXml.appendChild(root.createTextNode(message))
+            failureXml.appendChild(messageXml)
 
         for assembly_name in sorted(both_assemblies):
             base_result = base_results_by_name[assembly_name]
@@ -950,16 +962,25 @@ def compare_results(args):
             testresult.setAttribute('method', '{0}_{1}'.format(base_result.compiler_arch_os, diff_result.compiler_arch_os))
             testresult.setAttribute('time', '0')
             if base_diff_are_equal:
-                testresult.setAttribute('result', 'Fail')
-            else:
                 testresult.setAttribute('result', 'Pass')
+            else:
+                testresult.setAttribute('result', 'Fail')
 
             collection.appendChild(testresult)
 
-            messageXml = root.createElement('message')
-            messageXml.appendChild(root.createTextNode(message))
+            if not base_diff_are_equal:
+                failureXml = root.createElement('failure')
+                failureXml.setAttribute('exception-type', 'MismatchOrReturnCodeFail')
+                testresult.appendChild(failureXml)
 
-            testresult.appendChild(messageXml)
+                messageXml = root.createElement('message')
+                messageXml.appendChild(root.createTextNode(message))
+
+                failureXml.appendChild(messageXml)
+                messageXml = root.createElement('output')
+                messageXml.appendChild(root.createTextNode(message))
+
+                failureXml.appendChild(messageXml)
 
         xml_str = root.toprettyxml(indent ="\t") 
 
