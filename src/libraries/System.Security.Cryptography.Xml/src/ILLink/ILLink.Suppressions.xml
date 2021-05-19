@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Security.Cryptography.Xml, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.CryptoHelpers.CreateFromName``1(System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.DSASignatureDescription.CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.DSASignatureDescription.CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.RSAPKCS1SignatureDescription.CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.RSAPKCS1SignatureDescription.CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.SignedXml.CheckSignedInfo(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.SignedXml.ComputeSignature</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.DSASignatureDescription.CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.DSASignatureDescription.CreateDigest</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.DSASignatureDescription.CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.RSAPKCS1SignatureDescription.CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.RSAPKCS1SignatureDescription.CreateDigest</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.RSAPKCS1SignatureDescription.CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2057</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Security.Cryptography.Xml.SignedXml.CheckSignedInfo(System.Security.Cryptography.AsymmetricAlgorithm)</property>
+    </attribute>
+  </assembly>
+</linker>

@@ -11,14 +11,14 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreAddCertificate(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreAddCertificateWithPrivateKey(
             SafeX509StoreHandle store,
@@ -27,31 +27,31 @@ internal static partial class Interop
             PAL_KeyAlgorithm algorithm,
             string hashString);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreContainsCertificate(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreEnumerateCertificates(
             SafeX509StoreHandle storeHandle,
             delegate* unmanaged<void*, void*, Interop.AndroidCrypto.PAL_KeyAlgorithm, void*, void> callback,
             void *callbackContext);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreEnumerateTrustedCertificates(
             byte systemOnly,
             delegate* unmanaged<void*, void*, void> callback,
             void *callbackContext);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
         internal static extern unsafe SafeX509StoreHandle X509StoreOpenDefault();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreRemoveCertificate(
             SafeX509StoreHandle store,

@@ -31,12 +31,24 @@ namespace System.Net.NetworkInformation
             {
                 if (File.Exists(NetworkFiles.Ipv4RouteFile))
                 {
-                    IPv4Routes = File.ReadAllLines(NetworkFiles.Ipv4RouteFile);
+                    try
+                    {
+                        IPv4Routes = File.ReadAllLines(NetworkFiles.Ipv4RouteFile);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                    }
                 }
 
                 if (File.Exists(NetworkFiles.Ipv6RouteFile))
                 {
-                    IPv6Routes = File.ReadAllLines(NetworkFiles.Ipv6RouteFile);
+                    try
+                    {
+                        IPv6Routes = File.ReadAllLines(NetworkFiles.Ipv6RouteFile);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                    }
                 }
 
                 try
@@ -45,7 +57,7 @@ namespace System.Net.NetworkInformation
                     DnsSuffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(resolverConfig);
                     DnsAddresses = new InternalIPAddressCollection(StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(resolverConfig));
                 }
-                catch (FileNotFoundException)
+                catch (Exception e) when (e is FileNotFoundException || e is UnauthorizedAccessException)
                 {
                 }
             }

@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices
         Arm = 2,
         Arm64 = 3,
         Wasm = 4,
+        S390x = 5,
     }
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {

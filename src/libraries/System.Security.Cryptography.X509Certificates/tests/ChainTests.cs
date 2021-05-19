@@ -270,7 +270,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.False(chain.Build(microsoftDotCom));
 
                     // Linux and Windows do not search the default system root stores when CustomRootTrust is enabled
-                    if (OperatingSystem.IsMacOS())
+                    if (PlatformDetection.UsesAppleCrypto)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                         Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
@@ -636,6 +636,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
         [OuterLoop(/* Modifies user certificate store */)]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
             // Verifies that when the same root cert is placed in both a user and machine root certificate store,
@@ -768,7 +769,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 expectedFlags = X509ChainStatusFlags.NotSignatureValid;
             }
-            else if (OperatingSystem.IsMacOS())
+            else if (PlatformDetection.UsesAppleCrypto)
             {
                 // For OSX alone expectedFlags here means OR instead of AND.
                 // Because the error code changed in 10.13.4 from UntrustedRoot to PartialChain
@@ -806,7 +807,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                if (OperatingSystem.IsMacOS())
+                if (PlatformDetection.UsesAppleCrypto)
                 {
                     // If we're on 10.13.3 or older we get UntrustedRoot.
                     // If we're on 10.13.4 or newer we get PartialChain.
@@ -957,7 +958,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                     bool valid = chain.Build(cert);
                     X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                    if (OperatingSystem.IsMacOS())
+                    if (PlatformDetection.UsesAppleCrypto)
                     {
                         // OSX considers this to be valid because it doesn't report NotSignatureValid,
                         // just PartialChain ("I couldn't find an issuer that made the signature work"),

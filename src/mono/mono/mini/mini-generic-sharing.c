@@ -1166,7 +1166,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	// FIXME: Map 1 member structs to primitive types on platforms where its supported
 
 	klass = mono_class_from_mono_type_internal (t);
-	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT)
+	/* Under mono, auto and sequential layout are the same for valuetypes, see mono_class_layout_fields () */
+	if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) &&
+		((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT))
 		return NULL;
 	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
@@ -1188,8 +1190,28 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (findex >= 16)
 			break;
 	}
+
+#ifdef TARGET_WASM
+	guint32 align;
+	int size = mono_class_value_size (klass, &align);
+
+	/* Other platforms might pass small valuestypes or valuetypes with non-int fields differently */
+	if (align == 4 && size <= 4 * 5) {
+		findex = size / align;
+		for (int i = 0; i < findex; ++i)
+			args [i] = m_class_get_byval_arg (mono_get_int32_class ());
+	} else if (align == 8 && size <= 8 * 5) {
+		findex = size / align;
+		for (int i = 0; i < findex; ++i)
+			args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+	} else {
+		if (findex > 5)
+			return NULL;
+	}
+#else
 	if (findex > 5)
 		return NULL;
+#endif
 
 	switch (findex) {
 	case 0:
@@ -1214,7 +1236,6 @@ get_wrapper_shared_vtype (MonoType *t)
 		g_assert_not_reached ();
 		break;
 	}
-
 	g_assert (tuple_class);
 
 	memset (&ctx, 0, sizeof (ctx));

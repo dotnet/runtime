@@ -74,7 +74,8 @@ public:
                                                               mdToken MemberRefOrDefOrSpec,
                                                               const SigTypeContext *pTypeContext, // Context for type parameters in any parent TypeSpec and in the instantiation in a MethodSpec
                                                               BOOL strictMetadataChecks,  // Normally true - the zapper is one exception.  Throw an exception if no generic method args given for a generic method, otherwise return the 'generic' instantiation
-                                                              BOOL allowInstParam);
+                                                              BOOL allowInstParam,
+                                                              ClassLoadLevel owningTypeLoadLevel = CLASS_LOADED);
 
     static  FieldDesc* GetFieldDescFromMemberDefOrRef(Module *pModule,
                                                       mdMemberRef MemberDefOrRef,
@@ -92,7 +93,8 @@ public:
 
     static MethodDesc* GetMethodDescFromMethodDef(Module *pModule,
                                                   mdToken MethodDef,
-                                                  BOOL strictMetadataChecks);
+                                                  BOOL strictMetadataChecks,
+                                                  ClassLoadLevel owningTypeLoadLevel = CLASS_LOADED);
 
     static FieldDesc* GetFieldDescFromFieldDef(Module *pModule,
                                                mdToken FieldDef,
