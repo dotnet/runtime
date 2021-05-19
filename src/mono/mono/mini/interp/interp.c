@@ -2358,6 +2358,7 @@ do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *r
 	if (thrown) {
 		MonoObject *obj = mono_llvm_load_exception ();
 		g_assert (obj);
+		mono_llvm_clear_exception ();
 		mono_error_set_exception_instance (error, (MonoException*)obj);
 		return;
 	}
