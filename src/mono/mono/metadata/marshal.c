@@ -3093,6 +3093,22 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 	}
 }
 
+static MonoArray*
+mono_marshal_get_callconvs_array_from_attribute (MonoCustomAttrEntry *attr, CattrNamedArg **arginfo)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	ERROR_DECL (error);
+	MonoArrayHandleOut typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandleOut named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+	mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, arginfo, error);
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+	}
+
+	HANDLE_FUNCTION_RETURN_OBJ (named_args_h);
+}
+
 static void
 mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
 {
@@ -3117,37 +3133,32 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		}
 	}
 
-	if (attr == NULL)
-		return;
-
-	CattrNamedArg *arginfo;
-	MonoArrayHandleOut typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
-	MonoArrayHandleOut named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
-	mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, &arginfo, error);
-	if (!is_ok (error)) {
-		mono_error_cleanup (error);
-		return;
-	}
-
-	MonoArray *named_args = MONO_HANDLE_RAW (named_args_h);
-	if (named_args)
+	if (attr != NULL)
 	{
-		for (i = 0; i < mono_array_length_internal (named_args); ++i) {
-			CattrNamedArg *info = &arginfo [i];
-			g_assert (info->field);
-			if (strcmp (info->field->name, "CallConvs") != 0)
-				continue;
+		CattrNamedArg *arginfo;
+		MonoArray *named_args = mono_marshal_get_callconvs_array_from_attribute(attr, &arginfo);
+		if (named_args)
+		{
+			for (i = 0; i < mono_array_length_internal(named_args); ++i) {
+				CattrNamedArg *info = &arginfo[i];
+				g_assert(info->field);
+				if (strcmp(info->field->name, "CallConvs") != 0)
+					continue;
 
-			/* CallConvs is an array of types */
-			MonoArray *callconv_array = mono_array_get_internal (named_args, MonoArray*, i);
-			for (int j = 0; j < mono_array_length_internal (callconv_array); ++j) {
-				MonoReflectionType *callconv_type = mono_array_get_internal (callconv_array, MonoReflectionType*, j);
-				mono_marshal_set_callconv_for_type (callconv_type->type, csig, skip_gc_trans);
+				/* CallConvs is an array of types */
+				MonoArray *callconv_array = mono_array_get_internal(named_args, MonoArray *, i);
+				for (int j = 0; j < mono_array_length_internal(callconv_array); ++j) {
+					MonoReflectionType *callconv_type = mono_array_get_internal(callconv_array, MonoReflectionType *, j);
+					mono_marshal_set_callconv_for_type(callconv_type->type, csig, skip_gc_trans);
+				}
 			}
 		}
+
+		g_free (arginfo);
 	}
 
-	g_free (arginfo);
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
 }
 
 /**
@@ -3390,8 +3401,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			mono_custom_attrs_free (cinfo);
 	}
 
-	if (csig->call_convention == MONO_CALL_DEFAULT)
-	{
+	if (csig->call_convention == MONO_CALL_DEFAULT) {
 		/* If the calling convention has not been set, check the UnmanagedCallConv attribute */
 		mono_marshal_set_callconv_from_unmanaged_callconv_attribute (method, csig, &skip_gc_trans);
 	}

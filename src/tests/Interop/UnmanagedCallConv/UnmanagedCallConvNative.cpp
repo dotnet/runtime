@@ -10,8 +10,8 @@ namespace
 
     BOOL Double(int a, int* b)
     {
-		if (b != NULL)
-	        *b = a * 2;
+        if (b != NULL)
+            *b = a * 2;
 
         BOOL ret = FALSE;
         if (s_isInCooperativeMode != nullptr)
