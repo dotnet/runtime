@@ -731,7 +731,7 @@ def crossgen_framework(args):
         crossgen_results = await run_crossgen(args.dotnet, args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname, args.target_os, args.target_arch, args.compiler_arch_os)
         if crossgen_results[0].returncode != 0:
             g_frameworkcompile_failed = True
-            print("{}{} {} return code={} args'{}'".format(print_prefix, args.crossgen_executable_filename, assembly_name, crossgen_results[0].returncode, crossgen_results[0].args))
+            print("{}{} {} return code={} args'{}' stdout '{}' stderr'{}'".format(print_prefix, args.crossgen_executable_filename, assembly_name, crossgen_results[0].returncode, crossgen_results[0].args, crossgen_results[0].stdout, crossgen_results[0].stderr))
         save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
