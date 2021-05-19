@@ -102,11 +102,7 @@ namespace System.Net.Sockets.Tests
                 bool willRaiseEvent = sock.ConnectAsync(args);
                 if (willRaiseEvent)
                 {
-                    bool willRaiseEvent = sock.ConnectAsync(args);
-                    if (willRaiseEvent)
-                    {
-                        await complete.Task;
-                    }
+                    await complete.Task;
 
                     Assert.Equal(
                         OperatingSystem.IsWindows() ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
