@@ -59,7 +59,7 @@ void JitHost::freeMemory(void* block)
     jitInstance.freeLongLivedArray((void*)block);
 }
 
-bool JitHost::convertStringValueToInt(const char16_t* key, const char16_t* stringValue, int& result)
+bool JitHost::convertStringValueToInt(const wchar_t* key, const wchar_t* stringValue, int& result)
 {
     if (stringValue == nullptr)
     {
@@ -79,7 +79,7 @@ bool JitHost::convertStringValueToInt(const char16_t* key, const char16_t* strin
     return true;
 }
 
-int JitHost::getIntConfigValue(const char16_t* key, int defaultValue)
+int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
 {
     jitInstance.mc->cr->AddCall("getIntConfigValue");
 
@@ -137,7 +137,7 @@ int JitHost::getIntConfigValue(const char16_t* key, int defaultValue)
     return valueFound ? result : defaultValue;
 }
 
-const char16_t* JitHost::getStringConfigValue(const char16_t* key)
+const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
 {
     jitInstance.mc->cr->AddCall("getStringConfigValue");
 
@@ -181,7 +181,7 @@ const char16_t* JitHost::getStringConfigValue(const char16_t* key)
     return result;
 }
 
-void JitHost::freeStringConfigValue(const char16_t* value)
+void JitHost::freeStringConfigValue(const wchar_t* value)
 {
     jitInstance.mc->cr->AddCall("freeStringConfigValue");
     jitInstance.freeLongLivedArray((void*)value);

@@ -54,7 +54,7 @@ void JitHost::freeMemory(void* block)
     return wrappedHost->freeMemory(block);
 }
 
-int JitHost::getIntConfigValue(const char16_t* key, int defaultValue)
+int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
 {
     mc->cr->AddCall("getIntConfigValue");
     int result = wrappedHost->getIntConfigValue(key, defaultValue);
@@ -69,10 +69,10 @@ int JitHost::getIntConfigValue(const char16_t* key, int defaultValue)
     return result;
 }
 
-const char16_t* JitHost::getStringConfigValue(const char16_t* key)
+const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
 {
     mc->cr->AddCall("getStringConfigValue");
-    const char16_t* result = wrappedHost->getStringConfigValue(key);
+    const wchar_t* result = wrappedHost->getStringConfigValue(key);
 
     // Don't store null returns, which is the default
     if (RecordVariable(key) && (result != nullptr))
@@ -82,7 +82,7 @@ const char16_t* JitHost::getStringConfigValue(const char16_t* key)
     return result;
 }
 
-void JitHost::freeStringConfigValue(const char16_t* value)
+void JitHost::freeStringConfigValue(const wchar_t* value)
 {
     mc->cr->AddCall("freeStringConfigValue");
     wrappedHost->freeStringConfigValue(value);

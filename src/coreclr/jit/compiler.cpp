@@ -1855,7 +1855,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
 
-    info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(u"SuperPMIMethodContextNumber", -1);
+    info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(L"SuperPMIMethodContextNumber", -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
@@ -8317,7 +8317,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     //
     // Query the jit host directly here instead of going via the
     // config cache, since value will change for each method.
-    int index = g_jitHost->getIntConfigValue(u"SuperPMIMethodContextNumber", -1);
+    int index = g_jitHost->getIntConfigValue(L"SuperPMIMethodContextNumber", -1);
 
     CritSecHolder csvLock(s_csvLock);
 

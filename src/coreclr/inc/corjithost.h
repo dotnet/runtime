@@ -22,13 +22,13 @@ public:
 
     // Return an integer config value for the given key, if any exists.
     virtual int getIntConfigValue(
-        const char16_t* name,
+        const wchar_t* name,
         int defaultValue
         ) = 0;
 
     // Return a string config value for the given key, if any exists.
-    virtual const char16_t* getStringConfigValue(
-        const char16_t* name
+    virtual const wchar_t* getStringConfigValue(
+        const wchar_t* name
         ) = 0;
 
     // Free a string ConfigValue returned by the runtime.
@@ -36,7 +36,7 @@ public:
     // to return the string values to the runtime for deletion.
     // This avoids leaking the memory in the JIT.
     virtual void freeStringConfigValue(
-        const char16_t* value
+        const wchar_t* value
         ) = 0;
 
     // Allocate memory slab of the given size in bytes. The host is expected to pool

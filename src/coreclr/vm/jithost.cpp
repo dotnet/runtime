@@ -21,7 +21,7 @@ void JitHost::freeMemory(void* block)
     delete [] (BYTE*)block;
 }
 
-int JitHost::getIntConfigValue(const char16_t* name, int defaultValue)
+int JitHost::getIntConfigValue(const wchar_t* name, int defaultValue)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -32,7 +32,7 @@ int JitHost::getIntConfigValue(const char16_t* name, int defaultValue)
     return CLRConfig::GetConfigValue(info);
 }
 
-const char16_t* JitHost::getStringConfigValue(const char16_t* name)
+const wchar_t* JitHost::getStringConfigValue(const wchar_t* name)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -43,11 +43,11 @@ const char16_t* JitHost::getStringConfigValue(const char16_t* name)
     return CLRConfig::GetConfigValue(info);
 }
 
-void JitHost::freeStringConfigValue(const char16_t* value)
+void JitHost::freeStringConfigValue(const wchar_t* value)
 {
     WRAPPER_NO_CONTRACT;
 
-    CLRConfig::FreeConfigString(const_cast<char16_t*>(value));
+    CLRConfig::FreeConfigString(const_cast<wchar_t*>(value));
 }
 
 //
