@@ -68,7 +68,7 @@ jobs:
     - name: targetarch
       value: ${{ parameters.targetarch }}
     - name: compiler_arch_os
-      value: ${{ format('{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType }}
+      value: ${{ format('{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     - name: crossgencompare_build_artifact
       value: crossgen_comparison_build_${{ parameters.targetos }}_${{ parameters.targetarch }}
     - name: displayname_comparison_job
