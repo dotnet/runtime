@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -10,19 +9,17 @@ namespace System.IO.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Directory_Changed_Tests : FileSystemWatcherTest
     {
-        public virtual bool UseSymLink { get; }
-
         [Fact]
         public void FileSystemWatcher_Directory_Changed_LastWrite()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(GetDirectoryOrSymLink(testDirectory.Path), Path.GetFileName(dir.Path)))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
             {
                 Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
                 WatcherChangeTypes expected = WatcherChangeTypes.Changed;
-                ExpectEvent(watcher, expected, action, expectedPath: Path.Combine(watcher.Path, "dir"));
+                ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
             }
         }
 
@@ -31,11 +28,11 @@ namespace System.IO.Tests
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(GetDirectoryOrSymLink(dir.Path), "*"))
+            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-                ExpectEvent(watcher, 0, action, expectedPath: null);
+                ExpectEvent(watcher, 0, action, expectedPath: dir.Path);
             }
         }
 
@@ -47,7 +44,7 @@ namespace System.IO.Tests
             using (var dir = new TempDirectory(GetTestFilePath()))
             using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
             using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(GetDirectoryOrSymLink(dir.Path), "*"))
+            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.Attributes;
@@ -57,7 +54,7 @@ namespace System.IO.Tests
                 Action cleanup = () => File.SetAttributes(nestedDir.Path, attributes);
 
                 WatcherChangeTypes expected = includeSubdirectories ? WatcherChangeTypes.Changed : 0;
-                ExpectEvent(watcher, expected, action, cleanup, Path.Combine(watcher.Path, "dir1", "nested"));
+                ExpectEvent(watcher, expected, action, cleanup, nestedDir.Path);
             }
         }
 
@@ -78,26 +75,8 @@ namespace System.IO.Tests
                 Action action = () => File.AppendAllText(file.Path, "longtext");
                 Action cleanup = () => File.AppendAllText(file.Path, "short");
 
-                ExpectEvent(watcher, 0, action, cleanup, expectedPath: null);
+                ExpectEvent(watcher, 0, action, cleanup, dir.Path);
             }
         }
-
-        private string GetDirectoryOrSymLink(string pathToDirectory)
-        {
-            if (!UseSymLink)
-            {
-                return pathToDirectory;
-            }
-
-            string symLinkPath = GetTestFilePath();
-            Assert.True(CreateSymLink(targetPath: pathToDirectory, linkPath: symLinkPath, isDirectory: true));
-            return symLinkPath;
-        }
-    }
-
-    [ConditionalClass(typeof(Symlink_Directory_Changed_Tests), nameof(CanCreateSymbolicLinks))]
-    public class Symlink_Directory_Changed_Tests : Directory_Changed_Tests
-    {
-        public override bool UseSymLink => true;
     }
 }
