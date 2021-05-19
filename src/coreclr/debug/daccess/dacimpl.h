@@ -1312,7 +1312,7 @@ public:
     HRESULT DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags flags, STRINGREF orefStackTrace);
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     HRESULT DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, CLRDATA_ADDRESS ccwPtr);
     HRESULT EnumMemStowedException(CLRDataEnumMemoryFlags flags);
 #endif
@@ -1989,7 +1989,6 @@ private:
         return &pData[mCurr->count++];
     }
 
-
     template <class IntType, class StructType>
     IntType WalkStack(IntType count, StructType refs[], promote_func promote, GCEnumCallback enumFunc)
     {
@@ -2001,7 +2000,28 @@ private:
         _ASSERTE(mCurr == NULL);
         _ASSERTE(mHead.next == NULL);
 
-        bool clearProfilerFilterContext = false;
+        class ProfilerFilterContextHolder
+        {
+            Thread* m_pThread;
+
+        public:
+            ProfilerFilterContextHolder() : m_pThread(NULL)
+            {
+            }
+
+            void Activate(Thread* pThread)
+            {
+                m_pThread = pThread;
+            }
+
+            ~ProfilerFilterContextHolder()
+            {
+                if (m_pThread != NULL)
+                    m_pThread->SetProfilerFilterContext(NULL);
+            }
+        };
+
+        ProfilerFilterContextHolder contextHolder;
         T_CONTEXT ctx;
 
         // Get the current thread's context and set that as the filter context
@@ -2009,7 +2029,7 @@ private:
         {
             mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
             mThread->SetProfilerFilterContext(&ctx);
-            clearProfilerFilterContext = true;
+            contextHolder.Activate(mThread);
         }
 
         // Setup GCCONTEXT structs for the stackwalk.
@@ -2035,11 +2055,6 @@ private:
 
         mEnumerated = true;
         mThread->StackWalkFrames(DacStackReferenceWalker::Callback, &gcctx, flagsStackWalk);
-
-        if (clearProfilerFilterContext)
-        {
-            mThread->SetProfilerFilterContext(NULL);
-        }
 
         // We have filled the user's array as much as we could.  If there's more data than
         // could fit, mHead.Next will contain a linked list of refs to enumerate.

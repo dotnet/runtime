@@ -127,6 +127,14 @@ set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
 
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+
+if(IS_BIG_ENDIAN)
+  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
+else()
+  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
+endif()
+
 ######################################
 # AOT CROSS COMPILER SUPPORT
 ######################################
@@ -149,6 +157,14 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "arm-apple-darwin10")
     set(TARGET_SYSTEM_NAME "iOS")
     set(TARGET_ARCH "arm")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-maccatalyst")
+    set(TARGET_SYSTEM_NAME "Darwin")
+    set(TARGET_ARCH "x86_64")
+    set(CMAKE_SYSTEM_VARIANT "MacCatalyst")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-apple-maccatalyst")
+    set(TARGET_SYSTEM_NAME "Darwin")
+    set(TARGET_ARCH "arm64")
+    set(CMAKE_SYSTEM_VARIANT "MacCatalyst")
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "Emscripten")
     set(TARGET_ARCH "wasm")
@@ -280,6 +296,9 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(TARGET_MACCAT 1)
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -342,6 +361,10 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
   set(HOST_ARM64 1)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
   set(HOST_ARM 1)
+  # fixme: use separate defines for host/target
+  set(NO_UNALIGNED_ACCESS 1)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
+  set(HOST_S390X 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm")
   set(HOST_WASM 1)
 else()
@@ -392,6 +415,13 @@ elseif(TARGET_ARCH MATCHES "arm")
   add_definitions("-DARM_FPU_VFP=1")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
+  # fixme: use separate defines for host/target
+  set(NO_UNALIGNED_ACCESS 1)
+elseif(TARGET_ARCH STREQUAL "s390x")
+  set(TARGET_S390X 1)
+  set(MONO_ARCHITECTURE "\"s390x\"")
+  set(TARGET_SIZEOF_VOID_P 8)
+  set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "wasm")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
@@ -590,52 +620,43 @@ endif()
 # EGLIB CHECKS
 ######################################
 
-set(GNUC_PRETTY)
-set(GNUC_UNUSED)
-set(BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
-if(GCC)
-  set(GNUC_UNUSED "__attribute__((__unused__))")
-  set(GNUC_NORETURN "__attribute__((__noreturn__))")
-  if(HOST_AMD64 OR HOST_X86)
-    set(BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
-  endif()
-endif()
-
-if(IS_BIG_ENDIAN)
-  set(ORDER G_BIG_ENDIAN)
-else()
-  set(ORDER G_LITTLE_ENDIAN)
-endif()
+set(EGLIB_GNUC_PRETTY)
+set(EGLIB_GNUC_UNUSED)
 
 if(HOST_WIN32)
-  set(PATHSEP "\\")
-  set(SEARCHSEP ";")
-  set(OS "WIN32")
-  set(PIDTYPE "void *")
+  set(EGLIB_GNUC_PRETTY "__FUNCTION__")
+  set(EGLIB_BREAKPOINT "__debugbreak()")
+  set(EGLIB_PATHSEP "\\\\")
+  set(EGLIB_SEARCHSEP ";")
+  set(EGLIB_OS "WIN32")
+  set(EGLIB_PIDTYPE "void *")
+  if(HOST_AMD64 OR HOST_ARM64)
+    set(EGLIB_GSIZE_FORMAT "\"Iu\"")
+  else()
+    set(EGLIB_GSIZE_FORMAT "\"u\"")
+  endif()
 else()
-  set(PATHSEP "/")
-  set(SEARCHSEP ":")
-  set(OS "UNIX")
-  set(PIDTYPE "int")
+  set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
+  if(GCC)
+    set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
+    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
+    if(HOST_AMD64 OR HOST_X86)
+      set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
+    endif()
+  endif()
+  set(EGLIB_PATHSEP "/")
+  set(EGLIB_SEARCHSEP ":")
+  set(EGLIB_OS "UNIX")
+  set(EGLIB_PIDTYPE "int")
+  set(EGLIB_GSIZE_FORMAT "\"lu\"")
 endif()
 
-# FIXME:
-set(GSIZE_FORMAT "\"lu\"")
-
-set(GSIZE "size_t")
-set(GSSIZE "ptrdiff_t")
+set(EGLIB_GSIZE "size_t")
+set(EGLIB_GSSIZE "ptrdiff_t")
 
 #
 # END OF EGLIB CHECKS
 #
-
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
-  set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
-else()
-  set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
-endif()
 
 ######################################
 # DEBUG BUILD CHECKS
@@ -723,7 +744,7 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(TARGET_IOS OR TARGET_ANDROID)
+if(TARGET_IOS OR TARGET_ANDROID OR TARGET_MACCAT)
   # FIXME: the mobile products use mono_dllmap_insert so allow this
   unset(DISABLE_DLLMAP)
 else()
@@ -742,4 +763,4 @@ if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOM
 endif()
 
 configure_file(cmake/config.h.in config.h)
-configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)  # TODO: eglib-config.h is not needed, we're using hardcoded eglib-config.hw
+configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)

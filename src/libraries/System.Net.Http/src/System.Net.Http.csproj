@@ -6,7 +6,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -29,16 +29,15 @@
     <Compile Include="System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
     <Compile Include="System\Net\Http\HeaderEncodingSelector.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
-    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsTVOS)' != 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.cs" />
     <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs" />
     <Compile Condition="'$(TargetsiOS)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.iOS.cs" />
+    <Compile Condition="'$(TargetsMacCatalyst)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.MacCatalyst.cs" />
     <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.tvOS.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
@@ -136,6 +135,8 @@
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="System\Net\Http\HttpMethod.Http3.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
@@ -405,8 +406,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.Interop.CertFreeCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
@@ -495,22 +494,6 @@
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
-             Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"
-             Link="Common\System\Net\Mail\DotAtomReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs"
-             Link="Common\System\Net\Mail\MailAddress.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs"
-             Link="Common\System\Net\Mail\MailAddressParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
-             Link="Common\System\Net\Mail\MailBnfHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs"
-             Link="Common\System\Net\Mail\QuotedPairReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs"
-             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs"
-             Link="Common\System\Net\Mail\WhitespaceReader.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>

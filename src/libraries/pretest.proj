@@ -38,6 +38,7 @@
 
   <Target Name="GetSharedFrameworkRuntimeFiles">
     <ItemGroup>
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.so" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Apple.dylib" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.dylib" />

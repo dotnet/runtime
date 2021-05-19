@@ -30,6 +30,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
             string path = null;
@@ -84,6 +85,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
         {
             string path = GetRandomNonExistingFilePath();
@@ -100,7 +102,15 @@ namespace System.Net.Sockets.Tests
                 bool willRaiseEvent = sock.ConnectAsync(args);
                 if (willRaiseEvent)
                 {
-                    await complete.Task;
+                    bool willRaiseEvent = sock.ConnectAsync(args);
+                    if (willRaiseEvent)
+                    {
+                        await complete.Task;
+                    }
+
+                    Assert.Equal(
+                        OperatingSystem.IsWindows() ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
+                        args.SocketError);
                 }
 
                 Assert.Equal(
@@ -112,6 +122,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Socket_SendReceive_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -143,6 +154,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Socket_SendReceive_Clone_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -189,6 +201,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Socket_SendReceiveAsync_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -225,6 +238,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(500, 18, 21)]
         [InlineData(500, 21, 18)]
         [InlineData(5, 128000, 64000)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {
             var writeBuffer = new byte[writeBufferSize * iterations];
@@ -280,6 +294,7 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -322,6 +337,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ConcurrentSendReceiveAsync()
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -376,6 +392,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void UnixDomainSocketEndPoint_RemoteEndPointEqualsBindAddress(bool abstractAddress)
         {
             string serverAddress;
@@ -384,7 +401,7 @@ namespace System.Net.Sockets.Tests
             if (abstractAddress)
             {
                 // abstract socket addresses are a Linux feature.
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (!OperatingSystem.IsLinux())
                 {
                     return;
                 }
@@ -506,7 +523,7 @@ namespace System.Net.Sockets.Tests
         {
             get
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     try
                     {

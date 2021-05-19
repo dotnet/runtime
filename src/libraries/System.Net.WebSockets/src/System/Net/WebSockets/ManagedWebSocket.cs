@@ -1246,7 +1246,7 @@ namespace System.Net.WebSockets
 
             // Return the read header
             resultHeader = header;
-            resultHeader.Processed = header.PayloadLength == 0;
+            resultHeader.Processed = header.PayloadLength == 0 && !header.Compressed;
             return null;
         }
 

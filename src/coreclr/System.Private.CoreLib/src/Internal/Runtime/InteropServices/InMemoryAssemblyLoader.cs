@@ -12,6 +12,10 @@ namespace Internal.Runtime.InteropServices
     /// </summary>
     public static class InMemoryAssemblyLoader
     {
+        private static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported", out bool isSupported) ? isSupported : true;
+
         /// <summary>
         /// Loads into an isolated AssemblyLoadContext an assembly that has already been loaded into memory by the OS loader as a native module.
         /// </summary>
@@ -20,6 +24,9 @@ namespace Internal.Runtime.InteropServices
         public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
         {
 #if TARGET_WINDOWS
+            if (!IsSupported)
+                throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
+
             string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
             if (assemblyPathString == null)
             {
