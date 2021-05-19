@@ -21,6 +21,7 @@ Param(
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind",
     [string] $LogicalMachine="",
     [switch] $AndroidMono,
+    [switch] $iOSMono,
     [switch] $NoPGO,
     [switch] $DynamicPGO,
     [switch] $FullPGO
@@ -138,6 +139,15 @@ if ($AndroidMono) {
         mkdir $WorkItemDirectory
     }
     Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
+}
+
+if ($iOSMono) {
+    if(!(Test-Path $WorkItemDirectory))
+    {
+        mkdir $WorkItemDirectory
+    }
+    Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
