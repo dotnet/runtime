@@ -258,7 +258,6 @@
                                  '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
   </PropertyGroup>
 
-
   <!-- Language configuration -->
   <PropertyGroup>
     <!-- default to allowing all language features -->
@@ -280,5 +279,6 @@
 
   <PropertyGroup>
     <CustomAfterNoTargetsProps>$(RepositoryEngineeringDir)NoTargetsSdk.AfterProps.props</CustomAfterNoTargetsProps>
+    <CustomAfterTraversalProps>$(RepositoryEngineeringDir)TraversalSdk.AfterProps.props</CustomAfterTraversalProps>
   </PropertyGroup>
 </Project>

@@ -213,6 +213,8 @@ if (CLR_CMAKE_TARGET_WIN32)
     loopcloningopts.h
     lower.h
     lsra_reftypes.h
+    lsra_stats.h
+    lsra_score.h
     lsra.h
     namedintrinsiclist.h
     objectalloc.h

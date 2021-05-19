@@ -494,22 +494,6 @@
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
-             Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"
-             Link="Common\System\Net\Mail\DotAtomReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs"
-             Link="Common\System\Net\Mail\MailAddress.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs"
-             Link="Common\System\Net\Mail\MailAddressParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
-             Link="Common\System\Net\Mail\MailBnfHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs"
-             Link="Common\System\Net\Mail\QuotedPairReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs"
-             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs"
-             Link="Common\System\Net\Mail\WhitespaceReader.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>
