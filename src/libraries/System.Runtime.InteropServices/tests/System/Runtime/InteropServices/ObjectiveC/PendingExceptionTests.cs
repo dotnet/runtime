@@ -64,6 +64,11 @@ namespace System.Runtime.InteropServices.Tests
 
         private static void ValidateSetMessageSendPendingExceptionImpl(MessageSendFunction msgSend)
         {
+            if (!LibObjC.SupportedOnPlatform(msgSend))
+            {
+                return;
+            }
+
             IntPtr func = msgSend switch
             {
                 MessageSendFunction.MsgSend => (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSend,
