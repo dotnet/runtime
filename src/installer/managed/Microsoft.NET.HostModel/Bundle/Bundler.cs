@@ -23,7 +23,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public const uint BundlerMajorVersion = 6;
         public const uint BundlerMinorVersion = 0;
         //Same as Path.GetRandomFileName
-        private const int BundleIdLength = 8;
+        private const int BundleIdLength = 12;
 
         private readonly string HostName;
         private readonly string OutputDir;
@@ -279,7 +279,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             long headerOffset = 0;
             using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(bundlePath)))
-            using (SHA256 hashAlg = SHA256Managed.Create())
+            using (SHA256 hashAlg = SHA256.Create())
             {
                 Stream bundle = writer.BaseStream;
                 bundle.Position = bundle.Length;
@@ -354,7 +354,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         private static byte[] ComputeSha256Hash(Stream stream)
         {
-            using (SHA256 sha = new SHA256Managed())
+            using (SHA256 sha = SHA256.Create())
             {
                 return sha.ComputeHash(stream);
             }
