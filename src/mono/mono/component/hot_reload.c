@@ -580,6 +580,9 @@ image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, 
 	if (!base_info->delta_image) {
 		base_info->delta_image = base_info->delta_image_last = g_list_alloc ();
 		base_info->delta_image->data = (gpointer)delta;
+                mono_memory_write_barrier ();
+                /* Have to set this here so that passes over the metadata in the updater thread start using the slow path */
+                base->has_updates = TRUE;
 		return;
 	}
 	g_assert (delta_info_lookup(((MonoImage*)base_info->delta_image_last->data))->generation < delta_info->generation);
@@ -1266,6 +1269,11 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 	gpointer dil_bytes = open_dil_data (image_base, dil_bytes_orig, dil_length);
 	/* TODO: make a copy of the dpdb bytes, once we consume them */
 
+        BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);
+
+	DeltaInfo *delta_info = delta_info_init (image_dmeta, image_base, base_info, generation);
+
+
 	if (image_dmeta->minimal_delta) {
 		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE], 0, MONO_MODULE_NAME);
 
@@ -1286,10 +1294,6 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 		hot_reload_update_cancel (generation);
 		return;
 	}
-
-        BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);
-
-	DeltaInfo *delta_info = delta_info_init (image_dmeta, image_base, base_info, generation);
 
 	/* Process EnCMap and compute number of added/modified rows from this
 	 * delta.  This enables computing row indexes relative to the delta.
