@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <PropertyGroup>
-    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'windows' or '$(DotNetBuildFromSource)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
     <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" />

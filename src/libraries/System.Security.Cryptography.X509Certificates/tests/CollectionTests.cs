@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -578,6 +579,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportStoreSavedAsPfxData()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -697,6 +699,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 export is not available")]
         public static void ExportPkcs7()
         {
             TestExportStore(X509ContentType.Pkcs7);

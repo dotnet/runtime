@@ -47,7 +47,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Expect = new KnownHeader("Expect", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueWithParametersParser, new string[] { "100-continue" }, H2StaticTable.Expect);
         public static readonly KnownHeader ExpectCT = new KnownHeader("Expect-CT");
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Expires);
-        public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser, null, H2StaticTable.From);
+        public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.SingleValueParserWithoutValidation, null, H2StaticTable.From);
         public static readonly KnownHeader GrpcEncoding = new KnownHeader("grpc-encoding", HttpHeaderType.Custom, null, new string[] { "identity", "gzip", "deflate" });
         public static readonly KnownHeader GrpcMessage = new KnownHeader("grpc-message");
         public static readonly KnownHeader GrpcStatus = new KnownHeader("grpc-status", HttpHeaderType.Custom, null, new string[] { "0" });

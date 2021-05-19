@@ -52,7 +52,7 @@ namespace ShowLocallocAlignment
             void* ptr2;
 
             required_alignment = 16; // Default to the biggest alignment required
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && (RuntimeInformation.ProcessArchitecture == Architecture.X86))
+            if (OperatingSystem.IsWindows() && (RuntimeInformation.ProcessArchitecture == Architecture.X86))
             {
                 required_alignment = 4;
             }

@@ -7299,6 +7299,16 @@ namespace System.IO
         Delete = 4,
         Inheritable = 16,
     }
+    public sealed class FileStreamOptions
+    {
+        public FileStreamOptions() { }
+        public System.IO.FileMode Mode { get; set; }
+        public System.IO.FileAccess Access { get; set; }
+        public System.IO.FileShare Share { get; set; }
+        public System.IO.FileOptions Options { get; set; }
+        public long PreallocationSize { get; set; }
+        public int BufferSize { get; set; }
+    }
     public partial class FileStream : System.IO.Stream
     {
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access) { }
@@ -7322,6 +7332,7 @@ namespace System.IO
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize, bool useAsync) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize, System.IO.FileOptions options) { }
+        public FileStream(string path, System.IO.FileStreamOptions options) { }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
@@ -7875,11 +7886,13 @@ namespace System.Reflection
     {
         protected Assembly() { }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message="The code will throw for assemblies embedded in a single-file app")]
         public virtual string? CodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message="The code will throw for assemblies embedded in a single-file app")]
         public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
@@ -7914,6 +7927,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetExportedTypes() { throw null; }
         public virtual System.IO.FileStream? GetFile(string name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public virtual System.IO.FileStream[] GetFiles() { throw null; }
         public virtual System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
@@ -8082,10 +8096,11 @@ namespace System.Reflection
     {
         public AssemblyName() { }
         public AssemblyName(string assemblyName) { }
-        public string? CodeBase { get { throw null; } set { } }
+        public string? CodeBase { [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message = "The code will return an empty string for assemblies embedded in a single-file app")] get { throw null; } set { } }
         public System.Reflection.AssemblyContentType ContentType { get { throw null; } set { } }
         public System.Globalization.CultureInfo? CultureInfo { get { throw null; } set { } }
         public string? CultureName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message="The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase { get { throw null; } }
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
@@ -9560,7 +9575,7 @@ namespace System.Runtime.CompilerServices
         public string DependentAssembly { get { throw null; } }
         public System.Runtime.CompilerServices.LoadHint LoadHint { get { throw null; } }
     }
-    [System.ObsoleteAttribute("DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications.", DiagnosticId = "SYSLIB0015", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("DisablePrivateReflectionAttribute has no effect in .NET 6.0+.", DiagnosticId = "SYSLIB0015", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class DisablePrivateReflectionAttribute : System.Attribute
     {
@@ -9844,6 +9859,7 @@ namespace System.Runtime.CompilerServices
         public StrongBox(T value) { }
         object? System.Runtime.CompilerServices.IStrongBox.Value { get { throw null; } set { } }
     }
+    [System.ObsoleteAttribute("SuppressIldasmAttribute has no effect in .NET 6.0+.", DiagnosticId = "SYSLIB0025", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module)]
     public sealed partial class SuppressIldasmAttribute : System.Attribute
     {

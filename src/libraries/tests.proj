@@ -139,8 +139,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/36897 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates/tests/System.Security.Cryptography.X509Certificates.Tests.csproj" />
 
     <!-- Failures -->
     <!-- https://github.com/dotnet/runtime/issues/51335 -->
@@ -184,16 +182,6 @@
     <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
-
-    <!-- PNSE -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem/tests/System.IO.FileSystem.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions/tests/System.Runtime.Extensions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/UnitTests/Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core/tests/Microsoft.VisualBasic.Core.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread/tests/System.Threading.Thread.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
@@ -242,9 +230,6 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51961 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/52384 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50959 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
@@ -357,6 +342,7 @@
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

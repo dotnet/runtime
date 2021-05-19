@@ -18,7 +18,6 @@ namespace System.IO.Tests
             return new FileStream(handle, access, bufferSize);
         }
 
-
         [Theory,
             InlineData(0),
             InlineData(-1)]
