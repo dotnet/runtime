@@ -3100,8 +3100,8 @@ void Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
                         case 2:
                         {
-                            controlBits1 = 15;  // 00 00 11 11;  op1 = { X = op1.W, Y = op1.W, Z = op3, W = op3 }
-                            controlBits2 = 36;  // 00 10 01 00; node = { X = op1.X, Y = op1.Y, Z = op3, W = op1.W }
+                            controlBits1 = 15; // 00 00 11 11;  op1 = { X = op1.W, Y = op1.W, Z = op3, W = op3 }
+                            controlBits2 = 36; // 00 10 01 00; node = { X = op1.X, Y = op1.Y, Z = op3, W = op1.W }
                             break;
                         }
 

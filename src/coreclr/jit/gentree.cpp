@@ -7376,7 +7376,7 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
         node->AsMultiRegOp()->gtOtherReg = REG_NEXT(argReg);
     }
 #else
-    node          = gtNewOperNode(GT_PUTARG_REG, type, arg);
+    node = gtNewOperNode(GT_PUTARG_REG, type, arg);
 #endif
     node->SetRegNum(argReg);
 
@@ -7406,7 +7406,7 @@ GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
     // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
 #else
-    node          = gtNewOperNode(GT_BITCAST, type, arg);
+    node = gtNewOperNode(GT_BITCAST, type, arg);
 #endif
 
     return node;
