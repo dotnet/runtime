@@ -158,7 +158,11 @@ namespace System.Xml.Serialization
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
 
-                serializer = Assembly.Load(name);
+                try
+                {
+                    serializer = Assembly.Load(name);
+                } catch (FileNotFoundException) { }
+
                 serializer ??= LoadAssemblyByPath(type, serializerName);
 
                 if (serializer == null)
