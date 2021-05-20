@@ -78,6 +78,9 @@ typedef struct {
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
+int
+mono_string_instance_is_interned (MonoString *str_raw);
+
 void
 mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 
@@ -95,13 +98,23 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	mono_unichar2 *native_val = mono_string_chars (str);
+	int is_interned = mono_string_instance_is_interned (str);
+	mono_unichar2 *native_chars = mono_string_chars (str);
 	int native_len = mono_string_length (str) * 2;
 	int native_res_len;
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var str = MONO.string_decoder.decode ($0, $0 + $1);
+		var str;
+		// If the expression is interned, use binding_support's intern table implementation to
+		//  avoid decoding it again unless necessary
+		// We could technically use conv_string for both cases here, but it's more expensive
+		//  than using decode directly in the case where the expression isn't interned
+		if ($4)
+			str = BINDING.conv_string($5, true);
+		else
+			str = MONO.string_decoder.decode ($0, $0 + $1);
+
 		try {
 			var res = eval (str);
 			if (res === null || res == undefined)
@@ -128,7 +141,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
 		setValue ($3, res.length, "i32");
 		return buff;
-	}, (int)native_val, native_len, is_exception, p_native_res_len);
+	}, (int)native_chars, native_len, is_exception, p_native_res_len, is_interned, (int)str);
 
 	if (native_res == NULL)
 		return NULL;
@@ -920,7 +933,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
+		mono_string_instance_is_interned ((MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
@@ -947,7 +960,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
+		mono_string_instance_is_interned ((MonoString *)obj)) {
 		*resultL = 0;
 		return MARSHAL_TYPE_STRING_INTERNED;
 	}
