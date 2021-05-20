@@ -161,7 +161,14 @@ namespace System.Xml.Serialization
                 try
                 {
                     serializer = Assembly.Load(name);
-                } catch (FileNotFoundException) { }
+                }
+                catch (Exception e)
+                {
+                    if (e is OutOfMemoryException)
+                    {
+                        throw;
+                    }
+                }
 
                 serializer ??= LoadAssemblyByPath(type, serializerName);
 
