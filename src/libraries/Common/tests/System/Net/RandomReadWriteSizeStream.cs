@@ -12,12 +12,12 @@ namespace System.Net.Test.Common
     public class RandomReadWriteSizeStream : Stream
     {
         private readonly Stream _innerStream;
-        private readonly int _maxSize;
+        private readonly int _maxChunkSize;
 
         public RandomReadWriteSizeStream(Stream stream, int maxChunkSize = int.MaxValue)
         {
             _innerStream = stream;
-            _maxSize = maxChunkSize;
+            _maxChunkSize = maxChunkSize;
         }
 
         public override bool CanSeek => _innerStream.CanSeek;
@@ -49,7 +49,7 @@ namespace System.Net.Test.Common
         {
             if (buffer.Length > 0)
             {
-                int readLength = RandomNumberGenerator.GetInt32(1, Math.Min(buffer.Length + 1, _maxSize));
+                int readLength = RandomNumberGenerator.GetInt32(1, Math.Min(buffer.Length + 1, _maxChunkSize));
                 buffer = buffer.Slice(0, readLength);
             }
 
@@ -62,7 +62,7 @@ namespace System.Net.Test.Common
         {
             if (buffer.Length > 0)
             {
-                int readLength = RandomNumberGenerator.GetInt32(1, Math.Min(buffer.Length + 1, _maxSize));
+                int readLength = RandomNumberGenerator.GetInt32(1, Math.Min(buffer.Length + 1, _maxChunkSize));
                 buffer = buffer.Slice(0, readLength);
             }
             return _innerStream.ReadAsync(buffer, cancellationToken);
