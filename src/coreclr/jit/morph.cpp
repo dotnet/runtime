@@ -12044,7 +12044,7 @@ GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
     unsigned    simdSize        = 0;
     GenTree*    simdStructNode  = getSIMDStructFromField(tree, &simdBaseJitType, &index, &simdSize);
 
-    if (simdStructNode != nullptr)
+    if ((simdStructNode != nullptr) && IsBaselineSimdIsaSupported())
     {
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
         GenTree*  op2          = gtNewIconNode(index, TYP_INT);
@@ -12081,7 +12081,7 @@ GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
     unsigned    simdSize        = 0;
     GenTree*    simdStructNode  = getSIMDStructFromField(tree->gtGetOp1(), &simdBaseJitType, &index, &simdSize);
 
-    if (simdStructNode != nullptr)
+    if ((simdStructNode != nullptr) && IsBaselineSimdIsaSupported())
     {
         var_types simdType     = simdStructNode->gtType;
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
