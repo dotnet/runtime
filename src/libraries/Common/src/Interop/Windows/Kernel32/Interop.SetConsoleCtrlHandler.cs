@@ -14,7 +14,12 @@ internal static partial class Interop
 
         internal delegate bool ConsoleCtrlHandlerRoutine(int controlType);
 
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, bool addOrRemove);
+#else
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, bool addOrRemove);
+#endif
     }
 }
