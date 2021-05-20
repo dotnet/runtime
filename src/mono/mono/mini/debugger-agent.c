@@ -5464,7 +5464,12 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 				mono_gc_wbarrier_generic_store_internal (addr, obj);
 			} else if (type == VALUE_TYPE_ID_NULL) {
+				if (CHECK_PROTOCOL_VERSION (2, 59)) {
+					decode_byte (buf, &buf, limit);
+					decode_int (buf, &buf, limit); //not used
+				}
 				*(MonoObject**)addr = NULL;
+
 			} else if (type == MONO_TYPE_VALUETYPE) {
 				ERROR_DECL (error);
 				guint8 *buf2;

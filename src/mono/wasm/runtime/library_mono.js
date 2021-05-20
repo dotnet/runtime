@@ -1413,7 +1413,6 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 					'bool', [ 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  					'bool', [ 'number', 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          					'bool', [ 'number', 'number', 'number']);
-			this._register_c_fn     ('mono_wasm_set_value_on_object',     					'bool', [ 'number', 'string', 'string' ]);
 			this._register_c_fn     ('mono_wasm_send_dbg_command',							'bool', [ 'number', 'number', 'number', 'number', 'number' ]);
 			this._register_c_fn     ('mono_wasm_send_dbg_command_with_parms', 				'bool', [ 'number', 'number', 'number', 'number', 'number', 'number', 'string' ]);
 
@@ -2403,18 +2402,6 @@ var MonoSupportLib = {
 				}
 			});
 		}
-	},
-
-	mono_wasm_add_frame: function(il, method, frame_id, assembly_name, method_full_name) {
-		var parts = Module.UTF8ToString (method_full_name).split (":", 2);
-		MONO.active_frames.push( {
-			il_pos: il,
-			method_token: method,
-			assembly_name: Module.UTF8ToString (assembly_name),
-			// Extract just the method name from `{class_name}:{method_name}`
-			method_name: parts [parts.length - 1],
-			frame_id
-		});
 	},
 
 	schedule_background_exec: function () {

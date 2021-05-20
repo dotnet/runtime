@@ -53,7 +53,6 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, Mdb
 
 
 //JS functions imported that we use
-extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_fire_debugger_agent_message (void);
 extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
@@ -1503,7 +1502,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	}
 	else
 		error = mono_process_dbg_packet(id, command_set, command, &no_reply, data, data + size, &buf);
-	
+
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
 	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
