@@ -629,7 +629,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
  */
-void Lowering::LowerCast(GenTree* tree)
+void Lowering::LowerCastTargetSpecific(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 

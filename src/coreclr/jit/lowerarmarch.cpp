@@ -406,7 +406,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
-// LowerCast: Lower GT_CAST(srcType, DstType) nodes.
+// LowerCastTargetSpecific: Lower GT_CAST(srcType, DstType) nodes.
 //
 // Arguments:
 //    tree - GT_CAST node to be lowered
@@ -425,11 +425,11 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 //    don't expect to see them here.
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
-void Lowering::LowerCast(GenTree* tree)
+void Lowering::LowerCastTargetSpecific(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
-    JITDUMP("LowerCast for: ");
+    JITDUMP("LowerCastTargetSpecific for: ");
     DISPNODE(tree);
     JITDUMP("\n");
 
