@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32)]
-        internal static partial void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
+        [DllImport(Libraries.Kernel32)]
+        internal static unsafe extern void GetSystemInfo(SYSTEM_INFO* lpSystemInfo);
     }
 }
