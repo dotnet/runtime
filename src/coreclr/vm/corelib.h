@@ -69,8 +69,10 @@
 #endif
 
 //
-// BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH allow IL linker to guard types behind a feature switch
-// Current support is only around class scope and not for standalone members of classes
+// BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH allow IL linker to guard types behind a feature switch.
+// Current support is only around class scope and not for standalone members of classes.
+// See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
+// https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
 //
 #ifndef BEGIN_ILLINK_FEATURE_SWITCH
 #define BEGIN_ILLINK_FEATURE_SWITCH(featureName, featureValue, featureDefault)
@@ -301,12 +303,6 @@ DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,              
 
 DEFINE_CLASS(DATE_TIME,             System,                 DateTime)
 DEFINE_METHOD(DATE_TIME,            LONG_CTOR,              .ctor,                      IM_Long_RetVoid)
-
-BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(DATE_TIME_OFFSET,      System,                 DateTimeOffset)
-#endif // FEATURE_COMINTEROP
-END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(DECIMAL,               System,                 Decimal)
 DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,                      IM_Currency_RetVoid)

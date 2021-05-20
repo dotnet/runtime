@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GlobalInstance.cs" />
-    <Compile Include="GlobalInstance.Marshalling.BuiltInComDisabled.cs" />
+    <Compile Include="GlobalInstance.Marshalling.cs" />
     <Compile Include="../Common.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />

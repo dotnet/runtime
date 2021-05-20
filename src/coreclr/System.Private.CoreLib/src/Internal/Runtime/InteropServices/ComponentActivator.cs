@@ -23,7 +23,7 @@ namespace Internal.Runtime.InteropServices
 
         private static bool IsSupported { get; } = InitializeIsSupported();
 
-        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.CallingManagedFunctionFromNativeHosting.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
 
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 
