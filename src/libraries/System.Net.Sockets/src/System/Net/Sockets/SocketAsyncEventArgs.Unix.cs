@@ -244,7 +244,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle)
+        internal SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             Debug.Assert(_sendPacketsElements != null);
             SendPacketsElement[] elements = (SendPacketsElement[])_sendPacketsElements.Clone();
@@ -288,7 +288,7 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, files, (bytesTransferred, error) =>
+            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, files, cancellationToken, (bytesTransferred, error) =>
             {
                 if (error == SocketError.Success)
                 {
