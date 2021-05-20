@@ -633,6 +633,10 @@ namespace System.Runtime.InteropServices
             get
             {
                 Debug.Assert(VariantType == VarEnum.VT_BSTR);
+                if (_typeUnion._unionTypes._bstr == IntPtr.Zero)
+                {
+                    return null;
+                }
                 return (string)Marshal.PtrToStringBSTR(this._typeUnion._unionTypes._bstr);
             }
             set
