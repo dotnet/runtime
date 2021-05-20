@@ -45,7 +45,7 @@ namespace Mono.Linker
 					}
 				}
 
-				baseType = context.TryResolveTypeDefinition (baseType.BaseType);
+				baseType = context.TryResolve (baseType.BaseType);
 			}
 
 			if (resolvedType != null)

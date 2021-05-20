@@ -32,7 +32,7 @@ namespace Mono.Linker.Dataflow
 
 		public static bool RequiresReflectionMethodBodyScannerForCallSite (LinkContext context, MethodReference calledMethod)
 		{
-			MethodDefinition methodDefinition = context.TryResolveMethodDefinition (calledMethod);
+			MethodDefinition methodDefinition = context.TryResolve (calledMethod);
 			if (methodDefinition == null)
 				return false;
 
@@ -51,7 +51,7 @@ namespace Mono.Linker.Dataflow
 
 		public static bool RequiresReflectionMethodBodyScannerForAccess (LinkContext context, FieldReference field)
 		{
-			FieldDefinition fieldDefinition = context.TryResolveFieldDefinition (field);
+			FieldDefinition fieldDefinition = context.TryResolve (field);
 			if (fieldDefinition == null)
 				return false;
 
@@ -637,7 +637,7 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			var callingMethodDefinition = callingMethodBody.Method;
-			var calledMethodDefinition = _context.TryResolveMethodDefinition (calledMethod);
+			var calledMethodDefinition = _context.TryResolve (calledMethod);
 			if (calledMethodDefinition == null)
 				return false;
 
@@ -1306,7 +1306,7 @@ namespace Mono.Linker.Dataflow
 
 								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, CreateMethodReturnValue (calledMethod, propagatedMemberTypes));
 							} else if (value is SystemTypeValue systemTypeValue) {
-								TypeDefinition baseTypeDefinition = _context.TryResolveTypeDefinition (systemTypeValue.TypeRepresented.BaseType);
+								TypeDefinition baseTypeDefinition = _context.TryResolve (systemTypeValue.TypeRepresented.BaseType);
 								if (baseTypeDefinition != null)
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (baseTypeDefinition));
 								else
@@ -1863,7 +1863,7 @@ namespace Mono.Linker.Dataflow
 							}
 
 							var typeRef = _context.TypeNameResolver.ResolveTypeName (resolvedAssembly, typeNameStringValue.Contents);
-							var resolvedType = _context.TryResolveTypeDefinition (typeRef);
+							var resolvedType = _context.TryResolve (typeRef);
 							if (resolvedType == null || typeRef is ArrayType) {
 								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
 								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
@@ -2219,7 +2219,7 @@ namespace Mono.Linker.Dataflow
 		void MarkType (ref ReflectionPatternContext reflectionContext, TypeReference typeReference, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			var source = reflectionContext.Source;
-			TypeDefinition type = _context.TryResolveTypeDefinition (typeReference);
+			TypeDefinition type = _context.TryResolve (typeReference);
 			reflectionContext.RecordRecognizedPattern (type, () => _markStep.MarkTypeVisibleToReflection (typeReference, type, new DependencyInfo (dependencyKind, source), source));
 		}
 

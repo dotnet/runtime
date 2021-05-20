@@ -77,7 +77,7 @@ namespace Mono.Linker.Dataflow
 
 		public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation (GenericParameter genericParameter)
 		{
-			TypeDefinition declaringType = _context.ResolveTypeDefinition (genericParameter.DeclaringType);
+			TypeDefinition declaringType = _context.Resolve (genericParameter.DeclaringType);
 			if (declaringType != null) {
 				if (GetAnnotations (declaringType).TryGetAnnotation (genericParameter, out var annotation))
 					return annotation;
@@ -85,7 +85,7 @@ namespace Mono.Linker.Dataflow
 				return DynamicallyAccessedMemberTypes.None;
 			}
 
-			MethodDefinition declaringMethod = _context.ResolveMethodDefinition (genericParameter.DeclaringMethod);
+			MethodDefinition declaringMethod = _context.Resolve (genericParameter.DeclaringMethod);
 			if (declaringMethod != null && GetAnnotations (declaringMethod.DeclaringType).TryGetAnnotation (declaringMethod, out var methodTypeAnnotations) &&
 				methodTypeAnnotations.TryGetAnnotation (genericParameter, out var methodAnnotation))
 				return methodAnnotation;
@@ -384,7 +384,7 @@ namespace Mono.Linker.Dataflow
 				return true;
 			}
 
-			found = _context.ResolveFieldDefinition (foundReference);
+			found = _context.Resolve (foundReference);
 
 			if (found == null) {
 				// If the field doesn't resolve, it can't be a field on the current type
@@ -409,7 +409,7 @@ namespace Mono.Linker.Dataflow
 			if (typeReference.MetadataType == MetadataType.String)
 				return true;
 
-			TypeDefinition type = _context.TryResolveTypeDefinition (typeReference);
+			TypeDefinition type = _context.TryResolve (typeReference);
 			return type != null && (
 				_hierarchyInfo.IsSystemType (type) ||
 				_hierarchyInfo.IsSystemReflectionIReflect (type));

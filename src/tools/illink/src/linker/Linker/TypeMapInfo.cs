@@ -125,7 +125,7 @@ namespace Mono.Linker
 			// to find the method implementation and record it.
 			foreach (var interfaceImpl in type.GetInflatedInterfaces ()) {
 				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
-					MethodDefinition resolvedInterfaceMethod = context.TryResolveMethodDefinition (interfaceMethod);
+					MethodDefinition resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
 					if (resolvedInterfaceMethod == null)
 						continue;
 
@@ -188,7 +188,7 @@ namespace Mono.Linker
 		void MapOverrides (MethodDefinition method)
 		{
 			foreach (MethodReference override_ref in method.Overrides) {
-				MethodDefinition @override = context.TryResolveMethodDefinition (override_ref);
+				MethodDefinition @override = context.TryResolve (override_ref);
 				if (@override == null)
 					continue;
 
@@ -239,7 +239,7 @@ namespace Mono.Linker
 				return GetInflatedBaseType (requiredModifierType.ElementType);
 
 			if (type is GenericInstanceType genericInstance) {
-				var baseType = context.TryResolveTypeDefinition (type)?.BaseType;
+				var baseType = context.TryResolve (type)?.BaseType;
 
 				if (baseType is GenericInstanceType)
 					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType);
@@ -247,7 +247,7 @@ namespace Mono.Linker
 				return baseType;
 			}
 
-			return context.TryResolveTypeDefinition (type)?.BaseType;
+			return context.TryResolve (type)?.BaseType;
 		}
 
 		// Returns a list of default implementations of the given interface method on this type.
@@ -259,7 +259,7 @@ namespace Mono.Linker
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
 			foreach (var interfaceImpl in type.Interfaces) {
-				var potentialImplInterface = context.TryResolveTypeDefinition (interfaceImpl.InterfaceType);
+				var potentialImplInterface = context.TryResolve (interfaceImpl.InterfaceType);
 				if (potentialImplInterface == null)
 					continue;
 
@@ -276,7 +276,7 @@ namespace Mono.Linker
 
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
-						if (context.TryResolveMethodDefinition (@override) == interfaceMethod) {
+						if (context.TryResolve (@override) == interfaceMethod) {
 							yield return interfaceImpl;
 							foundImpl = true;
 							break;
@@ -300,7 +300,7 @@ namespace Mono.Linker
 		MethodDefinition TryMatchMethod (TypeReference type, MethodReference method)
 		{
 			foreach (var candidate in type.GetMethods (context)) {
-				var md = context.TryResolveMethodDefinition (candidate);
+				var md = context.TryResolve (candidate);
 				if (md?.IsVirtual != true)
 					continue;
 

@@ -160,7 +160,7 @@ namespace Mono.Linker
 					yield return method;
 				}
 
-				type = context.TryResolveTypeDefinition (type.BaseType);
+				type = context.TryResolve (type.BaseType);
 				onBaseType = true;
 			}
 		}
@@ -196,7 +196,7 @@ namespace Mono.Linker
 					yield return field;
 				}
 
-				type = context.TryResolveTypeDefinition (type.BaseType);
+				type = context.TryResolve (type.BaseType);
 				onBaseType = true;
 			}
 		}
@@ -261,7 +261,7 @@ namespace Mono.Linker
 					yield return property;
 				}
 
-				type = context.TryResolveTypeDefinition (type.BaseType);
+				type = context.TryResolve (type.BaseType);
 				onBaseType = true;
 			}
 		}
@@ -306,7 +306,7 @@ namespace Mono.Linker
 					yield return @event;
 				}
 
-				type = context.TryResolveTypeDefinition (type.BaseType);
+				type = context.TryResolve (type.BaseType);
 				onBaseType = true;
 			}
 		}
@@ -317,14 +317,14 @@ namespace Mono.Linker
 				foreach (var i in type.Interfaces) {
 					yield return i;
 
-					TypeDefinition interfaceType = context.TryResolveTypeDefinition (i.InterfaceType);
+					TypeDefinition interfaceType = context.TryResolve (i.InterfaceType);
 					if (interfaceType != null) {
 						foreach (var innerInterface in interfaceType.GetAllInterfaceImplementations (context))
 							yield return innerInterface;
 					}
 				}
 
-				type = context.TryResolveTypeDefinition (type.BaseType);
+				type = context.TryResolve (type.BaseType);
 			}
 		}
 	}

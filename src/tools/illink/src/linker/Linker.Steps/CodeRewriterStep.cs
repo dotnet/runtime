@@ -153,7 +153,7 @@ namespace Mono.Linker.Steps
 
 			var il = body.GetILProcessor ();
 			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {
-				var baseType = Context.ResolveTypeDefinition (method.DeclaringType.BaseType);
+				var baseType = Context.Resolve (method.DeclaringType.BaseType);
 				if (baseType is null)
 					return body;
 
@@ -218,14 +218,14 @@ namespace Mono.Linker.Steps
 		{
 			switch (rtype.MetadataType) {
 			case MetadataType.ValueType:
-				var definition = context.TryResolveTypeDefinition (rtype);
+				var definition = context.TryResolve (rtype);
 				if (definition?.IsEnum == true) {
 					rtype = definition.GetEnumUnderlyingType ();
 				}
 
 				break;
 			case MetadataType.GenericInstance:
-				rtype = context.TryResolveTypeDefinition (rtype);
+				rtype = context.TryResolve (rtype);
 				break;
 			}
 
