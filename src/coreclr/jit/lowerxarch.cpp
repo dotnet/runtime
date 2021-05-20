@@ -3093,22 +3093,22 @@ void Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                     {
                         case 1:
                         {
-                            controlBits1 = 0;
-                            controlBits2 = 226;
+                            controlBits1 = 0;   // 00 00 00 00;  op1 = { X = op3,   Y = op3,   Z = op1.X, W = op1.X }
+                            controlBits2 = 226; // 11 10 00 10; node = { X = op1.X, Y = op3,   Z = op1.Z, W = op1.W }
                             break;
                         }
 
                         case 2:
                         {
-                            controlBits1 = 48;
-                            controlBits2 = 132;
+                            controlBits1 = 15;  // 00 00 11 11;  op1 = { X = op1.W, Y = op1.W, Z = op3, W = op3 }
+                            controlBits2 = 36;  // 00 10 01 00; node = { X = op1.X, Y = op1.Y, Z = op3, W = op1.W }
                             break;
                         }
 
                         case 3:
                         {
-                            controlBits1 = 32;
-                            controlBits2 = 36;
+                            controlBits1 = 10;  // 00 00 10 10;  op1 = { X = op1.Z, Y = op1.Z, Z = op3,   W = op3 }
+                            controlBits2 = 132; // 10 00 01 00; node = { X = op1.X, Y = op1.Y, Z = op1.Z, W = op3 }
                             break;
                         }
 
@@ -3119,18 +3119,23 @@ void Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                     idx = comp->gtNewIconNode(controlBits1);
                     BlockRange().InsertAfter(tmp2, idx);
 
-                    if (imm8 == 1)
+                    if (imm8 != 1)
                     {
                         std::swap(tmp1, tmp2);
                     }
 
-                    op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp2, tmp1, idx, NI_SSE_Shuffle,
+                    op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, tmp2, idx, NI_SSE_Shuffle,
                                                          CORINFO_TYPE_FLOAT, 16);
                     BlockRange().InsertAfter(idx, op1);
                     LowerNode(op1);
 
                     idx = comp->gtNewIconNode(controlBits2);
                     BlockRange().InsertAfter(op1, idx);
+
+                    if (imm8 != 1)
+                    {
+                        std::swap(op1, op2);
+                    }
 
                     op1          = comp->gtNewArgList(op1, op2, idx);
                     op2          = nullptr;
