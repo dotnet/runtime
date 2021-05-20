@@ -264,12 +264,12 @@ namespace BinderTracingTests
                 {
                     FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.SatelliteSubdirectory, assemblyName.Name, SatelliteCulture.Name, subdirectoryPath),
                     Source = ProbedPath.PathSource.SatelliteSubdirectory,
-                    Result = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? COR_E_FILENOTFOUND : S_OK
+                    Result = OperatingSystem.IsLinux() ? COR_E_FILENOTFOUND : S_OK
                 }
             };
 
             // On Linux, the path with a lower-case culture name should also be probed
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 probedPaths.Add(new ProbedPath()
                     {
@@ -318,7 +318,7 @@ namespace BinderTracingTests
             };
 
             // On Linux (case-sensitive), the path with a lower-case culture name should also be probed
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 probedPaths.Add(new ProbedPath()
                     {

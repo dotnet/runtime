@@ -6,9 +6,13 @@
     <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Sgen.cs" />
   </ItemGroup>
+
   <Import Project=".\GenerateThisAssemblyCs.targets" />
+
 </Project>

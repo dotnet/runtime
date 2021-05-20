@@ -301,6 +301,7 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Fact]
         [PlatformSpecific(PlatformSupport.OpenSSL)] // Uses P/Invokes to search Oid in the lookup table
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51388", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void LookupOidByValue_Method_OpenSSL()
         {
             // This needs to be an OID not in the static lookup table.  The purpose is to verify the
@@ -314,6 +315,7 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Fact]
         [PlatformSpecific(PlatformSupport.OpenSSL)]  // Uses P/Invokes to search Oid in the lookup table
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51388", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void LookupOidByFriendlyName_Method_OpenSSL()
         {
             // This needs to be a name not in the static lookup table.  The purpose is to verify the

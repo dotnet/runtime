@@ -54,12 +54,6 @@ namespace System.Net.NetworkInformation.Tests
 
         private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
-            if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSXLike)
-            {
-                // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
-                return;
-            }
-
             Assert.Equal(IPStatus.Success, pingReply.Status);
             if (localIpAddresses.Any(addr => pingReply.Address.Equals(addr)))
             {
@@ -131,6 +125,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddress(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -151,6 +146,7 @@ namespace System.Net.NetworkInformation.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithIPAddress(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync(addressFamily);
@@ -172,6 +168,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddress_AddressAsString(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -190,6 +187,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithIPAddress_AddressAsString()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -204,6 +202,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -217,6 +216,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -264,6 +264,7 @@ namespace System.Net.NetworkInformation.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddressAndTimeoutAndBuffer_Unix()
         {
             byte[] buffer = TestSettings.PayloadAsBytes;
@@ -276,7 +277,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -289,6 +290,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer_Unix()
         {
             byte[] buffer = TestSettings.PayloadAsBytes;
@@ -301,7 +303,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -353,6 +355,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
@@ -370,7 +373,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -385,6 +388,7 @@ namespace System.Net.NetworkInformation.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync(addressFamily);
@@ -402,7 +406,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -415,6 +419,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHost()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -428,6 +433,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithHost()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -442,6 +448,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHostAndTimeout()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -455,6 +462,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -502,6 +510,7 @@ namespace System.Net.NetworkInformation.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHostAndTimeoutAndBuffer_Unix()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -514,7 +523,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -527,6 +536,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer_Unix()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -539,7 +549,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -587,6 +597,7 @@ namespace System.Net.NetworkInformation.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -599,7 +610,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -612,6 +623,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -624,7 +636,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -636,6 +648,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -652,6 +665,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -667,6 +681,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendAsyncs_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -717,6 +732,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void Ping_DisposeAfterSend_Success()
         {
             Ping p = new Ping();
@@ -725,6 +741,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static async Task PingAsync_DisposeAfterSend_Success()
         {
             Ping p = new Ping();
@@ -801,6 +818,7 @@ namespace System.Net.NetworkInformation.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions(bool fragment)
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();

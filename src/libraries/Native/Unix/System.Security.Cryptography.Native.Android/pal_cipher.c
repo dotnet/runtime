@@ -7,7 +7,7 @@
 enum
 {
     CIPHER_NONE = 0,
-    CIPHER_HAS_TAG = 1,
+    CIPHER_HAS_VARIABLE_TAG = 1,
     CIPHER_REQUIRES_IV = 2,
 };
 typedef uint32_t CipherFlags;
@@ -26,49 +26,78 @@ CipherInfo* AndroidCryptoNative_ ## cipherId() \
     return &info; \
 }
 
-DEFINE_CIPHER(Aes128Ecb,    128, "AES/ECB/NoPadding", CIPHER_NONE)
-DEFINE_CIPHER(Aes128Cbc,    128, "AES/CBC/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes128Cfb8,   128, "AES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes128Cfb128, 128, "AES/CFB128/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes128Gcm,    128, "AES/GCM/NoPadding", CIPHER_HAS_TAG | CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes128Ccm,    128, "AES/CCM/NoPadding", CIPHER_HAS_TAG | CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes192Ecb,    192, "AES/ECB/NoPadding", CIPHER_NONE)
-DEFINE_CIPHER(Aes192Cbc,    192, "AES/CBC/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes192Cfb8,   192, "AES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes192Cfb128, 192, "AES/CFB128/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes192Gcm,    192, "AES/GCM/NoPadding", CIPHER_HAS_TAG | CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes192Ccm,    192, "AES/CCM/NoPadding", CIPHER_HAS_TAG | CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes256Ecb,    256, "AES/ECB/NoPadding", CIPHER_NONE)
-DEFINE_CIPHER(Aes256Cbc,    256, "AES/CBC/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes256Cfb8,   256, "AES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes256Cfb128, 256, "AES/CFB128/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes256Gcm,    256, "AES/GCM/NoPadding", CIPHER_HAS_TAG | CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Aes256Ccm,    256, "AES/CCM/NoPadding", CIPHER_HAS_TAG | CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(DesEcb,       64,  "DES/ECB/NoPadding", CIPHER_NONE)
-DEFINE_CIPHER(DesCbc,       64,  "DES/CBC/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(DesCfb8,      64,  "DES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Des3Ecb,      128, "DESede/ECB/NoPadding", CIPHER_NONE)
-DEFINE_CIPHER(Des3Cbc,      128, "DESede/CBC/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Des3Cfb8,     128, "DESede/CFB8/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_CIPHER(Des3Cfb64,    128, "DESede/CFB/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes128Ecb,        128, "AES/ECB/NoPadding", CIPHER_NONE)
+DEFINE_CIPHER(Aes128Cbc,        128, "AES/CBC/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes128Cfb8,       128, "AES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes128Cfb128,     128, "AES/CFB128/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes128Gcm,        128, "AES/GCM/NoPadding", CIPHER_HAS_VARIABLE_TAG | CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes128Ccm,        128, "AES/CCM/NoPadding", CIPHER_HAS_VARIABLE_TAG | CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes192Ecb,        192, "AES/ECB/NoPadding", CIPHER_NONE)
+DEFINE_CIPHER(Aes192Cbc,        192, "AES/CBC/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes192Cfb8,       192, "AES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes192Cfb128,     192, "AES/CFB128/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes192Gcm,        192, "AES/GCM/NoPadding", CIPHER_HAS_VARIABLE_TAG | CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes192Ccm,        192, "AES/CCM/NoPadding", CIPHER_HAS_VARIABLE_TAG | CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes256Ecb,        256, "AES/ECB/NoPadding", CIPHER_NONE)
+DEFINE_CIPHER(Aes256Cbc,        256, "AES/CBC/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes256Cfb8,       256, "AES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes256Cfb128,     256, "AES/CFB128/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes256Gcm,        256, "AES/GCM/NoPadding", CIPHER_HAS_VARIABLE_TAG | CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Aes256Ccm,        256, "AES/CCM/NoPadding", CIPHER_HAS_VARIABLE_TAG | CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(DesEcb,           64,  "DES/ECB/NoPadding", CIPHER_NONE)
+DEFINE_CIPHER(DesCbc,           64,  "DES/CBC/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(DesCfb8,          64,  "DES/CFB8/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Des3Ecb,          128, "DESede/ECB/NoPadding", CIPHER_NONE)
+DEFINE_CIPHER(Des3Cbc,          128, "DESede/CBC/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Des3Cfb8,         128, "DESede/CFB8/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(Des3Cfb64,        128, "DESede/CFB/NoPadding", CIPHER_REQUIRES_IV)
+DEFINE_CIPHER(ChaCha20Poly1305, 256, "ChaCha20/Poly1305/NoPadding", CIPHER_REQUIRES_IV)
 
-static bool HasTag(CipherInfo* type)
+//
+// We don't have to check whether `CipherInfo` arguments are valid pointers, as these functions will be called after the
+// context is created and the type stored in `CipherInfo` is asserted to be not NULL on creation time.  Managed code
+// cannot modify the context so it's fairly safe to assume that we're passed a valid pointer here.
+//
+// The entry functions (those that can be called by external code) take care to validate that the context passed to them
+// is a valid pointer and so we can assume the assertion from the preceding paragraph.
+//
+ARGS_NON_NULL_ALL static bool HasVariableTag(CipherInfo* type)
 {
-    return (type->flags & CIPHER_HAS_TAG) == CIPHER_HAS_TAG;
+    return (type->flags & CIPHER_HAS_VARIABLE_TAG) == CIPHER_HAS_VARIABLE_TAG;
 }
 
-static bool RequiresIV(CipherInfo* type)
+ARGS_NON_NULL_ALL static bool RequiresIV(CipherInfo* type)
 {
     return (type->flags & CIPHER_REQUIRES_IV) == CIPHER_REQUIRES_IV;
 }
 
-static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
+ARGS_NON_NULL_ALL static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
 {
-    return JSTRING(type->name);
+    return make_java_string(env, type->name);
+}
+
+int32_t AndroidCryptoNative_CipherIsSupported(CipherInfo* type)
+{
+    abort_if_invalid_pointer_argument (type);
+
+    JNIEnv* env = GetJNIEnv();
+    jobject algName = GetAlgorithmName(env, type);
+    if (!algName)
+        return FAIL;
+
+    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
+    (*env)->DeleteLocalRef(env, algName);
+    (*env)->DeleteLocalRef(env, cipher);
+
+    // If we were able to call Cipher.getInstance without an exception, like NoSuchAlgorithmException,
+    // then the algorithm is supported.
+    return TryClearJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
 {
+    abort_if_invalid_pointer_argument (type);
+
     JNIEnv* env = GetJNIEnv();
     jobject algName = GetAlgorithmName(env, type);
     if (!algName)
@@ -82,7 +111,7 @@ CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
         return FAIL;
     }
 
-    CipherCtx* ctx = malloc(sizeof(CipherCtx));
+    CipherCtx* ctx = xmalloc(sizeof(CipherCtx));
     ctx->cipher = cipher;
     ctx->type = type;
     ctx->tagLength = TAG_MAX_LENGTH;
@@ -106,7 +135,7 @@ int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength
     return SUCCESS;
 }
 
-static int32_t ReinitializeCipher(CipherCtx* ctx)
+ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
 
@@ -119,16 +148,17 @@ static int32_t ReinitializeCipher(CipherCtx* ctx)
         return FAIL;
 
     int32_t keyLength = ctx->keySizeInBits / 8;
-    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength);
+    jbyteArray keyBytes = make_java_byte_array(env, keyLength);
     (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength, (jbyte*)ctx->key);
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, algName);
 
     jobject ivPsObj = NULL;
     if (RequiresIV(ctx->type))
     {
-        jbyteArray ivBytes = (*env)->NewByteArray(env, ctx->ivLength);
+        jbyteArray ivBytes = make_java_byte_array(env, ctx->ivLength);
         (*env)->SetByteArrayRegion(env, ivBytes, 0, ctx->ivLength, (jbyte*)ctx->iv);
-        if (HasTag(ctx->type))
+
+        if (HasVariableTag(ctx->type))
         {
             ivPsObj = (*env)->NewObject(env, g_GCMParameterSpecClass, g_GCMParameterSpecCtor, ctx->tagLength * 8, ivBytes);
         }
@@ -158,7 +188,7 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
     if (enc != -1)
     {
-        assert(enc == 0 || enc == 1);
+        abort_unless(enc == 0 || enc == 1, "The 'enc' parameter must be either 1 or 0");
         ctx->encMode = enc == 0 ? CIPHER_DECRYPT_MODE : CIPHER_ENCRYPT_MODE;
     }
 
@@ -211,8 +241,10 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
     if (!ctx)
         return FAIL;
 
+    abort_if_invalid_pointer_argument(in);
+
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
+    jbyteArray inDataBytes = make_java_byte_array(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
     (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
     (*env)->DeleteLocalRef(env, inDataBytes);
@@ -228,8 +260,11 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
         // it means caller wants us to record "inl" but we don't need it.
         return SUCCESS;
 
+    abort_if_invalid_pointer_argument(outl);
+    abort_if_invalid_pointer_argument(in);
+
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
+    jbyteArray inDataBytes = make_java_byte_array(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
 
     *outl = 0;
@@ -251,6 +286,9 @@ int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t
 {
     if (!ctx)
         return FAIL;
+
+    abort_if_invalid_pointer_argument(outm);
+    abort_if_invalid_pointer_argument(outl);
 
     JNIEnv* env = GetJNIEnv();
 

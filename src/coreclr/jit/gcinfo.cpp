@@ -328,7 +328,7 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 
     regPtrNext = new (compiler, CMK_GC) regPtrDsc;
 
-    regPtrNext->rpdIsThis = FALSE;
+    regPtrNext->rpdIsThis = false;
 
     regPtrNext->rpdOffs = 0;
     regPtrNext->rpdNext = nullptr;

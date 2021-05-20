@@ -15,7 +15,7 @@ namespace System.Net.WebSockets
         private readonly WebSocketError _webSocketErrorCode;
 
         public WebSocketException()
-            : this(Marshal.GetLastWin32Error())
+            : this(Marshal.GetLastPInvokeError())
         {
         }
 

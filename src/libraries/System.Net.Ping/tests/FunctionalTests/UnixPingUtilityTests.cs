@@ -14,6 +14,7 @@ namespace System.Net.NetworkInformation.Tests
     // Contains a few basic validation tests to ensure that the local machine's ping utility
     // supports the types of options we need to use and formats its output in the way
     // that we expect it to in order to provide un-privileged Ping support on Unix.
+    [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Ping process is not available on iOS/tvOS/MacCatalyst")]
     public class UnixPingUtilityTests
     {
         private const int IcmpHeaderLengthInBytes = 8;

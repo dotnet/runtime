@@ -403,7 +403,7 @@ namespace System.IO.Pipes
             // Block until other end of the pipe has read everything.
             if (!Interop.Kernel32.FlushFileBuffers(_handle!))
             {
-                throw WinIOError(Marshal.GetLastWin32Error());
+                throw WinIOError(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -420,7 +420,7 @@ namespace System.IO.Pipes
                     uint pipeFlags;
                     if (!Interop.Kernel32.GetNamedPipeInfo(_handle!, &pipeFlags, null, null, null))
                     {
-                        throw WinIOError(Marshal.GetLastWin32Error());
+                        throw WinIOError(Marshal.GetLastPInvokeError());
                     }
                     if ((pipeFlags & Interop.Kernel32.PipeOptions.PIPE_TYPE_MESSAGE) != 0)
                     {
@@ -453,7 +453,7 @@ namespace System.IO.Pipes
                 uint inBufferSize;
                 if (!Interop.Kernel32.GetNamedPipeInfo(_handle!, null, null, &inBufferSize, null))
                 {
-                    throw WinIOError(Marshal.GetLastWin32Error());
+                    throw WinIOError(Marshal.GetLastPInvokeError());
                 }
 
                 return (int)inBufferSize;
@@ -483,7 +483,7 @@ namespace System.IO.Pipes
                 }
                 else if (!Interop.Kernel32.GetNamedPipeInfo(_handle!, null, &outBufferSize, null, null))
                 {
-                    throw WinIOError(Marshal.GetLastWin32Error());
+                    throw WinIOError(Marshal.GetLastPInvokeError());
                 }
 
                 return (int)outBufferSize;
@@ -519,7 +519,7 @@ namespace System.IO.Pipes
                     int pipeReadType = (int)value << 1;
                     if (!Interop.Kernel32.SetNamedPipeHandleState(_handle!, &pipeReadType, IntPtr.Zero, IntPtr.Zero))
                     {
-                        throw WinIOError(Marshal.GetLastWin32Error());
+                        throw WinIOError(Marshal.GetLastPInvokeError());
                     }
                     else
                     {
@@ -554,7 +554,7 @@ namespace System.IO.Pipes
             if (r == 0)
             {
                 // In message mode, the ReadFile can inform us that there is more data to come.
-                errorCode = Marshal.GetLastWin32Error();
+                errorCode = Marshal.GetLastPInvokeError();
                 return errorCode == Interop.Errors.ERROR_MORE_DATA ?
                     numBytesRead :
                     -1;
@@ -590,7 +590,7 @@ namespace System.IO.Pipes
 
             if (r == 0)
             {
-                errorCode = Marshal.GetLastWin32Error();
+                errorCode = Marshal.GetLastPInvokeError();
                 return -1;
             }
             else
@@ -638,7 +638,7 @@ namespace System.IO.Pipes
             uint flags;
             if (!Interop.Kernel32.GetNamedPipeHandleStateW(SafePipeHandle, &flags, null, null, null, null, 0))
             {
-                throw WinIOError(Marshal.GetLastWin32Error());
+                throw WinIOError(Marshal.GetLastPInvokeError());
             }
 
             if ((flags & Interop.Kernel32.PipeOptions.PIPE_READMODE_MESSAGE) != 0)

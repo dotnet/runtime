@@ -39,7 +39,7 @@
         <ExceptionFile>$(TargetDir)%(Class)%(Identity).exception.txt</ExceptionFile>
       </ExecuteMethod>
       <ExecuteMethod>
-        <Command>$(TestHostRootPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
+        <Command>$(NetCoreAppCurrentTestHostPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
       </ExecuteMethod>
     </ItemGroup>
     <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />

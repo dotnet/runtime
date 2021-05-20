@@ -13,14 +13,17 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    <AotCompilerFileName>mono-aot-cross</AotCompilerFileName>
+    <AotCompilerFileName Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(AotCompilerFileName).exe</AotCompilerFileName>
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeRuntimeAsset Include="$(MonoCrossAOTDir)$(TargetCrossRid)\**" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(MonoAotCrossDir)$(TargetCrossRid)\**" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.Sdk.props" TargetPath="Sdk/Sdk.props" />
   </ItemGroup>
 
   <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
+    <Error Condition="!Exists('$(MonoAotCrossDir)$(TargetCrossRid)\$(AotCompilerFileName)')" Text="Cross compiler not found in $(MonoAotCrossDir)$(TargetCrossRid)" />
   </Target>
 </Project>

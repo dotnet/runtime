@@ -76,7 +76,7 @@ namespace AppHost.Bundle.Tests
             // any forward slashes to the standard Windows dir separator ('\'), thus
             // failing to create directory trees for bundle extraction that use Unix
             // style dir separator in Windows.
-            if (relativePath == "foo/bar" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (relativePath == "foo/bar" && OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.TestFixture.Copy();

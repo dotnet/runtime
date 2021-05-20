@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             _testOnlyProductBehavior = TestOnlyProductBehavior.Enable(productBinaryPath);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // To test registered installs, we need a registry key which is:
                 // - writable without admin access - so that the tests don't require admin to run
@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public void SetInstallLocation(string installLocation, string architecture)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{architecture}"))
                 {
@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public void Dispose()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 parentKey.DeleteSubKeyTree(keyName, throwOnMissingSubKey: false);
                 key.Dispose();
@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return command;
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return command.EnvironmentVariable(
                     Constants.TestOnlyEnvironmentVariables.RegistryPath,

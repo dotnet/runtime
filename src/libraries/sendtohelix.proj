@@ -12,19 +12,29 @@
     "correlation payload", which is the set of files used by all Helix submissions
     (which we compress into a single file).
 -->
+<Project Sdk="Microsoft.Build.NoTargets">
 
-<Project DefaultTargets="RunInParallelForEachScenario">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <BuildTargetFramework Condition="'$(TestPackages)' != 'true'">$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
 
-  <!-- Helix auto-magically imports local *.props files. We're not going to import the Helix Sdk,
-       so we need to import those files manually so we can reference the properties defined there.
-  -->
-  <Import Project="Directory.Build.props" />
+    <!-- The Helix correlation payload file -->
+    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true' and
+                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(NetCoreAppCurrentBuildSettings).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
 
-  <Target Name="RunInParallelForEachScenario">
+    <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
+         (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target). -->
+    <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
+  </PropertyGroup>
+
+  <Target Name="RunInParallelForEachScenario"
+          AfterTargets="Build">
     <PropertyGroup>
       <!-- This specifies what properties are needed to be passed down as global properties to a child project invocation. -->
-
       <_PropertiesToPass>
         RuntimeFlavor=$(RuntimeFlavor);
         TargetArchitecture=$(TargetArchitecture);
@@ -35,17 +45,14 @@
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
-        BuildTargetFramework=$(BuildTargetFramework);
-        BuildSettings=$(BuildSettings)
+        BuildTargetFramework=$(BuildTargetFramework)
       </_PropertiesToPass>
     </PropertyGroup>
 
     <Message Condition="'$(_Scenarios)' != ''" Importance="High" Text="Using _Scenarios: $(_Scenarios)" />
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
-    <Message Importance="High" Text="BuildSettings: $(BuildSettings)" />
     <Message Importance="High" Text="BuildTargetFramework: $(BuildTargetFramework)" />
     <Message Importance="High" Text="TestArchiveTestsRoot: $(TestArchiveTestsRoot)" />
-    <Message Importance="High" Text="TestHostRootPath: $(TestHostRootPath)" />
     <Message Importance="High" Text="TestArchiveRoot: $(TestArchiveRoot)" />
     <Message Importance="High" Text="TestArchiveRuntimeRoot: $(TestArchiveRuntimeRoot)" />
     <Message Condition="'$(TestArchiveRuntimeFile)' != ''" Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
@@ -54,7 +61,7 @@
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="Scenarios=$(_Scenarios)" />
 
     <PropertyGroup>
-      <PerScenarioProjectFile>$(MSBuildProjectDirectory)\sendtohelixhelp.proj</PerScenarioProjectFile>
+      <PerScenarioProjectFile>$(MSBuildThisFileDirectory)sendtohelixhelp.proj</PerScenarioProjectFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -79,21 +86,6 @@
   </Target>
 
   <PropertyGroup>
-    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-    <BuildTargetFramework Condition="'$(TestPackages)' != 'true'">$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
-
-    <!-- The Helix correlation payload file -->
-    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true' and
-                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
-         (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target).
-    -->
-    <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
   <Target Name="CreateOneScenarioTestEnvFile">
@@ -102,7 +94,7 @@
     <Error Condition="'$(Scenario)' == ''" Text="No Scenario specified" />
 
     <PropertyGroup>
-      <TestEnvFilePath>$(TestHostRootPath)$(TestEnvFileName)</TestEnvFilePath>
+      <TestEnvFilePath>$(NetCoreAppCurrentTestHostPath)$(TestEnvFileName)</TestEnvFilePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -133,17 +125,19 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" />
   </Target>
 
-  <!--
-    We need to include all dlls in the runtime path as inputs to make it really incremental. If we use the root folder,
-    if a dll is updated, the folder's timestamp is not updated, therefore skipped.
-  -->
-  <ItemGroup>
-    <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
+  <Target Name="_CollectRuntimeInputs">
+    <!--
+      We need to include all dlls in the runtime path as inputs to make it really incremental. If we use the root folder,
+      if a dll is updated, the folder's timestamp is not updated, therefore skipped.
+    -->
+    <ItemGroup>
+      <_RuntimeInput Include="$(NetCoreAppCurrentTestHostPath)**\*.dll" />
 
-    <!-- Add the scenario TestEnv batch files -->
-    <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' == 'true' " Include="$(TestHostRootPath)**/*.cmd" />
-    <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(TestHostRootPath)**/*.sh" />
-  </ItemGroup>
+      <!-- Add the scenario TestEnv batch files -->
+      <_RuntimeInput Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' == 'true' " Include="$(NetCoreAppCurrentTestHostPath)**\*.cmd" />
+      <_RuntimeInput Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(NetCoreAppCurrentTestHostPath)**\*.sh" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="IncludeDumpDocsInTesthost"
           Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
@@ -155,13 +149,13 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(DebugDocsFiles)"
-          DestinationFolder="$(TestHostRootPath)"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)"
           SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CompressRuntimeDirectory"
-          DependsOnTargets="IncludeDumpDocsInTesthost"
-          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
+          DependsOnTargets="IncludeDumpDocsInTesthost;_CollectRuntimeInputs"
+          Inputs="@(_RuntimeInput);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TestPackages)' != 'true' and
                      '$(TargetsMobile)' != 'true' and
@@ -174,7 +168,7 @@
     <Message Importance="High" Text="Creating directory $(TestArchiveRuntimeRoot)" />
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
 
-    <ZipDirectory SourceDirectory="$(TestHostRootPath)"
+    <ZipDirectory SourceDirectory="$(NetCoreAppCurrentTestHostPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
                   Overwrite="true" />
 

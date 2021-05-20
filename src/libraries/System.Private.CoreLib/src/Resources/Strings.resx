@@ -2644,6 +2644,12 @@
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
     <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
   </data>
+  <data name="IO_DiskFull_Path_AllocationSize" xml:space="preserve">
+    <value>Failed to create '{0}' with allocation size '{1}' because the disk was full.</value>
+  </data>
+  <data name="IO_FileTooLarge_Path_AllocationSize" xml:space="preserve">
+    <value>Failed to create '{0}' with allocation size '{1}' because the file was too large.</value>
+  </data>
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
   </data>
@@ -3621,6 +3627,18 @@
   </data>
   <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
     <value>Attempt to update previously set global instance.</value>
+  </data>
+  <data name="InvalidOperation_ResetGlobalObjectiveCMsgSend" xml:space="preserve">
+    <value>Attempt to update previously set Objective-C msgSend API overrides.</value>
+  </data>
+  <data name="InvalidOperation_ObjectiveCMarshalNotInitialized" xml:space="preserve">
+    <value>Attempt to track an Objective-C Type without initializing.</value>
+  </data>
+  <data name="InvalidOperation_ReinitializeObjectiveCMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize ObjectiveCMarshal.</value>
+  </data>
+  <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
+    <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
