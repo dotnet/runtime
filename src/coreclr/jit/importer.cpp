@@ -21115,12 +21115,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 //
                                 if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                                 {
-                                    // If there's a ret buf, the context is the second arg.
+                                    // If there's a ret buf, the method table is the second arg.
                                     //
                                     if (call->HasRetBufArg())
                                     {
-                                        GenTreeCall::Use* const beforeArg = call->gtCallArgs;
-                                        beforeArg->SetNext(gtNewCallArgs(methodTableArg));
+                                        gtInsertNewCallArgAfter(methodTableArg, call->gtCallArgs);
                                     }
                                     else
                                     {
@@ -21204,7 +21203,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     // locally, or was boxed locally but we were unable to remove the box for
                     // various reasons.
                     //
-                    // We can still to update the call to invoke the unboxed entry, if the
+                    // We can still update the call to invoke the unboxed entry, if the
                     // boxed value is simple.
                     //
                     if (requiresInstMethodTableArg)
@@ -21249,12 +21248,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             //
                             if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                             {
-                                // If there's a ret buf, the context is the second arg.
+                                // If there's a ret buf, the method table is the second arg.
                                 //
                                 if (call->HasRetBufArg())
                                 {
-                                    GenTreeCall::Use* const beforeArg = call->gtCallArgs;
-                                    beforeArg->SetNext(gtNewCallArgs(methodTableArg));
+                                    gtInsertNewCallArgAfter(methodTableArg, call->gtCallArgs);
                                 }
                                 else
                                 {
