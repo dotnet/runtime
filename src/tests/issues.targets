@@ -746,6 +746,9 @@
         <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
             <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)readytorun/crossgen2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/49365</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
