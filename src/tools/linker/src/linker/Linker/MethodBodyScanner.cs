@@ -84,7 +84,7 @@ namespace Mono.Linker
 				while (currentType?.BaseType != null) // Checking BaseType != null to skip System.Object
 				{
 					AddMatchingInterfaces (interfaceImplementations, currentType, interfaceTypes);
-					currentType = context.TryResolveTypeDefinition (currentType.BaseType);
+					currentType = context.TryResolve (currentType.BaseType);
 				}
 			}
 
@@ -113,7 +113,7 @@ namespace Mono.Linker
 
 			foreach (Instruction instruction in body.Instructions) {
 				if (instruction.Operand is FieldReference fieldReference) {
-					AddIfResolved (types, context.TryResolveFieldDefinition (fieldReference)?.FieldType);
+					AddIfResolved (types, context.TryResolve (fieldReference)?.FieldType);
 				} else if (instruction.Operand is MethodReference methodReference) {
 					if (methodReference is GenericInstanceMethod genericInstanceMethod)
 						AddFromGenericInstance (types, genericInstanceMethod);
@@ -121,7 +121,7 @@ namespace Mono.Linker
 					if (methodReference.DeclaringType is GenericInstanceType genericInstanceType)
 						AddFromGenericInstance (types, genericInstanceType);
 
-					var resolvedMethod = context.TryResolveMethodDefinition (methodReference);
+					var resolvedMethod = context.TryResolve (methodReference);
 					if (resolvedMethod != null) {
 						if (resolvedMethod.HasParameters) {
 							foreach (var param in resolvedMethod.Parameters)
@@ -157,7 +157,7 @@ namespace Mono.Linker
 				return false;
 
 			foreach (var iface in type.Interfaces) {
-				if (context.TryResolveTypeDefinition (iface.InterfaceType) == interfaceType) {
+				if (context.TryResolve (iface.InterfaceType) == interfaceType) {
 					implementation = iface;
 					return true;
 				}
@@ -188,7 +188,7 @@ namespace Mono.Linker
 
 		void AddIfResolved (HashSet<TypeDefinition> set, TypeReference item)
 		{
-			var resolved = context.TryResolveTypeDefinition (item);
+			var resolved = context.TryResolve (item);
 			if (resolved == null)
 				return;
 

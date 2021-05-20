@@ -44,7 +44,7 @@ namespace Mono.Linker.Steps
 					void PopulateCache (Collection<TypeDefinition> types)
 					{
 						foreach (var t in types) {
-							var btd = Context.TryResolveTypeDefinition (t.BaseType);
+							var btd = Context.TryResolve (t.BaseType);
 							if (btd != null)
 								referencedBaseTypeCache.Add (btd);
 
@@ -56,7 +56,7 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			var bt = Context.TryResolveTypeDefinition (type);
+			var bt = Context.TryResolve (type);
 			return referencedBaseTypeCache.Contains (bt);
 		}
 

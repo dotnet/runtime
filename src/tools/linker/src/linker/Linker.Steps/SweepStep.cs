@@ -391,7 +391,7 @@ namespace Mono.Linker.Steps
 			if (!providerAsSecurity.HasSecurityDeclarations) {
 				// If the method or type had security before and all attributes were removed, or no remaining attributes are security attributes,
 				// then we need to set HasSecurity to false
-				if (!provider.HasCustomAttributes || provider.CustomAttributes.All (attr => !IsSecurityAttributeType (Context.TryResolveTypeDefinition (attr.AttributeType))))
+				if (!provider.HasCustomAttributes || provider.CustomAttributes.All (attr => !IsSecurityAttributeType (Context.TryResolve (attr.AttributeType))))
 					return true;
 			}
 
@@ -412,7 +412,7 @@ namespace Mono.Linker.Steps
 				};
 			}
 
-			definition = Context.TryResolveTypeDefinition (definition.BaseType);
+			definition = Context.TryResolve (definition.BaseType);
 			if (definition == null)
 				return false;
 

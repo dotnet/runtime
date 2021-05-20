@@ -358,7 +358,7 @@ namespace Mono.Linker.Steps
 
 				case Code.Call:
 				case Code.Callvirt:
-					var md = _context.TryResolveMethodDefinition ((MethodReference) instr.Operand);
+					var md = _context.TryResolve ((MethodReference) instr.Operand);
 					if (md == null)
 						break;
 
@@ -412,7 +412,7 @@ namespace Mono.Linker.Steps
 
 				case Code.Ldsfld:
 					var ftarget = (FieldReference) instr.Operand;
-					var field = _context.TryResolveFieldDefinition (ftarget);
+					var field = _context.TryResolve (ftarget);
 					if (field == null)
 						break;
 
@@ -435,9 +435,9 @@ namespace Mono.Linker.Steps
 
 					var operand = (TypeReference) instr.Operand;
 					if (operand.MetadataType == MetadataType.UIntPtr) {
-						sizeOfImpl = (UIntPtrSize ??= FindSizeMethod (_context.TryResolveTypeDefinition (operand)));
+						sizeOfImpl = (UIntPtrSize ??= FindSizeMethod (_context.TryResolve (operand)));
 					} else if (operand.MetadataType == MetadataType.IntPtr) {
-						sizeOfImpl = (IntPtrSize ??= FindSizeMethod (_context.TryResolveTypeDefinition (operand)));
+						sizeOfImpl = (IntPtrSize ??= FindSizeMethod (_context.TryResolve (operand)));
 					}
 
 					if (sizeOfImpl != null) {

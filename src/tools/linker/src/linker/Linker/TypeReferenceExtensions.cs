@@ -260,7 +260,7 @@ namespace Mono.Linker
 
 		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, LinkContext context)
 		{
-			TypeDefinition typeDef = context.ResolveTypeDefinition (type);
+			TypeDefinition typeDef = context.Resolve (type);
 			if (typeDef?.HasMethods != true)
 				yield break;
 

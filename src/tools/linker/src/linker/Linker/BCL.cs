@@ -12,7 +12,7 @@ namespace Mono.Linker
 					return false;
 
 				while (type.BaseType != null) {
-					var bt = context.ResolveTypeDefinition (type.BaseType);
+					var bt = context.Resolve (type.BaseType);
 
 					if (bt == null)
 						return false;

@@ -729,7 +729,7 @@ namespace Mono.Linker.Dataflow
 					return;
 				}
 			} else if (operation.Operand is MethodReference methodReference) {
-				var resolvedMethod = _context.TryResolveMethodDefinition (methodReference);
+				var resolvedMethod = _context.TryResolve (methodReference);
 				if (resolvedMethod != null) {
 					StackSlot slot = new StackSlot (new RuntimeMethodHandleValue (resolvedMethod));
 					currentStack.Push (slot);
@@ -789,7 +789,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
-			FieldDefinition field = _context.TryResolveFieldDefinition (operation.Operand as FieldReference);
+			FieldDefinition field = _context.TryResolve (operation.Operand as FieldReference);
 			if (field != null) {
 				StackSlot slot = new StackSlot (GetFieldValue (thisMethod, field), isByRef);
 				currentStack.Push (slot);
@@ -817,7 +817,7 @@ namespace Mono.Linker.Dataflow
 			if (operation.OpCode.Code == Code.Stfld)
 				PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
-			FieldDefinition field = _context.TryResolveFieldDefinition (operation.Operand as FieldReference);
+			FieldDefinition field = _context.TryResolve (operation.Operand as FieldReference);
 			if (field != null) {
 				HandleStoreField (thisMethod, field, operation, valueToStoreSlot.Value);
 			}
@@ -916,7 +916,7 @@ namespace Mono.Linker.Dataflow
 			if (typeReference is ArrayType)
 				return BCL.FindPredefinedType ("System", "Array", _context);
 
-			return _context.TryResolveTypeDefinition (typeReference);
+			return _context.TryResolve (typeReference);
 		}
 
 		public abstract bool HandleCall (
