@@ -6,7 +6,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/44657", TestPlatforms.Linux)]
+[assembly: Trait("category", "FlakyAppHostTests")]
 
 namespace AppHost.Bundle.Tests
 {
