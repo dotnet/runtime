@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-    public class RandomReadWriteSizeStream: Stream
+    // Wrapper stream to artificially chop reads and writes to smaller chunks.
+    public class RandomReadWriteSizeStream : Stream
     {
         private readonly Stream _innerStream;
         private readonly int _maxSize;
