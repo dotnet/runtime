@@ -14,13 +14,13 @@ namespace System.Net.Test.Common
         private readonly Stream _innerStream;
         private readonly int _maxSize;
 
-        public RandomReadWriteSizeStream(Stream stream, int maximumSize = int.MaxValue)
+        public RandomReadWriteSizeStream(Stream stream, int maxChunkSize = int.MaxValue)
         {
             _innerStream = stream;
-            _maxSize = maximumSize;
+            _maxSize = maxChunkSize;
         }
 
-        public override bool CanSeek => false;
+        public override bool CanSeek => _innerStream.CanSeek;
 
         public override bool CanRead => _innerStream.CanRead;
 

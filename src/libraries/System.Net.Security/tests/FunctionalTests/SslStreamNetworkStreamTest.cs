@@ -431,7 +431,7 @@ namespace System.Net.Security.Tests
         [InlineData(16384 * 100, 4096, 1024, false)]
         [InlineData(16384 * 100, 4096, 1024, true)]
         [InlineData(16384 * 100, 1024 * 20, 1024, true)]
-        [InlineData(16384 , 3, 3, true)]
+        [InlineData(16384, 3, 3, true)]
         public async Task SslStream_RandomSizeWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
         {
             byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);
