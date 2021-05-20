@@ -123,6 +123,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration/tests/FunctionalTests/Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder/tests/Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Physical/tests/Microsoft.Extensions.FileProviders.Physical.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Specialized/tests/System.Collections.Specialized.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations/tests/System.ComponentModel.Annotations.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.DriveInfo/tests/System.IO.FileSystem.DriveInfo.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Primitives/tests/System.IO.FileSystem.Primitives.Tests.csproj" />
@@ -134,11 +135,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/Misc/System.Xml.Misc.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlNodeReader/System.Xml.XmlNodeReader.Tests/System.Xml.XmlNodeReader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlReader/Tests/System.Xml.RW.XmlReader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSerializer/System.Xml.XmlSerializer.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XPath/XPathDocument/System.Xml.XPath.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/ExtendedFunctionalTests/System.Private.Uri.ExtendedFunctional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit/tests/System.Reflection.Emit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.SecureString/tests/System.Security.SecureString.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
