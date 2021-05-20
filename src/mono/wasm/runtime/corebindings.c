@@ -43,7 +43,7 @@ EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exceptio
 	}
 	catch (e)
 	{
-		res = e.toString ();
+		var res = e.toString ();
 		setValue (is_exception, 1, "i32");
 		if (res === null || res === undefined)
 			res = "unknown exception";

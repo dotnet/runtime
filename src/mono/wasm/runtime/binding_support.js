@@ -541,6 +541,7 @@ var BindingSupportLib = {
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 			}
 
+			var result;
 			switch (true) {
 				case js_obj === null:
 				case typeof js_obj === "undefined":
@@ -962,7 +963,7 @@ var BindingSupportLib = {
 
 				var conv = primitiveConverters.get (key);
 				if (!conv)
-					throw new Error ("Unknown parameter type " + type);
+					throw new Error ("Unknown parameter type " + key);
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;
@@ -1300,7 +1301,7 @@ var BindingSupportLib = {
 			converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
 		) {
 			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
-
+			var result;
 			if (is_result_marshaled)
 				result = this._unbox_mono_obj_root (resultRoot);
 			else
@@ -1443,7 +1444,7 @@ var BindingSupportLib = {
 				"return result;"
 			);
 
-			bodyJs = body.join ("\r\n");
+			var bodyJs = body.join ("\r\n");
 
 			if (friendly_name) {
 				var escapeRE = /[^A-Za-z0-9_]/g;
@@ -1699,7 +1700,6 @@ var BindingSupportLib = {
 
 		var js_args = BINDING.mono_wasm_parse_args(args);
 
-		var res;
 		try {
 			var m = obj [js_name];
 			if (typeof m === "undefined")
@@ -1731,7 +1731,6 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + js_name + "'");
 		}
 
-		var res;
 		try {
 			var m = obj [js_name];
 			if (m === Object(m) && obj.__is_mono_proxied__)
