@@ -11,7 +11,7 @@ namespace System.Data.Tests
     public class DataCommonEventSourceTest
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52710", TestPlatforms.OSX, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52710", TestPlatforms.OSX, runtimes: TestRuntimes.CoreCLR)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InvokeCodeThatShouldFirEvents_EnsureEventsFired()
         {
