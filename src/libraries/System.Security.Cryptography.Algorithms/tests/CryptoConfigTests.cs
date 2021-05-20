@@ -222,9 +222,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
                     yield return new object[] { "RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.AsymmetricAlgorithm", "System.Security.Cryptography.RSACryptoServiceProvider", true };
-                    if (!OperatingSystem.IsIOS() &&
-                        !OperatingSystem.IsTvOS() &&
-                        !OperatingSystem.IsMacCatalyst())
+                    if (!PlatformDetection.UsesMobileAppleCrypto)
                     {
                         yield return new object[] { "DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
                         yield return new object[] { "System.Security.Cryptography.DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };

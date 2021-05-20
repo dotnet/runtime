@@ -875,7 +875,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             {
                 expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
             }
-            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst())
+            else if (PlatformDetection.UsesMobileAppleCrypto)
             {
                 expectedIsSupported = false;
             }
