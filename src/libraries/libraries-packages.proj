@@ -19,6 +19,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <!-- This is merge marker 1 to help automerge -->
+    <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="$(MSBuildThisFileDirectory)\Microsoft.Extensions.DependencyInjection\pkg\Microsoft.Extensions.DependencyInjection.pkgproj" />
     <!-- This is merge marker 2 to help automerge --> 
     <!-- This is merge marker 3 to help automerge --> 
     <!-- This is merge marker 4 to help automerge --> 
