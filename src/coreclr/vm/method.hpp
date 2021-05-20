@@ -3027,6 +3027,8 @@ public:
         kIsQCall                        = 0x1000,
 
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
+
+        kNDirectPopulated               = 0x8000, // Indicate if the NDirect has been fully populated.
     };
 
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
@@ -3157,6 +3159,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (ndirect.m_wFlags & kDefaultDllImportSearchPathsIsCached) != 0;
+    }
+
+    BOOL IsPopulated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (ndirect.m_wFlags & kNDirectPopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
