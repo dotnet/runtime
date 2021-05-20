@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/utsname.h>
+#if defined(TARGET_ANDROID)
+#include <sys/system_properties.h>
+#endif
 
 const char* SystemNative_GetUnixName()
 {
@@ -15,10 +18,23 @@ const char* SystemNative_GetUnixName()
 
 char* SystemNative_GetUnixRelease()
 {
+#if defined(TARGET_ANDROID)
+    // get the Android API level
+    char sdk_ver_str[PROP_VALUE_MAX];
+    if (__system_property_get("ro.build.version.sdk", sdk_ver_str))
+    {
+        return strdup(sdk_ver_str);
+    }
+    else
+    {
+        return NULL;
+    }
+#else
     struct utsname _utsname;
     return uname(&_utsname) != -1 ?
         strdup(_utsname.release) :
         NULL;
+#endif
 }
 
 int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
