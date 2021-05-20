@@ -148,7 +148,10 @@ namespace System.IO.MemoryMappedFiles
         private static int GetSystemPageAllocationGranularity()
         {
             Interop.Kernel32.SYSTEM_INFO info;
-            Interop.Kernel32.GetSystemInfo(out info);
+            unsafe
+            {
+                Interop.Kernel32.GetSystemInfo(&info);
+            }
 
             return (int)info.dwAllocationGranularity;
         }
