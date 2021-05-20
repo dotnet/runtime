@@ -628,7 +628,7 @@ namespace System.Runtime.InteropServices
 
         // VT_BSTR
 
-        public string AsBstr
+        public string? AsBstr
         {
             get
             {
