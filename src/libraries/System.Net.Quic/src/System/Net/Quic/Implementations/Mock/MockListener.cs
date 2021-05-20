@@ -69,6 +69,8 @@ namespace System.Net.Quic.Implementations.Mock
         // Returns false if backlog queue is full.
         internal bool TryConnect(MockConnection.ConnectionState state)
         {
+            state._serverMaxUnidirectionalStreamsCount = _options.MaxUnidirectionalStreams;
+            state._serverMaxBidirectionalStreamsCount = _options.MaxBidirectionalStreams;
             return _listenQueue.Writer.TryWrite(state);
         }
 

@@ -14,11 +14,13 @@ namespace System.Net.Quic.Implementations.Mock
     {
         private bool _disposed;
         private readonly bool _isInitiator;
+        private readonly MockConnection _connection;
 
         private readonly StreamState _streamState;
 
-        internal MockStream(StreamState streamState, bool isInitiator)
+        internal MockStream(MockConnection connection, StreamState streamState, bool isInitiator)
         {
+            _connection = connection;
             _streamState = streamState;
             _isInitiator = isInitiator;
         }
@@ -199,6 +201,15 @@ namespace System.Net.Quic.Implementations.Mock
 
             // This seems to mean shutdown send, in particular, not both.
             WriteStreamBuffer?.EndWrite();
+
+            if (_streamState._inboundStreamBuffer is null) // unidirectional stream
+            {
+                _connection.DecrementUnidirectionalStreamCount();
+            }
+            else
+            {
+                _connection.DecrementBidirectionalStreamCount();
+            }
         }
 
         private void CheckDisposed()

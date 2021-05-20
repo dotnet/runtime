@@ -21,11 +21,20 @@ namespace System.Net.Quic.Implementations.Mock
         private object _syncObject = new object();
         private long _nextOutboundBidirectionalStream;
         private long _nextOutboundUnidirectionalStream;
+        private readonly int _maxUnidirectionalStreams;
+        private readonly int _maxBidirectionalStreams;
+        private int _peerUnidirectionalStreams;
+        private int _peerBidirectionalStreams;
+
+        // Since this is mock, we don't need to be conservative with the allocations.
+        // We keep the TCSes allocated all the time for the simplicity of the code.
+        private TaskCompletionSource _newUnidirectionalStreamsAvailableTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        private TaskCompletionSource _newBidirectionalStreamsAvailableTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private ConnectionState? _state;
 
         // Constructor for outbound connections
-        internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+        internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null, int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
             if (remoteEndPoint is null)
             {
@@ -44,6 +53,8 @@ namespace System.Net.Quic.Implementations.Mock
             _sslClientAuthenticationOptions = sslClientAuthenticationOptions;
             _nextOutboundBidirectionalStream = 0;
             _nextOutboundUnidirectionalStream = 2;
+            _maxUnidirectionalStreams = maxUnidirectionalStreams;
+            _maxBidirectionalStreams = maxBidirectionalStreams;
 
             // _state is not initialized until ConnectAsync
         }
@@ -59,6 +70,71 @@ namespace System.Net.Quic.Implementations.Mock
             _nextOutboundUnidirectionalStream = 3;
 
             _state = state;
+            _maxUnidirectionalStreams = _state._serverMaxUnidirectionalStreamsCount;
+            _maxBidirectionalStreams = _state._serverMaxBidirectionalStreamsCount;
+        }
+
+        private int PeerMaxUnidirectionalStreams => _isClient ? _state!._serverMaxUnidirectionalStreamsCount : _state!._clientMaxUnidirectionalStreamsCount;
+        private int PeerMaxBidirectionalStreams => _isClient ? _state!._serverMaxBidirectionalStreamsCount : _state!._clientMaxBidirectionalStreamsCount;
+
+        private bool TryIncrementUnidirectionalStreamCount()
+        {
+            if (_state is null)
+            {
+                throw new InvalidOperationException("not connected");
+            }
+
+            lock (_syncObject)
+            {
+                if (_peerUnidirectionalStreams < PeerMaxUnidirectionalStreams)
+                {
+                    ++_peerUnidirectionalStreams;
+                    return true;
+                }
+                return false;
+            }
+        }
+        private bool TryIncrementBidirectionalStreamCount()
+        {
+            if (_state is null)
+            {
+                throw new InvalidOperationException("not connected");
+            }
+
+            lock (_syncObject)
+            {
+                if (_peerBidirectionalStreams < PeerMaxBidirectionalStreams)
+                {
+                    ++_peerBidirectionalStreams;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        internal void DecrementUnidirectionalStreamCount()
+        {
+            lock (_syncObject)
+            {
+                --_peerUnidirectionalStreams;
+                if (!_newUnidirectionalStreamsAvailableTcs.Task.IsCompleted)
+                {
+                    _newUnidirectionalStreamsAvailableTcs.SetResult();
+                    _newUnidirectionalStreamsAvailableTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+            }
+        }
+        internal void DecrementBidirectionalStreamCount()
+        {
+            lock (_syncObject)
+            {
+                --_peerBidirectionalStreams;
+                if (!_newBidirectionalStreamsAvailableTcs.Task.IsCompleted)
+                {
+                    _newBidirectionalStreamsAvailableTcs.SetResult();
+                    _newBidirectionalStreamsAvailableTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+            }
         }
 
         private static IPEndPoint GetIPEndPoint(EndPoint endPoint)
@@ -131,6 +207,8 @@ namespace System.Net.Quic.Implementations.Mock
 
             // TODO: deal with protocol negotiation
             _state = new ConnectionState(_sslClientAuthenticationOptions!.ApplicationProtocols![0]);
+            _state._clientMaxUnidirectionalStreamsCount = _maxUnidirectionalStreams;
+            _state._clientMaxBidirectionalStreamsCount = _maxBidirectionalStreams;
             if (!listener.TryConnect(_state))
             {
                 throw new QuicException("Connection refused");
@@ -141,16 +219,25 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            return _disposed ? ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException())) : ValueTask.CompletedTask;
+            return new ValueTask(_newUnidirectionalStreamsAvailableTcs.Task.WaitAsync(cancellationToken));
         }
 
         internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            return _disposed ? ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException())) : ValueTask.CompletedTask;
+            return new ValueTask(_newBidirectionalStreamsAvailableTcs.Task.WaitAsync(cancellationToken));
         }
 
         internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
         {
+            if (_state is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
+            if (!TryIncrementUnidirectionalStreamCount())
+            {
+                throw new QuicException("No available unidirectional stream");
+            }
+
             long streamId;
             lock (_syncObject)
             {
@@ -163,6 +250,15 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
         {
+            if (_state is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
+            if (!TryIncrementBidirectionalStreamCount())
+            {
+                throw new QuicException("No available bidirectional stream");
+            }
+
             long streamId;
             lock (_syncObject)
             {
@@ -185,12 +281,34 @@ namespace System.Net.Quic.Implementations.Mock
             Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
             streamChannel.Writer.TryWrite(streamState);
 
-            return new MockStream(streamState, true);
+            return new MockStream(this, streamState, true);
         }
 
-        internal override int GetRemoteAvailableUnidirectionalStreamCount() => int.MaxValue;
+        internal override int GetRemoteAvailableUnidirectionalStreamCount()
+        {
+            if (_state is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
 
-        internal override int GetRemoteAvailableBidirectionalStreamCount() => int.MaxValue;
+            lock (_syncObject)
+            {
+                return PeerMaxUnidirectionalStreams - _peerUnidirectionalStreams;
+            }
+        }
+
+        internal override int GetRemoteAvailableBidirectionalStreamCount()
+        {
+            if (_state is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
+
+            lock (_syncObject)
+            {
+                return PeerMaxBidirectionalStreams - _peerBidirectionalStreams;
+            }
+        }
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
@@ -207,7 +325,7 @@ namespace System.Net.Quic.Implementations.Mock
             try
             {
                 MockStream.StreamState streamState = await streamChannel.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-                return new MockStream(streamState, false);
+                return new MockStream(this, streamState, false);
             }
             catch (ChannelClosedException)
             {
@@ -262,6 +380,9 @@ namespace System.Net.Quic.Implementations.Mock
                         Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
                         streamChannel.Writer.Complete();
                     }
+
+                    _newUnidirectionalStreamsAvailableTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+                    _newBidirectionalStreamsAvailableTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -287,6 +408,12 @@ namespace System.Net.Quic.Implementations.Mock
             public readonly SslApplicationProtocol _applicationProtocol;
             public Channel<MockStream.StreamState> _clientInitiatedStreamChannel;
             public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
+
+            public int _clientMaxUnidirectionalStreamsCount;
+            public int _clientMaxBidirectionalStreamsCount;
+            public int _serverMaxUnidirectionalStreamsCount;
+            public int _serverMaxBidirectionalStreamsCount;
+
             public long _clientErrorCode;
             public long _serverErrorCode;
             public bool _closed;

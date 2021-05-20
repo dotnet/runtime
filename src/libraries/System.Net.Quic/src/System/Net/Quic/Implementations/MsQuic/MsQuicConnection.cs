@@ -51,8 +51,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public readonly RewritingResettableCompletionSource<bool> NewUnidirectionalStreamsAvailableTcs = new RewritingResettableCompletionSource<bool>();
-            public readonly RewritingResettableCompletionSource<bool> NewBidirectionalStreamsAvailableTcs = new RewritingResettableCompletionSource<bool>();
+            // Note that there's no such thing as ressetable TCS, so we need reallocate the TCS every time we set the result.
+            // We also cannot use solutions like ManualResetValueTaskSourceCore, since we can have multiple waiters on the same TCS.
+            // To avoid as much as possible allocations, we keep the TCSes null until someone explicitely asks for them in WaitForAvailableStreamsAsync.
+            public TaskCompletionSource? NewUnidirectionalStreamsAvailable;
+            public TaskCompletionSource? NewBidirectionalStreamsAvailable;
 
             public bool Connected;
             public long AbortErrorCode = -1;
@@ -187,8 +190,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             state.AcceptQueue.Writer.Complete();
 
             // Stop notifying about available streams.
-            state.NewUnidirectionalStreamsAvailableTcs.CompleteException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
-            state.NewBidirectionalStreamsAvailableTcs.CompleteException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            lock (state)
+            {
+                state.NewUnidirectionalStreamsAvailable?.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+                state.NewBidirectionalStreamsAvailable?.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
 
             return MsQuicStatusCodes.Success;
         }
@@ -206,11 +212,29 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
             {
-                state.NewUnidirectionalStreamsAvailableTcs.Complete(true);
+                TaskCompletionSource? tcs;
+                lock (state)
+                {
+                    tcs = state.NewUnidirectionalStreamsAvailable;
+                    state.NewUnidirectionalStreamsAvailable = null;
+                }
+                if (tcs is not null)
+                {
+                    tcs.SetResult();
+                }
             }
             if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
             {
-                state.NewBidirectionalStreamsAvailableTcs.Complete(true);
+                TaskCompletionSource? tcs;
+                lock (state)
+                {
+                    tcs = state.NewBidirectionalStreamsAvailable;
+                    state.NewBidirectionalStreamsAvailable = null;
+                }
+                if (tcs is not null)
+                {
+                    tcs.SetResult();
+                }
             }
 
             return MsQuicStatusCodes.Success;
@@ -342,12 +366,48 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            return _state.NewUnidirectionalStreamsAvailableTcs.GetTypelessValueTask();
+            TaskCompletionSource? tcs = _state.NewUnidirectionalStreamsAvailable;
+            if (tcs is null)
+            {
+                lock (_state)
+                {
+                    if (_state.NewUnidirectionalStreamsAvailable is null)
+                    {
+                        if (_state.ShutdownTcs.Task.IsCompleted)
+                        {
+                            throw new QuicOperationAbortedException();
+                        }
+
+                        _state.NewUnidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                    tcs = _state.NewUnidirectionalStreamsAvailable;
+                }
+            }
+
+            return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
         }
 
         internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
         {
-            return _state.NewBidirectionalStreamsAvailableTcs.GetTypelessValueTask();
+            TaskCompletionSource? tcs = _state.NewBidirectionalStreamsAvailable;
+            if (tcs is null)
+            {
+                lock (_state)
+                {
+                    if (_state.NewBidirectionalStreamsAvailable is null)
+                    {
+                        if (_state.ShutdownTcs.Task.IsCompleted)
+                        {
+                            throw new QuicOperationAbortedException();
+                        }
+
+                        _state.NewBidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                    tcs = _state.NewBidirectionalStreamsAvailable;
+                }
+            }
+
+            return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
         }
 
         internal override async ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
