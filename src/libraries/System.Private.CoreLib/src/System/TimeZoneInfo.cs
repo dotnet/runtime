@@ -54,6 +54,12 @@ namespace System
         private const string UtcId = "UTC";
         private const string LocalId = "Local";
 
+#if TARGET_WINDOWS
+        // This field is only used in TimeZoneInfo.Win32.cs, but needs to be defined here to ensure it is initialized
+        // before the call to CreateUtcTimeZone during static field initialization of s_utcTimeZone.
+        private static readonly Dictionary<string, string> s_FileMuiPathCache = new();
+#endif
+
         private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
 
         private static CachedData s_cachedData = new CachedData();
