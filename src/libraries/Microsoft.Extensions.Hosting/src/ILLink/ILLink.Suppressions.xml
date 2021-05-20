@@ -25,5 +25,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.Extensions.Hosting.HostingHostBuilderExtensions.&lt;&gt;c__DisplayClass11_0.&lt;ConfigureDefaults&gt;b__1(Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Configuration.IConfigurationBuilder)</property>
+    </attribute>
   </assembly>
 </linker>
