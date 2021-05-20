@@ -773,8 +773,8 @@ namespace System
         /// </summary>
         private static unsafe string GetFileMuiPath(string filePath, CultureInfo cultureInfo)
         {
-            char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH];
-            char* language = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
+            char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH + 1];
+            char* language = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1];
             uint fileMuiPathLength = Interop.Kernel32.MAX_PATH;
             uint languageLength = Interop.Kernel32.LOCALE_NAME_MAX_LENGTH;
             ulong enumerator = 0;
@@ -804,6 +804,7 @@ namespace System
 
                     if (succeeded)
                     {
+                        fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
                         return new string(fileMuiPath);
                     }
 
@@ -812,9 +813,11 @@ namespace System
                 }
 
                 // Lookup succeeded.  Check for exact match to the desired culture.
+                language[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH] = '\0';
                 var lang = new string(language);
                 if (string.Equals(lang, cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
                 {
+                    fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
                     return new string(fileMuiPath);
                 }
 
@@ -824,6 +827,7 @@ namespace System
                 {
                     if (ci.Parent.Name.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
                     {
+                        fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
                         return new string(fileMuiPath);
                     }
 
