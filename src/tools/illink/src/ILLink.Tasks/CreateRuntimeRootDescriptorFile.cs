@@ -325,8 +325,8 @@ namespace ILLink.Tasks
 
 			XmlNode assemblyNode = linkerNode["assembly"];
 
-			foreach (string typeName in classNamesToClassMembers.Keys) {
-				AddXmlTypeNode (doc, assemblyNode, typeName, classNamesToClassMembers[typeName]);
+			foreach (var type in classNamesToClassMembers) {
+				AddXmlTypeNode (doc, assemblyNode, type.Key, type.Value);
 			}
 			doc.Save (outputFileName);
 		}
