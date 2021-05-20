@@ -995,7 +995,7 @@ namespace System
         /// Helper function that takes a string representing a time_zone_name registry key name
         /// and returns a TimeZoneInfo instance.
         /// </summary>
-        private static TimeZoneInfoResult GetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
+        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
             e = null;
 
