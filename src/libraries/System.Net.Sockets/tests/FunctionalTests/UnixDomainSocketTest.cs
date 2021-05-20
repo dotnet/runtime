@@ -90,31 +90,37 @@ namespace System.Net.Sockets.Tests
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = endPoint;
-            args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
-
-            var complete = new TaskCompletionSource();
-            args.UserToken = complete;
-
-            using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            try
             {
-                bool willRaiseEvent = sock.ConnectAsync(args);
-                if (willRaiseEvent)
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = endPoint;
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
+
+                var complete = new TaskCompletionSource();
+                args.UserToken = complete;
+
+                using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
                 {
-                    await complete.Task;
+                    bool willRaiseEvent = sock.ConnectAsync(args);
+                    if (willRaiseEvent)
+                    {
+                        await complete.Task;
+
+                        Assert.Equal(
+                            OperatingSystem.IsWindows() ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
+                            args.SocketError);
+                    }
 
                     Assert.Equal(
-                        OperatingSystem.IsWindows() ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
+                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
                         args.SocketError);
                 }
-
-                Assert.Equal(
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
-                    args.SocketError);
             }
-
-            Assert.False(File.Exists(path));
+            finally
+            {
+                try { File.Delete(path); }
+                catch { }
+            }
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
