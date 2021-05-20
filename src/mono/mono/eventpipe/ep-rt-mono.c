@@ -1453,10 +1453,11 @@ ep_rt_mono_execute_rundown (void)
 }
 
 bool
-ep_rt_mono_write_event_ee_startup_start (void)
+ep_rt_mono_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks)
 {
-	return FireEtwEEStartupStart_V1 (
+	return FireEtwEEStartupStart_V2 (
 		clr_instance_get_id (),
+		clr_init_to_start_100ns_ticks,
 		NULL,
 		NULL);
 }

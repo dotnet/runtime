@@ -164,7 +164,6 @@ static void mini_metadata_update_init (MonoError *error);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
 
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -4245,6 +4244,8 @@ mini_init (const char *filename, const char *runtime_version)
 	static const MonoThreadInfoRuntimeCallbacks ticallbacks = {
 		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, mono)
 	};
+
+	mono_component_event_pipe_100ns_ticks_start ();
 
 	MONO_VES_INIT_BEGIN ();
 

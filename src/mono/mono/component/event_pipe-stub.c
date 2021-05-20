@@ -96,7 +96,7 @@ event_pipe_stub_thread_ctrl_activity_id (
 	uint32_t activity_id_len);
 
 static bool
-event_pipe_stub_write_event_ee_startup_start (void);
+event_pipe_stub_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks);
 
 static bool
 event_pipe_stub_write_event_threadpool_worker_thread_start (
@@ -315,7 +315,7 @@ event_pipe_stub_thread_ctrl_activity_id (
 }
 
 static bool
-event_pipe_stub_write_event_ee_startup_start (void)
+event_pipe_stub_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks)
 {
 	return true;
 }

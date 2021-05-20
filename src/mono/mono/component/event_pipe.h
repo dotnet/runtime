@@ -126,7 +126,7 @@ typedef bool
  */
 
 typedef bool
-(*event_pipe_component_write_event_ee_startup_start_func)(void);
+(*event_pipe_component_write_event_ee_startup_start_func)(int64_t clr_init_to_start_100ns_ticks);
 
 typedef bool
 (*event_pipe_component_write_event_threadpool_worker_thread_start_func)(

@@ -5560,6 +5560,17 @@
                         </UserData>
                     </template>
 
+                    <template tid="Startup_V2">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="ClrInitToStart100nsTicks" inType="win:Int64" />
+                        <UserData>
+                            <Startup_V2 xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <ClrInitToStart100nsTicks> %2 </ClrInitToStart100nsTicks>
+                            </Startup_V2>
+                        </UserData>
+                    </template>
+
                     <template tid="FusionMessage">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Prepend" inType="win:Boolean" />
@@ -6220,6 +6231,11 @@
                            keywords ="StartupKeyword"  opcode="EEStartupStart"
                            task="Startup"
                            symbol="EEStartupStart_V1" message="$(string.PrivatePublisher.Startup_V1EventMessage)"/>
+
+                    <event value="80" version="2" level="win:Informational"  template="Startup_V2"
+                           keywords ="StartupKeyword"  opcode="EEStartupStart"
+                           task="Startup"
+                           symbol="EEStartupStart_V2" message="$(string.PrivatePublisher.Startup_V2EventMessage)"/>
 
                     <event value="81" version="0" level="win:Informational"  template="Startup"
                            keywords ="StartupKeyword"  opcode="EEStartupEnd"
@@ -7258,6 +7274,7 @@
                 <string id="PrivatePublisher.GCFullNotify_V1EventMessage" value="GenNumber=%1;%nIsAlloc=%2;%nClrInstanceID=%3"/>
                 <string id="PrivatePublisher.StartupEventMessage" value="NONE"/>
                 <string id="PrivatePublisher.Startup_V1EventMessage" value="ClrInstanceID=%1"/>
+                <string id="PrivatePublisher.Startup_V2EventMessage" value="ClrInstanceID=%1;%nClrInitToStart100nsTicks=%2"/>
                 <string id="PrivatePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="PrivatePublisher.BindingEventMessage" value="%AppDomainID=%1;%nLoadContextID=%2;%nFromLoaderCache=%3;%nDynamicLoad=%4;%nAssemblyCodebase=%5;%nAssemblyName=%6;%nClrInstanceID=%6"/>
                 <string id="PrivatePublisher.EvidenceGeneratedEventMessage" value="EvidenceType=%1;%nAppDomainID=%2;%nILImage=%3;%nClrInstanceID=%4" />

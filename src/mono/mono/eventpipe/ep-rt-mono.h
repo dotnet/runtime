@@ -2144,7 +2144,7 @@ ep_rt_volatile_store_ptr_without_barrier (
  */
 
 bool
-ep_rt_mono_write_event_ee_startup_start (void);
+ep_rt_mono_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks);
 
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
