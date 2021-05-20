@@ -2296,6 +2296,12 @@ bool        affinity_config_specified_p = false;
 region_allocator global_region_allocator;
 uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
 size_t      gc_heap::region_count = 0;
+
+uint8_t* bookkeeping_data_structure = nullptr;
+// As long as global_region_allocator.global_region_left_used <= bookkeeping_data_structure_committed
+// no more extra commit to the bookkeeping data structure is necessary.
+// outside of region_lock, bookkeeping_data_structure_committed >= global_region_allocator.global_region_left_used always
+uint8_t* bookkeeping_data_structure_committed = nullptr;
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -3568,6 +3574,8 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
     global_region_left_used = global_region_start;
     global_region_right_used = global_region_end;
 
+    bookkeeping_data_structure_committed = global_region_start;
+
     // Note: I am allocating a map that covers the whole reserved range.
     // We can optimize it to only cover the current heap range.
     size_t total_num_units = (global_region_end - global_region_start) / region_alignment;
@@ -3729,7 +3737,7 @@ void region_allocator::leave_spin_lock()
     region_allocator_lock.lock = -1;
 }
 
-uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction)
+uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn)
 {
     enter_spin_lock();
 
@@ -3812,7 +3820,62 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
     if (alloc)
     {
         total_free_units -= num_units;
-        print_map ("alloc: found at the end");
+        if ((fn != nullptr) && (global_region_left_used > bookkeeping_data_structure_committed))
+        {
+            bool speculative_commit_tried = false;
+#ifdef STRESS_REGIONS
+            if (gc_rand::get_rand(10) > 3)
+            {
+                dprintf (REGIONS_LOG, ("skipping speculative commit under stress regions"));
+                speculative_commit_tried = true;
+            }
+#endif
+            while (true)
+            {
+                uint8_t* new_bookkeeping_data_structure_committed = nullptr;
+                if (speculative_commit_tried)
+                {
+                    new_bookkeeping_data_structure_committed = global_region_left_used;
+                }
+                else
+                {
+                    uint64_t committed_size = (uint64_t)(bookkeeping_data_structure_committed - global_region_start);
+                    uint64_t total_size = (uint64_t)(global_region_end - global_region_start);
+                    assert (committed_size < total_size);
+                    uint64_t new_committed_size = min(committed_size * 2, total_size); // Should not overflow?
+                    uint8_t* double_commit = global_region_start + new_committed_size; // Should not overflow?
+                    new_bookkeeping_data_structure_committed = max(double_commit, global_region_left_used);
+                    dprintf (REGIONS_LOG, ("committed_size                           = %llu", committed_size));
+                    dprintf (REGIONS_LOG, ("total_size                               = %llu", total_size));
+                    dprintf (REGIONS_LOG, ("new_committed_size                       = %llu", new_committed_size));
+                    dprintf (REGIONS_LOG, ("double_commit                            = %p", double_commit));
+                }
+                dprintf (REGIONS_LOG, ("bookkeeping_data_structure_committed     = %p", bookkeeping_data_structure_committed));
+                dprintf (REGIONS_LOG, ("new_bookkeeping_data_structure_committed = %p", new_bookkeeping_data_structure_committed));
+
+                if (fn (bookkeeping_data_structure_committed, new_bookkeeping_data_structure_committed))
+                {
+                    bookkeeping_data_structure_committed = new_bookkeeping_data_structure_committed;
+                    break;
+                }
+                else
+                {
+                    if (speculative_commit_tried)
+                    {
+                        dprintf (REGIONS_LOG, ("The minimal commit for the GC bookkeepping data structure failed, giving up"));
+                        delete_region_impl (alloc);
+                        alloc = nullptr;
+                        break;
+                    }
+                    dprintf (REGIONS_LOG, ("The speculative commit for the GC bookkeepping data structure failed, retry for minimal commit"));
+                    speculative_commit_tried = true;
+                }
+            }
+        }
+        if (alloc)
+        {
+            print_map ("alloc: found at the end");
+        }
     }
     else
     {
@@ -3826,7 +3889,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
 
 // ETW TODO: need to fire create seg events for these methods.
 // FIRE_EVENT(GCCreateSegment_V1
-bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction)
+bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn)
 {
     size_t alignment = region_alignment;
     size_t alloc_size = align_region_up (size);
@@ -3836,7 +3899,7 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
     uint8_t* alloc = NULL;
     dprintf (REGIONS_LOG, ("----GET %d-----", num_units));
 
-    alloc = allocate (num_units, direction);
+    alloc = allocate (num_units, direction, fn);
     *start = alloc;
     *end = alloc + alloc_size;
     ret = (alloc != NULL);
@@ -3844,14 +3907,14 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
     return ret;
 }
 
-bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end)
+bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn)
 {
-    return allocate_region (region_alignment, start, end, allocate_forward);
+    return allocate_region (region_alignment, start, end, allocate_forward, fn);
 }
 
 // Large regions are 8x basic region sizes by default. If you need a larger region than that,
 // call allocate_region with the size.
-bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size)
+bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn)
 {
     if (size == 0)
         size = large_region_alignment;
@@ -3862,13 +3925,19 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, al
         assert (round_up_power2(large_region_alignment) == large_region_alignment);
         size = (size + (large_region_alignment - 1)) & ~(large_region_alignment - 1);
     }
-    return allocate_region (size, start, end, direction);
+    return allocate_region (size, start, end, direction, fn);
 }
 
 void region_allocator::delete_region (uint8_t* region_start)
 {
     enter_spin_lock();
+    delete_region_impl (region_start);
+    leave_spin_lock();
+}
 
+void region_allocator::delete_region_impl (uint8_t* region_start)
+{
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     assert (is_region_aligned (region_start));
 
     print_map ("before delete");
@@ -3925,8 +3994,6 @@ void region_allocator::delete_region (uint8_t* region_start)
     total_free_units += current_val;
 
     print_map ("after delete");
-
-    leave_spin_lock();
 }
 
 void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p, region_free_list to_free_list[count_free_region_kinds])
@@ -8503,29 +8570,179 @@ void destroy_card_table (uint32_t* c_table)
     dprintf (2, ("Table Virtual Free : %Ix", (size_t)&card_table_refcount(c_table)));
 }
 
+void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t card_table_element_sizes[total_bookkeeping_elements])
+{
+    card_table_element_sizes[card_table_element] = size_card_of (start, end);
+    card_table_element_sizes[brick_table_element] = size_brick_of (start, end);
+
+    card_table_element_sizes[card_bundle_table_element] = 0;
+#ifdef CARD_BUNDLE
+    if (can_use_write_watch_for_card_table())
+    {
+        card_table_element_sizes[card_bundle_table_element] = size_card_bundle_of (start, end);
+    }
+#endif //CARD_BUNDLE
+
+    card_table_element_sizes[software_write_watch_table_element] = 0;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (gc_can_use_concurrent)
+    {
+        card_table_element_sizes[software_write_watch_table_element] = SoftwareWriteWatch::GetTableByteSize(start, end);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+    card_table_element_sizes[seg_mapping_table_element] = size_seg_mapping_table_of (start, end);
+
+    card_table_element_sizes[mark_array_element] = 0;
+#ifdef BACKGROUND_GC
+    if (gc_can_use_concurrent)
+    {
+        card_table_element_sizes[mark_array_element] = size_mark_array_of (start, end);
+    } 
+#endif //BACKGROUND_GC
+}
+
+void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1])
+{
+    // This code has too many special case, doesn't make sense to change it into a loop
+    size_t card_table_element_sizes[total_bookkeeping_elements];
+    get_card_table_element_sizes(start, end, card_table_element_sizes);
+
+    layout[card_table_element] = sizeof(card_table_info);
+    layout[brick_table_element] = layout[card_table_element] + card_table_element_sizes[card_table_element];
+    layout[card_bundle_table_element] = layout[brick_table_element] + card_table_element_sizes[brick_table_element];
+    size_t software_write_watch_offset_prealign = layout[card_bundle_table_element] + card_table_element_sizes[card_bundle_table_element];
+    layout[software_write_watch_table_element] = software_write_watch_offset_prealign;
+    size_t seg_mapping_table_offset_prealign = software_write_watch_offset_prealign;
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (gc_can_use_concurrent)
+    {
+        layout[software_write_watch_table_element] = SoftwareWriteWatch::GetTableStartByteOffset(software_write_watch_offset_prealign);
+        seg_mapping_table_offset_prealign = layout[software_write_watch_table_element] + card_table_element_sizes[software_write_watch_table_element];
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    layout[seg_mapping_table_element] = align_for_seg_mapping_table (seg_mapping_table_offset_prealign);
+    layout[mark_array_element] = layout[seg_mapping_table_element] + card_table_element_sizes[seg_mapping_table_element];
+    layout[total_bookkeeping_elements] = layout[mark_array_element] + card_table_element_sizes[mark_array_element];
+}
+
+#ifdef USE_REGIONS
+bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
+{
+    dprintf (REGIONS_LOG, ("inplace_commit_card_table(%p, %p), size = %llu", from, to, to - from));
+
+    uint8_t* start = g_gc_lowest_address;
+    uint8_t* end = g_gc_highest_address;
+
+    size_t offsets[total_bookkeeping_elements + 1];
+    get_card_table_element_layout(start, end, offsets);
+
+    dprintf (REGIONS_LOG, ("layout"));
+    for (int i = card_table_element; i <= total_bookkeeping_elements; i++)
+    {
+        dprintf (REGIONS_LOG, ("%p", bookkeeping_data_structure + offsets[i]));
+    }
+
+    size_t new_sizes[total_bookkeeping_elements];
+    get_card_table_element_sizes (start, to, new_sizes);
+
+    dprintf (REGIONS_LOG, ("new_sizes"));
+    for (int i = card_table_element; i < total_bookkeeping_elements; i++)
+    {
+        dprintf (REGIONS_LOG, ("%llu", new_sizes[i]));
+    }
+
+    uint8_t* commit_begins[total_bookkeeping_elements];
+    size_t commit_sizes[total_bookkeeping_elements];
+
+    bool initial_commit = (from == start);
+    bool additional_commit = !initial_commit && (to > from);
+
+    if (initial_commit || additional_commit)
+    {
+        size_t old_sizes[total_bookkeeping_elements];
+        if (additional_commit)
+        {
+            get_card_table_element_sizes (start, from, old_sizes);
+            dprintf (REGIONS_LOG, ("old_sizes"));
+            for (int i = card_table_element; i < total_bookkeeping_elements; i++)
+            {
+                dprintf (REGIONS_LOG, ("%llu", old_sizes[i]));
+            }
+        }
+        for (int i = card_table_element; i <= seg_mapping_table_element; i++)
+        {
+            uint8_t* required_begin = nullptr;
+            uint8_t* required_end = nullptr;
+            uint8_t* commit_begin = nullptr;
+            uint8_t* commit_end = nullptr;
+            if (initial_commit)
+            {
+                required_begin = bookkeeping_data_structure + ((i == card_table_element) ? 0 : offsets[i]);
+                required_end = bookkeeping_data_structure + offsets[i] + new_sizes[i];
+                commit_begin = align_lower_page(required_begin);
+            }
+            else
+            {
+                assert (additional_commit);
+                required_begin = bookkeeping_data_structure + offsets[i] + old_sizes[i];
+                required_end = required_begin + new_sizes[i] - old_sizes[i];
+                commit_begin = align_on_page(required_begin);
+            }
+            commit_end = align_on_page(required_end);
+
+            dprintf (REGIONS_LOG, ("required = [%p, %p), size = %llu", required_begin, required_end, required_end - required_begin));
+            dprintf (REGIONS_LOG, ("commit   = [%p, %p), size = %llu", commit_begin, commit_end, commit_end - commit_begin));
+
+            commit_begins[i] = commit_begin;
+            commit_sizes[i] = (size_t)(commit_end - commit_begin);
+        }
+        dprintf (REGIONS_LOG, ("---------------------------------------"));
+    }
+    else
+    {
+        return true;
+    }
+    int failed_commit = -1;
+    for (int i = card_table_element; i <= seg_mapping_table_element; i++)
+    {
+        bool succeed;
+        if (commit_sizes[i] > 0)
+        {
+            succeed = virtual_commit (commit_begins[i], commit_sizes[i], gc_oh_num::none);
+            if (!succeed)
+            {
+                failed_commit = i;
+                break;
+            }
+        }
+    }
+    if (failed_commit != -1)
+    {
+        for (int i = card_table_element; i < failed_commit; i++)
+        {
+            bool succeed;
+            if (commit_sizes[i] > 0)
+            {
+                succeed = virtual_decommit (commit_begins[i], commit_sizes[i], gc_oh_num::none);
+                assert (succeed);
+            }
+        }
+        return false;
+    }
+    return true;
+}
+#endif //USE_REGIONS
+
 uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 {
     assert (g_gc_lowest_address == start);
     assert (g_gc_highest_address == end);
 
     uint32_t virtual_reserve_flags = VirtualReserveFlags::None;
-
-    size_t bs = size_brick_of (start, end);
-    size_t cs = size_card_of (start, end);
-#ifdef BACKGROUND_GC
-    size_t ms = (gc_can_use_concurrent ?
-                 size_mark_array_of (start, end) :
-                 0);
-#else
-    size_t ms = 0;
-#endif //BACKGROUND_GC
-
-    size_t cb = 0;
-
 #ifdef CARD_BUNDLE
     if (can_use_write_watch_for_card_table())
     {
-        cb = size_card_bundle_of (g_gc_lowest_address, g_gc_highest_address);
 #ifndef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // If we're not manually managing the card bundles, we will need to use OS write
         // watch APIs over this region to track changes.
@@ -8534,27 +8751,14 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     }
 #endif //CARD_BUNDLE
 
-    size_t wws = 0;
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    size_t sw_ww_table_offset = 0;
-    if (gc_can_use_concurrent)
-    {
-        size_t sw_ww_size_before_table = sizeof(card_table_info) + cs + bs + cb;
-        sw_ww_table_offset = SoftwareWriteWatch::GetTableStartByteOffset(sw_ww_size_before_table);
-        wws = sw_ww_table_offset - sw_ww_size_before_table + SoftwareWriteWatch::GetTableByteSize(start, end);
-    }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    size_t offsets[total_bookkeeping_elements + 1];
+    get_card_table_element_layout(start, end, offsets);
 
-    size_t st = size_seg_mapping_table_of (g_gc_lowest_address, g_gc_highest_address);
-    size_t st_table_offset = sizeof(card_table_info) + cs + bs + cb + wws;
-    size_t st_table_offset_aligned = align_for_seg_mapping_table (st_table_offset);
-
-    st += (st_table_offset_aligned - st_table_offset);
-
-    // it is impossible for alloc_size to overflow due bounds on each of
-    // its components.
-    size_t alloc_size = sizeof (uint8_t)*(sizeof(card_table_info) + cs + bs + cb + wws + st + ms);
+    size_t alloc_size = offsets[total_bookkeeping_elements];
     uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
+#ifdef USE_REGIONS
+    bookkeeping_data_structure = mem;
+#endif //USE_REGIONS
 
     if (!mem)
         return 0;
@@ -8563,26 +8767,36 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
                  alloc_size, (size_t)mem, (size_t)(mem+alloc_size)));
 
     // mark array will be committed separately (per segment).
-    size_t commit_size = alloc_size - ms;
+    size_t commit_size = offsets[mark_array_element];
 
+#ifdef USE_REGIONS
+    if (!inplace_commit_card_table (g_gc_lowest_address, global_region_allocator.get_left_used_unsafe()))
+    {
+        dprintf (1, ("Card table commit failed"));
+        GCToOSInterface::VirtualRelease (mem, alloc_size);
+        return 0;
+    }
+    bookkeeping_data_structure_committed = global_region_allocator.get_left_used_unsafe();
+#else
     if (!virtual_commit (mem, commit_size, gc_oh_num::none))
     {
         dprintf (1, ("Card table commit failed"));
         GCToOSInterface::VirtualRelease (mem, alloc_size);
         return 0;
     }
+#endif
 
     // initialize the ref count
-    uint32_t* ct = (uint32_t*)(mem+sizeof (card_table_info));
+    uint32_t* ct = (uint32_t*)(mem + offsets[card_table_element]);
     card_table_refcount (ct) = 0;
     card_table_lowest_address (ct) = start;
     card_table_highest_address (ct) = end;
-    card_table_brick_table (ct) = (short*)((uint8_t*)ct + cs);
+    card_table_brick_table (ct) = (short*)(mem + offsets[brick_table_element]);
     card_table_size (ct) = alloc_size;
     card_table_next (ct) = 0;
 
 #ifdef CARD_BUNDLE
-    card_table_card_bundle_table (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs);
+    card_table_card_bundle_table (ct) = (uint32_t*)(mem + offsets[card_bundle_table_element]);
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     g_gc_card_bundle_table = translate_card_bundle_table(card_table_card_bundle_table(ct), g_gc_lowest_address);
@@ -8592,17 +8806,17 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     if (gc_can_use_concurrent)
     {
-        SoftwareWriteWatch::InitializeUntranslatedTable(mem + sw_ww_table_offset, start);
+        SoftwareWriteWatch::InitializeUntranslatedTable(mem + offsets[software_write_watch_table_element], start);
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-    seg_mapping_table = (seg_mapping*)(mem + st_table_offset_aligned);
+    seg_mapping_table = (seg_mapping*)(mem + offsets[seg_mapping_table_element]);
     seg_mapping_table = (seg_mapping*)((uint8_t*)seg_mapping_table -
                                         size_seg_mapping_table_of (0, (align_lower_segment (g_gc_lowest_address))));
 
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
-        card_table_mark_array (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs + cb + wws + st);
+        card_table_mark_array (ct) = (uint32_t*)(mem + offsets[mark_array_element]);
     else
         card_table_mark_array (ct) = NULL;
 #endif //BACKGROUND_GC
@@ -12060,7 +12274,11 @@ inline void gc_heap::verify_card_bundles()
 {
 #ifdef _DEBUG
     size_t lowest_card = card_word (card_of (lowest_address));
+#ifdef USE_REGIONS
+    size_t highest_card = card_word (card_of (global_region_allocator.get_left_used_unsafe()));
+#else
     size_t highest_card = card_word (card_of (highest_address));
+#endif
     size_t cardb = cardw_card_bundle (lowest_card);
     size_t end_cardb = cardw_card_bundle (align_cardw_on_bundle (highest_card));
 
@@ -12103,7 +12321,11 @@ void gc_heap::update_card_table_bundle()
         uint8_t* base_address = (uint8_t*)(&card_table[card_word (card_of (lowest_address))]);
 
         // The address of the card word containing the card representing the highest heap address
+#ifdef USE_REGIONS
+        uint8_t* high_address = (uint8_t*)(&card_table[card_word (card_of (global_region_allocator.get_left_used_unsafe()))]);
+#else
         uint8_t* high_address = (uint8_t*)(&card_table[card_word (card_of (highest_address))]);
+#endif //USE_REGIONS
 
         uint8_t* saved_base_address = base_address;
         uintptr_t bcount = array_size;
@@ -12446,7 +12668,7 @@ bool allocate_initial_regions(int number_of_heaps)
     {
         bool succeed = global_region_allocator.allocate_large_region(
             &initial_regions[i][poh_generation][0],
-            &initial_regions[i][poh_generation][1], allocate_forward);
+            &initial_regions[i][poh_generation][1], allocate_forward, 0, nullptr);
         assert(succeed);
     }
     for (int i = 0; i < number_of_heaps; i++)
@@ -12455,7 +12677,7 @@ bool allocate_initial_regions(int number_of_heaps)
         {
             bool succeed = global_region_allocator.allocate_basic_region(
                 &initial_regions[i][gen][0],
-                &initial_regions[i][gen][1]);
+                &initial_regions[i][gen][1], nullptr);
             assert(succeed);
         }
     }
@@ -12463,7 +12685,7 @@ bool allocate_initial_regions(int number_of_heaps)
     {
         bool succeed = global_region_allocator.allocate_large_region(
             &initial_regions[i][loh_generation][0],
-            &initial_regions[i][loh_generation][1], allocate_forward);
+            &initial_regions[i][loh_generation][1], allocate_forward, 0, nullptr);
         assert(succeed);
     }
     return true;
@@ -29357,8 +29579,8 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 
     // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ? 
-        global_region_allocator.allocate_large_region (&start, &end, allocate_forward, size) :
-        global_region_allocator.allocate_basic_region (&start, &end));
+        global_region_allocator.allocate_large_region (&start, &end, allocate_forward, size, inplace_commit_card_table) :
+        global_region_allocator.allocate_basic_region (&start, &end, inplace_commit_card_table));
 
     if (!allocated_p)
     {
