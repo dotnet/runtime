@@ -182,6 +182,10 @@ namespace ILLink.Tasks
 					} else {
 						char[] separators = { ',', '(', ')', ' ', '\t', '/' };
 						string[] featureSwitchElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
+						if(featureSwitchElements.Length !=4 ) {
+							Log.LogError ($"BEGIN_ILLINK_FEATURE_SWITCH is not formatted correctly '{typeFile}' for line {def}");
+							return;
+						}
 						currentFeatureSwitch = new FeatureSwitchMembers (featureSwitchElements[1], featureSwitchElements[2], featureSwitchElements[3]);
 						if (!featureSwitchMembers.ContainsKey (currentFeatureSwitch.Value)) {
 							featureSwitchMembers.Add (currentFeatureSwitch.Value, new Dictionary<string, ClassMembers> ());
@@ -313,7 +317,7 @@ namespace ILLink.Tasks
 					featureAssemblyNode.Attributes.Append (featureDefault);
 
 					foreach (string typeName in featureSwitchMembers[fsMembers].Keys) {
-						AddXmlTypeNode (doc, featureAssemblyNode, typeName, featureSwitchMembers[fsMembers]);
+						AddXmlTypeNode (doc, featureAssemblyNode, typeName, featureSwitchMembers[fsMembers][typeName]);
 					}
 					linkerNode.AppendChild (featureAssemblyNode);
 				}
@@ -322,19 +326,17 @@ namespace ILLink.Tasks
 			XmlNode assemblyNode = linkerNode["assembly"];
 
 			foreach (string typeName in classNamesToClassMembers.Keys) {
-				AddXmlTypeNode (doc, assemblyNode, typeName, classNamesToClassMembers);
+				AddXmlTypeNode (doc, assemblyNode, typeName, classNamesToClassMembers[typeName]);
 			}
 			doc.Save (outputFileName);
 		}
 
-		static void AddXmlTypeNode (XmlDocument doc, XmlNode assemblyNode, string typeName, Dictionary<string, ClassMembers> classToClassMems)
+		static void AddXmlTypeNode (XmlDocument doc, XmlNode assemblyNode, string typeName, ClassMembers members)
 		{
 			XmlNode typeNode = doc.CreateElement ("type");
 			XmlAttribute typeFullName = doc.CreateAttribute ("fullname");
 			typeFullName.Value = typeName;
 			typeNode.Attributes.Append (typeFullName);
-
-			ClassMembers members = classToClassMems[typeName];
 
 			// We need to keep everyting in System.Runtime.InteropServices.WindowsRuntime and
 			// System.Threading.Volatile.
