@@ -3334,6 +3334,8 @@ bool Compiler::lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const
 // this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
 //
+// Also seems like this info could be cached in the layout.
+//
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {
     if (varTypeIsStruct(varDsc->TypeGet()))
@@ -3377,11 +3379,21 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     {
         varDsc->lvType = TYP_STRUCT;
     }
+
     if (varDsc->GetLayout() == nullptr)
     {
+        ClassLayout* layout = typGetObjLayout(typeHnd);
+
+        if (isBoxedValueClass)
+        {
+            assert(layout->GetSize() > TARGET_POINTER_SIZE);
+        }
+
         varDsc->SetLayout(layout);
 
-        if (layout->IsValueClass())
+        // Boxed value classes are always passed explicitly by ref, and are never simd/hfa.
+        //
+        if (layout->IsValueClass() && !isBoxedValueClass)
         {
             varDsc->lvType = layout->GetType();
 
@@ -3422,6 +3434,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     }
     else
     {
+        assert(!isBoxedValueClass);
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);

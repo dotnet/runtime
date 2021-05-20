@@ -389,12 +389,32 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 GenTreeAllocObj*     asAllocObj = data->AsAllocObj();
                 unsigned int         lclNum     = stmtExpr->AsLclVar()->GetLclNum();
                 CORINFO_CLASS_HANDLE clsHnd     = data->AsAllocObj()->gtAllocObjClsHnd;
+                const char*          onHeapReason = nullptr;
+                bool                 canStack     = false;
 
                 // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
-                if (IsObjectStackAllocationEnabled() && !basicBlockHasBackwardJump &&
-                    CanAllocateLclVarOnStack(lclNum, clsHnd))
+                //
+                if (!IsObjectStackAllocationEnabled())
                 {
-                    JITDUMP("Allocating local variable V%02u on the stack\n", lclNum);
+                    onHeapReason = "[object stack allocation disabled]";
+                    canStack     = false;
+                }
+                else if (basicBlockHasBackwardJump)
+                {
+                    onHeapReason = "[alloc in loop]";
+                    canStack     = false;
+                }
+                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, &onHeapReason))
+                {
+                    // reason set by the call
+                    canStack = false;
+                }
+                else
+                {
+                    JITDUMP("Allocating V%02u on the stack\n", lclNum);
+                    canStack = true;
+
+                    printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd), comp->info.compFullName);
 
                     const unsigned int stackLclNum = MorphAllocObjNodeIntoStackAlloc(asAllocObj, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
@@ -406,13 +426,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
                     didStackAllocate = true;
                 }
-                else
-                {
-                    if (IsObjectStackAllocationEnabled())
-                    {
-                        JITDUMP("Allocating local variable V%02u on the heap\n", lclNum);
-                    }
 
+                if (!canStack)
+                {
+                    assert(onHeapReason != nullptr);
+                    JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, onHeapReason);
                     data                         = MorphAllocObjNodeIntoHelperCall(asAllocObj);
                     stmtExpr->AsLclVar()->Data() = data;
                     stmtExpr->AddAllEffectsFlags(data);
@@ -504,10 +522,12 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
 
-    const bool         shortLifetime = false;
-    const unsigned int lclNum = comp->lvaGrabTemp(shortLifetime DEBUGARG("MorphAllocObjNodeIntoStackAlloc temp"));
-    const int          unsafeValueClsCheck = true;
-    comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, unsafeValueClsCheck);
+    const bool isValueClass  = comp->info.compCompHnd->isValueClass(allocObj->gtAllocObjClsHnd);
+    const bool shortLifetime = false;
+
+    const unsigned int lclNum = comp->lvaGrabTemp(shortLifetime DEBUGARG(
+        isValueClass ? "stack allocated boxed value class temp" : "stack allocated ref class temp"));
+    comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, true, false, isValueClass);
 
     // Initialize the object memory if necessary.
     bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
@@ -533,6 +553,8 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         comp->compSuppressedZeroInit = true;
     }
 
+    // Initialize the vtable slot.
+    //
     //------------------------------------------------------------------------
     // STMTx (IL 0x... ???)
     //   * STORE_LCL_FLD    long
@@ -584,6 +606,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         GenTree* parent               = parentStack->Top(parentIndex);
         keepChecking                  = false;
 
+        JITDUMP("... L%02u ... checking [%06u]\n", lclNum, comp->dspTreeID(parent));
+
         switch (parent->OperGet())
         {
             // Update the connection graph if we are storing to a local.
@@ -601,6 +625,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_EQ:
             case GT_NE:
+            case GT_NULLCHECK:
                 canLclVarEscapeViaParentStack = false;
                 break;
 
@@ -615,7 +640,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_COLON:
             case GT_QMARK:
             case GT_ADD:
-            case GT_FIELD_ADDR:
+            case GT_BOX:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
@@ -696,6 +721,8 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
             case GT_EQ:
             case GT_NE:
+            case GT_NULLCHECK:
+            case GT_BOX:
                 break;
 
             case GT_COMMA:

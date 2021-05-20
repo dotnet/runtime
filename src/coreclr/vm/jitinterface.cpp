@@ -1995,11 +1995,22 @@ CEEInfo::getHeapClassSize(
     TypeHandle VMClsHnd(clsHnd);
     MethodTable* pMT = VMClsHnd.GetMethodTable();
     _ASSERTE(pMT);
-    _ASSERTE(!pMT->IsValueType());
     _ASSERTE(!pMT->HasComponentSize());
 
+#ifdef FEATURE_READYTORUN_COMPILER
+    _ASSERTE(!IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
+#endif
+
     // Add OBJECT_SIZE to account for method table pointer.
-    result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
+    //
+    if (pMT->IsValueType())
+    {
+        result = VMClsHnd.GetSize() + OBJECT_SIZE;
+    }
+    else
+    {
+        result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
+    }
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
@@ -2023,7 +2034,6 @@ bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
     TypeHandle VMClsHnd(clsHnd);
     MethodTable* pMT = VMClsHnd.GetMethodTable();
     _ASSERTE(pMT);
-    _ASSERTE(!pMT->IsValueType());
 
     result = !pMT->HasFinalizer();
 

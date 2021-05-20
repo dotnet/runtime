@@ -652,6 +652,8 @@ RELEASE_CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, W("JitObjectStackAllocationRefClass"), 0)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, W("JitObjectStackAllocationBoxedValueClass"), 0)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
