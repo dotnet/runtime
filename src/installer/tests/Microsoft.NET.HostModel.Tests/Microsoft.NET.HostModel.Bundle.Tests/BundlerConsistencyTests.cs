@@ -144,7 +144,7 @@ namespace Microsoft.NET.HostModel.Tests
             bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.Repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
         }
 
-        private string CreateSampleBundle()
+        private (string bundleFileName, string bundleId) CreateSampleBundle(bool bundleMultipleFiles)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -156,22 +156,36 @@ namespace Microsoft.NET.HostModel.Tests
 
             var fileSpecs = new List<FileSpec>();
             fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
-            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat.dll"));
+            if (bundleMultipleFiles)
+            {
+                fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat.dll"));
+            }
 
             Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
-            return bundler.GenerateBundle(fileSpecs);
+            return (bundler.GenerateBundle(fileSpecs), bundler.BundleManifest.BundleID);
         }
 
         [Fact]
         public void TestWithIdenticalBundlesShouldBeBinaryEqualPasses()
         {
-            string firstBundle = CreateSampleBundle();
-            byte[] firstBundleContent = File.ReadAllBytes(firstBundle);
-            string secondBundle = CreateSampleBundle();
-            byte[] secondBundleContent = File.ReadAllBytes(secondBundle);
+            var firstBundle = CreateSampleBundle(true);
+            byte[] firstBundleContent = File.ReadAllBytes(firstBundle.bundleFileName);
+            var secondBundle = CreateSampleBundle(true);
+            byte[] secondBundleContent = File.ReadAllBytes(secondBundle.bundleFileName);
 
+            firstBundle.bundleId.ShouldBeEquivalentTo(secondBundle.bundleId,
+                "Deterministic/Reproducible build should produce identical bundle id for identical inputs");
             firstBundleContent.ShouldBeEquivalentTo(secondBundleContent,
                 "Deterministic/Reproducible build should produce identical binary for identical inputs");
+        }
+
+        [Fact]
+        public void TestWithUniqueBundlesShouldHaveUniqueBundleIdsPasses()
+        {
+            string firstBundle = CreateSampleBundle(true).bundleId;
+            string secondBundle = CreateSampleBundle(false).bundleId;
+
+            Assert.NotEqual(firstBundle, secondBundle, StringComparer.Ordinal);
         }
 
         [Fact]
