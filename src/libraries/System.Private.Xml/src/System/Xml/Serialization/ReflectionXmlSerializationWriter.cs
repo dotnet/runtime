@@ -1403,6 +1403,7 @@ namespace System.Xml.Serialization
             return memberInfo;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public static MemberInfo GetEffectiveGetInfo(Type declaringType, string memberName)
         {
             MemberInfo memberInfo = GetMember(declaringType, memberName, true)!;
@@ -1430,6 +1431,7 @@ namespace System.Xml.Serialization
             return memberInfo;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public static MemberInfo GetEffectiveSetInfo(Type declaringType, string memberName)
         {
             MemberInfo memberInfo = GetMember(declaringType, memberName, true)!;
