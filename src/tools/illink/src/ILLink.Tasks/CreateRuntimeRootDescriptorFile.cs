@@ -63,23 +63,27 @@ namespace ILLink.Tasks
 			public string Feature { get; }
 			public string FeatureValue { get; }
 			public string FeatureDefault { get; }
+			// Unique value to track the key
+			private readonly String _key;
 
 			public FeatureSwitchMembers (string feature, string featureValue, string featureDefault)
 			{
 				Feature = feature;
 				FeatureValue = featureValue;
 				FeatureDefault = featureDefault;
+				// Use a separator that is not going to be in any of the strings to ensure uniqueness
+				_key = feature + ',' + featureValue + ',' + featureDefault;
 			}
 
 			public override int GetHashCode ()
 			{
-				return HashCode.Combine (Feature, FeatureValue, FeatureDefault);
+				return _key.GetHashCode();
 			}
 
 			public override bool Equals (object obj)
 			{
 				FeatureSwitchMembers other = (FeatureSwitchMembers) obj;
-				return other.Feature.Equals (Feature) && other.FeatureValue.Equals (FeatureValue) && other.FeatureDefault.Equals (FeatureDefault);
+				return other._key.Equals (_key);
 			}
 		}
 
