@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is DocumentNameBlobHandle && Equals((DocumentNameBlobHandle)obj);
+            return obj is DocumentNameBlobHandle documentHandle && Equals(documentHandle);
         }
 
         public bool Equals(DocumentNameBlobHandle other)

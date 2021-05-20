@@ -88,7 +88,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is SignatureHeader && Equals((SignatureHeader)obj);
+            return obj is SignatureHeader signatureHeader && Equals(signatureHeader);
         }
 
         public bool Equals(SignatureHeader other)

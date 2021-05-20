@@ -50,7 +50,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is SequencePoint && Equals((SequencePoint)obj);
+            return obj is SequencePoint sequencePoint && Equals(sequencePoint);
         }
 
         public bool Equals(SequencePoint other)

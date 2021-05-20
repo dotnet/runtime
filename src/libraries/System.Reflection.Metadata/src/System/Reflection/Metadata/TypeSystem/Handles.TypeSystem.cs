@@ -71,7 +71,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals(object? obj)
         {
-            return obj is ModuleDefinitionHandle && ((ModuleDefinitionHandle)obj)._rowId == _rowId;
+            return obj is ModuleDefinitionHandle moduleDefinition && moduleDefinition._rowId == _rowId;
         }
 
         public bool Equals(ModuleDefinitionHandle other)

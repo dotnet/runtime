@@ -17,7 +17,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is EditAndContinueLogEntry && Equals((EditAndContinueLogEntry)obj);
+            obj is EditAndContinueLogEntry editAndContinue && Equals(editAndContinue);
 
         public bool Equals(EditAndContinueLogEntry other) =>
             Operation == other.Operation && Handle == other.Handle;

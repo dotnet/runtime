@@ -97,7 +97,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is EntityHandle && Equals((EntityHandle)obj);
+            return obj is EntityHandle entityHandle && Equals(entityHandle);
         }
 
         public bool Equals(EntityHandle other)
