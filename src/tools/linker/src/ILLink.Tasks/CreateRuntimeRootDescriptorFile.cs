@@ -316,8 +316,8 @@ namespace ILLink.Tasks
 					featureDefault.Value = fsMembers.FeatureDefault;
 					featureAssemblyNode.Attributes.Append (featureDefault);
 
-					foreach (string typeName in featureSwitchMembers[fsMembers].Keys) {
-						AddXmlTypeNode (doc, featureAssemblyNode, typeName, featureSwitchMembers[fsMembers][typeName]);
+					foreach (var type in featureSwitchMembers[fsMembers]) {
+						AddXmlTypeNode (doc, featureAssemblyNode, type.Key, type.Value);
 					}
 					linkerNode.AppendChild (featureAssemblyNode);
 				}
