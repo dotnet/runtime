@@ -808,8 +808,8 @@ namespace System
         {
             if (Sse2.IsSupported)
             {
-                var g1 = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(left));
-                var g2 = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(right));
+                Vector128<byte> g1 = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(left));
+                Vector128<byte> g2 = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(right));
 
                 if (Sse41.IsSupported)
                 {
