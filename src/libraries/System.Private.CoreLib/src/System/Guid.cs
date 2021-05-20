@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
@@ -801,17 +803,38 @@ namespace System
 
         public bool Equals(Guid g) => EqualsCore(this, g);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool EqualsCore(in Guid left, in Guid right)
         {
-            ref int rA = ref Unsafe.AsRef(in left._a);
-            ref int rB = ref Unsafe.AsRef(in right._a);
+            if (Sse2.IsSupported)
+            {
+                var g1 = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(left));
+                var g2 = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(right));
 
-            // Compare each element
+                if (Sse41.IsSupported)
+                {
+                    var xor = Sse2.Xor(g1, g2);
+                    return Sse41.TestZ(xor, xor);
+                }
 
-            return rA == rB
-                && Unsafe.Add(ref rA, 1) == Unsafe.Add(ref rB, 1)
-                && Unsafe.Add(ref rA, 2) == Unsafe.Add(ref rB, 2)
-                && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
+                var result = Sse2.CompareEqual(g1, g2);
+                return Sse2.MoveMask(result) == 0b1111_1111_1111_1111;
+            }
+
+            return SoftwareFallback(left, right);
+
+            static bool SoftwareFallback(in Guid left, in Guid right)
+            {
+                ref int rA = ref Unsafe.AsRef(in left._a);
+                ref int rB = ref Unsafe.AsRef(in right._a);
+
+                // Compare each element
+
+                return rA == rB
+                    && Unsafe.Add(ref rA, 1) == Unsafe.Add(ref rB, 1)
+                    && Unsafe.Add(ref rA, 2) == Unsafe.Add(ref rB, 2)
+                    && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
+            }
         }
 
         private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
