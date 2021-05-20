@@ -683,11 +683,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return o.ToString() ?? string.Empty;
         }
 
-        public static Uri CreateUri(string uri)
-        {
-            return new Uri(uri);
-        }
-
         public static bool SafeHandleAddRef(SafeHandle safeHandle)
         {
             bool _addRefSucceeded = false;

@@ -53,7 +53,8 @@ var BindingSupportLib = {
 			Float64Array.prototype[Symbol.for("wasm type")] = 18;
 
 			this.assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
-			this.find_corlib_class = Module.cwrap ('mono_wasm_find_corlib_class', 'number', ['string', 'string']);
+			this._find_corlib_class = Module.cwrap ('mono_wasm_find_corlib_class', 'number', ['string', 'string']);
+			this._find_system_class = Module.cwrap ('mono_wasm_find_system_class', 'number', ['string', 'string']);
 			this.find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string']);
 			this._find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
 			this.invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
@@ -160,13 +161,49 @@ var BindingSupportLib = {
 			this.get_call_sig = get_method ("GetCallSignature");
 
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
-			this.create_uri = get_method ("CreateUri");
 
 			this.safehandle_addref = get_method ("SafeHandleAddRef");
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
+		},
+
+		_find_cached_class: function (namespace, name) {
+			if (!this._class_cache) {
+				this._class_cache = new Map();
+				return undefined;
+			}
+			
+			var ns = this._class_cache.get(namespace);
+			if (!ns) {
+				this._class_cache.set(namespace, new Map());
+				return undefined;
+			}
+			
+			return this._class_cache.get(name);
+		},
+
+		find_corlib_class: function (namespace, name, throw_on_failure) {
+			var result = this._find_cached_class(namespace, name);
+			if (result !== undefined)
+				return result;
+			result = this._find_corlib_class(namespace, name);
+			if (throw_on_failure && !result)
+				throw new Error(`Failed to find mscorlib.dll class ${namespace}.${name}`);
+			this._class_cache.get(namespace).set(name, result);
+			return result;
+		},
+
+		find_system_class: function (namespace, name, throw_on_failure) {
+			var result = this._find_cached_class(namespace, name);
+			if (result !== undefined)
+				return result;
+			result = this._find_system_class(namespace, name);
+			if (throw_on_failure && !result)
+				throw new Error(`Failed to find System.dll class ${namespace}.${name}`);
+			this._class_cache.get(namespace).set(name, result);
+			return result;
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -587,7 +624,7 @@ var BindingSupportLib = {
 					})
 					return this.get_task_and_bind (tcs, js_obj);
 				case js_obj.constructor.name === "Date": {
-					return this.box_js_obj_with_converter(js_obj, this.find_corlib_class ("System", "DateTime"));
+					return this.box_js_obj_with_converter(js_obj, this.find_corlib_class ("System", "DateTime", true));
 				} 
 				default:
 					return this.extract_mono_obj (js_obj);
@@ -595,17 +632,7 @@ var BindingSupportLib = {
 		},
 		js_to_mono_uri: function (js_obj) {
 			this.bindings_lazy_init ();
-
-			switch (true) {
-				case js_obj === null:
-				case typeof js_obj === "undefined":
-					return 0;
-				case typeof js_obj === "symbol":
-				case typeof js_obj === "string":
-					return this.call_method(this.create_uri, null, "s!", [ js_obj ])
-				default:
-					return this.extract_mono_obj (js_obj);
-			}
+			return this.box_js_obj_with_converter(js_obj, this.find_corlib_class ("System", "Uri", true));
 		},
 		has_backing_array_buffer: function (js_obj) {
 			return typeof SharedArrayBuffer !== 'undefined'
