@@ -397,8 +397,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     size_t ReserveBlockSize = pInfo->getRequestSize();
 
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
-    ReserveBlockSize += sizeof(TrackAllocation) + sizeof(HeapList) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
-
+    ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
     // reserve ReserveBlockSize rounded-up to VIRTUAL_ALLOC_RESERVE_GRANULARITY of memory
     ReserveBlockSize = ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
@@ -428,15 +427,23 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_ApproximateLargestBlock = ReserveBlockSize;
     m_pAllocator = pInfo->m_pAllocator;
 
-    TrackAllocation *pTracker = AllocMemory_NoThrow(0, sizeof(HeapList), sizeof(void*), 0);
+    HeapList* pHp = new HeapList;
+
+    TrackAllocation *pTracker = NULL;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+    pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     if (pTracker == NULL)
     {
         // This should only ever happen with fault injection
         _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
+        delete pHp;
         ThrowOutOfMemory();
     }
 
-    HeapList* pHp = (HeapList *)(pTracker + 1);
+    pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+#endif
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
@@ -446,17 +453,17 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
         (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, pTracker->size));
 
-    // It is imporant to exclude the CLRPersonalityRoutine from the tracked range
-    pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + pTracker->size;
+    // It is important to exclude the CLRPersonalityRoutine from the tracked range
+    pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);
     pHp->mapBase = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     pHp->pHdrMap = NULL;
     pHp->endAddress = pHp->startAddress;
 
-    pHp->maxCodeHeapSize = m_TotalBytesAvailable - pTracker->size;
+    pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
     pHp->reserveForJumpStubs = 0;
 
 #ifdef HOST_64BIT
-    emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
+    emitJump(pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
 #endif
 
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(pHp->maxCodeHeapSize));
