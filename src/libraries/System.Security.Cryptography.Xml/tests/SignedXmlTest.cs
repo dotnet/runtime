@@ -539,6 +539,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void ComputeSignatureMissingReferencedObject()
         {
             XmlDocument doc = new XmlDocument();
