@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("maccatalyst")]
         public static DSA Create(int keySizeInBits)
         {
-            DSA dsa = Create();
+            DSA dsa = CreateCore();
 
             try
             {
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("maccatalyst")]
         public static DSA Create(DSAParameters parameters)
         {
-            DSA dsa = Create();
+            DSA dsa = CreateCore();
 
             try
             {
