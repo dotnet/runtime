@@ -15,6 +15,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
