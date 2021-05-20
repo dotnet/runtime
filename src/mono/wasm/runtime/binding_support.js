@@ -172,6 +172,7 @@ var BindingSupportLib = {
 		_find_cached_class: function (namespace, name) {
 			if (!this._class_cache) {
 				this._class_cache = new Map();
+				this._class_cache.set(namespace, new Map());
 				return undefined;
 			}
 			
@@ -632,7 +633,7 @@ var BindingSupportLib = {
 		},
 		js_to_mono_uri: function (js_obj) {
 			this.bindings_lazy_init ();
-			return this.box_js_obj_with_converter(js_obj, this.find_corlib_class ("System", "Uri", true));
+			return this.box_js_obj_with_converter(js_obj, this.find_system_class ("System", "Uri", true));
 		},
 		has_backing_array_buffer: function (js_obj) {
 			return typeof SharedArrayBuffer !== 'undefined'

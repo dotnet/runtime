@@ -606,7 +606,7 @@ mono_wasm_find_system_class (const char *namespace, const char *name)
 	MonoAssembly* assembly = mono_wasm_assembly_load ("System");
 	if (!assembly)
 		return NULL;
-	return mono_class_from_name (assembly, namespace, name);
+	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoClass*
