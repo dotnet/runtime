@@ -6,10 +6,9 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
-[assembly: Trait("category", "FlakyAppHostTests")]
-
 namespace AppHost.Bundle.Tests
 {
+    [Trait("category", "FlakyAppHostTests")]
     public class SingleFileApiTests : BundleTestBase, IClassFixture<SingleFileSharedState>
     {
         private SingleFileSharedState sharedTestState;
