@@ -35,7 +35,7 @@ void* offset_in_FAT_universal_binary(const char* addr)
         }
     }
 
-    trace::error(_X("Couldn't find offset un an universal fat binary."));
+    trace::error(_X("Couldn't find offset in an universal fat binary."));
     throw StatusCode::BundleExtractionFailure;
 }
 #endif // TARGET_OSX
