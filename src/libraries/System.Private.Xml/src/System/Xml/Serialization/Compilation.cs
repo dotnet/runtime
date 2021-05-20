@@ -227,6 +227,9 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls LoadFile")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Annotating this as dangerous will make the core of the serializer to be marked as not safe, instead " +
+            "this pattern is only dangerous if using sgen only. See https://github.com/dotnet/runtime/issues/50820")]
         private static Assembly? LoadAssemblyByPath(Type type, string assemblyName)
         {
             Assembly? assembly = null;
