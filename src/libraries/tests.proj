@@ -128,10 +128,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent/tests/System.Collections.Concurrent.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Specialized/tests/System.Collections.Specialized.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations/tests/System.ComponentModel.Annotations.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.Hosting/tests/System.Composition.Hosting.Tests.csproj" />
+    <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.DataSetExtensions/tests/System.Data.DataSetExtensions.Tests.csproj" /> -->
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.DriveInfo/tests/System.IO.FileSystem.DriveInfo.Tests.csproj" /> -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Primitives/tests/System.IO.FileSystem.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory/tests/System.Memory.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail/tests/Functional/System.Net.Mail.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/UnitTests/System.Net.Security.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient/tests/System.Net.WebClient.Tests.csproj" />
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj" /> -->
