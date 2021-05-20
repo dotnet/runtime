@@ -707,7 +707,8 @@ inline
 void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
-	;
+	extern void ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config);
+	ep_rt_mono_provider_config_init (provider_config);
 }
 
 static
@@ -724,7 +725,8 @@ inline
 bool
 ep_rt_providers_validate_all_disabled (void)
 {
-	return true;
+	extern bool ep_rt_mono_providers_validate_all_disabled (void);
+	return ep_rt_mono_providers_validate_all_disabled ();
 }
 
 static
@@ -2146,6 +2148,11 @@ ep_rt_mono_write_event_ee_startup_start (void);
 
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
+
+bool
+ep_rt_mono_write_event_method_il_to_native_map (
+	MonoMethod *method,
+	MonoJitInfo *ji);
 
 bool
 ep_rt_mono_write_event_method_load (
