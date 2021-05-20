@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.SDK">
-  <!-- These are wrapper project files for packaging.-->
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
+    <!-- The only output of this project is the package as the tasks aren't packaged. -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <IsSourceProject>false</IsSourceProject>
     <IsPackable>true</IsPackable>
