@@ -881,23 +881,16 @@ enum CorInfoException
 
 enum CorInfoIntrinsics
 {
-    CORINFO_INTRINSIC_GetChar,              // fetch character out of string
-    CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
     CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
     CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-    CORINFO_INTRINSIC_StringGetChar,        // fetch character out of string
-    CORINFO_INTRINSIC_StringLength,         // get the length
     CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-    CORINFO_INTRINSIC_GetTypeFromHandle,
     CORINFO_INTRINSIC_RTH_GetValueInternal,
-    CORINFO_INTRINSIC_TypeEQ,
-    CORINFO_INTRINSIC_TypeNEQ,
     CORINFO_INTRINSIC_Object_GetType,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-    CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
     CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
+
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
     CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -910,8 +903,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
-    CORINFO_INTRINSIC_Span_GetItem,
-    CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
     CORINFO_INTRINSIC_GetRawHandle,
 
     CORINFO_INTRINSIC_Count,

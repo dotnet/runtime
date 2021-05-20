@@ -61,4 +61,4 @@ All that's left is to ensure that your changes have worked as expected. To do so
 
 ## Approval Process
 
-All the servicing change must go through an approval process. Please create your PR using [this template](https://github.com/dotnet/runtime/compare/template?expand=1&template=servicing_pull_request_template.md). You should also add `servicing-consider` label to the pull request and bring it to the attention of the engineering lead responsible for the area.
+All the servicing change must go through an approval process. Please create your PR using [this template](https://raw.githubusercontent.com/dotnet/runtime/main/.github/PULL_REQUEST_TEMPLATE/servicing_pull_request_template.md). You should also add `servicing-consider` label to the pull request and bring it to the attention of the engineering lead responsible for the area.

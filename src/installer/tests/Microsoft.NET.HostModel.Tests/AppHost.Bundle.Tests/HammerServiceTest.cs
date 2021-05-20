@@ -21,16 +21,10 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "On Windows, the hammer servicing location is %ProgramFiles%\\coreservicing. Since writing to this location requires administrative privilege, we do not run the test on Windows.")]
         private void SingleFile_Apps_Are_Serviced()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // On Windows, the hammer servicing location is %ProgramFiles%\coreservicing.
-                // Since writing to this location requires administrative privilege, we do not run the test on Windows.
-                // On Unix systems, the servicing location is obtained from the environment variable $CORE_SERVICING.
-
-                return;
-            }
+            // On Unix systems, the servicing location is obtained from the environment variable $CORE_SERVICING.
 
             var fixture = sharedTestState.TestFixture.Copy();
             var servicer = sharedTestState.ServiceFixture.Copy();

@@ -63,7 +63,7 @@ internal class Program
         return result;
     }
 
-    public static string OSExeSuffix(string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
+    public static string OSExeSuffix(string path) => (OperatingSystem.IsWindows() ? path + ".exe" : path);
 
     private static void PrepareCompilationInputFolder(string coreRootFolder, string compilationInputFolder)
     {

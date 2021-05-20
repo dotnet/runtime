@@ -12,8 +12,14 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
+    <NetCoreAppCurrentBuildSettings>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
+    <NetCoreAppCurrentTestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
+    <NetCoreAppCurrentTestHostSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
+    
     <TargetsForTfmSpecificContentInPackage Condition="'$(IsPackable)' == 'true'">$(TargetsForTfmSpecificContentInPackage);LibIntellisenseDocs</TargetsForTfmSpecificContentInPackage>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
+
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')))">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable;CA1052</NoWarn>
     <!-- Ignore Obsolete errors within the generated shims that type-forward types.
@@ -23,8 +29,9 @@
          SYSLIB0021: Derived cryptographic types.
          SYSLIB0022: Rijndael types.
          SYSLIB0023: RNGCryptoServiceProvider.
+         SYSLIB0025: SuppressIldasmAttribute.
     -->
-    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023</NoWarn>
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
     <!-- Set the documentation output file globally. -->
@@ -59,12 +66,16 @@
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
+    <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
-    <!-- Microsoft.Extensions are not yet using the doc-file package -->
-    <BinPlaceItem Include="$(DocumentationFile)" />
-  </ItemGroup>
+  <Target Name="AddDocumentationFileAsBinPlaceItemForExtensionsProjects"
+          Condition="Exists('$(DocumentationFile)')">
+    <ItemGroup>
+      <!-- Microsoft.Extensions are not yet using the doc-file package -->
+      <BinPlaceItem Include="$(DocumentationFile)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
@@ -77,7 +88,7 @@
 
     <!-- binplace to directories for packages -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
-                              Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+                              Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
       <PackageFileNativePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileNativePath>
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
@@ -97,9 +108,9 @@
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
-                              Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
-      <NativePath >$(NETCoreAppTestSharedFrameworkPath)</NativePath>
-      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
+                              Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
+      <NativePath >$(NetCoreAppCurrentTestHostSharedFrameworkPath)</NativePath>
+      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NetCoreAppCurrentTestHostSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
     <!-- Microsoft.NetCore.App.Ref and Microsoft.NetCore.App.Runtime targeting packs -->

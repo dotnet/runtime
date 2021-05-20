@@ -60,7 +60,7 @@ namespace System.IO.Enumeration
 
         private unsafe IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
         {
-            (int status, IntPtr handle) = Interop.NtDll.CreateFile(
+            (uint status, IntPtr handle) = Interop.NtDll.CreateFile(
                 relativePath,
                 _directoryHandle,
                 Interop.NtDll.CreateDisposition.FILE_OPEN,
@@ -68,7 +68,7 @@ namespace System.IO.Enumeration
                 createOptions: Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT | Interop.NtDll.CreateOptions.FILE_DIRECTORY_FILE
                     | Interop.NtDll.CreateOptions.FILE_OPEN_FOR_BACKUP_INTENT);
 
-            switch ((uint)status)
+            switch (status)
             {
                 case Interop.StatusOptions.STATUS_SUCCESS:
                     return handle;
@@ -77,7 +77,7 @@ namespace System.IO.Enumeration
                     // such as ERROR_ACCESS_DENIED. As we want to replicate Win32 handling/reporting and the mapping isn't documented,
                     // we should always do our logic on the converted code, not the NTSTATUS.
 
-                    int error = (int)Interop.NtDll.RtlNtStatusToDosError(status);
+                    int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)status);
 
                     if (ContinueOnDirectoryError(error, ignoreNotFound: true))
                     {

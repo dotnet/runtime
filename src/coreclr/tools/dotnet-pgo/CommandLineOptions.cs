@@ -28,6 +28,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool DisplayProcessedEvents;
         public bool ValidateOutputFile;
         public bool GenerateCallGraph;
+        public bool Spgo;
+        public bool SpgoIncludeBlockCounts;
+        public bool SpgoIncludeEdgeCounts;
+        public int SpgoMinSamples = 50;
         public bool VerboseWarnings;
         public jittraceoptions JitTraceOptions;
         public double ExcludeEventsBefore;
@@ -40,6 +44,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public List<AssemblyName> IncludedAssemblies = new List<AssemblyName>();
         public bool DumpMibc = false;
         public FileInfo InputFileToDump;
+        public List<FileInfo> CompareMibc;
 
         public string[] HelpArgs = Array.Empty<string>();
 
@@ -189,6 +194,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 #endif
                 CommonOptions();
                 CompressedOption();
+
+                syntax.DefineOption(name: "spgo", value: ref Spgo, help: "Base profile on samples in the input. Uses last branch records if available and otherwise raw IP samples.", requireValue: false);
+                syntax.DefineOption(name: "spgo-with-block-counts", value: ref SpgoIncludeBlockCounts, help: "Include block counts in the written .mibc file. If neither this nor spgo-with-edge-counts are specified, then defaults to true.", requireValue: false);
+                syntax.DefineOption(name: "spgo-with-edge-counts", value: ref SpgoIncludeEdgeCounts, help: "Include edge counts in the written .mibc file.", requireValue: false);
+                syntax.DefineOption(name: "spgo-min-samples", value: ref SpgoMinSamples, help: $"The minimum number of total samples a function must have before generating profile data for it with SPGO. Default: {SpgoMinSamples}", requireValue: false);
+
+                if (!SpgoIncludeBlockCounts && !SpgoIncludeEdgeCounts)
+                    SpgoIncludeBlockCounts = true;
+
                 HelpOption();
             }
 
@@ -231,7 +245,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 HelpArgs = new string[] { "merge", "--help", "--output", "output", "--input", "input"};
 
-                InputFilesToMerge = DefineFileOptionList(name: "i|input", help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.");
+                InputFilesToMerge = DefineFileOptionList(name: "i|input", help: "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc");
                 OutputOption();
 
                 IReadOnlyList<string> assemblyNamesAsStrings = null;
@@ -281,6 +295,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     OutputFileName = new FileInfo(outputFile);
             }
 
+            var compareMibcCommand = syntax.DefineCommand(name: "compare-mibc", value: ref command, help: "Compare two .mibc files");
+            if (compareMibcCommand.IsActive)
+            {
+                HelpArgs = new[] { "compare-mibc", "--input", "first.mibc", "--input", "second.mibc" };
+                CompareMibc = DefineFileOptionList(name: "i|input", help: "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc");
+                if (CompareMibc.Count != 2)
+                    Help = true;
+            }
 
             if (syntax.ActiveCommand == null)
             {
@@ -363,7 +385,7 @@ Example tracing commands used to generate the input to this tool:
         private void ParseCommmandLineHelper(string[] args)
         {
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, DefineArgumentSyntax);
-            if (Help || (!FileType.HasValue && (InputFilesToMerge == null) && !DumpMibc))
+            if (Help || (!FileType.HasValue && (InputFilesToMerge == null) && !DumpMibc && CompareMibc == null))
             {
                 Help = true;
             }

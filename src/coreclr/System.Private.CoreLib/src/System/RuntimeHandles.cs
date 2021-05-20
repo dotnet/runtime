@@ -437,6 +437,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetNumVirtualsAndStaticVirtuals(RuntimeType type);
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void VerifyInterfaceIsImplemented(QCallTypeHandle handle, QCallTypeHandle interfaceHandle);
 

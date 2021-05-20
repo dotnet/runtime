@@ -746,6 +746,9 @@
         <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
             <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)readytorun/crossgen2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/49365</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
@@ -3381,6 +3384,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
+            <Issue>https://github.com/dotnet/runtime/issues/52763</Issue>
         </ExcludeList>
     </ItemGroup>
 

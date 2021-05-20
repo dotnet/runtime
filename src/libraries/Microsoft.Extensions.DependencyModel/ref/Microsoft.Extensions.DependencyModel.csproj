@@ -4,5 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.DependencyModel.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
   </ItemGroup>
 </Project>
