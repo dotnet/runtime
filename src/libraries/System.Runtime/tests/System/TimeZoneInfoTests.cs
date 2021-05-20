@@ -2723,7 +2723,8 @@ namespace System.Tests
             }).Dispose();
         }
 
-        private static bool CanTestWindowsNlsDisplayNames => s_isWindows && RemoteExecutor.IsSupported && WindowsUILanguageHelper.GetInstalledWin32CulturesWithUniqueLanguages().Length > 1;
+        private static readonly CultureInfo[] s_CulturesForWindowsNlsDisplayNamesTest = WindowsUILanguageHelper.GetInstalledWin32CulturesWithUniqueLanguages();
+        private static bool CanTestWindowsNlsDisplayNames => RemoteExecutor.IsSupported && s_CulturesForWindowsNlsDisplayNamesTest.Length > 1;
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(nameof(CanTestWindowsNlsDisplayNames))]
@@ -2731,7 +2732,7 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                var cultures = WindowsUILanguageHelper.GetInstalledWin32CulturesWithUniqueLanguages();
+                CultureInfo[] cultures = s_CulturesForWindowsNlsDisplayNamesTest;
 
                 CultureInfo.CurrentUICulture = cultures[0];
                 TimeZoneInfo.ClearCachedData();
@@ -2741,9 +2742,9 @@ namespace System.Tests
                 TimeZoneInfo.ClearCachedData();
                 TimeZoneInfo tz2 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
 
-                Assert.True(tz1.StandardName != tz2.DisplayName, $"The display name '{tz1.DisplayName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+                Assert.True(tz1.DisplayName != tz2.DisplayName, $"The display name '{tz1.DisplayName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
                 Assert.True(tz1.StandardName != tz2.StandardName, $"The standard name '{tz1.StandardName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
-                Assert.True(tz1.StandardName != tz2.DaylightName, $"The daylight name '{tz1.DaylightName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+                Assert.True(tz1.DaylightName != tz2.DaylightName, $"The daylight name '{tz1.DaylightName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
             }).Dispose();
         }
 
@@ -3009,7 +3010,7 @@ namespace System.Tests
         }
 
         //  This helper class is used to retrieve information about installed OS languages from Windows.
-        //  It should only be using in Windows platform-specific tests.
+        //  Its methods returns empty when run on non-Windows platforms.
         private static class WindowsUILanguageHelper
         {
             public static CultureInfo[] GetInstalledWin32CulturesWithUniqueLanguages() =>
@@ -3020,6 +3021,11 @@ namespace System.Tests
 
             public static CultureInfo[] GetInstalledWin32Cultures()
             {
+                if (!OperatingSystem.IsWindows())
+                {
+                    return new CultureInfo[0];
+                }
+
                 var context = new EnumContext();
                 EnumUILanguagesProc proc = EnumUiLanguagesCallback;
 
