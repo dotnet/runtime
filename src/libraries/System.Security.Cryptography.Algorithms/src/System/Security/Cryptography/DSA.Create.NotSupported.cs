@@ -7,10 +7,7 @@ namespace System.Security.Cryptography
 {
     public partial class DSA : AsymmetricAlgorithm
     {
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
-        public static new DSA Create()
+        private static DSA CreateCore()
         {
             throw new PlatformNotSupportedException();
         }
