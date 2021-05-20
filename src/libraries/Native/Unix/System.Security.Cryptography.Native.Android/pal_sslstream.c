@@ -654,7 +654,7 @@ int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream
 {
     if (g_SSLEngineGetApplicationProtocol == NULL)
     {
-        LOG_ERROR ("SSLStreamGetApplicationProtocol is only supported from API level 29 and above");
+        // SSLEngine.getApplicationProtocol() is only supported from API level 29 and above
         return FAIL;
     }
 
