@@ -20,7 +20,7 @@
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>6.0.0-preview.6.21268.1</MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>
+    <MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>6.0.0-preview.6.21270.1</MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2012Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
   <!--
