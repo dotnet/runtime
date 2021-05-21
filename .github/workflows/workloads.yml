@@ -1,0 +1,56 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Test
+      shell: pwsh
+      run: |
+        mkdir t0
+        cd t0
+        Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -Outfile dotnet-install.ps1
+        ./dotnet-install.ps1 -Channel release/6.0.1xx-preview5 -InstallDir dotnet
+        
+        $Env:Path="$pwd\dotnet;$Env:Path"
+        $Env:DOTNET_ROOT="$pwd\dotnet"
+        
+        which dotnet
+        
+        # new nugetconfig with dotnet6 feed
+        
+        dotnet new nugetconfig
+        
+        $nugetConfigPath = "$pwd\nuget.config"
+        $doc = (Get-Content $nugetConfigPath) -As [Xml]
+        $node = $doc.SelectSingleNode("/configuration/packageSources/add")
+        
+        $newNode = $doc.CreateElement("add")
+        $newNode.SetAttribute("key", "dotnet6")
+        $newNode.SetAttribute("value", "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json")
+        $doc.configuration.packageSources.InsertBefore($newNode, $node)
+        $doc.Save($nugetConfigPath)
+        
+        # install workload
+        dotnet workload install microsoft-net-sdk-blazorwebassembly-aot
+        
+        # blazorwasm
+        mkdir project
+        cd project
+        dotnet new blazorwasm
+        
+        dotnet publish /p:RunAOTCompilation=true /bl
+        
