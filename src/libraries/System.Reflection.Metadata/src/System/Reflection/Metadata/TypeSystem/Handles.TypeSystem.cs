@@ -2521,7 +2521,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is NamespaceDefinitionHandle && Equals((NamespaceDefinitionHandle)obj);
+            return obj is NamespaceDefinitionHandle ndh && Equals(ndh);
         }
 
         public bool Equals(NamespaceDefinitionHandle other)
@@ -2652,7 +2652,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is BlobHandle && Equals((BlobHandle)obj);
+            return obj is BlobHandle bh && Equals(bh);
         }
 
         public bool Equals(BlobHandle other)
@@ -2720,7 +2720,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is GuidHandle && Equals((GuidHandle)obj);
+            return obj is GuidHandle gh && Equals(gh);
         }
 
         public bool Equals(GuidHandle other)
