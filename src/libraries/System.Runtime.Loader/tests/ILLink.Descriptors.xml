@@ -2,4 +2,6 @@
   <assembly fullname="LoaderLinkTest.Dynamic" />
   <assembly fullname="ReferencedClassLib" />
   <assembly fullname="ReferencedClassLibNeutralIsSatellite" />
+  <!-- Add every ApplyUpdate test assembly here - the baselines must not be altered -->
+  <assembly fullname="System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1" />
 </linker>
