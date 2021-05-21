@@ -1,4 +1,4 @@
-name: Blazor-wasm test
+name: Blazor-wasm test (local build)
 
 on:
   #push:
@@ -29,6 +29,13 @@ jobs:
       shell: pwsh
       run: |
         .\build.cmd -os browser -s mono+libs+pack -bl
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.3
+      with:
+        # Artifact name
+        name: build-log
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ${{ github.workspace }}/artifacts/log/*/Build.binlog
     - name: Test
       shell: pwsh
       run: |
