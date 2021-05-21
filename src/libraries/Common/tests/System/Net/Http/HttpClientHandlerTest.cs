@@ -880,8 +880,9 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(true)]
-        [InlineData(false)]
-        [InlineData(null)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
+        // [InlineData(false)]
+        // [InlineData(null)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

@@ -25,6 +25,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53089")]
         public async Task IncompleteResponseStream_ResponseDropped_CancelsRequestToServer()
         {
             using (HttpClient client = CreateHttpClient())

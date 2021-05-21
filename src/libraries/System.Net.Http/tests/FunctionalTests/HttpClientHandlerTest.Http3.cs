@@ -114,8 +114,8 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
-
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53090")]
         public async Task ReservedFrameType_Throws()
         {
             const int ReservedHttp2PriorityFrameId = 0x2;
