@@ -54,15 +54,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string[] parts = var_name.Split(".");
             JObject rootObject = null;
+            if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret))
+                return ret;
             foreach (string part in parts)
             {
+                string partTrimmed = part.Trim();
                 if (rootObject != null)
                 {
                     if (DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
                         var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
                         var root_res_obj = root_res.Value?["result"];
-                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == part);
+                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
                         if (objRet != null)
                         {
                             rootObject = await GetValueFromObject(objRet, token);
@@ -77,7 +80,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
                     locals_fetched = true;
                 }
-                if (scopeCache.Locals.TryGetValue(part, out JObject obj))
+                if (scopeCache.Locals.TryGetValue(partTrimmed, out JObject obj))
                 {
                     rootObject = obj["value"]?.Value<JObject>();
                 }
@@ -87,35 +90,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
                         var root_res_obj = root_res.Value?["result"];
-                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == part);
+                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
                         if (objRet != null)
                         {
                             rootObject = await GetValueFromObject(objRet, token);
                         }
                     }
                 }
-                /*
-                if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret))
-                    return ret;
-
-                if (varIds == null)
-                {
-                    Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
-                    varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
-                }
-
-                Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.EvaluateMemberAccess(scopeId, var_name, varIds), token);
-                if (res.IsOk)
-                {
-                    ret = res.Value?["result"]?["value"]?["value"]?.Value<JObject>();
-                    scopeCache.MemberReferences[var_name] = ret;
-                }
-                else
-                {
-                    logger.LogDebug(res.Error.ToString());
-                }
-                */
             }
+            scopeCache.MemberReferences[var_name] = rootObject;
             return rootObject;
         }
 
