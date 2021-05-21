@@ -36,6 +36,9 @@ namespace System
         private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
+        private static readonly Dictionary<string, string> s_FileMuiPathCache = new();
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
+
         private sealed partial class CachedData
         {
             private static TimeZoneInfo GetCurrentOneYearLocal()
