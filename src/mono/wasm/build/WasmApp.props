@@ -15,6 +15,5 @@
         _AfterWasmBuildApp
     </WasmBuildAppDependsOn>
   </PropertyGroup>
-
   <Import Project="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)ICU.DataFiles.props" Condition="'$(EnableSharding)' == 'true'" />
 </Project>

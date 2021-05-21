@@ -2,9 +2,6 @@
 //
 // Run runtime tests under a JS shell or a browser
 //
-
-const { config } = require("node:process");
-
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
 

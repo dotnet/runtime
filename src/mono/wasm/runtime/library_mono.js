@@ -1152,7 +1152,6 @@ var MonoSupportLib = {
 		},
 
 		_get_list_of_icu_files: function (dictionary, culture, feature_shards=true, features="") {
-			console.log(dictionary)
 			var icu_files = []
 			if (dictionary === undefined)
 				return null;
@@ -1160,13 +1159,15 @@ var MonoSupportLib = {
 				icu_files = [dictionary.full];
 			} else {
 				var shard_name = this._get_shard_name(dictionary.shards, culture)
-				var files = dictionary.packs[shard_name];
+				var packs = dictionary.packs;
+				var files = packs[shard_name];
 				if (!feature_shards) {
 					icu_files = files.full;
 				} else {
 					// Get base files first
-					files[files.extends].forEach(feature => icu_files.push(...files[files.extends][feature]))
-
+					for (var feature in packs[files.extends]) {
+						icu_files.push(...packs[files.extends][feature]);
+					}
 					// Adding shard specific core files such as collation and locales
 					icu_files.push(...files["core"])
 					

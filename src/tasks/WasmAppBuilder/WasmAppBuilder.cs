@@ -250,27 +250,6 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        // if (!InvariantGlobalization)
-        // {
-        //     if (!string.IsNullOrEmpty(IcuDictionary!))
-        //     {
-        //         try
-        //         {
-        //             string? icuDictionary = File.ReadAllText(IcuDictionary!);
-        //             config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
-        //         }
-        //         catch (Exception e)
-        //         {
-        //             Log.LogError($"Error with opening ICU Dictionary {e.Message}");
-        //             return false;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         config.Assets.Add(new IcuData("icudt.dat") { LoadRemote = RemoteSources?.Length > 0 });
-        //     }
-        // }
-
         string monoConfigPath = Path.Combine(AppDir, "mono-config.js");
         using (var sw = File.CreateText(monoConfigPath))
         {
