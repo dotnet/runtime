@@ -3953,17 +3953,13 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         return PROMOTION_TYPE_DEPENDENT;
     }
 
-    // We have a parameter that could be enregistered
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-    // The struct parameter is a register candidate
-    return PROMOTION_TYPE_INDEPENDENT;
-#else
-    // The struct parameter is not enregistered
+// We have a parameter that could be enregistered
+#if defined(TARGET_ARM)
+    // TODO-Cleanup: return INDEPENDENT for arm32.
     return PROMOTION_TYPE_DEPENDENT;
-#endif
+#else  // !TARGET_ARM
+    return PROMOTION_TYPE_INDEPENDENT;
+#endif // !TARGET_ARM
 }
 
 /*****************************************************************************
