@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -2721,31 +2720,7 @@ namespace System.Tests
                 Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expected display name for Pacific time zone");
 
             }).Dispose();
-        }
 
-        private static readonly CultureInfo[] s_CulturesForWindowsNlsDisplayNamesTest = WindowsUILanguageHelper.GetInstalledWin32CulturesWithUniqueLanguages();
-        private static bool CanTestWindowsNlsDisplayNames => RemoteExecutor.IsSupported && s_CulturesForWindowsNlsDisplayNamesTest.Length > 1;
-
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(nameof(CanTestWindowsNlsDisplayNames))]
-        public static void TestWindowsNlsDisplayNames()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                CultureInfo[] cultures = s_CulturesForWindowsNlsDisplayNamesTest;
-
-                CultureInfo.CurrentUICulture = cultures[0];
-                TimeZoneInfo.ClearCachedData();
-                TimeZoneInfo tz1 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
-
-                CultureInfo.CurrentUICulture = cultures[1];
-                TimeZoneInfo.ClearCachedData();
-                TimeZoneInfo tz2 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
-
-                Assert.True(tz1.DisplayName != tz2.DisplayName, $"The display name '{tz1.DisplayName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
-                Assert.True(tz1.StandardName != tz2.StandardName, $"The standard name '{tz1.StandardName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
-                Assert.True(tz1.DaylightName != tz2.DaylightName, $"The daylight name '{tz1.DaylightName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
-            }).Dispose();
         }
 
         [Theory]
@@ -3007,57 +2982,6 @@ namespace System.Tests
                     TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardDisplayName, daylightDisplayName, adjustmentRules);
                 }
             });
-        }
-
-        //  This helper class is used to retrieve information about installed OS languages from Windows.
-        //  Its methods returns empty when run on non-Windows platforms.
-        private static class WindowsUILanguageHelper
-        {
-            public static CultureInfo[] GetInstalledWin32CulturesWithUniqueLanguages() =>
-                GetInstalledWin32Cultures()
-                    .GroupBy(c => c.TwoLetterISOLanguageName)
-                    .Select(g => g.First())
-                    .ToArray();
-
-            public static CultureInfo[] GetInstalledWin32Cultures()
-            {
-                if (!OperatingSystem.IsWindows())
-                {
-                    return new CultureInfo[0];
-                }
-
-                var context = new EnumContext();
-                EnumUILanguagesProc proc = EnumUiLanguagesCallback;
-
-                EnumUILanguages(proc, MUI_ALL_INSTALLED_LANGUAGES | MUI_LANGUAGE_NAME, context);
-                GC.KeepAlive(proc);
-                return context.InstalledCultures.ToArray();
-            }
-
-            private static bool EnumUiLanguagesCallback(IntPtr lpUiLanguageString, EnumContext lParam)
-            {
-                var cultureName = Marshal.PtrToStringUni(lpUiLanguageString);
-                if (cultureName != null)
-                {
-                    lParam.InstalledCultures.Add(CultureInfo.GetCultureInfo(cultureName));
-                    return true;
-                }
-
-                return false;
-            }
-
-            private const uint MUI_LANGUAGE_NAME = 0x8;
-            private const uint MUI_ALL_INSTALLED_LANGUAGES = 0x20;
-
-            [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
-            private static extern bool EnumUILanguages(EnumUILanguagesProc lpUILanguageEnumProc, uint dwFlags, EnumContext lParam);
-
-            private delegate bool EnumUILanguagesProc(IntPtr lpUILanguageString, EnumContext lParam);
-
-            private class EnumContext
-            {
-                public readonly List<CultureInfo> InstalledCultures = new();
-            }
         }
     }
 }
