@@ -59,7 +59,7 @@ namespace System.IO.Tests.Enumeration
                  // Skipping attributes would force a disk hit which enters the cyclic symlink
                  new EnumerationOptions(){ AttributesToSkip = 0 });
 
-            Assert.Equal(1, enumerable.Count());
+            Assert.Single(enumerable);
         }
     }
 }

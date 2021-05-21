@@ -33,7 +33,7 @@ namespace System.IO.Tests
         public void EnumerateFileSystemEntries_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
-            Assert.Equal(1, Directory.EnumerateFileSystemEntries(testDirectory.FullName).Count());
+            Assert.Single(Directory.EnumerateFileSystemEntries(testDirectory.FullName));
         }
     }
 }
