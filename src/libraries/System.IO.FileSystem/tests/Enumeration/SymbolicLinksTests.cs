@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests.Enumeration
 {
+    [ConditionalClass(typeof(FileSystemTest), nameof(CanCreateSymbolicLinks))]
     public class Enumeration_SymbolicLinksTests : BaseSymbolicLinks
     {
         [Fact]

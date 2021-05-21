@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ConditionalClass(typeof(FileSystemTest), nameof(CanCreateSymbolicLinks))]
     public class Directory_SymbolicLinks : BaseSymbolicLinks
     {
         [Fact]
