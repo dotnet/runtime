@@ -12,8 +12,8 @@ namespace System.Security.Cryptography.X509Certificates
     /// public and private keys of a <see cref="X509Certificate2" />.
     /// </summary>
     [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("tvos")]
     [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     public static class DSACertificateExtensions
     {
         /// <summary>
