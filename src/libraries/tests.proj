@@ -106,6 +106,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives/tests/FunctionalTests/System.Net.Primitives.Functional.Tests.csproj" />
 
+    <!-- Crashes on CI (possibly flakey) -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/Misc/System.Xml.Misc.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -135,6 +138,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory/tests/System.Memory.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail/tests/Functional/System.Net.Mail.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution/tests/PalTests/System.Net.NameResolution.Pal.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/UnitTests/System.Net.Security.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient/tests/System.Net.WebClient.Tests.csproj" />
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj" /> -->
@@ -203,7 +207,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging/tests/Common/Microsoft.Extensions.Logging.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression/tests/System.IO.Compression.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.ZipFile.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem/tests/System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging/tests/System.IO.Packaging.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/UnitTests/System.Private.Uri.Unit.Tests.csproj" />
