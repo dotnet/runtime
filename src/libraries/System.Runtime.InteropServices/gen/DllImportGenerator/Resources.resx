@@ -181,6 +181,15 @@
   <data name="CustomTypeMarshallingNativeToManagedUnsupported" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</value>
   </data>
+  <data name="GeneratedDllImportContainingTypeMissingModifiersDescription" xml:space="preserve">
+    <value>Types that contain methods marked with 'GeneratedDllImportAttribute' must be 'partial'. P/Invoke source generation will ignore methods contained within non-partial types.</value>
+  </data>
+  <data name="GeneratedDllImportContainingTypeMissingModifiersMessage" xml:space="preserve">
+    <value>Type '{0}' contains methods marked with 'GeneratedDllImportAttribute' and should be 'partial'. P/Invoke source generation will ignore methods contained within non-partial types.</value>
+  </data>
+  <data name="GeneratedDllImportContainingTypeMissingModifiersTitle" xml:space="preserve">
+    <value>Types that contain methods marked with 'GeneratedDllImportAttribute' must be 'partial'.</value>
+  </data>
   <data name="GeneratedDllImportMissingModifiersDescription" xml:space="preserve">
     <value>Methods marked with 'GeneratedDllImportAttribute' should be 'static' and 'partial'. P/Invoke source generation will ignore methods that are not 'static' and 'partial'.</value>
   </data>

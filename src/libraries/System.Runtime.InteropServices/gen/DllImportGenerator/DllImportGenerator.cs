@@ -285,6 +285,15 @@ namespace Microsoft.Interop
                     return;
                 }
 
+                // Verify that the types the method is declared in are marked partial.
+                for (SyntaxNode? parentNode = methodSyntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+                {
+                    if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
+                    {
+                        return;
+                    }
+                }
+
                 // Check if the method is marked with the GeneratedDllImport attribute.
                 foreach (AttributeListSyntax listSyntax in methodSyntax.AttributeLists)
                 {

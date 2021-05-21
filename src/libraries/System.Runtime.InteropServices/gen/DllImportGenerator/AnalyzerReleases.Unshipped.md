@@ -21,3 +21,4 @@ DLLIMPORTGENANALYZER013 | Usage            | Warning  | GeneratedDllImportMissin
 DLLIMPORTGENANALYZER014 | Usage            | Error    | RefValuePropertyUnsupported
 DLLIMPORTGENANALYZER015 | Interoperability | Disabled | ConvertToGeneratedDllImportAnalyzer
 DLLIMPORTGENANALYZER016 | Usage            | Error    | GenericTypeMustBeClosed
+DLLIMPORTGENANALYZER017 | Usage            | Warning  | GeneratedDllImportContainingTypeMissingModifiers

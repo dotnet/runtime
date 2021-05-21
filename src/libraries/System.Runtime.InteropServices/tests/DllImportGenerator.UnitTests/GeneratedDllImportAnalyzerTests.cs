@@ -139,5 +139,55 @@ partial class Test
 ";
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
+
+        [Theory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("record")]
+
+        public async Task NonPartialParentType_Diagnostic(string typeKind)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+{typeKind} {{|#0:Test|}}
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    static partial void {{|CS0751:Method2|}}();
+}}
+";
+
+            await VerifyCS.VerifyAnalyzerAsync(
+                source,
+                VerifyCS.Diagnostic(GeneratedDllImportContainingTypeMissingModifiers)
+                    .WithLocation(0)
+                    .WithArguments("Test"));
+        }
+
+        [Theory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("record")]
+
+        public async Task NonPartialGrandparentType_Diagnostic(string typeKind)
+        {
+
+            string source = $@"
+using System.Runtime.InteropServices;
+{typeKind} {{|#0:Test|}}
+{{
+    partial class TestInner
+    {{
+        [GeneratedDllImport(""DoesNotExist"")]
+        static partial void Method2();
+    }}
+}}
+";
+
+            await VerifyCS.VerifyAnalyzerAsync(
+                source,
+                VerifyCS.Diagnostic(GeneratedDllImportContainingTypeMissingModifiers)
+                    .WithLocation(0)
+                    .WithArguments("Test"));
+        }
     }
 }

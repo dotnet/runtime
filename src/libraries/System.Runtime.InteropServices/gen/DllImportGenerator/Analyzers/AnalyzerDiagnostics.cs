@@ -29,6 +29,7 @@ namespace Microsoft.Interop.Analyzers
 
             // GeneratedDllImport
             public const string GeneratedDllImportMissingRequiredModifiers = Prefix + "013";
+            public const string GeneratedDllImportContaiingTypeMissingRequiredModifiers = Prefix + "017";
 
             // Migration from DllImport to GeneratedDllImport
             public const string ConvertToGeneratedDllImport = Prefix + "015";

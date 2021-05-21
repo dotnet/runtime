@@ -250,6 +250,33 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Types that contain methods marked with &apos;GeneratedDllImportAttribute&apos; must be &apos;partial&apos;. P/Invoke source generation will ignore methods contained within non-partial types..
+        /// </summary>
+        internal static string GeneratedDllImportContainingTypeMissingModifiersDescription {
+            get {
+                return ResourceManager.GetString("GeneratedDllImportContainingTypeMissingModifiersDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type &apos;{0}&apos; contains methods marked with &apos;GeneratedDllImportAttribute&apos; and should be &apos;partial&apos;. P/Invoke source generation will ignore methods contained within non-partial types..
+        /// </summary>
+        internal static string GeneratedDllImportContainingTypeMissingModifiersMessage {
+            get {
+                return ResourceManager.GetString("GeneratedDllImportContainingTypeMissingModifiersMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Types that contain methods marked with &apos;GeneratedDllImportAttribute&apos; must be &apos;partial&apos;..
+        /// </summary>
+        internal static string GeneratedDllImportContainingTypeMissingModifiersTitle {
+            get {
+                return ResourceManager.GetString("GeneratedDllImportContainingTypeMissingModifiersTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
         /// </summary>
         internal static string GeneratedDllImportMissingModifiersDescription {
