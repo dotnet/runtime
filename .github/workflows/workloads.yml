@@ -19,6 +19,7 @@ jobs:
     - name: Test
       shell: pwsh
       run: |
+        cd ..
         mkdir t0
         cd t0
         Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -Outfile dotnet-install.ps1
@@ -42,6 +43,8 @@ jobs:
         $newNode.SetAttribute("value", "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json")
         $doc.configuration.packageSources.InsertBefore($newNode, $node)
         $doc.Save($nugetConfigPath)
+        
+        type nuget.config
         
         # install workload
         dotnet workload install microsoft-net-sdk-blazorwebassembly-aot
