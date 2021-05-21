@@ -54,13 +54,19 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string[] parts = var_name.Split(".");
             JObject rootObject = null;
-            if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret))
+
+            if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret)) {
                 return ret;
+            }
             foreach (string part in parts)
             {
                 string partTrimmed = part.Trim();
+                if (partTrimmed == "")
+                    return null;
                 if (rootObject != null)
                 {
+                    if (rootObject?["subtype"]?.Value<string>() == "null")
+                        return null;
                     if (DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
                         var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
@@ -69,6 +75,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (objRet != null)
                         {
                             rootObject = await GetValueFromObject(objRet, token);
+                        }
+                        else
+                        {
+                            return null;
                         }
                     }
                     continue;
@@ -84,9 +94,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     rootObject = obj["value"]?.Value<JObject>();
                 }
-                if (scopeCache.Locals.TryGetValue("this", out JObject objThis))
+                else if (scopeCache.Locals.TryGetValue("this", out JObject objThis))
                 {
-                    if (DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                    if (partTrimmed == "this")
+                    {
+                        rootObject = objThis?["value"].Value<JObject>();
+                    }
+                    else if (DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
                         var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
                         var root_res_obj = root_res.Value?["result"];
@@ -94,6 +108,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (objRet != null)
                         {
                             rootObject = await GetValueFromObject(objRet, token);
+                        }
+                        else
+                        {
+                            return null;
                         }
                     }
                 }
