@@ -2481,8 +2481,27 @@ void Compiler::lvaPromoteLongVars()
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
     {
         LclVarDsc* varDsc = &lvaTable[lclNum];
-        if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || (varDsc->lvRefCnt() == 0) ||
-            varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
+        if (!varTypeIsLong(varDsc))
+        {
+            continue;
+        }
+        if (varDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+        if (varDsc->lvRefCnt() == 0)
+        {
+            continue;
+        }
+        if (varDsc->lvIsStructField)
+        {
+            continue;
+        }
+        if (fgNoStructPromotion)
+        {
+            continue;
+        }
+        if (fgNoStructParamPromotion && varDsc->lvIsParam)
         {
             continue;
         }
