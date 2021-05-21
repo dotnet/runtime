@@ -3820,9 +3820,6 @@ public:
 
     StructPromotionHelper* structPromotionHelper;
 
-#if !defined(TARGET_64BIT)
-    void lvaPromoteLongVars();
-#endif // !defined(TARGET_64BIT)
     unsigned lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOffset);
     lvaPromotionType lvaGetPromotionType(const LclVarDsc* varDsc);
     lvaPromotionType lvaGetPromotionType(unsigned varNum);
