@@ -15,7 +15,7 @@ namespace System.IO.Tests
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
 
             // Windows differentiates between dir symlinks and file symlinks
-            int expected = PlatformDetection.IsWindows ? 1 : 0;
+            int expected = OperatingSystem.IsWindows() ? 1 : 0;
             Assert.Equal(expected, Directory.EnumerateDirectories(testDirectory.FullName).Count());
         }
 
@@ -25,7 +25,7 @@ namespace System.IO.Tests
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
 
             // Windows differentiates between dir symlinks and file symlinks
-            int expected = PlatformDetection.IsWindows ? 0 : 1;
+            int expected = OperatingSystem.IsWindows() ? 0 : 1;
             Assert.Equal(expected, Directory.EnumerateFiles(testDirectory.FullName).Count());
         }
 

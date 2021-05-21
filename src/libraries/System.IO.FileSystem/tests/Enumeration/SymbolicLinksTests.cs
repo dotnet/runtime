@@ -25,7 +25,7 @@ namespace System.IO.Tests.Enumeration
                  };
 
             // Windows differentiates between dir symlinks and file symlinks
-            int expected = PlatformDetection.IsWindows ? 1 : 0;
+            int expected = OperatingSystem.IsWindows() ? 1 : 0;
             Assert.Equal(expected, enumerable.Count());
         }
 
@@ -44,7 +44,7 @@ namespace System.IO.Tests.Enumeration
                  };
 
             // Windows differentiates between dir symlinks and file symlinks
-            int expected = PlatformDetection.IsWindows ? 0 : 1;
+            int expected = OperatingSystem.IsWindows() ? 0 : 1;
             Assert.Equal(expected, enumerable.Count());
         }
 

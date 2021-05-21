@@ -18,7 +18,7 @@ namespace System.IO.Tests
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
 
             // Windows avoids accessing the cyclic symlink if we do not recurse
-            if (PlatformDetection.IsWindows && !recurse)
+            if (OperatingSystem.IsWindows() && !recurse)
             {
                 testDirectory.EnumerateDirectories("*", options).Count();
                 testDirectory.GetDirectories("*", options).Count();
@@ -40,7 +40,7 @@ namespace System.IO.Tests
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
 
             // Windows avoids accessing the cyclic symlink if we do not recurse
-            if (PlatformDetection.IsWindows && !recurse)
+            if (OperatingSystem.IsWindows() && !recurse)
             {
                 testDirectory.EnumerateFiles("*", options).Count();
                 testDirectory.GetFiles("*", options).Count();
@@ -62,7 +62,7 @@ namespace System.IO.Tests
             DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
 
             // Windows avoids accessing the cyclic symlink if we do not recurse
-            if (PlatformDetection.IsWindows && !recurse)
+            if (OperatingSystem.IsWindows() && !recurse)
             {
                 testDirectory.EnumerateFileSystemInfos("*", options).Count();
                 testDirectory.GetFileSystemInfos("*", options).Count();
