@@ -77,7 +77,7 @@ namespace ILLink.Tasks
 
 			public override int GetHashCode ()
 			{
-				return _key.GetHashCode();
+				return _key.GetHashCode ();
 			}
 
 			public override bool Equals (object obj)
@@ -90,7 +90,7 @@ namespace ILLink.Tasks
 		readonly Dictionary<string, string> namespaceDictionary = new Dictionary<string, string> ();
 		readonly Dictionary<string, string> classIdsToClassNames = new Dictionary<string, string> ();
 		readonly Dictionary<string, ClassMembers> classNamesToClassMembers = new Dictionary<string, ClassMembers> ();
-		readonly Dictionary<FeatureSwitchMembers, Dictionary<string, ClassMembers>> featureSwitchMembers = new Dictionary<FeatureSwitchMembers, Dictionary<string, ClassMembers>> ();
+		readonly Dictionary<FeatureSwitchMembers, Dictionary<string, ClassMembers>> featureSwitchMembers = new ();
 		readonly HashSet<string> defineConstants = new HashSet<string> (StringComparer.Ordinal);
 
 		public override bool Execute ()
@@ -186,7 +186,7 @@ namespace ILLink.Tasks
 					} else {
 						char[] separators = { ',', '(', ')', ' ', '\t', '/' };
 						string[] featureSwitchElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
-						if(featureSwitchElements.Length !=4 ) {
+						if (featureSwitchElements.Length != 4) {
 							Log.LogError ($"BEGIN_ILLINK_FEATURE_SWITCH is not formatted correctly '{typeFile}' for line {def}");
 							return;
 						}
