@@ -137,10 +137,7 @@ private:
 
 FORCEINLINE void DeregisterProfilerIfNotificationOnly(ProfilerInfo *pProfilerInfo) 
 {
-    if (!g_profControlBlock.IsMainProfiler(pProfilerInfo->pProfInterface))
-    {
-        g_profControlBlock.RemoveProfilerInfo(pProfilerInfo);
-    }
+    g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
 }
 
 typedef Wrapper<ProfilerInfo *, DoNothing, DeregisterProfilerIfNotificationOnly> ProfilerInfoHolder;

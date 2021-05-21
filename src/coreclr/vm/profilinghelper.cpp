@@ -1093,16 +1093,11 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
     // Client data is currently only specified on attach
     _ASSERTE((pvClientData == NULL) || (loadType == kAttachLoad));
 
-    NewHolder<ProfilerInfo> pProfilerInfo = new (nothrow) ProfilerInfo;
-    if (pProfilerInfo == NULL)
-    {
-        LogProfError(IDS_EE_OUT_OF_MEMORY);
-        return E_FAIL;
-    }
-
+    ProfilerInfo profilerInfo;
     // RAII type that will deregister if we bail at any point
-    ProfilerInfoHolder profilerInfoHolder(pProfilerInfo);
-    pProfilerInfo->Init();
+    ProfilerInfoHolder profilerInfoHolder(&profilerInfo);
+    profilerInfo.Init();
+    profilerInfo.inUse = TRUE;
 
     HRESULT hr = PerformDeferredInit();
     if (FAILED(hr))
@@ -1120,7 +1115,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // Usually we need to take the lock when modifying profiler status, but at this
         // point no one else could have a pointer to this ProfilerInfo so we don't
         // need to synchronize. Once we store it in g_profControlBlock we need to.
-        pProfilerInfo->curProfStatus.Set(kProfStatusPreInitialize);
+        profilerInfo.curProfStatus.Set(kProfStatusPreInitialize);
     }
 
     NewHolder<EEToProfInterfaceImpl> pEEProf(new (nothrow) EEToProfInterfaceImpl());
@@ -1153,18 +1148,19 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // callback (which we do immediately below), and have it successfully call
         // back into us via the Info interface (ProfToEEInterfaceImpl) to perform its
         // initialization.
-        pProfilerInfo->pProfInterface = pEEProf.GetValue();
+        profilerInfo.pProfInterface = pEEProf.GetValue();
         pEEProf.SuppressRelease();
         pEEProf = NULL;
 
         // Set global status to reflect the proper type of Init we're doing (attach vs
         // startup)
-        pProfilerInfo->curProfStatus.Set(
+        profilerInfo.curProfStatus.Set(
             (loadType == kStartupLoad) ?
                 kProfStatusInitializingForStartupLoad :
                 kProfStatusInitializingForAttachLoad);
     }
 
+    ProfilerInfo *pProfilerInfo = NULL;
     {
         // Now we register the profiler, from this point on we need to worry about
         // synchronization
@@ -1173,8 +1169,8 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // Check if this profiler is notification only and load as appropriate
         BOOL notificationOnly = FALSE;
         {
-            EvacuationCounterHolder holder(pProfilerInfo);
-            HRESULT callHr = pProfilerInfo->pProfInterface->CanThisProfilerBeLoadedAsNotficationOnly(&notificationOnly);
+            EvacuationCounterHolder holder(&profilerInfo);
+            HRESULT callHr = profilerInfo.pProfInterface->CanThisProfilerBeLoadedAsNotficationOnly(&notificationOnly);
             if (FAILED(callHr))
             {
                 notificationOnly = FALSE;
@@ -1183,8 +1179,8 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
 
         if (notificationOnly)
         {
-            // This can be a notification only profiler, add it to the list
-            g_profControlBlock.AddProfilerInfo(pProfilerInfo);
+            pProfilerInfo = g_profControlBlock.GetNextFreeProfilerInfo();
+            *pProfilerInfo = profilerInfo;
         }
         else
         {
@@ -1195,13 +1191,11 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
                 return CORPROF_E_PROFILER_ALREADY_ACTIVE;
             }
 
-            g_profControlBlock.mainProfilerInfo = *pProfilerInfo;
+            // This profiler cannot be a notification only profiler, copy it over to the 
+            // main slot and the ProfilerInfoHolder above will clear out the notification slot
+            g_profControlBlock.mainProfilerInfo = profilerInfo;
             pProfilerInfo = &(g_profControlBlock.mainProfilerInfo);
         }
-
-        // Whether it's stored in the notification profiler list or pointing at 
-        // g_profControlBlock.mainProfilerInfo, we don't want to free it any more.
-        pProfilerInfo.SuppressRelease();
 
         pProfilerInfo->pProfInterface->SetProfilerInfo(pProfilerInfo);
     }
@@ -1566,8 +1560,7 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
 
         pProfilerInfo->curProfStatus.Set(kProfStatusNone);
         
-        g_profControlBlock.RemoveProfilerInfo(pProfilerInfo);
-        delete pProfilerInfo;
+        g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
         
         g_profControlBlock.UpdateGlobalEventMask();
     }

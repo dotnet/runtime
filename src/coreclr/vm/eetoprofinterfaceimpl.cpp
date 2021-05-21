@@ -2140,8 +2140,6 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     }
     CONTRACTL_END;
 
-    g_profControlBlock.CheckGlobalEventMask();
-
     BOOL isMainProfiler = g_profControlBlock.IsMainProfiler(this);
 
     if (!isMainProfiler &&

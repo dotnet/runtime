@@ -33,6 +33,8 @@ struct AssemblyReferenceClosureWalkContextForProfAPI;
 
 #include "corprof.h"
 
+#define MAX_NOTIFICATION_PROFILERS 8
+
 //---------------------------------------------------------------------------------------
 // Enumerates the various init states of profiling.
 //
@@ -113,7 +115,9 @@ public:
     // Why volatile?
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
     Volatile<DWORD> dwProfilerEvacuationCounter;
-    
+
+    Volatile<BOOL> inUse;
+
     // Reset those variables that is only for the current attach session
     void ResetPerSessionStatus();
     void Init();
@@ -162,7 +166,8 @@ public:
 
     ProfilerInfo mainProfilerInfo;
 
-    InlineSArray<ProfilerInfo *, 4> notificationOnlyProfilers;
+    ProfilerInfo notificationOnlyProfilers[MAX_NOTIFICATION_PROFILERS];
+    Volatile<UINT32> notificationProfilerCount;
 
     EventMask globalEventMask;
 
@@ -211,90 +216,58 @@ public:
     BOOL IsMainProfiler(EEToProfInterfaceImpl *pEEToProf);
     BOOL IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE);
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
-    ProfilerInfo *GetNextFreeProfilerInfo();
 
     template<typename Func, typename... Args>
     inline VOID IterateProfilers(Func callback, Args... args)
     {
-        EX_TRY
+        if (mainProfilerInfo.pProfInterface.Load() != NULL)
         {
-            if (mainProfilerInfo.pProfInterface.Load() != NULL)
-            {
-                callback(&mainProfilerInfo, args...);
-            }
-
-            for (auto it = notificationOnlyProfilers.Begin(); it != notificationOnlyProfilers.End(); ++it)
-            {
-                ProfilerInfo *current = *it;
-                _ASSERTE(current->pProfInterface.Load() != NULL);
-                callback(current, args...);
-            }
-        }
-        EX_CATCH
-        {
-            _ASSERTE(FALSE);
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
-    }
-
-    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
-    inline HRESULT DoOneProfilerCallback(ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
-    {
-        HRESULT hr = S_OK;
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-        EvacuationCounterHolder evacuationCounter(pProfilerInfo);
+            EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
-        if (condition(pProfilerInfo))
-        {
-            HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
-            if (FAILED(innerHR))
-            {
-                hr = innerHR;
-            }
+            callback(&mainProfilerInfo, args...);
         }
 
-        return hr;
+        if (notificationProfilerCount > 0)
+        {
+            for (SIZE_T i = 0; i < MAX_NOTIFICATION_PROFILERS; ++i)
+            {
+                ProfilerInfo *current = &(notificationOnlyProfilers[i]);
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+                EvacuationCounterHolder evacuationCounter(current);
+#endif // FEATURE_PROFAPI_ATTACH_DETACH
+                if (current->pProfInterface.Load() != NULL)
+                {
+                    callback(current, args...);
+                }
+            }
+        }
     }
 
     template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
     inline HRESULT DoProfilerCallback(ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
     {
         HRESULT hr = S_OK;
-        EX_TRY
-        {
-            HRESULT innerHR = DoOneProfilerCallback(&mainProfilerInfo, condition, additionalData, callback, args...);
-            if (FAILED(innerHR))
-            {
-                hr = innerHR;
-            }
-
-            for (auto it = notificationOnlyProfilers.Begin(); it != notificationOnlyProfilers.End(); ++it)
-            {
-                ProfilerInfo *current = *it;
-                HRESULT innerHR = DoOneProfilerCallback(current, condition, additionalData, callback, args...);
-                if (FAILED(innerHR))
-                {
-                    hr = innerHR;
-                }
-            }
-        }
-        EX_CATCH
-        {
-            _ASSERTE(FALSE);
-            hr = E_FAIL;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
-
+        IterateProfilers([](ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, HRESULT *pHR, Args... args)
+                            {
+                                if (condition(pProfilerInfo))
+                                {
+                                    HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
+                                    if (FAILED(innerHR))
+                                    {
+                                        *pHR = innerHR;
+                                    }
+                                }
+                            },
+                         condition, additionalData, callback, &hr, args...);
         return hr;
     }
 
-    void AddProfilerInfo(ProfilerInfo *pProfilerInfo);
-    void RemoveProfilerInfo(ProfilerInfo *pProfilerInfo);
-
 #ifndef DACCESS_COMPILE
+    ProfilerInfo *GetNextFreeProfilerInfo();
+    void DeRegisterProfilerInfo(ProfilerInfo *pProfilerInfo);
     void UpdateGlobalEventMask();
 #endif // DACCESS_COMPILE
-    void CheckGlobalEventMask();
 
     BOOL IsCallback3Supported();
     BOOL IsCallback5Supported();
