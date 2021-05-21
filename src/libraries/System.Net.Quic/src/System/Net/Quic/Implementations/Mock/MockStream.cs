@@ -204,11 +204,11 @@ namespace System.Net.Quic.Implementations.Mock
 
             if (_streamState._inboundStreamBuffer is null) // unidirectional stream
             {
-                _connection.DecrementUnidirectionalStreamCount();
+                _connection.LocalStreamLimit!.Unidirectional.Decrement();
             }
             else
             {
-                _connection.DecrementBidirectionalStreamCount();
+                _connection.LocalStreamLimit!.Bidirectional.Decrement();
             }
         }
 
