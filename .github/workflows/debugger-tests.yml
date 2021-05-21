@@ -31,6 +31,8 @@ jobs:
         with:
           dotnet-version: 5.0.x
 
+      - name: Provision emsdk
+        run: make -C src/mono/wasm provision-wasm
       - name: Build
         run: make -C src/mono/wasm build-all
       - name: Test
