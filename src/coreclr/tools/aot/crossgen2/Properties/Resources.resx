@@ -156,6 +156,12 @@
   <data name="CompositeBuildMode" xml:space="preserve">
     <value>Emit a composite R2R image comprising a number of input assemblies</value>
   </data>
+  <data name="CompositeKeyFile" xml:space="preserve">
+    <value>KeyFile(.snk) for specifiying a Public Key for the composite image created</value>
+  </data>
+  <data name="ErrorCompositeKeyFileNotPublicKey" xml:space="preserve">
+    <value>--CompositeKeyFile does not specify a valid public key</value>
+  </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
   </data>
@@ -218,6 +224,9 @@
   </data>
   <data name="ReferenceFiles" xml:space="preserve">
     <value>Reference file(s) for compilation</value>
+  </data>
+  <data name="InputBubbleReferenceFiles" xml:space="preserve">
+    <value>Input bubble reference file(s) to be added to bubble (any use of this option is unsupported!) </value>
   </data>
   <data name="ResilientOption" xml:space="preserve">
     <value>Disable behavior where unexpected compilation failures cause overall compilation failure</value>

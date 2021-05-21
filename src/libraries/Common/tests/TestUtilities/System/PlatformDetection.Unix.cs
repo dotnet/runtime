@@ -101,7 +101,18 @@ namespace System
             }
         }
 
-        public static bool OpenSslPresentOnSystem => !IsBrowser && Interop.OpenSslNoInit.OpenSslIsAvailable;
+        public static bool OpenSslPresentOnSystem
+        {
+            get
+            {
+                if (IsAndroid || IsiOS || IstvOS || IsMacCatalyst || IsBrowser)
+                {
+                    return false;
+                }
+
+                return Interop.OpenSslNoInit.OpenSslIsAvailable;
+            }
+        }
 
         private static Version s_opensslVersion;
         private static Version GetOpenSslVersion()

@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-[SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+[SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
 public class SyncTextReader
 {
     // NOTE: These tests test the underlying SyncTextReader by

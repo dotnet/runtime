@@ -375,6 +375,12 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
+      <argument>IL2092</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterfaceMap(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.TypeLoading.Assignability.CanCastArrayToInterface(System.Type,System.Type,System.Reflection.TypeLoading.CoreTypes)</property>

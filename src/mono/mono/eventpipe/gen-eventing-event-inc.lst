@@ -1,0 +1,13 @@
+# Native runtime events supported by Mono runtime.
+
+RuntimeInformationDCStart
+RuntimeInformationDCStart
+AppDomainDCEnd_V1
+DCEndInit_V1
+DCEndComplete_V1
+EEStartupStart_V1
+MethodDCEndILToNativeMap
+MethodDCEndVerbose_V1
+DomainModuleDCEnd_V1
+AssemblyDCEnd_V1
+ModuleDCEnd_V2

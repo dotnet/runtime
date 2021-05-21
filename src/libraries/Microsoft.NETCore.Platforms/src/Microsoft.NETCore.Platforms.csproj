@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.SDK">
-  <!-- These are wrapper project files for packaging.-->
+<Project Sdk="Microsoft.NET.SDK">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
+    <!-- The only output of this project is the package as the tasks aren't packaged. -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <IsSourceProject>false</IsSourceProject>
     <IsPackable>true</IsPackable>
@@ -21,6 +22,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Compile Include="BuildTask.Desktop.cs" />
     <Compile Include="AssemblyResolver.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,7 +40,7 @@
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
     <Content Include="_._" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />

@@ -31,7 +31,7 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
+        System.loadLibrary("System.Security.Cryptography.Native.Android");
         System.loadLibrary("monodroid");
     }
 

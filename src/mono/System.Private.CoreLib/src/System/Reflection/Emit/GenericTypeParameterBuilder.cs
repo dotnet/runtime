@@ -342,7 +342,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             throw not_supported();
         }

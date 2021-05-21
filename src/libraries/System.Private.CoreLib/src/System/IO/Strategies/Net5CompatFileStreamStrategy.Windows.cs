@@ -46,7 +46,7 @@ namespace System.IO.Strategies
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private CompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options, long preallocationSize)
         {
             FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
 

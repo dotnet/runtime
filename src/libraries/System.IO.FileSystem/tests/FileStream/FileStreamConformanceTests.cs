@@ -112,7 +112,7 @@ namespace System.IO.Tests
                 filePath = stream.Name;
 
                 // the following buffer fits into internal FileStream buffer
-                byte[] small = Enumerable.Repeat(byte.MinValue, BufferSize - 1).ToArray();
+                byte[] small = Enumerable.Repeat(byte.MinValue, Math.Max(1, BufferSize - 1)).ToArray();
                 // the following buffer does not fit into internal FileStream buffer
                 byte[] big = Enumerable.Repeat(byte.MaxValue, BufferSize + 1).ToArray();
                 // in this test we are selecting a random buffer and write it to file
@@ -175,7 +175,7 @@ namespace System.IO.Tests
                 stream.WriteByte(0);
                 writtenBytes.Add(0);
 
-                byte[] bytes = new byte[BufferSize - 1];
+                byte[] bytes = new byte[Math.Max(0, BufferSize - 1)];
                 stream.Write(bytes.AsSpan());
                 writtenBytes.AddRange(bytes);
 
@@ -191,7 +191,12 @@ namespace System.IO.Tests
     public class UnbufferedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.None;
+
+#if RELEASE // since buffering can be now disabled by setting the buffer size to 0 or 1, let's test 0 in one config and 1 in the other
+        protected override int BufferSize => 0;
+#else
         protected override int BufferSize => 1;
+#endif
     }
 
     public class BufferedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
@@ -205,7 +210,12 @@ namespace System.IO.Tests
     public class UnbufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
+
+#if RELEASE
+        protected override int BufferSize => 0;
+#else
         protected override int BufferSize => 1;
+#endif
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]

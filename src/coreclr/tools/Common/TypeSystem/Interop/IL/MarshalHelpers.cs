@@ -797,5 +797,23 @@ namespace Internal.TypeSystem.Interop
                 return MarshallerKind.Invalid;
             }
         }
+
+        internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
+        {
+            if (!target.IsOSX)
+                return false;
+
+            const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
+            const string ObjectiveCMsgSend = "objc_msgSend";
+
+            // This is for the objc_msgSend suite of functions.
+            //   objc_msgSend
+            //   objc_msgSend_fpret
+            //   objc_msgSend_stret
+            //   objc_msgSendSuper
+            //   objc_msgSendSuper_stret
+            return metadata.Module.Equals(ObjectiveCLibrary)
+                && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
     }
 }
