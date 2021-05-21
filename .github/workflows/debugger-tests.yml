@@ -36,4 +36,11 @@ jobs:
       - name: Build
         run: make -C src/mono/wasm build-all
       - name: Test
-        run: make -C src/mono/wasm run-debugger-tests
+        run: make -C src/mono/wasm run-debugger-tests MSBUILD_ARGS="/fl /flp:v=diag"
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          # Artifact name
+          name: debugger-build-log
+          # A file, directory or wildcard pattern that describes what to upload
+          path: ${{ github.workspace }}/src/mono/wasm/msbuild.log
