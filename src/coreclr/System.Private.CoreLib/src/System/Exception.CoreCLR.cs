@@ -104,14 +104,14 @@ namespace System
                     return remoteStackTraceString;
                 }
 
-                return remoteStackTraceString + GetStackTrace(this);
+                return remoteStackTraceString + GetStackTrace();
             }
         }
 
-        private static string GetStackTrace(Exception e)
+        private string GetStackTrace()
         {
             // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(e, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            return new StackTrace(this, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         private string? CreateSourceName()
@@ -253,7 +253,7 @@ namespace System
 
                 if (stackTraceString == null && _stackTrace != null)
                 {
-                    stackTraceString = GetStackTrace(this);
+                    stackTraceString = GetStackTrace();
                 }
 
                 return stackTraceString;

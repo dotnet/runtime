@@ -58,19 +58,30 @@ namespace System
             }
         }
 
-        public virtual string? StackTrace => GetStackTrace(true);
-
-        private string? GetStackTrace(bool needFileInfo)
+        public virtual string? StackTrace
         {
-            string? stackTraceString = _stackTraceString;
-            string? remoteStackTraceString = _remoteStackTraceString;
+            get
+            {
+                string? stackTraceString = _stackTraceString;
+                string? remoteStackTraceString = _remoteStackTraceString;
 
-            if (stackTraceString != null)
-                return remoteStackTraceString + stackTraceString;
-            if (_traceIPs == null)
-                return remoteStackTraceString;
+                if (stackTraceString != null)
+                {
+                    return remoteStackTraceString + stackTraceString;
+                }
+                if (_traceIPs == null)
+                {
+                    return remoteStackTraceString;
+                }
 
-            return remoteStackTraceString + new StackTrace(this, needFileInfo).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
+                return remoteStackTraceString + GetStackTrace();
+            }
+        }
+
+        private string GetStackTrace()
+        {
+            // Do not include a trailing newline for backwards compatibility
+            return new StackTrace(this, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         internal DispatchState CaptureDispatchState()
@@ -149,6 +160,20 @@ namespace System
         private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
-        private string? SerializationStackTraceString => GetStackTrace(true);
+
+        private string? SerializationStackTraceString
+        {
+            get
+            {
+                string? stackTraceString = _stackTraceString;
+
+                if (stackTraceString == null && _traceIPs != null)
+                {
+                    stackTraceString = GetStackTrace();
+                }
+
+                return stackTraceString;
+            }
+        }
     }
 }
