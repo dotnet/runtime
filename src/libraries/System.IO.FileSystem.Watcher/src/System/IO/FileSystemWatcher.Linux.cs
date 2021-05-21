@@ -405,7 +405,7 @@ namespace System.IO
                         directoryEntry.Parent = parent;
                         if (hasParent)
                         {
-                            parent!.InitializedChildren.Add (directoryEntry);
+                            parent!.InitializedChildren.Add(directoryEntry);
                         }
                     }
                     directoryEntry.Name = directoryName;
@@ -421,7 +421,7 @@ namespace System.IO
                     };
                     if (hasParent)
                     {
-                        parent!.InitializedChildren.Add (directoryEntry);
+                        parent!.InitializedChildren.Add(directoryEntry);
                     }
                     _wdToPathMap.Add(wd, directoryEntry);
                     isNewDirectory = true;

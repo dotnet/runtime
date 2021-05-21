@@ -105,7 +105,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferencesChildLink()
+        public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferenceChildLink()
         {
             // Arrange
             using var dirA = new TempDirectory(GetTestFilePath());
