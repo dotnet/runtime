@@ -121,8 +121,8 @@ jobs:
       continueOnError: ${{ parameters.continueOnError }}
     - ${{ if ne( parameters.osGroup, 'windows') }}:
       - bash: |
-        echo $(Skip)
-        echo $[variables.Skip]
+          echo $(Skip)
+          echo $[variables.Skip]
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
       displayName: Run ci setup script
       # Run perf testing in helix
