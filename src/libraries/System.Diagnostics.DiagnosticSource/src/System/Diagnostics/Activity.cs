@@ -1058,13 +1058,6 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
-
-            if (request == ActivitySamplingResult.AllDataAndRecorded)
-            {
-                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
-            }
-
             if (parentId != null)
             {
                 activity._parentId = parentId;
@@ -1081,6 +1074,13 @@ namespace System.Diagnostics
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
                 activity._traceState = parentContext.TraceState;
+            }
+
+            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
+
+            if (request == ActivitySamplingResult.AllDataAndRecorded)
+            {
+                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
             if (startTime != default)
