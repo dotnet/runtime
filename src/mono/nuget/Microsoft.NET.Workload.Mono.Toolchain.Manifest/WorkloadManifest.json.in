@@ -4,22 +4,20 @@
     "microsoft-net-sdk-blazorwebassembly-aot": {
       "description": "Browser Runtime native performance tools",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-        "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
+        "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm",
         "Microsoft.NET.Runtime.Emscripten.Node",
         "Microsoft.NET.Runtime.Emscripten.Python",
         "Microsoft.NET.Runtime.Emscripten.Sdk"
       ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android": {
       "abstract": true,
       "description": "Android Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
-        "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.android-arm",
         "Microsoft.NETCore.App.Runtime.Mono.android-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.android-x64",
@@ -28,14 +26,13 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
       ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-ios": {
       "abstract": true,
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
-        "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.iossimulator",
@@ -45,20 +42,28 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86"
       ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
     },
     "microsoft-net-runtime-tvos": {
       "abstract": true,
       "description": "tvOS Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
-        "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.tvossimulator",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator"
       ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
+    },
+    "microsoft-net-runtime-mono-tooling": {
+      "abstract": true,
+      "description": "Shared native build tooling for Mono runtime",
+      "packs": [
+        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
+        "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
+      ],
     }
   },
   "packs": {
