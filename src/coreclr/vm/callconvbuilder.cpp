@@ -387,30 +387,84 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
 #ifndef CROSSGEN_COMPILE
 namespace
 {
-    bool TryGetCallingConventionFromTypeArray(_In_ CaValue* arrayOfTypes, _Out_ CorInfoCallConvExtension* callConv)
+    bool TryGetCallingConventionFromTypeArray(_In_ CaValue* arrayOfTypes, _Inout_ CallConvBuilder* builder)
     {
         CONTRACTL
         {
             STANDARD_VM_CHECK;
             PRECONDITION(arrayOfTypes != NULL);
-            PRECONDITION(callConv != NULL);
+            PRECONDITION(builder != NULL);
         }
         CONTRACTL_END
 
-        CallConvBuilder builder;
         for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
         {
             CaValue& typeNameValue = arrayOfTypes->arr[i];
-            if (!builder.AddFullyQualifiedTypeName(typeNameValue.str.cbStr, typeNameValue.str.pStr))
+            if (!builder->AddFullyQualifiedTypeName(typeNameValue.str.cbStr, typeNameValue.str.pStr))
             {
                 // We found a second base calling convention.
                 return false;
             }
         }
 
-        *callConv = builder.GetCurrentCallConv();
         return true;
     }
+}
+
+HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
+    _In_ MethodDesc* pMD,
+    _Inout_ CallConvBuilder* builder,
+    _Out_opt_ UINT* errorResID)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMD != NULL);
+        PRECONDITION(builder != NULL);
+    }
+    CONTRACTL_END;
+
+    BYTE *pData = NULL;
+    LONG cData = 0;
+
+    // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallConv, (const VOID **)(&pData), (ULONG *)&cData);
+    if (hr != S_OK) // GetCustomAttribute returns S_FALSE if the method does not have the attribute
+        return hr;
+
+    _ASSERTE(cData > 0);
+    CustomAttributeParser ca(pData, cData);
+
+    // CallConvs named argument
+    CaTypeCtor callConvsType(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
+    CaNamedArg callConvsArg;
+    callConvsArg.Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, callConvsType);
+
+    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
+    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+        pData,
+        cData,
+        &caValueArrayFactory,
+        NULL,
+        0,
+        &callConvsArg,
+        1,
+        domainAssembly));
+
+    // Value isn't defined
+    if (callConvsArg.val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
+        return S_FALSE;
+
+    if (!TryGetCallingConventionFromTypeArray(&callConvsArg.val, builder))
+    {
+        if (errorResID != NULL)
+            *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
+
+        return COR_E_INVALIDPROGRAM;
+    }
+
+    return S_OK;
 }
 
 bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* pMD, _Out_ CorInfoCallConvExtension* pCallConv)
@@ -484,12 +538,14 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     }
     else
     {
-        if (!TryGetCallingConventionFromTypeArray(&namedArgs[0].val, &callConvLocal))
+        CallConvBuilder builder;
+        if (!TryGetCallingConventionFromTypeArray(&namedArgs[0].val, &builder))
         {
             // We found a second base calling convention.
             return false;
         }
 
+        callConvLocal = builder.GetCurrentCallConv();
         if (callConvLocal == CallConvBuilder::UnsetValue)
         {
             callConvLocal = CallConv::GetDefaultUnmanagedCallingConvention();

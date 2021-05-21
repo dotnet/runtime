@@ -93,13 +93,13 @@ namespace Microsoft.Extensions.Primitives
             {
                 // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
                 object value = _values;
-                if (value is string)
-                {
-                    return 1;
-                }
                 if (value is null)
                 {
                     return 0;
+                }
+                if (value is string)
+                {
+                    return 1;
                 }
                 else
                 {

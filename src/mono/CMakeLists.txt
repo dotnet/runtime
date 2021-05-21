@@ -470,6 +470,35 @@ if(GCC)
 endif()
 
 ######################################
+# LLVM FLAGS AND LIBRARIES
+######################################
+
+# llvm-config --libs analysis core bitwriter mcjit orcjit
+set(MONO_llvm_core_libs_1100 "-lLLVMOrcJIT" "-lLLVMPasses" "-lLLVMCoroutines" "-lLLVMipo" "-lLLVMInstrumentation" "-lLLVMVectorize" "-lLLVMScalarOpts" "-lLLVMLinker" "-lLLVMIRReader" "-lLLVMAsmParser" "-lLLVMInstCombine" "-lLLVMFrontendOpenMP" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMOrcError" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMTarget" "-lLLVMRuntimeDyld" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+
+# llvm-config --libs x86codegen
+set(MONO_llvm_extra_libs_x86codegen_1100 "-lLLVMX86CodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+
+# llvm-config --libs armcodegen
+set(MONO_llvm_extra_libs_armcodegen_1100 "-lLLVMARMCodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
+
+# llvm-config --libs aarch64codegen
+set(MONO_llvm_extra_libs_aarch64codegen_1100 "-lLLVMAArch64CodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
+
+
+# llvm-config --libs analysis core bitwriter mcjit orcjit
+set(MONO_llvm_core_libs_900 "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+
+# llvm-config --libs x86codegen
+set(MONO_llvm_extra_libs_x86codegen_900 "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+
+# llvm-config --libs armcodegen
+set(MONO_llvm_extra_libs_armcodegen_900 "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
+
+# llvm-config --libs aarch64codegen
+set(MONO_llvm_extra_libs_aarch64codegen_900 "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
+
+######################################
 # LLVM CHECKS
 ######################################
 set(LLVM_LIBS)
@@ -504,19 +533,11 @@ if(LLVM_PREFIX)
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
     # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+    set(llvm_core_libs ${MONO_llvm_core_libs_${llvm_api_version}})
 
     # Check codegen libs and add needed libraries.
-    if("${llvm_codegen_libs}" STREQUAL "x86codegen")
-      # llvm-config --libs x86codegen
-      set(llvm_extra "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
-    elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
-      # llvm-config --libs armcodegen
-      set(llvm_extra "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
-    elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
-      # llvm-config --libs aarch64codegen
-      set(llvm_extra "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
-    else()
+    set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}_${llvm_api_version}})
+    if("${llvm_extra}" STREQUAL "")
       message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
     endif()
 

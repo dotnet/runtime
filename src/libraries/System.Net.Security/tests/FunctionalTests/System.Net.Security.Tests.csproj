@@ -49,6 +49,8 @@
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs"
              Link="Common\System\Net\SslStreamCertificatePolicy.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RandomReadWriteSizeStream.cs"
+             Link="Common\System\Net\RandomReadWriteSizeStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"

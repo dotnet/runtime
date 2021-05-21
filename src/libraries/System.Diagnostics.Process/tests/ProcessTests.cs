@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
             ProcessPriorityClass originalPriority = _process.PriorityClass;
-            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
+            Assert.Equal(Process.GetCurrentProcess().PriorityClass, originalPriority);
 
             try
             {
