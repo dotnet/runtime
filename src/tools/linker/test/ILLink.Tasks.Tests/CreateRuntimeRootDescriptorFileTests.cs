@@ -102,9 +102,9 @@ namespace ILLink.Tasks.Tests
 		}
 
 		[Fact]
-		public void TestCoreLibClassGenWithFeatureSwitch()
+		public void TestCoreLibClassGenWithFeatureSwitch ()
 		{
-			File.WriteAllLines("corelib.h", new string[] {
+			File.WriteAllLines ("corelib.h", new string[] {
 				"#ifndef TESTDEF",
 				"#define TESTDEF",
 				"#endif",
@@ -134,12 +134,12 @@ namespace ILLink.Tasks.Tests
 				"END_ILLINK_FEATURE_SWITCH()"
 				});
 
-			File.WriteAllText("namespace.h",
+			File.WriteAllText ("namespace.h",
 				"#define g_TestNS \"TestNS\"" + Environment.NewLine);
 
-			File.WriteAllLines("cortypeinfo.h", new string[] { });
+			File.WriteAllLines ("cortypeinfo.h", new string[] { });
 
-			File.WriteAllLines("rexcep.h", new string[] {
+			File.WriteAllLines ("rexcep.h", new string[] {
 				"DEFINE_EXCEPTION(g_TestNS, TestAlwaysException, false, C)",
 				"#ifdef FEATURE_ON",
 				"DEFINE_EXCEPTION(g_TestNS, TestFeatureOnException, false, C)",
@@ -149,49 +149,48 @@ namespace ILLink.Tasks.Tests
 				"#endif"
 				});
 
-			XElement existingAssembly = new XElement("assembly", new XAttribute("fullname", "testassembly"),
-					new XComment("Existing content"));
-			XElement existingContent = new XElement("linker", existingAssembly);
-			(new XDocument(existingContent)).Save("Test.ILLink.Descriptors.Combined.xml");
+			XElement existingAssembly = new XElement ("assembly", new XAttribute ("fullname", "testassembly"),
+					new XComment ("Existing content"));
+			XElement existingContent = new XElement ("linker", existingAssembly);
+			(new XDocument (existingContent)).Save ("Test.ILLink.Descriptors.Combined.xml");
 
-			var task = new CreateRuntimeRootILLinkDescriptorFile()
-			{
-				NamespaceFilePath = new TaskItem("namespace.h"),
-				MscorlibFilePath = new TaskItem("corelib.h"),
-				CortypeFilePath = new TaskItem("cortypeinfo.h"),
-				RexcepFilePath = new TaskItem("rexcep.h"),
-				ILLinkTrimXmlFilePath = new TaskItem("Test.ILLink.Descriptors.Combined.xml"),
+			var task = new CreateRuntimeRootILLinkDescriptorFile () {
+				NamespaceFilePath = new TaskItem ("namespace.h"),
+				MscorlibFilePath = new TaskItem ("corelib.h"),
+				CortypeFilePath = new TaskItem ("cortypeinfo.h"),
+				RexcepFilePath = new TaskItem ("rexcep.h"),
+				ILLinkTrimXmlFilePath = new TaskItem ("Test.ILLink.Descriptors.Combined.xml"),
 				DefineConstants = new TaskItem[] {
 					new TaskItem("FOR_ILLINK"),
 					new TaskItem("_TEST"),
 					new TaskItem("FEATURE_ON"),
 					new TaskItem("FEATURE_BOTH")
 				},
-				RuntimeRootDescriptorFilePath = new TaskItem("Test.ILLink.Descriptors.xml")
+				RuntimeRootDescriptorFilePath = new TaskItem ("Test.ILLink.Descriptors.xml")
 			};
 
-			Assert.True(task.Execute());
+			Assert.True (task.Execute ());
 
-			XDocument output = XDocument.Load("Test.ILLink.Descriptors.xml");
-			string expectedXml = new XElement("linker",
-				new XElement("assembly",
-					existingAssembly.Attributes(),
-					existingAssembly.Nodes(),
-					new XElement("type", new XAttribute("fullname", "TestNS.TestAlwaysException"),
-						new XElement("method", new XAttribute("name", ".ctor"))),
-					new XElement("type", new XAttribute("fullname", "TestNS.TestFeatureOnException"),
-						new XElement("method", new XAttribute("name", ".ctor")))
+			XDocument output = XDocument.Load ("Test.ILLink.Descriptors.xml");
+			string expectedXml = new XElement ("linker",
+				new XElement ("assembly",
+					existingAssembly.Attributes (),
+					existingAssembly.Nodes (),
+					new XElement ("type", new XAttribute ("fullname", "TestNS.TestAlwaysException"),
+						new XElement ("method", new XAttribute ("name", ".ctor"))),
+					new XElement ("type", new XAttribute ("fullname", "TestNS.TestFeatureOnException"),
+						new XElement ("method", new XAttribute ("name", ".ctor")))
 					),
-				new XElement("assembly", new XAttribute("fullname", "System.Private.CoreLib"), new XAttribute("feature", "TestFeatureName"), new XAttribute("featurevalue", "true"), new XAttribute("featuredefault", "true"),
-					new XElement("type", new XAttribute("fullname", "TestNS.TestClass"),
-						new XElement("method", new XAttribute("name", "TestMethod")),
-						new XElement("method", new XAttribute("name", "TestMethodIfOn")),
-						new XElement("method", new XAttribute("name", "TestMethodIfNotBoth")),
-						new XElement("method", new XAttribute("name", "TestMethodIfNotBothForILLink")),
-						new XElement("method", new XAttribute("name", "TestMethodForILLink")))
+				new XElement ("assembly", new XAttribute ("fullname", "System.Private.CoreLib"), new XAttribute ("feature", "TestFeatureName"), new XAttribute ("featurevalue", "true"), new XAttribute ("featuredefault", "true"),
+					new XElement ("type", new XAttribute ("fullname", "TestNS.TestClass"),
+						new XElement ("method", new XAttribute ("name", "TestMethod")),
+						new XElement ("method", new XAttribute ("name", "TestMethodIfOn")),
+						new XElement ("method", new XAttribute ("name", "TestMethodIfNotBoth")),
+						new XElement ("method", new XAttribute ("name", "TestMethodIfNotBothForILLink")),
+						new XElement ("method", new XAttribute ("name", "TestMethodForILLink")))
 					)
-				).ToString();
-			Assert.Equal(expectedXml, output.Root.ToString());
+				).ToString ();
+			Assert.Equal (expectedXml, output.Root.ToString ());
 		}
 
 	}
