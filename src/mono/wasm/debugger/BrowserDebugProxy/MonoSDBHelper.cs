@@ -438,12 +438,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             Array.Reverse(bytes, 0, bytes.Length);
             Write(bytes);
         }
-        public void WriteObj(DotnetObjectId objectId)
+        public void WriteObj(DotnetObjectId objectId, MonoSDBHelper sdbHelper)
         {
             if (objectId.Scheme == "object")
             {
                 Write((byte)ElementType.Class);
                 Write(int.Parse(objectId.Value));
+            }
+            if (objectId.Scheme == "valuetype")
+            {
+                Write(sdbHelper.valueTypes[int.Parse(objectId.Value)].valueTypeBuffer);
             }
         }
     }
@@ -466,7 +470,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public JArray valueTypeProxy;
         public string valueTypeVarName;
         public bool valueTypeAutoExpand;
-        public ValueTypeClass(string varName, byte[] buffer, JArray json, int id, bool expand_properties)
+        public int Id;
+        public ValueTypeClass(string varName, byte[] buffer, JArray json, int id, bool expand_properties, int valueTypeId)
         {
             valueTypeBuffer = buffer;
             valueTypeJson = json;
@@ -475,6 +480,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             valueTypeProxy = null;
             valueTypeVarName = varName;
             valueTypeAutoExpand = expand_properties;
+            Id = valueTypeId;
         }
     }
     internal class PointerValue
@@ -492,8 +498,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal class MonoSDBHelper
     {
-        private Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
-        private Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
+        internal Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
+        internal Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
         private static int debugger_object_id;
         private static int cmd_id;
         private static int GetId() {return cmd_id++;}
@@ -885,7 +891,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JArray> GetPropertiesValuesOfValueType(SessionId sessionId, int valueTypeId, CancellationToken token)
         {
             var valueType = valueTypes[valueTypeId];
-            var properties = await CreateJArrayForProperties(sessionId, valueType.typeId, valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.typeId}", token);
+            var properties = await CreateJArrayForProperties(sessionId, valueType.typeId, valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", token);
             return properties;
         }
 
@@ -1205,7 +1211,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     byte[] valueTypeBuffer = new byte[endPos - initialPos];
                     ret_debugger_cmd_reader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
                     ret_debugger_cmd_reader.BaseStream.Position = endPos;
-                    valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className));
+                    valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className), valueTypeId);
                     if (AutoInvokeToString(className) || isEnum == 1) {
                         int method_id = await GetMethodIdByName(sessionId, typeId, "ToString", token);
                         var retMethod = await InvokeMethod(sessionId, valueTypeBuffer, method_id, "methodRet", token);

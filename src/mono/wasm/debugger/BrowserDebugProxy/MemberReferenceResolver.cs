@@ -41,7 +41,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     var command_params = new MemoryStream();
                     var command_params_writer = new MonoBinaryWriter(command_params);
-                    command_params_writer.WriteObj(objectId);
+                    command_params_writer.WriteObj(objectId, proxy.sdbHelper);
                     var ret = await proxy.sdbHelper.InvokeMethod(sessionId, command_params.ToArray(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
                     return ret["value"]?.Value<JObject>();
                 }
@@ -85,12 +85,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        var this_res = await proxy.sdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), true, false, token);
-                        var objRet = this_res.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == part);
+                        var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
+                        var root_res_obj = root_res.Value?["result"];
+                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == part);
                         if (objRet != null)
                         {
                             rootObject = await GetValueFromObject(objRet, token);
-                            //rootObject = objRet["value"]?.Value<JObject>();
                         }
                     }
                 }
