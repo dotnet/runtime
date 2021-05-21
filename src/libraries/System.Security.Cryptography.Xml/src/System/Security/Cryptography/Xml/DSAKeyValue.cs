@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.Xml
         //
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public DSAKeyValue()
         {
             _key = DSA.Create();

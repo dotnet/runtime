@@ -8,8 +8,8 @@ namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("tvos")]
     [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     public sealed partial class AesGcm : IDisposable
     {
         private const int NonceSize = 12;
