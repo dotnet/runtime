@@ -59,13 +59,16 @@ namespace System.Diagnostics.Metrics
         /// <param name="state">A state object which will be passed back to the callback getting measurements events.</param>
         public void EnableMeasurementEvents(Instrument instrument, object? state = null)
         {
-            if (instrument is null || _disposed)
+            lock (Instrument.EventsSyncObject)
             {
-                return;
-            }
+                if (instrument is null || _disposed || instrument.Meter.Disposed)
+                {
+                    return;
+                }
 
-            _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
-            instrument.EnableMeasurement(new ListenerSubscription(this, state));
+                _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
+                instrument.EnableMeasurement(new ListenerSubscription(this, state));
+            }
         }
 
         /// <summary>
@@ -74,6 +77,15 @@ namespace System.Diagnostics.Metrics
         /// <param name="instrument">The instrument to stop listening to.</param>
         /// <returns>The state object originally passed to <see cref="EnableMeasurementEvents" /> method.</returns>
         public object? DisableMeasurementEvents(Instrument instrument)
+        {
+            lock (Instrument.EventsSyncObject)
+            {
+                return DisableMeasurement(instrument);
+            }
+        }
+
+        // This method should always be called from inside the Meter.EventsSyncObject lock
+        internal object? DisableMeasurement(Instrument instrument)
         {
             if (instrument is null)
             {
@@ -128,18 +140,21 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Enable the listener to start listeneing to instruments measurement recording.
+        /// Enable the listener to start listening to instruments measurement recording.
         /// </summary>
         public void Start()
         {
-            if (_disposed)
+            lock (Instrument.EventsSyncObject)
             {
-                return;
-            }
+                if (_disposed)
+                {
+                    return;
+                }
 
-            if (s_allStartedListeners.AddIfNotExist(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2)))
-            {
-                Meter.NotifyListenerWithAllPublishedInstruments(this);
+                if (s_allStartedListeners.AddIfNotExist(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2)))
+                {
+                    Meter.NotifyListenerWithAllPublishedInstruments(this);
+                }
             }
         }
 
@@ -161,27 +176,32 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Disposes the listeners which will stop it from listeneing to any instrument.
+        /// Disposes the listeners which will stop it from listening to any instrument.
         /// </summary>
         public void Dispose()
         {
-            if (_disposed)
+            lock (Instrument.EventsSyncObject)
             {
-                return;
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+
+                s_allStartedListeners.Remove(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2));
+
+                LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
+
+                while (current is not null)
+                {
+                    object? state = current.Value.DisableMeasurements(this);
+                    MeasurementsCompleted?.Invoke(current.Value, state);
+                    current = current.Next;
+                }
+
+                _enabledMeasurementInstruments.Clear();
             }
-            _disposed = true;
-            s_allStartedListeners.Remove(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2));
-
-            LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
-
-            while (current is not null)
-            {
-                object? state = current.Value.DisableMeasurements(this);
-                MeasurementsCompleted?.Invoke(current.Value, state);
-                current = current.Next;
-            }
-
-            _enabledMeasurementInstruments.Clear();
         }
 
         // NotifyForPublishedInstrument will be called every time publishing instrument

@@ -17,6 +17,7 @@ namespace System.Diagnostics.Metrics
     {
         private static LinkedList<Meter> s_allMeters = new LinkedList<Meter>();
         private LinkedList<Instrument>? _instruments;
+        internal bool Disposed { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the Meter using the meter name.
@@ -150,19 +151,29 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Dispose()
         {
-            s_allMeters.Remove(this, (meter1, meter2) => object.ReferenceEquals(meter1, meter2));
-
-            if (_instruments is not null)
+            lock (Instrument.EventsSyncObject)
             {
-                LinkedListNode<Instrument>? current = _instruments.First;
-
-                while (current is not null)
+                if (Disposed)
                 {
-                    current.Value.NotifyForUnpublishedInstrument();
-                    current = current.Next;
+                    return;
                 }
 
-                _instruments.Clear();
+                Disposed = true;
+
+                s_allMeters.Remove(this, (meter1, meter2) => object.ReferenceEquals(meter1, meter2));
+
+                if (_instruments is not null)
+                {
+                    LinkedListNode<Instrument>? current = _instruments.First;
+
+                    while (current is not null)
+                    {
+                        current.Value.NotifyForUnpublishedInstrument();
+                        current = current.Next;
+                    }
+
+                    _instruments.Clear();
+                }
             }
         }
 

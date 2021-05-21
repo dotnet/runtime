@@ -18,6 +18,7 @@ namespace System.Diagnostics.Metrics
 #else
         internal static KeyValuePair<string, object?>[] EmptyTags { get; } = Array.Empty<KeyValuePair<string, object?>>();
 #endif // NO_ARRAY_EMPTY_SUPPORT
+        internal static object EventsSyncObject { get; } = new object();
 
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // LinkedList is thread safe for Add and Remove operations.
@@ -54,8 +55,16 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected void Publish()
         {
-            Meter.AddInstrument(this);
-            MeterListener.NotifyForPublishedInstrument(this);
+            lock (EventsSyncObject)
+            {
+                if (Meter.Disposed)
+                {
+                    return;
+                }
+
+                Meter.AddInstrument(this);
+                MeterListener.NotifyForPublishedInstrument(this);
+            }
         }
 
         /// <summary>
@@ -94,7 +103,7 @@ namespace System.Diagnostics.Metrics
             LinkedListNode<ListenerSubscription>? current = _subscriptions.First;
             while (current is not null)
             {
-                current.Value.Listener.DisableMeasurementEvents(this);
+                current.Value.Listener.DisableMeasurement(this);
                 current = current.Next;
             }
 
