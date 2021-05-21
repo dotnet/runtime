@@ -1,4 +1,4 @@
-name: .NET
+name: Blazor-wasm test
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: windows-latest
 
     steps:
@@ -53,4 +52,3 @@ jobs:
         dotnet new blazorwasm
         
         dotnet publish /p:RunAOTCompilation=true /bl
-        
