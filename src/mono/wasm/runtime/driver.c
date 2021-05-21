@@ -956,7 +956,7 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	}
 }
 
-EMSCRIPTEN_KEEPALIVE int
+EMSCRIPTEN_KEEPALIVE MonoClass *
 mono_wasm_get_obj_class (MonoObject *obj)
 {
 	if (!obj)
@@ -992,6 +992,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int result_capacity)
 {
+	void **resultP = result;
 	int *resultI = result;
 	int64_t *resultL = result;
 	float *resultF = result;
@@ -1112,7 +1113,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			*resultL = 0;
 			// HACK: Store the class pointer into the result buffer so our caller doesn't
 			//  have to call back into the native runtime later to get it
-			*resultI = klass;
+			*resultP = klass;
 			obj = NULL;
 			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
 	}
