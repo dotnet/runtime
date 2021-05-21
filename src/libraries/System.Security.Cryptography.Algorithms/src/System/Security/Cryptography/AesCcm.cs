@@ -7,6 +7,9 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [UnsupportedOSPlatform("maccatalyst")]
     public sealed partial class AesCcm : IDisposable
     {
         public static KeySizes NonceByteSizes { get; } = new KeySizes(7, 13, 1);

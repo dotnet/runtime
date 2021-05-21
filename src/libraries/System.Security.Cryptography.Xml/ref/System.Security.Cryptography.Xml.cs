@@ -43,6 +43,9 @@ namespace System.Security.Cryptography.Xml
     }
     public partial class DSAKeyValue : System.Security.Cryptography.Xml.KeyInfoClause
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public DSAKeyValue() { }
         public DSAKeyValue(System.Security.Cryptography.DSA key) { }
         public System.Security.Cryptography.DSA Key { get { throw null; } set { } }
