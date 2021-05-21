@@ -37,7 +37,9 @@ jobs:
         run: make -C src/mono/wasm build-all
       - name: Test
         run: make -C src/mono/wasm run-debugger-tests MSBUILD_ARGS="/fl /flp:v=diag"
+
       - name: Upload a Build Artifact
+        if: ${{ always() }}
         uses: actions/upload-artifact@v2.2.3
         with:
           # Artifact name
