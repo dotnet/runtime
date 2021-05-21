@@ -7,10 +7,9 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ConditionalClass(typeof(FileSystemTest), nameof(CanCreateSymbolicLinks))]
     public class DirectoryInfo_SymbolicLinks : BaseSymbolicLinks
     {
-        [Theory]
+        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
         [InlineData(false)]
         [InlineData(true)]
         public void EnumerateDirectories_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
@@ -32,7 +31,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
         [InlineData(false)]
         [InlineData(true)]
         public void EnumerateFiles_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
@@ -54,7 +53,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
         [InlineData(false)]
         [InlineData(true)]
         public void EnumerateFileSystemInfos_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)

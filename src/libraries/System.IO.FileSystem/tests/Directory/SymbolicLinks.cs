@@ -7,10 +7,9 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ConditionalClass(typeof(FileSystemTest), nameof(CanCreateSymbolicLinks))]
     public class Directory_SymbolicLinks : BaseSymbolicLinks
     {
-        [Fact]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void EnumerateDirectories_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
@@ -20,7 +19,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Directory.EnumerateDirectories(testDirectory.FullName).Count());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void EnumerateFiles_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
@@ -30,7 +29,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Directory.EnumerateFiles(testDirectory.FullName).Count());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void EnumerateFileSystemEntries_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
