@@ -1410,18 +1410,9 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline void CanonicalizeCastNode(GenTreeCast* cast)
-{
-    if (varTypeIsFloating(cast->CastOp()))
-    {
-        cast->gtFlags &= ~GTF_UNSIGNED;
-    }
-}
-
 inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
 {
     GenTreeCast* cast = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
-    CanonicalizeCastNode(cast);
 
     return cast;
 }
@@ -1437,7 +1428,6 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
     GenTreeCast* cast =
         new (this, LargeOpOpcode()) GenTreeCast(typ, op1, fromUnsigned, castType DEBUGARG(/*largeNode*/ true));
-    CanonicalizeCastNode(cast);
 
     return cast;
 }
