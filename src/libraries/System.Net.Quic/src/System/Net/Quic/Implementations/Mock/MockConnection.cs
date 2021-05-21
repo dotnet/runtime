@@ -23,8 +23,6 @@ namespace System.Net.Quic.Implementations.Mock
         private long _nextOutboundUnidirectionalStream;
         private readonly int _maxUnidirectionalStreams;
         private readonly int _maxBidirectionalStreams;
-        private int _peerUnidirectionalStreams;
-        private int _peerBidirectionalStreams;
 
         // Since this is mock, we don't need to be conservative with the allocations.
         // We keep the TCSes allocated all the time for the simplicity of the code.
@@ -70,12 +68,14 @@ namespace System.Net.Quic.Implementations.Mock
             _nextOutboundUnidirectionalStream = 3;
 
             _state = state;
-            _maxUnidirectionalStreams = _state._serverMaxUnidirectionalStreamsCount;
-            _maxBidirectionalStreams = _state._serverMaxBidirectionalStreamsCount;
+            _maxUnidirectionalStreams = _state._serverMaxUnidirectionalStreams;
+            _maxBidirectionalStreams = _state._serverMaxBidirectionalStreams;
         }
 
-        private int PeerMaxUnidirectionalStreams => _isClient ? _state!._serverMaxUnidirectionalStreamsCount : _state!._clientMaxUnidirectionalStreamsCount;
-        private int PeerMaxBidirectionalStreams => _isClient ? _state!._serverMaxBidirectionalStreamsCount : _state!._clientMaxBidirectionalStreamsCount;
+        private int PeerMaxUnidirectionalStreams => _isClient ? _state!._serverMaxUnidirectionalStreams : _state!._clientMaxUnidirectionalStreams;
+        private int PeerMaxBidirectionalStreams => _isClient ? _state!._serverMaxBidirectionalStreams : _state!._clientMaxBidirectionalStreams;
+        private int PeerUnidirectionalStreams => _isClient ? _state!._serverUnidirectionalStreams : _state!._clientUnidirectionalStreams;
+        private int PeerBidirectionalStreams => _isClient ? _state!._serverBidirectionalStreams : _state!._clientBidirectionalStreams;
 
         private bool TryIncrementUnidirectionalStreamCount()
         {
@@ -84,11 +84,18 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("not connected");
             }
 
-            lock (_syncObject)
+            lock (_state)
             {
-                if (_peerUnidirectionalStreams < PeerMaxUnidirectionalStreams)
+                if (PeerUnidirectionalStreams < PeerMaxUnidirectionalStreams)
                 {
-                    ++_peerUnidirectionalStreams;
+                    if (_isClient)
+                    {
+                        ++_state._serverUnidirectionalStreams;
+                    }
+                    else
+                    {
+                        ++_state._clientUnidirectionalStreams;
+                    }
                     return true;
                 }
                 return false;
@@ -101,11 +108,18 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("not connected");
             }
 
-            lock (_syncObject)
+            lock (_state)
             {
-                if (_peerBidirectionalStreams < PeerMaxBidirectionalStreams)
+                if (PeerBidirectionalStreams < PeerMaxBidirectionalStreams)
                 {
-                    ++_peerBidirectionalStreams;
+                    if (_isClient)
+                    {
+                        ++_state._serverBidirectionalStreams;
+                    }
+                    else
+                    {
+                        ++_state._clientBidirectionalStreams;
+                    }
                     return true;
                 }
                 return false;
@@ -114,9 +128,22 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal void DecrementUnidirectionalStreamCount()
         {
-            lock (_syncObject)
+            if (_state is null)
             {
-                --_peerUnidirectionalStreams;
+                throw new InvalidOperationException("not connected");
+            }
+
+            lock (_state)
+            {
+                if (_isClient)
+                {
+                    --_state._clientUnidirectionalStreams;
+                }
+                else
+                {
+                    --_state._serverUnidirectionalStreams;
+                }
+
                 if (!_newUnidirectionalStreamsAvailableTcs.Task.IsCompleted)
                 {
                     _newUnidirectionalStreamsAvailableTcs.SetResult();
@@ -126,9 +153,22 @@ namespace System.Net.Quic.Implementations.Mock
         }
         internal void DecrementBidirectionalStreamCount()
         {
-            lock (_syncObject)
+            if (_state is null)
             {
-                --_peerBidirectionalStreams;
+                throw new InvalidOperationException("not connected");
+            }
+
+            lock (_state)
+            {
+                if (_isClient)
+                {
+                    --_state._clientBidirectionalStreams;
+                }
+                else
+                {
+                    --_state._serverBidirectionalStreams;
+                }
+
                 if (!_newBidirectionalStreamsAvailableTcs.Task.IsCompleted)
                 {
                     _newBidirectionalStreamsAvailableTcs.SetResult();
@@ -207,8 +247,8 @@ namespace System.Net.Quic.Implementations.Mock
 
             // TODO: deal with protocol negotiation
             _state = new ConnectionState(_sslClientAuthenticationOptions!.ApplicationProtocols![0]);
-            _state._clientMaxUnidirectionalStreamsCount = _maxUnidirectionalStreams;
-            _state._clientMaxBidirectionalStreamsCount = _maxBidirectionalStreams;
+            _state._clientMaxUnidirectionalStreams = _maxUnidirectionalStreams;
+            _state._clientMaxBidirectionalStreams = _maxBidirectionalStreams;
             if (!listener.TryConnect(_state))
             {
                 throw new QuicException("Connection refused");
@@ -291,9 +331,9 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("Not connected");
             }
 
-            lock (_syncObject)
+            lock (_state)
             {
-                return PeerMaxUnidirectionalStreams - _peerUnidirectionalStreams;
+                return PeerMaxUnidirectionalStreams - PeerUnidirectionalStreams;
             }
         }
 
@@ -304,9 +344,9 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("Not connected");
             }
 
-            lock (_syncObject)
+            lock (_state)
             {
-                return PeerMaxBidirectionalStreams - _peerBidirectionalStreams;
+                return PeerMaxBidirectionalStreams - PeerBidirectionalStreams;
             }
         }
 
@@ -409,10 +449,15 @@ namespace System.Net.Quic.Implementations.Mock
             public Channel<MockStream.StreamState> _clientInitiatedStreamChannel;
             public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
 
-            public int _clientMaxUnidirectionalStreamsCount;
-            public int _clientMaxBidirectionalStreamsCount;
-            public int _serverMaxUnidirectionalStreamsCount;
-            public int _serverMaxBidirectionalStreamsCount;
+            public int _clientMaxUnidirectionalStreams;
+            public int _clientMaxBidirectionalStreams;
+            public int _serverMaxUnidirectionalStreams;
+            public int _serverMaxBidirectionalStreams;
+
+            public int _clientUnidirectionalStreams;
+            public int _clientBidirectionalStreams;
+            public int _serverUnidirectionalStreams;
+            public int _serverBidirectionalStreams;
 
             public long _clientErrorCode;
             public long _serverErrorCode;

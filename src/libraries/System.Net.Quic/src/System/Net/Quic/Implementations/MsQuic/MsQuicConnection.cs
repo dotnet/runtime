@@ -378,6 +378,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                             throw new QuicOperationAbortedException();
                         }
 
+                        if (GetRemoteAvailableUnidirectionalStreamCount() > 0)
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+
                         _state.NewUnidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                     }
                     tcs = _state.NewUnidirectionalStreamsAvailable;
@@ -399,6 +404,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                         if (_state.ShutdownTcs.Task.IsCompleted)
                         {
                             throw new QuicOperationAbortedException();
+                        }
+
+                        if (GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        {
+                            return ValueTask.CompletedTask;
                         }
 
                         _state.NewBidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
