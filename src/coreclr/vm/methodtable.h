@@ -1660,6 +1660,8 @@ public:
 
     inline BOOL IsBlittable();
 
+    inline BOOL MayContainGCPointers();
+
     inline BOOL IsManagedSequential();
 
     inline BOOL HasExplicitSize();

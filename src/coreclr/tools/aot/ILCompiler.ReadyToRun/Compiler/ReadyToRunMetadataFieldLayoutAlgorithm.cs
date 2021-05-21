@@ -802,15 +802,42 @@ namespace ILCompiler
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else
-            if (type.IsEnum || MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
+            else if (type.HasLayout() && !MayContainGCPointers(type))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
-            else
+            return ComputeAutoFieldLayout(type, numInstanceFields);
+        }
+
+        private bool MayContainGCPointers(TypeDesc type)
+        {
+            if (type.IsPrimitive || type.IsEnum || type.IsPointer || type.IsFunctionPointer || type.IsObject)
             {
-                return ComputeAutoFieldLayout(type, numInstanceFields);
+                return false;
             }
+            if (type.Category != TypeFlags.ValueType && type.Category != TypeFlags.Class && type.Category != TypeFlags.Nullable)
+            {
+                return true;
+            }
+            MetadataType mdType = (MetadataType)type;
+            if (!type.IsValueType && type.HasBaseType && MayContainGCPointers((MetadataType)type.BaseType))
+            {
+                return true;
+            }
+            if (type.Category == TypeFlags.ValueType ||
+                type.Category == TypeFlags.Class ||
+                type.Category == TypeFlags.Nullable)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic && (field.FieldType.Category == TypeFlags.Class || MayContainGCPointers(field.FieldType)))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true;
         }
 
         /// <summary>

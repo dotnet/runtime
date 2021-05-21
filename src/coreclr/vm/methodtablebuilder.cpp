@@ -1718,27 +1718,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
             GetNumStaticFields(), GetNumHandleRegularStatics() + GetNumHandleThreadStatics(),
             pszDebugName));
 
-    if (IsBlittable() || IsManagedSequential())
+    if (!bmtGenerics->fContainsGenericVariables && HasExplicitFieldOffsetLayout())
     {
-        bmtFP->NumGCPointerSeries = 0;
-        bmtFP->NumInstanceGCPointerFields = 0;
-
-        _ASSERTE(HasLayout());
-
-        bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
-
-        // For simple Blittable types we still need to check if they have any overlapping
-        // fields and call the method SetHasOverLayedFields() when they are detected.
-        //
-        if (HasExplicitFieldOffsetLayout())
-        {
-            _ASSERTE(!bmtGenerics->fContainsGenericVariables);   // A simple Blittable type can't ever be an open generic type.
-            HandleExplicitLayout(pByValueClassCache);
-        }
-    }
-    else
-    {
-        _ASSERTE(!IsBlittable());
         // HandleExplicitLayout fails for the GenericTypeDefinition when
         // it will succeed for some particular instantiations.
         // Thus we only do explicit layout for real instantiations, e.g. C<int>, not
@@ -1746,15 +1727,16 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // of the "fake" types involving generic type variables which are
         // used for reflection and verification, e.g. C<List<!0>>.
         //
-        if (!bmtGenerics->fContainsGenericVariables && HasExplicitFieldOffsetLayout())
-        {
-            HandleExplicitLayout(pByValueClassCache);
-        }
-        else
-        {
-            // Place instance fields
-            PlaceInstanceFields(pByValueClassCache);
-        }
+        HandleExplicitLayout(pByValueClassCache);
+    }
+    else if (HasLayout() && !MayContainGCPointers())
+    {
+        bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
+    }
+    else
+    {
+        // Place instance fields
+        PlaceInstanceFields(pByValueClassCache);
     }
 
     if (CheckIfSIMDAndUpdateSize())
@@ -1845,8 +1827,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // Perform relevant GC calculations for value classes
         HandleGCForValueClasses(pByValueClassCache);
 
-        // GC reqires the series to be sorted.
-        // TODO: fix it so that we emit them in the correct order in the first place.
+    // GC requires the series to be sorted.
+    // TODO: fix it so that we emit them in the correct order in the first place.
     if (pMT->ContainsPointers())
     {
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
@@ -4256,8 +4238,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         //
         if (fIsByValue)
         {
-            if (!fIsStatic &&
-                (IsBlittable() || HasExplicitFieldOffsetLayout()))
+            if (!fIsStatic && HasExplicitFieldOffsetLayout())
             {
                 (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
@@ -4267,7 +4248,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 else
                     pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
             }
-            else if (!fIsStatic && IsManagedSequential())
+            else if (!fIsStatic && !MayContainGCPointers() && HasLayout())
             {
                 (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
@@ -4292,9 +4273,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             // If there is any kind of explicit layout information for this field, use it. If not, then
             // mark it as either GC or non-GC and as unplaced; it will get placed later on in an optimized way.
 
-            if ((IsBlittable() || HasExplicitFieldOffsetLayout()) && !fIsStatic)
+            if (HasExplicitFieldOffsetLayout() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (IsManagedSequential() && !fIsStatic)
+            else if (!MayContainGCPointers() && HasLayout() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (bCurrentFieldIsGCPointer)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
@@ -12027,6 +12008,16 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         pAllocator,
         pamTracker);
 
+#ifdef _DEBUG
+    // Only MultiCastDelegate should inherit from Delegate
+    LPCUTF8 className;
+    LPCUTF8 nameSpace;
+    if (FAILED(pInternalImport->GetNameOfTypeDef(cl, &className, &nameSpace)))
+    {
+        className = nameSpace = "Invalid TypeDef record";
+    }
+#endif
+
     if ((pParentMethodTable != NULL) && (pParentMethodTable == g_pDelegateClass))
     {
         // Note we do not allow single cast delegates
@@ -12034,17 +12025,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         {
             pAssembly->ThrowTypeLoadException(pInternalImport, cl, BFA_CANNOT_INHERIT_FROM_DELEGATE);
         }
-
-#ifdef _DEBUG
-        // Only MultiCastDelegate should inherit from Delegate
-        LPCUTF8 className;
-        LPCUTF8 nameSpace;
-        if (FAILED(pInternalImport->GetNameOfTypeDef(cl, &className, &nameSpace)))
-        {
-            className = nameSpace = "Invalid TypeDef record";
-        }
         BAD_FORMAT_NOTHROW_ASSERT(strcmp(className, "MulticastDelegate") == 0);
-#endif
     }
 
     if (fIsDelegate)

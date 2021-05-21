@@ -441,6 +441,19 @@ inline BOOL MethodTable::IsBlittable()
 }
 
 //==========================================================================================
+inline BOOL MethodTable::MayContainGCPointers()
+{
+    WRAPPER_NO_CONTRACT;
+#ifndef DACCESS_COMPILE
+    _ASSERTE(GetClass());
+    return GetClass()->MayContainGCPointers();
+#else // DACCESS_COMPILE
+    DacNotImpl();
+    return false;
+#endif // DACCESS_COMPILE
+}
+
+//==========================================================================================
 inline BOOL MethodTable::HasClassConstructor()
 {
     WRAPPER_NO_CONTRACT;

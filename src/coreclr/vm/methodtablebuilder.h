@@ -226,6 +226,7 @@ private:
     BOOL IsNested() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsNested(); }
     BOOL HasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasFieldsWhichMustBeInited(); }
     BOOL IsBlittable() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsBlittable(); }
+    BOOL MayContainGCPointers() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->MayContainGCPointers(); }
     PTR_MethodDescChunk GetChunks() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetChunks(); }
     BOOL HasExplicitFieldOffsetLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitFieldOffsetLayout(); }
     BOOL IsManagedSequential() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsManagedSequential(); }

@@ -190,6 +190,7 @@ namespace
                 calcTotalSize = fieldEnd;
         }
 
+        bool useMetadataClassSize = false;
         if (classSizeInMetadata != 0)
         {
             ULONG classSize = classSizeInMetadata;
@@ -197,9 +198,14 @@ namespace
                 COMPlusThrowOM();
 
             // size must be large enough to accomodate layout. If not, we use the layout size instead.
-            calcTotalSize = max(classSize, calcTotalSize);
+            if (classSize >= calcTotalSize)
+            {
+                calcTotalSize = classSize;
+                useMetadataClassSize = true;
+            }
         }
-        else
+
+        if (!useMetadataClassSize)
         {
             // There was no class size given in metadata, so let's round up to a multiple of the alignment requirement
             // to make array allocations of this structure simple to keep aligned.
@@ -263,6 +269,44 @@ namespace
 
         // No other type permitted for ManagedSequential.
         return TRUE;
+    }
+
+    //=======================================================================
+    // This function returns TRUE if the provided type contains GC pointers.
+    // The fsig parameter is used when the corElemType doesn't contain enough information
+    // (for ELEMENT_TYPE_VALUETYPE).
+    //=======================================================================
+    BOOL CheckIfFieldMayContainGCPointers(CorElementType corElemType, MetaSig& fsig)
+    {
+        switch (corElemType)
+        {
+        case ELEMENT_TYPE_BOOLEAN:
+        case ELEMENT_TYPE_CHAR:
+        case ELEMENT_TYPE_I1:
+        case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_I2:
+        case ELEMENT_TYPE_U2:
+        case ELEMENT_TYPE_I4:
+        case ELEMENT_TYPE_U4:
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+        case ELEMENT_TYPE_I:
+        case ELEMENT_TYPE_U:
+        case ELEMENT_TYPE_PTR:
+        case ELEMENT_TYPE_FNPTR:
+            return FALSE;
+
+        case ELEMENT_TYPE_VALUETYPE:
+            return fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
+                CLASS_LOAD_APPROXPARENTS,
+                TRUE).GetMethodTable()->MayContainGCPointers();
+
+        default:
+            // All other types are conservatively assumed to potentially contain GC pointers.
+            return TRUE;
+        }
     }
 
 #ifdef UNIX_AMD64_ABI
@@ -392,6 +436,7 @@ namespace
         BOOL* fDisqualifyFromManagedSequential,
         LayoutRawFieldInfo* pFieldInfoArrayOut,
         BOOL* pIsBlittableOut,
+        BOOL* pMayContainGCPointers,
         ULONG* cInstanceFields
     #ifdef _DEBUG
         ,
@@ -462,6 +507,8 @@ namespace
 
                 if (!IsFieldBlittable(pModule, fd, fsig.GetArgProps(), pTypeContext, nativeTypeFlags))
                     *pIsBlittableOut = FALSE;
+                if (CheckIfFieldMayContainGCPointers(corElemType, fsig))
+                    *pMayContainGCPointers = TRUE;
 
                 (*cInstanceFields)++;
                 pFieldInfoArrayOut++;
@@ -636,6 +683,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     BOOL fParentHasLayout = pParentMT && pParentMT->HasLayout();
     UINT32 cbAdjustedParentLayoutSize = 0;
     EEClassLayoutInfo *pParentLayoutInfo = NULL;
+    BOOL mayContainGCPointers = FALSE;
     if (fParentHasLayout)
     {
         pParentLayoutInfo = pParentMT->GetLayoutInfo();
@@ -650,6 +698,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         {
             cbAdjustedParentLayoutSize = pParentMT->GetNumInstanceFieldBytes();
         }
+        mayContainGCPointers = pParentMT->MayContainGCPointers();
     }
 
     ULONG cInstanceFields = 0;
@@ -669,6 +718,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         &fDisqualifyFromManagedSequential,
         pInfoArrayOut,
         &isBlittable,
+        &mayContainGCPointers,
         &cInstanceFields
         DEBUGARG(cTotalFields)
         DEBUGARG(szNamespace)
@@ -682,6 +732,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             && (!pParentLayoutInfo || !pParentLayoutInfo->IsZeroSized()); // Ensure non-zero size
     }
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
+    pEEClassLayoutInfoOut->SetMayContainGCPointers(mayContainGCPointers);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
     if (cbSortArraySize.IsOverflow())

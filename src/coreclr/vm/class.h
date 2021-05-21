@@ -388,7 +388,9 @@ class EEClassLayoutInfo
             // explicit type inherits from this type.
             e_ZERO_SIZED                =   0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE         = 0x08
+            e_HAS_EXPLICIT_SIZE         = 0x08,
+            // Class may contains GC pointers
+            e_MAY_CONTAIN_GC_POINTERS   = 0x10,
         };
 
         BYTE        m_bFlags;
@@ -407,6 +409,12 @@ class EEClassLayoutInfo
         {
             LIMITED_METHOD_CONTRACT;
             return (m_bFlags & e_BLITTABLE) == e_BLITTABLE;
+        }
+
+        bool MayContainGCPointers() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_MAY_CONTAIN_GC_POINTERS) == e_MAY_CONTAIN_GC_POINTERS;
         }
 
         BOOL IsManagedSequential() const
@@ -449,6 +457,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = isBlittable ? (m_bFlags | e_BLITTABLE)
                                    : (m_bFlags & ~e_BLITTABLE);
+        }
+
+        void SetMayContainGCPointers(BOOL mayContainGCPointers)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = mayContainGCPointers ? (m_bFlags | e_MAY_CONTAIN_GC_POINTERS)
+                                            : (m_bFlags & ~e_MAY_CONTAIN_GC_POINTERS);
         }
 
         void SetIsManagedSequential(BOOL isManagedSequential)
@@ -762,6 +777,10 @@ public:
 
     // class is blittable
     BOOL IsBlittable();
+
+    // class may contain GC pointers; this method shall return FALSE for all blittable classes
+    // but not all classes where the check returns FALSE are blittable.
+    BOOL MayContainGCPointers();
 
 #ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
@@ -2094,6 +2113,12 @@ inline BOOL EEClass::IsBlittable()
     // Either we have an opaque bunch of bytes, or we have some fields that are
     // all isomorphic and explicitly layed out.
     return (HasLayout() && GetLayoutInfo()->IsBlittable());
+}
+
+inline BOOL EEClass::MayContainGCPointers()
+{
+    LIMITED_METHOD_CONTRACT;
+    return (HasLayout() && GetLayoutInfo()->MayContainGCPointers());
 }
 
 inline BOOL EEClass::IsManagedSequential()

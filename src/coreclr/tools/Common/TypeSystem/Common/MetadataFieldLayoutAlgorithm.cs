@@ -860,7 +860,7 @@ namespace Internal.TypeSystem
                 parentSize = type.BaseType.InstanceByteCountUnaligned;
             LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
 
-            if (specifiedInstanceSize.AsInt >= instanceSize.AsInt)
+            if (!instanceSize.IsIndeterminate && specifiedInstanceSize.AsInt >= instanceSize.AsInt)
             {
                 instanceSize = specifiedInstanceSize;
             }
