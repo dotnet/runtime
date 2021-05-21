@@ -9,12 +9,6 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#ifndef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentHotReload *
-mono_component_hot_reload_init (void);
-#endif
-
 static bool
 hot_reload_available (void);
 

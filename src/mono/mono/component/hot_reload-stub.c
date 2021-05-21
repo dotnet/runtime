@@ -21,14 +21,12 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_apply_changes,
 };
 
-#ifdef STATIC_COMPONENTS
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *
 mono_component_hot_reload_init (void)
 {
 	return mono_component_hot_reload_stub_init ();
 }
-#endif
 
 MonoComponentHotReload *
 mono_component_hot_reload_stub_init (void)

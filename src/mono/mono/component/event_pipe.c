@@ -232,12 +232,6 @@ event_pipe_thread_ctrl_activity_id (
 	return result;
 }
 
-#ifndef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentEventPipe *
-mono_component_event_pipe_init (void);
-#endif
-
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {

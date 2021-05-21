@@ -247,14 +247,12 @@ event_pipe_stub_write_event_ee_startup_start (void)
 	return true;
 }
 
-#ifdef STATIC_COMPONENTS
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
 	return mono_component_event_pipe_stub_init ();
 }
-#endif
 
 MonoComponentEventPipe *
 mono_component_event_pipe_stub_init (void)

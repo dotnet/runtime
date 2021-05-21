@@ -900,7 +900,7 @@ ep_rt_mono_init_finish (void)
 	// Managed init of diagnostics classes, like registration of RuntimeEventSource (if available).
 	ERROR_DECL (error);
 
-	MonoClass *runtime_event_source = mono_class_from_name_checked (mono_defaults.corlib, "System.Diagnostics.Tracing", "RuntimeEventSource", error);
+	MonoClass *runtime_event_source = mono_class_from_name_checked (mono_get_corlib (), "System.Diagnostics.Tracing", "RuntimeEventSource", error);
 	if (is_ok (error) && runtime_event_source) {
 		MonoMethod *init = mono_class_get_method_from_name_checked (runtime_event_source, "Initialize", -1, 0, error);
 		if (is_ok (error) && init) {

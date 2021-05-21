@@ -127,9 +127,9 @@ public class AppleAppBuilderTask : Task
     public bool ForceAOT { get; set; }
 
     /// <summary>
-    /// List of components to static link, if available
+    /// List of enabled runtime components
     /// </summary>
-    public string? StaticLinkedComponentNames { get; set; } = ""!;
+    public string? RuntimeComponents { get; set; } = ""!;
 
     /// <summary>
     /// Forces the runtime to use the invariant mode
@@ -204,7 +204,7 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
 
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, StaticLinkedComponentNames, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
             {

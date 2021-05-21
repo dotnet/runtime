@@ -61,14 +61,12 @@ diagnostics_server_stub_disable (void)
 {
 }
 
-#ifdef STATIC_COMPONENTS
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void)
 {
 	return mono_component_diagnostics_server_stub_init ();
 }
-#endif
 
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_stub_init (void)
