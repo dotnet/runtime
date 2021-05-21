@@ -118,7 +118,7 @@ jobs:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
       collectionType: pmi
-      collectionName: tests
+      collectionName: coreclr_tests
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -140,7 +140,7 @@ jobs:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
       collectionType: pmi
-      collectionName: tests_libraries
+      collectionName: libraries_tests
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
