@@ -11190,7 +11190,31 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
     CodeHeader* pCodeHeader = m_CodeHeader;
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+
+    delete [] m_codeWriteBuffer;
+    m_codeWriteBuffer = NULL;
 }
+
+/*********************************************************************/
+void CEEJitInfo::WriteCode()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    memcpy((void*)m_CodeHeader->GetCodeStartAddress(), m_codeWriteBuffer, m_codeWriteBufferSize);
+    delete [] m_codeWriteBuffer;
+    m_codeWriteBuffer = NULL;
+
+#if defined(TARGET_AMD64)
+    // Publish the new unwind information in a way that the ETW stack crawler can find
+    _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
+    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, m_CodeHeader->GetUnwindInfo(0), m_totalUnwindInfos);
+#endif // defined(TARGET_AMD64)
+
+}
+
 
 /*********************************************************************/
 // Route jit information to the Jit Debug store.
@@ -11455,12 +11479,30 @@ void CEEJitInfo::allocUnwindInfo (
     }
 
     PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeader->GetUnwindInfo(m_usedUnwindInfos);
+    PT_RUNTIME_FUNCTION pRuntimeFunctionRW = (PT_RUNTIME_FUNCTION)((BYTE *)pRuntimeFunction + m_writeableOffset);
+    if ((BYTE*)pRuntimeFunctionRW < m_codeWriteBuffer || (BYTE*)pRuntimeFunctionRW >= (m_codeWriteBuffer + m_codeWriteBufferSize))
+    {
+        pRuntimeFunctionRW = pRuntimeFunction;
+    }
+    else
+    {
+        __debugbreak();
+    }
+
     m_usedUnwindInfos++;
 
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
     _ASSERTE(IS_ALIGNED(pRuntimeFunction, sizeof(DWORD)));
 
     UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) &(m_theUnwindBlock[m_usedUnwindSize]);
+    UNWIND_INFO * pUnwindInfoRW = (UNWIND_INFO *)((BYTE*)pUnwindInfo + m_writeableOffset);
+    if ((BYTE*)pUnwindInfoRW < m_codeWriteBuffer || ((BYTE*)pUnwindInfoRW + unwindSize) > (m_codeWriteBuffer + m_codeWriteBufferSize))
+    {
+        __debugbreak();
+    }
+
+    uint32_t prevUsedUnwindSize = m_usedUnwindSize;
+
     m_usedUnwindSize += unwindSize;
 
     reservePersonalityRoutineSpace(m_usedUnwindSize);
@@ -11504,13 +11546,13 @@ void CEEJitInfo::allocUnwindInfo (
 
     unsigned unwindInfoDelta = (unsigned) unwindInfoDeltaT;
 
-    RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
+    RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunctionRW, currentCodeOffset + startOffset);
 
 #ifdef TARGET_AMD64
-    pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
+    pRuntimeFunctionRW->EndAddress        = currentCodeOffset + endOffset;
 #endif
 
-    RUNTIME_FUNCTION__SetUnwindInfoAddress(pRuntimeFunction, unwindInfoDelta);
+    RUNTIME_FUNCTION__SetUnwindInfoAddress(pRuntimeFunctionRW, unwindInfoDelta);
 
 #ifdef _DEBUG
     if (funcKind != CORJIT_FUNC_ROOT)
@@ -11520,14 +11562,13 @@ void CEEJitInfo::allocUnwindInfo (
         for (ULONG iUnwindInfo = 0; iUnwindInfo < m_usedUnwindInfos - 1; iUnwindInfo++)
         {
             PT_RUNTIME_FUNCTION pOtherFunction = m_CodeHeader->GetUnwindInfo(iUnwindInfo);
-            _ASSERTE((   RUNTIME_FUNCTION__BeginAddress(pOtherFunction) >= RUNTIME_FUNCTION__EndAddress(pRuntimeFunction, baseAddress)
-                     || RUNTIME_FUNCTION__EndAddress(pOtherFunction, baseAddress) <= RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction)));
+            _ASSERTE((   RUNTIME_FUNCTION__BeginAddress(pOtherFunction) >= RUNTIME_FUNCTION__EndAddress(pRuntimeFunctionRW, baseAddress)
+                     || RUNTIME_FUNCTION__EndAddress(pOtherFunction, baseAddress) <= RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctionRW)));
         }
     }
 #endif // _DEBUG
 
-    /* Copy the UnwindBlock */
-    memcpy(pUnwindInfo, pUnwindBlock, unwindSize);
+    memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
 #if defined(TARGET_X86)
 
@@ -11535,32 +11576,26 @@ void CEEJitInfo::allocUnwindInfo (
 
 #elif defined(TARGET_AMD64)
 
-    pUnwindInfo->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
+    pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
-    ULONG * pPersonalityRoutine = (ULONG*)ALIGN_UP(&(pUnwindInfo->UnwindCode[pUnwindInfo->CountOfUnwindCodes]), sizeof(ULONG));
-    *pPersonalityRoutine = ExecutionManager::GetCLRPersonalityRoutineValue();
+    ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
+    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
 
 #elif defined(TARGET_ARM64)
 
-    *(LONG *)pUnwindInfo |= (1 << 20); // X bit
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
-    ULONG * pPersonalityRoutine = (ULONG*)((BYTE *)pUnwindInfo + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutine = ExecutionManager::GetCLRPersonalityRoutineValue();
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
 
 #elif defined(TARGET_ARM)
 
-    *(LONG *)pUnwindInfo |= (1 << 20); // X bit
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
-    ULONG * pPersonalityRoutine = (ULONG*)((BYTE *)pUnwindInfo + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutine = (TADDR)ProcessCLRException - baseAddress;
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
 
 #endif
-
-#if defined(TARGET_AMD64)
-    // Publish the new unwind information in a way that the ETW stack crawler can find
-    if (m_usedUnwindInfos == m_totalUnwindInfos)
-        UnwindInfoTable::PublishUnwindInfoForMethod(baseAddress, m_CodeHeader->GetUnwindInfo(0), m_totalUnwindInfos);
-#endif // defined(TARGET_AMD64)
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS
@@ -12268,24 +12303,28 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag
+    // TODO: move the write buffer allocation inside of the allocCode and use it to write the code header too.
+    m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_codeWriteBufferSize
 #ifdef FEATURE_EH_FUNCLETS
                                            , m_totalUnwindInfos
                                            , &m_moduleBase
 #endif
                                            );
 
+    m_codeWriteBufferSize = totalSize.Value();
     BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
+    m_codeWriteBuffer = new BYTE[m_codeWriteBufferSize];
+    m_writeableOffset = m_codeWriteBuffer - current;
 
     *codeBlock = current;
-    *codeBlockRW = current;
+    *codeBlockRW = current + m_writeableOffset;
     current += codeSize;
 
     if (pArgs->roDataSize > 0)
     {
         current = (BYTE *)ALIGN_UP(current, roDataAlignment);
         pArgs->roDataBlock = current;
-        pArgs->roDataBlockRW = current;
+        pArgs->roDataBlockRW = current + m_writeableOffset;
         current += pArgs->roDataSize;
     }
     else
@@ -13279,7 +13318,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
         LOG((LF_JIT, LL_INFO10000, "Done Jitting method %s::%s  %s }\n",cls,name, ftn->m_pszDebugMethodSignature));
 
-        if (!SUCCEEDED(res))
+        if (SUCCEEDED(res))
+        {
+            jitInfo.WriteCode();
+        }
+        else
         {
             jitInfo.BackoutJitData(jitMgr);
             ThrowExceptionForJit(res);

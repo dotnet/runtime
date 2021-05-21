@@ -974,7 +974,7 @@ public:
 
     BOOL                LoadJIT();
 
-    CodeHeader*         allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
+    CodeHeader*         allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, size_t* pAllocatedSize
 #ifdef FEATURE_EH_FUNCLETS
                                   , UINT nUnwindInfos
                                   , TADDR * pModuleBase
@@ -1054,7 +1054,7 @@ private :
     bool        CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap);
     void*       allocCodeRaw(CodeHeapRequestInfo *pInfo,
                              size_t header, size_t blockSize, unsigned align,
-                             HeapList ** ppCodeHeap);
+                             HeapList ** ppCodeHeap, size_t* pAllocatedSize);
 
     DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList *CreateCodeHeapList(CodeHeapRequestInfo *pInfo);

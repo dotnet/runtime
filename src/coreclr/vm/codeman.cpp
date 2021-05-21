@@ -2492,7 +2492,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 
 void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
                                  size_t header, size_t blockSize, unsigned align,
-                                 HeapList ** ppCodeHeap)
+                                 HeapList ** ppCodeHeap, size_t* pAllocatedSize)
 {
     CONTRACT(void *) {
         THROWS;
@@ -2501,7 +2501,12 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
         POSTCONDITION((RETVAL != NULL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
-    pInfo->setRequestSize(header+blockSize+(align-1)+pInfo->getReserveForJumpStubs());
+    size_t allocatedSize = header+blockSize+(align-1)+pInfo->getReserveForJumpStubs(); 
+    if (pAllocatedSize != NULL)
+    {
+        *pAllocatedSize = allocatedSize;
+    }
+    pInfo->setRequestSize(allocatedSize);
 
     void *      mem         = NULL;
     HeapList * pCodeHeap    = NULL;
@@ -2592,7 +2597,7 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     RETURN(mem);
 }
 
-CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
+CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, size_t* pAllocatedSize
 #ifdef FEATURE_EH_FUNCLETS
                                     , UINT nUnwindInfos
                                     , TADDR * pModuleBase
@@ -2665,7 +2670,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
         HeapList *pCodeHeap = NULL;
 
-        TADDR pCode = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), totalSize, alignment, &pCodeHeap);
+        TADDR pCode = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), totalSize, alignment, &pCodeHeap, pAllocatedSize);
 
         _ASSERTE(pCodeHeap);
 
@@ -2984,7 +2989,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
+        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, CODE_SIZE_ALIGN, &pCodeHeap, NULL);
         if (mem == NULL)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
@@ -3040,7 +3045,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, alignment, &pCodeHeap);
+        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, alignment, &pCodeHeap, NULL);
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));

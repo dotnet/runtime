@@ -705,6 +705,10 @@ public:
         } CONTRACTL_END;
 
         m_CodeHeader = NULL;
+        m_writeableOffset = 0;
+        
+        delete [] m_codeWriteBuffer;
+        m_codeWriteBuffer = NULL;
 
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
@@ -804,6 +808,9 @@ public:
         : CEEInfo(fd, fVerifyOnly, allowInlining),
           m_jitManager(jm),
           m_CodeHeader(NULL),
+          m_codeWriteBuffer(NULL),
+          m_codeWriteBufferSize(0),
+          m_writeableOffset(0),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
           m_moduleBase(NULL),
@@ -909,6 +916,8 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
+    void WriteCode();
+
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
@@ -934,6 +943,9 @@ protected :
 
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
+    BYTE*                   m_codeWriteBuffer;
+    size_t                  m_codeWriteBufferSize;
+    size_t                  m_writeableOffset;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
