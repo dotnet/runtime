@@ -7,7 +7,7 @@ namespace System.IO.Tests
 {
     public abstract class BaseSymbolicLinks : FileSystemTest
     {
-        protected DirectoryInfo CreateDirectorySymbolicLinkToItself()
+        protected DirectoryInfo CreateDirectoryContainingSelfReferencingSymbolicLink()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
             string pathToLink = Path.Join(testDirectory.FullName, GetTestFileName());

@@ -15,7 +15,7 @@ namespace System.IO.Tests
         public void EnumerateDirectories_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
         {
             var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             // Windows avoids accessing the cyclic symlink if we do not recurse
             if (OperatingSystem.IsWindows() && !recurse)
@@ -37,7 +37,7 @@ namespace System.IO.Tests
         public void EnumerateFiles_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
         {
             var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             // Windows avoids accessing the cyclic symlink if we do not recurse
             if (OperatingSystem.IsWindows() && !recurse)
@@ -59,7 +59,7 @@ namespace System.IO.Tests
         public void EnumerateFileSystemInfos_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
         {
             var options  = new EnumerationOptions() { RecurseSubdirectories = recurse };
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             // Windows avoids accessing the cyclic symlink if we do not recurse
             if (OperatingSystem.IsWindows() && !recurse)

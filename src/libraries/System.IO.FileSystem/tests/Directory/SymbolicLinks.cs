@@ -12,7 +12,7 @@ namespace System.IO.Tests
         [Fact]
         public void EnumerateDirectories_LinksWithCycles_ShouldNotThrow()
         {
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             // Windows differentiates between dir symlinks and file symlinks
             int expected = OperatingSystem.IsWindows() ? 1 : 0;
@@ -22,7 +22,7 @@ namespace System.IO.Tests
         [Fact]
         public void EnumerateFiles_LinksWithCycles_ShouldNotThrow()
         {
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             // Windows differentiates between dir symlinks and file symlinks
             int expected = OperatingSystem.IsWindows() ? 0 : 1;
@@ -32,7 +32,7 @@ namespace System.IO.Tests
         [Fact]
         public void EnumerateFileSystemEntries_LinksWithCycles_ShouldNotThrow()
         {
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
             Assert.Single(Directory.EnumerateFileSystemEntries(testDirectory.FullName));
         }
     }

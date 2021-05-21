@@ -13,7 +13,7 @@ namespace System.IO.Tests.Enumeration
         [Fact]
         public void EnumerateDirectories_LinksWithCycles_ShouldNotThrow()
         {
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                  testDirectory.FullName,
@@ -32,7 +32,7 @@ namespace System.IO.Tests.Enumeration
         [Fact]
         public void EnumerateFiles_LinksWithCycles_ShouldNotThrow()
         {
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                  testDirectory.FullName,
@@ -51,7 +51,7 @@ namespace System.IO.Tests.Enumeration
         [Fact]
         public void EnumerateFileSystemEntries_LinksWithCycles_ShouldNotThrow()
         {
-            DirectoryInfo testDirectory = CreateDirectorySymbolicLinkToItself();
+            DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                  testDirectory.FullName,
