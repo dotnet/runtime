@@ -3,10 +3,10 @@
     <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
-    <type fullname="Internal.Runtime.InteropServices.ComponentActivator" feature="Internal.Runtime.InteropServices.ComponentActivator.IsSupported" featurevalue="false">
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator" feature="System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
-    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader" feature="Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported" featurevalue="false">
+    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader" feature="System.Runtime.InteropServices.EnableCppCLIHostActivation" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <type fullname="System.Runtime.InteropServices.Marshal" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="false">

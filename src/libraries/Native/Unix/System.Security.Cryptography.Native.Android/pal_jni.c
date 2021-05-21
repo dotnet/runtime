@@ -967,7 +967,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
-    g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
+    g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");

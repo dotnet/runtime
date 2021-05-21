@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-  </PropertyGroup>
 
   <PropertyGroup>
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">linux</MonoLLVMHostOS>

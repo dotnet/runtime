@@ -35,7 +35,7 @@ def escapeProvFilename(name):
     name = name.lower()
     return name
 
-def generateDummyProvider(providerName, eventNodes, allTemplates, extern):
+def generateDummyProvider(providerName, eventNodes, allTemplates, runtimeFlavor, extern):
     impl = []
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
@@ -64,9 +64,9 @@ def generateDummyProvider(providerName, eventNodes, allTemplates, extern):
             for paramName in fnSig.paramlist:
                 fnparam     = fnSig.getParam(paramName)
                 wintypeName = fnparam.winType
-                typewName   = palDataTypeMapping[wintypeName]
+                typewName   = getPalDataTypeMapping(runtimeFlavor)[wintypeName]
                 winCount    = fnparam.count
-                countw      = palDataTypeMapping[winCount]
+                countw      = getPalDataTypeMapping(runtimeFlavor)[winCount]
 
                 if paramName in template.structs:
                     linefnptype.append("%sint %s_ElementSize,\n" % (lindent, paramName))
@@ -93,7 +93,7 @@ def generateDummyProvider(providerName, eventNodes, allTemplates, extern):
 
     return ''.join(impl)
 
-def generateDummyFiles(etwmanifest, out_dirname, extern, dryRun):
+def generateDummyFiles(etwmanifest, out_dirname, runtimeFlavor, extern, dryRun):
     tree                    = DOM.parse(etwmanifest)
 
     #keep these relative
@@ -138,7 +138,7 @@ def generateDummyFiles(etwmanifest, out_dirname, extern, dryRun):
                 allTemplates = parseTemplateNodes(templateNodes)
 
                 #create the implementation of eventing functions : dummyeventprov*.cp
-                impl.write(generateDummyProvider(providerName, eventNodes, allTemplates, extern) + "\n")
+                impl.write(generateDummyProvider(providerName, eventNodes, allTemplates, runtimeFlavor, extern) + "\n")
 
 def main(argv):
 
@@ -150,6 +150,8 @@ def main(argv):
                                     help='full path to manifest containig the description of events')
     required.add_argument('--intermediate', type=str, required=True,
                                     help='full path to eventprovider  intermediate directory')
+    required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
+                                    help='runtime flavor')
     required.add_argument('--nonextern', action='store_true',
                                     help='if specified, will generate files to be compiled into the CLR rather than externaly' )
     required.add_argument('--dry-run', action='store_true',
@@ -161,10 +163,11 @@ def main(argv):
 
     sClrEtwAllMan     = args.man
     intermediate      = args.intermediate
+    runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     extern            = not args.nonextern
     dryRun            = args.dry_run
 
-    generateDummyFiles(sClrEtwAllMan, intermediate, extern, dryRun)
+    generateDummyFiles(sClrEtwAllMan, intermediate, runtimeFlavor, extern, dryRun)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -39,7 +40,7 @@ namespace System.Reflection
             return ((Pointer)ptr)._ptr;
         }
 
-        public override unsafe bool Equals(object? obj)
+        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is Pointer pointer)
             {

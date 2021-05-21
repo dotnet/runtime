@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     public static partial class ObjectiveCMarshal
     {
         /// <summary>
-        /// Sets a pending exception to be thrown the next time the runtime is entered from an overridden msgSend P/Invoke.
+        /// Sets a pending exception to be thrown the next time the runtime is entered from an Objective-C msgSend P/Invoke.
         /// </summary>
         /// <param name="exception">The exception.</param>
         /// <remarks>

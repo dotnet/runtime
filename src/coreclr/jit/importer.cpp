@@ -21115,7 +21115,16 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 //
                                 if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                                 {
-                                    call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                    // If there's a ret buf, the method table is the second arg.
+                                    //
+                                    if (call->HasRetBufArg())
+                                    {
+                                        gtInsertNewCallArgAfter(methodTableArg, call->gtCallArgs);
+                                    }
+                                    else
+                                    {
+                                        call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                    }
                                 }
                                 else
                                 {
@@ -21194,26 +21203,26 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     // locally, or was boxed locally but we were unable to remove the box for
                     // various reasons.
                     //
-                    // We may still be able to update the call to invoke the unboxed entry.
+                    // We can still update the call to invoke the unboxed entry, if the
+                    // boxed value is simple.
                     //
                     if (requiresInstMethodTableArg)
                     {
-                        const DWORD derivedClassAttribs = info.compCompHnd->getClassAttribs(derivedClass);
+                        // Get the method table from the boxed object.
+                        //
+                        GenTree* const thisArg       = call->gtCallThisArg->GetNode();
+                        GenTree* const clonedThisArg = gtClone(thisArg);
 
-                        if ((derivedClassAttribs & CORINFO_FLG_SHAREDINST) != 0)
+                        if (clonedThisArg == nullptr)
                         {
                             JITDUMP(
-                                "unboxed entry needs MT arg, but the handle we have is shared. Deferring update.\n");
+                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
                         }
                         else
                         {
-                            // See if the method table we have is a viable argument to the unboxed
-                            // entry point. It is, if it's not a shared MT.
-                            //
-                            GenTree* const thisArg        = call->gtCallThisArg->GetNode();
-                            GenTree* const methodTableArg = gtNewIconEmbClsHndNode(derivedClass);
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
 
-                            JITDUMP("revising call to invoke unboxed entry with additional known class handle arg\n");
+                            GenTree* const methodTableArg = gtNewMethodTableLookup(clonedThisArg);
 
                             // Update the 'this' pointer to refer to the box payload
                             //
@@ -21232,14 +21241,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             derivedMethod        = unboxedEntryMethod;
                             derivedMethodAttribs = unboxedMethodAttribs;
 
-                            // Add the method table argument...
+                            // Add the method table argument.
                             //
                             // Prepend for R2L arg passing or empty L2R passing
                             // Append for non-empty L2R
                             //
                             if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                             {
-                                call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                // If there's a ret buf, the method table is the second arg.
+                                //
+                                if (call->HasRetBufArg())
+                                {
+                                    gtInsertNewCallArgAfter(methodTableArg, call->gtCallArgs);
+                                }
+                                else
+                                {
+                                    call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                }
                             }
                             else
                             {

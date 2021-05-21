@@ -112,6 +112,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -3038,14 +3039,33 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
-static void 
+static void
+mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
+{
+	MonoClass *callconv_class_maybe = mono_class_from_mono_type_internal (type);
+	if ((m_class_get_image (callconv_class_maybe) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (callconv_class_maybe), "System.Runtime.CompilerServices")) {
+		const char *class_name = m_class_get_name (callconv_class_maybe);
+		if (!strcmp (class_name, "CallConvCdecl"))
+			csig->call_convention = MONO_CALL_C;
+		else if (!strcmp (class_name, "CallConvStdcall"))
+			csig->call_convention = MONO_CALL_STDCALL;
+		else if (!strcmp (class_name, "CallConvFastcall"))
+			csig->call_convention = MONO_CALL_FASTCALL;
+		else if (!strcmp (class_name, "CallConvThiscall"))
+			csig->call_convention = MONO_CALL_THISCALL;
+		else if (!strcmp (class_name, "CallConvSuppressGCTransition") && skip_gc_trans != NULL)
+			*skip_gc_trans = TRUE;
+	}
+}
+
+static void
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig, gboolean set_default)
 {
 	MonoMethodSignature *sig;
 	int i;
 
 #ifdef TARGET_WIN32
-	/* 
+	/*
 	 * Under windows, delegates passed to native code must use the STDCALL
 	 * calling convention.
 	 */
@@ -3069,19 +3089,76 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 		gboolean required;
 		MonoType *cmod_type = mono_type_get_custom_modifier (sig->ret, i, &required, error);
 		mono_error_assert_ok (error);
-		MonoClass *cmod_class = mono_class_from_mono_type_internal (cmod_type);
-		if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
-			const char *cmod_class_name = m_class_get_name (cmod_class);
-			if (!strcmp (cmod_class_name, "CallConvCdecl"))
-				csig->call_convention = MONO_CALL_C;
-			else if (!strcmp (cmod_class_name, "CallConvStdcall"))
-				csig->call_convention = MONO_CALL_STDCALL;
-			else if (!strcmp (cmod_class_name, "CallConvFastcall"))
-				csig->call_convention = MONO_CALL_FASTCALL;
-			else if (!strcmp (cmod_class_name, "CallConvThiscall"))
-				csig->call_convention = MONO_CALL_THISCALL;
+		mono_marshal_set_callconv_for_type (cmod_type, csig, NULL);
+	}
+}
+
+static MonoArray*
+mono_marshal_get_callconvs_array_from_attribute (MonoCustomAttrEntry *attr, CattrNamedArg **arginfo)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	ERROR_DECL (error);
+	MonoArrayHandleOut typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandleOut named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+	mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, arginfo, error);
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+	}
+
+	HANDLE_FUNCTION_RETURN_OBJ (named_args_h);
+}
+
+static void
+mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
+{
+	MonoClass *attr_class = mono_class_try_get_unmanaged_callconv_attribute_class ();
+	if (!attr_class)
+		return;
+
+	ERROR_DECL (error);
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_method_checked (method, error);
+	if (!is_ok (error) || !cinfo) {
+		mono_error_cleanup (error);
+		return;
+	}
+
+	int i;
+	MonoCustomAttrEntry *attr = NULL;
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
+		if (ctor_class == attr_class) {
+			attr = &cinfo->attrs [i];
+			break;
 		}
 	}
+
+	if (attr != NULL)
+	{
+		CattrNamedArg *arginfo;
+		MonoArray *named_args = mono_marshal_get_callconvs_array_from_attribute(attr, &arginfo);
+		if (named_args)
+		{
+			for (i = 0; i < mono_array_length_internal(named_args); ++i) {
+				CattrNamedArg *info = &arginfo[i];
+				g_assert(info->field);
+				if (strcmp(info->field->name, "CallConvs") != 0)
+					continue;
+
+				/* CallConvs is an array of types */
+				MonoArray *callconv_array = mono_array_get_internal(named_args, MonoArray *, i);
+				for (int j = 0; j < mono_array_length_internal(callconv_array); ++j) {
+					MonoReflectionType *callconv_type = mono_array_get_internal(callconv_array, MonoReflectionType *, j);
+					mono_marshal_set_callconv_for_type(callconv_type->type, csig, skip_gc_trans);
+				}
+			}
+		}
+
+		g_free (arginfo);
+	}
+
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
 }
 
 /**
@@ -3322,6 +3399,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			skip_gc_trans = TRUE;
 		if (cinfo && !cinfo->cached)
 			mono_custom_attrs_free (cinfo);
+	}
+
+	if (csig->call_convention == MONO_CALL_DEFAULT) {
+		/* If the calling convention has not been set, check the UnmanagedCallConv attribute */
+		mono_marshal_set_callconv_from_unmanaged_callconv_attribute (method, csig, &skip_gc_trans);
 	}
 
 	MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;

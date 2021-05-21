@@ -66,6 +66,19 @@ internal static partial class Interop
             out SafeCFArrayHandle matches,
             out int pOSStatus);
 
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509StoreAddCertificate(
+            SafeKeychainItemHandle cert,
+            SafeKeychainHandle keychain,
+            out int pOSStatus);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509StoreRemoveCertificate(
+            SafeKeychainItemHandle cert,
+            SafeKeychainHandle keychain,
+            bool isReadOnlyMode,
+            out int pOSStatus);
+
         private static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeHandle item)
         {
             bool addedRef = false;
@@ -288,6 +301,54 @@ internal static partial class Interop
             if (throwOnError && osStatus != 0)
             {
                 throw CreateExceptionForOSStatus(osStatus);
+            }
+        }
+
+        internal static void X509StoreAddCertificate(SafeKeychainItemHandle certOrIdentity, SafeKeychainHandle keychain)
+        {
+            int osStatus;
+            int ret = AppleCryptoNative_X509StoreAddCertificate(certOrIdentity, keychain, out osStatus);
+
+            if (ret == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (ret != 1)
+            {
+                Debug.Fail($"Unexpected result from AppleCryptoNative_X509StoreAddCertificate: {ret}");
+                throw new CryptographicException();
+            }
+        }
+
+        internal static void X509StoreRemoveCertificate(SafeKeychainItemHandle certHandle, SafeKeychainHandle keychain, bool isReadOnlyMode)
+        {
+            int osStatus;
+            int ret = AppleCryptoNative_X509StoreRemoveCertificate(certHandle, keychain, isReadOnlyMode, out osStatus);
+
+            if (ret == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            const int SuccessOrNoMatch = 1;
+            const int UserTrustExists = 2;
+            const int AdminTrustExists = 3;
+            const int ReadOnlyDelete = 4;
+
+            switch (ret)
+            {
+                case SuccessOrNoMatch:
+                    break;
+                case UserTrustExists:
+                    throw new CryptographicException(SR.Cryptography_X509Store_WouldModifyUserTrust);
+                case AdminTrustExists:
+                    throw new CryptographicException(SR.Cryptography_X509Store_WouldModifyAdminTrust);
+                case ReadOnlyDelete:
+                    throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+                default:
+                    Debug.Fail($"Unexpected result from AppleCryptoNative_X509StoreRemoveCertificate: {ret}");
+                    throw new CryptographicException();
             }
         }
     }
