@@ -135,6 +135,7 @@ jobs:
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}
+      condition: eq($(Skip), '$(Skip)')
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:

@@ -185,6 +185,13 @@ perflab_arguments=
 queue=Ubuntu.1804.Amd64.Open
 creator=$BUILD_DEFINITIONNAME
 helix_source_prefix="pr"
+build_number_suffix=`(echo $build_number | awk '{s=substr($1, index($1, ".")+1);print s}')`
+
+if [[ $((bulid_number_suffix%2)) -eq 0 ]]; then
+    skip_on_even=1
+else
+    skip_on_odd=1
+fi
 
 if [[ "$internal" == true ]]; then
     perflab_arguments="--upload-to-perflab-container"
@@ -257,6 +264,9 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+    if [[ "$skip_on_odd" == "1" ]]; then
+      skip=true
+    fi
 fi
 
 if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
@@ -269,6 +279,9 @@ if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
+    if [[ "$skip_on_even" == "1" ]]; then
+      skip=true
+    fi
 fi
 
 if [[ "$use_core_run" = true ]]; then
@@ -308,3 +321,4 @@ Write-PipelineSetVariable -name "_BuildConfig" -value "$architecture.$kind.$fram
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
+Write-PipelineSetVariable -name "Skip" -value "$skip" -is_multi_job_variable false
