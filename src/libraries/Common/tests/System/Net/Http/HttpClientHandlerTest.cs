@@ -880,9 +880,8 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(true)]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
-        // [InlineData(false)]
-        // [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(null)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -893,6 +892,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
                 // Chunking is not supported on HTTP/2 and later.
+                return;
+            }
+
+            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
                 return;
             }
 
