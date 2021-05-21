@@ -28,6 +28,18 @@ namespace System
         /// <remarks>Keep in sync with AllocateString in gchelpers.cpp.</remarks>
         internal const int MaxLength = 0x3FFFFFDF;
 
+        // The Empty constant holds the empty string value. It is initialized by the EE during startup.
+        // It is treated as intrinsic by the JIT as so the static constructor would never run.
+        // Leaving it uninitialized would confuse debuggers.
+        //
+        // We need to call the String constructor so that the compiler doesn't mark this as a literal.
+        // Marking this as a literal would mean that it doesn't show up as a field which we can access
+        // from native.
+#pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
+        [Intrinsic]
+        public static readonly string Empty;
+#pragma warning restore CS8618
+
         //
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //
@@ -803,6 +815,33 @@ namespace System
             {
                 return ASCIIUtility.GetIndexOfFirstNonAsciiChar(str, (uint)Length) == (uint)Length;
             }
+        }
+
+        // Gets the character at a specified position.
+        //
+        [IndexerName("Chars")]
+        public char this[int index]
+        {
+            [Intrinsic]
+            get
+            {
+                if ((uint)index >= (uint)_stringLength)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                return Unsafe.Add(ref _firstChar, (nint)(uint)index /* force zero-extension */);
+            }
+        }
+
+        // Gets the length of this string
+        //
+        // This is an intrinsic function so that the JIT can recognise it specially
+        // and eliminate checks on character fetches in a loop like:
+        //        for(int i = 0; i < str.Length; i++) str[i]
+        // The actual code generated for this will be one instruction and will be inlined.
+        //
+        public int Length
+        {
+            [Intrinsic]
+            get => _stringLength;
         }
     }
 }

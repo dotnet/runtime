@@ -93,11 +93,13 @@ namespace System.Tests
         public static void TestIsOSVersionAtLeast_FreeBSD() => TestIsOSVersionAtLeast("FreeBSD");
 
         [Fact, PlatformSpecific(TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
         public static void TestIsOSPlatform_Android() => TestIsOSPlatform("Android", OperatingSystem.IsAndroid);
 
         [Fact, PlatformSpecific(TestPlatforms.Android)]
         public static void TestIsOSVersionAtLeast_Android() => TestIsOSVersionAtLeast("Android");
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]
+        public static void TestIsOSVersionAtLeast_Android_21() => Assert.True(OperatingSystem.IsAndroidVersionAtLeast(21)); // 21 is our min supported version
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
         public static void TestIsOSPlatform_IOS() => TestIsOSPlatform("iOS", OperatingSystem.IsIOS);

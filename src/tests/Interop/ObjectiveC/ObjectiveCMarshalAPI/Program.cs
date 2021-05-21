@@ -279,12 +279,14 @@ namespace ObjectiveCMarshalAPI
         // Do not call this method from Main as it depends on a previous test for set up.
         static void _Validate_ExceptionPropagation()
         {
+            var delThrowInt = new ThrowExceptionDelegate(DEL_ThrowIntException);
+            var delThrowException = new ThrowExceptionDelegate(DEL_ThrowExceptionException);
             var scenarios = new[]
             {
                 new Scenario((delegate* unmanaged<int, void>)&UCO_ThrowIntException, 3423),
                 new Scenario((delegate* unmanaged<int, void>)&UCO_ThrowExceptionException, 5432),
-                new Scenario((delegate* unmanaged<int, void>)Marshal.GetFunctionPointerForDelegate<ThrowExceptionDelegate>(DEL_ThrowIntException), 6453),
-                new Scenario((delegate* unmanaged<int, void>)Marshal.GetFunctionPointerForDelegate<ThrowExceptionDelegate>(DEL_ThrowExceptionException), 5343)
+                new Scenario((delegate* unmanaged<int, void>)Marshal.GetFunctionPointerForDelegate(delThrowInt), 6453),
+                new Scenario((delegate* unmanaged<int, void>)Marshal.GetFunctionPointerForDelegate(delThrowException), 5343)
             };
 
             foreach (var scen in scenarios)
@@ -293,6 +295,9 @@ namespace ObjectiveCMarshalAPI
                 int ret = NativeObjCMarshalTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
                 Assert.AreEqual(scen.Expected, ret);
             }
+
+            GC.KeepAlive(delThrowInt);
+            GC.KeepAlive(delThrowException);
         }
 
         static void Validate_Initialize_FailsOnSecondAttempt()

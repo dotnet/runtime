@@ -2658,7 +2658,9 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName)
+    _In_ MethodDesc* pMD,
+    _Outptr_opt_ LPCUTF8* pLibName,
+    _Outptr_opt_ LPCUTF8* pEntryPointName)
 {
     CONTRACTL
     {
@@ -2756,7 +2758,10 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     InitCallConv(CallConvWinApiSentinel, FALSE);
 }
 
-void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName, _Outptr_opt_ LPCUTF8 *ppEntryPointName)
+void PInvokeStaticSigInfo::DllImportInit(
+    _In_ MethodDesc* pMD,
+    _Outptr_opt_ LPCUTF8* ppLibName,
+    _Outptr_opt_ LPCUTF8* ppEntryPointName)
 {
     CONTRACTL
     {
@@ -2785,7 +2790,6 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
         return;
     }
 
-    // out parameter pEntryPointName
     if (ppEntryPointName && *ppEntryPointName == NULL)
         *ppEntryPointName = pMD->GetName();
 
@@ -3279,16 +3283,12 @@ BOOL NDirect::MarshalingRequired(
                 return TRUE;
         }
 
-        // SetLastError is handled by stub
-        PInvokeStaticSigInfo sigInfo(pMD);
-        if (sigInfo.GetLinkFlags() & nlfLastError)
-            return TRUE;
-
-        // LCID argument is handled by stub
-        if (GetLCIDParameterIndex(pMD) != -1)
-            return TRUE;
-
-        if (pMD->IsNDirect())
+        PInvokeStaticSigInfo sigInfo;
+        if (!pMD->IsNDirect())
+        {
+            new (&sigInfo) PInvokeStaticSigInfo(pMD);
+        }
+        else
         {
             // A P/Invoke marked with UnmanagedCallersOnlyAttribute
             // doesn't technically require marshalling. However, we
@@ -3305,12 +3305,22 @@ BOOL NDirect::MarshalingRequired(
             if (pNMD->IsClassConstructorTriggeredByILStub())
                 return TRUE;
 
+            InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
+
 #ifndef CROSSGEN_COMPILE
             // Pending exceptions are handled by stub
             if (Interop::ShouldCheckForPendingException(pNMD))
                 return TRUE;
 #endif // !CROSSGEN_COMPILE
         }
+
+        // SetLastError is handled by stub
+        if (sigInfo.GetLinkFlags() & nlfLastError)
+            return TRUE;
+
+        // LCID argument is handled by stub
+        if (GetLCIDParameterIndex(pMD) != -1)
+            return TRUE;
 
         callConv = sigInfo.GetCallConv();
     }
@@ -4376,7 +4386,11 @@ static void CreateNDirectStubAccessMetadata(
 
 namespace
 {
-    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_opt_z_ LPCUTF8 libName, _In_opt_z_ LPCUTF8 entryPointName)
+    void PopulateNDirectMethodDescImpl(
+        _Inout_ NDirectMethodDesc* pNMD,
+        _In_ const PInvokeStaticSigInfo& sigInfo,
+        _In_opt_z_ LPCUTF8 libName,
+        _In_opt_z_ LPCUTF8 entryPointName)
     {
         CONTRACTL
         {
@@ -4414,9 +4428,8 @@ namespace
             pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(entryPointName);
         }
 
-        // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
-        // or you will introduce a race condition.
-        pNMD->InterlockedSetNDirectFlags(ndirectflags);
+        // Do not publish incomplete prestub flags or you will introduce a race condition.
+        pNMD->InterlockedSetNDirectFlags(ndirectflags | NDirectMethodDesc::kNDirectPopulated);
     }
 }
 
@@ -4431,6 +4444,9 @@ void NDirect::PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD)
 
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
+
+    if (pNMD->IsPopulated())
+        return;
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
     PInvokeStaticSigInfo sigInfo(pNMD, &szLibName, &szEntryPointName);
@@ -4452,6 +4468,9 @@ void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMetho
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
     new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
+
+    if (pNMD->IsPopulated())
+        return;
 
     PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName, szEntryPointName);
 }

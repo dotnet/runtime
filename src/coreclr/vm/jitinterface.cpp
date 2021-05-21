@@ -8831,20 +8831,6 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
                     *pMustExpand = true;
                 }
             }
-            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN)))
-            {
-                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__SPAN__GET_ITEM)))
-                {
-                    result = CORINFO_INTRINSIC_Span_GetItem;
-                }
-            }
-            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN)))
-            {
-                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__READONLY_SPAN__GET_ITEM)))
-                {
-                    result = CORINFO_INTRINSIC_ReadOnlySpan_GetItem;
-                }
-            }
         }
     }
 

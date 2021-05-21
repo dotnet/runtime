@@ -182,6 +182,9 @@
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
              Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />

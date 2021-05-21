@@ -6736,16 +6736,36 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 	res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, MONO_HANDLE_RAW (str));
 	if (res)
 		MONO_HANDLE_ASSIGN_RAW (s, res);
-	else
+	else {
 		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+
+#ifdef HOST_WASM
+		mono_set_string_interned_internal ((MonoObject *)MONO_HANDLE_RAW (s));
+#endif
+	}
 	ldstr_unlock ();
 	return s;
 }
 
+#ifdef HOST_WASM
+/**
+ * mono_string_instance_is_interned:
+ * Searches the interned string table for the provided string instance.
+ * \param str String to probe
+ * \returns TRUE if the string is interned, FALSE otherwise.
+ */
+int
+mono_string_instance_is_interned (MonoString *str)
+{
+	return mono_is_string_interned_internal ((MonoObject *)str);
+}
+#endif
+
 /**
  * mono_string_is_interned:
- * \param o String to probe
- * \returns Whether the string has been interned.
+ * Searches the interned string table for a string with value equal to the provided string.
+ * \param str String to probe
+ * \returns The string located within the intern table, or null.
  */
 MonoString*
 mono_string_is_interned (MonoString *str_raw)

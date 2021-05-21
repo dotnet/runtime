@@ -26,13 +26,9 @@
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" Condition="'$(UseTargetFrameworkSDK)' != 'false'" />
 
   <PropertyGroup>
-    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</BuildTargetFramework>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
-    <!-- Initialize BuildSettings from the individual properties. -->
-    <BuildSettings>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
-    <BuildSettings Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
@@ -59,10 +55,6 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(TargetFramework)'))</_targetFrameworkValue>
-    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(_targetFrameworkValue)', '$(NetCoreAppCurrent)'))</_targetFrameworkValue>
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_targetFrameworkValue)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
 
@@ -77,12 +69,6 @@
     <!-- Projects which are manually built. -->
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
-                                           '$(BuildAllConfigurations)' == 'true'">true</BuildingNETCoreAppVertical>
-    <BinPlaceTestSharedFramework Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceTestSharedFramework>
-  </PropertyGroup>
 
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
@@ -147,9 +133,6 @@
 
     <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
-
-    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>

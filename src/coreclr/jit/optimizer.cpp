@@ -2679,14 +2679,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
 
         case BBJ_SWITCH:
         {
-            to->bbJumpSwt            = new (this, CMK_BasicBlock) BBswtDesc();
-            to->bbJumpSwt->bbsCount  = from->bbJumpSwt->bbsCount;
-            to->bbJumpSwt->bbsDstTab = new (this, CMK_BasicBlock) BasicBlock*[from->bbJumpSwt->bbsCount];
-
-            for (unsigned i = 0; i < from->bbJumpSwt->bbsCount; i++)
-            {
-                to->bbJumpSwt->bbsDstTab[i] = from->bbJumpSwt->bbsDstTab[i];
-            }
+            to->bbJumpSwt = new (this, CMK_BasicBlock) BBswtDesc(this, from->bbJumpSwt);
         }
         break;
 

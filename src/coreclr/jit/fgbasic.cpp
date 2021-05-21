@@ -395,11 +395,18 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-
-        //
-        // Remove the old edge [oldSwitchBlock => bJump]
-        //
-        fgRemoveRefPred(bJump, oldSwitchBlock);
+        if (bJump->countOfInEdges() > 0)
+        {
+            //
+            // Remove the old edge [oldSwitchBlock => bJump]
+            //
+            fgRemoveRefPred(bJump, oldSwitchBlock);
+        }
+        else
+        {
+            // bJump->countOfInEdges() must not be zero after preds are calculated.
+            assert(!fgComputePredsDone);
+        }
 
         //
         // Create the new edge [newSwitchBlock => bJump]

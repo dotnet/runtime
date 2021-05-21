@@ -135,6 +135,10 @@ internal static partial class Interop
             SafeEvpCipherCtxHandle ctx,
             int tagLength);
 
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_CipherIsSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CipherIsSupported(IntPtr cipher);
+
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_Aes128Ecb")]
         internal static extern IntPtr EvpAes128Ecb();
 
@@ -215,6 +219,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RC2Ecb")]
         internal static extern IntPtr EvpRC2Ecb();
+
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_ChaCha20Poly1305")]
+        internal static extern IntPtr EvpChaCha20Poly1305();
 
         internal enum EvpCipherDirection : int
         {

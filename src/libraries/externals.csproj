@@ -8,7 +8,6 @@
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -46,16 +45,16 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"
-          DestinationFolder="$(TestHostRootPath)host\fxr\$(ProductVersion)"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)host\fxr\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
     <Copy SourceFiles="@(DotnetExe)"
-          DestinationFolder="$(TestHostRootPath)"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'"/>
+    <Exec Command="chmod +x $(NetCoreAppCurrentTestHostPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
