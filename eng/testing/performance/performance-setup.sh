@@ -188,10 +188,15 @@ helix_source_prefix="pr"
 build_number_suffix=`(echo $build_number | awk '{s=substr($1, index($1, ".")+1);print s}')`
 
 if [[ $((bulid_number_suffix%2)) -eq 0 ]]; then
+    echo "Build is even"
     skip_on_even=1
 else
+    echo "Build is odd"
     skip_on_odd=1
 fi
+
+echo "Skip on even is $skip_on_even"
+echo "Skip on odd is $skip_on_odd"
 
 if [[ "$internal" == true ]]; then
     perflab_arguments="--upload-to-perflab-container"
@@ -265,6 +270,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     mv $wasm_runtime_loc $wasm_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
     if [[ "$skip_on_odd" == "1" ]]; then
+      echo "Skipping WASM"
       skip=true
     fi
 fi
@@ -280,6 +286,7 @@ if [[ "$monoaot" == "true" ]]; then
     mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
     if [[ "$skip_on_even" == "1" ]]; then
+      echo "Skipping AOT"
       skip=true
     fi
 fi
