@@ -28,7 +28,7 @@ jobs:
     - name: Build
       shell: pwsh
       run: |
-        .\build.cmd -os browser -s mono+libs+pack -bl
+        .\build.cmd -os browser -s mono+libs+packs -bl
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.3
       with:
