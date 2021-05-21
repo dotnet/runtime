@@ -14,8 +14,6 @@ namespace System
     {
         partial void RestoreRemoteStackTrace(SerializationInfo info, StreamingContext context)
         {
-            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
-
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
             //
@@ -244,8 +242,6 @@ namespace System
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
-
-        private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
 
         private object? SerializationWatsonBuckets => _watsonBuckets;
 
