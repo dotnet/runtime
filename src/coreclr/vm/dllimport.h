@@ -56,14 +56,15 @@ public:
 class NDirect
 {
 public:
-    // Get the calling convention for a method by checking:
+    // Get the calling convention and whether to suppress GC transition for a method by checking:
+    //   - SuppressGCTransition attribute
     //   - For delegates: UnmanagedFunctionPointer attribute
     //   - For non-delegates: P/Invoke metadata
     //   - Any modopts encoded in the method signature
     // If no calling convention is specified, the default calling convention is returned
     // This function ignores any errors when reading attributes/metadata, treating them as
     // if no calling convention was specified through that mechanism.
-    static CorInfoCallConvExtension GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD);
+    static void GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD, _Out_opt_ CorInfoCallConvExtension* callConv, _Out_opt_ bool* suppressGCTransition);
 
     //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
@@ -319,16 +320,17 @@ public:
     PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
 
 private:
-    void ThrowError(WORD errorResourceID);
-    void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
+    void ThrowError(_In_ WORD errorResourceID);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ BOOL bIsVarArg);
     void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
-    void PreInit(Module* pModule, MethodTable *pClass);
-    void PreInit(MethodDesc* pMD);
+    void PreInit(_In_ Module* pModule, _In_ MethodTable* pClass);
+    void PreInit(_In_ MethodDesc* pMD);
 
 private:
     enum
     {
-        PINVOKE_STATIC_SIGINFO_IS_STATIC = 0x0001,
+        PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION = 0x0001,
         PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR = 0x0002,
         PINVOKE_STATIC_SIGINFO_BEST_FIT = 0x0004,
 
@@ -346,9 +348,20 @@ public: // public getters
     DWORD GetStubFlags() const
     {
         WRAPPER_NO_CONTRACT;
-        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) |
-               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
-               (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
+        DWORD flags = 0;
+        if (GetThrowOnUnmappableChar())
+            flags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+
+        if (GetBestFitMapping())
+            flags |= NDIRECTSTUB_FL_BESTFIT;
+
+        if (IsDelegateInterop())
+            flags |= NDIRECTSTUB_FL_DELEGATE;
+
+        if (ShouldSuppressGCTransition())
+            flags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+
+        return flags;
     }
     Module* GetModule() const { LIMITED_METHOD_CONTRACT; return m_pModule; }
     BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
@@ -360,6 +373,7 @@ public: // public getters
 public: // private getters
     BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
     BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
+    BOOL ShouldSuppressGCTransition() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION; }
 
 private: // setters
     void SetThrowOnUnmappableChar(BOOL throwOnUnmappableChar)
@@ -377,6 +391,14 @@ private: // setters
             m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
+    }
+    void SetShouldSuppressGCTransition(BOOL suppress)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (suppress)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION;
     }
     void SetIsDelegateInterop(BOOL delegateInterop)
     {
