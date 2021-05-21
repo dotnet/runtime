@@ -7,9 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="VariantTest.cs" />
-    <Compile Include="VariantTest.BuiltInCom.cs" />
+    <Compile Include="VariantTest.ComWrappers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
   </ItemGroup>
 </Project>
