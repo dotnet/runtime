@@ -438,6 +438,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             Array.Reverse(bytes, 0, bytes.Length);
             Write(bytes);
         }
+        public void WriteObj(DotnetObjectId objectId)
+        {
+            if (objectId.Scheme == "object")
+            {
+                Write((byte)ElementType.Class);
+                Write(int.Parse(objectId.Value));
+            }
+        }
     }
     internal class FieldTypeClass
     {
@@ -507,7 +515,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.VM, (int) CmdVM.SET_PROTOCOL_VERSION, command_params, token);
             return true;
         }
-
+        public async Task<bool> EnableReceiveUserBreakRequest(SessionId sessionId, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write((byte)EventKind.USER_BREAK);
+            command_params_writer.Write((byte)SuspendPolicy.SUSPEND_POLICY_NONE);
+            command_params_writer.Write((byte)0);
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
+            return true;
+        }
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommand(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
@@ -818,14 +835,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var getMethodId = ret_debugger_cmd_reader.ReadInt32();
                 ret_debugger_cmd_reader.ReadInt32(); //setmethod
                 ret_debugger_cmd_reader.ReadInt32(); //attrs
-                if (await MethodIsStatic(sessionId, getMethodId, token))
+                if (getMethodId == 0 || await MethodIsStatic(sessionId, getMethodId, token))
                     continue;
                 JObject propRet = null;
                 if (attributes.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any())
                     continue;
                 if (isAutoExpandable)
                 {
-                    propRet = await InvokeMethod(sessionId, object_buffer, getMethodId, propertyNameStr, token);
+                    try {
+                        propRet = await InvokeMethod(sessionId, object_buffer, getMethodId, propertyNameStr, token);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
                 }
                 else
                 {
@@ -836,6 +859,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 objectId = $"{objectId}:method_id:{getMethodId}",
                                 className = "Function",
                                 description = "get " + propertyNameStr + " ()",
+                                methodId = getMethodId,
+                                objectIdValue = objectId
                             },
                             name = propertyNameStr
                         });
@@ -1288,17 +1313,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 command_params_writer.Write(var.Index);
             }
 
-
             if (await IsAsyncMethod(sessionId, method.DebuggerId, token))
             {
                 ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_THIS, command_params, token);
                 ret_debugger_cmd_reader.ReadByte(); //ignore type
                 var objectId = ret_debugger_cmd_reader.ReadInt32();
                 var asyncLocals = await GetObjectValues(sessionId, objectId, true, false, token);
-                asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>")));
+                asyncLocals = new JArray(asyncLocals.Where( asyncLocal => !asyncLocal["name"].Value<string>().Contains("<>") || asyncLocal["name"].Value<string>().EndsWith("__this")));
                 foreach (var asyncLocal in asyncLocals)
                 {
-                    if (asyncLocal["name"].Value<string>().Contains("<"))
+                    if (asyncLocal["name"].Value<string>().EndsWith("__this"))
+                        asyncLocal["name"] = "this";
+                    else if (asyncLocal["name"].Value<string>().Contains("<"))
                         asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
                 }
                 return asyncLocals;

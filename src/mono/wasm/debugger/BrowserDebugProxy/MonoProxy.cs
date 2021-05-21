@@ -18,7 +18,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class MonoProxy : DevToolsProxy
     {
-        private MonoSDBHelper sdbHelper;
+        internal MonoSDBHelper sdbHelper;
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
@@ -577,7 +577,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task<Result> RuntimeGetProperties(MessageId id, DotnetObjectId objectId, JToken args, CancellationToken token)
+        internal async Task<Result> RuntimeGetProperties(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             try {
                 if (objectId.Scheme == "scope")
@@ -617,7 +617,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, Breakpoint bp, CancellationToken token)
+        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, Frame mono_frame, Breakpoint bp, CancellationToken token)
         {
             if (string.IsNullOrEmpty(bp?.Condition) || mono_frame == null)
                 return true;
@@ -627,8 +627,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (bp.ConditionAlreadyEvaluatedWithError)
                 return false;
             try {
-                var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
-
+                var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
                 if (retValue == null)
                     retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
@@ -671,24 +670,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             var callFrames = new List<object>();
             var frames = new List<Frame>();
             for (int i = 0 ; i < number_of_events; i++) {
-                var event_kind = ret_debugger_cmd_reader.ReadByte(); //event kind
+                var event_kind = (EventKind)ret_debugger_cmd_reader.ReadByte(); //event kind
                 var request_id = ret_debugger_cmd_reader.ReadInt32(); //request id
-                if ((EventKind)event_kind == EventKind.STEP)
+                if (event_kind == EventKind.STEP)
                     await sdbHelper.ClearSingleStep(sessionId, request_id, token);
                 Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
-                switch ((EventKind)event_kind)
+                switch (event_kind)
                 {
+                    case EventKind.USER_BREAK:
                     case EventKind.STEP:
                     case EventKind.BREAKPOINT:
                     {
                         int thread_id = ret_debugger_cmd_reader.ReadInt32();
-                        int method_id = ret_debugger_cmd_reader.ReadInt32();
+                        int method_id = 0;
+                        if (event_kind != EventKind.USER_BREAK)
+                            method_id = ret_debugger_cmd_reader.ReadInt32();
                         var command_params = new MemoryStream();
                         var command_params_writer = new MonoBinaryWriter(command_params);
                         command_params_writer.Write(thread_id);
                         command_params_writer.Write(0);
                         command_params_writer.Write(-1);
-
                         ret_debugger_cmd_reader = await sdbHelper.SendDebuggerAgentCommand(sessionId, (int) CommandSet.THREAD, (int) CmdThread.GET_FRAME_INFO, command_params, token);
                         var frame_count = ret_debugger_cmd_reader.ReadInt32();
                         for (int j = 0; j < frame_count; j++) {
@@ -793,6 +794,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             data,
                             hitBreakpoints = bp_list,
                         });
+                        if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
+                        {
+                            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                            return true;
+                        }
                         SendEvent(sessionId, "Debugger.paused", o, token);
                         break;
                     }
@@ -1124,6 +1130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             await sdbHelper.SetProtocolVersion(sessionId, token);
+            await sdbHelper.EnableReceiveUserBreakRequest(sessionId, token);
 
             DebugStore store = await LoadStore(sessionId, token);
 

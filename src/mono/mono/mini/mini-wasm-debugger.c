@@ -489,7 +489,9 @@ mono_wasm_breakpoint_hit (void)
 void
 mono_wasm_user_break (void)
 {
-	mono_wasm_fire_bp ();
+	mono_wasm_save_thread_context();
+	mono_dbg_debugger_agent_user_break ();
+	// mono_wasm_fire_bp ();
 }
 
 static MonoObject*

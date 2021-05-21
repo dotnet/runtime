@@ -1581,6 +1581,7 @@ void mono_init_debugger_agent_for_wasm (int log_level_parm)
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
 	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
+	agent_config.enabled = TRUE;
 }
 
 
@@ -3510,7 +3511,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 				return;
 		}
 	}
-	
+
 	if (event == EVENT_KIND_VM_START) 
 		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;	
 	
@@ -3598,6 +3599,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			break;
 		}
 		case EVENT_KIND_USER_BREAK: {
+#ifndef TARGET_WASM
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 			g_assert (tls);
@@ -3605,6 +3607,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			if (tls->disable_breakpoints)
 				return;
 			mono_stopwatch_stop (&tls->step_time);
+#endif			
 			break;
 		}
 		case EVENT_KIND_USER_LOG: {
@@ -4316,8 +4319,8 @@ user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 /*
  * Called by System.Diagnostics.Debugger:Break ().
  */
-static void
-debugger_agent_user_break (void)
+void
+mono_dbg_debugger_agent_user_break (void)
 {
 	if (agent_config.enabled) {
 		MonoContext ctx;
@@ -8756,7 +8759,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			buffer_add_byte(buf, TRUE);
 			mono_debug_free_method_async_debug_info (async_method);
 		}
-		else 
+		else
 			buffer_add_byte(buf, FALSE);
 		break;
 	}
@@ -10191,7 +10194,7 @@ mono_debugger_agent_init (void)
 	cbs.handle_exception = debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;
 	cbs.end_exception_filter = debugger_agent_end_exception_filter;
-	cbs.user_break = debugger_agent_user_break;
+	cbs.user_break = mono_dbg_debugger_agent_user_break;
 	cbs.debug_log = debugger_agent_debug_log;
 	cbs.debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	cbs.send_crash = mono_debugger_agent_send_crash;
