@@ -1734,7 +1734,6 @@ ep_rt_mono_write_event_module_load (MonoImage *image)
 		uint32_t module_native_pdb_age = 0;
 
 		uint32_t reserved_flags = 0;
-		uint64_t binding_id = 0;
 
 		// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
 		uint32_t module_flags = MODULE_FLAGS_MANIFEST_MODULE;
