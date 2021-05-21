@@ -16,13 +16,13 @@ namespace System.IO.Tests.Enumeration
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
-                 testDirectory.FullName,
-                 (ref FileSystemEntry entry) => entry.ToFullPath(),
-                 // Skipping attributes would force a disk hit which enters the cyclic symlink
-                 new EnumerationOptions(){ AttributesToSkip = 0 })
-                 {
-                     ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsDirectory
-                 };
+                testDirectory.FullName,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                // Skipping attributes would force a disk hit which enters the cyclic symlink
+                new EnumerationOptions(){ AttributesToSkip = 0 })
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsDirectory
+            };
 
             // Windows differentiates between dir symlinks and file symlinks
             int expected = OperatingSystem.IsWindows() ? 1 : 0;
@@ -35,13 +35,13 @@ namespace System.IO.Tests.Enumeration
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
-                 testDirectory.FullName,
-                 (ref FileSystemEntry entry) => entry.ToFullPath(),
-                 // Skipping attributes would force a disk hit which enters the cyclic symlink
-                 new EnumerationOptions(){ AttributesToSkip = 0 })
-                 {
-                     ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory
-                 };
+                testDirectory.FullName,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                // Skipping attributes would force a disk hit which enters the cyclic symlink
+                new EnumerationOptions(){ AttributesToSkip = 0 })
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory
+            };
 
             // Windows differentiates between dir symlinks and file symlinks
             int expected = OperatingSystem.IsWindows() ? 0 : 1;
@@ -54,10 +54,10 @@ namespace System.IO.Tests.Enumeration
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
-                 testDirectory.FullName,
-                 (ref FileSystemEntry entry) => entry.ToFullPath(),
-                 // Skipping attributes would force a disk hit which enters the cyclic symlink
-                 new EnumerationOptions(){ AttributesToSkip = 0 });
+                testDirectory.FullName,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                // Skipping attributes would force a disk hit which enters the cyclic symlink
+                new EnumerationOptions(){ AttributesToSkip = 0 });
 
             Assert.Single(enumerable);
         }
