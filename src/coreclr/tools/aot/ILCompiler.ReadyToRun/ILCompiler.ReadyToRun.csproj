@@ -248,6 +248,9 @@
     <Compile Include="..\..\Common\JitInterface\TypeString.cs">
       <Link>JitInterface\TypeString.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\CallConvHelper.cs">
+      <Link>JitInterface\CallConvHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoBase.cs">
       <Link>JitInterface\CorInfoBase.cs</Link>
     </Compile>

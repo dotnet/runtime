@@ -1803,25 +1803,26 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // Note we could update the local variable weights here by
-    // calling lvaMarkLocalVars, with the block and weight adjustment.
-
     // If either block or bNext has a profile weight
     // or if both block and bNext have non-zero weights
-    // then we select the highest weight block.
+    // then we will use the max weight for the block.
+    //
+    const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
+    const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
 
-    if (block->hasProfileWeight() || bNext->hasProfileWeight() || (block->bbWeight && bNext->bbWeight))
+    if (hasProfileWeight || hasNonZeroWeight)
     {
-        // We are keeping block so update its fields
-        // when bNext has a greater weight
+        BasicBlock::weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
 
-        if (block->bbWeight < bNext->bbWeight)
+        if (hasProfileWeight)
         {
-            block->bbWeight = bNext->bbWeight;
-
-            block->bbFlags |= (bNext->bbFlags & BBF_PROF_WEIGHT); // Set the profile weight flag (if necessary)
-            assert(block->bbWeight != BB_ZERO_WEIGHT);
-            block->bbFlags &= ~BBF_RUN_RARELY; // Clear any RarelyRun flag
+            block->setBBProfileWeight(newWeight);
+        }
+        else
+        {
+            assert(newWeight != BB_ZERO_WEIGHT);
+            block->bbWeight = newWeight;
+            block->bbFlags &= ~BBF_RUN_RARELY;
         }
     }
     // otherwise if either block has a zero weight we select the zero weight
@@ -3726,47 +3727,163 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     return true;
 }
 
-/*****************************************************************************
- *
- *  Function called to optimize switch statements
- */
-
+//-----------------------------------------------------------------------------
+// fgOptimizeSwitchJump: see if a switch has a dominant case, and modify to
+//   check for that case up front (aka switch peeling).
+//
+// Returns:
+//    True if the switch now has an upstream check for the dominant case.
+//
 bool Compiler::fgOptimizeSwitchJumps()
 {
-    bool result = false; // Our return value
-
-#if 0
-    // TODO-CQ: Add switch jump optimizations?
     if (!fgHasSwitch)
-        return false;
-
-    if (!fgHaveValidEdgeWeights)
-        return false;
-
-    for (BasicBlock* bSrc = fgFirstBB; bSrc != NULL; bSrc = bSrc->bbNext)
     {
-        if (bSrc->bbJumpKind == BBJ_SWITCH)
+        return false;
+    }
+
+    bool modified = false;
+
+    for (BasicBlock* block = fgFirstBB; block != NULL; block = block->bbNext)
+    {
+        // Lowering expands switches, so calling this method on lowered IR
+        // does not make sense.
+        //
+        assert(!block->IsLIR());
+
+        if (block->bbJumpKind != BBJ_SWITCH)
         {
-            unsigned        jumpCnt; jumpCnt = bSrc->bbJumpSwt->bbsCount;
-            BasicBlock**    jumpTab; jumpTab = bSrc->bbJumpSwt->bbsDstTab;
+            continue;
+        }
 
-            do
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
+        if (!block->bbJumpSwt->bbsHasDominantCase)
+        {
+            continue;
+        }
+
+        // We currently will only see dominant cases with PGO.
+        //
+        assert(block->hasProfileWeight());
+
+        const unsigned dominantCase = block->bbJumpSwt->bbsDominantCase;
+
+        JITDUMP(FMT_BB " has switch with dominant case %u, considering peeling\n", block->bbNum, dominantCase);
+
+        // The dominant case should not be the default case, as we already peel that one.
+        //
+        assert(dominantCase < (block->bbJumpSwt->bbsCount - 1));
+        BasicBlock* const dominantTarget = block->bbJumpSwt->bbsDstTab[dominantCase];
+        Statement* const  switchStmt     = block->lastStmt();
+        GenTree* const    switchTree     = switchStmt->GetRootNode();
+        assert(switchTree->OperIs(GT_SWITCH));
+        GenTree* const switchValue = switchTree->AsOp()->gtGetOp1();
+
+        // Split the switch block just before at the switch.
+        //
+        // After this, newBlock is the switch block, and
+        // block is the upstream block.
+        //
+        BasicBlock* newBlock = nullptr;
+
+        if (block->firstStmt() == switchStmt)
+        {
+            newBlock = fgSplitBlockAtBeginning(block);
+        }
+        else
+        {
+            newBlock = fgSplitBlockAfterStatement(block, switchStmt->GetPrevStmt());
+        }
+
+        // Set up a compare in the upstream block, "stealing" the switch value tree.
+        //
+        GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
+        GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
+        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetILOffsetX());
+        fgInsertStmtAtEnd(block, jmpStmt);
+        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
+
+        // Reattach switch value to the switch. This may introduce a comma
+        // in the upstream compare tree, if the switch value expression is complex.
+        //
+        switchTree->AsOp()->gtOp1 = fgMakeMultiUse(&dominantCaseCompare->AsOp()->gtOp1);
+
+        // Update flags
+        //
+        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
+        jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
+        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
+
+        // Wire up the new control flow.
+        //
+        block->bbJumpKind                   = BBJ_COND;
+        block->bbJumpDest                   = dominantTarget;
+        flowList* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+        flowList* const blockToNewBlockEdge = newBlock->bbPreds;
+        assert(blockToNewBlockEdge->getBlock() == block);
+        assert(blockToTargetEdge->getBlock() == block);
+
+        // Update profile data
+        //
+        const BasicBlock::weight_t fraction              = newBlock->bbJumpSwt->bbsDominantFraction;
+        const BasicBlock::weight_t blockToTargetWeight   = block->bbWeight * fraction;
+        const BasicBlock::weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
+
+        newBlock->setBBProfileWeight(blockToNewBlockWeight);
+
+        blockToTargetEdge->setEdgeWeights(blockToTargetWeight, blockToTargetWeight, dominantTarget);
+        blockToNewBlockEdge->setEdgeWeights(blockToNewBlockWeight, blockToNewBlockWeight, block);
+
+        // There may be other switch cases that lead to this same block, but there's just
+        // one edge in the flowgraph. So we need to subtract off the profile data that now flows
+        // along the peeled edge.
+        //
+        for (flowList* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->flNext)
+        {
+            if (pred->getBlock() == newBlock)
             {
-                BasicBlock*   bDst       = *jumpTab;
-                flowList*     edgeToDst  = fgGetPredForBlock(bDst, bSrc);
-                double        outRatio   = (double) edgeToDst->edgeWeightMin()  / (double) bSrc->bbWeight;
-
-                if (outRatio >= 0.60)
+                if (pred->flDupCount == 1)
                 {
-                    // straighten switch here...
+                    // The only switch case leading to the dominant target was the one we peeled.
+                    // So the edge from the switch now has zero weight.
+                    //
+                    pred->setEdgeWeights(BB_ZERO_WEIGHT, BB_ZERO_WEIGHT, dominantTarget);
+                }
+                else
+                {
+                    // Other switch cases also lead to the dominant target.
+                    // Subtract off the weight we transferred to the peel.
+                    //
+                    BasicBlock::weight_t newMinWeight = pred->edgeWeightMin() - blockToTargetWeight;
+                    BasicBlock::weight_t newMaxWeight = pred->edgeWeightMax() - blockToTargetWeight;
+
+                    if (newMinWeight < BB_ZERO_WEIGHT)
+                    {
+                        newMinWeight = BB_ZERO_WEIGHT;
+                    }
+                    if (newMaxWeight < BB_ZERO_WEIGHT)
+                    {
+                        newMaxWeight = BB_ZERO_WEIGHT;
+                    }
+                    pred->setEdgeWeights(newMinWeight, newMaxWeight, dominantTarget);
                 }
             }
-            while (++jumpTab, --jumpCnt);
         }
-    }
-#endif
 
-    return result;
+        // For now we leave the switch as is, since there's no way
+        // to indicate that one of the cases is now unreachable.
+        //
+        // But it no longer has a dominant case.
+        //
+        newBlock->bbJumpSwt->bbsHasDominantCase = false;
+
+        modified = true;
+    }
+
+    return modified;
 }
 
 //-----------------------------------------------------------------------------

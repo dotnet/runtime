@@ -375,7 +375,7 @@ namespace Tracing.Tests.Common
 
     public class ConnectionHelper
     {
-        private static string IpcRootPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\\.\pipe\" : Path.GetTempPath();
+        private static string IpcRootPath { get; } = OperatingSystem.IsWindows() ? @"\\.\pipe\" : Path.GetTempPath();
         public static Stream GetStandardTransport(int processId)
         {
             try
@@ -391,7 +391,7 @@ namespace Tracing.Tests.Common
                 throw new Exception($"Process {processId} seems to be elevated.");
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 string pipeName = $"dotnet-diagnostic-{processId}";
                 var namedPipe = new NamedPipeClientStream(

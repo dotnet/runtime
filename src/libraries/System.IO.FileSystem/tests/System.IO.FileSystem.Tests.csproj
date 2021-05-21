@@ -18,6 +18,7 @@
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />
+    <Compile Include="FileStream\ctor_options_as.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
@@ -49,13 +50,22 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
+    <Compile Include="FileStream\ctor_options_as.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileSystemTest.Windows.cs" />
+    <Compile Include="FileStream\ctor_options_as.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="FileSystemTest.Browser.cs" />
-  </ItemGroup>  
+    <Compile Include="FileStream\ctor_options_as.Browser.cs" />
+  </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
     <Compile Include="DirectoryInfo\GetSetAttributes.cs" />

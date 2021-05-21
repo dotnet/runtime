@@ -396,6 +396,57 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 
 /*****************************************************************************
  *
+ *  Generate a "mov reg1, reg2" instruction.
+ */
+void CodeGen::inst_Mov(var_types dstType,
+                       regNumber dstReg,
+                       regNumber srcReg,
+                       bool      canSkip,
+                       emitAttr  size,
+                       insFlags  flags /* = INS_FLAGS_DONT_CARE */)
+{
+    instruction ins = ins_Copy(srcReg, dstType);
+
+    if (size == EA_UNKNOWN)
+    {
+        size = emitActualTypeSize(dstType);
+    }
+
+#ifdef TARGET_ARM
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+#else
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
+#endif
+}
+
+/*****************************************************************************
+ *
+ *  Generate a "mov reg1, reg2" instruction.
+ */
+void CodeGen::inst_Mov_Extend(var_types srcType,
+                              bool      srcInReg,
+                              regNumber dstReg,
+                              regNumber srcReg,
+                              bool      canSkip,
+                              emitAttr  size,
+                              insFlags  flags /* = INS_FLAGS_DONT_CARE */)
+{
+    instruction ins = ins_Move_Extend(srcType, srcInReg);
+
+    if (size == EA_UNKNOWN)
+    {
+        size = emitActualTypeSize(srcType);
+    }
+
+#ifdef TARGET_ARM
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+#else
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
+#endif
+}
+
+/*****************************************************************************
+ *
  *  Generate a "op reg1, reg2" instruction.
  */
 
@@ -1570,7 +1621,8 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     if (varTypeIsFloating(srcType))
         return INS_vmov;
 #else
-    assert(!varTypeIsFloating(srcType));
+    if (varTypeIsFloating(srcType))
+        return INS_mov;
 #endif
 
 #if defined(TARGET_XARCH)

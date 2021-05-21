@@ -95,7 +95,7 @@
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="HostnameMatchTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or ('$(UseAppleCrypto)' == 'true' and '$(TargetsOSX)' == 'true')">
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
     <Compile Include="X509StoreMutableTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' != 'true'">
@@ -115,8 +115,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
-    <Compile Include="X509StoreMutableTests.OSX.cs" Condition="'$(TargetsOSX)' == 'true'" />
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' == 'true'">
+    <Compile Include="X509StoreMutableTests.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"
@@ -135,14 +135,17 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' != 'true'">
+    <Compile Include="X509StoreMutableTests.iOS.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />

@@ -8,9 +8,9 @@ namespace System.Text.Json.Nodes
 {
     [DebuggerDisplay("{ToJsonString(),nq}")]
     [DebuggerTypeProxy(typeof(JsonValue<>.DebugView))]
-    internal sealed partial class JsonValue<TValue> : JsonValue
+    internal abstract partial class JsonValue<TValue> : JsonValue
     {
-        internal readonly TValue _value; // keep as a field for direct access to avoid copies
+        public readonly TValue _value; // keep as a field for direct access to avoid copies
 
         public JsonValue(TValue value, JsonNodeOptions? options = null) : base(options)
         {
@@ -33,7 +33,7 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        public override T GetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] T>()
+        public override T GetValue<T>()
         {
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)
@@ -71,23 +71,6 @@ namespace System.Text.Json.Nodes
             //  so attempting to cast here would throw InvalidCastException.
             value = default!;
             return false;
-        }
-
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            if (_value is JsonElement jsonElement)
-            {
-                jsonElement.WriteTo(writer);
-            }
-            else
-            {
-                JsonSerializer.Serialize(writer, _value, _value!.GetType(), options);
-            }
         }
 
         internal TypeToConvert ConvertJsonElement<TypeToConvert>()

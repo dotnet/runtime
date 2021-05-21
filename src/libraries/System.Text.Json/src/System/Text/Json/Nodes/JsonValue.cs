@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
@@ -20,11 +21,12 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   The new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </returns>
-        /// <typeparam name="T">The type of value to be added.</typeparam>
-        /// <param name="value">The value to add.</param>
+        /// <typeparam name="T">The type of value to create.</typeparam>
+        /// <param name="value">The value to create.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        public static JsonValue? Create<T>(T? value, JsonNodeOptions? options = null)
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public static JsonValue? Create<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)]T>(T? value, JsonNodeOptions? options = null)
         {
             if (value == null)
             {
@@ -38,13 +40,46 @@ namespace System.Text.Json.Nodes
                     return null;
                 }
 
-                if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
-                {
-                    throw new InvalidOperationException(SR.NodeElementCannotBeObjectOrArray);
-                }
+                VerifyJsonElementIsNotArrayOrObject(ref element);
             }
 
-            return new JsonValue<T>(value, options);
+            return new JsonValueNotTrimmable<T>(value, options);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <returns>
+        ///   The new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </returns>
+        /// <typeparam name="T">The type of value to create.</typeparam>
+        /// <param name="value">The value to create.</param>
+        /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> that is later used to serialize the value.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        public static JsonValue? Create<T>(T? value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
+        {
+            if (jsonTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            if (value == null)
+            {
+                return null;
+            }
+
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.Null)
+                {
+                    return null;
+                }
+
+                VerifyJsonElementIsNotArrayOrObject(ref element);
+            }
+
+            return new JsonValueTrimmable<T>(value, jsonTypeInfo, options);
         }
 
         internal override void GetPath(List<string> path, JsonNode? child)
@@ -64,5 +99,14 @@ namespace System.Text.Json.Nodes
         /// <param name="value">When this method returns, contains the parsed value.</param>
         /// <returns><see langword="true"/> if the value can be successfully obtained; otherwise, <see langword="false"/>.</returns>
         public abstract bool TryGetValue<T>([NotNullWhen(true)] out T? value);
+
+        private static void VerifyJsonElementIsNotArrayOrObject(ref JsonElement element)
+        {
+            // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
+            if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
+            {
+                throw new InvalidOperationException(SR.NodeElementCannotBeObjectOrArray);
+            }
+        }
     }
 }

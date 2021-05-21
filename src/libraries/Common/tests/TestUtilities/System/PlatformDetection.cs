@@ -137,6 +137,9 @@ namespace System
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
+        public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
+
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
 

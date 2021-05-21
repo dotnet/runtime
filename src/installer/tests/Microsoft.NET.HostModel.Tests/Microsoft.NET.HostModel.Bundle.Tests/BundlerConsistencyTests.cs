@@ -187,7 +187,7 @@ namespace Microsoft.NET.HostModel.Tests
             // work correctly in the presence of "."s in the hostName.
             var originalBaseName = "StandaloneApp";
             var newBaseName = "Stand.Alone.App";
-            var exe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+            var exe = OperatingSystem.IsWindows() ? ".exe" : string.Empty;
 
             void rename(string extension)
             {
