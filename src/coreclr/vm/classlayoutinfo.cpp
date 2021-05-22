@@ -190,6 +190,13 @@ namespace
                 calcTotalSize = fieldEnd;
         }
 
+#if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(TARGET_64BIT)
+        if (LargestAlignmentRequirement > TARGET_POINTER_SIZE)
+        {
+            LargestAlignmentRequirement = TARGET_POINTER_SIZE;
+        }
+#endif
+
         bool useMetadataClassSize = false;
         if (classSizeInMetadata != 0)
         {
@@ -258,6 +265,13 @@ namespace
             if (pNestedType.GetMethodTable()->HasLayout())
             {
                 pManagedPlacementInfo->m_alignment = pNestedType.GetMethodTable()->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+#if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(TARGET_64BIT)
+                // On x86, maximum native struct alignment is 4
+                if (pManagedPlacementInfo->m_alignment > TARGET_POINTER_SIZE)
+                {
+                    pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
+                }
+#endif
             }
             else
             {
@@ -281,6 +295,7 @@ namespace
     {
         switch (corElemType)
         {
+        case ELEMENT_TYPE_VOID:
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_I1:
