@@ -33,7 +33,7 @@ struct AssemblyReferenceClosureWalkContextForProfAPI;
 
 #include "corprof.h"
 
-#define MAX_NOTIFICATION_PROFILERS 8
+#define MAX_NOTIFICATION_PROFILERS 32
 
 //---------------------------------------------------------------------------------------
 // Enumerates the various init states of profiling.
