@@ -20,11 +20,11 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a secret agreement for generating shared key material
         /// </summary>
-        [DllImport(Interop.Libraries.NCrypt)]
-        private static extern ErrorCode NCryptSecretAgreement(
+        [GeneratedDllImport(Interop.Libraries.NCrypt)]
+        private static partial ErrorCode NCryptSecretAgreement(
             SafeNCryptKeyHandle hPrivKey,
             SafeNCryptKeyHandle hPubKey,
-            [Out] out SafeNCryptSecretHandle phSecret,
+            out SafeNCryptSecretHandle phSecret,
             int dwFlags);
 
 
