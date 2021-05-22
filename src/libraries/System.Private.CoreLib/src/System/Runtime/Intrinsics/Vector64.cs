@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
+
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
@@ -12,20 +15,21 @@ namespace System.Runtime.Intrinsics
         internal const int Size = 8;
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{U}" />.</summary>
-        /// <typeparam name="T">The type of the input vector.</typeparam>
-        /// <typeparam name="U">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
+        /// <typeparam name="TFrom">The type of the input vector.</typeparam>
+        /// <typeparam name="TTo">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector64{U}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) or the type of the target (<typeparamref name="U" />) is not supported.</exception>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="TFrom" />) or the type of the target (<typeparamref name="TTo" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<U> As<T, U>(this Vector64<T> vector)
-            where T : struct
-            where U : struct
+        public static Vector64<TTo> As<TFrom, TTo>(this Vector64<TFrom> vector)
+            where TFrom : struct
+            where TTo : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<U>();
-            return Unsafe.As<Vector64<T>, Vector64<U>>(ref vector);
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<TFrom>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<TTo>();
+
+            return Unsafe.As<Vector64<TFrom>, Vector64<TTo>>(ref vector);
         }
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{Byte}" />.</summary>
@@ -35,10 +39,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<byte> AsByte<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, byte>();
-        }
+            where T : struct => vector.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{Double}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -47,10 +48,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<double> AsDouble<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, double>();
-        }
+            where T : struct => vector.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{Int16}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -59,10 +57,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<short> AsInt16<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, short>();
-        }
+            where T : struct => vector.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{Int32}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -71,10 +66,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<int> AsInt32<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, int>();
-        }
+            where T : struct => vector.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{Int64}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -83,10 +75,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<long> AsInt64<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, long>();
-        }
+            where T : struct => vector.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{SByte}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -96,10 +85,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<sbyte> AsSByte<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, sbyte>();
-        }
+            where T : struct => vector.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{Single}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -108,10 +94,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector64<float> AsSingle<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, float>();
-        }
+            where T : struct => vector.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{UInt16}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -121,10 +104,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<ushort> AsUInt16<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, ushort>();
-        }
+            where T : struct => vector.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{UInt32}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -134,10 +114,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<uint> AsUInt32<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, uint>();
-        }
+            where T : struct => vector.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{UInt64}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -147,10 +124,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<ulong> AsUInt64<T>(this Vector64<T> vector)
-            where T : struct
-        {
-            return vector.As<T, ulong>();
-        }
+            where T : struct => vector.As<T, ulong>();
 
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -944,40 +918,14 @@ namespace System.Runtime.Intrinsics
         public static T GetElement<T>(this Vector64<T> vector, int index)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector64<T>.Count))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            ref T e0 = ref Unsafe.As<Vector64<T>, T>(ref vector);
-            return Unsafe.Add(ref e0, index);
-        }
-
-        /// <summary>Creates a new <see cref="Vector64{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
-        /// <typeparam name="T">The type of the input vector.</typeparam>
-        /// <param name="vector">The vector to get the remaining elements from.</param>
-        /// <param name="index">The index of the element to set.</param>
-        /// <param name="value">The value to set the element to.</param>
-        /// <returns>A <see cref="Vector64{T}" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        public static Vector64<T> WithElement<T>(this Vector64<T> vector, int index, T value)
-            where T : struct
-        {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-
-            if ((uint)(index) >= (uint)(Vector64<T>.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Vector64<T> result = vector;
-            ref T e0 = ref Unsafe.As<Vector64<T>, T>(ref result);
-            Unsafe.Add(ref e0, index) = value;
-            return result;
+            return vector.GetElementUnsafe(index);
         }
 
         /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
@@ -989,8 +937,8 @@ namespace System.Runtime.Intrinsics
         public static T ToScalar<T>(this Vector64<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-            return Unsafe.As<Vector64<T>, T>(ref vector);
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            return vector.GetElementUnsafe(0);
         }
 
         /// <summary>Converts the given vector to a new <see cref="Vector128{T}" /> with the lower 64-bits set to the value of the given vector and the upper 64-bits initialized to zero.</summary>
@@ -1002,7 +950,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> ToVector128<T>(this Vector64<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
             Vector128<T> result = Vector128<T>.Zero;
             Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = vector;
@@ -1018,7 +966,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector128<T> ToVector128Unsafe<T>(this Vector64<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
@@ -1026,6 +974,46 @@ namespace System.Runtime.Intrinsics
             byte* pResult = stackalloc byte[Vector128.Size];
             Unsafe.AsRef<Vector64<T>>(pResult) = vector;
             return Unsafe.AsRef<Vector128<T>>(pResult);
+        }
+
+        /// <summary>Creates a new <see cref="Vector64{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the remaining elements from.</param>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value to set the element to.</param>
+        /// <returns>A <see cref="Vector64{T}" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        public static Vector64<T> WithElement<T>(this Vector64<T> vector, int index, T value)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+            if ((uint)(index) >= (uint)(Vector64<T>.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            Vector64<T> result = vector;
+            result.SetElementUnsafe(index, value);
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static T GetElementUnsafe<T>(in this Vector64<T> vector, int index)
+            where T : struct
+        {
+            Debug.Assert((index >= 0) && (index < Vector64<T>.Count));
+            return Unsafe.Add(ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in vector)), index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void SetElementUnsafe<T>(in this Vector64<T> vector, int index, T value)
+            where T : struct
+        {
+            Debug.Assert((index >= 0) && (index < Vector64<T>.Count));
+            Unsafe.Add(ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in vector)), index) = value;
         }
     }
 }

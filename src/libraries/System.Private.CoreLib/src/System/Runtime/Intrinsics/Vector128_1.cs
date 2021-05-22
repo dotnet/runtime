@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
@@ -35,6 +36,18 @@ namespace System.Runtime.Intrinsics
         private readonly ulong _00;
         private readonly ulong _01;
 
+        /// <summary>Gets a new <see cref="Vector128{T}" /> with all bits set to 1.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector128<T> AllBitsSet
+        {
+            [Intrinsic]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return Vector128.Create(0xFFFFFFFF).As<uint, T>();
+            }
+        }
+
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector128{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
@@ -42,9 +55,24 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 return Vector128.Size / Unsafe.SizeOf<T>();
             }
+        }
+
+        internal static bool IsSupported
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte)) ||
+                   (typeof(T) == typeof(double)) ||
+                   (typeof(T) == typeof(short)) ||
+                   (typeof(T) == typeof(int)) ||
+                   (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(sbyte)) ||
+                   (typeof(T) == typeof(float)) ||
+                   (typeof(T) == typeof(ushort)) ||
+                   (typeof(T) == typeof(uint)) ||
+                   (typeof(T) == typeof(ulong));
         }
 
         /// <summary>Gets a new <see cref="Vector128{T}" /> with all elements initialized to zero.</summary>
@@ -54,20 +82,8 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 return default;
-            }
-        }
-
-        /// <summary>Gets a new <see cref="Vector128{T}" /> with all bits set to 1.</summary>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public static Vector128<T> AllBitsSet
-        {
-            [Intrinsic]
-            get
-            {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-                return Vector128.Create(0xFFFFFFFF).As<uint, T>();
             }
         }
 
@@ -86,20 +102,12 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal static bool IsSupported
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (typeof(T) == typeof(byte)) ||
-                   (typeof(T) == typeof(sbyte)) ||
-                   (typeof(T) == typeof(short)) ||
-                   (typeof(T) == typeof(ushort)) ||
-                   (typeof(T) == typeof(int)) ||
-                   (typeof(T) == typeof(uint)) ||
-                   (typeof(T) == typeof(long)) ||
-                   (typeof(T) == typeof(ulong)) ||
-                   (typeof(T) == typeof(float)) ||
-                   (typeof(T) == typeof(double));
-        }
+        /// <summary>Determines whether the specified object is equal to the current instance.</summary>
+        /// <param name="obj">The object to compare with the current instance.</param>
+        /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector128{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public override bool Equals([NotNullWhen(true)] object? obj)
+            => (obj is Vector128<T> other) && Equals(other);
 
         /// <summary>Determines whether the specified <see cref="Vector128{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector128{T}" /> to compare with the current instance.</param>
@@ -108,7 +116,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector128<T> other)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
             if (Sse.IsSupported && (typeof(T) == typeof(float)))
             {
@@ -151,27 +159,17 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Determines whether the specified object is equal to the current instance.</summary>
-        /// <param name="obj">The object to compare with the current instance.</param>
-        /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector128{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return (obj is Vector128<T>) && Equals((Vector128<T>)(obj));
-        }
-
         /// <summary>Gets the hash code for the instance.</summary>
         /// <returns>The hash code for the instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-
             HashCode hashCode = default;
 
             for (int i = 0; i < Count; i++)
             {
-                hashCode.Add(this.GetElement(i).GetHashCode());
+                var value = this.GetElement(i);
+                hashCode.Add(value);
             }
 
             return hashCode.ToHashCode();
@@ -181,21 +179,24 @@ namespace System.Runtime.Intrinsics
         /// <returns>An equivalent string representation of the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString()
-        {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            => ToString("G", CultureInfo.InvariantCulture);
 
-            int lastElement = Count - 1;
+        private string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
             var sb = new ValueStringBuilder(stackalloc char[64]);
-            CultureInfo invariant = CultureInfo.InvariantCulture;
+            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
 
             sb.Append('<');
-            for (int i = 0; i < lastElement; i++)
+            sb.Append(((IFormattable)this.GetElement(0)).ToString(format, formatProvider));
+
+            for (int i = 1; i < Count; i++)
             {
-                sb.Append(((IFormattable)this.GetElement(i)).ToString("G", invariant));
-                sb.Append(',');
+                sb.Append(separator);
                 sb.Append(' ');
+                sb.Append(((IFormattable)this.GetElement(i)).ToString(format, formatProvider));
             }
-            sb.Append(((IFormattable)this.GetElement(lastElement)).ToString("G", invariant));
             sb.Append('>');
 
             return sb.ToString();

@@ -216,4 +216,7 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
-Total Issues: 192
+MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector128<U> System.Runtime.Intrinsics.Vector128.As<T, U>(System.Runtime.Intrinsics.Vector128<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector256<U> System.Runtime.Intrinsics.Vector256.As<T, U>(System.Runtime.Intrinsics.Vector256<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector64<U> System.Runtime.Intrinsics.Vector64.As<T, U>(System.Runtime.Intrinsics.Vector64<T>)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 195
