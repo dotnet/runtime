@@ -43,6 +43,13 @@ namespace System.Net.Sockets.Tests
         private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RemoteExecutor_FailureIsPropagated()
+        {
+            Assert.ThrowsAny<Exception>(() => RemoteExecutor.Invoke(() => Assert.True(false)).Dispose());
+        }
+
+
         [OuterLoop]
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
         public void DualMode_Success(SocketType socketType, ProtocolType protocolType)
