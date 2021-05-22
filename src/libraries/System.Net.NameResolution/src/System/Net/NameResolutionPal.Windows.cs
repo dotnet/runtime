@@ -117,21 +117,25 @@ namespace System.Net
 
         public static unsafe string GetHostName()
         {
+            // Historically this function has initialized WinSock. We continue to do so.
+            // Trying to debug .NET runtime seeing some ancient vesion of WinSock because a native P/Invoke call
+            // started initializing WinSock first due to rearranged call order is not my idea of a fun day.
+            // I'm not changing it.
             Interop.Winsock.EnsureInitialized();
 
             // We do not cache the result in case the hostname changes.
 
-            const int HostNameBufferLength = 256;
-            byte* buffer = stackalloc byte[HostNameBufferLength];
-            SocketError result = Interop.Winsock.gethostname(buffer, HostNameBufferLength);
-
-            if (result != SocketError.Success)
+            const uint HostNameBufferLength = 256;
+            char* buffer = stackalloc char[(int)HostNameBufferLength];
+            uint bufferused = HostNameBufferLength;
+            if (Interop.Kernel32.GetComputerNameEx(Interop.Kernel32.COMPUTER_NAME_FORMAT.ComputerNameDnsHostname, buffer, ref bufferused) == 0)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"GetHostName failed with {result}");
-                throw new SocketException();
+                var exception = new SocketException(Marshal.GetLastWin32Error());
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"GetHostName failed with {exception.SocketErrorCode}");
+                throw exception;
             }
 
-            return new string((sbyte*)buffer);
+            return new string(buffer, 0, (int)bufferused);
         }
 
         public static unsafe Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
