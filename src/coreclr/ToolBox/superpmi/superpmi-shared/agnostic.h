@@ -491,6 +491,7 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD data_index;
     DWORD dataByteCount;
     DWORD result;
+    DWORD pgoSource;
 };
 
 struct Agnostic_GetProfilingHandle

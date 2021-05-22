@@ -1815,10 +1815,12 @@ HRESULT MyICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
 HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                              PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                              uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
-                                             uint8_t **                 pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                             PgoSource*                 pPgoSource)
+
 {
     jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
-    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

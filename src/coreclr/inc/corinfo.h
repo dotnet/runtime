@@ -1616,10 +1616,12 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
     // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    // - failure reason set if devirtualization fails.
     //
     CORINFO_METHOD_HANDLE       devirtualizedMethod;
     bool                        requiresInstMethodTableArg;
     CORINFO_CONTEXT_HANDLE      exactContext;
+    const char*                 failureReason;
 };
 
 //----------------------------------------------------------------------------

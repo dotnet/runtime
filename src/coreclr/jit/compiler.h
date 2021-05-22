@@ -5752,6 +5752,7 @@ protected:
 public:
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled;
+    ICorJitInfo::PgoSource                 fgPgoSource;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -9391,6 +9392,8 @@ public:
             printf("[%06d]", dspTreeID(tree));
         }
     }
+
+    const char* pgoSourceToString(ICorJitInfo::PgoSource p);
 
 #endif // DEBUG
 

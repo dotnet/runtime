@@ -2067,11 +2067,12 @@ HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE 
 HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                                        PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                                        uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
-                                                       uint8_t **                 pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                                       uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                                       PgoSource*                 pPgoSource)
 {
     mc->cr->AddCall("getPgoInstrumentationResults");
-    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
-    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, temp);
+    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
+    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, temp);
     return temp;
 }
 

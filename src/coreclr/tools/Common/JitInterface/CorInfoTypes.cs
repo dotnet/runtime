@@ -313,6 +313,17 @@ namespace Internal.JitInterface
         public int Other;
     }
 
+    public enum PgoSource
+    {
+        Unknown = 0,
+        Static = 1,
+        Dynamic = 2,
+        Blend = 3,
+        Text = 4,
+        IBC = 5,
+        Sampling = 6,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AllocMemArgs
     {
@@ -1074,11 +1085,13 @@ namespace Internal.JitInterface
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
         // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        // - failureReason is optionally set to asciiz string describing why devirtualization failed
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public byte _requiresInstMethodTableArg;
         public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
+        public byte* failureReason;
     }
 
     //----------------------------------------------------------------------------

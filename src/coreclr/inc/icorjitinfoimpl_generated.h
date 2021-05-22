@@ -678,7 +678,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
-          uint8_t** pInstrumentationData) override;
+          uint8_t** pInstrumentationData,
+          ICorJitInfo::PgoSource* pgoSource) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,

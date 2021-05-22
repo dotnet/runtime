@@ -5543,6 +5543,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
                                                     ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                     UINT32* pCountSchemaItems,
                                                     BYTE** pInstrumentationData,
+                                                    ICorJitInfo::PgoSource* pPgoSource,
                                                     HRESULT result)
 {
     if (GetPgoInstrumentationResults == nullptr)
@@ -5571,6 +5572,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     value.data_index    = GetPgoInstrumentationResults->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)maxOffset);
     value.dataByteCount = (unsigned)maxOffset;
     value.result        = (DWORD)result;
+    value.pgoSource     = (DWORD)*pPgoSource;
 
     DWORDLONG key = CastHandle(ftnHnd);
     GetPgoInstrumentationResults->Add(key, value);
@@ -5578,8 +5580,8 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
 }
 void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value)
 {
-    printf("GetPgoInstrumentationResults key ftn-%016llX, value res-%08X schemaCnt-%u profileBufSize-%u schema{",
-        key, value.result, value.countSchemaItems, value.dataByteCount);
+    printf("GetPgoInstrumentationResults key ftn-%016llX, value res-%08X schemaCnt-%u profileBufSize-%u source-%u schema{",
+        key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource);
 
     if (value.countSchemaItems > 0)
     {
@@ -5636,7 +5638,8 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
                                                        ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                        UINT32* pCountSchemaItems,
-                                                       BYTE** pInstrumentationData)
+                                                       BYTE** pInstrumentationData,
+                                                       ICorJitInfo::PgoSource* pPgoSource)
 {
     DWORDLONG key = CastHandle(ftnHnd);
     AssertMapAndKeyExist(GetPgoInstrumentationResults, key, ": key %016llX", key);
@@ -5646,6 +5649,7 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
 
     *pCountSchemaItems    = (UINT32)tempValue.countSchemaItems;
     *pInstrumentationData = (BYTE*)GetPgoInstrumentationResults->GetBuffer(tempValue.data_index);
+    *pPgoSource           = (ICorJitInfo::PgoSource)tempValue.pgoSource;
 
     ICorJitInfo::PgoInstrumentationSchema* pOutSchema = (ICorJitInfo::PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.countSchemaItems * sizeof(ICorJitInfo::PgoInstrumentationSchema));
 
@@ -6814,7 +6818,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
         ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData);
+        ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData, &pgoSource);
 
         size_t minOffset = (size_t) ~0;
         size_t maxOffset = 0;
@@ -6902,7 +6907,7 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
@@ -6919,7 +6924,7 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
         ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData);
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &pgoSource);
 
         if (SUCCEEDED(pgoHR))
         {
