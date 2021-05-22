@@ -191,11 +191,6 @@ inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pP
     return pProfilerInfo;
 }
 
-inline BOOL PinAllProfilers(ProfilerInfo *)
-{
-    return TRUE;
-}
-
 #ifndef DACCESS_COMPILE
 inline ProfilerInfo *ProfControlBlock::GetNextFreeProfilerInfo()
 {

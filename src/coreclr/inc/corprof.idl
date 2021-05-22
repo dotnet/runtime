@@ -4216,26 +4216,6 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
                 [in] LPCGUID            pRelatedActivityId);
 }
 
-[
-    object,
-    uuid(19C4179D-F92C-4D25-9F20-5FEBFBBD2978),
-    pointer_default(unique),
-    local
-]
-interface ICorProfilerInfo13 : ICorProfilerInfo12
-{
-    HRESULT SetCurrentProfilerName(
-                [in]  ULONG      cchName,
-                [in, size_is(cchName)]
-                      WCHAR      wszName[]);
-
-    HRESULT GetCurrentProfilerName(
-                [in]  ULONG      cchName,
-                [out] ULONG      *pcchName,
-                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
-                      WCHAR      wszName[]);
-}
-
 /*
 * This interface lets you iterate over methods in the runtime.
 */
