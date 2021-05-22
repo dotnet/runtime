@@ -3019,45 +3019,54 @@ namespace System.Tests
                     .Select(g => g.First())
                     .ToArray();
 
-            public static CultureInfo[] GetInstalledWin32Cultures()
+            public static unsafe CultureInfo[] GetInstalledWin32Cultures()
             {
                 if (!OperatingSystem.IsWindows())
                 {
                     return new CultureInfo[0];
                 }
 
-                var context = new EnumContext();
-                EnumUILanguagesProc proc = EnumUiLanguagesCallback;
-
-                EnumUILanguages(proc, MUI_ALL_INSTALLED_LANGUAGES | MUI_LANGUAGE_NAME, context);
-                GC.KeepAlive(proc);
-                return context.InstalledCultures.ToArray();
-            }
-
-            private static bool EnumUiLanguagesCallback(IntPtr lpUiLanguageString, EnumContext lParam)
-            {
-                var cultureName = Marshal.PtrToStringUni(lpUiLanguageString);
-                if (cultureName != null)
+                var list = new List<CultureInfo>();
+                GCHandle handle = GCHandle.Alloc(list);
+                try
                 {
-                    lParam.InstalledCultures.Add(CultureInfo.GetCultureInfo(cultureName));
-                    return true;
+                    EnumUILanguages(
+                        &EnumUiLanguagesCallback,
+                        MUI_ALL_INSTALLED_LANGUAGES | MUI_LANGUAGE_NAME,
+                        GCHandle.ToIntPtr(handle));
+                }
+                finally
+                {
+                    handle.Free();
                 }
 
-                return false;
+                return list.ToArray();
+            }
+
+            [UnmanagedCallersOnly]
+            private static unsafe int EnumUiLanguagesCallback(char* lpUiLanguageString, IntPtr lParam)
+            {
+                // native string is null terminated
+                var cultureName = new string(lpUiLanguageString);
+
+                try
+                {
+                    var handle = GCHandle.FromIntPtr(lParam);
+                    var list = (List<CultureInfo>) handle.Target;
+                    list!.Add(CultureInfo.GetCultureInfo(cultureName));
+                    return 1;
+                }
+                catch
+                {
+                    return 0;
+                }
             }
 
             private const uint MUI_LANGUAGE_NAME = 0x8;
             private const uint MUI_ALL_INSTALLED_LANGUAGES = 0x20;
 
             [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
-            private static extern bool EnumUILanguages(EnumUILanguagesProc lpUILanguageEnumProc, uint dwFlags, EnumContext lParam);
-
-            private delegate bool EnumUILanguagesProc(IntPtr lpUILanguageString, EnumContext lParam);
-
-            private class EnumContext
-            {
-                public readonly List<CultureInfo> InstalledCultures = new();
-            }
+            private static extern unsafe bool EnumUILanguages(delegate* unmanaged<char*, IntPtr, int> lpUILanguageEnumProc, uint dwFlags, IntPtr lParam);
         }
     }
 }
