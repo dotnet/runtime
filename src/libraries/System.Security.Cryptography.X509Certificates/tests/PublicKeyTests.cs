@@ -830,9 +830,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out _);
 
             Assert.Null(key.GetRSAPublicKey());
-            Assert.Null(key.GetDSAPublicKey());
             Assert.Null(key.GetECDsaPublicKey());
             Assert.Null(key.GetECDiffieHellmanPublicKey());
+        }
+
+        [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        public static void GetDSAPublicKey_NullForDifferentAlgorithm()
+        {
+            byte[] spki = TestData.GostR3410SubjectPublicKeyInfo;
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out _);
+
+            Assert.Null(key.GetDSAPublicKey());
         }
 
         [Fact]
@@ -857,6 +866,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void GetDSAPublicKey_ReturnsDsaKey()
         {
             PublicKey key = GetTestDsaKey();
@@ -869,6 +879,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void GetDSAPublicKey_ThrowsForCorruptDsaKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });
