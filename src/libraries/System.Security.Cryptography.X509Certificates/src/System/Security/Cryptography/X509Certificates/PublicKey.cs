@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 
 using Internal.Cryptography;
@@ -177,6 +178,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         /// The key contents are corrupt or could not be read successfully.
         /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public DSA? GetDSAPublicKey()
         {
             if (_oid.Value != Oids.Dsa)
