@@ -319,6 +319,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowNullReferenceException()
+        {
+            throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowSerializationException(ExceptionResource resource)
         {
             throw new SerializationException(GetResourceString(resource));
