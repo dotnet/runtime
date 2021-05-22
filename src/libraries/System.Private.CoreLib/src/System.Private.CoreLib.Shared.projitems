@@ -514,6 +514,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorDebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObjectDisposedException.cs" />

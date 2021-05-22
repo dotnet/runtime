@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -30,6 +31,8 @@ namespace System.Numerics
     /// large algorithms. This type is immutable, individual elements cannot be modified.
     /// </summary>
     [Intrinsic]
+    [DebuggerDisplay("{DisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(VectorDebugView<>))]
     public readonly struct Vector<T> : IEquatable<Vector<T>>, IFormattable
         where T : struct
     {
@@ -149,6 +152,23 @@ namespace System.Numerics
             }
         }
 
+        internal static bool IsSupported
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte)) ||
+                   (typeof(T) == typeof(double)) ||
+                   (typeof(T) == typeof(short)) ||
+                   (typeof(T) == typeof(int)) ||
+                   (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
+                   (typeof(T) == typeof(sbyte)) ||
+                   (typeof(T) == typeof(float)) ||
+                   (typeof(T) == typeof(ushort)) ||
+                   (typeof(T) == typeof(uint)) ||
+                   (typeof(T) == typeof(ulong));
+        }
+
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to one.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector<T> One
@@ -166,6 +186,21 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return default;
+            }
+        }
+
+        internal unsafe string DisplayString
+        {
+            get
+            {
+                if (IsSupported)
+                {
+                    return ToString();
+                }
+                else
+                {
+                    return SR.NotSupported_Type;
+                }
             }
         }
 
