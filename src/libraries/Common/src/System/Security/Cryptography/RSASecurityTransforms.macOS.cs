@@ -17,17 +17,11 @@ namespace System.Security.Cryptography
     {
         public sealed partial class RSASecurityTransforms : RSA
         {
-            public override RSAParameters ExportParameters(bool includePrivateParameters)
+            private static RSAParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
             {
                 // Apple requires all private keys to be exported encrypted, but since we're trying to export
                 // as parsed structures we will need to decrypt it for the user.
                 const string ExportPassword = "DotnetExportPassphrase";
-                SecKeyPair keys = GetKeys();
-
-                if (includePrivateParameters && keys.PrivateKey == null)
-                {
-                    throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
-                }
 
                 byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
                     includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
@@ -79,30 +73,33 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override void ImportParameters(RSAParameters parameters)
+            private static bool HasWorkingPKCS1Padding { get; } = OperatingSystem.IsMacOSVersionAtLeast(10, 15);
+
+            private static void ImportPrivateKey(
+                RSAParameters rsaParameters,
+                out SafeSecKeyRefHandle privateKey,
+                out SafeSecKeyRefHandle publicKey)
             {
-                ValidateParameters(parameters);
-                ThrowIfDisposed();
-
-                bool isPrivateKey = parameters.D != null;
-
-                if (isPrivateKey)
+                // macOS 10.14 and older have broken PKCS#1 depadding for decryption
+                // of empty data. The bug doesn't affect the legacy CSSM keys so we
+                // use them instead.
+                if (HasWorkingPKCS1Padding)
                 {
-                    // Start with the private key, in case some of the private key fields
-                    // don't match the public key fields.
-                    //
-                    // Public import should go off without a hitch.
-                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
+                    privateKey = ImportKey(rsaParameters);
+                    publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
+                }
+                else
+                {
+                    privateKey = ImportLegacyPrivateKey(rsaParameters);
 
-                    RSAParameters publicOnly = new RSAParameters
-                    {
-                        Modulus = parameters.Modulus,
-                        Exponent = parameters.Exponent,
-                    };
-
-                    SafeSecKeyRefHandle publicKey;
                     try
                     {
+                        RSAParameters publicOnly = new RSAParameters
+                        {
+                            Modulus = rsaParameters.Modulus,
+                            Exponent = rsaParameters.Exponent,
+                        };
+
                         publicKey = ImportKey(publicOnly);
                     }
                     catch
@@ -110,31 +107,14 @@ namespace System.Security.Cryptography
                         privateKey.Dispose();
                         throw;
                     }
-
-                    SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
-                }
-                else
-                {
-                    SafeSecKeyRefHandle publicKey = ImportKey(parameters);
-                    SetKey(SecKeyPair.PublicOnly(publicKey));
                 }
             }
 
-            private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
+            private static SafeSecKeyRefHandle ImportLegacyPrivateKey(RSAParameters parameters)
             {
-                AsnWriter keyWriter;
-                bool hasPrivateKey;
+                Debug.Assert(parameters.D != null);
 
-                if (parameters.D != null)
-                {
-                    keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
-                    hasPrivateKey = true;
-                }
-                else
-                {
-                    keyWriter = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
-                    hasPrivateKey = false;
-                }
+                AsnWriter keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
 
                 byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
 
@@ -149,64 +129,11 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), true);
                 }
                 finally
                 {
                     CryptoPool.Return(rented, written);
-                }
-            }
-
-            public override unsafe void ImportSubjectPublicKeyInfo(
-                ReadOnlySpan<byte> source,
-                out int bytesRead)
-            {
-                ThrowIfDisposed();
-
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                    {
-                        // Validate the DER value and get the number of bytes.
-                        RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                            manager.Memory,
-                            out int localRead);
-
-                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
-                        SetKey(SecKeyPair.PublicOnly(publicKey));
-
-                        bytesRead = localRead;
-                    }
-                }
-            }
-
-            public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
-            {
-                ThrowIfDisposed();
-
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                    {
-                        AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                        ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
-
-                        SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
-                        {
-                            Algorithm = new AlgorithmIdentifierAsn
-                            {
-                                Algorithm = Oids.Rsa,
-                                Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
-                            },
-                            SubjectPublicKey = firstElement,
-                        };
-
-                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                        spki.Encode(writer);
-
-                        ImportSubjectPublicKeyInfo(writer.Encode(), out _);
-                        bytesRead = firstElement.Length;
-                    }
                 }
             }
         }

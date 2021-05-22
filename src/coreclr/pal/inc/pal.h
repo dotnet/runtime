@@ -4337,6 +4337,8 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
+        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -4357,12 +4359,17 @@ public:
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
 
+    void(*ManagedToNativeExceptionCallback)(void* context);
+    void* ManagedToNativeExceptionCallbackContext;
+
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        ManagedToNativeExceptionCallback = NULL;
+        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -4399,6 +4406,8 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        ManagedToNativeExceptionCallback = NULL;
+        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     CONTEXT* GetContextRecord()
@@ -4419,6 +4428,19 @@ public:
     void SecondPassDone()
     {
         TargetFrameSp = NoTargetFrameSp;
+    }
+
+    bool HasPropagateExceptionCallback()
+    {
+        return ManagedToNativeExceptionCallback != NULL;
+    }
+
+    void SetPropagateExceptionCallback(
+        void(*callback)(void*),
+        void* context)
+    {
+        ManagedToNativeExceptionCallback = callback;
+        ManagedToNativeExceptionCallbackContext = context;
     }
 };
 

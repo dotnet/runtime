@@ -246,14 +246,14 @@ mono_ios_runtime_init (void)
     const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER", 
         "APP_CONTEXT_BASE_DIRECTORY",
-#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
+#if !defined(INVARIANT_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
 #endif
     };
     const char *appctx_values [] = {
         APPLE_RUNTIME_IDENTIFIER,
         bundle,
-#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
+#if !defined(INVARIANT_GLOBALIZATION)
         icu_dat_path
 #endif
     };

@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -145,6 +146,9 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />

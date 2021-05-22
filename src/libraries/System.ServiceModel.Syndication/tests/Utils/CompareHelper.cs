@@ -42,6 +42,9 @@ namespace System.ServiceModel.Syndication.Tests
 
         public static void AssertEqualLongString(string expected, string actual)
         {
+            if (!LineEndingsHelper.IsNewLineConsistent)
+                expected = LineEndingsHelper.Normalize(expected);
+
             if (actual != expected)
             {
                 string message = "-- Expected -" + Environment.NewLine + expected + Environment.NewLine + "-- Actual -" + Environment.NewLine + actual + Environment.NewLine;

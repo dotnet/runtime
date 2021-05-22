@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
@@ -28,10 +26,11 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ZeroBufferSizeThrows()
+        public void ZeroBufferSizeDoesNotThrow()
         {
-            // Unfortunate pre-existing behavior of FileStream, we should look into enabling this sometime.
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 0));
+            using (CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 0))
+            {
+            }
         }
 
         [Fact]

@@ -111,7 +111,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     perfmap.cpp
     perfinfo.cpp
     pgo.cpp
-    pinvokeoverride.cpp
     precode.cpp
     prestub.cpp
     rejit.cpp
@@ -302,6 +301,7 @@ set(VM_SOURCES_WKS
     assemblyspec.cpp
     baseassemblyspec.cpp
     cachelinealloc.cpp
+    callconvbuilder.cpp
     callhelpers.cpp
     callsiteinspect.cpp
     clrconfignative.cpp
@@ -364,6 +364,7 @@ set(VM_SOURCES_WKS
     objectlist.cpp
     olevariant.cpp
     pendingload.cpp
+    pinvokeoverride.cpp
     profdetach.cpp
     profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
@@ -409,6 +410,7 @@ set(VM_HEADERS_WKS
     cachelinealloc.h
     callhelpers.h
     callsiteinspect.h
+    callconvbuilder.hpp
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -550,77 +552,111 @@ if(FEATURE_STANDALONE_GC)
         )
 endif(FEATURE_STANDALONE_GC)
 
+#
+# Targeted interop scenarios
+#
+# Shared assets
+list(APPEND VM_SOURCES_WKS
+    interoplibinterface_shared.cpp
+)
+list(APPEND VM_HEADERS_WKS
+    interoplibinterface.h
+)
+if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
+    if (FEATURE_COMWRAPPERS)
+        list(APPEND VM_SOURCES_WKS
+            interoplibinterface.cpp
+        )
+    endif (FEATURE_COMWRAPPERS)
+
+    if (FEATURE_OBJCMARSHAL)
+        list(APPEND VM_SOURCES_WKS
+            interoplibinterface_objc.cpp
+        )
+    endif (FEATURE_OBJCMARSHAL)
+endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
+
 if(CLR_CMAKE_TARGET_WIN32)
 
-set(VM_SOURCES_DAC_AND_WKS_WIN32
-    amsi.cpp
-    clrtocomcall.cpp
-)
+    set(VM_SOURCES_DAC_AND_WKS_WIN32
+        amsi.cpp
+    )
 
-set(VM_HEADERS_DAC_AND_WKS_WIN32
-    amsi.h
-    clrtocomcall.h
-)
+    set(VM_HEADERS_DAC_AND_WKS_WIN32
+        amsi.h
+    )
 
-list(APPEND VM_SOURCES_WKS
-    ${VM_SOURCES_DAC_AND_WKS_WIN32}
-    # These should not be included for Linux
-    classcompat.cpp
-    comcache.cpp
-    comcallablewrapper.cpp
-    comconnectionpoints.cpp
-    cominterfacemarshaler.cpp
-    commtmemberinfomap.cpp
-    comtoclrcall.cpp
-    dispatchinfo.cpp
-    dispparammarshaler.cpp
-    dwreport.cpp
-    eventreporter.cpp
-    interoplibinterface.cpp
-    mngstdinterfaces.cpp
-    notifyexternals.cpp
-    olecontexthelpers.cpp
-    rcwrefcache.cpp
-    rtlfunctions.cpp
-    runtimecallablewrapper.cpp
-    stacksampler.cpp
-    stdinterfaces.cpp
-    stdinterfaces_wrapper.cpp
-)
+    # COM interop scenarios
+    list(APPEND VM_SOURCES_DAC_AND_WKS_WIN32
+        clrtocomcall.cpp
+        )
+    list(APPEND VM_HEADERS_DAC_AND_WKS_WIN32
+        clrtocomcall.h
+        )
 
-list(APPEND VM_HEADERS_WKS
-    ${VM_HEADERS_DAC_AND_WKS_WIN32}
-    # These should not be included for Linux
-    classcompat.h
-    comcache.h
-    comcallablewrapper.h
-    comconnectionpoints.h
-    cominterfacemarshaler.h
-    commtmemberinfomap.h
-    comtoclrcall.h
-    dispatchinfo.h
-    dispparammarshaler.h
-    dwreport.h
-    eventreporter.h
-    interoplibinterface.h
-    mngstdinterfaces.h
-    notifyexternals.h
-    olecontexthelpers.h
-    rcwrefcache.h
-    rtlfunctions.h
-    runtimecallablewrapper.h
-    stacksampler.h
-    stdinterfaces.h
-    stdinterfaces_internal.h
-)
+    list(APPEND VM_SOURCES_WKS
+        ${VM_SOURCES_DAC_AND_WKS_WIN32}
+        # These should not be included for Linux
+        dwreport.cpp
+        eventreporter.cpp
+        rtlfunctions.cpp
+        stacksampler.cpp
+    )
 
-list(APPEND VM_SOURCES_DAC
-    ${VM_SOURCES_DAC_AND_WKS_WIN32}
-)
+    list(APPEND VM_HEADERS_WKS
+        ${VM_HEADERS_DAC_AND_WKS_WIN32}
+        # These should not be included for Linux
+        dwreport.h
+        eventreporter.h
+        rtlfunctions.h
+        stacksampler.h
+    )
 
-list(APPEND VM_HEADERS_DAC
-    ${VM_HEADERS_DAC_AND_WKS_WIN32}
-)
+    # COM interop scenarios
+    list(APPEND VM_SOURCES_WKS
+        classcompat.cpp
+        comcache.cpp
+        comcallablewrapper.cpp
+        comconnectionpoints.cpp
+        cominterfacemarshaler.cpp
+        commtmemberinfomap.cpp
+        comtoclrcall.cpp
+        dispatchinfo.cpp
+        dispparammarshaler.cpp
+        mngstdinterfaces.cpp
+        notifyexternals.cpp
+        olecontexthelpers.cpp
+        rcwrefcache.cpp
+        runtimecallablewrapper.cpp
+        stdinterfaces.cpp
+        stdinterfaces_wrapper.cpp
+        )
+    list(APPEND VM_HEADERS_WKS
+        classcompat.h
+        comcache.h
+        comcallablewrapper.h
+        comconnectionpoints.h
+        cominterfacemarshaler.h
+        commtmemberinfomap.h
+        comtoclrcall.h
+        dispatchinfo.h
+        dispparammarshaler.h
+        mngstdinterfaces.h
+        notifyexternals.h
+        olecontexthelpers.h
+        rcwrefcache.h
+        runtimecallablewrapper.h
+        stdinterfaces.h
+        stdinterfaces_internal.h
+        )
+
+    list(APPEND VM_SOURCES_DAC
+        ${VM_SOURCES_DAC_AND_WKS_WIN32}
+    )
+
+    list(APPEND VM_HEADERS_DAC
+        ${VM_HEADERS_DAC_AND_WKS_WIN32}
+    )
 
 endif(CLR_CMAKE_TARGET_WIN32)
 

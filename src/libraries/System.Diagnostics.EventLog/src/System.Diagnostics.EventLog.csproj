@@ -128,7 +128,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
-  
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
   <!-- Ensure we run ResolveProjectReferences to add the message DLL to the package.
        We do this here rather than in the pkgproj to ensure the package paths are in sync -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

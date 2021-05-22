@@ -91,7 +91,7 @@ build_native()
     fi
 
     if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCLR_CMAKE_TARGET_MACCATALYST=1 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -431,6 +431,10 @@ while :; do
 
         x64|-x64)
             __BuildArch=x64
+            ;;
+
+        s390x|-s390x)
+            __BuildArch=s390x
             ;;
 
         wasm|-wasm)

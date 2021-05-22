@@ -103,8 +103,6 @@ FCFuncStart(gStringFuncs)
     FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::CtorSBytePtrManaged)
     FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_Int_Int_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::CtorSBytePtrStartLengthManaged)
     FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_Int_Int_Encoding_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::CtorSBytePtrStartLengthEncodingManaged)
-    FCIntrinsic("get_Length", COMString::Length, CORINFO_INTRINSIC_StringLength)
-    FCIntrinsic("get_Chars", COMString::GetCharAt, CORINFO_INTRINSIC_StringGetChar)
     FCFuncElement("SetTrailByte", COMString::FCSetTrailByte)
     FCFuncElement("TryGetTrailByte", COMString::FCTryGetTrailByte)
     FCFuncElement("IsInterned", AppDomainNative::IsStringInterned)
@@ -162,10 +160,10 @@ FCFuncStart(gTypedReferenceFuncs)
 FCFuncEnd()
 
 FCFuncStart(gSystem_Type)
-    FCIntrinsic("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle, CORINFO_INTRINSIC_GetTypeFromHandle)
+    FCFuncElement("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle)
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
-    FCIntrinsic("op_Equality", RuntimeTypeHandle::TypeEQ, CORINFO_INTRINSIC_TypeEQ)
-    FCIntrinsic("op_Inequality", RuntimeTypeHandle::TypeNEQ, CORINFO_INTRINSIC_TypeNEQ)
+    FCFuncElement("op_Equality", RuntimeTypeHandle::TypeEQ)
+    FCFuncElement("op_Inequality", RuntimeTypeHandle::TypeNEQ)
 FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
@@ -208,6 +206,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetAttributes", RuntimeTypeHandle::GetAttributes)
     FCFuncElement("_GetMetadataImport", RuntimeTypeHandle::GetMetadataImport)
     FCFuncElement("GetNumVirtuals", RuntimeTypeHandle::GetNumVirtuals)
+    FCFuncElement("GetNumVirtualsAndStaticVirtuals", RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals)
     QCFuncElement("VerifyInterfaceIsImplemented", RuntimeTypeHandle::VerifyInterfaceIsImplemented)
     QCFuncElement("GetInterfaceMethodImplementation", RuntimeTypeHandle::GetInterfaceMethodImplementation)
     FCFuncElement("IsComObject", RuntimeTypeHandle::IsComObject)
@@ -758,10 +757,14 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
 
     QCFuncElement("InternalPrelink", MarshalNative::Prelink)
-    QCFuncElement("IsComSupportedInternal", MarshalNative::IsComSupported)
+    QCFuncElement("IsBuiltInComSupportedInternal", MarshalNative::IsBuiltInComSupported)
     FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
+
+#ifdef _DEBUG
+    QCFuncElement("GetIsInCooperativeGCModeFunctionPointer", MarshalNative::GetIsInCooperativeGCModeFunctionPointer)
+#endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
@@ -930,6 +933,14 @@ FCFuncStart(gComWrappersFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+FCFuncStart(gObjCMarshalFuncs)
+    QCFuncElement("TrySetGlobalMessageSendCallback", ObjCMarshalNative::TrySetGlobalMessageSendCallback)
+    QCFuncElement("TryInitializeReferenceTracker", ObjCMarshalNative::TryInitializeReferenceTracker)
+    QCFuncElement("CreateReferenceTrackingHandleInternal", ObjCMarshalNative::CreateReferenceTrackingHandle)
+FCFuncEnd()
+#endif // FEATURE_OBJCMARSHAL
+
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
     FCFuncElement("ConvertContentsToNative", MngdRefCustomMarshaler::ConvertContentsToNative)
@@ -940,7 +951,7 @@ FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
     FCFuncElement("InitDeclaringType", StubHelpers::InitDeclaringType)
-    FCIntrinsic("GetNDirectTarget", StubHelpers::GetNDirectTarget, CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget)
+    FCFuncElement("GetNDirectTarget", StubHelpers::GetNDirectTarget)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
@@ -1121,9 +1132,9 @@ FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFuncs)
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
@@ -1180,6 +1191,9 @@ FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
+#ifdef FEATURE_OBJCMARSHAL
+FCClassElement("ObjectiveCMarshal", "System.Runtime.InteropServices.ObjectiveC", gObjCMarshalFuncs)
+#endif // FEATURE_OBJCMARSHAL
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 
@@ -1216,7 +1230,6 @@ FCClassElement("Variant", "System", gVariantFuncs)
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
 FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)

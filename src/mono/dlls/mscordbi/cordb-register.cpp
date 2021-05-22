@@ -16,10 +16,9 @@ HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
     return E_NOTIMPL;
 }
 
-CordbRegisterSet::CordbRegisterSet(Connection* conn, uint8_t* ctx, uint32_t ctx_len) : CordbBaseMono(conn)
+CordbRegisterSet::CordbRegisterSet(Connection* conn, int64_t sp) : CordbBaseMono(conn)
 {
-    this->m_pCtx   = ctx;
-    this->m_ctxLen = ctx_len;
+    this->m_nSp   = sp;
 }
 
 HRESULT CordbRegisterSet::QueryInterface(REFIID id, void** pInterface)
@@ -55,8 +54,8 @@ HRESULT STDMETHODCALLTYPE CordbRegisterSet::SetRegisters(ULONG64 mask, ULONG32 r
 
 HRESULT STDMETHODCALLTYPE CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
 {
-    if (m_ctxLen < contextSize)
-        memcpy(context+POS_RAX, m_pCtx, m_ctxLen);
+    if (POS_RSP + sizeof(int64_t) < contextSize)
+        memcpy(context+POS_RSP, &m_nSp, sizeof(int64_t));
     LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetThreadContext - NOT IMPLEMENTED\n"));
     return S_OK;
 }

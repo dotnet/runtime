@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Memory.Data, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.BinaryData.#ctor(System.Object,System.Text.Json.JsonSerializerOptions,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.BinaryData.FromObjectAsJson``1(``0,System.Text.Json.JsonSerializerOptions)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.BinaryData.ToObjectFromJson``1(System.Text.Json.JsonSerializerOptions)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.BinaryData.#ctor(System.Object,System.Text.Json.JsonSerializerOptions,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2087</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.BinaryData.FromObjectAsJson``1(``0,System.Text.Json.JsonSerializerOptions)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2087</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.BinaryData.ToObjectFromJson``1(System.Text.Json.JsonSerializerOptions)</property>
+    </attribute>
+  </assembly>
+</linker>

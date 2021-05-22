@@ -2,6 +2,7 @@
   <PropertyGroup>
     <!-- ensure these projects use a different intermediate and output directory than generated projects -->
     <OutDirName>manual.$(MSBuildProjectName)</OutDirName>
+    <IsFrameworkSupportFacade>true</IsFrameworkSupportFacade>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props" />

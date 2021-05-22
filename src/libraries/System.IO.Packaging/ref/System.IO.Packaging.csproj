@@ -1,21 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard1.3;net46</TargetFrameworks>
-  </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net46'">
     <Compile Include="System.IO.Packaging.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
+    <Compile Include="System.IO.Packaging.net46.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System.IO.Packaging.Serialization.cs" />
     <Compile Include="System.IO.Packaging.PackUriScheme.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
     <Reference Include="WindowsBase" />
   </ItemGroup>
 </Project>

@@ -69,10 +69,10 @@ VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
     END_QCALL;
 }
 
-// IsComSupported
+// IsBuiltInComSupported
 // Built-in COM support is only checked from the native side to ensure the runtime
 // is in a consistent state
-BOOL QCALLTYPE MarshalNative::IsComSupported()
+BOOL QCALLTYPE MarshalNative::IsBuiltInComSupported()
 {
     QCALL_CONTRACT;
 
@@ -424,6 +424,31 @@ FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* re
     return pFPtr;
 }
 FCIMPLEND
+
+#ifdef _DEBUG
+namespace
+{
+    BOOL STDMETHODCALLTYPE IsInCooperativeGCMode()
+    {
+        return GetThread()->PreemptiveGCDisabled();
+    }
+}
+
+MarshalNative::IsInCooperativeGCMode_fn QCALLTYPE MarshalNative::GetIsInCooperativeGCModeFunctionPointer()
+{
+    QCALL_CONTRACT;
+
+    MarshalNative::IsInCooperativeGCMode_fn ret = NULL;
+
+    BEGIN_QCALL;
+
+    ret = IsInCooperativeGCMode;
+
+    END_QCALL;
+
+    return ret;
+}
+#endif
 
 /************************************************************************
  * Marshal.GetLastPInvokeError

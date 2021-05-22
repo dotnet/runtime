@@ -52,6 +52,7 @@ namespace Internal.Cryptography
             private readonly IntPtr _algorithmEvp;
             private readonly int _hashSize;
             private readonly SafeEvpMdCtxHandle _ctx;
+            private bool _running;
 
             public EvpHashProvider(IntPtr algorithmEvp)
             {
@@ -69,8 +70,11 @@ namespace Internal.Cryptography
                 Interop.Crypto.CheckValidOpenSslHandle(_ctx);
             }
 
-            public override void AppendHashData(ReadOnlySpan<byte> data) =>
+            public override void AppendHashData(ReadOnlySpan<byte> data)
+            {
+                _running = true;
                 Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
+            }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
@@ -82,6 +86,7 @@ namespace Internal.Cryptography
 
                 // Reset the algorithm provider.
                 Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
+                _running = false;
 
                 return _hashSize;
             }
@@ -106,12 +111,22 @@ namespace Internal.Cryptography
                     _ctx.Dispose();
                 }
             }
+
+            public override void Reset()
+            {
+                if (_running)
+                {
+                    Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
+                    _running = false;
+                }
+            }
         }
 
         private sealed class HmacHashProvider : HashProvider
         {
             private readonly int _hashSize;
             private SafeHmacCtxHandle _hmacCtx;
+            private bool _running;
 
             public HmacHashProvider(IntPtr algorithmEvp, ReadOnlySpan<byte> key)
             {
@@ -127,8 +142,11 @@ namespace Internal.Cryptography
                 Interop.Crypto.CheckValidOpenSslHandle(_hmacCtx);
             }
 
-            public override void AppendHashData(ReadOnlySpan<byte> data) =>
+            public override void AppendHashData(ReadOnlySpan<byte> data)
+            {
+                _running = true;
                 Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
+            }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
@@ -139,6 +157,7 @@ namespace Internal.Cryptography
                 Debug.Assert(length == _hashSize);
 
                 Check(Interop.Crypto.HmacReset(_hmacCtx));
+                _running = false;
                 return _hashSize;
             }
 
@@ -161,6 +180,15 @@ namespace Internal.Cryptography
                 {
                     _hmacCtx.Dispose();
                     _hmacCtx = null!;
+                }
+            }
+
+            public override void Reset()
+            {
+                if (_running)
+                {
+                    Check(Interop.Crypto.HmacReset(_hmacCtx));
+                    _running = false;
                 }
             }
         }

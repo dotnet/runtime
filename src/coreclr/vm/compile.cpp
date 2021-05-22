@@ -968,6 +968,14 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     return FALSE;
 }
 
+BOOL CEECompileInfo::IsUnmanagedCallConvMethod(CORINFO_METHOD_HANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodDesc * pMethod = GetMethod(handle);
+    return pMethod->HasUnmanagedCallConvAttribute();
+}
+
 BOOL CEECompileInfo::IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
@@ -5735,7 +5743,7 @@ void CEEPreloader::GenerateMethodStubs(
         {
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
             PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
+            NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
             pStubMD = NDirect::GetILStubMethodDesc((NDirectMethodDesc*)pMD, &sigInfo, dwNGenStubFlags);
         }
 #ifdef FEATURE_COMINTEROP
