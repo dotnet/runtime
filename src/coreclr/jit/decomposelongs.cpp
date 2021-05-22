@@ -279,6 +279,14 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     }
 #endif
 
+    // When casting from a decomposed long to a smaller integer we can discard the high part.
+    if (m_compiler->opts.OptimizationEnabled() && !use.IsDummyUse() && use.User()->OperIs(GT_CAST) &&
+        use.User()->TypeIs(TYP_INT) && use.Def()->OperIs(GT_LONG))
+    {
+        assert(nextNode == use.User());
+        nextNode = OptimizeCastFromDecomposedLong(use.User()->AsCast());
+    }
+
     return nextNode;
 }
 
@@ -1782,6 +1790,76 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 }
 
 #endif // FEATURE_HW_INTRINSICS
+
+GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
+{
+    GenTree*   nextNode = cast;
+    GenTreeOp* src      = cast->CastOp()->AsOp();
+    var_types  dstType  = cast->CastToType();
+
+    assert(src->OperIs(GT_LONG));
+    assert(genActualType(dstType) == TYP_INT);
+
+    GenTree* loSrc = src->gtGetOp1();
+    GenTree* hiSrc = src->gtGetOp2();
+
+    // We can only optimize a checked cast if:
+    //  1. It is from ulong/long to uint/int.
+    //  2. We know the upper bits to be all zeroes.
+    // All other cases - mismatched signedness or small types - are not optimizable.
+    bool signsMatch = varTypeIsUnsigned(dstType) == cast->IsUnsigned();
+    if (cast->gtOverflow() && !(hiSrc->IsIntegralConst(0) && varTypeIsInt(dstType) && signsMatch))
+    {
+        return nextNode;
+    }
+
+    JITDUMP("Optimized a truncating cast [%06u] from decomposed LONG [%06u] to %s:\n", cast->gtTreeID, src->gtTreeID,
+            varTypeName(dstType));
+    INDEBUG(GenTree* treeToDisplay = cast);
+
+    // TODO-CQ: we could go perform this removal transitively.
+    // See also identical code in shift decomposition.
+    if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+    {
+        Range().Remove(hiSrc, /* markOperandsUnused */ true);
+    }
+    else
+    {
+        hiSrc->SetUnusedValue();
+    }
+
+    Range().Remove(src);
+
+    if (varTypeIsSmall(dstType))
+    {
+        // TODO-Cleanup: this path is not reachable right now
+        // because morph splits "long -> small type" casts into
+        // "long -> int -> small type" chains. Investigate what
+        // happens if you disable this decomposition.
+        // Likely, there will be CSE-related regressions.
+        cast->CastOp() = loSrc;
+    }
+    else
+    {
+        LIR::Use useOfCast;
+        if (Range().TryGetUse(cast, &useOfCast))
+        {
+            useOfCast.ReplaceWith(m_compiler, loSrc);
+        }
+        else
+        {
+            loSrc->SetUnusedValue();
+        }
+
+        INDEBUG(treeToDisplay = loSrc);
+        nextNode = cast->gtNext;
+        Range().Remove(cast);
+    }
+
+    DISPTREERANGE(Range(), treeToDisplay);
+
+    return nextNode;
+}
 
 //------------------------------------------------------------------------
 // StoreNodeToVar: Check if the user is a STORE_LCL_VAR, and if it isn't,
