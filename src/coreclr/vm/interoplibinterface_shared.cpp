@@ -3,6 +3,7 @@
 
 // Runtime headers
 #include "common.h"
+#include "dllimport.h"
 
 #include "interoplibinterface.h"
 
@@ -24,7 +25,7 @@ bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
     if (libraryName == NULL || entrypointName == NULL)
         return false;
 
-    if (ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
+    if (ObjCMarshalNative::IsRuntimeMessageSendFunction(libraryName, entrypointName))
         return true;
 #endif // FEATURE_OBJCMARSHAL
 

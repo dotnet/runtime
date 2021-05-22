@@ -31,7 +31,7 @@
     <CoreClrLibName>coreclr</CoreClrLibName>
     <CoreClrFileName>$(LibPrefix)$(CoreClrLibName)$(SharedLibExt)</CoreClrFileName>
     <MonoLibName>monosgen-2.0</MonoLibName>
-    <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
+    <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
     <MonoSharedLibName Condition="'$(MonoSharedLibName)' == ''">$(CoreClrLibName)</MonoSharedLibName>
     <MonoSharedLibFileName>$(LibPrefix)$(MonoSharedLibName)$(SharedLibExt)</MonoSharedLibFileName>
     <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibExt)</MonoStaticLibFileName>

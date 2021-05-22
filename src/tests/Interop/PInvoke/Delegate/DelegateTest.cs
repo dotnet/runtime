@@ -124,7 +124,7 @@ class DelegateTest
         try
         {
             TestFunctionPointer();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 TestIDispatch();
             }

@@ -35,6 +35,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
         internal static unsafe extern int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, out int cbDigest);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestReset")]
+        internal static extern int DigestReset(SafeDigestCtxHandle ctx);
     }
 }
 

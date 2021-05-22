@@ -76,7 +76,7 @@ public class Reflection
             var contextMenu = (NETServer.ContextMenu)Activator.CreateInstance(typeof(NETServer.ContextMenu));
 
             // Non-Windows should throw PlatformNotSupportedException
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 return false;
             }
@@ -89,11 +89,11 @@ public class Reflection
 
             return true;
         }
-        catch (PlatformNotSupportedException) when (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        catch (PlatformNotSupportedException) when (!OperatingSystem.IsWindows())
         {
             return true;
         }
-        catch (COMException) when (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        catch (COMException) when (OperatingSystem.IsWindows())
         {
             return true;
         }

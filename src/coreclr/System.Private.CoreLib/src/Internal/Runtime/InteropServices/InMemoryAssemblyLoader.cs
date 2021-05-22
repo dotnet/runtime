@@ -14,7 +14,7 @@ namespace Internal.Runtime.InteropServices
     {
         private static bool IsSupported { get; } = InitializeIsSupported();
 
-        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Loads into an isolated AssemblyLoadContext an assembly that has already been loaded into memory by the OS loader as a native module.

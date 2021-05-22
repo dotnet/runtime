@@ -130,6 +130,38 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
+    else if (node->AsStoreInd()->Data()->OperIs(GT_CNS_DBL))
+    {
+        // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
+        GenTree*  data   = node->AsStoreInd()->Data();
+        double    dblCns = data->AsDblCon()->gtDconVal;
+        ssize_t   intCns = 0;
+        var_types type   = TYP_UNKNOWN;
+
+        if (node->TypeIs(TYP_FLOAT))
+        {
+            float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
+            type         = TYP_UINT;
+        }
+#ifdef TARGET_AMD64
+        else
+        {
+            assert(node->TypeIs(TYP_DOUBLE));
+            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
+            type   = TYP_ULONG;
+        }
+#endif
+
+        if (type != TYP_UNKNOWN)
+        {
+            data->SetContained();
+            data->ChangeOperConst(GT_CNS_INT);
+            data->AsIntCon()->SetIconValue(intCns);
+            data->ChangeType(type);
+            node->ChangeType(type);
+        }
+    }
     ContainCheckStoreIndir(node);
 }
 

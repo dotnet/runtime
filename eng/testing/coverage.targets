@@ -29,7 +29,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'@(CoverageIncludeDirectory)' != ''">
-      <CoverageIncludeDirectoryFilter>@(CoverageIncludeDirectory -> '$(TestHostRootPath)%(Identity)', ',')</CoverageIncludeDirectoryFilter>
+      <CoverageIncludeDirectoryFilter>@(CoverageIncludeDirectory -> '$(NetCoreAppCurrentTestHostPath)%(Identity)', ',')</CoverageIncludeDirectoryFilter>
     </PropertyGroup>
   </Target>
 

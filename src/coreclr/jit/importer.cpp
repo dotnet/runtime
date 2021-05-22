@@ -3784,7 +3784,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     switch (intrinsicID)
     {
         GenTree* op1;
-        GenTree* op2;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
@@ -3814,6 +3813,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             assert(callType != TYP_STRUCT);
             assert(sig->numArgs == 2);
 
+            GenTree* op2;
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -3860,6 +3860,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             assert(callType != TYP_STRUCT);
             assert(sig->numArgs == 3);
+            GenTree* op2;
             GenTree* op3;
 
             op3 = impPopStack().val; // comparand
@@ -3874,46 +3875,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
-        case CORINFO_INTRINSIC_StringLength:
-            op1 = impPopStack().val;
-            if (opts.OptimizationEnabled())
-            {
-                if (op1->OperIs(GT_CNS_STR))
-                {
-                    // Optimize `ldstr + String::get_Length()` to CNS_INT
-                    // e.g. "Hello".Length => 5
-                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
-                    if (iconNode != nullptr)
-                    {
-                        retNode = iconNode;
-                        break;
-                    }
-                }
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
-                op1                   = arrLen;
-            }
-            else
-            {
-                /* Create the expression "*(str_addr + stringLengthOffset)" */
-                op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                    gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
-                op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
-            }
-
-            // Getting the length of a null string should throw
-            op1->gtFlags |= GTF_EXCEPT;
-
-            retNode = op1;
-            break;
-
-        case CORINFO_INTRINSIC_StringGetChar:
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-            op1 = gtNewIndexRef(TYP_USHORT, op1, op2);
-            op1->gtFlags |= GTF_INX_STRING_LAYOUT;
-            retNode = op1;
-            break;
-
         case CORINFO_INTRINSIC_InitializeArray:
             retNode = impInitializeArrayIntrinsic(sig);
             break;
@@ -3922,31 +3883,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         case CORINFO_INTRINSIC_Array_Get:
         case CORINFO_INTRINSIC_Array_Set:
             retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, intrinsicID);
-            break;
-
-        case CORINFO_INTRINSIC_GetTypeFromHandle:
-            op1 = impStackTop(0).val;
-            CorInfoHelpFunc typeHandleHelper;
-            if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
-                gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
-            {
-                op1 = impPopStack().val;
-                // Replace helper with a more specialized helper that returns RuntimeType
-                if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
-                {
-                    typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
-                }
-                else
-                {
-                    assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
-                    typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL;
-                }
-                assert(op1->AsCall()->gtCallArgs->GetNext() == nullptr);
-                op1         = gtNewHelperCallNode(typeHandleHelper, TYP_REF, op1->AsCall()->gtCallArgs);
-                op1->gtType = TYP_REF;
-                retNode     = op1;
-            }
-            // Call the regular function.
             break;
 
         case CORINFO_INTRINSIC_RTH_GetValueInternal:
@@ -4097,76 +4033,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             retNode                     = field;
             break;
         }
-        case CORINFO_INTRINSIC_Span_GetItem:
-        case CORINFO_INTRINSIC_ReadOnlySpan_GetItem:
-        {
-            // Have index, stack pointer-to Span<T> s on the stack. Expand to:
-            //
-            // For Span<T>
-            //   Comma
-            //     BoundsCheck(index, s->_length)
-            //     s->_pointer + index * sizeof(T)
-            //
-            // For ReadOnlySpan<T> -- same expansion, as it now returns a readonly ref
-            //
-            // Signature should show one class type parameter, which
-            // we need to examine.
-            assert(sig->sigInst.classInstCount == 1);
-            CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
-            const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
-            assert(elemSize > 0);
-
-            const bool isReadOnly = (intrinsicID == CORINFO_INTRINSIC_ReadOnlySpan_GetItem);
-
-            JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Item, T=%s, sizeof(T)=%u\n", isReadOnly ? "ReadOnly" : "",
-                    info.compCompHnd->getClassName(spanElemHnd), elemSize);
-
-            GenTree* index          = impPopStack().val;
-            GenTree* ptrToSpan      = impPopStack().val;
-            GenTree* indexClone     = nullptr;
-            GenTree* ptrToSpanClone = nullptr;
-            assert(varTypeIsIntegral(index));
-            assert(ptrToSpan->TypeGet() == TYP_BYREF);
-
-#if defined(DEBUG)
-            if (verbose)
-            {
-                printf("with ptr-to-span\n");
-                gtDispTree(ptrToSpan);
-                printf("and index\n");
-                gtDispTree(index);
-            }
-#endif // defined(DEBUG)
-
-            // We need to use both index and ptr-to-span twice, so clone or spill.
-            index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                 nullptr DEBUGARG("Span.get_Item index"));
-            ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                     nullptr DEBUGARG("Span.get_Item ptrToSpan"));
-
-            // Bounds check
-            CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
-            const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
-            GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-            GenTree*             boundsCheck  = new (this, GT_ARR_BOUNDS_CHECK)
-                GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
-
-            // Element access
-            GenTree*             indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
-            GenTree*             sizeofNode  = gtNewIconNode(elemSize);
-            GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
-            CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
-            const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
-            GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-            GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
-
-            // Prepare result
-            var_types resultType = JITtype2varType(sig->retType);
-            assert(resultType == result->TypeGet());
-            retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
-
-            break;
-        }
 
         case CORINFO_INTRINSIC_GetRawHandle:
         {
@@ -4200,35 +4066,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
         }
 
-        case CORINFO_INTRINSIC_TypeEQ:
-        case CORINFO_INTRINSIC_TypeNEQ:
-        {
-            JITDUMP("Importing Type.op_*Equality intrinsic\n");
-            op1              = impStackTop(1).val;
-            op2              = impStackTop(0).val;
-            GenTree* optTree = gtFoldTypeEqualityCall(intrinsicID, op1, op2);
-            if (optTree != nullptr)
-            {
-                // Success, clean up the evaluation stack.
-                impPopStack();
-                impPopStack();
-
-                // See if we can optimize even further, to a handle compare.
-                optTree = gtFoldTypeCompare(optTree);
-
-                // See if we can now fold a handle compare to a constant.
-                optTree = gtFoldExpr(optTree);
-
-                retNode = optTree;
-            }
-            else
-            {
-                // Retry optimizing these later
-                isSpecial = true;
-            }
-            break;
-        }
-
         default:
             /* Unknown intrinsic */
             intrinsicID = CORINFO_INTRINSIC_Illegal;
@@ -4241,6 +4078,176 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         assert(retNode == nullptr);
         switch (ni)
         {
+            case NI_System_String_get_Chars:
+            {
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+                retNode      = gtNewIndexRef(TYP_USHORT, op1, op2);
+                retNode->gtFlags |= GTF_INX_STRING_LAYOUT;
+                break;
+            }
+
+            case NI_System_String_get_Length:
+            {
+                GenTree* op1 = impPopStack().val;
+                if (opts.OptimizationEnabled())
+                {
+                    if (op1->OperIs(GT_CNS_STR))
+                    {
+                        // Optimize `ldstr + String::get_Length()` to CNS_INT
+                        // e.g. "Hello".Length => 5
+                        GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                        if (iconNode != nullptr)
+                        {
+                            retNode = iconNode;
+                            break;
+                        }
+                    }
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                    op1                   = arrLen;
+                }
+                else
+                {
+                    /* Create the expression "*(str_addr + stringLengthOffset)" */
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
+                    op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
+                }
+
+                // Getting the length of a null string should throw
+                op1->gtFlags |= GTF_EXCEPT;
+
+                retNode = op1;
+                break;
+            }
+
+            case NI_System_Span_get_Item:
+            case NI_System_ReadOnlySpan_get_Item:
+            {
+                // Have index, stack pointer-to Span<T> s on the stack. Expand to:
+                //
+                // For Span<T>
+                //   Comma
+                //     BoundsCheck(index, s->_length)
+                //     s->_pointer + index * sizeof(T)
+                //
+                // For ReadOnlySpan<T> -- same expansion, as it now returns a readonly ref
+                //
+                // Signature should show one class type parameter, which
+                // we need to examine.
+                assert(sig->sigInst.classInstCount == 1);
+                assert(sig->numArgs == 1);
+                CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
+                const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
+                assert(elemSize > 0);
+
+                const bool isReadOnly = (ni == NI_System_ReadOnlySpan_get_Item);
+
+                JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Item, T=%s, sizeof(T)=%u\n",
+                        isReadOnly ? "ReadOnly" : "", info.compCompHnd->getClassName(spanElemHnd), elemSize);
+
+                GenTree* index          = impPopStack().val;
+                GenTree* ptrToSpan      = impPopStack().val;
+                GenTree* indexClone     = nullptr;
+                GenTree* ptrToSpanClone = nullptr;
+                assert(varTypeIsIntegral(index));
+                assert(ptrToSpan->TypeGet() == TYP_BYREF);
+
+#if defined(DEBUG)
+                if (verbose)
+                {
+                    printf("with ptr-to-span\n");
+                    gtDispTree(ptrToSpan);
+                    printf("and index\n");
+                    gtDispTree(index);
+                }
+#endif // defined(DEBUG)
+
+                // We need to use both index and ptr-to-span twice, so clone or spill.
+                index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                     nullptr DEBUGARG("Span.get_Item index"));
+                ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                         nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+
+                // Bounds check
+                CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
+                const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
+                GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                GenTree*             boundsCheck  = new (this, GT_ARR_BOUNDS_CHECK)
+                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
+
+                // Element access
+                GenTree*             indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
+                GenTree*             sizeofNode  = gtNewIconNode(elemSize);
+                GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
+                CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
+
+                // Prepare result
+                var_types resultType = JITtype2varType(sig->retType);
+                assert(resultType == result->TypeGet());
+                retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
+
+                break;
+            }
+
+            case NI_System_Type_GetTypeFromHandle:
+            {
+                GenTree*        op1 = impStackTop(0).val;
+                CorInfoHelpFunc typeHandleHelper;
+                if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
+                    gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
+                {
+                    op1 = impPopStack().val;
+                    // Replace helper with a more specialized helper that returns RuntimeType
+                    if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
+                    {
+                        typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
+                    }
+                    else
+                    {
+                        assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
+                        typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL;
+                    }
+                    assert(op1->AsCall()->gtCallArgs->GetNext() == nullptr);
+                    op1         = gtNewHelperCallNode(typeHandleHelper, TYP_REF, op1->AsCall()->gtCallArgs);
+                    op1->gtType = TYP_REF;
+                    retNode     = op1;
+                }
+                break;
+            }
+
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+            {
+                JITDUMP("Importing Type.op_*Equality intrinsic\n");
+                GenTree* op1     = impStackTop(1).val;
+                GenTree* op2     = impStackTop(0).val;
+                GenTree* optTree = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
+                if (optTree != nullptr)
+                {
+                    // Success, clean up the evaluation stack.
+                    impPopStack();
+                    impPopStack();
+
+                    // See if we can optimize even further, to a handle compare.
+                    optTree = gtFoldTypeCompare(optTree);
+
+                    // See if we can now fold a handle compare to a constant.
+                    optTree = gtFoldExpr(optTree);
+
+                    retNode = optTree;
+                }
+                else
+                {
+                    // Retry optimizing these later
+                    isSpecial = true;
+                }
+                break;
+            }
+
             case NI_System_Enum_HasFlag:
             {
                 GenTree* thisOp  = impStackTop(1).val;
@@ -4894,6 +4901,43 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsAssignableTo") == 0)
             {
                 result = NI_System_Type_IsAssignableTo;
+            }
+            else if (strcmp(methodName, "op_Equality") == 0)
+            {
+                result = NI_System_Type_op_Equality;
+            }
+            else if (strcmp(methodName, "op_Inequality") == 0)
+            {
+                result = NI_System_Type_op_Inequality;
+            }
+            else if (strcmp(methodName, "GetTypeFromHandle") == 0)
+            {
+                result = NI_System_Type_GetTypeFromHandle;
+            }
+        }
+        else if (strcmp(className, "String") == 0)
+        {
+            if (strcmp(methodName, "get_Chars") == 0)
+            {
+                result = NI_System_String_get_Chars;
+            }
+            else if (strcmp(methodName, "get_Length") == 0)
+            {
+                result = NI_System_String_get_Length;
+            }
+        }
+        else if (strcmp(className, "Span`1") == 0)
+        {
+            if (strcmp(methodName, "get_Item") == 0)
+            {
+                result = NI_System_Span_get_Item;
+            }
+        }
+        else if (strcmp(className, "ReadOnlySpan`1") == 0)
+        {
+            if (strcmp(methodName, "get_Item") == 0)
+            {
+                result = NI_System_ReadOnlySpan_get_Item;
             }
         }
     }
@@ -21071,7 +21115,16 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 //
                                 if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                                 {
-                                    call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                    // If there's a ret buf, the method table is the second arg.
+                                    //
+                                    if (call->HasRetBufArg())
+                                    {
+                                        gtInsertNewCallArgAfter(methodTableArg, call->gtCallArgs);
+                                    }
+                                    else
+                                    {
+                                        call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                    }
                                 }
                                 else
                                 {
@@ -21150,26 +21203,26 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     // locally, or was boxed locally but we were unable to remove the box for
                     // various reasons.
                     //
-                    // We may still be able to update the call to invoke the unboxed entry.
+                    // We can still update the call to invoke the unboxed entry, if the
+                    // boxed value is simple.
                     //
                     if (requiresInstMethodTableArg)
                     {
-                        const DWORD derivedClassAttribs = info.compCompHnd->getClassAttribs(derivedClass);
+                        // Get the method table from the boxed object.
+                        //
+                        GenTree* const thisArg       = call->gtCallThisArg->GetNode();
+                        GenTree* const clonedThisArg = gtClone(thisArg);
 
-                        if ((derivedClassAttribs & CORINFO_FLG_SHAREDINST) != 0)
+                        if (clonedThisArg == nullptr)
                         {
                             JITDUMP(
-                                "unboxed entry needs MT arg, but the handle we have is shared. Deferring update.\n");
+                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
                         }
                         else
                         {
-                            // See if the method table we have is a viable argument to the unboxed
-                            // entry point. It is, if it's not a shared MT.
-                            //
-                            GenTree* const thisArg        = call->gtCallThisArg->GetNode();
-                            GenTree* const methodTableArg = gtNewIconEmbClsHndNode(derivedClass);
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
 
-                            JITDUMP("revising call to invoke unboxed entry with additional known class handle arg\n");
+                            GenTree* const methodTableArg = gtNewMethodTableLookup(clonedThisArg);
 
                             // Update the 'this' pointer to refer to the box payload
                             //
@@ -21188,14 +21241,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             derivedMethod        = unboxedEntryMethod;
                             derivedMethodAttribs = unboxedMethodAttribs;
 
-                            // Add the method table argument...
+                            // Add the method table argument.
                             //
                             // Prepend for R2L arg passing or empty L2R passing
                             // Append for non-empty L2R
                             //
                             if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                             {
-                                call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                // If there's a ret buf, the method table is the second arg.
+                                //
+                                if (call->HasRetBufArg())
+                                {
+                                    gtInsertNewCallArgAfter(methodTableArg, call->gtCallArgs);
+                                }
+                                else
+                                {
+                                    call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                                }
                             }
                             else
                             {

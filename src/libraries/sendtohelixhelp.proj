@@ -41,11 +41,11 @@
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
 
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
-         test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue)
+         test run name will be displayed as $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-$(HelixTargetQueue)
 
          In the multi-scenario case, we append the scenario name to this test name prefix to distinguish the different scenario results.
     -->
-    <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
+    <TestRunNamePrefix>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 

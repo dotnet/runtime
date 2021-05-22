@@ -32,7 +32,9 @@ namespace System.IO.Strategies
         {
             if (UseNet5CompatStrategy)
             {
-                return new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
+                // The .NET 5 Compat strategy does not support bufferSize == 0.
+                // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
+                return new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync);
             }
 
             WindowsFileStreamStrategy strategy = isAsync
@@ -46,7 +48,7 @@ namespace System.IO.Strategies
         {
             if (UseNet5CompatStrategy)
             {
-                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, preallocationSize);
+                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize);
             }
 
             WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
@@ -57,7 +59,7 @@ namespace System.IO.Strategies
         }
 
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
-            => bufferSize == 1 ? strategy : new BufferedFileStreamStrategy(strategy, bufferSize);
+            => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
             => CreateFileOpenHandle(path, mode, access, share, options, preallocationSize);
