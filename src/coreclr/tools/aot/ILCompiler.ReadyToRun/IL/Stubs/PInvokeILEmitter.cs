@@ -43,7 +43,7 @@ namespace Internal.IL.Stubs
 
             MetadataType stubHelpersType = InteropTypes.GetStubHelpers(context);
 
-            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
+            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
             if (_importMetadata.Flags.SetLastError)
             {
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
@@ -76,6 +76,9 @@ namespace Internal.IL.Stubs
         private MethodIL EmitIL()
         {
             if (!_importMetadata.Flags.PreserveSig)
+                throw new NotSupportedException();
+
+            if (MarshalHelpers.ShouldCheckForPendingException(_targetMethod.Context.Target, _importMetadata))
                 throw new NotSupportedException();
 
             if (_targetMethod.IsUnmanagedCallersOnly)

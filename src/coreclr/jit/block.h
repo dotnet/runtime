@@ -477,10 +477,8 @@ struct BasicBlock : private LIR::Range
 
     BasicBlockFlags bbFlags;
 
-#ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
-#endif
 
     unsigned bbNum; // the block's number
 

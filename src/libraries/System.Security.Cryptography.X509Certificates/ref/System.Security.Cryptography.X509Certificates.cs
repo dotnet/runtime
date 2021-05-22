@@ -34,6 +34,9 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest() { throw null; }
         public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public static partial class DSACertificateExtensions
     {
         public static System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.DSA privateKey) { throw null; }

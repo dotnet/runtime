@@ -143,6 +143,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
+    - Android_arm
     - Android_arm64
     variables:
       # map dependencies variables to local variables
@@ -171,17 +172,6 @@ jobs:
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: Release
-    platforms:
-    - Android_arm
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Build_Subset_Mono
-      buildArgs: -subset mono+libs
 
 #
 # Build the whole product using Mono and run libraries tests

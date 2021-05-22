@@ -68,6 +68,21 @@
 #define DEFINE_FIELD_U(stringName, unmanagedContainingType, unmanagedOffset)
 #endif
 
+//
+// BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH allow IL linker to guard types behind a feature switch.
+// Current support is only around class scope and not for standalone members of classes.
+// See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
+// https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
+//
+#ifndef BEGIN_ILLINK_FEATURE_SWITCH
+#define BEGIN_ILLINK_FEATURE_SWITCH(featureName, featureValue, featureDefault)
+#endif
+
+#ifndef END_ILLINK_FEATURE_SWITCH
+#define END_ILLINK_FEATURE_SWITCH()
+#endif
+
+
 // NOTE: Make this window really wide if you want to read the table...
 
 DEFINE_CLASS(ACTIVATOR,             System,                 Activator)
@@ -176,6 +191,7 @@ DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,    
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
 #endif // FEATURE_COMINTEROP
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(BSTR_WRAPPER,          Interop,                BStrWrapper)
 DEFINE_CLASS(CURRENCY_WRAPPER,      Interop,                CurrencyWrapper)
@@ -184,7 +200,9 @@ DEFINE_CLASS(ERROR_WRAPPER,         Interop,                ErrorWrapper)
 DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
 DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
@@ -201,6 +219,7 @@ DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextI
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
 
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS_U(Interop,                CriticalHandle,             CriticalHandle)
 DEFINE_FIELD_U(handle,                     CriticalHandle,     m_handle)
@@ -284,10 +303,6 @@ DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,              
 
 DEFINE_CLASS(DATE_TIME,             System,                 DateTime)
 DEFINE_METHOD(DATE_TIME,            LONG_CTOR,              .ctor,                      IM_Long_RetVoid)
-
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(DATE_TIME_OFFSET,      System,                 DateTimeOffset)
-#endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(DECIMAL,               System,                 Decimal)
 DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,                      IM_Currency_RetVoid)
@@ -402,6 +417,7 @@ DEFINE_METHOD(FIELD_INFO,           GET_VALUE,              GetValue,           
 
 DEFINE_CLASS(GUID,                  System,                 Guid)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT,               System,                 Variant)
 DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT,MarshalHelperConvertObjectToVariant,SM_Obj_RefVariant_RetVoid)
@@ -413,6 +429,7 @@ DEFINE_FIELD_U(_objref,             VariantData,            m_objref)
 DEFINE_FIELD_U(_data,               VariantData,            m_data)
 DEFINE_FIELD_U(_flags,              VariantData,            m_flags)
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(IASYNCRESULT,          System,                 IAsyncResult)
 
@@ -431,11 +448,13 @@ DEFINE_CLASS(DYNAMICINTERFACECASTABLEHELPERS,   Interop,   DynamicInterfaceCasta
 DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  IS_INTERFACE_IMPLEMENTED,       IsInterfaceImplemented,     SM_IDynamicInterfaceCastable_RuntimeType_Bool_RetBool)
 DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  GET_INTERFACE_IMPLEMENTATION,   GetInterfaceImplementation, SM_IDynamicInterfaceCastable_RuntimeType_RetRtType)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
 DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,               IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
 DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterfaceResult)
 #endif //FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 
 #ifdef FEATURE_COMWRAPPERS
 DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
@@ -467,11 +486,11 @@ DEFINE_METHOD(IREFLECT,             GET_FIELDS,             GetFields,          
 DEFINE_METHOD(IREFLECT,             GET_METHODS,            GetMethods,                 IM_BindingFlags_RetArrMethodInfo)
 DEFINE_METHOD(IREFLECT,             INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 
-
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttribute)
 #endif // FEATURE_COMINTEROP
-
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MARSHAL,               Interop,                Marshal)
 #ifdef FEATURE_COMINTEROP
@@ -618,10 +637,11 @@ DEFINE_METHOD(SINGLE,               GET_HASH_CODE,          GetHashCode, IM_RetI
 
 DEFINE_CLASS(__CANON,              System,                 __Canon)
 
-
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
@@ -1060,6 +1080,7 @@ DEFINE_METHOD(ANSIBSTRMARSHALER,    CONVERT_TO_NATIVE,      ConvertToNative,    
 DEFINE_METHOD(ANSIBSTRMARSHALER,    CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
 DEFINE_METHOD(ANSIBSTRMARSHALER,    CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(OBJECTMARSHALER,       StubHelpers,            ObjectMarshaler)
 DEFINE_METHOD(OBJECTMARSHALER,      CONVERT_TO_NATIVE,      ConvertToNative,            SM_ObjIntPtr_RetVoid)
@@ -1080,6 +1101,7 @@ DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpa
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_IntPtr_RefObj_IntPtr_RetVoid)
 #endif // FEATURE_COMINTEROP
+END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(DATEMARSHALER,         StubHelpers,            DateMarshaler)
 DEFINE_METHOD(DATEMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_DateTime_RetDbl)
@@ -1274,9 +1296,10 @@ DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
 DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
 DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
 
-
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD
 #undef DEFINE_FIELD
 #undef DEFINE_CLASS_U
 #undef DEFINE_FIELD_U
+#undef BEGIN_ILLINK_FEATURE_SWITCH
+#undef END_ILLINK_FEATURE_SWITCH
