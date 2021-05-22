@@ -11191,8 +11191,8 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
 
-    delete [] m_codeWriteBuffer;
-    m_codeWriteBuffer = NULL;
+    delete [] (BYTE*)m_CodeHeaderRW;
+    m_CodeHeaderRW = NULL;
 }
 
 /*********************************************************************/
@@ -11203,9 +11203,22 @@ void CEEJitInfo::WriteCode()
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    memcpy((void*)m_CodeHeader->GetCodeStartAddress(), m_codeWriteBuffer, m_codeWriteBufferSize);
-    delete [] m_codeWriteBuffer;
-    m_codeWriteBuffer = NULL;
+    if (m_pRealCodeHeader != NULL)
+    {
+        // Restore the read only version of the real code header
+        m_CodeHeaderRW->SetRealCodeHeader(m_pRealCodeHeader);
+        m_pRealCodeHeader = NULL;
+    }
+
+//    memcpy((void*)m_CodeHeader->GetCodeStartAddress(), m_codeWriteBuffer, m_codeWriteBufferSize);
+    memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
+    delete [] (BYTE*)m_CodeHeaderRW;
+    m_CodeHeaderRW = NULL;
+    // delete [] m_codeWriteBuffer;
+    // m_codeWriteBuffer = NULL;
+
+    m_codeWriteBufferSize = 0;
+
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find
@@ -11334,7 +11347,7 @@ void CEEJitInfo::CompressDebugInfo()
             NULL,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
-        m_CodeHeader->SetDebugInfo(pDebugInfo);
+        m_CodeHeaderRW->SetDebugInfo(pDebugInfo);
     }
     EX_CATCH
     {
@@ -11478,17 +11491,8 @@ void CEEJitInfo::allocUnwindInfo (
         _ASSERTE(m_usedUnwindInfos > 0);
     }
 
-    PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeader->GetUnwindInfo(m_usedUnwindInfos);
-    PT_RUNTIME_FUNCTION pRuntimeFunctionRW = (PT_RUNTIME_FUNCTION)((BYTE *)pRuntimeFunction + m_writeableOffset);
-    if ((BYTE*)pRuntimeFunctionRW < m_codeWriteBuffer || (BYTE*)pRuntimeFunctionRW >= (m_codeWriteBuffer + m_codeWriteBufferSize))
-    {
-        pRuntimeFunctionRW = pRuntimeFunction;
-    }
-    else
-    {
-        __debugbreak();
-    }
-
+    PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
+    
     m_usedUnwindInfos++;
 
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
@@ -11496,10 +11500,6 @@ void CEEJitInfo::allocUnwindInfo (
 
     UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) &(m_theUnwindBlock[m_usedUnwindSize]);
     UNWIND_INFO * pUnwindInfoRW = (UNWIND_INFO *)((BYTE*)pUnwindInfo + m_writeableOffset);
-    if ((BYTE*)pUnwindInfoRW < m_codeWriteBuffer || ((BYTE*)pUnwindInfoRW + unwindSize) > (m_codeWriteBuffer + m_codeWriteBufferSize))
-    {
-        __debugbreak();
-    }
 
     uint32_t prevUsedUnwindSize = m_usedUnwindSize;
 
@@ -11546,13 +11546,13 @@ void CEEJitInfo::allocUnwindInfo (
 
     unsigned unwindInfoDelta = (unsigned) unwindInfoDeltaT;
 
-    RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunctionRW, currentCodeOffset + startOffset);
+    RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
 
 #ifdef TARGET_AMD64
-    pRuntimeFunctionRW->EndAddress        = currentCodeOffset + endOffset;
+    pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
 #endif
 
-    RUNTIME_FUNCTION__SetUnwindInfoAddress(pRuntimeFunctionRW, unwindInfoDelta);
+    RUNTIME_FUNCTION__SetUnwindInfoAddress(pRuntimeFunction, unwindInfoDelta);
 
 #ifdef _DEBUG
     if (funcKind != CORJIT_FUNC_ROOT)
@@ -11561,9 +11561,9 @@ void CEEJitInfo::allocUnwindInfo (
 
         for (ULONG iUnwindInfo = 0; iUnwindInfo < m_usedUnwindInfos - 1; iUnwindInfo++)
         {
-            PT_RUNTIME_FUNCTION pOtherFunction = m_CodeHeader->GetUnwindInfo(iUnwindInfo);
-            _ASSERTE((   RUNTIME_FUNCTION__BeginAddress(pOtherFunction) >= RUNTIME_FUNCTION__EndAddress(pRuntimeFunctionRW, baseAddress)
-                     || RUNTIME_FUNCTION__EndAddress(pOtherFunction, baseAddress) <= RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctionRW)));
+            PT_RUNTIME_FUNCTION pOtherFunction = m_CodeHeaderRW->GetUnwindInfo(iUnwindInfo);
+            _ASSERTE((   RUNTIME_FUNCTION__BeginAddress(pOtherFunction) >= RUNTIME_FUNCTION__EndAddress(pRuntimeFunction, baseAddress)
+                     || RUNTIME_FUNCTION__EndAddress(pOtherFunction, baseAddress) <= RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction)));
         }
     }
 #endif // _DEBUG
@@ -12303,18 +12303,16 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    // TODO: move the write buffer allocation inside of the allocCode and use it to write the code header too.
-    m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_codeWriteBufferSize
+    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
                                            , m_totalUnwindInfos
                                            , &m_moduleBase
 #endif
                                            );
 
-    m_codeWriteBufferSize = totalSize.Value();
+//    m_codeWriteBufferSize = totalSize.Value();
     BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
-    m_codeWriteBuffer = new BYTE[m_codeWriteBufferSize];
-    m_writeableOffset = m_codeWriteBuffer - current;
+    m_writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
     *codeBlock = current;
     *codeBlockRW = current + m_writeableOffset;
@@ -12362,8 +12360,8 @@ void * CEEJitInfo::allocGCInfo (size_t size)
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(m_CodeHeader != 0);
-    _ASSERTE(m_CodeHeader->GetGCInfo() == 0);
+    _ASSERTE(m_CodeHeaderRW != 0);
+    _ASSERTE(m_CodeHeaderRW->GetGCInfo() == 0);
 
 #ifdef HOST_64BIT
     if (size & 0xFFFFFFFF80000000LL)
@@ -12372,13 +12370,13 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocGCInfo(m_CodeHeader,(DWORD)size, &m_GCinfo_len);
+    block = m_jitManager->allocGCInfo(m_CodeHeaderRW,(DWORD)size, &m_GCinfo_len);
     if (!block)
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
 
-    _ASSERTE(m_CodeHeader->GetGCInfo() != 0 && block == m_CodeHeader->GetGCInfo());
+    _ASSERTE(m_CodeHeaderRW->GetGCInfo() != 0 && block == m_CodeHeaderRW->GetGCInfo());
 
     EE_TO_JIT_TRANSITION();
 
@@ -12398,14 +12396,14 @@ void CEEJitInfo::setEHcount (
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(cEH != 0);
-    _ASSERTE(m_CodeHeader != 0);
-    _ASSERTE(m_CodeHeader->GetEHInfo() == 0);
+    _ASSERTE(m_CodeHeaderRW != 0);
+    _ASSERTE(m_CodeHeaderRW->GetEHInfo() == 0);
 
     EE_ILEXCEPTION* ret;
-    ret = m_jitManager->allocEHInfo(m_CodeHeader,cEH, &m_EHinfo_len);
+    ret = m_jitManager->allocEHInfo(m_CodeHeaderRW,cEH, &m_EHinfo_len);
     _ASSERTE(ret);      // allocEHInfo throws if there's not enough memory
 
-    _ASSERTE(m_CodeHeader->GetEHInfo() != 0 && m_CodeHeader->GetEHInfo()->EHCount() == cEH);
+    _ASSERTE(m_CodeHeaderRW->GetEHInfo() != 0 && m_CodeHeaderRW->GetEHInfo()->EHCount() == cEH);
 
     EE_TO_JIT_TRANSITION();
 }
@@ -12424,9 +12422,9 @@ void CEEJitInfo::setEHinfo (
     JIT_TO_EE_TRANSITION();
 
     // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
-    _ASSERTE(m_CodeHeader->GetEHInfo() != 0 && EHnumber < m_CodeHeader->GetEHInfo()->EHCount());
+    _ASSERTE(m_CodeHeaderRW->GetEHInfo() != 0 && EHnumber < m_CodeHeaderRW->GetEHInfo()->EHCount());
 
-    EE_ILEXCEPTION_CLAUSE* pEHClause = m_CodeHeader->GetEHInfo()->EHClause(EHnumber);
+    EE_ILEXCEPTION_CLAUSE* pEHClause = m_CodeHeaderRW->GetEHInfo()->EHClause(EHnumber);
 
     pEHClause->TryStartPC     = clause->TryOffset;
     pEHClause->TryEndPC       = clause->TryLength;

@@ -2504,7 +2504,7 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     size_t allocatedSize = header+blockSize+(align-1)+pInfo->getReserveForJumpStubs(); 
     if (pAllocatedSize != NULL)
     {
-        *pAllocatedSize = allocatedSize;
+        *pAllocatedSize = allocatedSize - (align - 1);
     }
     pInfo->setRequestSize(allocatedSize);
 
@@ -2597,18 +2597,18 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     RETURN(mem);
 }
 
-CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, size_t* pAllocatedSize
+void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW, size_t* pAllocatedSize, BYTE** ppRealHeader
 #ifdef FEATURE_EH_FUNCLETS
                                     , UINT nUnwindInfos
                                     , TADDR * pModuleBase
 #endif
                                     )
 {
-    CONTRACT(CodeHeader *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+//        POSTCONDITION(CheckPointer(RETVAL));
+    } CONTRACTL_END;
 
     //
     // Alignment
@@ -2641,6 +2641,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
     SIZE_T totalSize = blockSize;
 
     CodeHeader * pCodeHdr = NULL;
+    CodeHeader * pCodeHdrRW = NULL;
 
     CodeHeapRequestInfo requestInfo(pMD);
 #if defined(FEATURE_JIT_PITCHING)
@@ -2649,6 +2650,10 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
         requestInfo.SetDynamicDomain();
     }
 #endif
+    if (reserveForJumpStubs != 0)
+    {
+        __debugbreak();
+    }
     requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
 
 #if defined(USE_INDIRECT_CODEHEADER)
@@ -2680,17 +2685,19 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
         }
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
-
+//Maybe this is the problem!
         // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
         // map so that we don't have to harden readers against uninitialized data.
         // However because we hold the lock, this initialization should be fast and cheap!
 
         pCodeHdr = ((CodeHeader *)pCode) - 1;
+        pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize]();
 
 #ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
         {
-            pCodeHdr->SetRealCodeHeader((BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*)));
+            // Set the real code header to the writeable mapping so that we can set its members via the CodeHeader methods below
+            pCodeHdrRW->SetRealCodeHeader((BYTE *)(pCodeHdrRW + 1) + ALIGN_UP(blockSize, sizeof(void*)));
         }
         else
         {
@@ -2698,23 +2705,39 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
             //
             // allocate the real header in the low frequency heap
             BYTE* pRealHeader = (BYTE*)(void*)pMD->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(realHeaderSize));
-            pCodeHdr->SetRealCodeHeader(pRealHeader);
+            pCodeHdrRW->SetRealCodeHeader(pRealHeader);
         }
 #endif
 
-        pCodeHdr->SetDebugInfo(NULL);
-        pCodeHdr->SetEHInfo(NULL);
-        pCodeHdr->SetGCInfo(NULL);
-        pCodeHdr->SetMethodDesc(pMD);
+        pCodeHdrRW->SetDebugInfo(NULL);
+        pCodeHdrRW->SetEHInfo(NULL);
+        pCodeHdrRW->SetGCInfo(NULL);
+        pCodeHdrRW->SetMethodDesc(pMD);
 #ifdef FEATURE_EH_FUNCLETS
-        pCodeHdr->SetNumberOfUnwindInfos(nUnwindInfos);
+        pCodeHdrRW->SetNumberOfUnwindInfos(nUnwindInfos);
         *pModuleBase = pCodeHeap->GetModuleBase();
 #endif
+        // This needs to happen elsewhere, 
+        // if (requestInfo.IsDynamicDomain())
+        // {
+        //     // We are done setting the real code header members, so set it to the final executable mapping
+        //     pCodeHdrRW->SetRealCodeHeader((BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*)));
+        // }
 
         NibbleMapSet(pCodeHeap, pCode, TRUE);
+
+        if (requestInfo.IsDynamicDomain())
+        {
+            *ppRealHeader = (BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*));
+        }
+        else
+        {
+            *ppRealHeader = NULL;
+        }
     }
 
-    RETURN(pCodeHdr);
+    *ppCodeHeader = pCodeHdr;
+    *ppCodeHeaderRW = pCodeHdrRW;
 }
 
 EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly)
