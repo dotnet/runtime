@@ -441,12 +441,12 @@ inline BOOL MethodTable::IsBlittable()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::MayContainGCPointers()
+inline BOOL MethodTable::LayoutContainsNoGCPointers()
 {
     WRAPPER_NO_CONTRACT;
 #ifndef DACCESS_COMPILE
     _ASSERTE(GetClass());
-    return GetClass()->MayContainGCPointers();
+    return GetClass()->LayoutContainsNoGCPointers();
 #else // DACCESS_COMPILE
     DacNotImpl();
     return false;

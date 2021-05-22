@@ -272,11 +272,12 @@ namespace
     }
 
     //=======================================================================
-    // This function returns TRUE if the provided type contains GC pointers.
+    // This function returns TRUE if the provided type contains no GC pointers.
     // The fsig parameter is used when the corElemType doesn't contain enough information
-    // (for ELEMENT_TYPE_VALUETYPE).
+    // (for ELEMENT_TYPE_VALUETYPE). For generics we cannot confirm that the type
+    // contains no GC pointers because we don't have enough information to check that.
     //=======================================================================
-    BOOL CheckIfFieldMayContainGCPointers(CorElementType corElemType, MetaSig& fsig)
+    BOOL CheckIfFieldContainsNoGCPointers(CorElementType corElemType, MetaSig& fsig)
     {
         switch (corElemType)
         {
@@ -296,16 +297,16 @@ namespace
         case ELEMENT_TYPE_U:
         case ELEMENT_TYPE_PTR:
         case ELEMENT_TYPE_FNPTR:
-            return FALSE;
+            return TRUE;
 
         case ELEMENT_TYPE_VALUETYPE:
             return fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
                 CLASS_LOAD_APPROXPARENTS,
-                TRUE).GetMethodTable()->MayContainGCPointers();
+                TRUE).GetMethodTable()->LayoutContainsNoGCPointers();
 
         default:
-            // All other types are conservatively assumed to potentially contain GC pointers.
-            return TRUE;
+            // For no other types we can prove that they don't contain GC pointers
+            return FALSE;
         }
     }
 
@@ -436,7 +437,7 @@ namespace
         BOOL* fDisqualifyFromManagedSequential,
         LayoutRawFieldInfo* pFieldInfoArrayOut,
         BOOL* pIsBlittableOut,
-        BOOL* pMayContainGCPointers,
+        BOOL* pLayoutContainsNoGCPointers,
         ULONG* cInstanceFields
     #ifdef _DEBUG
         ,
@@ -505,10 +506,8 @@ namespace
                 CorElementType corElemType = fsig.NextArgNormalized();
                 *fDisqualifyFromManagedSequential |= CheckIfDisqualifiedFromManagedSequential(corElemType, fsig, &pFieldInfoArrayOut->m_placement);
 
-                if (!IsFieldBlittable(pModule, fd, fsig.GetArgProps(), pTypeContext, nativeTypeFlags))
-                    *pIsBlittableOut = FALSE;
-                if (CheckIfFieldMayContainGCPointers(corElemType, fsig))
-                    *pMayContainGCPointers = TRUE;
+                *pIsBlittableOut = *pIsBlittableOut && IsFieldBlittable(pModule, fd, fsig.GetArgProps(), pTypeContext, nativeTypeFlags);
+                *pLayoutContainsNoGCPointers = *pLayoutContainsNoGCPointers && CheckIfFieldContainsNoGCPointers(corElemType, fsig);
 
                 (*cInstanceFields)++;
                 pFieldInfoArrayOut++;
@@ -683,7 +682,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     BOOL fParentHasLayout = pParentMT && pParentMT->HasLayout();
     UINT32 cbAdjustedParentLayoutSize = 0;
     EEClassLayoutInfo *pParentLayoutInfo = NULL;
-    BOOL mayContainGCPointers = FALSE;
+    BOOL layoutContainsNoGCPointers = TRUE;
     if (fParentHasLayout)
     {
         pParentLayoutInfo = pParentMT->GetLayoutInfo();
@@ -698,7 +697,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         {
             cbAdjustedParentLayoutSize = pParentMT->GetNumInstanceFieldBytes();
         }
-        mayContainGCPointers = pParentMT->MayContainGCPointers();
+        layoutContainsNoGCPointers = pParentMT->LayoutContainsNoGCPointers();
     }
 
     ULONG cInstanceFields = 0;
@@ -718,7 +717,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         &fDisqualifyFromManagedSequential,
         pInfoArrayOut,
         &isBlittable,
-        &mayContainGCPointers,
+        &layoutContainsNoGCPointers,
         &cInstanceFields
         DEBUGARG(cTotalFields)
         DEBUGARG(szNamespace)
@@ -732,7 +731,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             && (!pParentLayoutInfo || !pParentLayoutInfo->IsZeroSized()); // Ensure non-zero size
     }
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
-    pEEClassLayoutInfoOut->SetMayContainGCPointers(mayContainGCPointers);
+    pEEClassLayoutInfoOut->SetLayoutContainsNoGCPointers(layoutContainsNoGCPointers);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
     if (cbSortArraySize.IsOverflow())
@@ -763,7 +762,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
 
     BYTE parentManagedAlignmentRequirement = 0;
-    if (pParentMT && (pParentMT->IsManagedSequential() || pParentMT->GetClass()->HasExplicitFieldOffsetLayout()))
+    if (pParentMT && pParentMT->LayoutContainsNoGCPointers())
     {
         parentManagedAlignmentRequirement = pParentLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
     }

@@ -1718,6 +1718,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
             GetNumStaticFields(), GetNumHandleRegularStatics() + GetNumHandleThreadStatics(),
             pszDebugName));
 
+    // To avoid breaking interop we need to ensure that blittable types may not contain GC pointers.
+    ASSERT(!IsBlittable() || LayoutContainsNoGCPointers());
+
     if (!bmtGenerics->fContainsGenericVariables && HasExplicitFieldOffsetLayout())
     {
         // HandleExplicitLayout fails for the GenericTypeDefinition when
@@ -1729,7 +1732,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         //
         HandleExplicitLayout(pByValueClassCache);
     }
-    else if (HasLayout() && !MayContainGCPointers())
+    else if (LayoutContainsNoGCPointers())
     {
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
     }
@@ -1826,6 +1829,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
     else
         // Perform relevant GC calculations for value classes
         HandleGCForValueClasses(pByValueClassCache);
+
+    // If we end up concluding that a type contains GC pointers we shouldn't have ruled that out beforehand.
+    ASSERT(!(pMT->ContainsPointers() && LayoutContainsNoGCPointers()));
 
     // GC requires the series to be sorted.
     // TODO: fix it so that we emit them in the correct order in the first place.
@@ -4248,7 +4254,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 else
                     pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
             }
-            else if (!fIsStatic && !MayContainGCPointers() && HasLayout())
+            else if (!fIsStatic && LayoutContainsNoGCPointers())
             {
                 (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
@@ -4275,7 +4281,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             if (HasExplicitFieldOffsetLayout() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (!MayContainGCPointers() && HasLayout() && !fIsStatic)
+            else if (LayoutContainsNoGCPointers() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (bCurrentFieldIsGCPointer)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
@@ -8354,7 +8360,7 @@ MethodTableBuilder::HandleExplicitLayout(
         {
             instanceSliceSize = fieldExtent;
         }
-        
+
         if (fieldAlignment > instanceSliceAlignment)
         {
             instanceSliceAlignment = fieldAlignment;

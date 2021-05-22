@@ -389,8 +389,8 @@ class EEClassLayoutInfo
             e_ZERO_SIZED                =   0x04,
             // The size of the struct is explicitly specified in the meta-data.
             e_HAS_EXPLICIT_SIZE         = 0x08,
-            // Class may contains GC pointers
-            e_MAY_CONTAIN_GC_POINTERS   = 0x10,
+            // Class layout is certain to contain no GC pointers
+            e_LAYOUT_CONTAINS_NO_GC_POINTERS = 0x10,
         };
 
         BYTE        m_bFlags;
@@ -411,10 +411,10 @@ class EEClassLayoutInfo
             return (m_bFlags & e_BLITTABLE) == e_BLITTABLE;
         }
 
-        bool MayContainGCPointers() const
+        bool LayoutContainsNoGCPointers() const
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_bFlags & e_MAY_CONTAIN_GC_POINTERS) == e_MAY_CONTAIN_GC_POINTERS;
+            return (m_bFlags & e_LAYOUT_CONTAINS_NO_GC_POINTERS) == e_LAYOUT_CONTAINS_NO_GC_POINTERS;
         }
 
         BOOL IsManagedSequential() const
@@ -459,11 +459,11 @@ class EEClassLayoutInfo
                                    : (m_bFlags & ~e_BLITTABLE);
         }
 
-        void SetMayContainGCPointers(BOOL mayContainGCPointers)
+        void SetLayoutContainsNoGCPointers(BOOL layoutContainsNoGCPointers)
         {
             LIMITED_METHOD_CONTRACT;
-            m_bFlags = mayContainGCPointers ? (m_bFlags | e_MAY_CONTAIN_GC_POINTERS)
-                                            : (m_bFlags & ~e_MAY_CONTAIN_GC_POINTERS);
+            m_bFlags = layoutContainsNoGCPointers ? (m_bFlags | e_LAYOUT_CONTAINS_NO_GC_POINTERS)
+                                                  : (m_bFlags & ~e_LAYOUT_CONTAINS_NO_GC_POINTERS);
         }
 
         void SetIsManagedSequential(BOOL isManagedSequential)
@@ -778,9 +778,11 @@ public:
     // class is blittable
     BOOL IsBlittable();
 
-    // class may contain GC pointers; this method shall return FALSE for all blittable classes
-    // but not all classes where the check returns FALSE are blittable.
-    BOOL MayContainGCPointers();
+    // Class is certain to contain no GC pointers; this method shall return TRUE for all blittable
+    // classes but not all classes with no GC pointers are blittable. This method exactly
+    // matches the behavior of MethodTable::ContainsPointers except in the presence of fields
+    // with generic types where this function always returns FALSE.
+    BOOL LayoutContainsNoGCPointers();
 
 #ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
@@ -2115,10 +2117,10 @@ inline BOOL EEClass::IsBlittable()
     return (HasLayout() && GetLayoutInfo()->IsBlittable());
 }
 
-inline BOOL EEClass::MayContainGCPointers()
+inline BOOL EEClass::LayoutContainsNoGCPointers()
 {
     LIMITED_METHOD_CONTRACT;
-    return (HasLayout() && GetLayoutInfo()->MayContainGCPointers());
+    return (HasLayout() && GetLayoutInfo()->LayoutContainsNoGCPointers());
 }
 
 inline BOOL EEClass::IsManagedSequential()
