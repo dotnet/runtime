@@ -16,7 +16,7 @@
 //
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
-// The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
+// The JIT/EE interface is versioned. By "interface", we mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
 //
@@ -112,7 +112,7 @@ enum CorJitResult
 // to guide the memory allocation for the code, readonly data, and read-write data
 enum CorJitAllocMemFlag
 {
-    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
+    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will use the normal alignment
     CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN   = 0x00000001, // The code will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
