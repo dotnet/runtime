@@ -675,6 +675,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.PredefinedCulturesOnly)
             {
+                Debug.Assert(!GlobalizationMode.Invariant);
                 if (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName))
                     return null;
             }
