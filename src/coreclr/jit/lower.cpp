@@ -196,7 +196,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_CAST:
-            return LowerCast(node->AsCast());
+            LowerCast(node);
+            break;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         case GT_ARR_BOUNDS_CHECK:
@@ -957,69 +958,6 @@ bool Lowering::TryLowerSwitchToBitTest(
 
     return true;
 #endif // TARGET_XARCH
-}
-
-GenTree* Lowering::LowerCast(GenTreeCast* cast)
-{
-#if !defined(TARGET_64BIT)
-    // On 32 bit targets, when casting from a decomposed long to an integer,
-    // we can discard the high part (provided the cast is unchecked of course).
-
-    GenTree*  src     = cast->CastOp();
-    var_types dstType = cast->CastToType();
-
-    if (src->OperIs(GT_LONG) && genActualTypeIsInt(dstType) && !cast->gtOverflow())
-    {
-        assert(varTypeIsLong(src));
-
-        GenTree* loSrc = src->gtGetOp1();
-        GenTree* hiSrc = src->gtGetOp2();
-
-        // TODO-CQ: we could go perform this removal transitively.
-        // See also identical code in long decomposition.
-        if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
-        {
-            BlockRange().Remove(hiSrc, /* markOperandsUnused */ true);
-        }
-        else
-        {
-            hiSrc->SetUnusedValue();
-        }
-
-        BlockRange().Remove(src);
-
-        if (!varTypeIsSmall(dstType))
-        {
-            LIR::Use use;
-            if (BlockRange().TryGetUse(cast, &use))
-            {
-                use.ReplaceWith(comp, loSrc);
-            }
-            else
-            {
-                loSrc->SetUnusedValue();
-            }
-
-            GenTree* nextNode = cast->gtNext;
-            BlockRange().Remove(cast);
-
-            return nextNode;
-        }
-        else
-        {
-            // TODO-Cleanup: this path is not reachable right now
-            // because morph splits "long -> small type" casts into
-            // "long -> int -> small type" chains. Investigate what
-            // happens if you disable this decomposition.
-            // Likely, there will be CSE-related regressions.
-            cast->CastOp() = loSrc;
-        }
-    }
-#endif // !TARGET_64BIT
-
-    LowerCastTargetSpecific(cast);
-
-    return cast->gtNext;
 }
 
 // NOTE: this method deliberately does not update the call arg table. It must only
