@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- The project doesn't compile anything therefore create the package during build. -->
-    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'">true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</GeneratePackageOnBuild>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <IsSourcePackage>true</IsSourcePackage>
