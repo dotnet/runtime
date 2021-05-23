@@ -177,25 +177,6 @@ const char* GenTree::OpName(genTreeOps op)
 
 #endif
 
-#ifdef DEBUG
-
-static const char* RMWStatusStrings[] = {
-    "STATUS_UNKNOWN",
-    "DST_IS_OP1",
-    "DST_IS_OP2",
-    "UNSUPPORTED_ADDR",
-    "UNSUPPORTED_OPER",
-    "UNSUPPORTED_TYPE",
-    "INDIR_UNEQUAL"
-};
-
-const char* RMWStatusString(RMWStatus status)
-{
-    return RMWStatusStrings[(uint8_t)status];
-}
-
-#endif
-
 #if MEASURE_NODE_SIZE
 
 static const char* opStructNames[] = {

@@ -5777,7 +5777,7 @@ protected:
 };
 
 // Read-modify-write status of a RMW memory op rooted at a storeInd
-enum RMWStatus : uint8_t
+enum RMWStatus
 {
     STOREIND_RMW_STATUS_UNKNOWN, // RMW status of storeInd unknown
                                  // Default status unless modified by IsRMWMemOpRootedAtStoreInd()
@@ -5794,7 +5794,28 @@ enum RMWStatus : uint8_t
 };
 
 #ifdef DEBUG
-const char* RMWStatusString(RMWStatus status);
+inline const char* RMWStatusString(RMWStatus status)
+{
+    switch (status)
+    {
+        case STOREIND_RMW_STATUS_UNKNOWN:
+            return "STATUS_UNKNOWN";
+        case STOREIND_RMW_DST_IS_OP1:
+            return "DST_IS_OP1";
+        case STOREIND_RMW_DST_IS_OP2:
+            return "DST_IS_OP2";
+        case STOREIND_RMW_UNSUPPORTED_ADDR:
+            return "UNSUPPORTED_ADDR";
+        case STOREIND_RMW_UNSUPPORTED_OPER:
+            return "UNSUPPORTED_OPER";
+        case STOREIND_RMW_UNSUPPORTED_TYPE:
+            return "UNSUPPORTED_TYPE";
+        case STOREIND_RMW_INDIR_UNEQUAL:
+            return "INDIR_UNEQUAL";
+        default:
+            unreached();
+    }
+}
 #endif
 
 // StoreInd is just a BinOp, with additional RMW status
