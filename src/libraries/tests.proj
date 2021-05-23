@@ -181,8 +181,6 @@
     <!-- Failures -->
     <!-- https://github.com/dotnet/runtime/issues/51335 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/51338 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaValidatorApi/System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
 
     <!-- Crashes or hangs, did not produce testResults.xml -->
     <!-- https://github.com/dotnet/runtime/issues/52117 -->
