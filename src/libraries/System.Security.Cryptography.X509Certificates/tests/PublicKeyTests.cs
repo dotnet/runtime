@@ -857,7 +857,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void GetRSAPublicKey_ThrowsForCorruptRsaKey()
+        public static void GetRSAPublicKey_ThrowsForCorruptKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });
             PublicKey key = new PublicKey(GetTestRsaKey().Oid, badData, badData);
@@ -880,7 +880,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
-        public static void GetDSAPublicKey_ThrowsForCorruptDsaKey()
+        public static void GetDSAPublicKey_ThrowsForCorruptKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });
             PublicKey key = new PublicKey(GetTestDsaKey().Oid, badData, badData);
@@ -901,7 +901,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void GetECDsaPublicKey_ThrowsForCorruptDsaKey()
+        public static void GetECDsaPublicKey_ThrowsForCorruptKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });
             PublicKey key = new PublicKey(GetTestECDsaKey().Oid, badData, badData);
@@ -922,7 +922,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void GetECDiffieHellmanPublicKey_ThrowsForCorruptDsaKey()
+        public static void GetECDiffieHellmanPublicKey_ThrowsForCorruptKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });
             PublicKey key = new PublicKey(GetTestECDHKey().Oid, badData, badData);
