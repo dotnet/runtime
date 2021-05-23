@@ -5777,7 +5777,7 @@ protected:
 };
 
 // Read-modify-write status of a RMW memory op rooted at a storeInd
-enum RMWStatus
+enum RMWStatus : uint8_t
 {
     STOREIND_RMW_STATUS_UNKNOWN, // RMW status of storeInd unknown
                                  // Default status unless modified by IsRMWMemOpRootedAtStoreInd()
@@ -5792,6 +5792,10 @@ enum RMWStatus
     STOREIND_RMW_UNSUPPORTED_TYPE, // Type is not supported for RMW memory
     STOREIND_RMW_INDIR_UNEQUAL     // Indir to read value is not equivalent to indir that writes the value
 };
+
+#ifdef DEBUG
+const char* RMWStatusString(RMWStatus status);
+#endif
 
 // StoreInd is just a BinOp, with additional RMW status
 struct GenTreeStoreInd : public GenTreeIndir
