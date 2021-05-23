@@ -385,6 +385,11 @@ namespace System
         /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
         public int CompareTo(Half other)
         {
+            if (this == other)
+            {
+                return 0;
+            }
+
             if (this < other)
             {
                 return -1;
@@ -393,11 +398,6 @@ namespace System
             if (this > other)
             {
                 return 1;
-            }
-
-            if (this == other)
-            {
-                return 0;
             }
 
             if (IsNaN(this))
