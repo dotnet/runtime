@@ -47,9 +47,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return messageBuilder.ToString();
         }
 
-        private void AppendResolutionPath(StringBuilder builder, Type currentlyResolving = null)
+        private void AppendResolutionPath(StringBuilder builder, Type currentlyResolving)
         {
-            foreach (KeyValuePair<Type, ChainItemInfo> pair in _callSiteChain.OrderBy(p => p.Value.Order))
+            var ordered = new List<KeyValuePair<Type, ChainItemInfo>>(_callSiteChain);
+            ordered.Sort((a, b) => a.Value.Order.CompareTo(b.Value.Order));
+
+            foreach (KeyValuePair<Type, ChainItemInfo> pair in ordered)
             {
                 Type serviceType = pair.Key;
                 Type implementationType = pair.Value.ImplementationType;
@@ -70,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             builder.Append(TypeNameHelper.GetTypeDisplayName(currentlyResolving));
         }
 
-        private struct ChainItemInfo
+        private readonly struct ChainItemInfo
         {
             public int Order { get; }
             public Type ImplementationType { get; }
