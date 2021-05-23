@@ -1090,8 +1090,8 @@ namespace System
                 }
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                    Justification = "Calls to ResolveTypeHandle technically require all types to be kept" +
-                        "But this is not a public API to enumerate reflection items, all the public APIs which do that" +
+                    Justification = "Calls to ResolveTypeHandle technically require all types to be kept " +
+                        "But this is not a public API to enumerate reflection items, all the public APIs which do that " +
                         "should be annotated accordingly.")]
                 private RuntimeType[] PopulateNestedClasses(Filter filter)
                 {
