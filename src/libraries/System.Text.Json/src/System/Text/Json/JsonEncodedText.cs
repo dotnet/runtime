@@ -45,7 +45,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonEncodedText Encode(string value, JavaScriptEncoder? encoder = null)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             return Encode(value.AsSpan(), encoder);
@@ -61,7 +61,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonEncodedText Encode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder = null)
         {
-            if (value.Length == 0)
+            if (value.IsEmpty)
             {
                 return new JsonEncodedText(Array.Empty<byte>());
             }
@@ -102,7 +102,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonEncodedText Encode(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder? encoder = null)
         {
-            if (utf8Value.Length == 0)
+            if (utf8Value.IsEmpty)
             {
                 return new JsonEncodedText(Array.Empty<byte>());
             }
@@ -133,9 +133,9 @@ namespace System.Text.Json
         /// </remarks>
         public bool Equals(JsonEncodedText other)
         {
-            if (_value == null)
+            if (_value is null)
             {
-                return other._value == null;
+                return other._value is null;
             }
             else
             {
