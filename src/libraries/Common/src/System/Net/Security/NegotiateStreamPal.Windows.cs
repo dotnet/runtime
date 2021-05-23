@@ -43,7 +43,7 @@ namespace System.Net.Security
                 if (result != Interop.SECURITY_STATUS.OK)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(Interop.SspiCli.SspiEncodeStringsAsAuthIdentity), $"0x{(int)result:X}"));
-                    throw new Win32Exception((int)result);
+                    throw new HttpListenerException((int)result);
                 }
 
                 return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPIAuth,
@@ -169,9 +169,9 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
         }
 
-        internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
+        internal static HttpListenerException CreateExceptionFromError(SecurityStatusPal statusCode)
         {
-            return new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(statusCode));
+            return new HttpListenerException((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(statusCode));
         }
 
         internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
@@ -213,7 +213,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 NetEventSource.Info($"VerifySignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
-                throw new Win32Exception(errorCode);
+                throw new HttpListenerException(errorCode);
             }
 
             // not sure why this is here - retained from Encrypt code above
@@ -257,7 +257,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 NetEventSource.Info($"MakeSignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
-                throw new Win32Exception(errorCode);
+                throw new HttpListenerException(errorCode);
             }
 
             // return signed size

@@ -27,7 +27,7 @@ namespace System.Net
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"arrayBase: {arrayBaseHandle}");
                             if (errorCode != 0)
                             {
-                                throw new Win32Exception(errorCode);
+                                throw new HttpListenerException(errorCode);
                             }
 
                             var securityPackages = new SecurityPackageInfoClass[moduleCount];
@@ -86,7 +86,7 @@ namespace System.Net
             if (errorCode != 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireDefaultCredential), $"0x{errorCode:X}"));
-                throw new Win32Exception(errorCode);
+                throw new HttpListenerException(errorCode);
             }
             return outCredential;
         }
@@ -101,7 +101,7 @@ namespace System.Net
             if (errorCode != 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
-                throw new Win32Exception(errorCode);
+                throw new HttpListenerException(errorCode);
             }
 
             return credentialsHandle;
@@ -118,7 +118,7 @@ namespace System.Net
             if (errorCode != 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
-                throw new Win32Exception(errorCode);
+                throw new HttpListenerException(errorCode);
             }
 
             return outCredential;
@@ -135,7 +135,7 @@ namespace System.Net
             if (errorCode != 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
-                throw new Win32Exception(errorCode);
+                throw new HttpListenerException(errorCode);
             }
 
             return outCredential;

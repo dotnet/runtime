@@ -81,7 +81,7 @@ namespace System.Net
 
             if (attachException)
             {
-                return new SecurityStatusPal(statusCode, new Win32Exception((int)win32SecurityStatus));
+                return new SecurityStatusPal(statusCode, new HttpListenerException((int)win32SecurityStatus));
             }
             else
             {
