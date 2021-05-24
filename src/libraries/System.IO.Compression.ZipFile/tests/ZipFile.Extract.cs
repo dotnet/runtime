@@ -34,7 +34,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52616", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ExtractToDirectoryUnicode()
         {
             string zipFileName = zfile("unicode.zip");
