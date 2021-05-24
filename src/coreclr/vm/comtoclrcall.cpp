@@ -1013,7 +1013,6 @@ void ComCallMethodDesc::InitNativeInfo()
                 CONSISTENCY_CHECK_MSGF(false, ("BreakOnComToClrNativeInfoInit: '%s' ", szDebugName));
 #endif // _DEBUG
 
-#ifdef TARGET_X86
             MetaSig fsig(pFD);
             fsig.NextArg();
 
@@ -1030,6 +1029,10 @@ void ComCallMethodDesc::InitNativeInfo()
 #endif
                              );
 
+            if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_UNKNOWN)
+                info.ThrowTypeLoadExceptionForInvalidFieldMarshal(pFD, info.GetErrorResourceId());
+
+#ifdef TARGET_X86
             if (IsFieldGetter())
             {
                 // getter takes 'this' and the output argument by-ref
