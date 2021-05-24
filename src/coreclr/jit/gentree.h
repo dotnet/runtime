@@ -5798,6 +5798,31 @@ enum RMWStatus
     STOREIND_RMW_INDIR_UNEQUAL     // Indir to read value is not equivalent to indir that writes the value
 };
 
+#ifdef DEBUG
+inline const char* RMWStatusDescription(RMWStatus status)
+{
+    switch (status)
+    {
+        case STOREIND_RMW_STATUS_UNKNOWN:
+            return "RMW status unknown";
+        case STOREIND_RMW_DST_IS_OP1:
+            return "dst candidate is op1";
+        case STOREIND_RMW_DST_IS_OP2:
+            return "dst candidate is op2";
+        case STOREIND_RMW_UNSUPPORTED_ADDR:
+            return "address mode is not supported";
+        case STOREIND_RMW_UNSUPPORTED_OPER:
+            return "oper is not supported";
+        case STOREIND_RMW_UNSUPPORTED_TYPE:
+            return "type is not supported";
+        case STOREIND_RMW_INDIR_UNEQUAL:
+            return "read indir is not equivalent to write indir";
+        default:
+            unreached();
+    }
+}
+#endif
+
 // StoreInd is just a BinOp, with additional RMW status
 struct GenTreeStoreInd : public GenTreeIndir
 {
