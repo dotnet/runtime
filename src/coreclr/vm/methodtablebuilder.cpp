@@ -12019,16 +12019,6 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         pAllocator,
         pamTracker);
 
-#ifdef _DEBUG
-    // Only MultiCastDelegate should inherit from Delegate
-    LPCUTF8 className;
-    LPCUTF8 nameSpace;
-    if (FAILED(pInternalImport->GetNameOfTypeDef(cl, &className, &nameSpace)))
-    {
-        className = nameSpace = "Invalid TypeDef record";
-    }
-#endif
-
     if ((pParentMethodTable != NULL) && (pParentMethodTable == g_pDelegateClass))
     {
         // Note we do not allow single cast delegates
@@ -12036,7 +12026,17 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         {
             pAssembly->ThrowTypeLoadException(pInternalImport, cl, BFA_CANNOT_INHERIT_FROM_DELEGATE);
         }
+
+#ifdef _DEBUG
+        // Only MultiCastDelegate should inherit from Delegate
+        LPCUTF8 className;
+        LPCUTF8 nameSpace;
+        if (FAILED(pInternalImport->GetNameOfTypeDef(cl, &className, &nameSpace)))
+        {
+            className = nameSpace = "Invalid TypeDef record";
+        }
         BAD_FORMAT_NOTHROW_ASSERT(strcmp(className, "MulticastDelegate") == 0);
+#endif
     }
 
     if (fIsDelegate)
