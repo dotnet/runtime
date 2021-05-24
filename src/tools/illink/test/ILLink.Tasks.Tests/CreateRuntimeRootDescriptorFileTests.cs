@@ -131,6 +131,12 @@ namespace ILLink.Tasks.Tests
 				"#if FOR_ILLINK",
 				"DEFINE_METHOD(TESTCLASS, TESTMETHODFORILLINK, TestMethodForILLink, 5)",
 				"#endif",
+				"END_ILLINK_FEATURE_SWITCH()",
+				"BEGIN_ILLINK_FEATURE_SWITCH(TestFeature2Name, false, false)",
+				"#ifdef FEATURE_OFF",
+				"DEFINE_CLASS(TESTCLASS)",
+				"DEFINE_METHOD(TESTCLASS, TESTMETHODFEATURE2, TestMethodFeature2, 6)",
+				"#endif",
 				"END_ILLINK_FEATURE_SWITCH()"
 				});
 

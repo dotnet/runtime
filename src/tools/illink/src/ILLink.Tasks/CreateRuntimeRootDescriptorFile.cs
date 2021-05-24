@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using Microsoft.Build.Framework; // ITaskItem
 using Microsoft.Build.Utilities; // Task
@@ -301,7 +302,10 @@ namespace ILLink.Tasks
 			XmlNode linkerNode = doc["linker"];
 
 			if (featureSwitchMembers.Count > 0) {
-				foreach (var fsMembers in featureSwitchMembers.Keys) {
+				foreach ((var fs, var members) in featureSwitchMembers.Select (kv => (kv.Key, kv.Value))) {
+					if (members.Count == 0)
+						continue;
+
 					// <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
 					XmlNode featureAssemblyNode = doc.CreateElement ("assembly");
 					XmlAttribute featureAssemblyFullName = doc.CreateAttribute ("fullname");
@@ -309,18 +313,18 @@ namespace ILLink.Tasks
 					featureAssemblyNode.Attributes.Append (featureAssemblyFullName);
 
 					XmlAttribute featureName = doc.CreateAttribute ("feature");
-					featureName.Value = fsMembers.Feature;
+					featureName.Value = fs.Feature;
 					featureAssemblyNode.Attributes.Append (featureName);
 
 					XmlAttribute featureValue = doc.CreateAttribute ("featurevalue");
-					featureValue.Value = fsMembers.FeatureValue;
+					featureValue.Value = fs.FeatureValue;
 					featureAssemblyNode.Attributes.Append (featureValue);
 
 					XmlAttribute featureDefault = doc.CreateAttribute ("featuredefault");
-					featureDefault.Value = fsMembers.FeatureDefault;
+					featureDefault.Value = fs.FeatureDefault;
 					featureAssemblyNode.Attributes.Append (featureDefault);
 
-					foreach (var type in featureSwitchMembers[fsMembers]) {
+					foreach (var type in members) {
 						AddXmlTypeNode (doc, featureAssemblyNode, type.Key, type.Value);
 					}
 					linkerNode.AppendChild (featureAssemblyNode);
