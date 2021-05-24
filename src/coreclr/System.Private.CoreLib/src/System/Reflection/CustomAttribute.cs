@@ -300,6 +300,8 @@ namespace System.Reflection
             Justification = "Property setters and fields which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
                             "As such enumerating all fields and properties may return different results after trimming" +
                             "but all those which are needed to actually have data will be there.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "We're getting a MethodBase of a constructor that we found in the metadata. The attribute constructor won't be trimmed.")]
         private CustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
         {
             m_scope = scope;
