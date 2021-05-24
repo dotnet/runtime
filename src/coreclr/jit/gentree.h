@@ -3531,6 +3531,11 @@ struct GenTreeCast : public GenTreeOp
     GenTreeCast(var_types type, GenTree* op, bool fromUnsigned, var_types castType DEBUGARG(bool largeNode = false))
         : GenTreeOp(GT_CAST, type, op, nullptr DEBUGARG(largeNode)), gtCastType(castType)
     {
+        // We do not allow casts from floating point types to be treated as from
+        // unsigned to avoid bugs related to wrong GTF_UNSIGNED in case the
+        // CastOp's type changes.
+        assert(!varTypeIsFloating(op) || !fromUnsigned);
+
         gtFlags |= fromUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
     }
 #if DEBUGGABLE_GENTREE

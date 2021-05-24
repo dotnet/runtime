@@ -1322,6 +1322,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/signed_overflow_conversions_are_not_treated_as_unsigned/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51323</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/compiler/FilterToHandler/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
