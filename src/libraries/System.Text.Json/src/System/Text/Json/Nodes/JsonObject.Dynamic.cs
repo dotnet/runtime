@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Reflection;
 
@@ -21,6 +22,7 @@ namespace System.Text.Json.Nodes
             return true;
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private bool TrySetMemberCallback(SetMemberBinder binder, object? value)
         {
             JsonNode? node = null;
@@ -37,17 +39,17 @@ namespace System.Text.Json.Nodes
             return true;
         }
 
-        private static MethodInfo GetMethod(string name) => typeof(JsonObject).GetMethod(
-            name, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private const BindingFlags MemberInfoBindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
 
         private static MethodInfo? s_TryGetMember;
         internal override MethodInfo? TryGetMemberMethodInfo =>
-            s_TryGetMember ??
-            (s_TryGetMember = GetMethod(nameof(TryGetMemberCallback)));
+            s_TryGetMember ??= typeof(JsonObject).GetMethod(nameof(TryGetMemberCallback), MemberInfoBindingFlags);
 
         private static MethodInfo? s_TrySetMember;
-        internal override MethodInfo? TrySetMemberMethodInfo =>
-            s_TrySetMember ??
-            (s_TrySetMember = GetMethod(nameof(TrySetMemberCallback)));
+        internal override MethodInfo? TrySetMemberMethodInfo
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            get => s_TrySetMember ??= typeof(JsonObject).GetMethod(nameof(TrySetMemberCallback), MemberInfoBindingFlags);
+        }
     }
 }
