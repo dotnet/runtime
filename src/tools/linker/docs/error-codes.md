@@ -1592,6 +1592,9 @@ void RequirePublicMethodOnAType(
 }
 ```
 
+#### `IL2106`: Invalid assembly action '{action}' specified for assembly '{assembly}'. C++/CLI assemblies can only be copied or skipped. 
+
+
 ## Single-File Warning Codes
 
 #### `IL3000`: 'member' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'

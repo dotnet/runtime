@@ -1,6 +1,6 @@
 using System;
-using System.Linq;
-using Mono.Cecil;
+using System.IO;
+using System.Reflection.PortableExecutable;
 
 namespace ILLink.Tasks
 {
@@ -9,18 +9,13 @@ namespace ILLink.Tasks
 		public static bool IsManagedAssembly (string fileName)
 		{
 			try {
-				ModuleDefinition module = ModuleDefinition.ReadModule (fileName);
-				return !IsCPPCLIAssembly (module);
-			} catch (BadImageFormatException) {
+				using (Stream fileStream = new FileStream (fileName, FileMode.Open, FileAccess.Read)) {
+					PEHeaders headers = new PEHeaders (fileStream);
+					return headers.CorHeader != null;
+				}
+			} catch (Exception) {
 				return false;
 			}
-		}
-
-		private static bool IsCPPCLIAssembly (ModuleDefinition module)
-		{
-			return module.Types.Any (t =>
-				t.Namespace == "<CppImplementationDetails>" ||
-				t.Namespace == "<CrtImplementationDetails>");
 		}
 	}
 }
