@@ -271,7 +271,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
     if [[ "$skip_on_odd" == "1" ]]; then
       echo "Skipping WASM"
-      skip=true
+      skip=yes
     fi
 fi
 
@@ -287,7 +287,7 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
     if [[ "$skip_on_even" == "1" ]]; then
       echo "Skipping AOT"
-      skip=true
+      skip=yes
     fi
 fi
 
