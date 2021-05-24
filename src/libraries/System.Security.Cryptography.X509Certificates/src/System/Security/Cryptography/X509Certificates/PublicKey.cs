@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 
 using Internal.Cryptography;
@@ -138,6 +139,122 @@ namespace System.Security.Cryptography.X509Certificates
 
             bytesRead = read;
             return new PublicKey(localOid, localParameters, localKeyValue);
+        }
+
+        /// <summary>
+        /// Gets the <see cref="RSA" /> public key, or <see langword="null" /> if the key is not an RSA key.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if the key is not an RSA key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        public RSA? GetRSAPublicKey()
+        {
+            if (_oid.Value != Oids.Rsa)
+                return null;
+
+            RSA rsa = RSA.Create();
+
+            try
+            {
+                rsa.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo(), out _);
+                return rsa;
+            }
+            catch
+            {
+                rsa.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="DSA" /> public key, or <see langword="null" /> if the key is not an DSA key.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if the key is not an DSA key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        public DSA? GetDSAPublicKey()
+        {
+            if (_oid.Value != Oids.Dsa)
+                return null;
+
+            DSA dsa = DSA.Create();
+
+            try
+            {
+                dsa.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo(), out _);
+                return dsa;
+            }
+            catch
+            {
+                dsa.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ECDsa" /> public key, or <see langword="null" /> if the key is not an ECDsa key.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if the key is not an ECDsa key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        public ECDsa? GetECDsaPublicKey()
+        {
+            if (_oid.Value != Oids.EcPublicKey)
+                return null;
+
+            ECDsa ecdsa = ECDsa.Create();
+
+            try
+            {
+                ecdsa.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo(), out _);
+                return ecdsa;
+            }
+            catch
+            {
+                ecdsa.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> public key, or <see langword="null" />
+        /// if the key is not an ECDiffieHellman key.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if the key is not an ECDiffieHellman key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        public ECDiffieHellman? GetECDiffieHellmanPublicKey()
+        {
+            if (_oid.Value != Oids.EcPublicKey)
+                return null;
+
+            ECDiffieHellman ecdh = ECDiffieHellman.Create();
+
+            try
+            {
+                ecdh.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo(), out _);
+                return ecdh;
+            }
+            catch
+            {
+                ecdh.Dispose();
+                throw;
+            }
         }
 
         private AsnWriter EncodeSubjectPublicKeyInfo()
