@@ -569,11 +569,11 @@ inline bool genSmallTypeCanRepresentValue(var_types type, ssize_t value)
 extern const BYTE genTypeSizes[TYP_COUNT];
 
 template <class T>
-inline unsigned genTypeSize(T type)
+inline unsigned genTypeSize(T value)
 {
-    assert((unsigned)TypeGet(type) < _countof(genTypeSizes));
+    assert((unsigned)TypeGet(value) < _countof(genTypeSizes));
 
-    return genTypeSizes[TypeGet(type)];
+    return genTypeSizes[TypeGet(value)];
 }
 
 /*****************************************************************************
@@ -584,11 +584,12 @@ inline unsigned genTypeSize(T type)
 
 extern const BYTE genTypeStSzs[TYP_COUNT];
 
-inline unsigned genTypeStSz(var_types type)
+template <class T>
+inline unsigned genTypeStSz(T value)
 {
-    assert((unsigned)type < _countof(genTypeStSzs));
+    assert((unsigned)TypeGet(value) < _countof(genTypeStSzs));
 
-    return genTypeStSzs[type];
+    return genTypeStSzs[TypeGet(value)];
 }
 
 /*****************************************************************************
@@ -604,64 +605,16 @@ inline unsigned genTypeStSz(var_types type)
 
 extern const BYTE genActualTypes[TYP_COUNT];
 
-inline var_types genActualType(var_types type)
+template <class T>
+inline var_types genActualType(T value)
 {
     /* Spot check to make certain the table is in synch with the enum */
-
     assert(genActualTypes[TYP_DOUBLE] == TYP_DOUBLE);
     assert(genActualTypes[TYP_REF] == TYP_REF);
 
-    assert((unsigned)type < sizeof(genActualTypes));
-    return (var_types)genActualTypes[type];
-}
+    assert((unsigned)TypeGet(value) < sizeof(genActualTypes));
 
-/*****************************************************************************/
-
-inline var_types genUnsignedType(var_types type)
-{
-    /* Force signed types into corresponding unsigned type */
-
-    switch (type)
-    {
-        case TYP_BYTE:
-            type = TYP_UBYTE;
-            break;
-        case TYP_SHORT:
-            type = TYP_USHORT;
-            break;
-        case TYP_INT:
-            type = TYP_UINT;
-            break;
-        case TYP_LONG:
-            type = TYP_ULONG;
-            break;
-        default:
-            break;
-    }
-
-    return type;
-}
-
-/*****************************************************************************/
-
-inline var_types genSignedType(var_types type)
-{
-    /* Force non-small unsigned type into corresponding signed type */
-    /* Note that we leave the small types alone */
-
-    switch (type)
-    {
-        case TYP_UINT:
-            type = TYP_INT;
-            break;
-        case TYP_ULONG:
-            type = TYP_LONG;
-            break;
-        default:
-            break;
-    }
-
-    return type;
+    return (var_types)genActualTypes[TypeGet(value)];
 }
 
 /*****************************************************************************
@@ -1412,8 +1365,9 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 
 inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
 {
-    GenTreeCast* res = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
-    return res;
+    GenTreeCast* cast = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
+
+    return cast;
 }
 
 inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
@@ -1425,9 +1379,10 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
     /* Make a big node first and then change it to be GT_CAST */
 
-    GenTreeCast* res =
+    GenTreeCast* cast =
         new (this, LargeOpOpcode()) GenTreeCast(typ, op1, fromUnsigned, castType DEBUGARG(/*largeNode*/ true));
-    return res;
+
+    return cast;
 }
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
