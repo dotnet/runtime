@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -69,7 +70,7 @@ namespace System.Security.Cryptography.Xml.Tests
         private static string xmlDSA = "<DSAKeyValue><P>" + dsaP + "</P><Q>" + dsaQ + "</Q><G>" + dsaG + "</G><Y>" + dsaY + "</Y></DSAKeyValue>";
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void DSAKeyValue()
         {
             using (DSA key = DSA.Create())
@@ -148,7 +149,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void Complex()
         {
             KeyInfoName name = new KeyInfoName();
@@ -199,7 +200,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void ImportKeyNode()
         {
             string keyName = "Mono::";

@@ -3585,7 +3585,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     // force the fromType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
     {
-        fromType = genUnsignedType(fromType);
+        fromType = varTypeToUnsigned(fromType);
     }
 
     // If we have a cast involving floating point types, then bail.

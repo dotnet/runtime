@@ -604,6 +604,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overridable Overloads Sub Lock()
@@ -612,6 +613,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overridable Overloads Sub Unlock()
@@ -619,6 +621,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overridable Overloads Sub Lock(ByVal Record As Long)
@@ -630,6 +633,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overridable Overloads Sub Unlock(ByVal Record As Long)
@@ -641,6 +645,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overridable Overloads Sub Lock(ByVal RecordStart As Long, ByVal RecordEnd As Long)
@@ -652,6 +657,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overridable Overloads Sub Unlock(ByVal RecordStart As Long, ByVal RecordEnd As Long)

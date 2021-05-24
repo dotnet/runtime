@@ -345,6 +345,7 @@ namespace System.Security
             return c.ToString();
         }
 
+        [return: NotNullIfNotNull("str")]
         public static string? Escape(string? str)
         {
             if (str == null)
