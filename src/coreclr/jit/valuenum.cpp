@@ -770,7 +770,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
 
             case VNF_MUL_OVF:
             case VNF_MUL_UN_OVF:
-                assert(!CheckedOps::MulOverflows(v0, v1, vnf == VNF_SUB_UN_OVF));
+                assert(!CheckedOps::MulOverflows(v0, v1, vnf == VNF_MUL_UN_OVF));
                 return v0 * v1;
 
             default:
