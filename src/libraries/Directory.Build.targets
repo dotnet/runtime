@@ -146,6 +146,13 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
+  <Import Sdk="Microsoft.DotNet.PackageValidation" Project="Sdk.targets" Condition="'$(IsSourceProject)' == 'true' and !Exists('$(PkgProjPath)')" />
+
+  <PropertyGroup>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <EnablePackageBaselineValidation Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj' and '$(EnablePackageBaselineValidation)' == ''">true</EnablePackageBaselineValidation>
+  </PropertyGroup>
+
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>

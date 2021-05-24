@@ -6,6 +6,8 @@
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <IsSourcePackage>true</IsSourcePackage>
+    <!-- This is non-shipping package. -->
+    <EnablePackageBaselineValidation>false</EnablePackageBaselineValidation>
     <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
 
