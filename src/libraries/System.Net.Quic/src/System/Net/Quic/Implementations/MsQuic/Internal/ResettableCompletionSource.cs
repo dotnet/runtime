@@ -10,7 +10,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     /// A resettable completion source which can be completed multiple times.
     /// Used to make methods async between completed events and their associated async method.
     /// </summary>
-    internal class ResettableCompletionSource<T> : IValueTaskSource<T>, IValueTaskSource
+    internal sealed class ResettableCompletionSource<T> : IValueTaskSource<T>, IValueTaskSource
     {
         private ManualResetValueTaskSourceCore<T> _valueTaskSource;
 

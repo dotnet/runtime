@@ -51,9 +51,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            // Note that there's no such thing as ressetable TCS, so we need reallocate the TCS every time we set the result.
+            // Note that there's no such thing as resetable TCS, so we cannot reuse the same instance after we've set the result.
             // We also cannot use solutions like ManualResetValueTaskSourceCore, since we can have multiple waiters on the same TCS.
-            // To avoid as much as possible allocations, we keep the TCSes null until someone explicitely asks for them in WaitForAvailableStreamsAsync.
+            // As a result, we allocate a new TCS when needed, which is when someone explicitely asks for them in WaitForAvailableStreamsAsync.
             public TaskCompletionSource? NewUnidirectionalStreamsAvailable;
             public TaskCompletionSource? NewBidirectionalStreamsAvailable;
 
@@ -194,6 +194,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 state.NewUnidirectionalStreamsAvailable?.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
                 state.NewBidirectionalStreamsAvailable?.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+                state.NewUnidirectionalStreamsAvailable = null;
+                state.NewBidirectionalStreamsAvailable = null;
             }
 
             return MsQuicStatusCodes.Success;
