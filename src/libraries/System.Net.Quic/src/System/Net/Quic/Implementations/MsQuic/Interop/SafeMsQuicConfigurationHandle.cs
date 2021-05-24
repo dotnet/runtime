@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -15,6 +16,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal sealed class SafeMsQuicConfigurationHandle : SafeHandle
     {
+        private static readonly FieldInfo _contextCertificate = typeof(SslStreamCertificateContext).GetField("Certificate", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo _contextChain= typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
         public override bool IsInvalid => handle == IntPtr.Zero;
 
         private SafeMsQuicConfigurationHandle()
@@ -31,18 +35,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             // TODO: lots of ClientAuthenticationOptions are not yet supported by MsQuic.
-            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
+            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: null, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
         }
 
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicListenerOptions options)
         {
             // TODO: lots of ServerAuthenticationOptions are not yet supported by MsQuic.
-            return Create(options, QUIC_CREDENTIAL_FLAGS.NONE, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ApplicationProtocols);
+            return Create(options, QUIC_CREDENTIAL_FLAGS.NONE, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ServerCertificateContext, options.ServerAuthenticationOptions?.ApplicationProtocols);
         }
 
         // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.
         //       Consider moving bigger logic like this outside of constructor call chains.
-        private static unsafe SafeMsQuicConfigurationHandle Create(QuicOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, List<SslApplicationProtocol>? alpnProtocols)
+        private static unsafe SafeMsQuicConfigurationHandle Create(QuicOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, SslStreamCertificateContext? certificateContext, List<SslApplicationProtocol>? alpnProtocols)
         {
             // TODO: some of these checks should be done by the QuicOptions type.
             if (alpnProtocols == null || alpnProtocols.Count == 0)
@@ -62,7 +66,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             if ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0)
             {
-                if (certificate == null)
+                if (certificate == null && certificateContext == null)
                 {
                     throw new Exception("Server must provide certificate");
                 }
@@ -101,6 +105,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             uint status;
             SafeMsQuicConfigurationHandle? configurationHandle;
+            X509Certificate2[]? intermediates = null;
 
             MemoryHandle[]? handles = null;
             QuicBuffer[]? buffers = null;
@@ -121,6 +126,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 CredentialConfig config = default;
                 config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
+                if (certificateContext != null)
+                {
+                    certificate = (X509Certificate2?) _contextCertificate.GetValue(certificateContext);
+                    intermediates = (X509Certificate2[]?) _contextChain.GetValue(certificateContext);
+
+                    if (certificate == null || intermediates == null)
+                    {
+                        throw new ArgumentException(nameof(certificateContext));
+                    }
+                }
+
                 if (certificate != null)
                 {
                     if (OperatingSystem.IsWindows())
@@ -132,7 +148,24 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     else
                     {
                         CredentialConfigCertificatePkcs12 pkcs12Config;
-                        byte[] asn1 = certificate.Export(X509ContentType.Pkcs12);
+                        byte[] asn1;
+
+                        if (intermediates?.Length > 0)
+                        {
+                            X509Certificate2Collection collection = new X509Certificate2Collection();
+                            collection.Add(certificate);
+                            for (int i= 0; i < intermediates?.Length; i++)
+                            {
+                                collection.Add(intermediates[i]);
+                            }
+
+                            asn1 = collection.Export(X509ContentType.Pkcs12)!;
+                        }
+                        else
+                        {
+                            asn1 = certificate.Export(X509ContentType.Pkcs12);
+                        }
+
                         fixed (void* ptr = asn1)
                         {
                             pkcs12Config.Asn1Blob = (IntPtr)ptr;
