@@ -461,6 +461,11 @@ namespace System.IO.Tests
 
         public static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
         {
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()) // OSes that don't support Process.Start()
+            {
+                return false;
+            }
+            
             Process symLinkProcess = new Process();
             if (OperatingSystem.IsWindows())
             {
