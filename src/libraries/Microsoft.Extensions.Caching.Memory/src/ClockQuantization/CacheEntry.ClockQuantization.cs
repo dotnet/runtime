@@ -10,21 +10,11 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     internal partial class CacheEntry : ICacheEntry
     {
-        private long? _slidingExpirationClockOffsetUnits;
+        internal long? SlidingExpirationClockOffsetUnits { [MethodImpl(MethodImplOptions.AggressiveInlining)] get; private set; }
 
+        internal Internal.ClockQuantization.LazyClockOffsetSerialPosition LastAccessedClockOffsetSerialPosition;
 
-        private Internal.ClockQuantization.LazyClockOffsetSerialPosition _lastAccessedClockOffsetSerialPosition;
-        internal Internal.ClockQuantization.LazyClockOffsetSerialPosition LastAccessedClockOffsetSerialPosition
-        {
-            get => _lastAccessedClockOffsetSerialPosition;
-            set
-            {
-                _lastAccessedClockOffsetSerialPosition = value;
-            }
-        }
-
-
-        private long? _absoluteExpirationClockOffset;
+        internal long? AbsoluteExpirationClockOffset;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,37 +24,48 @@ namespace Microsoft.Extensions.Caching.Memory
                 || (_tokens != null && _tokens.CheckForExpiredTokens(this));
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool CheckForExpiredTime(ref Internal.ClockQuantization.LazyClockOffsetSerialPosition now)
         {
-            var absoluteExpirationUndecided = AbsoluteExpiration.HasValue;
+            return CheckForExpiredTime(ref now, AbsoluteExpirationClockOffset.HasValue, SlidingExpirationClockOffsetUnits.HasValue);
+        }
 
-            if (!absoluteExpirationUndecided)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool CheckExpired(ref Internal.ClockQuantization.LazyClockOffsetSerialPosition now, bool absoluteExpirationUndecided, bool slidingExpirationUndecided)
+            => _state.IsExpired
+                || CheckForExpiredTime(ref now, absoluteExpirationUndecided, slidingExpirationUndecided)
+                || (_tokens != null && _tokens.CheckForExpiredTokens(this));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool CheckForExpiredTime(ref Internal.ClockQuantization.LazyClockOffsetSerialPosition now, bool absoluteExpirationUndecided, bool slidingExpirationUndecided)
+        {
+            if (!absoluteExpirationUndecided && !slidingExpirationUndecided)
             {
-                if (!_slidingExpirationClockOffsetUnits.HasValue)
-                {
-                    return false;
-                }
+                return false;
             }
 
-            var slidingExpirationUndecided = _slidingExpirationClockOffsetUnits.HasValue;
+            return FullCheckForExpiredTime(ref now, absoluteExpirationUndecided, slidingExpirationUndecided);
+        }
 
-            if (now.IsExact)
+        private bool FullCheckForExpiredTime(ref Internal.ClockQuantization.LazyClockOffsetSerialPosition now, bool absoluteExpirationUndecided, bool slidingExpirationUndecided)
+        {
+            if (!now.IsExact)
             {
-                return ExactFullCheckForExpiredTime(now.ClockOffset, absoluteExpirationUndecided, slidingExpirationUndecided);
+                return IntervalBasedFullCheckForExpiredTime(ref now, absoluteExpirationUndecided, slidingExpirationUndecided);
             }
 
-            return IntervalBasedFullCheckForExpiredTime(ref now, absoluteExpirationUndecided, slidingExpirationUndecided);
+            return ExactFullCheckForExpiredTime(now.ClockOffset, absoluteExpirationUndecided, slidingExpirationUndecided);
         }
 
         private bool ExactFullCheckForExpiredTime(long offset, bool absoluteExpirationUndecided, bool slidingExpirationUndecided)
         {
-            if (absoluteExpirationUndecided && offset >= _absoluteExpirationClockOffset!.Value)
+            if (absoluteExpirationUndecided && offset >= AbsoluteExpirationClockOffset!.Value)
             {
                 SetExpired(EvictionReason.Expired);
                 return true;
             }
 
-            if (slidingExpirationUndecided && ((offset - _lastAccessedClockOffsetSerialPosition.ClockOffset) >= _slidingExpirationClockOffsetUnits!.Value))
+            if (slidingExpirationUndecided && ((offset - LastAccessedClockOffsetSerialPosition.ClockOffset) >= SlidingExpirationClockOffsetUnits!.Value))
             {
                 SetExpired(EvictionReason.Expired);
                 return true;
@@ -83,7 +84,7 @@ namespace Microsoft.Extensions.Caching.Memory
             var absoluteExpiresAtOffset = default(long);
             if (absoluteExpirationUndecided)
             {
-                absoluteExpiresAtOffset = _absoluteExpirationClockOffset!.Value;
+                absoluteExpiresAtOffset = AbsoluteExpirationClockOffset!.Value;
                 if (IntervalCheckForExpiredTime(nextMetronomicOffset, referenceOffset, absoluteExpiresAtOffset, ref absoluteExpirationUndecided))
                 {
                     SetExpired(EvictionReason.Expired);
@@ -95,7 +96,7 @@ namespace Microsoft.Extensions.Caching.Memory
             var slidingExpiresAtOffset = default(long);
             if (slidingExpirationUndecided)
             {
-                slidingExpiresAtOffset = _lastAccessedClockOffsetSerialPosition.ClockOffset + _slidingExpirationClockOffsetUnits!.Value;
+                slidingExpiresAtOffset = LastAccessedClockOffsetSerialPosition.ClockOffset + SlidingExpirationClockOffsetUnits!.Value;
                 if (IntervalCheckForExpiredTime(nextMetronomicOffset, referenceOffset, slidingExpiresAtOffset, ref slidingExpirationUndecided))
                 {
                     SetExpired(EvictionReason.Expired);
@@ -122,7 +123,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             // We need an exact position for unexpired entries with sliding expiration (to properly update last accessed) and ensure proper LRU ordering as we go.
-            if (_slidingExpirationClockOffsetUnits.HasValue)
+            if (SlidingExpirationClockOffsetUnits.HasValue)
             {
                 quantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: true);
             }
