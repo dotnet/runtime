@@ -27,7 +27,7 @@ build.cmd/sh -subset libs.tests -test -c Release
 
 - The following builds clr in release, libs in debug and runs all tests:
 ```
-build.cmd/sh -subset clr+libs.tests -test -rc Release
+build.cmd/sh -subset clr+libs+libs.tests -test -rc Release
 ```
 
 - The following builds mono and libs for x86 architecture and runs all tests:
