@@ -46,6 +46,17 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
+  <Target Name="PreserveEnCAssembliesFromLinking"
+	  Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+	  BeforeTargets="ConfigureTrimming">
+    <ItemGroup>
+      <!-- Don't modify EnC test assemblies -->
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="IncludeDeltasInWasmBundle"
 	  BeforeTargets="PrepareForWasmBuildApp"
 	  Condition="'$(TargetOS)' == 'Browser'">

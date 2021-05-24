@@ -85,8 +85,10 @@ mono_metadata_update_enabled (int *modifiable_assemblies_out)
 
 	if (!inited) {
 		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (val && !g_strcasecmp (val, "debug"))
+		if (val && !g_strcasecmp (val, "debug")) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
 			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		}
 		g_free (val);
 		inited = TRUE;
 	}
