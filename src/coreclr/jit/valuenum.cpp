@@ -3362,8 +3362,6 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
 ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
     ValueNum resultVN = NoVN; // set default result to unsuccessful
-    ValueNum ZeroVN;
-    ValueNum OneVN;
 
     if (typ == TYP_BYREF) // We don't want/need to optimize a zero byref
     {
@@ -3445,6 +3443,9 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // We have ways of evaluating some binary functions.
     if (func < VNF_Boundary)
     {
+        ValueNum ZeroVN;
+        ValueNum OneVN;
+
         switch (genTreeOps(func))
         {
             case GT_ADD:
