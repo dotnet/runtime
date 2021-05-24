@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 
 #if SYSTEM_PRIVATE_CORELIB
 namespace Internal.IO
