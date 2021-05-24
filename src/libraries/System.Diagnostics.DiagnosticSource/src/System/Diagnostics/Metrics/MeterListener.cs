@@ -59,13 +59,35 @@ namespace System.Diagnostics.Metrics
         /// <param name="state">A state object which will be passed back to the callback getting measurements events.</param>
         public void EnableMeasurementEvents(Instrument instrument, object? state = null)
         {
-            if (instrument is null || _disposed)
+            bool enabled = false;
+            List<object?>? states = null;
+
+            lock (Instrument.SyncObject)
             {
-                return;
+                if (instrument is not null && !_disposed && !instrument.Meter.Disposed)
+                {
+                    _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
+                    states = instrument.EnableMeasurement(new ListenerSubscription(this, state));
+                    enabled = true;
+                }
             }
 
-            _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
-            instrument.EnableMeasurement(new ListenerSubscription(this, state));
+            if (enabled)
+            {
+                if (states is not null && MeasurementsCompleted is not null)
+                {
+                    foreach (object? st in states)
+                    {
+                        MeasurementsCompleted?.Invoke(instrument!, st);
+                    }
+                }
+            }
+            else
+            {
+                // The caller trying to enable the measurements but it didn't happen because the meter or the listener is disposed.
+                // We need to send MeasurementsCompleted notification telling this instrument is not enabled for measuring.
+                MeasurementsCompleted?.Invoke(instrument!, state);
+            }
         }
 
         /// <summary>
@@ -75,14 +97,18 @@ namespace System.Diagnostics.Metrics
         /// <returns>The state object originally passed to <see cref="EnableMeasurementEvents" /> method.</returns>
         public object? DisableMeasurementEvents(Instrument instrument)
         {
-            if (instrument is null)
+            object? state =  null;
+            lock (Instrument.SyncObject)
             {
-                return default;
+                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2)) == default)
+                {
+                    return default;
+                }
+
+                state =  instrument.DisableMeasurements(this);
             }
 
-            _enabledMeasurementInstruments.Remove(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
-            object? state =  instrument.DisableMeasurements(this);
-            MeasurementsCompleted?.Invoke(instrument!, state);
+            MeasurementsCompleted?.Invoke(instrument, state);
             return state;
         }
 
@@ -165,34 +191,94 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Dispose()
         {
-            if (_disposed)
+            Dictionary<Instrument, object?>? callbacksArguments = null;
+            Action<Instrument, object?>? measurementsCompleted = MeasurementsCompleted;
+
+            lock (Instrument.SyncObject)
             {
-                return;
+                if (_disposed)
+                {
+                    return;
+                }
+                _disposed = true;
+                s_allStartedListeners.Remove(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2));
+
+                LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
+                if (current is not null && measurementsCompleted is not null)
+                {
+                    callbacksArguments = new Dictionary<Instrument, object?>();
+
+                    do
+                    {
+                        object? state = current.Value.DisableMeasurements(this);
+                        callbacksArguments.Add(current.Value, state);
+                        current = current.Next;
+                    } while (current is not null);
+
+                    _enabledMeasurementInstruments.Clear();
+                }
             }
-            _disposed = true;
-            s_allStartedListeners.Remove(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2));
 
-            LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
-
-            while (current is not null)
+            if (callbacksArguments is not null)
             {
-                object? state = current.Value.DisableMeasurements(this);
-                MeasurementsCompleted?.Invoke(current.Value, state);
-                current = current.Next;
+                foreach (KeyValuePair<Instrument, object?> kvp in callbacksArguments)
+                {
+                    measurementsCompleted?.Invoke(kvp.Key, kvp.Value);
+                }
             }
-
-            _enabledMeasurementInstruments.Clear();
         }
 
-        // NotifyForPublishedInstrument will be called every time publishing instrument
-        internal static void NotifyForPublishedInstrument(Instrument instrument)
+        // Publish is called from Instrument.Publish
+        internal static void Publish(Instrument instrument)
         {
-            LinkedListNode<MeterListener>? current = s_allStartedListeners.First;
+            List<MeterListener>? listeners = null;
+
+            lock (Instrument.SyncObject)
+            {
+                if (instrument is null || instrument.Meter.Disposed || !instrument.Meter.AddInstrument(instrument))
+                {
+                    return;
+                }
+
+                LinkedListNode<MeterListener>? current = s_allStartedListeners.First;
+                if (current is not null)
+                {
+                    listeners = new List<MeterListener>();
+
+                    do
+                    {
+                        // Notify only if the listener didn't already registered this instrument before as the notification should be already happened.
+                        if (!current.Value.IsRegisteredInstrument(instrument))
+                        {
+                            listeners.Add(current.Value);
+                        }
+                        current = current.Next;
+                    } while (current is not null);
+                }
+            }
+
+            if (listeners is not null)
+            {
+                foreach (MeterListener listener in listeners)
+                {
+                    listener.InstrumentPublished?.Invoke(instrument, listener);
+                }
+            }
+        }
+
+        internal bool IsRegisteredInstrument(Instrument instrument)
+        {
+            LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
             while (current is not null)
             {
-                current.Value.InstrumentPublished?.Invoke(instrument, current.Value);
+                if (object.ReferenceEquals(instrument, current.Value))
+                {
+                    return true;
+                }
                 current = current.Next;
             }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

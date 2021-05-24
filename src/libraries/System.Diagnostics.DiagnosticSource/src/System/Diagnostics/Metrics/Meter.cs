@@ -16,7 +16,8 @@ namespace System.Diagnostics.Metrics
     public class Meter : IDisposable
     {
         private static LinkedList<Meter> s_allMeters = new LinkedList<Meter>();
-        private LinkedList<Instrument>? _instruments;
+        private LinkedList<Instrument> _instruments = new LinkedList<Instrument>();
+        internal bool Disposed { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the Meter using the meter name.
@@ -150,34 +151,34 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Dispose()
         {
-            s_allMeters.Remove(this, (meter1, meter2) => object.ReferenceEquals(meter1, meter2));
+            LinkedList<Instrument>? instruments = null;
 
-            if (_instruments is not null)
+            lock (Instrument.SyncObject)
             {
-                LinkedListNode<Instrument>? current = _instruments.First;
+                if (Disposed)
+                {
+                    return;
+                }
+                Disposed = true;
 
+                s_allMeters.Remove(this, (meter1, meter2) => object.ReferenceEquals(meter1, meter2));
+                instruments = _instruments;
+                _instruments = new LinkedList<Instrument>();
+            }
+
+            if (instruments is not null)
+            {
+                LinkedListNode<Instrument>? current = instruments.First;
                 while (current is not null)
                 {
                     current.Value.NotifyForUnpublishedInstrument();
                     current = current.Next;
                 }
-
-                _instruments.Clear();
             }
         }
 
         // AddInstrument will be called when publishing the instrument (i.e. calling Instrument.Publish()).
-        internal void AddInstrument(Instrument instrument)
-        {
-            if (_instruments is null)
-            {
-                Interlocked.CompareExchange(ref _instruments, new LinkedList<Instrument>(), null);
-            }
-
-            Debug.Assert(_instruments is not null);
-
-            _instruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
-        }
+        internal bool AddInstrument(Instrument instrument) => _instruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
 
         // Called from MeterListener.Start
         internal static void NotifyListenerWithAllPublishedInstruments(MeterListener listener)
@@ -188,16 +189,39 @@ namespace System.Diagnostics.Metrics
                 return;
             }
 
-            LinkedListNode<Meter>? current = s_allMeters.First;
-            while (current is not null)
+            List<Instrument>? instruments = null;
+
+            lock (Instrument.SyncObject)
             {
-                LinkedListNode<Instrument>? currentInstrument = current.Value._instruments?.First;
-                while (currentInstrument is not null)
+                LinkedListNode<Meter>? current = s_allMeters.First;
+                if (current is not null)
                 {
-                    instrumentPublished.Invoke(currentInstrument.Value, listener);
-                    currentInstrument = currentInstrument.Next;
+                    instruments = new List<Instrument>();
+
+                    do
+                    {
+                        LinkedListNode<Instrument>? currentInstrument = current.Value._instruments.First;
+                        while (currentInstrument is not null)
+                        {
+                            // Notify only if the listener didn't register this instrument before.
+                            if (!listener.IsRegisteredInstrument(currentInstrument.Value))
+                            {
+                                instruments.Add(currentInstrument.Value);
+                            }
+
+                            currentInstrument = currentInstrument.Next;
+                        }
+                        current = current.Next;
+                    } while (current is not null);
                 }
-                current = current.Next;
+            }
+
+            if (instruments is not null)
+            {
+                foreach (Instrument inst in instruments)
+                {
+                    instrumentPublished.Invoke(inst, listener);
+                }
             }
         }
     }

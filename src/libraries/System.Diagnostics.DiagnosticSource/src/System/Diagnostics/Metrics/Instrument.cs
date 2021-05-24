@@ -19,6 +19,8 @@ namespace System.Diagnostics.Metrics
         internal static KeyValuePair<string, object?>[] EmptyTags { get; } = Array.Empty<KeyValuePair<string, object?>>();
 #endif // NO_ARRAY_EMPTY_SUPPORT
 
+        internal static object SyncObject { get; } = new object();
+
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // LinkedList is thread safe for Add and Remove operations.
         internal LinkedList<ListenerSubscription> _subscriptions = new LinkedList<ListenerSubscription>();
@@ -52,11 +54,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Publish is activating the instrument to start recording measurements and to allow listeners to start listening to such measurements.
         /// </summary>
-        protected void Publish()
-        {
-            Meter.AddInstrument(this);
-            MeterListener.NotifyForPublishedInstrument(this);
-        }
+        protected void Publish() => MeterListener.Publish(this);
 
         /// <summary>
         /// Gets the Meter which created the instrument.
@@ -112,16 +110,21 @@ namespace System.Diagnostics.Metrics
         }
 
         // Called from MeterListener.EnableMeasurementEvents
-        internal void EnableMeasurement(ListenerSubscription subscription)
+        internal List<object?>? EnableMeasurement(ListenerSubscription subscription)
         {
+            List<object?>? states = null;
+
             while (!_subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)))
             {
                 ListenerSubscription oldSubscription = _subscriptions.Remove(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener));
                 if (object.ReferenceEquals(oldSubscription.Listener, subscription.Listener))
                 {
-                    oldSubscription.Listener.MeasurementsCompleted?.Invoke(this, oldSubscription.State);
+                    states ??= new List<object?>();
+                    states.Add(oldSubscription.State);
                 }
             }
+
+            return states;
         }
 
         // Called from MeterListener.DisableMeasurementEvents
