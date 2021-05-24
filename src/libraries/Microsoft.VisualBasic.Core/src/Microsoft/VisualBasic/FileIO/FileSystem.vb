@@ -1537,8 +1537,7 @@ Namespace Microsoft.VisualBasic.FileIO
             ' Remove any separators at the end for the same reason in IsRoot.
             Path1 = Path1.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
             Path2 = Path2.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
-            Return String.Compare(IO.Path.GetPathRoot(Path1), IO.Path.GetPathRoot(Path2),
-                    StringComparison.OrdinalIgnoreCase) = 0
+            Return String.Equals(IO.Path.GetPathRoot(Path1), IO.Path.GetPathRoot(Path2), StringComparison.OrdinalIgnoreCase)
         End Function
 
         ''' <summary>
@@ -1559,8 +1558,7 @@ Namespace Microsoft.VisualBasic.FileIO
             End If
 
             Path = Path.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
-            Return String.Compare(Path, IO.Path.GetPathRoot(Path),
-                    StringComparison.OrdinalIgnoreCase) = 0
+            Return String.Equals(Path, IO.Path.GetPathRoot(Path), StringComparison.OrdinalIgnoreCase)
         End Function
 
         ''' <summary>

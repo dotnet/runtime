@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
+#pragma warning disable CA1844 // lack of ReadAsync(Memory) override in .NET Standard 2.1 build
+
 namespace System.Net.Http
 {
     internal sealed class WinHttpResponseStream : Stream

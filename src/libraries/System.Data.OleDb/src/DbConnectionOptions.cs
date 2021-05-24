@@ -211,7 +211,7 @@ namespace System.Data.Common
                 if (useOdbcRules)
                 {
                     if ((0 < keyValue.Length) &&
-                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (0 == string.Compare(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
+                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (string.Equals(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
                         !ConnectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
                     {
                         // always quote Driver value (required for ODBC Version 2.65 and earlier)

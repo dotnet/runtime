@@ -90,7 +90,7 @@ namespace System.Data.OleDb
         internal OleDbConnectionString(string connectionString, bool validate) : base(connectionString)
         {
             string? prompt = this[KEY.Prompt];
-            PossiblePrompt = ((!ADP.IsEmpty(prompt) && (0 != string.Compare(prompt, VALUES.NoPrompt, StringComparison.OrdinalIgnoreCase)))
+            PossiblePrompt = ((!ADP.IsEmpty(prompt) && (!string.Equals(prompt, VALUES.NoPrompt, StringComparison.OrdinalIgnoreCase)))
                               || !ADP.IsEmpty(this[KEY.WindowHandle]));
 
             if (!IsEmpty)
