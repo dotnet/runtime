@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
 {
-    public class InterpolatedStringBuilderTests
+    public class DefaultInterpolatedStringHandlerTests
     {
         [Theory]
         [InlineData(0, 0)]
@@ -18,51 +18,46 @@ namespace System.Runtime.CompilerServices.Tests
         [InlineData(-16, 1)]
         public void LengthAndHoleArguments_Valid(int literalLength, int formattedCount)
         {
-            InterpolatedStringBuilder.Create(literalLength, formattedCount);
+            new DefaultInterpolatedStringHandler(literalLength, formattedCount);
 
             Span<char> scratch1 = stackalloc char[1];
             foreach (IFormatProvider provider in new IFormatProvider[] { null, new ConcatFormatter(), CultureInfo.InvariantCulture, CultureInfo.CurrentCulture, new CultureInfo("en-US"), new CultureInfo("fr-FR") })
             {
-                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider);
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider);
 
-                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, default);
-                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, scratch1);
-                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, Array.Empty<char>());
-                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, new char[256]);
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, default);
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, scratch1);
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, Array.Empty<char>());
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, new char[256]);
             }
-
-            InterpolatedStringBuilder.Create(literalLength, formattedCount, Span<char>.Empty);
-            InterpolatedStringBuilder.Create(literalLength, formattedCount, scratch1);
-            InterpolatedStringBuilder.Create(literalLength, formattedCount, Array.Empty<char>());
-            InterpolatedStringBuilder.Create(literalLength, formattedCount, new char[256]);
         }
 
         [Fact]
         public void ToString_DoesntClear()
         {
-            InterpolatedStringBuilder builder = InterpolatedStringBuilder.Create(0, 0);
-            builder.AppendLiteral("hi");
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0);
+            handler.AppendLiteral("hi");
             for (int i = 0; i < 3; i++)
             {
-                Assert.Equal("hi", builder.ToString());
+                Assert.Equal("hi", handler.ToString());
             }
-            Assert.Equal("hi", builder.ToStringAndClear());
+            Assert.Equal("hi", handler.ToStringAndClear());
         }
 
         [Fact]
         public void ToStringAndClear_Clears()
         {
-            InterpolatedStringBuilder builder = InterpolatedStringBuilder.Create(0, 0);
-            builder.AppendLiteral("hi");
-            Assert.Equal("hi", builder.ToStringAndClear());
-            Assert.Equal(string.Empty, builder.ToStringAndClear());
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0);
+            handler.AppendLiteral("hi");
+            Assert.Equal("hi", handler.ToStringAndClear());
+            Assert.Equal(string.Empty, handler.ToStringAndClear());
         }
 
         [Fact]
         public void AppendLiteral()
         {
             var expected = new StringBuilder();
-            InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
+            DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0);
 
             foreach (string s in new[] { "", "a", "bc", "def", "this is a long string", "!" })
             {
@@ -77,7 +72,7 @@ namespace System.Runtime.CompilerServices.Tests
         public void AppendFormatted_ReadOnlySpanChar()
         {
             var expected = new StringBuilder();
-            InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
+            DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0);
 
             foreach (string s in new[] { "", "a", "bc", "def", "this is a longer string", "!" })
             {
@@ -108,7 +103,7 @@ namespace System.Runtime.CompilerServices.Tests
         public void AppendFormatted_String()
         {
             var expected = new StringBuilder();
-            InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
+            DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0);
 
             foreach (string s in new[] { null, "", "a", "bc", "def", "this is a longer string", "!" })
             {
@@ -141,7 +136,7 @@ namespace System.Runtime.CompilerServices.Tests
             var provider = new ConcatFormatter();
 
             var expected = new StringBuilder();
-            InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0, provider);
+            DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0, provider);
 
             foreach (string s in new[] { null, "", "a" })
             {
@@ -169,7 +164,7 @@ namespace System.Runtime.CompilerServices.Tests
         public void AppendFormatted_ReferenceTypes()
         {
             var expected = new StringBuilder();
-            InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
+            DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0);
 
             foreach (string rawInput in new[] { null, "", "a", "bc", "def", "this is a longer string", "!" })
             {
@@ -231,22 +226,22 @@ namespace System.Runtime.CompilerServices.Tests
         public void AppendFormatted_ReferenceTypes_CreateProviderFlowed(bool useScratch)
         {
             var provider = new CultureInfo("en-US");
-            InterpolatedStringBuilder builder = useScratch ?
-                InterpolatedStringBuilder.Create(1, 2, provider, stackalloc char[16]) :
-                InterpolatedStringBuilder.Create(1, 2, provider);
+            DefaultInterpolatedStringHandler handler = useScratch ?
+                new DefaultInterpolatedStringHandler(1, 2, provider, stackalloc char[16]) :
+                new DefaultInterpolatedStringHandler(1, 2, provider);
 
             foreach (IHasToStringState tss in new IHasToStringState[] { new FormattableStringWrapper("hello"), new SpanFormattableStringWrapper("hello") })
             {
-                builder.AppendFormatted(tss);
+                handler.AppendFormatted(tss);
                 Assert.Same(provider, tss.ToStringState.LastProvider);
 
-                builder.AppendFormatted(tss, 1);
+                handler.AppendFormatted(tss, 1);
                 Assert.Same(provider, tss.ToStringState.LastProvider);
 
-                builder.AppendFormatted(tss, "X2");
+                handler.AppendFormatted(tss, "X2");
                 Assert.Same(provider, tss.ToStringState.LastProvider);
 
-                builder.AppendFormatted(tss, 1, "X2");
+                handler.AppendFormatted(tss, 1, "X2");
                 Assert.Same(provider, tss.ToStringState.LastProvider);
             }
         }
@@ -257,7 +252,7 @@ namespace System.Runtime.CompilerServices.Tests
             var provider = new ConcatFormatter();
 
             var expected = new StringBuilder();
-            InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0, provider);
+            DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0, provider);
 
             foreach (string s in new[] { null, "", "a" })
             {
@@ -301,7 +296,7 @@ namespace System.Runtime.CompilerServices.Tests
             void Test<T>(T t)
             {
                 var expected = new StringBuilder();
-                InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
+                DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0);
 
                 // struct
                 expected.AppendFormat("{0}", t);
@@ -347,20 +342,20 @@ namespace System.Runtime.CompilerServices.Tests
             void Test<T>(T t)
             {
                 var provider = new CultureInfo("en-US");
-                InterpolatedStringBuilder builder = useScratch ?
-                    InterpolatedStringBuilder.Create(1, 2, provider, stackalloc char[16]) :
-                    InterpolatedStringBuilder.Create(1, 2, provider);
+                DefaultInterpolatedStringHandler handler = useScratch ?
+                    new DefaultInterpolatedStringHandler(1, 2, provider, stackalloc char[16]) :
+                    new DefaultInterpolatedStringHandler(1, 2, provider);
 
-                builder.AppendFormatted(t);
+                handler.AppendFormatted(t);
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
 
-                builder.AppendFormatted(t, 1);
+                handler.AppendFormatted(t, 1);
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
 
-                builder.AppendFormatted(t, "X2");
+                handler.AppendFormatted(t, "X2");
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
 
-                builder.AppendFormatted(t, 1, "X2");
+                handler.AppendFormatted(t, 1, "X2");
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
             }
 
@@ -385,7 +380,7 @@ namespace System.Runtime.CompilerServices.Tests
                 }
 
                 var expected = new StringBuilder();
-                InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0, provider);
+                DefaultInterpolatedStringHandler actual = new DefaultInterpolatedStringHandler(0, 0, provider);
 
                 // struct
                 expected.AppendFormat(provider, "{0}", t);
@@ -422,20 +417,20 @@ namespace System.Runtime.CompilerServices.Tests
         public void Grow_Large(bool useScratch)
         {
             var expected = new StringBuilder();
-            InterpolatedStringBuilder builder = useScratch ?
-                InterpolatedStringBuilder.Create(3, 1000, null, stackalloc char[16]) :
-                InterpolatedStringBuilder.Create(3, 1000);
+            DefaultInterpolatedStringHandler handler = useScratch ?
+                new DefaultInterpolatedStringHandler(3, 1000, null, stackalloc char[16]) :
+                new DefaultInterpolatedStringHandler(3, 1000);
 
             for (int i = 0; i < 1000; i++)
             {
-                builder.AppendFormatted(i);
+                handler.AppendFormatted(i);
                 expected.Append(i);
 
-                builder.AppendFormatted(i, 3);
+                handler.AppendFormatted(i, 3);
                 expected.AppendFormat("{0,3}", i);
             }
 
-            Assert.Equal(expected.ToString(), builder.ToStringAndClear());
+            Assert.Equal(expected.ToString(), handler.ToStringAndClear());
         }
 
         private static void AssertModeMatchesType<T>(T tss) where T : IHasToStringState
