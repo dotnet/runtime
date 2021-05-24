@@ -24,6 +24,7 @@ typedef struct {
 
 MonoCodeManager* mono_code_manager_new     (void);
 MonoCodeManager* mono_code_manager_new_dynamic (void);
+MonoCodeManager* mono_code_manager_new_aot (void);
 void             mono_code_manager_destroy (MonoCodeManager *cman);
 void             mono_code_manager_invalidate (MonoCodeManager *cman);
 void             mono_code_manager_set_read_only (MonoCodeManager *cman);
@@ -33,7 +34,7 @@ void*            mono_code_manager_reserve_align (MonoCodeManager *cman, int siz
 void*            mono_code_manager_reserve (MonoCodeManager *cman, int size);
 void             mono_code_manager_commit  (MonoCodeManager *cman, void *data, int size, int newsize);
 int              mono_code_manager_size    (MonoCodeManager *cman, int *used_size);
-void             mono_code_manager_init (void);
+void             mono_code_manager_init (gboolean no_exec);
 void             mono_code_manager_cleanup (void);
 void             mono_code_manager_install_callbacks (const MonoCodeManagerCallbacks* callbacks);
 
