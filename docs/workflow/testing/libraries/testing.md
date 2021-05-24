@@ -2,7 +2,7 @@
 
 We use the OSS testing framework [xunit](https://github.com/xunit/xunit).
 
-To build the tests and run them you can call the libraries build script.
+To build the tests and run them you can call the libraries build script. For libraries tests to work, you must have built the coreclr or mono runtime for them to run on.
 
 **Examples**
 - The following shows how to build only the tests but not run them:
@@ -10,9 +10,29 @@ To build the tests and run them you can call the libraries build script.
 build.cmd/sh -subset libs.tests
 ```
 
+- The following builds and runs all tests using clr:
+```
+build.cmd/sh -subset clr+libs.tests -test
+```
+
+- The following builds and runs all tests using mono:
+```
+build.cmd/sh -subset mono+libs.tests -test
+```
+
 - The following builds and runs all tests in release configuration:
 ```
 build.cmd/sh -subset libs.tests -test -c Release
+```
+
+- The following builds clr in release, libs in debug and runs all tests:
+```
+build.cmd/sh -subset clr+libs+libs.tests -test -rc Release
+```
+
+- The following builds mono and libs for x86 architecture and runs all tests:
+```
+build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 ```
 
 - The following example shows how to pass extra msbuild properties to ignore tests ignored in CI:
@@ -39,6 +59,11 @@ dotnet build /t:Test
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g.:
 ```cmd
 dotnet build /t:Test /p:XUnitOptions="-class Test.ClassUnderTests"
+```
+
+Which is very useful when you want to run tests as `x86` on a `x64` machine:
+```cmd
+dotnet build /t:Test /p:TargetArchitecture=x86
 ```
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
