@@ -641,7 +641,7 @@ void Lowering::LowerCast(GenTree* tree)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     // We should never see the following casts as they are expected to be lowered
@@ -4877,7 +4877,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (node->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     if (!node->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(srcType)))

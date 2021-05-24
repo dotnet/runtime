@@ -307,7 +307,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // U8 -> R4   = U8 -> R8 -> R4
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -337,7 +337,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -588,7 +588,7 @@ OPTIMIZECAST:
                     srcType = genActualType(srcType);
                 }
 
-                srcType = genUnsignedType(srcType);
+                srcType = varTypeToUnsigned(srcType);
             }
 
             if (srcType == dstType)
