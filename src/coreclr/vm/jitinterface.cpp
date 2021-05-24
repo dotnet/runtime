@@ -11718,7 +11718,7 @@ void CEEJitInfo::recordRelocation(void * location,
             delta = (INT64)(branchTarget - fixupLocation);
             _ASSERTE((delta & 0x3) == 0);          // the low two bits must be zero
 
-            UINT32 branchInstr = *((UINT32*) fixupLocation);
+            UINT32 branchInstr = *((UINT32*) fixupLocationRW);
             branchInstr &= 0xFC000000;  // keep bits 31-26
             _ASSERTE((branchInstr & 0x7FFFFFFF) == 0x14000000);  // Must be B or BL
 
