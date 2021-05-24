@@ -183,20 +183,15 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         // do we need to do it in two steps R -> I, '-> smallType
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
         if (dstSize < genTypeSize(TYP_INT))
         {
-            oper = gtNewCastNodeL(TYP_INT, oper, tree->IsUnsigned(), TYP_INT);
+            oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            // We must not mistreat the original cast, which was from a floating point type,
+            // as from an unsigned type, since we now have a TYP_INT node for the source and
+            // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
+            assert(!tree->IsUnsigned());
         }
-#else
-        if (dstSize < TARGET_POINTER_SIZE)
-        {
-            oper = gtNewCastNodeL(TYP_I_IMPL, oper, false, TYP_I_IMPL);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-        }
-#endif
         else
         {
             /* Note that if we need to use a helper call then we can not morph oper */
