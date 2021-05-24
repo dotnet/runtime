@@ -760,41 +760,17 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
             // Here we handle those that are the same for all integer types.
             case VNF_ADD_OVF:
             case VNF_ADD_UN_OVF:
-                if (sizeof(T) == 8)
-                {
-                    assert(!CheckedOps::LongAddOverflows(v0, v1, vnf == VNF_ADD_UN_OVF));
-                }
-                else
-                {
-                    assert(!CheckedOps::IntAddOverflows(INT32(v0), INT32(v1), vnf == VNF_ADD_UN_OVF));
-                }
-
+                assert(!CheckedOps::AddOverflows(v0, v1, vnf == VNF_ADD_UN_OVF));
                 return v0 + v1;
 
             case VNF_SUB_OVF:
             case VNF_SUB_UN_OVF:
-                if (sizeof(T) == 8)
-                {
-                    assert(!CheckedOps::LongSubOverflows(v0, v1, vnf == VNF_SUB_UN_OVF));
-                }
-                else
-                {
-                    assert(!CheckedOps::IntSubOverflows(INT32(v0), INT32(v1), vnf == VNF_SUB_UN_OVF));
-                }
-
+                assert(!CheckedOps::SubOverflows(v0, v1, vnf == VNF_SUB_UN_OVF));
                 return v0 - v1;
 
             case VNF_MUL_OVF:
             case VNF_MUL_UN_OVF:
-                if (sizeof(T) == 8)
-                {
-                    assert(!CheckedOps::LongMulOverflows(v0, v1, vnf == VNF_MUL_UN_OVF));
-                }
-                else
-                {
-                    assert(!CheckedOps::IntMulOverflows(INT32(v0), INT32(v1), vnf == VNF_MUL_UN_OVF));
-                }
-
+                assert(!CheckedOps::MulOverflows(v0, v1, vnf == VNF_SUB_UN_OVF));
                 return v0 * v1;
 
             default:
@@ -3295,17 +3271,17 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
             switch (func)
             {
                 case VNF_ADD_OVF:
-                    return !CheckedOps::IntAddOverflows(op1, op2, CheckedOps::Signed);
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Signed);
                 case VNF_SUB_OVF:
-                    return !CheckedOps::IntSubOverflows(op1, op2, CheckedOps::Signed);
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Signed);
                 case VNF_MUL_OVF:
-                    return !CheckedOps::IntMulOverflows(op1, op2, CheckedOps::Signed);
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Signed);
                 case VNF_ADD_UN_OVF:
-                    return !CheckedOps::IntAddOverflows(op1, op2, CheckedOps::Unsigned);
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Unsigned);
                 case VNF_SUB_UN_OVF:
-                    return !CheckedOps::IntSubOverflows(op1, op2, CheckedOps::Unsigned);
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Unsigned);
                 case VNF_MUL_UN_OVF:
-                    return !CheckedOps::IntMulOverflows(op1, op2, CheckedOps::Unsigned);
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Unsigned);
                 default:
                     assert(!"Unexpected checked operation in VNEvalShouldFold");
                     return false;
@@ -3319,17 +3295,17 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
             switch (func)
             {
                 case VNF_ADD_OVF:
-                    return !CheckedOps::LongAddOverflows(op1, op2, CheckedOps::Signed);
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Signed);
                 case VNF_SUB_OVF:
-                    return !CheckedOps::LongSubOverflows(op1, op2, CheckedOps::Signed);
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Signed);
                 case VNF_MUL_OVF:
-                    return !CheckedOps::LongMulOverflows(op1, op2, CheckedOps::Signed);
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Signed);
                 case VNF_ADD_UN_OVF:
-                    return !CheckedOps::LongAddOverflows(op1, op2, CheckedOps::Unsigned);
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Unsigned);
                 case VNF_SUB_UN_OVF:
-                    return !CheckedOps::LongSubOverflows(op1, op2, CheckedOps::Unsigned);
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Unsigned);
                 case VNF_MUL_UN_OVF:
-                    return !CheckedOps::LongMulOverflows(op1, op2, CheckedOps::Unsigned);
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Unsigned);
                 default:
                     assert(!"Unexpected checked operation in VNEvalShouldFold");
                     return false;

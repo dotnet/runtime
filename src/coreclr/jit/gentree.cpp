@@ -14740,7 +14740,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 case GT_ADD:
                     itemp = i1 + i2;
-                    if (tree->gtOverflow() && CheckedOps::IntAddOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
+                    if (tree->gtOverflow() && CheckedOps::AddOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
@@ -14749,7 +14749,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     break;
                 case GT_SUB:
                     itemp = i1 - i2;
-                    if (tree->gtOverflow() && CheckedOps::IntSubOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
+                    if (tree->gtOverflow() && CheckedOps::SubOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
@@ -14757,7 +14757,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     break;
                 case GT_MUL:
                     itemp = i1 * i2;
-                    if (tree->gtOverflow() && CheckedOps::IntMulOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
+                    if (tree->gtOverflow() && CheckedOps::MulOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
@@ -14964,7 +14964,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 case GT_ADD:
                     ltemp = lval1 + lval2;
-                    if (tree->gtOverflow() && CheckedOps::LongAddOverflows(lval1, lval2, tree->IsUnsigned()))
+                    if (tree->gtOverflow() && CheckedOps::AddOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
@@ -14973,7 +14973,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 case GT_SUB:
                     ltemp = lval1 - lval2;
-                    if (tree->gtOverflow() && CheckedOps::LongSubOverflows(lval1, lval2, tree->IsUnsigned()))
+                    if (tree->gtOverflow() && CheckedOps::SubOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
@@ -14982,7 +14982,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 case GT_MUL:
                     ltemp = lval1 * lval2;
-                    if (tree->gtOverflow() && CheckedOps::LongMulOverflows(lval1, lval2, tree->IsUnsigned()))
+                    if (tree->gtOverflow() && CheckedOps::MulOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
