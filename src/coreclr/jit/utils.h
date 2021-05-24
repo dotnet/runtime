@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include "safemath.h"
 #include "clr_std/type_traits"
 #include "iallocator.h"
 #include "hostallocator.h"
@@ -787,120 +788,51 @@ const bool Signed   = false;
 // for VNF_ADD_OVF/UN, and would like to continue doing so without casts.
 
 template <class T>
-bool AddOverflows(T firstAddend, T secondAddend, bool unsignedAdd)
+bool AddOverflows(T x, T y, bool unsignedAdd)
 {
     typedef typename std::make_unsigned<T>::type UT;
     assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
 
-    T result = firstAddend + secondAddend;
-
-    // For the SIGNED case - If there is one positive and one negative operand, there can be no overflow.
-    // If both are positive, the result has to be positive, and similary for negatives.
-    // For the UNSIGNED case - If an unsigned operand is bigger than the result then OVF.
     if (unsignedAdd)
     {
-        if ((static_cast<UT>(firstAddend) > static_cast<UT>(result)) ||
-            (static_cast<UT>(secondAddend) > static_cast<UT>(result)))
-        {
-            return true;
-        }
+        return (ClrSafeInt<UT>(static_cast<UT>(x)) + ClrSafeInt<UT>(static_cast<UT>(y))).IsOverflow();
     }
-    else if (((firstAddend < 0) == (secondAddend < 0)) && ((firstAddend < 0) != (result < 0)))
+    else
     {
-        return true;
+        return (ClrSafeInt<T>(x) + ClrSafeInt<T>(y)).IsOverflow();
     }
-
-    return false;
 }
 
 template <class T>
-bool SubOverflows(T minuend, T subtrahend, bool unsignedSub)
+bool SubOverflows(T x, T y, bool unsignedSub)
 {
     typedef typename std::make_unsigned<T>::type UT;
     assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
-
-    T result = minuend - subtrahend;
 
     if (unsignedSub)
     {
-        if (static_cast<UT>(subtrahend) > static_cast<UT>(minuend))
-        {
-            return true;
-        }
+        return (ClrSafeInt<UT>(static_cast<UT>(x)) - ClrSafeInt<UT>(static_cast<UT>(y))).IsOverflow();
     }
     else
     {
-        // If both operands are positive or negative, there can be no overflow.
-        if ((minuend < 0) != (subtrahend < 0))
-        {
-            // If the signs of the operands differ and there was no overflow,
-            // the result will always match the sign of minuend.
-            // Consider A > 0, B > 0:
-            // sign((-A) - (+B)) == sign(-A - B) == -1 == sign(-A).
-            // sign((+A) - (-B)) == sign(A + B) == 1 == sign(A).
-            // This not holding means an overflow has occured.
-            if ((minuend < 0) != (result < 0))
-            {
-                return true;
-            }
-        }
+        return (ClrSafeInt<T>(x) - ClrSafeInt<T>(y)).IsOverflow();
     }
-
-    return false;
 }
 
 template <class T>
-bool MulOverflows(T firstFactor, T secondFactor, bool unsignedMul)
+bool MulOverflows(T x, T y, bool unsignedMul)
 {
     typedef typename std::make_unsigned<T>::type UT;
     assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
 
-    T result = firstFactor * secondFactor;
-
-    // No overflow can occur if either of the operands is 0.
-    if (firstFactor == 0 || secondFactor == 0)
-    {
-        return false;
-    }
-
     if (unsignedMul)
     {
-        if ((static_cast<UT>(result) / static_cast<UT>(secondFactor)) != static_cast<UT>(firstFactor))
-        {
-            return true;
-        }
+        return (ClrSafeInt<UT>(static_cast<UT>(x)) * ClrSafeInt<UT>(static_cast<UT>(y))).IsOverflow();
     }
     else
     {
-        // This does a multiply and then reverses it.
-        // This test works great except for MIN_INT * -1.
-        // In that case we mess up the sign on the result.  Make sure to double check the sign.
-        // if either is 0, then no overflow.
-
-        if (((firstFactor < 0) == (secondFactor < 0)) && (result < 0))
-        {
-            return true;
-        }
-        if (((firstFactor < 0) != (secondFactor < 0)) && (result > 0))
-        {
-            return true;
-        }
-
-        // TODO-Amd64-Unix: Remove the code that disables optimizations for GenTree::gtFoldExprConst
-        // when the clang optimizer is fixed and/or the method implementation is refactored in a simpler code.
-        // There is a bug in the clang-3.5 optimizer. The issue is that in release build the
-        // optimizer is mistyping (or just wrongly decides to use 32 bit operation for a corner
-        // case of MIN_LONG) the args of the (result / secondFactor) to int (it does a 32 bit div
-        // operation instead of 64 bit.). For the case of firstFactor and secondFactor equal to MIN_LONG
-        // (0x8000000000000000) this results in raising a SIGFPE.
-        // Optimizations disabled for now. See compiler.h.
-        if ((result / secondFactor) != firstFactor)
-        {
-            return true;
-        }
+        return (ClrSafeInt<T>(x) * ClrSafeInt<T>(y)).IsOverflow();
     }
-
-    return false;
 }
 
 bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned);
