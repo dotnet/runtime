@@ -3207,6 +3207,12 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // `fgUpdateFlowGraph` has been called with `doTailDuplication` set to true, and the
     // backend always calls `fgUpdateFlowGraph` with `doTailDuplication` set to false.
     assert(!block->IsLIR());
+    
+    // The optimization doesn't make sense in this case
+    if (target->bbWeight == 0.0)
+    {
+        return false;
+    }
 
     // See https://github.com/dotnet/runtime/pull/50490#pullrequestreview-625700642
     //
