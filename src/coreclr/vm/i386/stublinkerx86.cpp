@@ -5286,8 +5286,7 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
             *(void**)GetBase() = (BYTE*)pMD - (iMethodDescChunkIndex * MethodDesc::ALIGNMENT);
     }
 
-    MethodDesc* pPrecodeMD = (MethodDesc*)GetMethodDesc();
-    _ASSERTE((TADDR)pPrecodeMD == (TADDR)pMD);
+    _ASSERTE(GetMethodDesc() == (TADDR)pMD);
 
     PCODE target = (PCODE)GetEEFuncEntryPoint(PrecodeFixupThunk);
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS

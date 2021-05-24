@@ -11196,29 +11196,30 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
 }
 
 /*********************************************************************/
-void CEEJitInfo::WriteCode()
+void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
 
+#ifdef USE_INDIRECT_CODEHEADER
     if (m_pRealCodeHeader != NULL)
     {
         // Restore the read only version of the real code header
         m_CodeHeaderRW->SetRealCodeHeader(m_pRealCodeHeader);
         m_pRealCodeHeader = NULL;
     }
+#endif // USE_INDIRECT_CODEHEADER
 
-//    memcpy((void*)m_CodeHeader->GetCodeStartAddress(), m_codeWriteBuffer, m_codeWriteBufferSize);
     memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
     delete [] (BYTE*)m_CodeHeaderRW;
     m_CodeHeaderRW = NULL;
-    // delete [] m_codeWriteBuffer;
-    // m_codeWriteBuffer = NULL;
-
     m_codeWriteBufferSize = 0;
 
+    // Now that the code header was written to the final location, publish the code via the nibble map
+    jitMgr->NibbleMapSetUnlocked(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), TRUE);
+    m_pCodeHeap = NULL;
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find
@@ -11500,8 +11501,6 @@ void CEEJitInfo::allocUnwindInfo (
 
     UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) &(m_theUnwindBlock[m_usedUnwindSize]);
     UNWIND_INFO * pUnwindInfoRW = (UNWIND_INFO *)((BYTE*)pUnwindInfo + m_writeableOffset);
-
-    uint32_t prevUsedUnwindSize = m_usedUnwindSize;
 
     m_usedUnwindSize += unwindSize;
 
@@ -12303,14 +12302,19 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pRealCodeHeader
-#ifdef FEATURE_EH_FUNCLETS
-                                           , m_totalUnwindInfos
-                                           , &m_moduleBase
+    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+#ifdef USE_INDIRECT_CODEHEADER
+                          , &m_pRealCodeHeader
 #endif
-                                           );
+#ifdef FEATURE_EH_FUNCLETS
+                          , m_totalUnwindInfos
+#endif
+                          );
 
-//    m_codeWriteBufferSize = totalSize.Value();
+#ifdef FEATURE_EH_FUNCLETS
+    m_moduleBase = m_pCodeHeap->GetModuleBase();
+#endif
+
     BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
     m_writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
@@ -13318,7 +13322,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
         if (SUCCEEDED(res))
         {
-            jitInfo.WriteCode();
+            jitInfo.WriteCode(jitMgr);
         }
         else
         {

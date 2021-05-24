@@ -2492,7 +2492,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 
 void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
                                  size_t header, size_t blockSize, unsigned align,
-                                 HeapList ** ppCodeHeap, size_t* pAllocatedSize)
+                                 HeapList ** ppCodeHeap)
 {
     CONTRACT(void *) {
         THROWS;
@@ -2501,12 +2501,7 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
         POSTCONDITION((RETVAL != NULL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
-    size_t allocatedSize = header+blockSize+(align-1)+pInfo->getReserveForJumpStubs(); 
-    if (pAllocatedSize != NULL)
-    {
-        *pAllocatedSize = allocatedSize - (align - 1);
-    }
-    pInfo->setRequestSize(allocatedSize);
+    pInfo->setRequestSize(header+blockSize+(align-1)+pInfo->getReserveForJumpStubs());
 
     void *      mem         = NULL;
     HeapList * pCodeHeap    = NULL;
@@ -2597,17 +2592,19 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     RETURN(mem);
 }
 
-void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW, size_t* pAllocatedSize, BYTE** ppRealHeader
-#ifdef FEATURE_EH_FUNCLETS
-                                    , UINT nUnwindInfos
-                                    , TADDR * pModuleBase
+void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
+                             size_t* pAllocatedSize, HeapList** ppCodeHeap
+#ifdef USE_INDIRECT_CODEHEADER
+                           , BYTE** ppRealHeader
 #endif
-                                    )
+#ifdef FEATURE_EH_FUNCLETS
+                           , UINT nUnwindInfos
+#endif
+                           )
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-//        POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACTL_END;
 
     //
@@ -2650,10 +2647,6 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         requestInfo.SetDynamicDomain();
     }
 #endif
-    if (reserveForJumpStubs != 0)
-    {
-        __debugbreak();
-    }
     requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
 
 #if defined(USE_INDIRECT_CODEHEADER)
@@ -2673,11 +2666,9 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        HeapList *pCodeHeap = NULL;
-
-        TADDR pCode = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), totalSize, alignment, &pCodeHeap, pAllocatedSize);
-
-        _ASSERTE(pCodeHeap);
+        *ppCodeHeap = NULL;
+        TADDR pCode = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), totalSize, alignment, ppCodeHeap);
+        _ASSERTE(*ppCodeHeap);
 
         if (pMD->IsLCGMethod())
         {
@@ -2685,13 +2676,11 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         }
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
-//Maybe this is the problem!
-        // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
-        // map so that we don't have to harden readers against uninitialized data.
-        // However because we hold the lock, this initialization should be fast and cheap!
 
         pCodeHdr = ((CodeHeader *)pCode) - 1;
-        pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize]();
+
+        *pAllocatedSize = sizeof(CodeHeader) + totalSize + reserveForJumpStubs;
+        pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
 
 #ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
@@ -2715,17 +2704,9 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdrRW->SetMethodDesc(pMD);
 #ifdef FEATURE_EH_FUNCLETS
         pCodeHdrRW->SetNumberOfUnwindInfos(nUnwindInfos);
-        *pModuleBase = pCodeHeap->GetModuleBase();
 #endif
-        // This needs to happen elsewhere, 
-        // if (requestInfo.IsDynamicDomain())
-        // {
-        //     // We are done setting the real code header members, so set it to the final executable mapping
-        //     pCodeHdrRW->SetRealCodeHeader((BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*)));
-        // }
 
-        NibbleMapSet(pCodeHeap, pCode, TRUE);
-
+#ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
         {
             *ppRealHeader = (BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*));
@@ -2734,6 +2715,7 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         {
             *ppRealHeader = NULL;
         }
+#endif // USE_INDIRECT_CODEHEADER
     }
 
     *ppCodeHeader = pCodeHdr;
@@ -3012,7 +2994,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, CODE_SIZE_ALIGN, &pCodeHeap, NULL);
+        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
         if (mem == NULL)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
@@ -3068,7 +3050,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, alignment, &pCodeHeap, NULL);
+        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, alignment, &pCodeHeap);
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
@@ -3878,6 +3860,18 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 }
 
 #if !defined(DACCESS_COMPILE)
+
+void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapCritSec);
+    NibbleMapSet(pHp, pCode, bSet);
+}
+
 void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
 {
     CONTRACTL {

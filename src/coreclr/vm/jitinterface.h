@@ -626,6 +626,7 @@ protected:
 /*********************************************************************/
 
 class  EEJitManager;
+struct  HeapList;
 struct _hpCodeHdr;
 typedef struct _hpCodeHdr CodeHeader;
 
@@ -711,8 +712,10 @@ public:
         m_CodeHeaderRW = NULL;
 
         m_codeWriteBufferSize = 0;
-
+#ifdef USE_INDIRECT_CODEHEADER
         m_pRealCodeHeader = NULL;
+#endif
+        m_pCodeHeap = NULL;
 
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
@@ -814,8 +817,11 @@ public:
           m_CodeHeader(NULL),
           m_CodeHeaderRW(NULL),
           m_codeWriteBufferSize(0),
+#ifdef USE_INDIRECT_CODEHEADER
           m_pRealCodeHeader(NULL),
+#endif
           m_writeableOffset(0),
+          m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
           m_moduleBase(NULL),
@@ -921,7 +927,7 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
-    void WriteCode();
+    void WriteCode(EEJitManager * jitMgr);
 
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
@@ -950,8 +956,11 @@ protected :
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
     CodeHeader*             m_CodeHeaderRW;
     size_t                  m_codeWriteBufferSize;
+#ifdef USE_INDIRECT_CODEHEADER
     BYTE*                   m_pRealCodeHeader;
+#endif
     size_t                  m_writeableOffset;
+    HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
