@@ -23,10 +23,6 @@ parameters:
             
 
 steps:
-- ${{ if ne( parameters.osGroup, 'windows') }}:
-  - bash: |
-          echo $(condition)
-          echo $[variables.condition]
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
