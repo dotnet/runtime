@@ -706,7 +706,6 @@ public:
         } CONTRACTL_END;
 
         m_CodeHeader = NULL;
-        m_writeableOffset = 0;
         
         delete [] (BYTE*)m_CodeHeaderRW;
         m_CodeHeaderRW = NULL;
@@ -820,7 +819,6 @@ public:
 #ifdef USE_INDIRECT_CODEHEADER
           m_pRealCodeHeader(NULL),
 #endif
-          m_writeableOffset(0),
           m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
@@ -959,7 +957,6 @@ protected :
 #ifdef USE_INDIRECT_CODEHEADER
     BYTE*                   m_pRealCodeHeader;
 #endif
-    size_t                  m_writeableOffset;
     HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS

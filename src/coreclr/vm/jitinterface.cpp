@@ -11499,8 +11499,10 @@ void CEEJitInfo::allocUnwindInfo (
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
     _ASSERTE(IS_ALIGNED(pRuntimeFunction, sizeof(DWORD)));
 
+
+    size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
     UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) &(m_theUnwindBlock[m_usedUnwindSize]);
-    UNWIND_INFO * pUnwindInfoRW = (UNWIND_INFO *)((BYTE*)pUnwindInfo + m_writeableOffset);
+    UNWIND_INFO * pUnwindInfoRW = (UNWIND_INFO *)((BYTE*)pUnwindInfo + writeableOffset);
 
     m_usedUnwindSize += unwindSize;
 
@@ -12316,17 +12318,17 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 #endif
 
     BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
-    m_writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
+    size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
     *codeBlock = current;
-    *codeBlockRW = current + m_writeableOffset;
+    *codeBlockRW = current + writeableOffset;
     current += codeSize;
 
     if (pArgs->roDataSize > 0)
     {
         current = (BYTE *)ALIGN_UP(current, roDataAlignment);
         pArgs->roDataBlock = current;
-        pArgs->roDataBlockRW = current + m_writeableOffset;
+        pArgs->roDataBlockRW = current + writeableOffset;
         current += pArgs->roDataSize;
     }
     else
