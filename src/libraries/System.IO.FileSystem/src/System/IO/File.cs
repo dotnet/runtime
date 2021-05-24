@@ -21,7 +21,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public static class File
+    public static partial class File
     {
         private const int MaxByteArrayLength = 0x7FFFFFC7;
         private static Encoding? s_UTF8NoBOM;
@@ -109,39 +109,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
 
             FileSystem.DeleteFile(Path.GetFullPath(path));
-        }
-
-        // Tests whether a file exists. The result is true if the file
-        // given by the specified path exists; otherwise, the result is
-        // false.  Note that if path describes a directory,
-        // Exists will return true.
-        public static bool Exists([NotNullWhen(true)] string? path)
-        {
-            try
-            {
-                if (path == null)
-                    return false;
-                if (path.Length == 0)
-                    return false;
-
-                path = Path.GetFullPath(path);
-
-                // After normalizing, check whether path ends in directory separator.
-                // Otherwise, FillAttributeInfo removes it and we may return a false positive.
-                // GetFullPath should never return null
-                Debug.Assert(path != null, "File.Exists: GetFullPath returned null");
-                if (path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]))
-                {
-                    return false;
-                }
-
-                return FileSystem.FileExists(path);
-            }
-            catch (ArgumentException) { }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-
-            return false;
         }
 
         public static FileStream Open(string path, FileMode mode)
@@ -325,86 +292,6 @@ namespace System.IO
                 sw.Write(contents);
             }
         }
-
-        public static byte[] ReadAllBytes(string path)
-        {
-            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
-            {
-                long fileLength = fs.Length;
-                if (fileLength > int.MaxValue)
-                {
-                    throw new IOException(SR.IO_FileTooLong2GB);
-                }
-                else if (fileLength == 0)
-                {
-#if !MS_IO_REDIST
-                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content.
-                    // Thus we need to assume 0 doesn't mean empty.
-                    return ReadAllBytesUnknownLength(fs);
-#endif
-                }
-
-                int index = 0;
-                int count = (int)fileLength;
-                byte[] bytes = new byte[count];
-                while (count > 0)
-                {
-                    int n = fs.Read(bytes, index, count);
-                    if (n == 0)
-                        throw Error.GetEndOfFile();
-                    index += n;
-                    count -= n;
-                }
-                return bytes;
-            }
-        }
-
-#if !MS_IO_REDIST
-        private static byte[] ReadAllBytesUnknownLength(FileStream fs)
-        {
-            byte[]? rentedArray = null;
-            Span<byte> buffer = stackalloc byte[512];
-            try
-            {
-                int bytesRead = 0;
-                while (true)
-                {
-                    if (bytesRead == buffer.Length)
-                    {
-                        uint newLength = (uint)buffer.Length * 2;
-                        if (newLength > MaxByteArrayLength)
-                        {
-                            newLength = (uint)Math.Max(MaxByteArrayLength, buffer.Length + 1);
-                        }
-
-                        byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
-                        buffer.CopyTo(tmp);
-                        if (rentedArray != null)
-                        {
-                            ArrayPool<byte>.Shared.Return(rentedArray);
-                        }
-                        buffer = rentedArray = tmp;
-                    }
-
-                    Debug.Assert(bytesRead < buffer.Length);
-                    int n = fs.Read(buffer.Slice(bytesRead));
-                    if (n == 0)
-                    {
-                        return buffer.Slice(0, bytesRead).ToArray();
-                    }
-                    bytesRead += n;
-                }
-            }
-            finally
-            {
-                if (rentedArray != null)
-                {
-                    ArrayPool<byte>.Shared.Return(rentedArray);
-                }
-            }
-        }
-#endif
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {

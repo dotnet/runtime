@@ -110,6 +110,8 @@
              Link="Common\System\IO\DisableMediaInsertionPrompt.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs"
              Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\File.cs"
+             Link="Common\System\IO\File.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Path.cs"
              Link="System\IO\Path.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Path.Windows.cs"

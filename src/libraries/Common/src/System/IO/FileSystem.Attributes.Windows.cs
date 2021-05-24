@@ -9,7 +9,9 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-#if MS_IO_REDIST
+#if SYSTEM_PRIVATE_CORELIB
+namespace Internal.IO
+#elif MS_IO_REDIST
 namespace Microsoft.IO
 #else
 namespace System.IO

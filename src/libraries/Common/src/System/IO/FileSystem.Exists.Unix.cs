@@ -3,7 +3,11 @@
 
 using System.Diagnostics;
 
+#if SYSTEM_PRIVATE_CORELIB
+namespace Internal.IO
+#else
 namespace System.IO
+#endif
 {
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
     internal static partial class FileSystem

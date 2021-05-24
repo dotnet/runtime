@@ -14,6 +14,8 @@
   </ItemGroup>
   <!-- All targets files -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\IO\File.cs"
+         Link="Common\System\IO\File.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs"
              Link="System\IO\PathInternal.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -218,10 +220,11 @@
              Link="Common\Interop\Unix\Interop.UTimensat.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)System\IO\FileSystem.Exists.Unix.cs"
+             Link="Common\System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="System\IO\FileStatus.Unix.cs" />
-    <Compile Include="System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
   </ItemGroup>
