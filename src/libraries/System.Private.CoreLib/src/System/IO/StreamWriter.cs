@@ -941,8 +941,7 @@ namespace System.IO
                 return Task.CompletedTask;
             }
 
-            Task flushTask = Core(flushStream, flushEncoder, cancellationToken);
-            return flushTask;
+            return Core(flushStream, flushEncoder, cancellationToken);
 
             async Task Core(bool flushStream, bool flushEncoder, CancellationToken cancellationToken)
             {
