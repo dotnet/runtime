@@ -187,7 +187,6 @@ namespace System.Diagnostics
             TrailingNewLine,        // include a trailing new line character
         }
 
-#if !CORERT
         /// <summary>
         /// Builds a readable representation of the stack trace, specifying
         /// the format for backwards compatibility.
@@ -199,6 +198,7 @@ namespace System.Diagnostics
             return sb.ToString();
         }
 
+#if !CORERT
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
         {
             // Passing a default string for "at" in case SR.UsingResourceKeys() is true
