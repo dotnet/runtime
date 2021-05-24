@@ -6,6 +6,7 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="PInvokeDefs.cs" />
     <Compile Include="VariantTest.cs" />
     <Compile Include="VariantTest.BuiltInCom.cs" />
   </ItemGroup>
