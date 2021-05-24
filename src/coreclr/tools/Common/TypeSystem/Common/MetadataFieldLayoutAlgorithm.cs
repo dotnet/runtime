@@ -866,7 +866,8 @@ namespace Internal.TypeSystem
             }
             else if (type.IsValueType)
             {
-                instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
+                LayoutInt sizeAlignment = LayoutInt.Min(alignment, target.GetObjectAlignment(alignment));
+                instanceSize = LayoutInt.AlignUp(instanceSize, sizeAlignment, target);
             }
 
             if (type.IsValueType)

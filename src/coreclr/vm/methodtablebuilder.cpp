@@ -8584,6 +8584,11 @@ MethodTableBuilder::HandleExplicitLayout(
 
     // Instance fields start right after the parent
     S_UINT32 dwInstanceSliceOffset = S_UINT32(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0);
+
+#if !defined(TARGET_64BIT) && !defined(FEATURE_64BIT_ALIGNMENT)
+    instanceSliceAlignment = min(instanceSliceAlignment, TARGET_POINTER_SIZE);
+#endif
+
     dwInstanceSliceOffset.AlignUp(instanceSliceAlignment);
     if (dwInstanceSliceOffset.IsOverflow())
     {

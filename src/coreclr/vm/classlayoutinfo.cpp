@@ -190,13 +190,6 @@ namespace
                 calcTotalSize = fieldEnd;
         }
 
-#if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(TARGET_64BIT)
-        if (LargestAlignmentRequirement > TARGET_POINTER_SIZE)
-        {
-            LargestAlignmentRequirement = TARGET_POINTER_SIZE;
-        }
-#endif
-
         bool useMetadataClassSize = false;
         if (classSizeInMetadata != 0)
         {
@@ -214,13 +207,17 @@ namespace
 
         if (!useMetadataClassSize)
         {
+            uint32_t sizeAlignment = LargestAlignmentRequirement;
+#if !defined(TARGET_64BIT) && !defined(FEATURE_64BIT_ALIGNMENT)
+            sizeAlignment = min(sizeAlignment, TARGET_POINTER_SIZE);
+#endif
             // There was no class size given in metadata, so let's round up to a multiple of the alignment requirement
             // to make array allocations of this structure simple to keep aligned.
-            calcTotalSize += (LargestAlignmentRequirement - calcTotalSize % LargestAlignmentRequirement) % LargestAlignmentRequirement;
+            calcTotalSize += (sizeAlignment - calcTotalSize % sizeAlignment) % sizeAlignment;
 
-            if (calcTotalSize % LargestAlignmentRequirement != 0)
+            if (calcTotalSize % sizeAlignment != 0)
             {
-                if (!SafeAddUINT32(&calcTotalSize, LargestAlignmentRequirement - (calcTotalSize % LargestAlignmentRequirement)))
+                if (!SafeAddUINT32(&calcTotalSize, sizeAlignment - (calcTotalSize % sizeAlignment)))
                     COMPlusThrowOM();
             }
         }
