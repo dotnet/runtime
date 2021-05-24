@@ -27,6 +27,9 @@ bin/
 
 **/Dependencies/*.dll
 
+# Include C++/CLI binaries
+!**/CppCLI/Dependencies/*.dll
+
 # arcade artifacts
 .dotnet
 .packages
