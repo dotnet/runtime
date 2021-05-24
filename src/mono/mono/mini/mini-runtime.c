@@ -4451,6 +4451,15 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mini_debug_options.collect_pagefault_stats)
 		mono_aot_set_make_unreadable (TRUE);
 
+	/* set no-exec before the default ALC is created */
+	if (mono_compile_aot) {
+		/*
+		 * Avoid running managed code when AOT compiling, since the platform
+		 * might only support aot-only execution.
+		 */
+		mono_runtime_set_no_exec (TRUE);
+	}
+
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
@@ -4506,13 +4515,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	register_trampolines (domain);
-
-	if (mono_compile_aot)
-		/*
-		 * Avoid running managed code when AOT compiling, since the platform
-		 * might only support aot-only execution.
-		 */
-		mono_runtime_set_no_exec (TRUE);
 
 	mono_mem_account_register_counters ();
 
