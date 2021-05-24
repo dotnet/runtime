@@ -5794,24 +5794,24 @@ enum RMWStatus
 };
 
 #ifdef DEBUG
-inline const char* RMWStatusString(RMWStatus status)
+inline const char* RMWStatusDescription(RMWStatus status)
 {
     switch (status)
     {
         case STOREIND_RMW_STATUS_UNKNOWN:
-            return "STATUS_UNKNOWN";
+            return "RMW status unknown";
         case STOREIND_RMW_DST_IS_OP1:
-            return "DST_IS_OP1";
+            return "dst candidate is op1";
         case STOREIND_RMW_DST_IS_OP2:
-            return "DST_IS_OP2";
+            return "dst candidate is op2";
         case STOREIND_RMW_UNSUPPORTED_ADDR:
-            return "UNSUPPORTED_ADDR";
+            return "address mode is not supported";
         case STOREIND_RMW_UNSUPPORTED_OPER:
-            return "UNSUPPORTED_OPER";
+            return "oper is not supported";
         case STOREIND_RMW_UNSUPPORTED_TYPE:
-            return "UNSUPPORTED_TYPE";
+            return "type is not supported";
         case STOREIND_RMW_INDIR_UNEQUAL:
-            return "INDIR_UNEQUAL";
+            return "read indir is not equivalent to write indir";
         default:
             unreached();
     }
