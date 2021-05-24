@@ -2651,7 +2651,7 @@ bool LongAddOverflows(int64_t firstAddend, int64_t secondAddend, bool unsignedAd
 
     // For the SIGNED case - If there is one positive and one negative operand, there can be no overflow.
     // If both are positive, the result has to be positive, and similary for negatives.
-    // For the UNSIGNED case - If a UINT32 operand is bigger than the result then OVF.
+    // For the UNSIGNED case - If a UINT64 operand is bigger than the result then OVF.
     if (unsignedAdd)
     {
         if (((uint64_t)firstAddend > (uint64_t)result) || ((uint64_t)secondAddend > (uint64_t)result))
