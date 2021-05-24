@@ -140,6 +140,21 @@ uint32_t
 ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload);
 
 /*
+* Environment variables
+*/
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+
+static
+uint32_t
+ds_rt_get_environment_variable (const ep_char16_t *name,
+								uint32_t valueBufferLength,
+								uint32_t *valueLengthOut,
+								ep_char16_t *valueBuffer);
+
+/*
 * DiagnosticServer.
 */
 

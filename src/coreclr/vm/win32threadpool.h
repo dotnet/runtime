@@ -751,7 +751,7 @@ public:
             DWORD processorNumber = 0;
 
 #ifndef TARGET_UNIX
-	        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+            if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
                 processorNumber = CPUGroupInfo::CalculateCurrentProcessorNumber();
             else
                 // Turns out GetCurrentProcessorNumber can return a value greater than the number of processors reported by

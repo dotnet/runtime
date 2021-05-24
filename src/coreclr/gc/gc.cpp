@@ -23683,6 +23683,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         grow_mark_list_piece();
 #endif //USE_REGIONS
 
+        GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
         num_sizedrefs = GCToEEInterface::GetTotalNumSizedRefHandles();
 
 #ifdef MULTIPLE_HEAPS
@@ -28562,7 +28563,11 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
         region_index, heap_segment_mem (region), survived, 
         ((survived == heap_segment_survived (region)) ? "same as" : "diff from"),
         heap_segment_survived (region)));
+#ifdef MULTIPLE_HEAPS
+    assert (survived <= heap_segment_survived (region));
+#else
     assert (survived == heap_segment_survived (region));
+#endif //MULTIPLE_HEAPS
 #endif //_DEBUG
 
     assert (last_marked_obj_end);
@@ -31727,14 +31732,13 @@ void gc_heap::background_mark_phase ()
             bgc_tuning::record_bgc_sweep_start();
 #endif //BGC_SERVO_TUNING
 
+            GCToEEInterface::BeforeGcScanRoots(max_generation, /* is_bgc */ true, /* is_concurrent */ false);
+
 #ifdef MULTIPLE_HEAPS
             dprintf(3, ("Joining BGC threads after absorb"));
             bgc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
-
-        // give VM a chance to do work
-        GCToEEInterface::GcBeforeBGCSweepWork();
 
         //reset the flag, indicating that the EE no longer expect concurrent
         //marking
@@ -41280,7 +41284,7 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    g_num_active_processors = GCToOSInterface::GetCurrentProcessCpuCount();
+    g_num_active_processors = GCToEEInterface::GetCurrentProcessCpuCount();
 
     if (nhp_from_config)
     {
@@ -41292,7 +41296,7 @@ HRESULT GCHeap::Initialize()
     nhp = ((nhp_from_config == 0) ? g_num_active_processors : nhp_from_config);
 
     nhp = min (nhp, MAX_SUPPORTED_CPUS);
-#ifndef FEATURE_REDHAWK
+
     gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ? 
         !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
 
@@ -41304,12 +41308,7 @@ HRESULT GCHeap::Initialize()
         {
             nhp = min(nhp, num_affinitized_processors);
         }
-#ifndef TARGET_WINDOWS
-        // Limit the GC heaps to the number of processors available in the system.
-        nhp = min (nhp, GCToOSInterface::GetTotalProcessorCount());
-#endif // !TARGET_WINDOWS
     }
-#endif //!FEATURE_REDHAWK
 #endif //MULTIPLE_HEAPS
 
     size_t seg_size = 0;

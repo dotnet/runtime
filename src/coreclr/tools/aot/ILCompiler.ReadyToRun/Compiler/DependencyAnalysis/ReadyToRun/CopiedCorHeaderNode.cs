@@ -150,7 +150,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitReloc(factory.ManifestMetadataTable, RelocType.IMAGE_REL_SYMBOL_SIZE);
 
                 // Flags
-                builder.EmitUInt(0);
+                if (factory.CompositeImageSettings.PublicKey != null)
+                {
+                    const uint COMIMAGE_FLAGS_STRONGNAMESIGNED = 8;
+                    builder.EmitUInt(COMIMAGE_FLAGS_STRONGNAMESIGNED);
+                }
+                else
+                {
+                    builder.EmitUInt(0);
+                }
 
                 // Entrypoint
                 builder.EmitInt(0);
