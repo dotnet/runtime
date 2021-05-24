@@ -13456,10 +13456,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     callNode = varTypeIsFloating(impStackTop().val->TypeGet());
                 }
 
-                // At this point uns, ovf, callNode all set
-
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1);
+
+                // Casts from floating point types must not have GTF_UNSIGNED set.
+                if (varTypeIsFloating(op1))
+                {
+                    uns = false;
+                }
+
+                // At this point uns, ovf, callNode are all set.
 
                 if (varTypeIsSmall(lclTyp) && !ovfl && op1->gtType == TYP_INT && op1->gtOper == GT_AND)
                 {

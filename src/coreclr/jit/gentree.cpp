@@ -11681,7 +11681,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             /* if GTF_UNSIGNED is set then force fromType to an unsigned type */
             if (tree->gtFlags & GTF_UNSIGNED)
             {
-                fromType = genUnsignedType(fromType);
+                fromType = varTypeToUnsigned(fromType);
             }
 
             if (finalType != toType)

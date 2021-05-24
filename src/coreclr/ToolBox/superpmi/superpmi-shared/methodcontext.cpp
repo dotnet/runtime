@@ -5608,8 +5608,11 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                     printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
+                    printf("T %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
@@ -6927,7 +6930,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
                 if (hasEdgeProfile && hasClassProfile && hasLikelyClass)

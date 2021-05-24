@@ -943,7 +943,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return keyAlgorithm switch
                 {
                     Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDsa(certificate) =>
                         ExtractKeyFromPem<ECDsa>(
                             keyPem,
@@ -1013,7 +1013,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return keyAlgorithm switch
                 {
                     Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDsa(certificate) =>
                         ExtractKeyFromEncryptedPem<ECDsa>(
                             keyPem,

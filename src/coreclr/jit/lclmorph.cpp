@@ -641,7 +641,7 @@ private:
             if (Compiler::gtHasCallOnStack(&m_ancestors))
             {
                 varDsc->lvQuirkToLong = true;
-                JITDUMP("Adding a quirk for the storage size of V%02u of type %s", val.LclNum(),
+                JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
                         varTypeName(varDsc->TypeGet()));
             }
         }

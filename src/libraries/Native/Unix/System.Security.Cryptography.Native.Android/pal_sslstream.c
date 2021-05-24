@@ -652,6 +652,12 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 
 int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int32_t* outLen)
 {
+    if (g_SSLEngineGetApplicationProtocol == NULL)
+    {
+        // SSLEngine.getApplicationProtocol() is only supported from API level 29 and above
+        return FAIL;
+    }
+
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (outLen);
 

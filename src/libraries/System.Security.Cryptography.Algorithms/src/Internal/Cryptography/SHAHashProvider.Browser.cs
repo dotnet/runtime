@@ -74,6 +74,12 @@ namespace Internal.Cryptography
 
         public override int HashSizeInBytes => hashSizeInBytes;
 
+        public override void Reset()
+        {
+            buffer = null;
+            impl.Initialize();
+        }
+
         public override void Dispose(bool disposing)
         {
         }

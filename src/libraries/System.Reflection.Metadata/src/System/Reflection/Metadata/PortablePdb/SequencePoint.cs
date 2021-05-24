@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -47,9 +48,9 @@ namespace System.Reflection.Metadata
                    Hash.Combine(EndLine, EndColumn)))));
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is SequencePoint && Equals((SequencePoint)obj);
+            return obj is SequencePoint sequencePoint && Equals(sequencePoint);
         }
 
         public bool Equals(SequencePoint other)
