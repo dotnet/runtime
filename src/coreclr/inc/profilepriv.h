@@ -167,7 +167,7 @@ public:
     ProfilerInfo mainProfilerInfo;
 
     ProfilerInfo notificationOnlyProfilers[MAX_NOTIFICATION_PROFILERS];
-    Volatile<UINT32> notificationProfilerCount;
+    Volatile<LONG> notificationProfilerCount;
 
     EventMask globalEventMask;
 
