@@ -59,7 +59,8 @@
   <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
 
   <UsingTask TaskName="RuntimeConfigParserTask"
-             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
+             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
+             Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
 
   <Target Name="GenerateRuntimeConfig">
     <PropertyGroup>
