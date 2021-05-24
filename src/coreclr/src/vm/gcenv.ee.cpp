@@ -65,9 +65,9 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     // Go through all the only app domain and detach all the *unmarked* RCWs to prevent
     // the RCW cache from resurrecting them.
     ::GetAppDomain()->DetachRCWs();
-#endif // FEATURE_COMINTEROP
 
     Interop::OnAfterGCScanRoots();
+#endif // FEATURE_COMINTEROP
 }
 
 /*
