@@ -155,7 +155,8 @@ namespace Internal.JitInterface
             bool hasTypeHistogram = false;
             foreach (var elem in pgoData)
             {
-                if (elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
+                if (elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount)
                 {
                     // found histogram
                     hasTypeHistogram = true;
@@ -179,7 +180,8 @@ namespace Internal.JitInterface
 
                 for (int i = 0; i < (pgoData.Length); i++)
                 {
-                    if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
+                    if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
+                        pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount)
                     {
                         PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
                         if (newElem.HasValue)
