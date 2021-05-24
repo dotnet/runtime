@@ -87,7 +87,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
                 "%p %p %d %d StoredMethodCode",
                 pMD,
                 codeInfo.GetEntryPoint(),
-                (int)codeInfo.WasTier0Jit(),
+                (int)codeInfo.WasTier0(),
                 (int)codeInfo.JitSwitchedToOptimized()));
         }
 #endif
@@ -131,7 +131,7 @@ MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDes
                     "%p %p %d %d QueryAndRemoveMethodCode",
                     pMethod,
                     codeInfo.GetEntryPoint(),
-                    (int)codeInfo.WasTier0Jit(),
+                    (int)codeInfo.WasTier0(),
                     (int)codeInfo.JitSwitchedToOptimized()));
             }
 #endif
@@ -521,7 +521,9 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
 
 #ifndef DACCESS_COMPILE
 MulticoreJitPrepareCodeConfig::MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
-    PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE), m_wasTier0Jit(false)
+    // Method code that was pregenerated and loaded is recorded in the multi-core JIT profile, so enable multi-core JIT to also
+    // look up pregenerated code to help parallelize the work
+    PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, TRUE), m_wasTier0(false)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -548,9 +550,9 @@ MulticoreJitCodeInfo::MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitP
     _ASSERTE((m_entryPointAndTierInfo & (TADDR)TierInfo::Mask) == 0);
 
 #ifdef FEATURE_TIERED_COMPILATION
-    if (pConfig->WasTier0Jit())
+    if (pConfig->WasTier0())
     {
-        m_entryPointAndTierInfo |= (TADDR)TierInfo::WasTier0Jit;
+        m_entryPointAndTierInfo |= (TADDR)TierInfo::WasTier0;
     }
 
     if (pConfig->JitSwitchedToOptimized())
