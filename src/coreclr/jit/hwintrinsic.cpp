@@ -861,7 +861,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             unsigned int sizeBytes;
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (sizeBytes != 0));
+            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
         }
         else
         {
