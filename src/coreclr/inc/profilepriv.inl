@@ -228,7 +228,7 @@ inline void ProfControlBlock::UpdateGlobalEventMask()
                           },
                           &qwEventMask);
         
-        if (InterlockedCompareExchange64((LONG64 *)&(globalEventMask.m_eventMask), (LONG64)qwEventMask, (LONG64)originalEventMask) == originalEventMask)
+        if ((UINT64)InterlockedCompareExchange64((LONG64 *)&(globalEventMask.m_eventMask), (LONG64)qwEventMask, (LONG64)originalEventMask) == originalEventMask)
         {
             break;
         }
