@@ -21,11 +21,11 @@ partial class Test
         Console.WriteLine($"Built-in COM Disabled?: {builtInComDisabled}");
         try
         {
-            TestByValue(builtInComDisabled);
-            TestByRef(builtInComDisabled);
+            TestByValue(!builtInComDisabled);
+            TestByRef(!builtInComDisabled);
             TestOut();
-            TestFieldByValue(builtInComDisabled);
-            TestFieldByRef(builtInComDisabled);
+            TestFieldByValue(!builtInComDisabled);
+            TestFieldByRef(!builtInComDisabled);
         }
         catch (Exception e)
         {
