@@ -842,7 +842,7 @@ void* NativeObjectWrapperContext::GetRuntimeContext() const noexcept
 
 IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const noexcept
 {
-    return ((_trackerObjectState == TrackerObjectState::NotSet) ? nullptr : _trackerObject);
+    return ((_trackerObjectState == TrackerObjectState::NotSet || _trackerObjectDisconnected) ? nullptr : _trackerObject);
 }
 
 // See TrackerObjectManager::AfterWrapperCreated() for AddRefFromTrackerSource() usage.
