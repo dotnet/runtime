@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.IO;
 using System.Net.Quic;
 using System.Net.Quic.Implementations;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -86,7 +87,7 @@ namespace System.Net.Http
                 _cookieContainer = new CookieContainer();
             }
 
-            return new HttpConnectionSettings()
+            var settings = new HttpConnectionSettings()
             {
                 _allowAutoRedirect = _allowAutoRedirect,
                 _automaticDecompression = _automaticDecompression,
@@ -118,9 +119,16 @@ namespace System.Net.Http
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
-                _plaintextStreamFilter = _plaintextStreamFilter,
-                _quicImplementationProvider = _quicImplementationProvider
+                _plaintextStreamFilter = _plaintextStreamFilter
             };
+
+            // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
+            if (HttpConnectionPool.IsHttp3Supported())
+            {
+                settings._quicImplementationProvider = _quicImplementationProvider;
+            }
+
+            return settings;
         }
 
         private static bool AllowHttp2
@@ -178,6 +186,11 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 
         private byte[]? _http3SettingsFrame;
+
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
     }
 }

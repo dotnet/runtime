@@ -9,15 +9,11 @@ SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
 SET (CMAKE_ASM_MASM_FLAGS                   "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
 
 # Configuration of our libray specs and our directories
-SET (CMAKE_INSTALL_PREFIX                   $ENV{__CMakeBinDir})
 SET (CMAKE_INCLUDE_CURRENT_DIR              ON)
 SET (CMAKE_SHARED_LIBRARY_PREFIX            "")
 
 set(__SharedLinkArgs)
 set(__LinkArgs)
-if ($ENV{__LinkArgs})
-    SET (__LinkArgs $ENV{__LinkArgs})
-endif()
 
 # Force an out of source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
@@ -61,7 +57,7 @@ add_compile_options(/Zl)          # enable debugging information
 add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
 add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
 
-if ($ENV{__BuildArch} STREQUAL "x86")
+if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
 
@@ -113,7 +109,7 @@ endif()
 # Debug build specific flags
 list(INSERT __SharedLinkArgs 0 $<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:/NOVCFEATURE>)
 
-if ($ENV{__BuildArch} STREQUAL "x86_64" OR $ENV{__BuildArch} STREQUAL "amd64")
+if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86_64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "amd64")
     add_definitions(-DTARGET_64BIT=1)
 endif ()
 

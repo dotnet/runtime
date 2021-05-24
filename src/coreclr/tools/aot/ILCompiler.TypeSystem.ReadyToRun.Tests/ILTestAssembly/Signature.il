@@ -29,6 +29,11 @@
   {
      ret
   }
+
+  .method public hidebysig instance int32 modopt([CoreTestAssembly]System.Void) [3,1 ... 4] Method4(int32 modopt(FooModifier)[2 ...,0...8], int32 modopt(FooModifier)[0...,...], int32 [,,,]) cil managed
+  {
+     ret
+  }
 }
 
 .class private auto ansi beforefieldinit Atom

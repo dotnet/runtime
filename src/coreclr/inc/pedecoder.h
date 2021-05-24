@@ -236,7 +236,7 @@ class PEDecoder
     BOOL IsILOnly() const;
     CHECK CheckILOnly() const;
 
-    void LayoutILOnly(void *base, BOOL allowFullPE = FALSE) const;
+    void LayoutILOnly(void *base, bool enableExecution) const;
 
     // Strong name & hashing support
 
@@ -353,7 +353,7 @@ class PEDecoder
     void *GetNativeEntryPoint() const;
 
     // Look up a named symbol in the export directory
-    void *GetExport(LPCSTR exportName) const;
+    PTR_VOID GetExport(LPCSTR exportName) const;
 
 #ifdef _DEBUG
     // Stress mode for relocations

@@ -595,7 +595,10 @@ namespace Internal.TypeSystem.Ecma
                 var module = (ModuleDesc)implementation;
                 string nameSpace = _metadataReader.GetString(exportedType.Namespace);
                 string name = _metadataReader.GetString(exportedType.Name);
-                return module.GetType(nameSpace, name, NotFoundBehavior.ReturnResolutionFailure);
+                MetadataType resolvedType = module.GetType(nameSpace, name, NotFoundBehavior.ReturnResolutionFailure);
+                if (resolvedType == null)
+                    return ModuleDesc.GetTypeResolutionFailure;
+                return resolvedType;
             }
             else
             if (implementation is MetadataType)

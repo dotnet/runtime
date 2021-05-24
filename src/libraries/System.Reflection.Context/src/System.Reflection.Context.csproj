@@ -63,5 +63,6 @@
     <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertyGetter.cs" />
     <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertySetter.cs" />
     <Compile Include="System\Reflection\Context\Virtual\VirtualReturnParameter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
   </ItemGroup>
 </Project>

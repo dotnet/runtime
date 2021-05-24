@@ -113,18 +113,41 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
-        public void IsHiddenAttribute()
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public void IsHiddenAttribute_Windows_OSX()
         {
-            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+            // Windows and MacOS hide a file by setting the hidden attribute
+            IsHiddenAttributeInternal(useDotPrefix: false, useHiddenFlag: true);
+        }
 
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void IsHiddenAttribute_Unix()
+        {
             // Put a period in front to make it hidden on Unix
-            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, "." + GetTestFileName()));
+            IsHiddenAttributeInternal(useDotPrefix: true, useHiddenFlag: false);
+        }
+
+        private void IsHiddenAttributeInternal(bool useDotPrefix, bool useHiddenFlag)
+        {
+            string prefix = useDotPrefix ? "." : "";
+
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+
+            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, prefix + GetTestFileName()));
 
             fileOne.Create().Dispose();
             fileTwo.Create().Dispose();
-            if (PlatformDetection.IsWindows)
-                fileTwo.Attributes = fileTwo.Attributes | FileAttributes.Hidden;
+
+            if (useHiddenFlag)
+            {
+                fileTwo.Attributes |= FileAttributes.Hidden;
+            }
+
+            FileInfo fileCheck = new FileInfo(fileTwo.FullName);
+            Assert.Equal(fileTwo.Attributes, fileCheck.Attributes);
 
             IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
                 testDirectory.FullName,
@@ -132,6 +155,30 @@ namespace System.IO.Tests.Enumeration
                 new EnumerationOptions() { AttributesToSkip = 0 })
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsHidden
+            };
+
+            Assert.Equal(new string[] { fileTwo.FullName }, enumerable);
+        }
+
+        [Fact]
+        public void IsReadOnlyAttribute()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+
+            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+
+            fileOne.Create().Dispose();
+            fileTwo.Create().Dispose();
+
+            fileTwo.Attributes |= FileAttributes.ReadOnly;
+
+            IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
+                 testDirectory.FullName,
+                 (ref FileSystemEntry entry) => entry.ToFullPath(),
+                 new EnumerationOptions() { AttributesToSkip = 0 })
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => (entry.Attributes & FileAttributes.ReadOnly) != 0
             };
 
             Assert.Equal(new string[] { fileTwo.FullName }, enumerable);

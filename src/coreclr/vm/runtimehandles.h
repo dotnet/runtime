@@ -239,6 +239,7 @@ public:
 
     static FCDECL2(MethodDesc*, GetMethodAt, PTR_ReflectClassBaseObject pType, INT32 slot);
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
+    static FCDECL1(INT32, GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pType);
 
     static
     void QCALLTYPE VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
@@ -270,7 +271,7 @@ class RuntimeMethodHandle {
 public:
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
-    static FCDECL5(Object*, InvokeMethod, Object *target, PTRArray *objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
+    static FCDECL5(Object*, InvokeMethod, Object *target, Span<OBJECTREF>* objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a

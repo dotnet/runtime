@@ -5,6 +5,8 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+
 namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 {
     using Rijndael = System.Security.Cryptography.Rijndael;
@@ -13,7 +15,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
     /// Since RijndaelImplementation (from Rijndael.Create()) and RijndaelManaged classes wrap Aes,
     /// we only test minimally here.
     /// </summary>
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class RijndaelTests
     {
         [Fact]
@@ -462,3 +464,5 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         }
     }
 }
+
+#pragma warning restore SYSLIB0022

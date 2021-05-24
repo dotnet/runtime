@@ -106,7 +106,7 @@ setup_dirs
 check_prereqs
 
 # Build the installer native components.
-build_native "$__TargetOS" "$__BuildArch" "$__scriptpath" "$__IntermediatesDir" "$__CMakeArgs" "installer component"
+build_native "$__TargetOS" "$__BuildArch" "$__scriptpath" "$__IntermediatesDir" "install" "$__CMakeArgs" "installer component"
 
 if [[ "$__RuntimeFlavor" != "Mono" ]]; then
     echo Copying "$__CoreClrArtifacts/corehost/."  to "$__CMakeBinDir/corehost"

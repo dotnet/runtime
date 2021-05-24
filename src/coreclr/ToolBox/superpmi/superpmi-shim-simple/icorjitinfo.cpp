@@ -12,6 +12,12 @@
 #include "spmiutil.h"
 
 
+bool interceptor_ICJI::isJitIntrinsic(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    return original_ICorJitInfo->isJitIntrinsic(ftn);
+}
+
 uint32_t interceptor_ICJI::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -658,9 +664,9 @@ void interceptor_ICJI::getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries)
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
-    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 }
 
 void interceptor_ICJI::setBoundaries(
@@ -1088,16 +1094,9 @@ bool interceptor_ICJI::notifyInstructionSetUsage(
 }
 
 void interceptor_ICJI::allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock)
+          AllocMemArgs* pArgs)
 {
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+    original_ICorJitInfo->allocMem(pArgs);
 }
 
 void interceptor_ICJI::reserveUnwindInfo(
@@ -1179,16 +1178,6 @@ JITINTERFACE_HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
     return original_ICorJitInfo->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          CORINFO_CLASS_HANDLE baseHnd,
-          uint32_t ilOffset,
-          uint32_t* pLikelihood,
-          uint32_t* pNumberOfClasses)
-{
-    return original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
-}
-
 void interceptor_ICJI::recordCallSite(
           uint32_t instrOffset,
           CORINFO_SIG_INFO* callSig,
@@ -1199,12 +1188,13 @@ void interceptor_ICJI::recordCallSite(
 
 void interceptor_ICJI::recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,
           int32_t addlDelta)
 {
-    original_ICorJitInfo->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
 }
 
 uint16_t interceptor_ICJI::getRelocTypeHint(

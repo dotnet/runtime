@@ -58,7 +58,7 @@ namespace System.IO.Tests
         [InlineData(200, 50, 150)]
         [InlineData(200, 100, 100)]
         [InlineData(20, 2000, 1000)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void Lock_Unlock_Successful(long fileLength, long position, long length)
         {
             string path = GetTestFilePath();
@@ -75,7 +75,7 @@ namespace System.IO.Tests
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         [InlineData(FileAccess.ReadWrite)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void Lock_Unlock_Successful_AlternateFileAccess(FileAccess fileAccess)
         {
             string path = GetTestFilePath();
@@ -89,7 +89,7 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(10, 0, 2, 3, 5)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void NonOverlappingRegions_Success(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -176,7 +176,7 @@ namespace System.IO.Tests
         [InlineData(10, 3, 5, 2, 6)]
         [InlineData(10, 3, 5, 2, 4)]
         [InlineData(10, 3, 5, 4, 6)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void OverlappingRegionsFromOtherProcess_ThrowsException(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -231,7 +231,7 @@ namespace System.IO.Tests
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         [InlineData(FileAccess.ReadWrite)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void OverlappingRegionsFromOtherProcess_With_WriteLock_ThrowsException(FileAccess fileAccess)
         {
             string path = GetTestFilePath();

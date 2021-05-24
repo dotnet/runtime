@@ -189,6 +189,9 @@ namespace System
             return dest.Slice(0, charsWritten).ToString();
         }
 
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) =>
+            ToString();
+
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
             TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
 

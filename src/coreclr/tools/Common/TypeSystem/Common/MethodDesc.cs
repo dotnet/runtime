@@ -27,7 +27,8 @@ namespace Internal.TypeSystem
     public enum EmbeddedSignatureDataKind
     {
         RequiredCustomModifier = 0,
-        OptionalCustomModifier = 1
+        OptionalCustomModifier = 1,
+        ArrayShape = 2
     }
 
     public struct EmbeddedSignatureData
@@ -58,6 +59,9 @@ namespace Internal.TypeSystem
         {
             return $"0.1.1.2.{(parameterIndex + 1).ToStringInvariant()}.1";
         }
+
+        // Provide a means to create a MethodSignature which ignores EmbeddedSignature data in the MethodSignatures it is compared to
+        public static EmbeddedSignatureData[] EmbeddedSignatureMismatchPermittedFlag = new EmbeddedSignatureData[0];
 
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {
@@ -167,7 +171,15 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _embeddedSignatureData != null;
+                return _embeddedSignatureData != null && _embeddedSignatureData.Length != 0;
+            }
+        }
+
+        public bool EmbeddedSignatureMismatchPermitted
+        {
+            get
+            {
+                return _embeddedSignatureData == EmbeddedSignatureMismatchPermittedFlag;
             }
         }
 
@@ -217,6 +229,13 @@ namespace Internal.TypeSystem
             }
 
             if (this._embeddedSignatureData == null && otherSignature._embeddedSignatureData == null)
+            {
+                return true;
+            }
+
+            // Array methods do not need to have matching details for the array parameters they support
+            if (this.EmbeddedSignatureMismatchPermitted ||
+                otherSignature.EmbeddedSignatureMismatchPermitted)
             {
                 return true;
             }

@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class EncryptDecrypt
     {
         public static bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;
@@ -338,6 +338,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52199", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RoundtripEmptyArray()
         {
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))

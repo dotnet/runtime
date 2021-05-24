@@ -248,6 +248,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArray_UnusualTypes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void MakeArrayType_UnusualTypes_ReturnsExpected(Type t)
         {
             Type tArray = t.MakeArrayType();
@@ -570,9 +571,11 @@ namespace System.Tests
         [Fact]
         public void ReflectionOnlyGetType()
         {
+#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType(null, true, false));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("", true, true));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
+#pragma warning restore SYSLIB0018
         }
 
         [Fact]
@@ -585,6 +588,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsSZArray_TrueForSZArrayTypes()
         {
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType()))
@@ -636,6 +640,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsVariableBoundArray_FalseForSZArrayTypes()
         {
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType()))

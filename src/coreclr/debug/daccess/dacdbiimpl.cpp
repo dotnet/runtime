@@ -6540,17 +6540,20 @@ HRESULT DacHeapWalker::NextSegment()
 
     do
     {
-        mCurrSeg++;
-        while (mCurrSeg >= mHeaps[mCurrHeap].SegmentCount)
+        do
         {
-            mCurrSeg = 0;
-            mCurrHeap++;
-
-            if (mCurrHeap >= mHeapCount)
+            mCurrSeg++;
+            while (mCurrSeg >= mHeaps[mCurrHeap].SegmentCount)
             {
-                return S_FALSE;
+                mCurrSeg = 0;
+                mCurrHeap++;
+
+                if (mCurrHeap >= mHeapCount)
+                {
+                    return S_FALSE;
+                }
             }
-        }
+        } while (mHeaps[mCurrHeap].Segments[mCurrSeg].Start >= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
@@ -6657,6 +6660,12 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
     mCurrHeap = 0;
     mCurrSeg = 0;
 
+    HRESULT hr = S_OK;
+
+    // it's possible the first segment is empty
+    if (mCurrObj >= mHeaps[0].Segments[0].End)
+        hr = MoveToNextObject();
+
     if (!mCache.ReadMT(mCurrObj, &mCurrMT))
         return E_FAIL;
 
@@ -6664,9 +6673,9 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
         return E_FAIL;
 
     if (mCurrObj < mStart || mCurrObj > mEnd)
-        MoveToNextObject();
+        hr = MoveToNextObject();
 
-    return S_OK;
+    return hr;
 }
 
 HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, CORDB_ADDRESS *pContaining, CORDB_ADDRESS *pNext)
@@ -7547,13 +7556,14 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if (mHandleMask & CorHandleWeakLong)
         result |= (1 << HNDTYPE_WEAK_LONG);
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
-
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     if (mHandleMask & CorHandleWeakNativeCom)
         result |= (1 << HNDTYPE_WEAK_NATIVE_COM);
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
@@ -7720,17 +7730,18 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.dwType = (DWORD)CorHandleWeakLong;
             break;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
         case HNDTYPE_REFCOUNTED:
             data.dwType = (DWORD)(data.i64ExtraData ? CorHandleStrongRefCount : CorHandleWeakRefCount);
             GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &refCnt, NULL, NULL, NULL);
             data.i64ExtraData = refCnt;
             break;
-
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         case HNDTYPE_WEAK_NATIVE_COM:
             data.dwType = (DWORD)CorHandleWeakNativeCom;
             break;
-#endif
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
         case HNDTYPE_DEPENDENT:
             data.dwType = (DWORD)CorHandleStrongDependent;

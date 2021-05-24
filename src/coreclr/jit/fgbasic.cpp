@@ -281,7 +281,7 @@ void Compiler::fgEnsureFirstBBisScratch()
     noway_assert(fgLastBB != nullptr);
 
     // Set the expected flags
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED | BBF_JMP_TARGET | BBF_HAS_LABEL);
+    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
 
     // This new first BB has an implicit ref, and no others.
     block->bbRefs = 1;
@@ -395,11 +395,18 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-
-        //
-        // Remove the old edge [oldSwitchBlock => bJump]
-        //
-        fgRemoveRefPred(bJump, oldSwitchBlock);
+        if (bJump->countOfInEdges() > 0)
+        {
+            //
+            // Remove the old edge [oldSwitchBlock => bJump]
+            //
+            fgRemoveRefPred(bJump, oldSwitchBlock);
+        }
+        else
+        {
+            // bJump->countOfInEdges() must not be zero after preds are calculated.
+            assert(!fgComputePredsDone);
+        }
 
         //
         // Create the new edge [newSwitchBlock => bJump]
@@ -509,9 +516,6 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 
             // Maintain, if necessary, the set of unique targets of "block."
             UpdateSwitchTableTarget(blockSwitch, oldTarget, newTarget);
-
-            // Make sure the new target has the proper bits set for being a branch target.
-            newTarget->bbFlags |= BBF_HAS_LABEL | BBF_JMP_TARGET;
 
             return; // We have replaced the jumps to oldTarget with newTarget
         }
@@ -893,8 +897,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     }
 
     CORINFO_RESOLVED_TOKEN resolvedToken;
-    CORINFO_RESOLVED_TOKEN constrainedResolvedToken;
-    CORINFO_CALL_INFO      callInfo;
 
     while (codeAddr < codeEndp)
     {
@@ -958,54 +960,35 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE methodHnd   = nullptr;
-                unsigned              methodFlags = 0;
-                bool                  mustExpand  = false;
-                CorInfoIntrinsics     intrinsicID = CORINFO_INTRINSIC_Illegal;
-                NamedIntrinsic        ni          = NI_Illegal;
+                CORINFO_METHOD_HANDLE methodHnd      = nullptr;
+                bool                  isJitIntrinsic = false;
+                bool                  mustExpand     = false;
+                NamedIntrinsic        ni             = NI_Illegal;
 
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    eeGetCallInfo(&resolvedToken,
-                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  combine(CORINFO_CALLINFO_KINDONLY,
-                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
-                                  &callInfo);
-
-                    methodHnd   = callInfo.hMethod;
-                    methodFlags = callInfo.methodFlags;
+                    methodHnd      = resolvedToken.hMethod;
+                    isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
                 }
 
-                if ((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
+                if (isJitIntrinsic)
                 {
                     intrinsicCalls++;
+                    ni = lookupNamedIntrinsic(methodHnd);
 
-                    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+                    switch (ni)
                     {
-                        intrinsicID = info.compCompHnd->getIntrinsicID(methodHnd, &mustExpand);
-                    }
-
-                    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
-                    {
-                        if (intrinsicID == CORINFO_INTRINSIC_Illegal)
+                        case NI_IsSupported_True:
+                        case NI_IsSupported_False:
                         {
-                            ni = lookupNamedIntrinsic(methodHnd);
+                            pushedStack.PushConstant();
+                            break;
+                        }
 
-                            switch (ni)
-                            {
-                                case NI_IsSupported_True:
-                                case NI_IsSupported_False:
-                                {
-                                    pushedStack.PushConstant();
-                                    break;
-                                }
-
-                                default:
-                                {
-                                    break;
-                                }
-                            }
+                        default:
+                        {
+                            break;
                         }
                     }
                 }
@@ -1162,18 +1145,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 noway_assert(sz == sizeof(unsigned));
                 prefixFlags |= PREFIX_CONSTRAINED;
 
-                if (resolveTokens)
-                {
-                    impResolveToken(codeAddr, &constrainedResolvedToken, CORINFO_TOKENKIND_Constrained);
-                }
                 codeAddr += sizeof(unsigned);
 
                 {
                     OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 
-                    if (actualOpcode != CEE_CALLVIRT)
+                    if (actualOpcode != CEE_CALLVIRT && actualOpcode != CEE_CALL && actualOpcode != CEE_LDFTN)
                     {
-                        BADCODE("constrained. has to be followed by callvirt");
+                        BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                     }
                 }
                 goto OBSERVE_OPCODE;
@@ -1940,11 +1919,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     do
     {
-        unsigned   jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
-        unsigned   bbFlags = 0;
-        BBswtDesc* swtDsc  = nullptr;
-        unsigned   nxtBBoffs;
-        OPCODE     opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        unsigned        jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
+        BasicBlockFlags bbFlags = BBF_EMPTY;
+        BBswtDesc*      swtDsc  = nullptr;
+        unsigned        nxtBBoffs;
+        OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
         BBjumpKinds jmpKind = BBJ_NONE;
 
@@ -2560,14 +2539,7 @@ void Compiler::fgFindBasicBlocks()
             {
                 // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
-                if (compDoOldStructRetyping())
-                {
-                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
-                }
-                else
-                {
-                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
-                }
+                lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
 
                 // If the method returns a ref class, set the class of the spill temp
                 // to the method's return value. We may update this later if it turns
@@ -2709,9 +2681,6 @@ void Compiler::fgFindBasicBlocks()
             BADCODE("Handler Clause is invalid");
         }
 
-        tryBegBB->bbFlags |= BBF_HAS_LABEL;
-        hndBegBB->bbFlags |= BBF_HAS_LABEL | BBF_JMP_TARGET;
-
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
         // This will change the block weight from 0 to 1
         // and clear the rarely run flag
@@ -2728,11 +2697,8 @@ void Compiler::fgFindBasicBlocks()
         if (clause.Flags & CORINFO_EH_CLAUSE_FILTER)
         {
             filtBB = HBtab->ebdFilter = fgLookupBB(clause.FilterOffset);
-
-            filtBB->bbCatchTyp = BBCT_FILTER;
-            filtBB->bbFlags |= BBF_HAS_LABEL | BBF_JMP_TARGET;
-
-            hndBegBB->bbCatchTyp = BBCT_FILTER_HANDLER;
+            filtBB->bbCatchTyp        = BBCT_FILTER;
+            hndBegBB->bbCatchTyp      = BBCT_FILTER_HANDLER;
 
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
             // This will change the block weight from 0 to 1
@@ -2806,7 +2772,7 @@ void Compiler::fgFindBasicBlocks()
 
         /* Mark the initial block and last blocks in the 'try' region */
 
-        tryBegBB->bbFlags |= BBF_TRY_BEG | BBF_HAS_LABEL;
+        tryBegBB->bbFlags |= BBF_TRY_BEG;
 
         /*  Prevent future optimizations of removing the first block   */
         /*  of a TRY block and the first block of an exception handler */
@@ -3099,7 +3065,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_LEAVE: // block always jumps to the target, maybe out of guarded
                             // region. Used temporarily until importing
-                fgControlFlowPermitted(blk, blk->bbJumpDest, TRUE);
+                fgControlFlowPermitted(blk, blk->bbJumpDest, true);
 
                 break;
 
@@ -3132,7 +3098,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
  * Consider removing this check here if we  can do it cheaply during importing
  */
 
-void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, BOOL isLeave)
+void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, bool isLeave)
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 
@@ -3568,9 +3534,9 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->bbFlags = curr->bbFlags;
 
     // Remove flags that the new block can't have.
-    newBlock->bbFlags &= ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_HAS_LABEL |
-                           BBF_JMP_TARGET | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS |
-                           BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->bbFlags &=
+        ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
+          BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -3793,7 +3759,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         {
             // Now 'curr' jumps to newBlock
             curr->bbJumpDest = newBlock;
-            newBlock->bbFlags |= BBF_JMP_TARGET;
         }
         fgAddRefPred(newBlock, curr);
     }
@@ -3810,7 +3775,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         assert(curr->bbJumpKind == BBJ_ALWAYS);
         fgReplacePred(succ, curr, newBlock);
         curr->bbJumpDest = newBlock;
-        newBlock->bbFlags |= BBF_JMP_TARGET;
         fgAddRefPred(newBlock, curr);
     }
 
@@ -4150,17 +4114,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             /* old block no longer gets the extra ref count for being the first block */
             block->bbRefs--;
             succBlock->bbRefs++;
-
-            /* Set the new firstBB */
-            fgUnlinkBlock(block);
-
-            /* Always treat the initial block as a jump target */
-            fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
         }
-        else
-        {
-            fgUnlinkBlock(block);
-        }
+
+        fgUnlinkBlock(block);
 
         /* mark the block as removed and set the change flag */
 
@@ -4221,7 +4177,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     /* The links for the direct predecessor case have already been updated above */
                     if (predBlock->bbJumpDest != block)
                     {
-                        succBlock->bbFlags |= BBF_HAS_LABEL | BBF_JMP_TARGET;
                         break;
                     }
 
@@ -4243,7 +4198,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 case BBJ_EHCATCHRET:
                     noway_assert(predBlock->bbJumpDest == block);
                     predBlock->bbJumpDest = succBlock;
-                    succBlock->bbFlags |= BBF_HAS_LABEL | BBF_JMP_TARGET;
                     break;
 
                 case BBJ_SWITCH:
@@ -4325,7 +4279,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 case BBJ_NONE:
                     bSrc->bbJumpKind = BBJ_ALWAYS;
                     bSrc->bbJumpDest = bDst;
-                    bSrc->bbJumpDest->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -4395,7 +4348,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     }
 
                     jmpBlk->bbJumpDest = bDst;
-                    jmpBlk->bbJumpDest->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 
                     if (fgComputePredsDone)
                     {

@@ -27,6 +27,8 @@ namespace Microsoft.VisualBasic.Tests
         // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
         // path that followed the symlink.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52851", TestPlatforms.MacCatalyst)]
         public void ChDir()
         {
             var savedDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -84,6 +86,8 @@ namespace Microsoft.VisualBasic.Tests
 
         // Can't get current directory on OSX before setting it.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52851", TestPlatforms.MacCatalyst)]
         public void CurDir()
         {
             Assert.Equal(FileSystem.CurDir(), System.IO.Directory.GetCurrentDirectory());

@@ -260,6 +260,9 @@ namespace System.Diagnostics
         /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MaxWorkingSet
         {
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("tvos")]
             get
             {
                 EnsureWorkingSetLimits();
@@ -280,6 +283,9 @@ namespace System.Diagnostics
         /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MinWorkingSet
         {
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("tvos")]
             get
             {
                 EnsureWorkingSetLimits();
@@ -1198,6 +1204,7 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public bool Start()
         {
@@ -1241,12 +1248,13 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName)
         {
             // the underlying Start method can only return null on Windows platforms,
             // when the ProcessStartInfo.UseShellExecute property is set to true.
-            // We can thus safely assert non-nullability for tihs overload.
+            // We can thus safely assert non-nullability for this overload.
             return Start(new ProcessStartInfo(fileName))!;
         }
 
@@ -1259,12 +1267,13 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, string arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
             // when the ProcessStartInfo.UseShellExecute property is set to true.
-            // We can thus safely assert non-nullability for tihs overload.
+            // We can thus safely assert non-nullability for this overload.
             return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
@@ -1272,6 +1281,7 @@ namespace System.Diagnostics
         /// Starts a process resource by specifying the name of an application and a set of command line arguments
         /// </summary>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
@@ -1298,6 +1308,7 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Process? Start(ProcessStartInfo startInfo)
         {

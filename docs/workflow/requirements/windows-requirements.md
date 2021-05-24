@@ -44,7 +44,7 @@ The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
 
 The dotnet/runtime repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
 
-## Ninja (optional)
+## Ninja
 
 - Install Ninja in one of the two following ways
   - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).

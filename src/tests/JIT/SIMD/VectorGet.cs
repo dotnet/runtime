@@ -128,7 +128,7 @@ internal partial class VectorTest
                     case 32: check = A[32]; break;
                 }
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -138,7 +138,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for index == Count of " + Vector<T>.Count);
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for index == Count of " + Vector<T>.Count);
                 returnVal = Fail;
             }
 
@@ -148,7 +148,7 @@ internal partial class VectorTest
             {
                 check = A[-1];
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -158,7 +158,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for index == -1");
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for index == -1");
                 returnVal = Fail;
             }
 
@@ -199,6 +199,12 @@ internal partial class VectorTest
         if (VectorGetTest<ulong>.VectorGet(101, 1) == Fail) returnVal = Fail;
         if (VectorGetTest<ulong>.VectorGet(100, 1) == Fail) returnVal = Fail;
         if (VectorGetTest<ulong>.VectorGetIndexerOutOfRange(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<nint>.VectorGet(101, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<nint>.VectorGet(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<nint>.VectorGetIndexerOutOfRange(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<nuint>.VectorGet(101, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<nuint>.VectorGet(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<nuint>.VectorGetIndexerOutOfRange(100, 1) == Fail) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("get_Item", "Double")) returnVal = Fail;
@@ -221,6 +227,10 @@ internal partial class VectorTest
         if (!jitLog.Check("get_Count", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("get_Item", "UInt64")) returnVal = Fail;
         if (!jitLog.Check("get_Count", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "UIntPtr")) returnVal = Fail;
         jitLog.Dispose();
 
         return returnVal;

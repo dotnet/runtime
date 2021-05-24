@@ -1197,7 +1197,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
     for (pwzBytes = wzBytes; pwzBytes != NULL; pwzBytes = pwzNext)
     {
-        BOOL fFirst = (pwzBytes == wzBytes);
+        bool fFirst = (pwzBytes == wzBytes);
 
         cchBytes = wcslen(pwzBytes);
 

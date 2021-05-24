@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.IO
 Imports System.Runtime.Versioning
 
@@ -121,7 +122,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             CloseTheFile()
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
@@ -136,7 +140,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             m_file.Lock(lStartByte, lLength)
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
+        <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
@@ -184,6 +191,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         '======================================
         ' Get
         '======================================
+        <RequiresUnreferencedCode("Calls GetRecord")>
         Friend Overrides Sub GetObject(ByRef Value As Object, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ContainedInVariant As Boolean = True)
 
@@ -282,11 +290,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
+        <RequiresUnreferencedCode("Calls GetRecord")>
         Friend Overloads Overrides Sub [Get](ByRef Value As ValueType, Optional ByVal RecordNumber As Long = 0)
             ValidateReadable()
             GetRecord(RecordNumber, Value, False)
         End Sub
 
+        <RequiresUnreferencedCode("Calls GetFixedArray and GetArrayData")>
         Friend Overloads Overrides Sub [Get](ByRef Value As System.Array, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 
@@ -420,6 +430,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Value = GetDate(RecordNumber)
         End Sub
 
+        <RequiresUnreferencedCode("Calls PutRecord")>
         Friend Overrides Sub PutObject(ByVal Value As Object, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ContainedInVariant As Boolean = True)
 
@@ -498,11 +509,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
+        <RequiresUnreferencedCode("Calls PutRecord")>
         Friend Overloads Overrides Sub Put(ByVal Value As ValueType, Optional ByVal RecordNumber As Long = 0)
             ValidateWriteable()
             PutRecord(RecordNumber, Value)
         End Sub
 
+        <RequiresUnreferencedCode("Calls PutFixedArray and PutDynamicArray")>
         Friend Overloads Overrides Sub Put(ByVal Value As System.Array, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 

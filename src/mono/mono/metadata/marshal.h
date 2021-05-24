@@ -411,7 +411,7 @@ mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype);
 void
 mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info);
 
-WrapperInfo*
+MONO_COMPONENT_API WrapperInfo*
 mono_marshal_get_wrapper_info (MonoMethod *wrapper);
 
 MonoMethod *
@@ -611,12 +611,12 @@ gpointer
 mono_marshal_lookup_pinvoke (MonoMethod *method);
 
 ICALL_EXPORT
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void);
 
 ICALL_EXPORT
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err);
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err);
 
 ICALL_EXPORT
 mono_bstr

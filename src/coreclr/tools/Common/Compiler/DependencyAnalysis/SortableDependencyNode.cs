@@ -56,6 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             // ReadyToRun Nodes
             //
+            Win32ResourcesNode,
             CorHeaderNode,
             ReadyToRunHeaderNode,
             ReadyToRunAssemblyHeaderNode,
@@ -95,12 +96,6 @@ namespace ILCompiler.DependencyAnalysis
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode,
-            WindowsDebugNeedTypeIndicesStoreNode,
-            WindowsDebugMethodSignatureMapSectionNode,
-            WindowsDebugTypeSignatureMapSectionNode,
-            WindowsDebugManagedNativeDictionaryInfoSectionNode,
-            WindowsDebugTypeRecordsSectionNode,
-            WindowsDebugPseudoAssemblySectionNode,
         }
 
         public class EmbeddedObjectNodeComparer : IComparer<EmbeddedObjectNode>

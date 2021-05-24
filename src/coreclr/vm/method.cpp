@@ -1140,7 +1140,7 @@ BOOL MethodDesc::IsVarArg()
 
     Signature signature = GetSignature();
     _ASSERTE(!signature.IsEmpty());
-    return MetaSig::IsVarArg(GetModule(), signature);
+    return MetaSig::IsVarArg(signature);
 }
 
 //*******************************************************************************
@@ -2229,6 +2229,31 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
     return pTarget;
 }
 
+MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+    if (pRS == NULL)
+        return NULL;
+
+    MethodDesc* pMD;
+    if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+        return pMD;
+
+    if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
+        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+
+    // We should never get here
+    _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
+    return NULL;
+}
+
 //*******************************************************************************
 // convert an entry point into a method desc
 MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
@@ -2242,26 +2267,13 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
     }
     CONTRACT_END
 
-    MethodDesc * pMD;
-
-    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
-    if (pRS != NULL)
-    {
-        if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
-            RETURN(pMD);
-
-        if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
-            RETURN(MethodDesc::GetMethodDescFromStubAddr(entryPoint));
-
-        // We should never get here
-        _ASSERTE(!"Entry2MethodDesc failed for RangeSection");
-        RETURN (NULL);
-    }
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(entryPoint);
+    if (pMD != NULL)
+        RETURN(pMD);
 
     pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
     if (pMD != NULL)
         RETURN(pMD);
-
 
     // Is it an FCALL?
     pMD = ECall::MapTargetBackToMethod(entryPoint);
@@ -2569,8 +2581,7 @@ void MethodDesc::Save(DataImage *image)
     {
         EX_TRY
         {
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this);
         }
         EX_CATCH
         {
@@ -5024,6 +5035,25 @@ void MethodDesc::ResetCodeEntryPoint()
     }
 }
 
+void MethodDesc::ResetCodeEntryPointForEnC()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsVersionable());
+    _ASSERTE(!IsVersionableWithPrecode());
+    _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
+
+    if (HasPrecode())
+    {
+        GetPrecode()->ResetTargetInterlocked();
+    }
+
+    if (HasNativeCodeSlot())
+    {
+        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
+        pRelPtr->SetValueMaybeNull(NULL);
+    }
+}
+
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
@@ -5394,6 +5424,38 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
+BOOL MethodDesc::HasUnmanagedCallConvAttribute()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    MethodDesc* tgt = this;
+    if (IsILStub())
+    {
+        // From the IL stub, determine if the actual target has been
+        // marked with UnmanagedCallConv.
+        PTR_DynamicMethodDesc ilStubMD = AsDynamicMethodDesc();
+        PTR_ILStubResolver ilStubResolver = ilStubMD->GetILStubResolver();
+        tgt = ilStubResolver->GetStubTargetMethodDesc();
+        if (tgt == nullptr)
+            return FALSE;
+    }
+
+    _ASSERTE(tgt != nullptr);
+    HRESULT hr = tgt->GetCustomAttribute(
+        WellKnownAttribute::UnmanagedCallConv,
+        nullptr,
+        nullptr);
+
+    return (hr == S_OK) ? TRUE : FALSE;
+}
+
+//*******************************************************************************
 BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 {
     CONTRACTL
@@ -5430,9 +5492,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -5460,11 +5522,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     }
 
     _ASSERTE(tgt != nullptr);
-    HRESULT hr = tgt->GetCustomAttribute(
-        WellKnownAttribute::SuppressGCTransition,
-        nullptr,
-        nullptr);
-    return (hr == S_OK) ? TRUE : FALSE;
+    bool suppressGCTransition;
+    NDirect::GetCallingConvention_IgnoreErrors(tgt, NULL /*callConv*/, &suppressGCTransition);
+    return suppressGCTransition ? TRUE : FALSE;
 }
 
 #ifdef FEATURE_COMINTEROP

@@ -27,6 +27,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(NativeName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void NativeName(string name, string expected)
         {
             CultureInfo myTestCulture = new CultureInfo(name);

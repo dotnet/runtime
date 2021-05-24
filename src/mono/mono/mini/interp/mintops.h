@@ -23,7 +23,11 @@ typedef enum
 	MintOpFieldToken,
 	MintOpClassToken,
 	MintOpTwoShorts,
-	MintOpShortAndInt
+	MintOpShortAndInt,
+	MintOpShortAndShortBranch,
+	MintOpPair2,
+	MintOpPair3,
+	MintOpPair4
 } MintOpArgType;
 
 #define OPDEF(a,b,c,d,e,f) a,
@@ -67,9 +71,13 @@ typedef enum {
 #define MINT_IS_BINOP_SHIFT(op) ((op) >= MINT_SHR_UN_I4 && (op) <= MINT_SHR_I8)
 #define MINT_IS_LDFLD(op) ((op) >= MINT_LDFLD_I1 && (op) <= MINT_LDFLD_O)
 #define MINT_IS_STFLD(op) ((op) >= MINT_STFLD_I1 && (op) <= MINT_STFLD_O)
+#define MINT_IS_LDIND_INT(op) ((op) >= MINT_LDIND_I1 && (op) <= MINT_LDIND_I8)
+#define MINT_IS_STIND_INT(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_I8)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2
+
+#define MINT_MOV_PAIRS_MAX 4
 
 extern unsigned char const mono_interp_oplen[];
 extern int const mono_interp_op_dregs [];

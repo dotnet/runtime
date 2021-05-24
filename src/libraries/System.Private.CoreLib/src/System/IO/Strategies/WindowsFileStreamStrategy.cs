@@ -10,13 +10,6 @@ namespace System.IO.Strategies
     // this type serves some basic functionality that is common for Async and Sync Windows File Stream Strategies
     internal abstract class WindowsFileStreamStrategy : FileStreamStrategy
     {
-        // Error codes (not HRESULTS), from winerror.h
-        internal const int ERROR_BROKEN_PIPE = 109;
-        internal const int ERROR_NO_DATA = 232;
-        protected const int ERROR_HANDLE_EOF = 38;
-        protected const int ERROR_INVALID_PARAMETER = 87;
-        protected const int ERROR_IO_PENDING = 997;
-
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
@@ -44,7 +37,7 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -52,7 +45,7 @@ namespace System.IO.Strategies
             _access = access;
             _share = share;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
+            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {

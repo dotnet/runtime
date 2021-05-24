@@ -83,8 +83,8 @@ Note that the x86/x64 implementation is shared, while currently the Arm64 intrin
 
 The hardware intrinsics nodes are generally imported as `GenTreeHWIntrinsic` nodes, with the `GT_HWINTRINSIC` operator. On these nodes:
 * The `gtHWIntrinsicId` field contains the intrinsic ID, as declared in the hardware intrinsics table
-* The `gtSIMDBaseType` field indicates the "base type" (generic type argument).
-* The `gtSIMDSize` field indicates the full byte width of the vector (e.g. 16 bytes for `Vector128<T>`).
+* The `GetSimdBaseType` method indicates the "base type" (generic type argument).
+* The `GetSimdSize` method indicates the full byte width of the vector (e.g. 16 bytes for `Vector128<T>`).
 
 ### Lowering
 

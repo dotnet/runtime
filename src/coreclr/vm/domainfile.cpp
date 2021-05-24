@@ -1445,23 +1445,14 @@ void DomainAssembly::Allocate()
     SetAssembly(pAssembly);
 
 #ifdef FEATURE_PREJIT
-    BOOL fInsertIntoAssemblySpecBindingCache = TRUE;
-
-    // Insert AssemblyDef details into AssemblySpecBindingCache if appropriate
-
-
-    fInsertIntoAssemblySpecBindingCache = fInsertIntoAssemblySpecBindingCache && GetFile()->CanUseWithBindingCache();
-
-    if (fInsertIntoAssemblySpecBindingCache)
+    // Insert AssemblyDef details into AssemblySpecBindingCache
+    AssemblySpec specAssemblyDef;
+    specAssemblyDef.InitializeSpec(GetFile());
+    if (specAssemblyDef.IsStrongNamed() && specAssemblyDef.HasPublicKey())
     {
-        AssemblySpec specAssemblyDef;
-        specAssemblyDef.InitializeSpec(GetFile());
-        if (specAssemblyDef.IsStrongNamed() && specAssemblyDef.HasPublicKey())
-        {
-            specAssemblyDef.ConvertPublicKeyToToken();
-        }
-        m_pDomain->AddAssemblyToCache(&specAssemblyDef, this);
+        specAssemblyDef.ConvertPublicKeyToToken();
     }
+    m_pDomain->AddAssemblyToCache(&specAssemblyDef, this);
 #endif
 } // DomainAssembly::Allocate
 

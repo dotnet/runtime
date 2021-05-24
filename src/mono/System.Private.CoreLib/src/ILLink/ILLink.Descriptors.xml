@@ -644,12 +644,6 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-    <!-- Used by metadata update -->
-    <!-- TODO: Remove this and add a debugger-libs command to invoke updates, see https://github.com/dotnet/runtime/issues/48458 -->
-		<type fullname="System.Reflection.Metadata.AssemblyExtensions">
-			<method name="ApplyUpdateSdb" />
-		</type>
-
 		<type fullname="System.ValueType">
 			<!-- https://github.com/dotnet/runtime/issues/47909 -->
 			<method signature="System.Void .ctor()" />

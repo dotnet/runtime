@@ -60,7 +60,7 @@ endif()
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
-set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value -Wno-error=unused-variable")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -208,6 +208,16 @@ check_symbol_exists(
     posix_fadvise
     fcntl.h
     HAVE_POSIX_ADVISE)
+
+check_symbol_exists(
+    posix_fallocate
+    fcntl.h
+    HAVE_POSIX_FALLOCATE)
+
+check_symbol_exists(
+    posix_fallocate64
+    fcntl.h
+    HAVE_POSIX_FALLOCATE64)
 
 check_symbol_exists(
     ioctl

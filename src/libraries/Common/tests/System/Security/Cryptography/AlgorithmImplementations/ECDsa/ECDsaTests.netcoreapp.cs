@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public sealed class ECDsaTests_Span : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm) =>
@@ -80,6 +80,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Theory, MemberData(nameof(TestNewCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TestRegenKeyExplicit(CurveDef curveDef)
         {
             ECParameters param, param2;

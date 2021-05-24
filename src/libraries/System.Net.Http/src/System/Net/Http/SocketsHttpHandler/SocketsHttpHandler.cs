@@ -42,6 +42,7 @@ namespace System.Net.Http
         /// <summary>
         /// Gets a value that indicates whether the handler is supported on the current platform.
         /// </summary>
+        [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => true;
 
         public bool UseCookies
@@ -511,6 +512,9 @@ namespace System.Net.Http
             }
 
             CheckDisposed();
+
+            cancellationToken.ThrowIfCancellationRequested();
+
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
@@ -525,6 +529,12 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CheckDisposed();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
+            }
+
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);

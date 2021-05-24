@@ -1908,7 +1908,6 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void GrowTable(Tables tables)
         {
-            const int MaxArrayLength = 0X7FEFFFFF;
             int locksAcquired = 0;
             try
             {
@@ -1964,7 +1963,7 @@ namespace System.Collections.Concurrent
 
                         Debug.Assert(newLength % 2 != 0);
 
-                        if (newLength > MaxArrayLength)
+                        if (newLength > Array.MaxLength)
                         {
                             maximizeTableSize = true;
                         }
@@ -1977,7 +1976,7 @@ namespace System.Collections.Concurrent
 
                 if (maximizeTableSize)
                 {
-                    newLength = MaxArrayLength;
+                    newLength = Array.MaxLength;
 
                     // We want to make sure that GrowTable will not be called again, since table is at the maximum size.
                     // To achieve that, we set the budget to int.MaxValue.

@@ -72,12 +72,12 @@ namespace Microsoft.NET.HostModel.Bundle
 
             switch (type)
             {
-                case FileType.Symbols:
-                case FileType.NativeBinary:
-                    return true;
+                case FileType.DepsJson:
+                case FileType.RuntimeConfigJson:
+                    return false;
 
                 default:
-                    return false;
+                    return true;
             }
         }
 

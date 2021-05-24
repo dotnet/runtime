@@ -35,11 +35,8 @@ try {
 
   $version = [Version]$(& $cmakePath --version | Select-String -Pattern '\d+\.\d+\.\d+' | %{$_.Matches.Value})
 
-  if ($version -lt [Version]"3.14.0") {
-    throw "This repository requires CMake 3.14 and recommends CMake 3.16. The version of CMake installed is $version. Please install CMake 3.16 or newer from https://cmake.org/download/."
-  }
-  elseif ($version -lt [Version]"3.16.4") {
-    [System.Console]::Error.WriteLine("CMake 3.16.4 or newer is recommended for building this repository. The newest version of CMake installed is $version. Please install CMake 3.16.4 or newer from https://cmake.org/download/.")
+  if ($version -lt [Version]"3.16.4") {
+    throw "CMake 3.16.4 or newer is required for building this repository. The newest version of CMake installed is $version. Please install CMake 3.16.4 or newer from https://cmake.org/download/."
   }
 
   [System.Console]::WriteLine("set CMakePath=" + $cmakePath)

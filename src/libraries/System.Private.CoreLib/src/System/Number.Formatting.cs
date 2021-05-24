@@ -758,7 +758,7 @@ namespace System
         {
             Debug.Assert(source != null);
 
-            if (source.AsSpan().TryCopyTo(destination))
+            if (source.TryCopyTo(destination))
             {
                 charsWritten = source.Length;
                 return true;

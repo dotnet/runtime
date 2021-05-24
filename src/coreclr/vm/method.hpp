@@ -668,6 +668,7 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
+    BOOL HasUnmanagedCallConvAttribute();
     BOOL HasUnmanagedCallersOnlyAttribute();
     BOOL ShouldSuppressGCTransition();
 
@@ -1078,11 +1079,6 @@ public:
     inline WORD GetSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifndef DACCESS_COMPILE
-        // The DAC build uses this method to test for "sanity" of a MethodDesc, and
-        // doesn't need the assert.
-        _ASSERTE(! IsEnCAddedMethod() || !"Cannot get slot for method added via EnC");
-#endif // !DACCESS_COMPILE
 
         // Check if this MD is using the packed slot layout
         if (!RequiresFullSlotNumber())
@@ -1411,6 +1407,7 @@ public:
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
     void SetCodeEntryPoint(PCODE entryPoint);
     void ResetCodeEntryPoint();
+    void ResetCodeEntryPointForEnC();
 
 #endif // !CROSSGEN_COMPILE
 
@@ -2579,6 +2576,7 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
                             (sizeof(MethodDescChunk) + (GetMethodDescIndex() * MethodDesc::ALIGNMENT)));
 }
 
+MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
 // convert an entry point into a MethodDesc
 MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
 
@@ -3030,6 +3028,8 @@ public:
         kIsQCall                        = 0x1000,
 
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
+
+        kNDirectPopulated               = 0x8000, // Indicate if the NDirect has been fully populated.
     };
 
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
@@ -3160,6 +3160,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (ndirect.m_wFlags & kDefaultDllImportSearchPathsIsCached) != 0;
+    }
+
+    BOOL IsPopulated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (ndirect.m_wFlags & kNDirectPopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()

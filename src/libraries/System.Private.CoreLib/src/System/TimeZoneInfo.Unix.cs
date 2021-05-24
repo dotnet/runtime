@@ -37,16 +37,20 @@ namespace System
             "Zulu"
         };
 
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
+
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
             _id = id;
+
+            HasIanaId = true;
 
             // Handle UTC and its aliases
             if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
             {
                 _standardDisplayName = GetUtcStandardDisplayName();
                 _daylightDisplayName = _standardDisplayName;
-                _displayName = $"(UTC) {_standardDisplayName}";
+                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
                 _baseUtcOffset = TimeSpan.Zero;
                 _adjustmentRules = Array.Empty<AdjustmentRule>();
                 return;

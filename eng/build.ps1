@@ -253,10 +253,9 @@ if ($os -eq "Browser") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"
 
-  if ($ninja -ne $True) {
-    # we need ninja for emscripten on windows
-    $ninja = $True
-    $arguments += " /p:Ninja=$ninja"
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
+    exit 1
   }
 }
 
@@ -264,7 +263,11 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    $env:__DistroRid="win-$singleArch"
+    if ($os -eq "Browser") {
+      $env:__DistroRid="browser-$singleArch"
+    } else {
+      $env:__DistroRid="win-$singleArch"
+    }
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     if ($lastExitCode -ne 0) {
         $failedBuilds += "Configuration: $config, Architecture: $singleArch"

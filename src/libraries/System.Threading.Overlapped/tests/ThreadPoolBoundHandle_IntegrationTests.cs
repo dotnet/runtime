@@ -32,7 +32,7 @@ public partial class ThreadPoolBoundHandleTests
 
             if (retval == 0)
             {
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
             }
 
             // Wait for overlapped operation to complete
@@ -77,7 +77,7 @@ public partial class ThreadPoolBoundHandleTests
 
             if (retval == 0)
             {
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
             }
 
 
@@ -87,7 +87,7 @@ public partial class ThreadPoolBoundHandleTests
 
             if (retval == 0)
             {
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
             }
 
             // Wait for overlapped operations to complete
@@ -142,7 +142,7 @@ public partial class ThreadPoolBoundHandleTests
 
                 if (retval == 0)
                 {
-                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
                 }
 
 
@@ -150,7 +150,7 @@ public partial class ThreadPoolBoundHandleTests
 
                 if (retval == 0)
                 {
-                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
                 }
 
                 // Wait for overlapped operations to complete
@@ -209,7 +209,7 @@ public partial class ThreadPoolBoundHandleTests
 
             if (retval == 0)
             {
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
             }
 
             // Wait for overlapped operation to complete

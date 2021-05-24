@@ -143,7 +143,7 @@ namespace System.Buffers
                 // Clear the array if the user requests
                 if (clearArray)
                 {
-                    Array.Clear(array, 0, array.Length);
+                    Array.Clear(array);
                 }
 
                 // Return the buffer to its bucket.  In the future, we might consider having Return return false
