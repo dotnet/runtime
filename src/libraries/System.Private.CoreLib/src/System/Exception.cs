@@ -47,6 +47,7 @@ namespace System
             _innerException = (Exception?)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
             _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
             _stackTraceString = info.GetString("StackTraceString"); // Do not rename (binary serialization)
+            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
             _HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)
             _source = info.GetString("Source"); // Do not rename (binary serialization)
 
@@ -110,7 +111,7 @@ namespace System
             info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
             info.AddValue("HelpURL", _helpURL, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("StackTraceString", SerializationStackTraceString, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackTraceString", SerializationRemoteStackTraceString, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("RemoteStackIndex", 0, typeof(int)); // Do not rename (binary serialization)
             info.AddValue("ExceptionMethod", null, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("HResult", _HResult); // Do not rename (binary serialization)
