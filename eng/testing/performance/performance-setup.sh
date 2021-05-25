@@ -229,7 +229,7 @@ fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
     configurations="CompilationMode=wasm RunKind=$kind"
-    if [[ "$javascript_engine" == "javascriptcore"]]; then
+    if [[ "$javascript_engine" == "javascriptcore" ]]; then
       configurations="$configurations JSEngine=javascriptcore"
     fi
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM NoMono"
