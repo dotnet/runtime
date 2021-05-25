@@ -30,7 +30,6 @@ namespace System.Text.Json.SourceGeneration
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{_assemblyName.Name}"", ""{_assemblyName.Version}"")]";
 
             // global::fully.qualified.name for referenced types
-            private const string ActionTypeRef = "global::System.Action";
             private const string ArrayTypeRef = "global::System.Array";
             private const string InvalidOperationExceptionTypeRef = "global::System.InvalidOperationException";
             private const string TypeTypeRef = "global::System.Type";
@@ -75,7 +74,7 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly GeneratorExecutionContext _executionContext;
 
-            private ContextGenerationSpec _currentContext = new();
+            private ContextGenerationSpec _currentContext = null!;
 
             private readonly SourceGenerationSpec _generationSpec = null!;
 
@@ -235,7 +234,7 @@ namespace {_currentContext.ContextType.Namespace}
                     {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
                     if (!converter.CanConvert(typeToConvert))
                     {{
-                        Type underlyingType = {NullableTypeRef}.GetUnderlyingType(typeToConvert);
+                        {TypeTypeRef} underlyingType = {NullableTypeRef}.GetUnderlyingType(typeToConvert);
                         if (underlyingType != null && converter.CanConvert(underlyingType))
                         {{
                             {JsonConverterTypeRef} actualConverter = converter;
@@ -379,30 +378,30 @@ namespace {_currentContext.ContextType.Namespace}
 
             private string GenerateFastPathFuncForEnumerable(string typeInfoRef, string serializeMethodName, bool canBeNull, bool isArray, TypeGenerationSpec valueTypeGenerationSpec)
             {
-                string? writerMethodToCall = GetWriterSerializationMethod(valueTypeGenerationSpec.Type);
+                string? writerMethodToCall = GetWriterMethod(valueTypeGenerationSpec.Type);
                 string valueToWrite = $"{ValueVarName}[i]";
                 string lengthPropName = isArray ? "Length" : "Count";
 
-                string serializationLogic;
+                string elementSerializationLogic;
                 if (writerMethodToCall != null)
                 {
-                    serializationLogic = $"{writerMethodToCall}Value({valueToWrite});";
+                    elementSerializationLogic = $"{writerMethodToCall}Value({valueToWrite});";
                 }
                 else
                 {
-                    serializationLogic = GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic);
+                    elementSerializationLogic = GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic);
                 }
 
-                string fastPathLogic = $@"{WriterVarName}.WriteStartArray();
+                string serializationLogic = $@"{WriterVarName}.WriteStartArray();
 
         for (int i = 0; i < {ValueVarName}.{lengthPropName}; i++)
         {{
-            {serializationLogic}
+            {elementSerializationLogic}
         }}
 
         {WriterVarName}.WriteEndArray();";
 
-                return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, fastPathLogic, canBeNull);
+                return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, serializationLogic, canBeNull);
             }
 
             private string GenerateFastPathFuncForDictionary(
@@ -412,32 +411,33 @@ namespace {_currentContext.ContextType.Namespace}
                 TypeGenerationSpec keyTypeGenerationSpec,
                 TypeGenerationSpec valueTypeGenerationSpec)
             {
-                string? writerMethodToCall = GetWriterSerializationMethod(valueTypeGenerationSpec.Type);
                 const string pairVarName = "pair";
                 string keyToWrite = $"{pairVarName}.Key";
                 string valueToWrite = $"{pairVarName}.Value";
 
-                string serializationLogic;
+                string? writerMethodToCall = GetWriterMethod(valueTypeGenerationSpec.Type);
+                string elementSerializationLogic;
+
                 if (writerMethodToCall != null)
                 {
-                    serializationLogic = $"{writerMethodToCall}({keyToWrite}, {valueToWrite})";
+                    elementSerializationLogic = $"{writerMethodToCall}({keyToWrite}, {valueToWrite});";
                 }
                 else
                 {
-                    serializationLogic = $@"{WriterVarName}.WritePropertyName({keyToWrite});
+                    elementSerializationLogic = $@"{WriterVarName}.WritePropertyName({keyToWrite});
         {GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic)}";
                 }
 
-                string fastPathLogic = $@"{WriterVarName}.WriteStartObject();
+                string serializationLogic = $@"{WriterVarName}.WriteStartObject();
 
-    foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {ValueVarName})
-    {{
-        {serializationLogic}
-    }}
+        foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {ValueVarName})
+        {{
+            {elementSerializationLogic}
+        }}
 
-    {WriterVarName}.WriteEndObject();";
+        {WriterVarName}.WriteEndObject();";
 
-                return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, fastPathLogic, canBeNull);
+                return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, serializationLogic, canBeNull);
             }
 
             private string GenerateForObject(TypeGenerationSpec typeMetadata)
@@ -615,8 +615,6 @@ namespace {_currentContext.ContextType.Namespace}
                 bool canBeNull,
                 List<PropertyGenerationSpec>? properties)
             {
-                string methodSignature = $"private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {typeInfoTypeRef} {ValueVarName})";
-
                 JsonSerializerOptionsAttribute options = _currentContext.SerializerOptions;
 
                 // Add the property names to the context-wide cache; we'll generate the source to initialize them at the end of generation.
@@ -666,7 +664,7 @@ namespace {_currentContext.ContextType.Namespace}
                         string propValue = $"{ValueVarName}.{propertySpec.ClrName}";
                         string methodArgs = $"{propName}, {propValue}";
 
-                        string? methodToCall = GetWriterSerializationMethod(propertyType);
+                        string? methodToCall = GetWriterMethod(propertyType);
 
                         if (propertyType == _generationSpec.CharType)
                         {
@@ -716,35 +714,35 @@ namespace {_currentContext.ContextType.Namespace}
                 return GenerateFastPathFuncForType(serializeMethodName, typeInfoTypeRef, sb.ToString(), canBeNull);
             }
 
-            private string? GetWriterSerializationMethod(Type type)
+            private string? GetWriterMethod(Type type)
             {
-                string? methodToCall;
+                string? method;
                 if (_generationSpec.IsStringBasedType(type))
                 {
-                    methodToCall = $"{WriterVarName}.WriteString";
+                    method = $"{WriterVarName}.WriteString";
                 }
                 else if (type == _generationSpec.BooleanType)
                 {
-                    methodToCall = $"{WriterVarName}.WriteBoolean";
+                    method = $"{WriterVarName}.WriteBoolean";
                 }
                 else if (type == _generationSpec.ByteArrayType)
                 {
-                    methodToCall = $"{WriterVarName}.WriteBase64String";
+                    method = $"{WriterVarName}.WriteBase64String";
                 }
                 else if (type == _generationSpec.CharType)
                 {
-                    methodToCall = $"{WriterVarName}.WriteString";
+                    method = $"{WriterVarName}.WriteString";
                 }
                 else if (_generationSpec.IsNumberType(type))
                 {
-                    methodToCall = $"{WriterVarName}.WriteNumber";
+                    method = $"{WriterVarName}.WriteNumber";
                 }
                 else
                 {
-                    methodToCall = null;
+                    method = null;
                 }
 
-                return methodToCall;
+                return method;
             }
 
             private string GenerateFastPathFuncForType(string serializeMethodName, string typeInfoTypeRef, string serializationLogic, bool canBeNull)
@@ -1037,7 +1035,7 @@ namespace {_currentContext.ContextType.Namespace}
 
             private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling) =>
                  numberHandling.HasValue
-                    ? $"(JsonNumberHandling){(int)numberHandling.Value}"
+                    ? $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}"
                     : "default";
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";

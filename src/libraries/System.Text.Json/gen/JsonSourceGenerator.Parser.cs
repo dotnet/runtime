@@ -46,6 +46,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type _dateTimeType;
             private readonly Type _dateTimeOffsetType;
             private readonly Type _guidType;
+            private readonly Type _nullableOfTType;
             private readonly Type _stringType;
             private readonly Type _uriType;
             private readonly Type _versionType;
@@ -64,9 +65,6 @@ namespace System.Text.Json.SourceGeneration
                 _compilation = compilation;
                 _metadataLoadContext = new MetadataLoadContextInternal(compilation);
 
-                TypeExtensions.NullableOfTType = _metadataLoadContext.Resolve(typeof(Nullable<>));
-                TypeExtensions.ObjectArrayType = _metadataLoadContext.Resolve(typeof(object[]));
-
                 _ienumerableType = _metadataLoadContext.Resolve(typeof(IEnumerable));
                 _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
                 _dictionaryType = _metadataLoadContext.Resolve(typeof(Dictionary<,>));
@@ -77,6 +75,7 @@ namespace System.Text.Json.SourceGeneration
                 _dateTimeType = _metadataLoadContext.Resolve(typeof(DateTime));
                 _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
+                _nullableOfTType = _metadataLoadContext.Resolve(typeof(Nullable<>));
                 _stringType = _metadataLoadContext.Resolve(typeof(string));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
@@ -395,7 +394,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.KnownType;
                 }
-                else if (type.IsNullableValueType(out nullableUnderlyingType))
+                else if (type.IsNullableValueType(_nullableOfTType, out nullableUnderlyingType))
                 {
                     Debug.Assert(nullableUnderlyingType != null);
                     classType = ClassType.Nullable;
@@ -468,8 +467,6 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 continue;
                             }
-
-                            string key = metadata.JsonPropertyName ?? metadata.ClrName;
 
                             if (metadata.CanUseGetter || metadata.CanUseSetter)
                             {

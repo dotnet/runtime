@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace System.Text.Json.SourceGeneration
 {
     [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
-    internal class PropertyGenerationSpec
+    internal sealed class PropertyGenerationSpec
     {
         /// <summary>
         /// The CLR name of the property.

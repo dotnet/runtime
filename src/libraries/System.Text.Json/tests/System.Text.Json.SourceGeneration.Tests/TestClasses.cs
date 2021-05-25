@@ -107,4 +107,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         public MyType Type = new();
     }
+
+    public class JsonMessage
+    {
+        public string Message { get; set; }
+        public int Length => Message?.Length ?? 0; // Read-only property
+    }
 }

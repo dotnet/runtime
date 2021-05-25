@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Metadata
             Action<Utf8JsonWriter, T>? serializeFunc,
             Type elementType) : base(typeof(T), options, ConverterStrategy.Enumerable)
         {
-            JsonConverter<T> converter = new SourceGenConverter<T>(converterCreator, ConverterStrategy.Enumerable, keyType: null, elementType);
+            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Enumerable, keyType: null, elementType);
 
             ElementType = converter.ElementType;
             ElementTypeInfo = elementInfo ?? throw new ArgumentNullException(nameof(elementInfo));
@@ -55,13 +55,13 @@ namespace System.Text.Json.Serialization.Metadata
             Type keyType,
             Type elementType) : base(typeof(T), options, ConverterStrategy.Dictionary)
         {
-            JsonConverter<T> converter = new SourceGenConverter<T>(converterCreator, ConverterStrategy.Dictionary, keyType, elementType);
+            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Dictionary, keyType, elementType);
 
             KeyType = converter.KeyType;
             ElementType = converter.ElementType;
-            KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo)); ;
+            KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo));
             ElementType = converter.ElementType;
-            ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo)); ;
+            ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo));
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             Serialize = serializeFunc;
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning disable CS8714
             // The type cannot be used as type parameter in the generic type or method.
             // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter = new SourceGenConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
+            JsonConverter converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
 #pragma warning restore CS8714
 
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);

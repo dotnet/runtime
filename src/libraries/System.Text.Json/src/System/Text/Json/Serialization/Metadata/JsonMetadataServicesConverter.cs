@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <typeparamref name="T"/>, to provide a fallback when the fast path cannot be used.
     /// </summary>
     /// <typeparam name="T">The type to converter</typeparam>
-    internal class SourceGenConverter<T> : JsonResumableConverter<T>
+    internal sealed class JsonMetadataServicesConverter<T> : JsonResumableConverter<T>
     {
         private readonly Func<JsonConverter<T>> _converterCreator;
 
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override Type? ElementType => _elementType;
 
-        public SourceGenConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy, Type? keyType, Type? elementType)
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy, Type? keyType, Type? elementType)
         {
             _converterCreator = converterCreator ?? throw new ArgumentNullException(nameof(converterCreator));
             _converterStrategy = converterStrategy;
@@ -85,6 +85,5 @@ namespace System.Text.Json.Serialization.Converters
 
             return Converter.OnTryWrite(writer, value, options, ref state);
         }
-
     }
 }

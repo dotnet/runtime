@@ -13,6 +13,12 @@ namespace System.Text.Json.Serialization
     public sealed class JsonSerializableAttribute : JsonAttribute
     {
         /// <summary>
+        /// Initializes a new instance of <see cref="JsonSerializableAttribute"/> with the specified type.
+        /// </summary>
+        /// <param name="type">The type to generate source code for.</param>
+        public JsonSerializableAttribute(Type type) { }
+
+        /// <summary>
         /// The name of the property for the generated <see cref="JsonTypeInfo{T}"/> for
         /// the type on the generated, derived <see cref="JsonSerializerContext"/> type.
         /// </summary>
@@ -25,11 +31,5 @@ namespace System.Text.Json.Serialization
         /// Determines what the source generator should generate for the type.
         /// </summary>
         public JsonSourceGenerationMode GenerationMode { get; set; }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="JsonSerializableAttribute"/> with the specified type.
-        /// </summary>
-        /// <param name="type">The type to generate source code for.</param>
-        public JsonSerializableAttribute(Type type) { }
     }
 }

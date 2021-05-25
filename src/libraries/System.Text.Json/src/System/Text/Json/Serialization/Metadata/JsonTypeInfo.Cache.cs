@@ -568,15 +568,18 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializeSerializePropCache()
         {
-            Debug.Assert(Options._context != null);
+            JsonSerializerContext? context = Options._context;
+
+            Debug.Assert(context != null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
             if (PropInitFunc == null)
             {
-                throw new NotSupportedException($"Property metadata was not provided for type {Type}.");
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                return;
             }
 
-            PropertyCacheArray = PropInitFunc(Options._context);
+            PropertyCacheArray = PropInitFunc(context);
         }
 
         internal void InitializeDeserializePropCache()

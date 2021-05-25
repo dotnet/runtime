@@ -81,7 +81,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Location expected = CreateLocation();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.Location);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.Location), typeof(Location));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.Location), typeof(Location));
 
             Location obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).Location);
             VerifyLocation(expected, obj);
@@ -95,7 +95,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             IndexViewModel expected = CreateIndexViewModel();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.IndexViewModel);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.IndexViewModel), typeof(IndexViewModel));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.IndexViewModel), typeof(IndexViewModel));
 
             IndexViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).IndexViewModel);
             VerifyIndexViewModel(expected, obj);
@@ -109,7 +109,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             CampaignSummaryViewModel expected = CreateCampaignSummaryViewModel();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.CampaignSummaryViewModel);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.CampaignSummaryViewModel), typeof(CampaignSummaryViewModel));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.CampaignSummaryViewModel), typeof(CampaignSummaryViewModel));
 
             CampaignSummaryViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).CampaignSummaryViewModel);
             VerifyCampaignSummaryViewModel(expected, obj);
@@ -123,7 +123,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             ActiveOrUpcomingEvent expected = CreateActiveOrUpcomingEvent();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.ActiveOrUpcomingEvent);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.ActiveOrUpcomingEvent), typeof(ActiveOrUpcomingEvent));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.ActiveOrUpcomingEvent), typeof(ActiveOrUpcomingEvent));
 
             ActiveOrUpcomingEvent obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).ActiveOrUpcomingEvent);
             VerifyActiveOrUpcomingEvent(expected, obj);
@@ -137,7 +137,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.WeatherForecastWithPOCOs);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.WeatherForecastWithPOCOs), typeof(WeatherForecastWithPOCOs));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.WeatherForecastWithPOCOs), typeof(WeatherForecastWithPOCOs));
 
             WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).WeatherForecastWithPOCOs);
             VerifyWeatherForecastWithPOCOs(expected, obj);
@@ -151,7 +151,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             EmptyPoco expected = CreateEmptyPoco();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.EmptyPoco);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
 
             EmptyPoco obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).EmptyPoco);
             VerifyEmptyPoco(expected, obj);
@@ -165,7 +165,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             RepeatedTypes.Location expected = CreateRepeatedLocation();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.RepeatedLocation);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.RepeatedLocation), typeof(RepeatedTypes.Location));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.RepeatedLocation), typeof(RepeatedTypes.Location));
 
             RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).RepeatedLocation);
             VerifyRepeatedLocation(expected, obj);
@@ -212,6 +212,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Same(JsonNamingPolicy.CamelCase, ((JsonSerializerContext)context).Options.PropertyNamingPolicy);
 
             string json = JsonSerializer.Serialize(new object[] { index, campaignSummary }, context.ObjectArray);
+            // Verify JSON was written with camel casing.
+            Assert.Contains("activeOrUpcomingEvents", json);
+            Assert.Contains("featuredCampaign", json);
+            Assert.Contains("description", json);
+            Assert.Contains("organizationName", json);
+
             object[] arr = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).ObjectArray);
 
             JsonElement indexAsJsonElement = (JsonElement)arr[0];
@@ -263,6 +269,16 @@ namespace System.Text.Json.SourceGeneration.Tests
                 Assert.Equal(expected.Day, actual.Day);
                 Assert.Equal(expected.NullableDay, actual.NullableDay);
             }
+        }
+
+        [Fact]
+        public override void ParameterizedConstructor()
+        {
+            string json = JsonSerializer.Serialize(new HighLowTempsImmutable(1, 2), DefaultContext.HighLowTempsImmutable);
+            Assert.Contains(@"""High"":1", json);
+            Assert.Contains(@"""Low"":2", json);
+
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable), typeof(HighLowTempsImmutable));
         }
     }
 }

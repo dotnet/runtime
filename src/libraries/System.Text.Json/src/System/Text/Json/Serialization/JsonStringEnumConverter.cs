@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// Converter to convert enums to and from strings.
     /// </summary>
     /// <remarks>
-    /// Reading is case insensitive, writing can be customized via a <see cref="JsonKnownNamingPolicy" />.
+    /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
     /// </remarks>
     public sealed class JsonStringEnumConverter : JsonConverterFactory
     {

@@ -7,18 +7,17 @@ using System.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
-    internal class SourceGenerationSpec
+    internal sealed class SourceGenerationSpec
     {
         public List<ContextGenerationSpec> ContextGenerationSpecList { get; init; }
 
-        #region Known types
         public Type BooleanType { get; init; }
         public Type ByteArrayType { get; init; }
         public Type CharType { get; init; }
-        public Type DateTimeType { get; init; }
-        public Type DateTimeOffsetType { get; init; }
-        public Type GuidType { get; init; }
-        public Type StringType { get; init; }
+        public Type DateTimeType { private get; init; }
+        public Type DateTimeOffsetType { private get; init; }
+        public Type GuidType { private get; init; }
+        public Type StringType { private get; init; }
 
         public HashSet<Type> NumberTypes { private get; init; }
 
@@ -26,6 +25,5 @@ namespace System.Text.Json.SourceGeneration
             => type == StringType || type == DateTimeType || type == DateTimeOffsetType || type == GuidType;
 
         public bool IsNumberType(Type type) => NumberTypes.Contains(type);
-        #endregion
     }
 }
