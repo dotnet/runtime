@@ -106,6 +106,10 @@ namespace System.IO.Tests
             var booleanArray = new bool[] { false, true };
             Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
             {
+                var function1 = functions.x;
+                var function2 = functions.y;
+                var reverse = functions.reverse;
+                
                 // Checking that milliseconds are not dropped after setter.
                 DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
                 DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
