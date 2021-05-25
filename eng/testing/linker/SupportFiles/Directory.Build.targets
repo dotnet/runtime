@@ -28,11 +28,8 @@
           BeforeTargets="PrepareForILLink"> 
     <ItemGroup>
       <ManagedAssemblyToLink>
-        <TrimMode>link</TrimMode>
+        <IsTrimmable>true</IsTrimmable>
       </ManagedAssemblyToLink>
-
-      <!-- Pass the app assembly as a root -->
-      <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
     </ItemGroup>
   </Target>
 
