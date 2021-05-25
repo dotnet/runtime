@@ -18,7 +18,10 @@ namespace System.IO.Pipes
         private const int RegisteringCancellation = 4;
         private const int CompletedCallback = 8;
 
+        internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
+
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
+        internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
 
         private CancellationTokenRegistration _cancellationRegistration;
         private int _errorCode;
@@ -46,21 +49,13 @@ namespace System.IO.Pipes
             _state = NoResult;
             // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
             _source.RunContinuationsAsynchronously = true;
+            _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
 
             _pinnedMemory = bufferToPin.Pin();
-            _overlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
-            {
-                var valueTaskSource = (PipeValueTaskSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
-                Debug.Assert(valueTaskSource.Overlapped == pOverlapped);
-
-                valueTaskSource.AsyncCallback(errorCode, numBytes);
-            }, this, null);
+            _overlapped = _threadPoolBinding.AllocateNativeOverlapped(_preallocatedOverlapped);
         }
 
-        internal NativeOverlapped* Overlapped
-        {
-            get { return _overlapped; }
-        }
+        internal NativeOverlapped* Overlapped => _overlapped;
 
         internal void RegisterForCancellation(CancellationToken cancellationToken)
         {
@@ -111,9 +106,19 @@ namespace System.IO.Pipes
             }
 
             _pinnedMemory.Dispose();
+            _preallocatedOverlapped.Dispose();
         }
 
         internal abstract void SetCompletedSynchronously();
+
+        private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+        {
+            var valueTaskSource = (PipeValueTaskSource<TResult>?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+            Debug.Assert(valueTaskSource is not null);
+            Debug.Assert(valueTaskSource.Overlapped == pOverlapped);
+
+            valueTaskSource.AsyncCallback(errorCode, numBytes);
+        }
 
         protected virtual void AsyncCallback(uint errorCode, uint numBytes)
         {
