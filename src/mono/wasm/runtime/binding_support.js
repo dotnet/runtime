@@ -1219,7 +1219,7 @@ var BindingSupportLib = {
 				} else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
-						convMethod, 0, signature, "ToJavaScript_" + this._get_type_name(typePtr)
+						convMethod, 0, signature, this._get_type_name(typePtr) + "$ToJavaScript"
 					);
 
 					this._struct_unboxer_cache.set (typePtr, this._compile_post_filter (typePtr, boundConverter, postFilter));
@@ -1310,7 +1310,7 @@ var BindingSupportLib = {
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
-					convMethod, 0, signature, "FromJavaScript_" + this._get_type_name(typePtr)
+					convMethod, 0, signature, this._get_type_name(typePtr) + "$FromJavaScript"
 				);
 
 				var result = this._compile_pre_filter (typePtr, boundConverter, preFilter);
@@ -2014,14 +2014,14 @@ var BindingSupportLib = {
 			bodyJs = body.join ("\r\n");
 
 			if (friendly_name) {
-				var escapeRE = /[^A-Za-z0-9_]/g;
+				var escapeRE = /[^A-Za-z0-9_\$]/g;
 				friendly_name = friendly_name.replace(escapeRE, "_");
 			}
 
-			var displayName = "managed_" + (friendly_name || method);
+			var displayName = friendly_name || ("clr_" + method);
 
 			if (this_arg)
-				displayName += "_with_this_" + this_arg;
+				displayName += "_this" + this_arg;
 
 			var result = this._create_named_function(displayName, argumentNames, bodyJs, closure);
 
