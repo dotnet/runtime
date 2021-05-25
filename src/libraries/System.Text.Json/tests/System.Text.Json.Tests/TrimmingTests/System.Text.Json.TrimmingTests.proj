@@ -11,9 +11,6 @@
     <TestConsoleAppSourceFiles Include="Collections\ConcurrentQueue.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="Collections\ConcurrentStack.cs">
-      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
-    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\DictionaryOfTKeyTValue.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
