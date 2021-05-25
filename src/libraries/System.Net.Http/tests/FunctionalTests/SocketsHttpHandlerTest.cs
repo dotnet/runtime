@@ -1774,7 +1774,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(TimeSpan.FromMinutes(1), handler.PooledConnectionIdleTimeout);
 
                 handler.PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan;
                 Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionIdleTimeout);
@@ -1957,7 +1957,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
                 Assert.Equal(64, handler.MaxResponseHeadersLength);
                 Assert.False(handler.PreAuthenticate);
-                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(TimeSpan.FromMinutes(1), handler.PooledConnectionIdleTimeout);
                 Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionLifetime);
                 Assert.NotNull(handler.Properties);
                 Assert.Null(handler.Proxy);
