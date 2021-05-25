@@ -142,25 +142,7 @@ int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t 
         return ret;
     }
 
-    switch (ctx->algorithm)
-    {
-        case PAL_MD5:
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            return CC_MD5_Init(&ctx->d.md5);
-#pragma clang diagnostic pop
-        case PAL_SHA1:
-            return CC_SHA1_Init(&ctx->d.sha1);
-        case PAL_SHA256:
-            return CC_SHA256_Init(&ctx->d.sha256);
-        case PAL_SHA384:
-            return CC_SHA384_Init(&ctx->d.sha384);
-        case PAL_SHA512:
-            return CC_SHA512_Init(&ctx->d.sha512);
-        default:
-            assert(false);
-            return -2;
-    }
+    return AppleCryptoNative_DigestReset(ctx);
 }
 
 int32_t AppleCryptoNative_DigestCurrent(const DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
@@ -225,4 +207,32 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
         default:
             return -1;
     }
+}
+
+int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx)
+{
+    if (ctx == NULL)
+        return -1;
+
+    switch (ctx->algorithm)
+    {
+        case PAL_MD5:
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            return CC_MD5_Init(&ctx->d.md5);
+#pragma clang diagnostic pop
+        case PAL_SHA1:
+            return CC_SHA1_Init(&ctx->d.sha1);
+        case PAL_SHA256:
+            return CC_SHA256_Init(&ctx->d.sha256);
+        case PAL_SHA384:
+            return CC_SHA384_Init(&ctx->d.sha384);
+        case PAL_SHA512:
+            return CC_SHA512_Init(&ctx->d.sha512);
+        default:
+            assert(false);
+            return -2;
+    }
+
+    return 1;
 }

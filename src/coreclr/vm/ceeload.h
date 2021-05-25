@@ -1330,8 +1330,6 @@ private:
 
     PTR_PEFile              m_file;
 
-    MethodDesc              *m_pDllMain;
-
     enum {
         // These are the values set in m_dwTransientFlags.
         // Note that none of these flags survive a prejit save/restore.
@@ -2503,18 +2501,6 @@ public:
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature);
 
-    // DLL entry point
-    MethodDesc *GetDllEntryPoint()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDllMain;
-    }
-    void SetDllEntryPoint(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pDllMain = pMD;
-    }
-
 #ifdef FEATURE_PREJIT
     // This data is only valid for NGEN'd modules, and for modules we're creating at NGEN time.
     ModuleCtorInfo* GetZapModuleCtorInfo()
@@ -2525,10 +2511,7 @@ public:
     }
 #endif
 
- private:
-
-
- public:
+public:
 #ifndef DACCESS_COMPILE
     BOOL Equals(Module *pModule) { WRAPPER_NO_CONTRACT; return m_file->Equals(pModule->m_file); }
     BOOL Equals(PEFile *pFile) { WRAPPER_NO_CONTRACT; return m_file->Equals(pFile); }

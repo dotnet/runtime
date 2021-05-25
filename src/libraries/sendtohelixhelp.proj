@@ -105,6 +105,15 @@
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- 
+      We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
+      We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
+      For the HTTPS endpoint we need development SSL certificate.
+      Below is alternative to `dotnet dev-certs https` but we don't have full SDK installed on helix, so the tool is not available.
+    -->
+    <HelixPreCommand Include="powershell -command &quot;New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment&quot;" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />

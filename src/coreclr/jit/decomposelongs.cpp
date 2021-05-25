@@ -539,7 +539,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
 
     if ((cast->gtFlags & GTF_UNSIGNED) != 0)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     bool skipDecomposition = false;

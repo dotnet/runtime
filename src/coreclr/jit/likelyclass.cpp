@@ -37,7 +37,7 @@ struct LikelyClassHistogramEntry
 //
 struct LikelyClassHistogram
 {
-    LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount);
+    LikelyClassHistogram(INT_PTR* histogramEntries, unsigned entryCount);
 
     // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in
     // m_histogram
@@ -54,7 +54,7 @@ struct LikelyClassHistogram
     }
 };
 
-LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount)
+LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned entryCount)
 {
     m_unknownTypes                 = 0;
     m_totalCount                   = 0;
@@ -129,14 +129,16 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
                 return (CORINFO_CLASS_HANDLE)result;
         }
 
-        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
-            (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
+        bool isHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount) ||
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+
+        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
         {
             // Form a histogram
             //
-            LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset),
-                                   (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
+            LikelyClassHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
 
             // Use histogram count as number of classes estimate
             //
@@ -204,7 +206,6 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
                     if (maxKnownCount > 0)
                     {
                         *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;
-                        ;
                         return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(maxKnownIndex).m_mt;
                     }
 
