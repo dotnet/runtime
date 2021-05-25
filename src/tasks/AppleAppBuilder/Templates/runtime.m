@@ -268,6 +268,7 @@ mono_ios_runtime_init (void)
     // register modules
     register_aot_modules ();
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+    setenv("MONO_AOT_MODE", "aot", TRUE);
 #endif
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
