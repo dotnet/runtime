@@ -13,17 +13,10 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class JsonTypeInfoInternal<T> : JsonTypeInfo<T>
     {
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ConverterStrategy.Object"/>.
+        /// Creates serialization metadata given JsonSerializerOptions and a ConverterStrategy.
         /// </summary>
-        public JsonTypeInfoInternal() : base(typeof(T), null!, ConverterStrategy.Object)
-        {
-        }
-
-        /// <summary>
-        /// Creates serialization metadata for a <see cref="ConverterStrategy.Value"/>.
-        /// </summary>
-        public JsonTypeInfoInternal(JsonSerializerOptions options)
-            : base (typeof(T), options, ConverterStrategy.Value)
+        public JsonTypeInfoInternal(JsonSerializerOptions options, ConverterStrategy converterStrategy)
+            : base(typeof(T), options, converterStrategy)
         {
         }
 
@@ -90,13 +83,15 @@ namespace System.Text.Json.Serialization.Metadata
         /// Initializes serialization metadata for a <see cref="ConverterStrategy.Object"/>.
         /// </summary>
         public void InitializeAsObject(
-            JsonSerializerOptions options,
             Func<T>? createObjectFunc,
             Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
             JsonNumberHandling numberHandling,
             Action<Utf8JsonWriter, T>? serializeFunc)
         {
-            Options = options;
+            if (propInitFunc == null && serializeFunc == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_PropInitAndSerializeFuncsNull();
+            }
 
             if (serializeFunc != null)
             {
@@ -110,7 +105,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter = new SourceGenConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
 #pragma warning restore CS8714
 
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
+            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
             NumberHandling = numberHandling;
             PropInitFunc = propInitFunc;
 
@@ -127,11 +122,17 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineIfCanUseSerializeFastPath()
         {
-            Debug.Assert(Options == Options._context!.Options);
-            JsonSerializerOptions? contextDefaultOptions = Options._context!.DefaultOptions;
+            JsonSerializerContext? context = Options._context;
+            if (context == null)
+            {
+                return;
+            }
+
+            Debug.Assert(Options == context.Options);
+            JsonSerializerOptions? contextDefaultOptions = context.DefaultOptions;
             if (contextDefaultOptions == null)
             {
-                throw new InvalidOperationException($"To specify a fast-path implementation for type {typeof(T)}, context {Options._context.GetType()} must specify default options.");
+                throw new InvalidOperationException($"To specify a fast-path implementation for type {typeof(T)}, context {context.GetType()} must specify default options.");
             }
 
             UseFastPathOnWrite =

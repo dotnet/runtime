@@ -22,7 +22,7 @@ namespace System.Text.Json.Tests.Serialization
                     }
                     else
                     {
-                        _StringArray = JsonMetadataServices.CreateArrayInfo<string>(Options, this.String, default);
+                        _StringArray = JsonMetadataServices.CreateArrayInfo<string>(Options, this.String, default, serializeFunc: null);
                     }
                 }
 

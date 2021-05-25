@@ -453,7 +453,7 @@ namespace {_currentContext.ContextType.Namespace}
 
                 StringBuilder sb = new();
 
-                sb.Append($@"{JsonTypeInfoTypeRef}<{typeCompilableName}> objectInfo = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeCompilableName}>();
+                sb.Append($@"{JsonTypeInfoTypeRef}<{typeCompilableName}> objectInfo = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeCompilableName}>({OptionsInstanceVariableName});
                 _{typeFriendlyName} = objectInfo;
 ");
 
@@ -488,7 +488,6 @@ namespace {_currentContext.ContextType.Namespace}
                 sb.Append($@"
                 {JsonMetadataServicesTypeRef}.InitializeObjectInfo(
                     objectInfo,
-                    {OptionsInstanceVariableName},
                     {createObjectFuncTypeArg},
                     {propMetadataInitFuncNamedArg},
                     {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},

@@ -105,44 +105,47 @@ namespace System.Text.Json.Tests.Serialization
         public void CreateObjectInfo()
         {
             JsonSerializerOptions options = new();
-
-            JsonTypeInfo<MyClass> info = JsonMetadataServices.CreateObjectInfo<MyClass>();
-
-            // Null info
-            ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.InitializeObjectInfo<MyClass>(
-                info: null,
-                options: options,
-                createObjectFunc: null,
-                propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
-                numberHandling: default));
-            Assert.Contains("info", ane.ToString());
-
-            // Info is not for object converter strategy
-            ArgumentException ae = Assert.Throws<ArgumentException>(() => JsonMetadataServices.InitializeObjectInfo(
-                info: JsonMetadataServices.CreateValueInfo<MyClass>(options, new DerivedClassConverter()),
-                options: options,
-                createObjectFunc: null,
-                propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
-                numberHandling: default));
-            Assert.Contains("info", ae.ToString());
+            JsonTypeInfo<MyClass> info = JsonMetadataServices.CreateObjectInfo<MyClass>(options);
 
             // Null options
-            ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.InitializeObjectInfo(
-                info: info,
-                options: null,
-                createObjectFunc: null,
-                propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
-                numberHandling: default));
+            ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateObjectInfo<MyClass>(null!));
             Assert.Contains("options", ane.ToString());
 
-            // Null prop init func.
-            ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.InitializeObjectInfo(
-                info: info,
-                options: options,
+            // Null info
+            ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.InitializeObjectInfo<MyClass>(
+                info: null,
+                createObjectFunc: null,
+                propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
+                numberHandling: default,
+                serializeFunc: null));
+            Assert.Contains("info", ane.ToString());
+
+            // Null prop init func is fine if serialize func is provided.
+            JsonMetadataServices.InitializeObjectInfo(
+                info,
                 createObjectFunc: null,
                 propInitFunc: null,
-                numberHandling: default));
-            Assert.Contains("propInitFunc", ane.ToString());
+                numberHandling: default,
+                serializeFunc: (writer, obj) => { });
+
+            // Null serialize func is fine if prop init func is provided.
+            JsonMetadataServices.InitializeObjectInfo(
+                info,
+                createObjectFunc: null,
+                propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
+                numberHandling: default,
+                serializeFunc: null);
+
+            // Null prop init func and serialize func
+            InvalidOperationException ioe = Assert.Throws<InvalidOperationException>(() => JsonMetadataServices.InitializeObjectInfo(
+                info,
+                createObjectFunc: null,
+                propInitFunc: null,
+                numberHandling: default,
+                serializeFunc: null));
+            string ioeAsStr = ioe.ToString();
+            Assert.Contains("propInitFunc", ioeAsStr);
+            Assert.Contains("serializeFunc", ioeAsStr);
         }
 
         [Fact]
@@ -170,14 +173,16 @@ namespace System.Text.Json.Tests.Serialization
             ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateArrayInfo<int>(
                 options: null,
                 elementInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("options", ane.ToString());
 
             // Null element info
             ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateArrayInfo<int>(
-                options: options,
+                options,
                 elementInfo: null,
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("elementInfo", ane.ToString());
         }
 
@@ -191,7 +196,8 @@ namespace System.Text.Json.Tests.Serialization
                 options: null,
                 createObjectFunc: null,
                 elementInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("options", ane.ToString());
 
             // Null element info
@@ -199,7 +205,8 @@ namespace System.Text.Json.Tests.Serialization
                 options: options,
                 createObjectFunc: null,
                 elementInfo: null,
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("elementInfo", ane.ToString());
         }
 
@@ -214,7 +221,8 @@ namespace System.Text.Json.Tests.Serialization
                 createObjectFunc: null,
                 keyInfo: JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter),
                 valueInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("options", ane.ToString());
 
             // Null key info
@@ -223,7 +231,8 @@ namespace System.Text.Json.Tests.Serialization
                 createObjectFunc: null,
                 keyInfo: null,
                 valueInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("keyInfo", ane.ToString());
 
             // Null value info
@@ -232,7 +241,8 @@ namespace System.Text.Json.Tests.Serialization
                 createObjectFunc: null,
                 keyInfo: JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter),
                 valueInfo: null,
-                numberHandling: default));
+                numberHandling: default,
+                serializeFunc: null));
             Assert.Contains("valueInfo", ane.ToString());
         }
 

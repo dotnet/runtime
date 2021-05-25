@@ -23,12 +23,11 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                     else
                     {
-                        JsonTypeInfo<Person> objectInfo = JsonMetadataServices.CreateObjectInfo<Person>();
+                        JsonTypeInfo<Person> objectInfo = JsonMetadataServices.CreateObjectInfo<Person>(Options);
                         _Person = objectInfo;
 
                         JsonMetadataServices.InitializeObjectInfo(
                             objectInfo,
-                            Options,
                             createObjectFunc: static () => new Person(),
                             PersonPropInitFunc,
                             default,
