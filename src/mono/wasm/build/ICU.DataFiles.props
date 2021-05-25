@@ -15,6 +15,9 @@
 		<PlatformManifestFileEntry Include="icudt_cjk_coll.dat" IsNative="true" />
 		<PlatformManifestFileEntry Include="icudt_no_cjk_coll.dat" IsNative="true" />
 		<PlatformManifestFileEntry Include="icudt_full_coll.dat" IsNative="true" />
-		<PlatformManifestFileEntry Include="icudt_full.dat" IsNative="true" />
+		<PlatformManifestFileEntry Include="icudt_efigs_full.dat" IsNative="true" />
+		<PlatformManifestFileEntry Include="icudt_cjk_full.dat" IsNative="true" />
+		<PlatformManifestFileEntry Include="icudt_no_cjk_full.dat" IsNative="true" />
+		<PlatformManifestFileEntry Include="icudt_full_full.dat" IsNative="true" />
 	</ItemGroup>
 </Project>

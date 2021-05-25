@@ -1145,8 +1145,9 @@ var MonoSupportLib = {
 
 		_get_shard_name: function (shards, culture) {
 			// Get shard name that culture belongs to
+			var parent_culture = culture.includes('-') ? culture.split('-')[0] : culture;
 			for (var name in shards) {
-				if (culture.match(shards[name]))
+				if (parent_culture.match(shards[name]))
 					return name
 			}
 		},
@@ -1180,14 +1181,19 @@ var MonoSupportLib = {
 					}
 				}
 			}
-			console.log(JSON.stringify(icu_files))
 			icu_assets = [];
-			icu_files.forEach(file => icu_assets.push({
-														"behavior": "icu",
-														"name": file,
-														"load_remote": false,
-														"data_type": "common"
-													}));
+			icu_files.forEach(file => {
+				var type = "common";
+				// if (file.includes("locales"))
+				// 	type = "app";
+				icu_assets.push({
+									"behavior": "icu",
+									"name": file,
+									"load_remote": false,
+									"data_type": type
+								})
+				});
+				console.log(JSON.stringify(icu_assets))
 			return icu_assets;
 		},
 
@@ -1611,6 +1617,7 @@ var MonoSupportLib = {
 
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
+
 			switch (asset.behavior) {
 				case "resource":
 				case "assembly":

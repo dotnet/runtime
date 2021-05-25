@@ -594,5 +594,4 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       WasmAssembliesToBundle: @(WasmAssembliesToBundle)
       WasmAssembliesFinal: @(WasmAssembliesFinal)" />
   </Target>
-
 </Project>

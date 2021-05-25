@@ -41,7 +41,6 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    // public string? IcuDictionary { get; set; }
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -129,6 +128,7 @@ public class WasmAppBuilder : Task
             Log.LogError($"File MainJS='{MainJS}' doesn't exist.");
             return false;
         }
+
         // if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDictionary))
         // {
         //     Log.LogError("IcuDictionary property shouldn't be empty if InvariantGlobalization=false");
