@@ -177,10 +177,13 @@ public partial class ThreadPoolBoundHandleTests
         handle2.Dispose();
     }
 
-    [Fact]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
-    public unsafe void FlowsAsyncLocalsToCallback()
-    {   // Makes sure that we flow async locals to callback
+    public unsafe void FlowsAsyncLocalsToCallback(bool shouldFlow)
+    {
+        // Makes sure that we flow async locals to callback
 
         const int DATA_SIZE = 2;
 
@@ -201,7 +204,9 @@ public partial class ThreadPoolBoundHandleTests
             OnOverlappedOperationCompleted(_, __, ___);
         };
 
-        NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped(callback, context, data);
+        NativeOverlapped* overlapped = shouldFlow ?
+            boundHandle.AllocateNativeOverlapped(callback, context, data) :
+            boundHandle.UnsafeAllocateNativeOverlapped(callback, context, data);
 
         fixed (byte* p = data)
         {
@@ -220,7 +225,66 @@ public partial class ThreadPoolBoundHandleTests
         boundHandle.Dispose();
         handle.Dispose();
 
-        Assert.Equal(10, result);
+        Assert.Equal(
+            shouldFlow ? 10 : 0,
+            result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
+    public unsafe void FlowsAsyncLocalsToCallback_PreAllocatedOverlapped(bool shouldFlow)
+    {
+        // Makes sure that we flow async locals to callback
+
+        const int DATA_SIZE = 2;
+
+        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"AsyncLocal.tmp"));
+        ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle);
+
+        OverlappedContext context = new OverlappedContext();
+
+        byte[] data = new byte[DATA_SIZE];
+
+        AsyncLocal<int> asyncLocal = new AsyncLocal<int>();
+        asyncLocal.Value = 10;
+
+        int? result = null;
+        IOCompletionCallback callback = (_, __, ___) => {
+
+            result = asyncLocal.Value;
+            OnOverlappedOperationCompleted(_, __, ___);
+        };
+
+        using (PreAllocatedOverlapped preAlloc = shouldFlow ?
+            new PreAllocatedOverlapped(callback, context, data) :
+            PreAllocatedOverlapped.UnsafeCreate(callback, context, data))
+        {
+            NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped(preAlloc);
+
+            fixed (byte* p = data)
+            {
+                int retval = DllImport.WriteFile(boundHandle.Handle, p, DATA_SIZE, IntPtr.Zero, overlapped);
+
+                if (retval == 0)
+                {
+                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastPInvokeError());
+                }
+
+                // Wait for overlapped operation to complete
+                context.Event.WaitOne();
+            }
+
+            boundHandle.FreeNativeOverlapped(overlapped);
+        }
+
+        boundHandle.Dispose();
+        handle.Dispose();
+
+        Assert.Equal(
+            shouldFlow ? 10 : 0,
+            result);
     }
 
     private static unsafe void OnOverlappedOperationCompleted(uint errorCode, uint numBytes, NativeOverlapped* overlapped)

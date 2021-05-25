@@ -544,7 +544,7 @@ namespace System.IO.Strategies
             Debug.Assert(_preallocatedOverlapped == null);
 
             if (_useAsyncIO)
-                _preallocatedOverlapped = new PreAllocatedOverlapped(CompletionSource.s_ioCallback, this, _buffer);
+                _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(CompletionSource.s_ioCallback, this, _buffer);
         }
 
         private CompletionSource? CompareExchangeCurrentOverlappedOwner(CompletionSource? newSource, CompletionSource? existingSource)
