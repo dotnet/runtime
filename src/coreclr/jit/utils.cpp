@@ -2673,7 +2673,7 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 // Where "exponent" is a biased binary integer.
 // And "mantissa" is a fixed-point binary fraction of the following form:
 //
-//     mantissa = bits[1] * 2^-1 + bits[2] * 2^-2 + ... + bits[n] * 2^-N
+//     mantissa = bits[1] * 2^-1 + bits[2] * 2^-2 + ... + bits[N] * 2^-N
 //
 // Where "N" is the number of digits that depends on the width of floating point type
 // in question. It is equal to "23" for "float"s and to "52" for "double"s.
@@ -2683,12 +2683,12 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 //     return !((INT_MIN - 1) < fromValue && fromValue < (INT_MAX + 1));
 //
 // This is because casting uses the "round to zero" semantic: "checked((int)((double)int.MaxValue + 0.9))"
-// yields "(double)int.MaxValue" - not an error. Likewise, "checked((int)((double)int.MinValue - 0.9))"
-// results in "(double)int.MinValue". However, "checked((int)((double)int.MaxValue + 1))" will not compile.
+// yields "int.MaxValue" - not an error. Likewise, "checked((int)((double)int.MinValue - 0.9))"
+// results in "int.MinValue". However, "checked((int)((double)int.MaxValue + 1))" will not compile.
 //
 // The problem, of course, is that we are not dealing with real numbers, but rather floating point approximations.
-// At the same time, some real numbers - powers of two - can be represented in the floating point world exactly.
-// It so happens that both "INT_MIN - 1" and "INT_MAX + 1" can satsify that requirement for most cases.
+// At the same time, some real numbers can be represented in the floating point world exactly.
+// It so happens that both "INT_MIN - 1" and "INT_MAX + 1" can satisfy that requirement for most cases.
 // For unsigned integers, where M is the width of the type in bits:
 //
 //     INT_MIN - 1 = 0 - 1 = -2^0 - exactly representable.
@@ -2707,15 +2707,15 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 //     m = 2^(1 - M)
 //
 // In this case "m" is the "mantissa". The result obtained means that we can find the exact
-// value in cases when "|1 - M| <= N" <=> "M <= N - 1" - i. e. the precision is high enough for there to be a position
+// value in cases when "|1 - M| <= N" <=> "M <= N + 1" - i. e. the precision is high enough for there to be a position
 // in the fixed point mantissa that could represent the "-1". It is the case for the following combinations of types:
 //
-//     float + int8 / int16
-//     double + int8 / int16 / int32
+//     float -> int8 / int16
+//     double -> int8 / int16 / int32
 //
 // For the remaining cases, we could use a value that is the first representable one for the respective type
 // and is less than the infinitely precise MIN: -(1 + 2^-N) * 2^(M - 1).
-// However, a simpler appoach is to just use a different comparison.
+// However, a simpler approach is to just use a different comparison.
 // Instead of "MIN < fromValue", we'll do "MAX_MIN <= fromValue", where
 // "MAX_MIN" is just "-(2^(M - 1))" - the smallest representable value that can be cast safely.
 // The following table shows the final values and operations for MIN:
