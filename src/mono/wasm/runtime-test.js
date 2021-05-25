@@ -204,7 +204,7 @@ function loadScript (url)
 	}
 }
 
-loadScript ("mono-config.js");
+JSSupportLib.load_config();
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",

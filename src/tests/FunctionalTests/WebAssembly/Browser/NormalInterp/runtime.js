@@ -3,6 +3,10 @@
 
 var Module = { 
     onRuntimeInitialized: function () {
+        JSSupportLib.load_config(this.setupConfig);
+    },
+
+    setupConfig: function (config) {
         config.loaded_cb = function () {
             try {
                 App.init ();

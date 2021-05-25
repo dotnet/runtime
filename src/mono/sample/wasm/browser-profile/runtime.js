@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-var Module = {
+var Module = { 
     onRuntimeInitialized: function () {
+        JSSupportLib.load_config(this.setupConfig);
+    },
+
+    setupConfig: function (config) {
         config.loaded_cb = function () {
             try {
                 App.init ();
@@ -29,5 +33,5 @@ var Module = {
             test_exit(1);
             throw(error);
         }
-    }
+    },
 };
