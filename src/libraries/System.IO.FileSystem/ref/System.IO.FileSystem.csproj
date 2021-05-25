@@ -4,7 +4,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.IO.FileSystem.cs" />
     <Compile Include="System.IO.FileSystem.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -17,13 +17,6 @@ internal static partial class Interop
             uint Length,
             uint FileInformationClass);
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct IO_STATUS_BLOCK
-        {
-            private uint Status;
-            private IntPtr Information;
-        }
-
         internal const uint FileModeInformation = 16;
 
         internal const int STATUS_INVALID_HANDLE = unchecked((int)0xC0000008);

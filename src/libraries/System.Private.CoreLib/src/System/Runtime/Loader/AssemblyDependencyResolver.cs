@@ -6,7 +6,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal.IO;
 
 namespace System.Runtime.Loader
 {

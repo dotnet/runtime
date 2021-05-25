@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 
 #if MS_IO_REDIST
 using Microsoft.IO.Enumeration;
@@ -144,7 +143,7 @@ namespace System.IO
             => GetFiles(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetFiles(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => InternalEnumeratePaths(path, searchPattern, SearchTarget.Files, enumerationOptions).ToArray();
+            => EnumerableHelpers.ToArray(InternalEnumeratePaths(path, searchPattern, SearchTarget.Files, enumerationOptions), out _);
 
         public static string[] GetDirectories(string path) => GetDirectories(path, "*", enumerationOptions: EnumerationOptions.Compatible);
 
@@ -154,7 +153,7 @@ namespace System.IO
             => GetDirectories(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetDirectories(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => InternalEnumeratePaths(path, searchPattern, SearchTarget.Directories, enumerationOptions).ToArray();
+            => EnumerableHelpers.ToArray(InternalEnumeratePaths(path, searchPattern, SearchTarget.Directories, enumerationOptions), out _);
 
         public static string[] GetFileSystemEntries(string path) => GetFileSystemEntries(path, "*", enumerationOptions: EnumerationOptions.Compatible);
 
@@ -164,7 +163,7 @@ namespace System.IO
             => GetFileSystemEntries(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions).ToArray();
+            => EnumerableHelpers.ToArray(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions), out _);
 
         internal static IEnumerable<string> InternalEnumeratePaths(
             string path,
