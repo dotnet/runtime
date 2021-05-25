@@ -6006,10 +6006,10 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
 
 #ifdef FEATURE_SIMD
-    if (IsBaselineSimdIsaSupported())
+    // if this field belongs to simd struct, translate it to simd intrinsic.
+    if (mac == nullptr)
     {
-        // if this field belongs to simd struct, translate it to simd intrinsic.
-        if (mac == nullptr)
+        if (IsBaselineSimdIsaSupported())
         {
             GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
             if (newTree != tree)
@@ -6018,13 +6018,13 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 return newTree;
             }
         }
-        else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
+    }
+    else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
+    {
+        GenTreeLclVarCommon* lcl = objRef->IsLocalAddrExpr();
+        if (lcl != nullptr)
         {
-            GenTreeLclVarCommon* lcl = objRef->IsLocalAddrExpr();
-            if (lcl != nullptr)
-            {
-                lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DNER_LocalField));
-            }
+            lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DNER_LocalField));
         }
     }
 #endif
@@ -12079,7 +12079,7 @@ GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
     unsigned    simdSize        = 0;
     GenTree*    simdStructNode  = getSIMDStructFromField(tree->gtGetOp1(), &simdBaseJitType, &index, &simdSize);
 
-    if ((simdStructNode != nullptr) && IsBaselineSimdIsaSupported())
+    if (simdStructNode != nullptr)
     {
         var_types simdType     = simdStructNode->gtType;
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
