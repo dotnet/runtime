@@ -3208,8 +3208,12 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
 //
 // Return Value:     - Returns true if we should perform a folding operation.
 //
+// Notes:            - Does not handle operations producing TYP_BYREF.
+//
 bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
+    assert(typ != TYP_BYREF);
+
     // We have some arithmetic operations that will always throw
     // an exception given particular constant argument(s).
     // (i.e. integer division by zero)
@@ -3313,7 +3317,6 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
         }
         else
         {
-            // TODO-Review: what about TYP_BYREF?
             assert(!"Unexpected type in VNEvalShouldFold for overflow arithmetic");
             return false;
         }
