@@ -670,15 +670,8 @@ namespace System.Diagnostics.Tracing
         /// the ETW provider name.
         /// </summary>
         protected EventSource()
+            : this(EventSourceSettings.EtwManifestEventFormat, null)
         {
-            if (!IsSupported)
-                return;
-
-#if FEATURE_PERFTRACING
-            m_eventHandleTable = new TraceLoggingEventHandleTable();
-#endif
-            m_config = EventSourceSettings.EtwManifestEventFormat;
-            Initialize(null);
         }
 
         /// <summary>
