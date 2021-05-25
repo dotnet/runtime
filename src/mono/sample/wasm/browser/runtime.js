@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 var Module = { 
+    // Called when the runtime is initialized and wasm is ready
     onRuntimeInitialized: function () {
         JSSupportLib.load_config(this.setupConfig);
     },
 
+    // Called once the config file is loaded. THe contents of the config file
+    // are passed as a JS object within the config parameter
     setupConfig: function (config) {
         config.loaded_cb = function () {
             try {
