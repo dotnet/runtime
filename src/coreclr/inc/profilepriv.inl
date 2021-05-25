@@ -191,6 +191,11 @@ inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pP
     return pProfilerInfo;
 }
 
+inline BOOL IsProfilerPresentOrInitializing(ProfilerInfo *pProfilerInfo)
+{
+    return pProfilerInfo->curProfStatus.Get() > kProfStatusDetaching;
+}
+
 #ifndef DACCESS_COMPILE
 inline ProfilerInfo *ProfControlBlock::GetNextFreeProfilerInfo()
 {
@@ -221,7 +226,7 @@ inline void ProfControlBlock::UpdateGlobalEventMask()
 
         IterateProfilers([](ProfilerInfo *pProfilerInfo, UINT64 *pEventMask)
                           {
-                              if (IsProfilerPresent(pProfilerInfo))
+                              if (IsProfilerPresentOrInitializing(pProfilerInfo))
                               {
                                   *pEventMask |= pProfilerInfo->eventMask.m_eventMask;
                               }
@@ -1961,7 +1966,7 @@ inline BOOL CORProfilerTrackConditionalWeakTableElements()
 inline BOOL CORProfilerPresentOrInitializing()
 {
     LIMITED_METHOD_CONTRACT;
-    return AnyProfilerPassesCondition([](ProfilerInfo *pProfilerInfo) { return pProfilerInfo->curProfStatus.Get() > kProfStatusDetaching; });
+    return AnyProfilerPassesCondition(IsProfilerPresentOrInitializing);
 }
 
 // These return whether a CLR Profiler has requested the specified functionality.
