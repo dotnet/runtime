@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
+#nullable enable
+
 #if CODEDOM
 namespace System.CodeDom
 #else
@@ -283,7 +285,7 @@ namespace System.Runtime.Serialization
 
 #if CODEDOM
         public CodeTypeReference(CodeTypeParameter typeParameter) :
-            this(typeParameter?.Name)
+            this(typeParameter?.Name!)
         {
             Options = CodeTypeReferenceOptions.GenericTypeParameter;
         }

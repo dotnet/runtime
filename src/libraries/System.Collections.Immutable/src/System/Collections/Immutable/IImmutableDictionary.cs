@@ -11,7 +11,9 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
+#pragma warning disable CS8714 // The type 'TKey' cannot be used as type parameter 'TKey' in the generic type or method 'IReadOnlyDictionary<TKey, TValue>'. Nullability of type argument 'TKey' doesn't match 'notnull' constraint.
     public interface IImmutableDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
+#pragma warning restore CS8714
     {
         /// <summary>
         /// Gets an empty dictionary with equivalent ordering and key/value comparison rules.

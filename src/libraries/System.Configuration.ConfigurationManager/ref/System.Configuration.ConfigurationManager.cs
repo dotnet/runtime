@@ -1052,6 +1052,7 @@ namespace System.Configuration
     {
         public SettingsAttributeDictionary() { }
         public SettingsAttributeDictionary(System.Configuration.SettingsAttributeDictionary attributes) { }
+        protected SettingsAttributeDictionary(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class SettingsBase
     {
@@ -1070,6 +1071,7 @@ namespace System.Configuration
     public partial class SettingsContext : System.Collections.Hashtable
     {
         public SettingsContext() { }
+        protected SettingsContext(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class SettingsDescriptionAttribute : System.Attribute
