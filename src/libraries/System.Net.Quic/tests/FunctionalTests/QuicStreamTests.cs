@@ -560,13 +560,13 @@ namespace System.Net.Quic.Tests
                     using CancellationTokenSource cts = new CancellationTokenSource();
                     CancellationToken cancellationToken = cts.Token;
 
-                    ValueTask closeTask = clientStream.CloseAsync(cancellationToken);
+                    Task<OperationCanceledException> oceTask = Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await clientStream.CloseAsync(cancellationToken));
 
                     await Task.Delay(500);
-                    Assert.False(closeTask.IsCompleted);
+                    Assert.False(oceTask.IsCompleted);
 
                     cts.Cancel();
-                    OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await closeTask);
+                    OperationCanceledException oce = await oceTask;
                     Assert.Equal(cancellationToken, oce.CancellationToken);
 
                     // Abort the stream, causing the other side to close.

@@ -426,6 +426,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
+            if ((abortDirection & QuicAbortDirection.Immediate) == QuicAbortDirection.Immediate)
+            {
+                flags |= QUIC_STREAM_SHUTDOWN_FLAGS.IMMEDIATE;
+            }
+
             StartShutdownOrAbort(flags, errorCode);
 
             if (completeWrites)
@@ -443,6 +448,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         /// <param name="errorCode">For abortive flags, the error code sent to peer. Otherwise, ignored.</param>
         private void StartShutdownOrAbort(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
+            Debug.Assert(!_disposed);
+
             uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
         }
@@ -478,37 +485,42 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         public override ValueTask DisposeAsync(CancellationToken cancellationToken) =>
-            DisposeAsync(cancellationToken, async: true, immediate: _state.SendState == SendState.Aborted);
+            DisposeAsync(cancellationToken, async: true);
 
-        public override void Dispose() =>
-            Dispose(immediate: _state.SendState == SendState.Aborted);
-
-        ~MsQuicStream() =>
-            Dispose(immediate: true);
-
-        private void Dispose(bool immediate)
+        public override void Dispose()
         {
-            ValueTask t = DisposeAsync(cancellationToken: default, async: false, immediate);
+            ValueTask t = DisposeAsync(cancellationToken: default, async: false);
             Debug.Assert(t.IsCompleted);
             t.GetAwaiter().GetResult();
         }
 
-        /// <param name="cancellationToken"></param>
-        /// <param name="async"></param>
-        /// <param name="immediate">When true, causes immediate disposal without waiting for peer ACKs.</param>
-        /// <returns></returns>
-        private async ValueTask DisposeAsync(CancellationToken cancellationToken, bool async, bool immediate)
+        ~MsQuicStream()
+        {
+            DisposeAsyncThrowaway(this);
+
+            // This is weird due to needing to keep _state alive for MsQuic's callback.
+            // See DisposeAsync implementation for details.
+
+            static async void DisposeAsyncThrowaway(MsQuicStream stream)
+            {
+                await stream.DisposeAsync(cancellationToken: default, async: true).ConfigureAwait(false);
+            }
+        }
+
+        private async ValueTask DisposeAsync(CancellationToken cancellationToken, bool async)
         {
             if (_disposed)
             {
                 return;
             }
 
-            QUIC_STREAM_SHUTDOWN_FLAGS flags = immediate
-                ? (QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL | QUIC_STREAM_SHUTDOWN_FLAGS.IMMEDIATE)
-                : QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL;
+            // MsQuic will ignore this call if it was already shutdown elsewhere.
+            // PERF TODO: update write loop to make it so we don't need to call this. it queues an event to the MsQuic thread pool.
+            StartShutdownOrAbort(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
 
-            StartShutdownOrAbort(flags, errorCode: 0);
+            // MsQuic will continue sending us events, so we need to wait for shutdown
+            // completion (the final event) before freeing _stateHandle's GCHandle.
+            // If Abort() wasn't called with "immediate", this will wait for peer to shut down their write side.
 
             if (async)
             {
@@ -593,6 +605,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static unsafe uint HandleEventRecv(State state, ref StreamEvent evt)
         {
             ref StreamEventDataReceive receiveEvent = ref evt.Data.Receive;
+
+            if (receiveEvent.BufferCount == 0)
+            {
+                // This is a 0-length receive that happens once reads are finished (via abort or otherwise).
+                // State changes for this are handled elsewhere.
+                return MsQuicStatusCodes.Success;
+            }
 
             int readLength;
 

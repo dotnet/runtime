@@ -323,8 +323,6 @@ namespace System.Net.Quic.Tests
                             await stream.WriteAsync(data[pos..(pos + writeSize)]);
                         }
                         await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
-
-                        await stream.ShutdownCompleted();
                     },
                     clientFunction: async connection =>
                     {
@@ -340,8 +338,6 @@ namespace System.Net.Quic.Tests
                         int bytesRead = await ReadAll(stream, buffer);
                         Assert.Equal(data.Length, bytesRead);
                         AssertArrayEqual(data, buffer);
-
-                        await stream.ShutdownCompleted();
                     }
                 );
             }

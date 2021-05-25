@@ -95,7 +95,7 @@ namespace System.Net.Quic
         /// </summary>
         /// <param name="errorCode">The error code to abort with.</param>
         /// <param name="abortDirection">The direction of the abort.</param>
-        public void Abort(long errorCode, QuicAbortDirection abortDirection = QuicAbortDirection.Both) => _provider.Abort(errorCode, abortDirection);
+        public void Abort(long errorCode, QuicAbortDirection abortDirection = QuicAbortDirection.Immediate) => _provider.Abort(errorCode, abortDirection);
 
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, endStream, cancellationToken);
 
@@ -107,6 +107,7 @@ namespace System.Net.Quic
 
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
 
+        /// <inheritdoc cref="CloseAsync(CancellationToken)" path="//*[not(self::param or self::returns)]"/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -115,13 +116,18 @@ namespace System.Net.Quic
             }
         }
 
+        /// <inheritdoc cref="CloseAsync(CancellationToken)" path="//*[not(self::param)]"/>
         public override ValueTask DisposeAsync() => CloseAsync();
 
         /// <summary>
-        /// Gracefully shuts down and closes the <see cref="QuicStream"/>, leaving it in a disposed state.
+        /// Shuts down and closes the <see cref="QuicStream"/>, leaving it in a disposed state.
         /// </summary>
         /// <param name="cancellationToken">If triggered, an <see cref="OperationCanceledException"/> will be thrown and the stream will be left undisposed.</param>
         /// <returns>A <see cref="ValueTask"/> representing the asynchronous closure of the <see cref="QuicStream"/>.</returns>
+        /// <remarks>
+        /// When the stream has been been aborted with <see cref="QuicAbortDirection.Immediate"/>, this will complete independent of the peer.
+        /// Otherwise, this will wait for the peer to complete their write side (gracefully or abortive) and drain any bytes received in the mean time.
+        /// </remarks>
         public ValueTask CloseAsync(CancellationToken cancellationToken = default) => _provider.DisposeAsync(cancellationToken);
     }
 }

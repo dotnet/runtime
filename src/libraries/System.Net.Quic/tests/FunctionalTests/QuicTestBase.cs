@@ -84,7 +84,16 @@ namespace System.Net.Quic.Tests
                     }
                     catch
                     {
-                        clientStream.Abort(ClientThrewAbortCode);
+                        try
+                        {
+                            // abort the stream to give the peer a chance to tear down.
+                            clientStream.Abort(ClientThrewAbortCode);
+                        }
+                        catch(ObjectDisposedException)
+                        {
+                            // do nothing.
+                        }
+
                         throw;
                     }
                 },
@@ -97,7 +106,15 @@ namespace System.Net.Quic.Tests
                     }
                     catch
                     {
-                        serverStream.Abort(ServerThrewAbortCode);
+                        try
+                        {
+                            // abort the stream to give the peer a chance to tear down.
+                            serverStream.Abort(ServerThrewAbortCode);
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // do nothing.
+                        }
                         throw;
                     }
                 }, iterations, millisecondsTimeout);

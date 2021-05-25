@@ -12,6 +12,7 @@ namespace System.Net.Quic
         Read = 1,
         Write = 2,
         Both = 3,
+        Immediate = 7
     }
     public partial class QuicClientConnectionOptions : System.Net.Quic.QuicOptions
     {
@@ -92,7 +93,7 @@ namespace System.Net.Quic
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public long StreamId { get { throw null; } }
-        public void Abort(long errorCode, System.Net.Quic.QuicAbortDirection abortDirection = System.Net.Quic.QuicAbortDirection.Both) { }
+        public void Abort(long errorCode, System.Net.Quic.QuicAbortDirection abortDirection = System.Net.Quic.QuicAbortDirection.Immediate) { }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public System.Threading.Tasks.ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
