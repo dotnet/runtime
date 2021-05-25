@@ -21,7 +21,7 @@ namespace System.Diagnostics.Metrics
     {
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // LinkedList is thread safe for Add, Remove, and Clear operations.
-        private static LinkedList<MeterListener> s_allStartedListeners = new LinkedList<MeterListener>();
+        private static List<MeterListener> s_allStartedListeners = new List<MeterListener>();
 
         // List of the instruments which the current listener is listening to.
         private LinkedList<Instrument> _enabledMeasurementInstruments = new LinkedList<Instrument>();
@@ -59,27 +59,25 @@ namespace System.Diagnostics.Metrics
         /// <param name="state">A state object which will be passed back to the callback getting measurements events.</param>
         public void EnableMeasurementEvents(Instrument instrument, object? state = null)
         {
+            bool oldStateStored = false;
             bool enabled = false;
-            List<object?>? states = null;
+            object? oldState = null;
 
             lock (Instrument.SyncObject)
             {
                 if (instrument is not null && !_disposed && !instrument.Meter.Disposed)
                 {
                     _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
-                    states = instrument.EnableMeasurement(new ListenerSubscription(this, state));
+                    oldState = instrument.EnableMeasurement(new ListenerSubscription(this, state), out oldStateStored);
                     enabled = true;
                 }
             }
 
             if (enabled)
             {
-                if (states is not null && MeasurementsCompleted is not null)
+                if (oldStateStored && MeasurementsCompleted is not null)
                 {
-                    foreach (object? st in states)
-                    {
-                        MeasurementsCompleted?.Invoke(instrument!, st);
-                    }
+                    MeasurementsCompleted?.Invoke(instrument!, oldState);
                 }
             }
             else
@@ -158,14 +156,27 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Start()
         {
-            if (_disposed)
+            List<Instrument>? publishedInstruments = null;
+            lock (Instrument.SyncObject)
             {
-                return;
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (!s_allStartedListeners.Contains(this))
+                {
+                    s_allStartedListeners.Add(this);
+                    publishedInstruments = Meter.GetPublishedInstruments();
+                }
             }
 
-            if (s_allStartedListeners.AddIfNotExist(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2)))
+            if (publishedInstruments is not null)
             {
-                Meter.NotifyListenerWithAllPublishedInstruments(this);
+                foreach (Instrument instrument in publishedInstruments)
+                {
+                    InstrumentPublished?.Invoke(instrument, this);
+                }
             }
         }
 
@@ -201,7 +212,7 @@ namespace System.Diagnostics.Metrics
                     return;
                 }
                 _disposed = true;
-                s_allStartedListeners.Remove(this, (listener1, listener2) => object.ReferenceEquals(listener1, listener2));
+                s_allStartedListeners.Remove(this);
 
                 LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
                 if (current is not null && measurementsCompleted is not null)
@@ -229,57 +240,7 @@ namespace System.Diagnostics.Metrics
         }
 
         // Publish is called from Instrument.Publish
-        internal static void Publish(Instrument instrument)
-        {
-            List<MeterListener>? listeners = null;
-
-            lock (Instrument.SyncObject)
-            {
-                if (instrument is null || instrument.Meter.Disposed || !instrument.Meter.AddInstrument(instrument))
-                {
-                    return;
-                }
-
-                LinkedListNode<MeterListener>? current = s_allStartedListeners.First;
-                if (current is not null)
-                {
-                    listeners = new List<MeterListener>();
-
-                    do
-                    {
-                        // Notify only if the listener didn't already registered this instrument before as the notification should be already happened.
-                        if (!current.Value.IsRegisteredInstrument(instrument))
-                        {
-                            listeners.Add(current.Value);
-                        }
-                        current = current.Next;
-                    } while (current is not null);
-                }
-            }
-
-            if (listeners is not null)
-            {
-                foreach (MeterListener listener in listeners)
-                {
-                    listener.InstrumentPublished?.Invoke(instrument, listener);
-                }
-            }
-        }
-
-        internal bool IsRegisteredInstrument(Instrument instrument)
-        {
-            LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
-            while (current is not null)
-            {
-                if (object.ReferenceEquals(instrument, current.Value))
-                {
-                    return true;
-                }
-                current = current.Next;
-            }
-
-            return false;
-        }
+        internal static List<MeterListener>? GetAllListeners() => s_allStartedListeners.Count == 0 ? null : new List<MeterListener>(s_allStartedListeners);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void NotifyMeasurement<T>(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) where T : struct
