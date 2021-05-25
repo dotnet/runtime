@@ -312,6 +312,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     int                 numArgs      = sig->numArgs;
     var_types           simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
+    if (!featureSIMD || !IsBaselineSimdIsaSupported())
+    {
+        return nullptr;
+    }
+
     assert(numArgs >= 0);
     assert(varTypeIsArithmetic(simdBaseType));
 
@@ -350,11 +355,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(!sig->hasThis());
             assert(numArgs == 1);
 
-            if (!featureSIMD)
-            {
-                return nullptr;
-            }
-
             // We fold away the cast here, as it only exists to satisfy
             // the type system. It is safe to do this here since the retNode type
             // and the signature return type are both the same TYP_SIMD.
@@ -370,11 +370,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             // We shouldn't handle this as an intrinsic if the
             // respective ISAs have been disabled by the user.
-
-            if (!compExactlyDependsOn(InstructionSet_AdvSimd))
-            {
-                break;
-            }
 
             if (sig->numArgs == 1)
             {
@@ -422,11 +417,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(!sig->hasThis());
             assert(numArgs == 2);
 
-            if (!featureSIMD || !compExactlyDependsOn(InstructionSet_AdvSimd))
-            {
-                return nullptr;
-            }
-
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
@@ -435,15 +425,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_get_Zero:
         case NI_Vector64_get_AllBitsSet:
-        case NI_Vector128_get_Zero:
         case NI_Vector128_get_AllBitsSet:
+        case NI_Vector64_get_Zero:
+        case NI_Vector128_get_Zero:
         {
             assert(!sig->hasThis());
             assert(numArgs == 0);
 
             retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_GetUpper:
+        {
+            // Converts to equivalent managed code:
+            //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
+            assert(numArgs == 1);
+            op1            = impPopStack().val;
+            GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, simdBaseJitType, simdSize);
+            ssize_t  index = 8 / genTypeSize(simdBaseType);
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                                               simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, retNode, NI_Vector128_GetLower, simdBaseJitType, 8);
             break;
         }
 
@@ -454,6 +459,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* indexOp = impStackTop(1).val;
             if (!indexOp->OperIsConst())
             {
+                // TODO-XARCH-CQ: We should always import these like we do with GetElement
                 // If index is not constant use software fallback.
                 return nullptr;
             }
@@ -473,21 +479,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ true);
-            break;
-        }
-
-        case NI_Vector128_GetUpper:
-        {
-            // Converts to equivalent managed code:
-            //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
-            assert(numArgs == 1);
-            op1            = impPopStack().val;
-            GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, simdBaseJitType, simdSize);
-            ssize_t  index = 8 / genTypeSize(simdBaseType);
-
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
-                                               simdBaseJitType, simdSize);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, retNode, NI_Vector128_GetLower, simdBaseJitType, 8);
             break;
         }
 
