@@ -9672,6 +9672,17 @@ get_field_value:
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		buffer_add_domainid (buf, obj->vtable->domain);
 		break;
+	case MDBGPROT_CMD_OBJECT_REF_DELEGATE_GET_METHOD:
+		buffer_add_methodid (buf, obj->vtable->domain, ((MonoDelegate *)obj)->method);
+		break;
+	case MDBGPROT_CMD_OBJECT_IS_DELEGATE: {
+		MonoType *type = m_class_get_byval_arg (obj_type);
+		if (m_class_is_delegate (obj_type) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (type->data.generic_class->container_class)))
+			buffer_add_byte (buf, TRUE);
+		else
+			buffer_add_byte (buf, FALSE);
+		break;
+	}
 	default:
 		err = ERR_NOT_IMPLEMENTED;
 		goto exit;

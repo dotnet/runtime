@@ -266,7 +266,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         REF_GET_DOMAIN = 5,
         REF_SET_VALUES = 6,
         REF_GET_INFO = 7,
-        GET_VALUES_ICORDBG = 8
+        GET_VALUES_ICORDBG = 8,
+        REF_DELEGATE_GET_METHOD = 9,
+        REF_IS_DELEGATE = 10
     }
 
     internal enum ElementType {
@@ -653,6 +655,45 @@ namespace Microsoft.WebAssembly.Diagnostics
             return param_count;
         }
 
+        public async Task<string> GetReturnType(SessionId sessionId, int method_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(method_id);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_PARAM_INFO, command_params, token);
+            ret_debugger_cmd_reader.ReadInt32();
+            ret_debugger_cmd_reader.ReadInt32();
+            ret_debugger_cmd_reader.ReadInt32();
+            var retType = ret_debugger_cmd_reader.ReadInt32();
+            var ret = await GetTypeName(sessionId, retType, token);
+            return ret;
+        }
+
+        public async Task<string> GetParameters(SessionId sessionId, int method_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(method_id);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_PARAM_INFO, command_params, token);
+            ret_debugger_cmd_reader.ReadInt32();
+            var paramCount = ret_debugger_cmd_reader.ReadInt32();
+            ret_debugger_cmd_reader.ReadInt32();
+            var retType = ret_debugger_cmd_reader.ReadInt32();
+            var parameters = "(";
+            for (int i = 0 ; i < paramCount; i++)
+            {
+                var paramType = ret_debugger_cmd_reader.ReadInt32();
+                parameters += await GetTypeName(sessionId, paramType, token);
+                parameters = parameters.Replace("System.Func", "Func");
+                if (i + 1 < paramCount)
+                    parameters += ",";
+            }
+            parameters += ")";
+            return parameters;
+        }
+
         public async Task<int> SetBreakpoint(SessionId sessionId, int method_id, long il_offset, CancellationToken token)
         {
             var command_params = new MemoryStream();
@@ -839,6 +880,43 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_METHODS_BY_NAME_FLAGS, command_params, token);
             var nMethods = ret_debugger_cmd_reader.ReadInt32();
             return ret_debugger_cmd_reader.ReadInt32();
+        }
+
+        public async Task<bool> IsDelegate(SessionId sessionId, int objectId, CancellationToken token)
+        {
+            var ret = new List<string>();
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write((int)objectId);
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.OBJECT_REF, (int) CmdObject.REF_IS_DELEGATE, command_params, token);
+            return ret_debugger_cmd_reader.ReadByte() == 1;
+        }
+
+        public async Task<int> GetDelegateMethod(SessionId sessionId, int objectId, CancellationToken token)
+        {
+            var ret = new List<string>();
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write((int)objectId);
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.OBJECT_REF, (int) CmdObject.REF_DELEGATE_GET_METHOD, command_params, token);
+            return ret_debugger_cmd_reader.ReadInt32();
+        }
+
+        public async Task<string> GetDelegateMethodDescription(SessionId sessionId, int objectId, CancellationToken token)
+        {
+            var methodId = await GetDelegateMethod(sessionId, objectId, token);
+
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(methodId);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_NAME, command_params, token);
+            var methodName = ret_debugger_cmd_reader.ReadString();
+
+            var returnType = await GetReturnType(sessionId, methodId, token);
+            var parameters = await GetParameters(sessionId, methodId, token);
+
+            return $"{returnType} {methodName} {parameters}";
         }
         public async Task<JObject> InvokeMethod(SessionId sessionId, byte[] valueTypeBuffer, int method_id, string varName, CancellationToken token)
         {
@@ -1215,14 +1293,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.Object:
                 {
                     var objectId = ret_debugger_cmd_reader.ReadInt32();
-                    var value = await GetClassNameFromObject(sessionId, objectId, token);
+                    var type_id = await GetTypeIdFromObject(sessionId, objectId, false, token);
+                    var className = await GetTypeName(sessionId, type_id[0], token);
+                    var description = className.ToString();
+                    if (await IsDelegate(sessionId, objectId, token))
+                    {
+                        description = await GetDelegateMethodDescription(sessionId, objectId, token);
+                    }
                     ret = JObject.FromObject(new {
                             value = new
                             {
                                 type = "object",
                                 objectId = $"dotnet:object:{objectId}", //maybe pass here the typeId and avoid another call to debugger-agent when getting fields
-                                description = value.ToString(),
-                                className = value.ToString(),
+                                description,
+                                className,
                             },
                             name
                         });
@@ -1472,7 +1556,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             name = propertyNameStr
                         }));
             }
-            //Console.WriteLine("GetValueTypeProxy - " + valueTypes[valueTypeId].valueTypeProxy);
             return valueTypes[valueTypeId].valueTypeProxy;
         }
 
@@ -1497,7 +1580,24 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, bool withProperties, bool withSetter, bool accessorPropertiesOnly, bool ownProperties, CancellationToken token)
         {
             var typeId = await GetTypeIdFromObject(sessionId, objectId, true, token);
+            var className = await GetTypeName(sessionId, typeId[0], token);
             JArray ret = new JArray();
+            if (await IsDelegate(sessionId, objectId, token))
+            {
+                var description = await GetDelegateMethodDescription(sessionId, objectId, token);
+
+                var obj = JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "symbol",
+                                value = description,
+                                description
+                            },
+                            name = "Target"
+                        });
+                ret.Add(obj);
+                return ret;
+            }
             for (int i = 0; i < typeId.Count; i++)
             {
                 if (!accessorPropertiesOnly)
