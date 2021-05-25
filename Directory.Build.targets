@@ -93,7 +93,7 @@
 
     <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
                       Lines="$(_NETStandardCompatErrorFileContent)"
-                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true"
                       Encoding="Unicode" />
 
     <ItemGroup>
