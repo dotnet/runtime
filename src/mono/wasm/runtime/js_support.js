@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// THIS FILE IS COPIED DIRECTLY INTO THE DOTNET.JS FILE WITHOUT BEING RUN OR COMPILED/OPTIMZIED
+// THIS FILE IS COPIED DIRECTLY INTO THE DOTNET.JS FILE WITHOUT BEING RUN OR COMPILED/OPTIMIZED
 // IT I MEANT AS A SET OF JS TOOLS TO SUPPORT THE SDK
 
 var JSSupportLib = {
@@ -9,7 +9,9 @@ var JSSupportLib = {
     load_config: function (callback) {
         if (ENVIRONMENT_IS_NODE){
             const config = require('./mono-config.json');
-            callback(config);
+            if (callback){
+                callback(config);
+            }
         }
         var xobj = new XMLHttpRequest();
         xobj.overrideMimeType("application/json");
@@ -17,7 +19,9 @@ var JSSupportLib = {
         xobj.onreadystatechange = function () {
             if (xobj.readyState == 4 && xobj.status == "200") {
                 const config = JSON.parse(xobj.responseText);
-                callback(config);
+                if (callback){
+                    callback(config);
+                }
             }
         };
         xobj.send();  

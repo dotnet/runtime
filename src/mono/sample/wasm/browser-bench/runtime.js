@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 var Module = { 
     onRuntimeInitialized: function () {
-        JSSupportLib.load_config(this.setupConfig);
+        JSSupportLib.load_config(this.onConfigLoaded);
     },
 
-    setupConfig: function (config) {
+    onConfigLoaded: function (config) {
         config.loaded_cb = function () {
             try {
                 App.init ();

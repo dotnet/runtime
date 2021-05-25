@@ -4,12 +4,12 @@
 var Module = { 
     // Called when the runtime is initialized and wasm is ready
     onRuntimeInitialized: function () {
-        JSSupportLib.load_config(this.setupConfig);
+        JSSupportLib.load_config(this.onConfigLoaded);
     },
 
     // Called once the config file is loaded. THe contents of the config file
     // are passed as a JS object within the config parameter
-    setupConfig: function (config) {
+    onConfigLoaded: function (config) {
         config.loaded_cb = function () {
             try {
                 App.init ();
