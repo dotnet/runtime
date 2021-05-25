@@ -475,6 +475,17 @@
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+
+    <!-- strip -->
+    <PropertyGroup>
+      <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
+    </PropertyGroup>
+    <Message Condition="$([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux'))" Text="Stripping debug symbols from $(_MonoRuntimeFilePath)" Importance="High"/>
+    <Exec Condition="$([MSBuild]::IsOSPlatform('OSX'))" Command="dsymutil --flat --minimize $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="$([MSBuild]::IsOSPlatform('OSX'))" Command="strip -no_code_signature_warning -S $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="$([MSBuild]::IsOSPlatform('Linux'))" Command="objcopy --only-keep-debug $(_MonoRuntimeFilePath) $(_MonoRuntimeFilePath).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="$([MSBuild]::IsOSPlatform('Linux'))" Command="objcopy --strip-unneeded $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="$([MSBuild]::IsOSPlatform('Linux'))" Command="objcopy --add-gnu-debuglink=$(_MonoRuntimeFilePath).dbg $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
