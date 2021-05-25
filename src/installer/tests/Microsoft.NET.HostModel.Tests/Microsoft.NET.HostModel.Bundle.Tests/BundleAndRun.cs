@@ -51,6 +51,9 @@ namespace Microsoft.NET.HostModel.Tests
             string fatApp = path + ".fat";
             string arch = BundleHelper.GetTargetArch(rid) == Architecture.Arm64 ? "arm64" : "x86_64";
 
+            // We will create a universal binary with just one arch slice and run it.
+            // It is enough for testing purposes. The code that finds the releavant slice
+            // would work the same regardless if there is 1, 2, 3 or more slices.
             Command.Create("lipo", $"-create -arch {arch} {path} -output {fatApp}")
                 .CaptureStdErr()
                 .CaptureStdOut()
