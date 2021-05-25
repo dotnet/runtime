@@ -11190,9 +11190,6 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
     CodeHeader* pCodeHeader = m_CodeHeader;
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
-
-    delete [] (BYTE*)m_CodeHeaderRW;
-    m_CodeHeaderRW = NULL;
 }
 
 /*********************************************************************/
@@ -11213,13 +11210,9 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
 #endif // USE_INDIRECT_CODEHEADER
 
     memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
-    delete [] (BYTE*)m_CodeHeaderRW;
-    m_CodeHeaderRW = NULL;
-    m_codeWriteBufferSize = 0;
 
     // Now that the code header was written to the final location, publish the code via the nibble map
-    jitMgr->NibbleMapSetUnlocked(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), TRUE);
-    m_pCodeHeap = NULL;
+    jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), TRUE);
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find

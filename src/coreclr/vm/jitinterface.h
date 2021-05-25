@@ -868,6 +868,8 @@ public:
             MODE_ANY;
         } CONTRACTL_END;
 
+        delete [] (BYTE*)m_CodeHeaderRW;
+
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
 

@@ -2679,7 +2679,7 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
 
         pCodeHdr = ((CodeHeader *)pCode) - 1;
 
-        *pAllocatedSize = sizeof(CodeHeader) + totalSize + reserveForJumpStubs;
+        *pAllocatedSize = sizeof(CodeHeader) + totalSize;
         pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
 
 #ifdef USE_INDIRECT_CODEHEADER
@@ -3005,7 +3005,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
         pCodeHdr->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        NibbleMapSet(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
         pBlock = (JumpStubBlockHeader *)mem;
 
@@ -3056,7 +3056,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
         pCodeHdr->SetStubCodeBlockKind(kind);
 
-        NibbleMapSet(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
         // Record the jump stub reservation
         pCodeHeap->reserveForJumpStubs += requestInfo.getReserveForJumpStubs();
@@ -3234,7 +3234,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         if (pHp == NULL)
             return;
 
-        NibbleMapSet(pHp, (TADDR)(pCHdr + 1), FALSE);
+        NibbleMapSetUnlocked(pHp, (TADDR)(pCHdr + 1), FALSE);
     }
 
     // Backout the GCInfo
@@ -3396,7 +3396,7 @@ void EEJitManager::FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart)
     // so pCodeHeap can only be a HostCodeHeap.
 
     // clean up the NibbleMap
-    NibbleMapSet(pCodeHeap->m_pHeapList, (TADDR)codeStart, FALSE);
+    NibbleMapSetUnlocked(pCodeHeap->m_pHeapList, (TADDR)codeStart, FALSE);
 
     // The caller of this method doesn't call HostCodeHeap->FreeMemForCode
     // directly because the operation should be protected by m_CodeHeapCritSec.
@@ -3861,7 +3861,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 
 #if !defined(DACCESS_COMPILE)
 
-void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
+void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
 {
     CONTRACTL {
         NOTHROW;
@@ -3869,10 +3869,10 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
     } CONTRACTL_END;
 
     CrstHolder ch(&m_CodeHeapCritSec);
-    NibbleMapSet(pHp, pCode, bSet);
+    NibbleMapSetUnlocked(pHp, pCode, bSet);
 }
 
-void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
+void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
 {
     CONTRACTL {
         NOTHROW;
