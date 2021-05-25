@@ -1508,6 +1508,7 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     CONTRACTL_END;
 
     ExternalObjectContext* context = static_cast<ExternalObjectContext*>(contextRaw);
+    _ASSERTE(context->IsSet(ExternalObjectContext::Flags_Detached));
     _ASSERTE(context->IsActive());
     context->MarkCollected();
 

@@ -116,7 +116,7 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     }
 }
 
-void Interop::OnBeforeGCScanRoots(_In_ bool is_concurrent)
+void Interop::OnBeforeGCScanRoots(_In_ bool isConcurrent)
 {
     CONTRACTL
     {
@@ -130,12 +130,12 @@ void Interop::OnBeforeGCScanRoots(_In_ bool is_concurrent)
     // handles only occurs in non-concurrent scenarios. This contract
     // is because of the potential for locking as a synchronization
     // mechanism for Objective-C lifetime management.
-    if (!is_concurrent)
+    if (!isConcurrent)
         ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 }
 
-void Interop::OnAfterGCScanRoots(_In_ bool is_concurrent)
+void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
 {
     CONTRACTL
     {
@@ -150,7 +150,7 @@ void Interop::OnAfterGCScanRoots(_In_ bool is_concurrent)
 
 #ifdef FEATURE_OBJCMARSHAL
     // See Interop::OnBeforeGCScanRoots for why non-concurrent.
-    if (!is_concurrent)
+    if (!isConcurrent)
         ObjCMarshalNative::AfterRefCountedHandleCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 }
