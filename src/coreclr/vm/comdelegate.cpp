@@ -189,16 +189,57 @@ public:
         if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
-            index = byteIndex / TARGET_POINTER_SIZE;
+
+#if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
+            index = byteIndex / TARGET_POINTER_SIZE;
             if (index >= ShuffleEntry::REGMASK)
             {
                 COMPlusThrow(kNotSupportedException);
             }
 
-            return -(int)byteIndex;
+            // Only Apple Silicon ABI currently supports unaligned stack argument shuffling
+            _ASSERTE(byteIndex == index * TARGET_POINTER_SIZE);
+            return index;
+#else
+            int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
+            int log2size = 3;
+
+            switch(bytesRemaining)
+            {
+                case 1:
+                    log2size = 0;
+                    m_currentByteStackIndex += 1;
+                    break;
+                case 2:
+                case 3: // Handle same as 2 then 1
+                    log2size = 1;
+                    m_currentByteStackIndex += 2;
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                    log2size = 2;
+                    m_currentByteStackIndex += 4;
+                    break;
+                default:
+                    _ASSERTE(bytesRemaining >= TARGET_POINTER_SIZE);
+                    m_currentByteStackIndex += TARGET_POINTER_SIZE;
+                    break;
+            }
+
+            // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
+            // Arm64 current implementation only supports 12 bit unsigned scaled offset
+            if ((byteIndex >> log2size) > 0xfff)
+            {
+                COMPlusThrow(kNotSupportedException);
+            }
+
+            return (byteIndex >> log2size) | (log2size << 12);
+#endif
         }
 
         // There are no more offsets to get, the caller should not have called us
@@ -274,31 +315,8 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
         // different).
         if (srcOffset != dstOffset)
         {
-            if (srcOffset <= 0)
-            {
-                // It was a stack byte offset.
-                const unsigned srcStackByteOffset = -srcOffset;
-                _ASSERT(((srcStackByteOffset % TARGET_POINTER_SIZE) == 0) && "NYI: does not support shuffling of such args");
-                entry.srcofs = (UINT16)(srcStackByteOffset / TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                _ASSERT((srcOffset & ShuffleEntry::REGMASK) != 0);
-                entry.srcofs = (UINT16)srcOffset;
-            }
-
-            if (dstOffset <= 0)
-            {
-                // It was a stack byte offset.
-                const unsigned dstStackByteOffset = -dstOffset;
-                _ASSERT((dstStackByteOffset % TARGET_POINTER_SIZE) == 0 && "NYI: does not support shuffling of such args");
-                entry.dstofs = (UINT16)(dstStackByteOffset / TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                _ASSERT((dstOffset & ShuffleEntry::REGMASK) != 0);
-                entry.dstofs = (UINT16)dstOffset;
-            }
+            entry.srcofs = (UINT16)srcOffset;
+            entry.dstofs = (UINT16)dstOffset;
 
             if (shuffleType == ShuffleComputationType::InstantiatingStub)
             {
@@ -657,7 +675,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = static_cast<UINT16>(stackSizeDelta);
+    entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
 #else
