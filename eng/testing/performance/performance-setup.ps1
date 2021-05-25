@@ -77,10 +77,37 @@ if($MonoDotnet -ne "")
     }
 }
 
+if($NoPGO)
+{
+    $Configurations += " PGOType=nopgo"
+}
+elseif($DynamicPGO)
+{
+    $Configurations += " PGOType=dynamicpgo"
+}
+elseif($FullPGO)
+{
+    $Configurations += " PGOType=fullpgo"
+    #$ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
+}
+
 # FIX ME: This is a workaround until we get this from the actual pipeline
 $CommonSetupArguments="--channel main --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
+if($NoPGO)
+{
+    $SetupArguments = "$SetupArguments --no-pgo"
+}
+elseif($DynamicPGO)
+{
+    $SetupArguments = "$SetupArguments --dynamic-pgo"
+}
+elseif($FullPGO)
+{
+    $SetupArguments = "$SetupArguments --full-pgo"
+    #$ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
+}
 
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
@@ -89,23 +116,6 @@ if ($RunFromPerformanceRepo) {
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
-}
-
-if($NoPGO)
-{
-    $SetupArguments = "$SetupArguments --no-pgo"
-    $Configurations += " PGOType=nopgo"
-}
-elseif($DynamicPGO)
-{
-    $SetupArguments = "$SetupArguments --dynamic-pgo"
-    $Configurations += " PGOType=dynamicpgo"
-}
-elseif($FullPGO)
-{
-    $SetupArguments = "$SetupArguments --full-pgo"
-    $Configurations += " PGOType=fullpgo"
-    #$ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
 }
 
 if($MonoDotnet -ne "")
