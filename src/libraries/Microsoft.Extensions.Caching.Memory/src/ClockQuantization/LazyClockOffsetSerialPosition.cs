@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Diagnostics;
 #if NETSTANDARD2_1 || NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET5_0_OR_GREATER
@@ -105,7 +107,7 @@ namespace Microsoft.Extensions.Internal.ClockQuantization
         /// <returns></returns>
         public static int Compare(in LazyClockOffsetSerialPosition first, in LazyClockOffsetSerialPosition second) => first.CompareTo(second);
 
-        int IComparable.CompareTo(object obj)
+        int IComparable.CompareTo(object? obj)
         {
             if (obj == null) return 1;
             if (obj is LazyClockOffsetSerialPosition value)
@@ -129,3 +131,5 @@ namespace Microsoft.Extensions.Internal.ClockQuantization
         }
     }
 }
+
+#nullable restore
