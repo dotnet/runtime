@@ -2676,7 +2676,7 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 //     mantissa = bits[1] * 2^-1 + bits[2] * 2^-2 + ... + bits[n] * 2^-N
 //
 // Where "N" is the number of digits that depends on the width of floating point type
-// in question. Is is equal to "23" for "float"s and to "52" for "double"s.
+// in question. It is equal to "23" for "float"s and to "52" for "double"s.
 //
 // If we did our calculations with real numbers, the condition to check would simply be:
 //
