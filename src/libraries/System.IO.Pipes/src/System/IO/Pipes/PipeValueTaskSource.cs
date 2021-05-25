@@ -44,7 +44,6 @@ namespace System.IO.Pipes
 
             _threadPoolBinding = handle;
             _state = NoResult;
-            _source = default;
             // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
             _source.RunContinuationsAsynchronously = true;
 
