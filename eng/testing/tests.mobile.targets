@@ -17,7 +17,6 @@
     <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <StartupHookSupport>false</StartupHookSupport>
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
