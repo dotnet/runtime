@@ -20,10 +20,9 @@ namespace System.Reflection.Metadata
         /// We need:
         /// 1. Either DOTNET_MODIFIABLE_ASSEMBLIES=debug is set, or we can use the RemoteExecutor to run a child process with that environment; and,
         /// 2. Either Mono in a supported configuration (interpreter as the execution engine, and the hot reload feature enabled), or CoreCLR; and,
-        /// 3. The test assemblies are compiled in the Debug configuration.
+        /// 3. The test assemblies are compiled with Debug information (this is configured by setting EmitDebugInformation in ApplyUpdate\Directory.Build.props)
         public static bool IsSupported => (IsModifiableAssembliesSet || IsRemoteExecutorSupported) &&
-            (!IsMonoRuntime || IsSupportedMonoConfiguration) &&
-            IsSupportedTestConfiguration();
+            (!IsMonoRuntime || IsSupportedMonoConfiguration);
 
         public static bool IsModifiableAssembliesSet =>
             String.Equals(DotNetModifiableAssembliesValue, Environment.GetEnvironmentVariable(DotNetModifiableAssembliesSwitch), StringComparison.InvariantCultureIgnoreCase);
@@ -59,16 +58,6 @@ namespace System.Reflection.Metadata
 
             // any non-empty string, assumed to be at least "baseline"
             return caps is string {Length: > 0};
-        }
-
-        // Only Debug assemblies are editable
-        internal static bool IsSupportedTestConfiguration()
-        {
-#if DEBUG
-            return true;
-#else
-            return false;
-#endif
         }
 
         private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();

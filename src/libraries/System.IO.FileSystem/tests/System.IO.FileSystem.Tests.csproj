@@ -14,7 +14,10 @@
     <Compile Include="Base\InfoGetSetTimes.cs" />
     <Compile Include="Base\AllGetSetAttributes.cs" />
     <Compile Include="Base\StaticGetSetTimes.cs" />
+    <Compile Include="Base\BaseSymbolicLinks.cs" />
     <Compile Include="Directory\EnumerableTests.cs" />
+    <Compile Include="Directory\SymbolicLinks.cs" />
+    <Compile Include="DirectoryInfo\SymbolicLinks.cs" />
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />
@@ -47,6 +50,7 @@
     <Compile Include="Enumeration\MatchTypesTests.cs" />
     <Compile Include="Enumeration\ExampleTests.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
+    <Compile Include="Enumeration\SymbolicLinksTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
