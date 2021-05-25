@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             else if (PlatformDetection.IsAndroid)
             {
                 // Android with API Level 28 is the minimum API Level support for ChaChaPoly1305.
-                expectedIsSupported = GetAndroidSdkVersion() >= 28;
+                expectedIsSupported = OperatingSystem.IsAndroidVersionAtLeast(28);
             }
             else if (PlatformDetection.OpenSslPresentOnSystem &&
                 (PlatformDetection.IsOSX || PlatformDetection.IsOpenSslSupported))
@@ -461,23 +461,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
 
             Assert.Equal(expectedIsSupported, ChaCha20Poly1305.IsSupported);
-        }
-
-        private static int GetAndroidSdkVersion()
-        {
-            using Process proc = new Process();
-            proc.StartInfo.FileName = "getprop";
-            proc.StartInfo.Arguments = " ro.build.version.sdk";
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.Start();
-            string stdout = proc.StandardOutput.ReadToEnd();
-
-            // This should never take more than a second.
-            int sdkVersion = -1;
-            bool success = proc.WaitForExit(5_000) && int.TryParse(stdout, out sdkVersion);
-            Assert.True(success, "Could not determine Android SDK version for current device.");
-            return sdkVersion;
         }
     }
 }

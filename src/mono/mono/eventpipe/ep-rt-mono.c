@@ -22,6 +22,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/mini/mini-runtime.h>
 #include <runtime_version.h>
+#include <clretwallmain.h>
 
 // EventPipe rt init state.
 gboolean _ep_rt_mono_initialized;
@@ -46,22 +47,6 @@ char *_ep_rt_mono_managed_cmd_line = NULL;
 // Sample profiler.
 static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
 static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
-
-// Rundown events.
-EventPipeProvider *EventPipeProviderDotNETRuntimeRundown = NULL;
-EventPipeEvent *EventPipeEventMethodDCEndVerbose_V1 = NULL;
-EventPipeEvent *EventPipeEventDCEndInit_V1 = NULL;
-EventPipeEvent *EventPipeEventDCEndComplete_V1 = NULL;
-EventPipeEvent *EventPipeEventMethodDCEndILToNativeMap = NULL;
-EventPipeEvent *EventPipeEventDomainModuleDCEnd_V1 = NULL;
-EventPipeEvent *EventPipeEventModuleDCEnd_V2 = NULL;
-EventPipeEvent *EventPipeEventAssemblyDCEnd_V1 = NULL;
-EventPipeEvent *EventPipeEventAppDomainDCEnd_V1 = NULL;
-EventPipeEvent *EventPipeEventRuntimeInformationDCStart = NULL;
-
-// Runtime private events.
-EventPipeProvider *EventPipeProviderDotNETRuntimePrivate = NULL;
-EventPipeEvent *EventPipeEventEEStartupStart_V1 = NULL;
 
 // Rundown types.
 typedef
@@ -151,173 +136,6 @@ typedef struct _EventPipeSampleProfileData {
 
 static
 bool
-resize_buffer (
-	uint8_t **buffer,
-	size_t *size,
-	size_t current_size,
-	size_t new_size,
-	bool *fixed_buffer);
-
-static
-bool
-write_buffer (
-	const uint8_t *value,
-	size_t value_size,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer);
-
-static
-bool
-write_buffer_string_utf8_t (
-	const ep_char8_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer);
-
-static
-bool
-write_runtime_info_dc_start (
-	const uint16_t clr_instance_id,
-	const uint16_t sku_id,
-	const uint16_t bcl_major_version,
-	const uint16_t bcl_minor_version,
-	const uint16_t bcl_build_number,
-	const uint16_t bcl_qfe_number,
-	const uint16_t vm_major_version,
-	const uint16_t vm_minor_version,
-	const uint16_t vm_build_number,
-	const uint16_t vm_qfe_number,
-	const uint32_t startup_flags,
-	const uint8_t startup_mode,
-	const ep_char8_t *cmd_line,
-	const uint8_t * object_guid,
-	const ep_char8_t *runtime_dll_path,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_runtime_info_dc_start (
-	const uint16_t clr_instance_id,
-	const uint16_t sku_id,
-	const uint16_t bcl_major_version,
-	const uint16_t bcl_minor_version,
-	const uint16_t bcl_build_number,
-	const uint16_t bcl_qfe_number,
-	const uint16_t vm_major_version,
-	const uint16_t vm_minor_version,
-	const uint16_t vm_build_number,
-	const uint16_t vm_qfe_number,
-	const uint32_t startup_flags,
-	const uint8_t startup_mode,
-	const ep_char8_t *cmd_line,
-	const uint8_t * object_guid,
-	const ep_char8_t *runtime_dll_path,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_dc_end_complete_v1 (
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_method_dc_end_il_to_native_map (
-	const uint64_t method_id,
-	const uint64_t rejit_id,
-	const uint8_t method_extent,
-	const uint16_t count_of_map_entries,
-	const uint32_t *il_offsets,
-	const uint32_t *native_offsets,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_method_dc_end_verbose_v1 (
-	const uint64_t method_id,
-	const uint64_t module_id,
-	const uint64_t method_start_address,
-	const uint32_t method_size,
-	const uint32_t method_token,
-	const uint32_t method_flags,
-	const ep_char8_t *method_namespace,
-	const ep_char8_t *method_name,
-	const ep_char8_t *method_signature,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_module_dc_end_v2 (
-	const uint64_t module_id,
-	const uint64_t assembly_id,
-	const uint32_t module_flags,
-	const uint32_t reserved_1,
-	const ep_char8_t *module_il_path,
-	const ep_char8_t *module_native_path,
-	const uint16_t clr_instance_id,
-	const uint8_t *managed_pdb_signature,
-	const uint32_t managed_pdb_age,
-	const ep_char8_t *managed_pdb_build_path,
-	const uint8_t *native_pdb_signature,
-	const uint32_t native_pdb_age,
-	const ep_char8_t *native_pdb_build_path,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_module_dc_end_v2 (
-	const uint64_t module_id,
-	const uint64_t assembly_id,
-	const uint32_t module_flags,
-	const uint32_t reserved_1,
-	const ep_char8_t *module_il_path,
-	const ep_char8_t *module_native_path,
-	const uint16_t clr_instance_id,
-	const uint8_t *managed_pdb_signature,
-	const uint32_t managed_pdb_age,
-	const ep_char8_t *managed_pdb_build_path,
-	const uint8_t *native_pdb_signature,
-	const uint32_t native_pdb_age,
-	const ep_char8_t *native_pdb_build_path,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_assembly_dc_end_v1 (
-	const uint64_t assembly_id,
-	const uint64_t domain_id,
-	const uint64_t binding_id,
-	const uint32_t assembly_flags,
-	const ep_char8_t *fully_qualified_name,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
-write_event_domain_dc_end_v1 (
-	const uint64_t domain_id,
-	const uint32_t domain_flags,
-	const ep_char8_t *domain_name,
-	const uint32_t domain_index,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-bool
 fire_method_rundown_events_func (
 	const uint64_t method_id,
 	const uint64_t module_id,
@@ -362,21 +180,6 @@ fire_domain_rundown_events_func (
 	const ep_char8_t *domain_name,
 	const uint32_t domain_index,
 	void *user_data);
-
-static
-void
-init_dotnet_runtime_rundown (void);
-
-static
-bool
-write_event_ee_startup_start_v1 (
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id);
-
-static
-void
-init_dotnet_runtime_private (void);
 
 static
 void
@@ -512,648 +315,6 @@ clr_instance_get_id (void)
 
 static
 bool
-resize_buffer (
-	uint8_t **buffer,
-	size_t *size,
-	size_t current_size,
-	size_t new_size,
-	bool *fixed_buffer)
-{
-	EP_ASSERT (buffer != NULL);
-	EP_ASSERT (size != NULL);
-	EP_ASSERT (fixed_buffer != NULL);
-
-	new_size = (size_t)(new_size * 1.5);
-	if (new_size < *size) {
-		EP_ASSERT (!"Overflow");
-		return false;
-	}
-
-	if (new_size < 32)
-		new_size = 32;
-
-	uint8_t *new_buffer;
-	new_buffer = ep_rt_byte_array_alloc (new_size);
-	ep_raise_error_if_nok (new_buffer != NULL);
-
-	memcpy (new_buffer, *buffer, current_size);
-
-	if (!*fixed_buffer)
-		ep_rt_byte_array_free (*buffer);
-
-	*buffer = new_buffer;
-	*size = new_size;
-	*fixed_buffer = false;
-
-	return true;
-
-ep_on_error:
-	return false;
-}
-
-static
-bool
-write_buffer (
-	const uint8_t *value,
-	size_t value_size,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	EP_ASSERT (value != NULL);
-	EP_ASSERT (buffer != NULL);
-	EP_ASSERT (offset != NULL);
-	EP_ASSERT (size != NULL);
-	EP_ASSERT (fixed_buffer != NULL);
-
-	if ((value_size + *offset) > *size)
-		ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_size, fixed_buffer));
-
-	memcpy (*buffer + *offset, value, value_size);
-	*offset += value_size;
-
-	return true;
-
-ep_on_error:
-	return false;
-}
-
-static
-bool
-write_buffer_string_utf8_t (
-	const ep_char8_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	if (!value)
-		return true;
-
-	GFixedBufferCustomAllocatorData custom_alloc_data;
-	custom_alloc_data.buffer = *buffer + *offset;
-	custom_alloc_data.buffer_size = *size - *offset;
-	custom_alloc_data.req_buffer_size = 0;
-
-	if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
-		ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
-		custom_alloc_data.buffer = *buffer + *offset;
-		custom_alloc_data.buffer_size = *size - *offset;
-		custom_alloc_data.req_buffer_size = 0;
-		ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
-	}
-
-	*offset += custom_alloc_data.req_buffer_size;
-	return true;
-
-ep_on_error:
-	return false;
-}
-
-static
-inline
-bool
-write_buffer_guid_t (
-	const uint8_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	return write_buffer (value, EP_GUID_SIZE, buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint8_t (
-	const uint8_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	return write_buffer (value, sizeof (uint8_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint16_t (
-	const uint16_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	return write_buffer ((const uint8_t *)value, sizeof (uint16_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint32_t (
-	const uint32_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	return write_buffer ((const uint8_t *)value, sizeof (uint32_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-inline
-bool
-write_buffer_uint64_t (
-	const uint64_t *value,
-	uint8_t **buffer,
-	size_t *offset,
-	size_t *size,
-	bool *fixed_buffer)
-{
-	return write_buffer ((const uint8_t *)value, sizeof (uint64_t), buffer, offset, size, fixed_buffer);
-}
-
-static
-bool
-write_runtime_info_dc_start (
-	const uint16_t clr_instance_id,
-	const uint16_t sku_id,
-	const uint16_t bcl_major_version,
-	const uint16_t bcl_minor_version,
-	const uint16_t bcl_build_number,
-	const uint16_t bcl_qfe_number,
-	const uint16_t vm_major_version,
-	const uint16_t vm_minor_version,
-	const uint16_t vm_build_number,
-	const uint16_t vm_qfe_number,
-	const uint32_t startup_flags,
-	const uint8_t startup_mode,
-	const ep_char8_t *cmd_line,
-	const uint8_t * object_guid,
-	const ep_char8_t *runtime_dll_path,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventRuntimeInformationDCStart != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventRuntimeInformationDCStart))
-		return true;
-
-	uint8_t stack_buffer [153];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&sku_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&bcl_major_version, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&bcl_minor_version, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&bcl_build_number, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&bcl_qfe_number, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&vm_major_version, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&vm_minor_version, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&vm_build_number, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&vm_qfe_number, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&startup_flags, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint8_t (&startup_mode, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (cmd_line, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_guid_t (object_guid, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (runtime_dll_path, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventRuntimeInformationDCStart, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_dc_end_init_v1 (
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventDCEndInit_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventDCEndInit_V1))
-		return true;
-
-	uint8_t stack_buffer [32];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventDCEndInit_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_dc_end_complete_v1 (
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventDCEndComplete_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventDCEndComplete_V1))
-		return true;
-
-	uint8_t stack_buffer [32];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventDCEndComplete_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_method_dc_end_il_to_native_map (
-	const uint64_t method_id,
-	const uint64_t rejit_id,
-	const uint8_t method_extent,
-	const uint16_t count_of_map_entries,
-	const uint32_t *il_offsets,
-	const uint32_t *native_offsets,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventMethodDCEndILToNativeMap != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventMethodDCEndILToNativeMap))
-		return true;
-
-	uint8_t stack_buffer [32];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint64_t (&method_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&rejit_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint8_t (&method_extent, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&count_of_map_entries, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer ((const uint8_t *)il_offsets, sizeof (const uint32_t) * (int32_t)count_of_map_entries, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer ((const uint8_t *)native_offsets, sizeof (const uint32_t) * (int32_t)count_of_map_entries, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventMethodDCEndILToNativeMap, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_method_dc_end_verbose_v1 (
-	const uint64_t method_id,
-	const uint64_t module_id,
-	const uint64_t method_start_address,
-	const uint32_t method_size,
-	const uint32_t method_token,
-	const uint32_t method_flags,
-	const ep_char8_t *method_namespace,
-	const ep_char8_t *method_name,
-	const ep_char8_t *method_signature,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventMethodDCEndVerbose_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventMethodDCEndVerbose_V1))
-		return true;
-
-	uint8_t stack_buffer [230];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint64_t (&method_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&module_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&method_start_address, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&method_size, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&method_token, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&method_flags, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (method_namespace, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (method_name, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (method_signature, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventMethodDCEndVerbose_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_module_dc_end_v2 (
-	const uint64_t module_id,
-	const uint64_t assembly_id,
-	const uint32_t module_flags,
-	const uint32_t reserved_1,
-	const ep_char8_t *module_il_path,
-	const ep_char8_t *module_native_path,
-	const uint16_t clr_instance_id,
-	const uint8_t *managed_pdb_signature,
-	const uint32_t managed_pdb_age,
-	const ep_char8_t *managed_pdb_build_path,
-	const uint8_t *native_pdb_signature,
-	const uint32_t native_pdb_age,
-	const ep_char8_t *native_pdb_build_path,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventModuleDCEnd_V2 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventModuleDCEnd_V2))
-		return true;
-
-	uint8_t stack_buffer [290];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint64_t (&module_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&assembly_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&module_flags, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&reserved_1, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (module_il_path, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (module_native_path, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_guid_t (managed_pdb_signature, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&managed_pdb_age, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (managed_pdb_build_path, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_guid_t (native_pdb_signature, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&native_pdb_age, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (native_pdb_build_path, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventModuleDCEnd_V2, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_domain_module_dc_end_v1 (
-	const uint64_t module_id,
-	const uint64_t assembly_id,
-	const uint64_t domain_id,
-	const uint32_t module_flags,
-	const uint32_t reserved_1,
-	const ep_char8_t *module_il_path,
-	const ep_char8_t *module_native_path,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventDomainModuleDCEnd_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventDomainModuleDCEnd_V1))
-		return true;
-
-	uint8_t stack_buffer [162];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint64_t (&module_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&assembly_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&domain_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&module_flags, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&reserved_1, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (module_il_path, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (module_native_path, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventDomainModuleDCEnd_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_assembly_dc_end_v1 (
-	const uint64_t assembly_id,
-	const uint64_t domain_id,
-	const uint64_t binding_id,
-	const uint32_t assembly_flags,
-	const ep_char8_t *fully_qualified_name,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventAssemblyDCEnd_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventAssemblyDCEnd_V1))
-		return true;
-
-	uint8_t stack_buffer [94];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint64_t (&assembly_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&domain_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint64_t (&binding_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&assembly_flags, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (fully_qualified_name, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventAssemblyDCEnd_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_domain_dc_end_v1 (
-	const uint64_t domain_id,
-	const uint32_t domain_flags,
-	const ep_char8_t *domain_name,
-	const uint32_t domain_index,
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventAppDomainDCEnd_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventAppDomainDCEnd_V1))
-		return true;
-
-	uint8_t stack_buffer [82];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint64_t (&domain_id, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&domain_flags, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_string_utf8_t (domain_name, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint32_t (&domain_index, &buffer, &offset, &size, &fixed_buffer);
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventAppDomainDCEnd_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-static
-bool
-write_event_ee_startup_start_v1 (
-	const uint16_t clr_instance_id,
-	const uint8_t *activity_id,
-	const uint8_t *related_activity_id)
-{
-	EP_ASSERT (EventPipeEventEEStartupStart_V1 != NULL);
-
-	if (!ep_event_is_enabled (EventPipeEventEEStartupStart_V1))
-		return true;
-
-	uint8_t stack_buffer [32];
-	uint8_t *buffer = stack_buffer;
-	size_t offset = 0;
-	size_t size = sizeof (stack_buffer);
-	bool fixed_buffer = true;
-	bool success = true;
-
-	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
-
-	ep_raise_error_if_nok (success);
-
-	ep_write_event (EventPipeEventEEStartupStart_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
-
-ep_on_exit:
-	if (!fixed_buffer)
-		ep_rt_byte_array_free (buffer);
-	return success;
-
-ep_on_error:
-	EP_ASSERT (!success);
-	ep_exit_error_handler ();
-}
-
-// Mapping FireEtw* CoreClr functions.
-#define FireEtwRuntimeInformationDCStart(...) write_runtime_info_dc_start(__VA_ARGS__,NULL,NULL)
-#define FireEtwDCEndInit_V1(...) write_event_dc_end_init_v1(__VA_ARGS__,NULL,NULL)
-#define FireEtwMethodDCEndILToNativeMap(...) write_event_method_dc_end_il_to_native_map(__VA_ARGS__,NULL,NULL)
-#define FireEtwMethodDCEndVerbose_V1(...) write_event_method_dc_end_verbose_v1(__VA_ARGS__,NULL,NULL)
-#define FireEtwModuleDCEnd_V2(...) write_event_module_dc_end_v2(__VA_ARGS__,NULL,NULL)
-#define FireEtwDomainModuleDCEnd_V1(...) write_event_domain_module_dc_end_v1(__VA_ARGS__,NULL,NULL)
-#define FireEtwAssemblyDCEnd_V1(...) write_event_assembly_dc_end_v1(__VA_ARGS__,NULL,NULL)
-#define FireEtwAppDomainDCEnd_V1(...) write_event_domain_dc_end_v1(__VA_ARGS__,NULL,NULL)
-#define FireEtwDCEndComplete_V1(...) write_event_dc_end_complete_v1(__VA_ARGS__,NULL,NULL)
-#define FireEtwEEStartupStart_V1(...) write_event_ee_startup_start_v1(__VA_ARGS__,NULL,NULL)
-
-static
-bool
 fire_method_rundown_events_func (
 	const uint64_t method_id,
 	const uint64_t module_id,
@@ -1176,7 +337,9 @@ fire_method_rundown_events_func (
 		count_of_map_entries,
 		il_offsets,
 		native_offsets,
-		clr_instance_get_id ());
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 
 	FireEtwMethodDCEndVerbose_V1 (
 		method_id,
@@ -1188,7 +351,9 @@ fire_method_rundown_events_func (
 		method_namespace,
 		method_name,
 		method_signature,
-		clr_instance_get_id ());
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 
 	return true;
 }
@@ -1227,7 +392,9 @@ fire_assembly_rundown_events_func (
 		managed_pdb_build_path,
 		native_pdb_signature,
 		native_pdb_age,
-		native_pdb_build_path);
+		native_pdb_build_path,
+		NULL,
+		NULL);
 
 	FireEtwDomainModuleDCEnd_V1 (
 		module_id,
@@ -1237,7 +404,9 @@ fire_assembly_rundown_events_func (
 		reserved_flags,
 		module_il_path,
 		module_native_path,
-		clr_instance_get_id ());
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 
 	FireEtwAssemblyDCEnd_V1 (
 		assembly_id,
@@ -1245,7 +414,9 @@ fire_assembly_rundown_events_func (
 		binding_id,
 		assembly_flags,
 		assembly_name,
-		clr_instance_get_id ());
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 
 	return true;
 }
@@ -1264,55 +435,9 @@ fire_domain_rundown_events_func (
 		domain_flags,
 		domain_name,
 		domain_index,
-		clr_instance_get_id ());
-}
-
-static
-void
-init_dotnet_runtime_rundown (void)
-{
-	//TODO: Add callback method to enable/disable more native events getting into EventPipe (when enabled).
-	EP_ASSERT (EventPipeProviderDotNETRuntimeRundown == NULL);
-	EventPipeProviderDotNETRuntimeRundown = ep_create_provider (ep_config_get_rundown_provider_name_utf8 (), NULL, NULL, NULL);
-
-	EP_ASSERT (EventPipeEventMethodDCEndVerbose_V1 == NULL);
-	EventPipeEventMethodDCEndVerbose_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 144, 48, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventDCEndComplete_V1 == NULL);
-	EventPipeEventDCEndComplete_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 146, 131128, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventDCEndInit_V1 == NULL);
-	EventPipeEventDCEndInit_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 148, 131128, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventMethodDCEndILToNativeMap == NULL);
-	EventPipeEventMethodDCEndILToNativeMap = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 150, 131072, 0, EP_EVENT_LEVEL_VERBOSE, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventDomainModuleDCEnd_V1 == NULL);
-	EventPipeEventDomainModuleDCEnd_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 152, 8, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventModuleDCEnd_V2 == NULL);
-	EventPipeEventModuleDCEnd_V2 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 154, 536870920, 2, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventAssemblyDCEnd_V1 == NULL);
-	EventPipeEventAssemblyDCEnd_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 156, 8, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventAppDomainDCEnd_V1 == NULL);
-	EventPipeEventAppDomainDCEnd_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 158, 8, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-
-	EP_ASSERT (EventPipeEventRuntimeInformationDCStart == NULL);
-	EventPipeEventRuntimeInformationDCStart = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 187, 0, 0, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
-}
-
-static
-void
-init_dotnet_runtime_private (void)
-{
-	//TODO: Add callback method to enable/disable more native events getting into EventPipe (when enabled).
-	EP_ASSERT (EventPipeProviderDotNETRuntimePrivate == NULL);
-	EventPipeProviderDotNETRuntimePrivate = ep_create_provider (ep_config_get_private_provider_name_utf8 (), NULL, NULL, NULL);
-
-	EP_ASSERT (EventPipeEventEEStartupStart_V1 == NULL);
-	EventPipeEventEEStartupStart_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimePrivate, 80, 2147483648, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 }
 
 static
@@ -1572,7 +697,8 @@ eventpipe_walk_managed_stack_for_thread (
 	MonoStackFrameInfo *frame,
 	MonoContext *ctx,
 	void *data,
-	bool *async_frame)
+	bool *async_frame,
+	bool *safe_point_frame)
 {
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
@@ -1583,6 +709,7 @@ eventpipe_walk_managed_stack_for_thread (
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
 	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+	case FRAME_TYPE_INTERP_ENTRY:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
@@ -1590,10 +717,15 @@ eventpipe_walk_managed_stack_for_thread (
 			return FALSE;
 		*async_frame |= frame->ji->async;
 		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
-		if (method && !m_method_is_wrapper (method))
+		if (method && m_method_is_wrapper (method)) {
+			WrapperInfo *wrapper = mono_marshal_get_wrapper_info(method);
+			if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll)
+				*safe_point_frame = true;
+		} else if (method && !m_method_is_wrapper (method)) {
 			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
-		else if (!method && frame->ji->async && !frame->ji->is_trampoline)
+		} else if (!method && frame->ji->async && !frame->ji->is_trampoline) {
 			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start), method);
+		}
 		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
 	default:
 		EP_UNREACHABLE ("eventpipe_walk_managed_stack_for_thread");
@@ -1608,8 +740,9 @@ eventpipe_walk_managed_stack_for_thread_func (
 	MonoContext *ctx,
 	void *data)
 {
-	bool async_frame = FALSE;
-	return eventpipe_walk_managed_stack_for_thread (frame, ctx, data, &async_frame);
+	bool async_frame = false;
+	bool safe_point_frame = false;
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, data, &async_frame, &safe_point_frame);
 }
 
 static
@@ -1622,6 +755,7 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
 
+	gboolean result = false;
 	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
 
 	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR) {
@@ -1631,7 +765,11 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
 
-	return eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame);
+	bool safe_point_frame = false;
+	result = eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame, &safe_point_frame);
+	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && safe_point_frame)
+		sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+	return result;
 }
 
 static
@@ -2015,8 +1153,8 @@ ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 void
 ep_rt_mono_init_providers_and_events (void)
 {
-	init_dotnet_runtime_rundown ();
-	init_dotnet_runtime_private ();
+	extern void InitProvidersAndEvents (void);
+	InitProvidersAndEvents ();
 }
 
 void
@@ -2025,9 +1163,6 @@ ep_rt_mono_fini_providers_and_events (void)
 	// dotnet/runtime: issue 12775: EventPipe shutdown race conditions
 	// Deallocating providers/events here might cause AV if a WriteEvent
 	// was to occur. Thus, we are not doing this cleanup.
-
-	// ep_delete_provider (EventPipeProviderDotNETRuntimePrivate);
-	// ep_delete_provider (EventPipeProviderDotNETRuntimeRundown);
 }
 
 bool
@@ -2185,22 +1320,33 @@ ep_rt_mono_execute_rundown (void)
 		startup_flags,
 		command_line,
 		object_guid,
-		runtime_module_path);
+		runtime_module_path,
+		NULL,
+		NULL);
 
-	FireEtwDCEndInit_V1 (clr_instance_get_id ());
+	FireEtwDCEndInit_V1 (
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 
 	eventpipe_execute_rundown (
 		fire_domain_rundown_events_func,
 		fire_assembly_rundown_events_func,
 		fire_method_rundown_events_func);
 
-	FireEtwDCEndComplete_V1 (clr_instance_get_id ());
+	FireEtwDCEndComplete_V1 (
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 }
 
 bool
 ep_rt_mono_write_event_ee_startup_start (void)
 {
-	return FireEtwEEStartupStart_V1 (clr_instance_get_id ());
+	return FireEtwEEStartupStart_V1 (
+		clr_instance_get_id (),
+		NULL,
+		NULL);
 }
 
 #endif /* ENABLE_PERFTRACING */

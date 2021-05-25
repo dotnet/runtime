@@ -16,7 +16,7 @@
 //
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
-// The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
+// The JIT/EE interface is versioned. By "interface", we mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
 //
@@ -112,7 +112,7 @@ enum CorJitResult
 // to guide the memory allocation for the code, readonly data, and read-write data
 enum CorJitAllocMemFlag
 {
-    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
+    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will use the normal alignment
     CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN   = 0x00000001, // The code will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
@@ -319,7 +319,8 @@ public:
         uint32_t ExecutionCount;
     };
 
-    // Data structure for a single class probe.
+
+    // Data structure for a single class probe using 32-bit count.
     //
     // CLASS_FLAG and INTERFACE_FLAG are placed into the Other field in the schema
     //
@@ -330,7 +331,7 @@ public:
     // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
     // gives the average number of calls between table updates.
     // 
-    struct ClassProfile
+    struct ClassProfile32
     {
         enum { 
             SIZE = 8, 
@@ -342,6 +343,12 @@ public:
 
         uint32_t Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
+    };
+
+    struct ClassProfile64
+    {
+        uint64_t Count;
+        CORINFO_CLASS_HANDLE ClassTable[ClassProfile32::SIZE];
     };
 
     enum class PgoInstrumentationKind
@@ -370,7 +377,8 @@ public:
         Done = None, // All instrumentation schemas must end with a record which is "Done"
         BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
         BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
+        TypeHandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema

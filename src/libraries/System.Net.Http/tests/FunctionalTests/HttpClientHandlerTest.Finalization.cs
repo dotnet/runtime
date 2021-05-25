@@ -27,6 +27,12 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task IncompleteResponseStream_ResponseDropped_CancelsRequestToServer()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53089")]
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 bool stopGCs = false;

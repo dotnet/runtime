@@ -28,6 +28,7 @@ enum class WellKnownAttribute : DWORD
     IsByRefLike,
     PrimaryInteropAssembly,
     ManagedToNativeComInteropStub,
+    UnmanagedCallConv,
     UnmanagedCallersOnly,
     NativeCallableInternal, // This is needed to support MCG scenarios
     TypeIdentifier,
@@ -88,6 +89,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute";
         case WellKnownAttribute::ManagedToNativeComInteropStub:
             return "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute";
+        case WellKnownAttribute::UnmanagedCallConv:
+            return "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
         case WellKnownAttribute::UnmanagedCallersOnly:
             return "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
         case WellKnownAttribute::NativeCallableInternal:

@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
             ProcessPriorityClass originalPriority = _process.PriorityClass;
-            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
+            Assert.Equal(Process.GetCurrentProcess().PriorityClass, originalPriority);
 
             try
             {
@@ -2096,6 +2096,7 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
         public void LongProcessNamesAreSupported()
         {
             string sleepPath;

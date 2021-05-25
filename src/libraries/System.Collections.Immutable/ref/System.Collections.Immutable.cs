@@ -143,7 +143,7 @@ namespace System.Collections.Immutable
         public void CopyTo(T[] destination) { }
         public void CopyTo(T[] destination, int destinationIndex) { }
         public bool Equals(System.Collections.Immutable.ImmutableArray<T> other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T>.Enumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public int IndexOf(T item) { throw null; }

@@ -66,12 +66,16 @@
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
+    <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
-    <!-- Microsoft.Extensions are not yet using the doc-file package -->
-    <BinPlaceItem Include="$(DocumentationFile)" />
-  </ItemGroup>
+  <Target Name="AddDocumentationFileAsBinPlaceItemForExtensionsProjects"
+          Condition="Exists('$(DocumentationFile)')">
+    <ItemGroup>
+      <!-- Microsoft.Extensions are not yet using the doc-file package -->
+      <BinPlaceItem Include="$(DocumentationFile)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
@@ -141,6 +145,13 @@
     <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <Import Sdk="Microsoft.DotNet.PackageValidation" Project="Sdk.targets" Condition="'$(IsSourceProject)' == 'true' and !Exists('$(PkgProjPath)')" />
+
+  <PropertyGroup>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <EnablePackageBaselineValidation Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj' and '$(EnablePackageBaselineValidation)' == ''">true</EnablePackageBaselineValidation>
+  </PropertyGroup>
 
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">

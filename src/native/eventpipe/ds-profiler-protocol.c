@@ -6,6 +6,7 @@
 #define DS_IMPL_PROFILER_PROTOCOL_GETTER_SETTER
 #include "ds-protocol.h"
 #include "ds-profiler-protocol.h"
+#include "ds-server.h"
 #include "ds-rt.h"
 
 #ifdef PROFILING_SUPPORTED
