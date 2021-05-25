@@ -706,5 +706,15 @@ namespace System.Text.Json
         {
             throw new InvalidOperationException(SR.Format(SR.PropInitAndSerializeFuncsNull));
         }
+
+        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(JsonSerializerContext context, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, context.GetType(), type));
+        }
+
+        public static void ThrowInvalidOperationException_NoDefaultOptionsForContext(JsonSerializerContext context, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoDefaultOptionsForContext, context.GetType(), type));
+        }
     }
 }

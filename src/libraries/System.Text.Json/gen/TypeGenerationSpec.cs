@@ -14,7 +14,7 @@ namespace System.Text.Json.SourceGeneration
         private bool _hasBeenInitialized;
 
         /// <summary>
-        /// Fully qualified assembly name, prefaced with "global::", e.g. global::System.Numerics.BigInteger.
+        /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
         public string TypeRef { get; private set; }
 
@@ -97,9 +97,23 @@ namespace System.Text.Json.SourceGeneration
         }
 
         public bool FastPathIsSupported()
-                => Type != TypeExtensions.ObjectArrayType && (ClassType == ClassType.Object ||
-                CollectionType == CollectionType.Dictionary ||
-                CollectionType == CollectionType.Array ||
-                CollectionType == CollectionType.List);
+        {
+            if (ClassType == ClassType.Object)
+            {
+                return true;
+            }
+
+            if (CollectionType == CollectionType.Array || CollectionType == CollectionType.List)
+            {
+                return !CollectionValueTypeMetadata!.Type.IsObjectType();
+            }
+
+            if (CollectionType == CollectionType.Dictionary)
+            {
+                return CollectionKeyTypeMetadata!.Type.IsStringType() && !CollectionValueTypeMetadata!.Type.IsObjectType();
+            }
+
+            return false;
+        }
     }
 }

@@ -11,27 +11,6 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
-    public interface ITestContext
-    {
-        public JsonTypeInfo<Location> Location { get; }
-        public JsonTypeInfo<RepeatedTypes.Location> RepeatedLocation { get; }
-        public JsonTypeInfo<ActiveOrUpcomingEvent> ActiveOrUpcomingEvent { get; }
-        public JsonTypeInfo<CampaignSummaryViewModel> CampaignSummaryViewModel { get; }
-        public JsonTypeInfo<IndexViewModel> IndexViewModel { get; }
-        public JsonTypeInfo<WeatherForecastWithPOCOs> WeatherForecastWithPOCOs { get; }
-        public JsonTypeInfo<EmptyPoco> EmptyPoco { get; }
-        public JsonTypeInfo<HighLowTemps> HighLowTemps { get; }
-        public JsonTypeInfo<MyType> MyType { get; }
-        public JsonTypeInfo<MyType2> MyType2 { get; }
-        public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
-        public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
-        public JsonTypeInfo<ContextTests.MyNestedClass> MyNestedClass { get; }
-        public JsonTypeInfo<ContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
-        public JsonTypeInfo<object[]> ObjectArray { get; }
-        public JsonTypeInfo<string> String { get; }
-        public JsonTypeInfo<ContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
-    }
-
     public abstract class ContextTests
     {
         protected ITestContext DefaultContext { get; }
@@ -463,7 +442,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public void ParameterizedConstructor()
+        public virtual void ParameterizedConstructor()
         {
             string json = JsonSerializer.Serialize(new HighLowTempsImmutable(1, 2), DefaultContext.HighLowTempsImmutable);
             Assert.Contains(@"""High"":1", json);
@@ -573,21 +552,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
-        protected void AssertThrowsNSEPropMetadataInit(Action action, Type type)
-        {
-            var ex = Assert.Throws<NotSupportedException>(action);
-            string exAsStr = ex.ToString();
-            Assert.Contains(type.ToString(), exAsStr);
-        }
-
-        protected void AssertFastPathLogicCorrect<T>(string expectedJson, T value, JsonTypeInfo<T> typeInfo)
+        protected static void AssertFastPathLogicCorrect<T>(string expectedJson, T value, JsonTypeInfo<T> typeInfo)
         {
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
             typeInfo.Serialize!(writer, value);
             writer.Flush();
-            string json = Encoding.UTF8.GetString(ms.ToArray());
-            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            JsonTestHelper.AssertJsonEqual(expectedJson, Encoding.UTF8.GetString(ms.ToArray()));
         }
     }
 }

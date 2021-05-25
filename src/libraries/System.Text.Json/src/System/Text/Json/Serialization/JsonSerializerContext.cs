@@ -35,6 +35,7 @@ namespace System.Text.Json.Serialization
                     {
                         _canUseSerializationLogic =
                             // Guard against unsupported features
+                            Options.Converters.Count == 0 &&
                             Options.Encoder == null &&
                             Options.NumberHandling == JsonNumberHandling.Strict &&
                             Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&

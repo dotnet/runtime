@@ -89,7 +89,7 @@
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonSerializableAttribute.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\SourceGenConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />

@@ -58,7 +58,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             IndexViewModel expected = CreateIndexViewModel();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.IndexViewModel);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.IndexViewModel), typeof(CampaignSummaryViewModel));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.IndexViewModel), typeof(CampaignSummaryViewModel));
 
             IndexViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).IndexViewModel);
             VerifyIndexViewModel(expected, obj);
@@ -70,7 +70,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             CampaignSummaryViewModel expected = CreateCampaignSummaryViewModel();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.CampaignSummaryViewModel);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.CampaignSummaryViewModel), typeof(CampaignSummaryViewModel));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.CampaignSummaryViewModel), typeof(CampaignSummaryViewModel));
 
             CampaignSummaryViewModel obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).CampaignSummaryViewModel);
             VerifyCampaignSummaryViewModel(expected, obj);
@@ -84,7 +84,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.WeatherForecastWithPOCOs);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.WeatherForecastWithPOCOs), typeof(HighLowTemps));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.WeatherForecastWithPOCOs), typeof(HighLowTemps));
 
             WeatherForecastWithPOCOs obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).WeatherForecastWithPOCOs);
             VerifyWeatherForecastWithPOCOs(expected, obj);
@@ -96,7 +96,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             EmptyPoco expected = CreateEmptyPoco();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.EmptyPoco);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
 
             EmptyPoco obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).EmptyPoco);
             VerifyEmptyPoco(expected, obj);
@@ -110,7 +110,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             RepeatedTypes.Location expected = CreateRepeatedLocation();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.RepeatedLocation);
-            AssertThrowsNSEPropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.RepeatedLocation), typeof(RepeatedTypes.Location));
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.RepeatedLocation), typeof(RepeatedTypes.Location));
 
             RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataContext.Default).RepeatedLocation);
             VerifyRepeatedLocation(expected, obj);
