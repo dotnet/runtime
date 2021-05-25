@@ -75,6 +75,11 @@ namespace
 
         bool IsActive() const
         {
+            // The context is marked detached when the native to managed mapping
+            // in the cache is no longer valid. The context is marked collected
+            // when the associated object has been collected, but the context
+            // memory is still valid. These are steps toward making the context
+            // inactive.
             return !IsSet(Flags_Collected | Flags_Detached)
                 && (SyncBlockIndex != InvalidSyncBlockIndex);
         }

@@ -66,8 +66,7 @@ void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_conc
     }
 #endif // VERIFY_HEAP
 
-    if (!is_concurrent)
-        Interop::OnBeforeGCScanRoots();
+    Interop::OnBeforeGCScanRoots(is_concurrent);
 }
 
 //EE can perform post stack scanning action, while the
