@@ -897,11 +897,12 @@ var BindingSupportLib = {
 			var klassPtr = this._resolve_class_ptr (klass);
 			if (!klassPtr)
 				throw new Error("No class pointer specified");
-			var converter = this._get_struct_unboxer_for_class (klassPtr);
+			var typePtr = this.mono_wasm_class_get_type (klassPtr);
+			var converter = this._get_struct_unboxer_for_type (typePtr);
 			if (converter)
 				return converter (mono_obj);
 			else
-				throw new Error (`No converter available for object ${mono_obj} of class ${klass}`);
+				throw new Error (`No converter available for object ${mono_obj} of class ${this._get_type_name(klassPtr)}`);
 		},
 
 		extract_js_obj_with_possible_converter: function (mono_obj, klass) {
@@ -912,7 +913,8 @@ var BindingSupportLib = {
 			if (!klassPtr)
 				throw new Error("No class pointer specified");
 
-			var converter = this._get_struct_unboxer_for_class (klassPtr);
+			var typePtr = this.mono_wasm_class_get_type (klassPtr);
+			var converter = this._get_struct_unboxer_for_type (typePtr);
 			if (converter)
 				return converter (mono_obj);
 
@@ -933,7 +935,7 @@ var BindingSupportLib = {
 			
 			var converter = this._pick_automatic_converter_for_user_type(0, "a", typePtr);
 			if (!converter)
-				throw new Error (`No converter available for class ${klass}`);
+				throw new Error (`No converter available for class ${this._get_type_name(klassPtr)}`);
 
 			return converter (js_obj);
 		},
@@ -1069,7 +1071,19 @@ var BindingSupportLib = {
 			return MarshalTypeNames[mtype] || String(mtype);
 		},
 
-		get_method_signature_info: function (classPtr, methodPtr) {
+		_get_type_name: function (typePtr) {
+			if (!typePtr)
+				return "<null>";
+			return this.mono_wasm_get_type_name(typePtr);
+		},
+
+		_get_class_name: function (classPtr) {
+			if (!classPtr)
+				return "<null>";
+			return this.mono_wasm_get_type_name(this.mono_wasm_class_get_type(classPtr));
+		},
+
+		get_method_signature_info: function (typePtr, methodPtr) {
 			// MakeMarshalSignatureInfo is a managed method, so we'll get called
 			//  during the process of binding it
 			if (!this.make_marshal_signature_info)
@@ -1081,22 +1095,17 @@ var BindingSupportLib = {
 			if (!this._method_signature_info_table)
 				this._method_signature_info_table = new Map ();
 			var result = this._method_signature_info_table.get (methodPtr);
-			var classMismatch = !!result && (result.classPtr !== classPtr);
+			var classMismatch = !!result && (result.typePtr !== typePtr);
 			if (!result) {
-				var typePtr = classPtr 
-					? this.mono_wasm_class_get_type (classPtr) 
-					: 0;
-				var typeName = typePtr 
-					? this.mono_wasm_get_type_name(typePtr)
-					: "null";
-				// console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr} (typeName ${typeName})`);
+				var typeName = this._get_type_name(typePtr);
+				// console.log(`Calling MakeMarshalSignatureInfo for typePtr ${typePtr} and methodPtr ${methodPtr} (typeName ${typeName})`);
 				var json = this.make_marshal_signature_info (typePtr, methodPtr);
 				if (!json)
-					throw new Error (`MakeMarshalSignatureInfo failed`);				
+					throw new Error (`MakeMarshalSignatureInfo failed for type ${typeName}`);
 
 				// console.log(json);
 				var result = JSON.parse(json);
-				result.classPtr = classPtr;
+				result.typePtr = typePtr;
 
 				if (classMismatch)
 					console.log("WARNING: Class ptr mismatch for signature info, so caching is disabled");
@@ -1106,14 +1115,14 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_compile_post_filter: function (classPtr, boundConverter, js) {
+		_compile_post_filter: function (typePtr, boundConverter, js) {
 			if (!js)
 				return boundConverter;
 			
 			var closure = { 
 				MONO: MONO,
 				BINDING: this,
-				classPtr: classPtr, 
+				typePtr: typePtr, 
 				// (value) => filtered_value
 				boundConverter: boundConverter 
 			};
@@ -1127,7 +1136,7 @@ var BindingSupportLib = {
 			
 			var bodyJs = body.join ("\r\n");
 			var result = this._create_named_function(
-				"post_filtered_converter_for_class" + classPtr, 
+				"post_filtered_converter_for_type" + typePtr, 
 				["js_value"], bodyJs, closure
 			);
 
@@ -1165,7 +1174,7 @@ var BindingSupportLib = {
 			
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
-				var fullName = this.mono_wasm_get_type_name (typePtr);
+				var fullName = this._get_type_name (typePtr);
 				var marshalerFullName = MONO._custom_marshaler_name_table[fullName];
 				if (!marshalerFullName) {
 					// console.log (`No custom marshaler configured for ${fullName}`);
@@ -1186,25 +1195,17 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_get_custom_marshaler_info_for_class: function (classPtr) {
-			if (!classPtr)
-				return null;
-			var typePtr = this.mono_wasm_class_get_type (classPtr);
-			return this._get_custom_marshaler_info_for_type (typePtr);
-		},
-
-		_get_struct_unboxer_for_class: function (classPtr) {
+		_get_struct_unboxer_for_type: function (typePtr) {
 			if (!this._struct_unboxer_cache)
 				this._struct_unboxer_cache = new Map ();
 
-			if (!this._struct_unboxer_cache.has (classPtr)) {
-				var typePtr = this.mono_wasm_class_get_type(classPtr);
-				var info = this._get_custom_marshaler_info_for_class (classPtr);
+			if (!this._struct_unboxer_cache.has (typePtr)) {
+				var info = this._get_custom_marshaler_info_for_type (typePtr);
 				// HACK
 				if (!info)
 					info = {};
 				if (info.error)
-					console.error(`Error while configuring automatic converter for type ${this.mono_wasm_get_type_name(typePtr)}: ${info.error}`);
+					console.error(`Error while configuring automatic converter for type ${this._get_type_name(typePtr)}: ${info.error}`);
 
 				var postFilter = info.postFilter;
 
@@ -1213,19 +1214,19 @@ var BindingSupportLib = {
 				var convMethod = info.outputPtr;
 				if (!convMethod) {
 					if (info.typePtr)
-						console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable ToJavaScript method`);
-					this._struct_unboxer_cache.set (classPtr, null);
+						console.error(`Automatic converter for type ${this._get_type_name(typePtr)} has no suitable ToJavaScript method`);
+					this._struct_unboxer_cache.set (typePtr, null);
 				} else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
-						convMethod, 0, signature, "ToJavaScript_class" + classPtr
+						convMethod, 0, signature, "ToJavaScript_type" + typePtr
 					);
 
-					this._struct_unboxer_cache.set (classPtr, this._compile_post_filter (classPtr, boundConverter, postFilter));
+					this._struct_unboxer_cache.set (typePtr, this._compile_post_filter (typePtr, boundConverter, postFilter));
 				}
 			}
 
-			return this._struct_unboxer_cache.get (classPtr);
+			return this._struct_unboxer_cache.get (typePtr);
 		},
 
 		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
@@ -1237,24 +1238,23 @@ var BindingSupportLib = {
 
 			// console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
 
-			var unboxer = this._get_struct_unboxer_for_class(classPtr);
-			if (!unboxer) {
-				var className = this.mono_wasm_get_type_name(this.mono_wasm_class_get_type(classPtr));
-				throw new Error ("No CustomJavaScriptMarshaler found for struct type " + className);
-			}
+			var typePtr = this.mono_wasm_class_get_type(classPtr);
+			var unboxer = this._get_struct_unboxer_for_type(typePtr);
+			if (!unboxer)
+				throw new Error (`No CustomJavaScriptMarshaler found for struct type ${this._get_type_name(typePtr)}`);
 
 			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
 			return unboxer (dataOffset);
 		},
 
-		_compile_pre_filter: function (classPtr, boundConverter, js) {
+		_compile_pre_filter: function (typePtr, boundConverter, js) {
 			if (!js)
 				return boundConverter;
 			
 			var closure = { 
 				MONO: MONO,
 				BINDING: this,
-				classPtr: classPtr, 
+				typePtr: typePtr, 
 				// (js_obj, method, parmIdx) => value
 				boundConverter: boundConverter 
 			};
@@ -1270,7 +1270,7 @@ var BindingSupportLib = {
 			
 			var bodyJs = body.join ("\r\n");
 			var result = this._create_named_function(
-				"pre_filtered_converter_for_class" + classPtr, 
+				"pre_filtered_converter_for_type" + typePtr, 
 				["value", "method", "parmIdx"], bodyJs, closure
 			);
 
@@ -1290,7 +1290,7 @@ var BindingSupportLib = {
 				if (!info)
 					info = {};
 				if (info.error)
-					console.error(`Error while configuring automatic converter for type ${this.mono_wasm_get_type_name(typePtr)}: ${info.error}`);
+					console.error(`Error while configuring automatic converter for type ${this._get_type_name(typePtr)}: ${info.error}`);
 
 				var preFilter = info.preFilter;
 
@@ -1299,12 +1299,10 @@ var BindingSupportLib = {
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
 					if (info.typePtr)
-						console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable FromJavaScript method`);
+						console.error(`Automatic converter for type ${this._get_type_name(typePtr)} has no suitable FromJavaScript method`);
 					this._automatic_converter_table.set (typePtr, null);
 					return null;
 				}
-
-				var classPtr = this.mono_wasm_type_get_class (typePtr);
 
 				// FIXME
 				var sigInfo = this.get_method_signature_info (0, convMethod);
@@ -1315,7 +1313,7 @@ var BindingSupportLib = {
 					convMethod, 0, signature, "FromJavaScript_type" + typePtr
 				);
 
-				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
+				var result = this._compile_pre_filter (typePtr, boundConverter, preFilter);
 
 				this._automatic_converter_table.set (typePtr, result);
 			}
@@ -1333,7 +1331,7 @@ var BindingSupportLib = {
 			/*
 			console.log("paramRecord", JSON.stringify(paramRecord));
 			if (paramRecord.typePtr)
-				console.log("name", this.mono_wasm_get_type_name(paramRecord.typePtr));
+				console.log("name", this._get_type_name(paramRecord.typePtr));
 			*/
 
 			switch (paramRecord.marshalType) {
@@ -1343,16 +1341,16 @@ var BindingSupportLib = {
 				case 7: // OBJECT
 					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.typePtr);
 					if (res) {
-						// console.log(`res for type ${this.mono_wasm_get_type_name(paramRecord.typePtr)} == ${res}`);
+						// console.log(`res for type ${this._get_type_name(paramRecord.typePtr)} == ${res}`);
 						result.convert = res;
 						break;
 					} else if (result.needs_unbox) {
-						throw new Error(`found no automatic converter for type ${this.mono_wasm_get_type_name(paramRecord.typePtr)}`);
+						throw new Error(`found no automatic converter for type ${this._get_type_name(paramRecord.typePtr)}`);
 					}
 					; // FIXME: Fall-through
 				default:
 					// FIXME
-					// console.log(`found no automatic converter for mtype ${paramRecord.marshalType} type ${this.mono_wasm_get_type_name(paramRecord.typePtr)}`);
+					// console.log(`found no automatic converter for mtype ${paramRecord.marshalType} type ${this._get_type_name(paramRecord.typePtr)}`);
 					result.convert = this.js_to_mono_obj.bind(this);
 					break;
 			}
@@ -1361,8 +1359,9 @@ var BindingSupportLib = {
 		},
 
 		// FIXME
-		_create_converter_for_marshal_string: function (classPtr, method, args_marshal) {
-			var sigInfo = this.get_method_signature_info (classPtr, method);
+		_create_converter_for_marshal_string: function (typePtr, method, args_marshal) {
+			// FIXME
+			var sigInfo = this.get_method_signature_info (typePtr, method);
 
 			var primitiveConverters = this._primitive_converters;
 			if (!primitiveConverters)
@@ -1428,7 +1427,7 @@ var BindingSupportLib = {
 			};
 		},
 
-		_get_converter_for_marshal_string: function (classPtr, method, args_marshal) {
+		_get_converter_for_marshal_string: function (typePtr, method, args_marshal) {
 			if (!this._signature_converters)
 				this._signature_converters = new Map();
 
@@ -1441,7 +1440,7 @@ var BindingSupportLib = {
 			}
 
 			if (!converter) {
-				converter = this._create_converter_for_marshal_string (classPtr, method, args_marshal);
+				converter = this._create_converter_for_marshal_string (typePtr, method, args_marshal);
 				if (converter.method) {
 					if (!map)
 						this._signature_converters.set (args_marshal, map = new Map ());
@@ -1455,8 +1454,8 @@ var BindingSupportLib = {
 			return converter;
 		},
 
-		_compile_converter_for_marshal_string: function (classPtr, method, args_marshal) {
-			var converter = this._get_converter_for_marshal_string (classPtr, method, args_marshal);
+		_compile_converter_for_marshal_string: function (typePtr, method, args_marshal) {
+			var converter = this._get_converter_for_marshal_string (typePtr, method, args_marshal);
 			if (typeof (converter.args_marshal) !== "string")
 				throw new Error ("Corrupt converter for '" + args_marshal + "'");
 
@@ -1764,7 +1763,8 @@ var BindingSupportLib = {
 					if (!classPtr)
 						throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
 
-					converter = this._compile_converter_for_marshal_string (classPtr, method, args_marshal);
+					var typePtr = this.mono_wasm_class_get_type (classPtr);
+					converter = this._compile_converter_for_marshal_string (typePtr, method, args_marshal);
 
 					is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
@@ -1877,7 +1877,8 @@ var BindingSupportLib = {
 				var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
 				if (!classPtr)
 					throw new Error (`Could not get class ptr for bind_method with this (${this_arg}) and method (${method})`);
-				converter = this._compile_converter_for_marshal_string (classPtr, method, args_marshal);
+				var typePtr = this.mono_wasm_class_get_type (classPtr);
+				converter = this._compile_converter_for_marshal_string (typePtr, method, args_marshal);
 			}
 
 			var token = {
