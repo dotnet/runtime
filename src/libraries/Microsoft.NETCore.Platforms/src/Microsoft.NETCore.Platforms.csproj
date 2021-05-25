@@ -38,7 +38,7 @@
   <ItemGroup>
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
-    <Content Include="_._" PackagePath="lib/netstandard1.0" />
+    <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
 
   <ItemGroup>
