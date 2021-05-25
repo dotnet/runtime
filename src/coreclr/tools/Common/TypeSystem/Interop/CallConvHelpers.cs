@@ -1,26 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.TypeSystem;
+using System;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Reflection.Metadata;
+
 using Internal.TypeSystem.Ecma;
 
-using Debug = System.Diagnostics.Debug;
-
-namespace ILCompiler
+namespace Internal.TypeSystem
 {
-    static class MethodExtensions
+    internal static unsafe class CallConvHelpers
     {
-        /// <summary>
-        /// Returns true if <paramref name="method"/> is an actual native entrypoint.
-        /// There's a distinction between when a method reports it's a PInvoke in the metadata
-        /// versus how it's treated in the compiler. For many PInvoke methods the compiler will generate
-        /// an IL body. The methods with an IL method body shouldn't be treated as PInvoke within the compiler.
-        /// </summary>
-        public static bool IsRawPInvoke(this MethodDesc method)
-        {
-            return method.IsPInvoke && (method is Internal.IL.Stubs.PInvokeTargetNativeMethod);
-        }
-
         /// <summary>
         /// Gets a value indicating whether the method has the SuppressGCTransition attribute
         /// </summary>
@@ -58,7 +50,7 @@ namespace ILCompiler
             if (unmanagedCallConvAttribute == null)
                 return false;
 
-            foreach (DefType defType in Internal.JitInterface.CallConvHelper.EnumerateCallConvsFromAttribute(unmanagedCallConvAttribute.Value))
+            foreach (DefType defType in unmanagedCallConvAttribute.Value.EnumerateCallConvsFromAttribute())
             {
                 if (defType.Name == "CallConvSuppressGCTransition")
                 {
@@ -69,16 +61,31 @@ namespace ILCompiler
             return false;
         }
 
-        /// <summary>
-        /// Return true when the method is marked as non-versionable. Non-versionable methods
-        /// may be freely inlined into ReadyToRun images even when they don't reside in the
-        /// same version bubble as the module being compiled.
-        /// </summary>
-        /// <param name="method">Method to check</param>
-        /// <returns>True when the method is marked as non-versionable, false otherwise.</returns>
-        public static bool IsNonVersionable(this MethodDesc method)
+        public static IEnumerable<DefType> EnumerateCallConvsFromAttribute(this CustomAttributeValue<TypeDesc> attributeWithCallConvsArray)
         {
-            return method.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
+            ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
+            foreach (var arg in attributeWithCallConvsArray.NamedArguments)
+            {
+                if (arg.Name == "CallConvs")
+                {
+                    callConvArray = (ImmutableArray<CustomAttributeTypedArgument<TypeDesc>>)arg.Value;
+                }
+            }
+
+            // No calling convention was specified in the attribute
+            if (callConvArray.IsDefault)
+                yield break;
+
+            foreach (CustomAttributeTypedArgument<TypeDesc> type in callConvArray)
+            {
+                if (!(type.Value is DefType defType))
+                    continue;
+
+                if (defType.Namespace != "System.Runtime.CompilerServices")
+                    continue;
+
+                yield return defType;
+            }
         }
     }
 }

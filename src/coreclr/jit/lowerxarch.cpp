@@ -5074,8 +5074,8 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
 
     if (!IsRMWMemOpRootedAtStoreInd(storeInd, &indirCandidate, &indirOpSource))
     {
-        JITDUMP("Lower of StoreInd didn't mark the node as self contained for reason: %d\n",
-                storeInd->AsStoreInd()->GetRMWStatus());
+        JITDUMP("Lower of StoreInd didn't mark the node as self contained for reason: %s\n",
+                RMWStatusDescription(storeInd->AsStoreInd()->GetRMWStatus()));
         DISPTREERANGE(BlockRange(), storeInd);
         return false;
     }

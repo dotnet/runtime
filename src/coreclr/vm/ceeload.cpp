@@ -8899,8 +8899,6 @@ void Module::Fixup(DataImage *image)
 
     image->ZeroField(this, offsetof(Module, m_file), sizeof(m_file));
 
-    image->FixupPointerField(this, offsetof(Module, m_pDllMain));
-
     image->ZeroField(this, offsetof(Module, m_dwTransientFlags), sizeof(m_dwTransientFlags));
 
     image->ZeroField(this, offsetof(Module, m_pVASigCookieBlock), sizeof(m_pVASigCookieBlock));
