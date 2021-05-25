@@ -157,7 +157,6 @@ namespace System.Data
 
         // CONSIDER: configure the scanner : local info
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal ExpressionNode Parse()
         {
             // free all nodes

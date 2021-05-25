@@ -21,12 +21,12 @@ namespace System.Data
         private readonly Type? _dataType;  // This set if the expression is part of ExpressionCoulmn
         private DataColumn[] _dependency = Array.Empty<DataColumn>();
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Members of types used in the expression might be trimmed.")]
         internal DataExpression(DataTable? table, string? expression) : this(table, expression, null)
         {
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Members of types used in the expression might be trimmed.")]
         internal DataExpression(DataTable? table, string? expression, Type? type)
         {
             ExpressionParser parser = new ExpressionParser(table);
@@ -118,6 +118,8 @@ namespace System.Data
             return Evaluate((DataRow?)null, DataRowVersion.Default);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Constructors taking expression are marked as unsafe")]
         internal object Evaluate(DataRow? row, DataRowVersion version)
         {
             object? result;
@@ -161,7 +163,8 @@ namespace System.Data
             return Evaluate(rows, DataRowVersion.Default);
         }
 
-
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Constructors taking expression are marked as unsafe")]
         internal object Evaluate(DataRow[] rows, DataRowVersion version)
         {
             if (!_bound)
@@ -188,6 +191,8 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Constructors taking expression are marked as unsafe")]
         public bool Invoke(DataRow row, DataRowVersion version)
         {
             if (_expr == null)

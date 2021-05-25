@@ -85,7 +85,7 @@ namespace System.Data
                     return null;
                 }
             }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -217,7 +217,6 @@ namespace System.Data
         /// Overriding DataView's SetIndex to prevent users from setting RowState filter to anything other
         /// than CurrentRows.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             // Throw only if expressions (filter or sort) are used and rowstate is not current rows
@@ -267,8 +266,6 @@ namespace System.Data
         /// </summary>
         ListSortDescriptionCollection IBindingListView.SortDescriptions
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 if (base.SortComparison == null)

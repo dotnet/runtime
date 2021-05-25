@@ -124,7 +124,6 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable? GetDataTableBySchemaAction(DataSet dataSet, MissingSchemaAction schemaAction)
         {
             if (null == dataSet)

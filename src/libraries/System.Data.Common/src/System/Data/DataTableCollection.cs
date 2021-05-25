@@ -144,7 +144,6 @@ namespace System.Data
         /// <summary>
         /// Adds the specified table to the collection.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Add(DataTable table)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Add|API> {0}, table={1}", ObjectID, (table != null) ? table.ObjectID : 0);
@@ -688,7 +687,6 @@ namespace System.Data
             return cachedI;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void FinishInitCollection()
         {
             if (_delayedAddRangeTables != null)

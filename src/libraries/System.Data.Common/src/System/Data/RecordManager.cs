@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -202,14 +201,12 @@ namespace System.Data
         }
 
         // Increases AutoIncrementCurrent
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int ImportRecord(DataTable src, int record)
         {
             return CopyRecord(src, record, -1);
         }
 
         // No impact on AutoIncrementCurrent if over written
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int CopyRecord(DataTable src, int record, int copy)
         {
             Debug.Assert(src != null, "Can not Merge record without a table");

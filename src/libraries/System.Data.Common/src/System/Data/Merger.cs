@@ -40,7 +40,6 @@ namespace System.Data
                 missingSchemaAction;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MergeDataSet(DataSet source)
         {
             Debug.Assert(_dataSet != null);
@@ -106,7 +105,7 @@ namespace System.Data
                             DataColumn targetColumn = targetTable.Columns[dc.ColumnName]!;
                             if (!existingColumns!.Contains(targetColumn))
                             {
-                                targetColumn.Expression = dc.Expression;
+                                targetColumn.CopyExpressionFrom(dc);
                             }
                         }
                     }
@@ -121,7 +120,6 @@ namespace System.Data
             _dataSet.EnforceConstraints = fEnforce;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MergeTable(DataTable src)
         {
             bool fEnforce = false;
@@ -195,7 +193,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void MergeTable(DataTable src, DataTable dst)
         {
             int rowsCount = src.Rows.Count;
@@ -235,7 +232,6 @@ namespace System.Data
             MergeExtendedProperties(src.ExtendedProperties, dst.ExtendedProperties);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MergeRows(DataRow[] rows)
         {
             Debug.Assert(_dataSet != null);
@@ -324,7 +320,6 @@ namespace System.Data
             _dataSet.EnforceConstraints = fEnforce;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataTable? MergeSchema(DataTable table)
         {
             DataTable? targetTable = null;
@@ -411,7 +406,7 @@ namespace System.Data
                     {
                         for (int i = oldCount; i < targetTable.Columns.Count; i++)
                         {
-                            targetTable.Columns[i].Expression = table.Columns[targetTable.Columns[i].ColumnName]!.Expression;
+                            targetTable.Columns[i].CopyExpressionFrom(table.Columns[targetTable.Columns[i].ColumnName]!);
                         }
                     }
 
@@ -456,7 +451,6 @@ namespace System.Data
             return targetTable;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void MergeTableData(DataTable src)
         {
             DataTable? dest = MergeSchema(src);

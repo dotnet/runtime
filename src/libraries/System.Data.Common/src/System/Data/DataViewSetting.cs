@@ -56,6 +56,7 @@ namespace System.Data
         public string RowFilter
         {
             get { return _rowFilter; }
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)

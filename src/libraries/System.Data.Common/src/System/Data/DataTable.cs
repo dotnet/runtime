@@ -160,7 +160,6 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataTable'/> class with no arguments.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable()
         {
             GC.SuppressFinalize(this);
@@ -181,13 +180,11 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataTable'/> class with the specified table
         ///    name.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable(string? tableName) : this()
         {
             _tableName = tableName == null ? "" : tableName;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable(string? tableName, string? tableNamespace) : this(tableName)
         {
             Namespace = tableNamespace;
@@ -213,8 +210,6 @@ namespace System.Data
             DeserializeDataTable(info, context, isSingleTable, remotingFormat);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
@@ -941,7 +936,6 @@ namespace System.Data
         public bool CaseSensitive
         {
             get { return _caseSensitive; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_caseSensitive != value)
@@ -965,7 +959,6 @@ namespace System.Data
 
         internal bool AreIndexEventsSuspended => 0 < _suspendIndexEvents;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RestoreIndexEvents(bool forceReset)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.RestoreIndexEvents|Info> {0}, {1}", ObjectID, _suspendIndexEvents);
@@ -1044,7 +1037,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool SetCaseSensitiveValue(bool isCaseSensitive, bool userSet, bool resetIndexes)
         {
             if (userSet || (!_caseSensitiveUserSet && (_caseSensitive != isCaseSensitive)))
@@ -1225,7 +1217,6 @@ namespace System.Data
         [Browsable(false)]
         public DataView DefaultView
         {
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 DataView? view = _defaultView;
@@ -1285,7 +1276,6 @@ namespace System.Data
 
                 return _enforceConstraints;
             }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_dataSet == null && _enforceConstraints != value)
@@ -1306,7 +1296,6 @@ namespace System.Data
             set { _suspendEnforceConstraints = value; }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void EnableConstraints()
         {
             bool errors = false;
@@ -1395,7 +1384,6 @@ namespace System.Data
                 Debug.Assert(null != _culture, "null culture");
                 return _culture;
             }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.set_Locale|API> {0}", ObjectID);
@@ -1462,7 +1450,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool SetLocaleValue(CultureInfo culture, bool userSet, bool resetIndexes)
         {
             Debug.Assert(null != culture, "SetLocaleValue: no locale");
@@ -2018,8 +2005,6 @@ namespace System.Data
             fInitInProgress = true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public virtual void EndInit()
         {
             if (_dataSet == null || !_dataSet._fInitInProgress)
@@ -2030,7 +2015,7 @@ namespace System.Data
                 {
                     if (dc.Computed)
                     {
-                        dc.Expression = dc.Expression;
+                        dc.CopyExpressionFrom(dc);
                     }
                 }
             }
@@ -2078,7 +2063,6 @@ namespace System.Data
         internal DataColumn? XmlText
         {
             get { return _xmlText; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_xmlText != value)
@@ -2146,7 +2130,6 @@ namespace System.Data
             return targetRow;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SetMergeRecords(DataRow row, int newRecord, int oldRecord, DataRowAction action)
         {
             if (newRecord != -1)
@@ -2165,7 +2148,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow MergeRow(DataRow row, DataRow? targetRow, bool preserveChanges, Index? idxSearch)
         {
             if (targetRow == null)
@@ -2288,7 +2270,6 @@ namespace System.Data
         /// <summary>
         /// Commits all the changes made to this table since the last time <see cref='System.Data.DataTable.AcceptChanges'/> was called.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void AcceptChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.AcceptChanges|API> {0}", ObjectID);
@@ -2323,13 +2304,10 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual DataTable CreateInstance() => (DataTable)Activator.CreateInstance(GetType(), true)!;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public virtual DataTable Clone() => Clone(null);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable Clone(DataSet? cloneDS)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Clone|INFO> {0}, cloneDS={1}", ObjectID, (cloneDS != null) ? cloneDS.ObjectID : 0);
@@ -2348,7 +2326,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataTable IncrementalCloneTo(DataTable sourceTable, DataTable targetTable)
         {
             foreach (DataColumn dc in sourceTable.Columns)
@@ -2362,7 +2339,6 @@ namespace System.Data
             return targetTable;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
         {
             if (visitedMap == null)
@@ -2402,7 +2378,6 @@ namespace System.Data
             return destinationTable;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataTable CloneTo(DataTable clone, DataSet? cloneDS, bool skipExpressionColumns)
         {
             // we do clone datatables while we do readxmlschema, so we do not want to clone columnexpressions if we call this from ReadXmlSchema
@@ -2443,7 +2418,7 @@ namespace System.Data
             {
                 for (int i = 0; i < clmns.Count; i++)
                 {
-                    clone.Columns[clmns[i].ColumnName]!.Expression = clmns[i].Expression;
+                    clone.Columns[clmns[i].ColumnName]!.CopyExpressionFrom(clmns[i]);
                 }
             }
 
@@ -2526,7 +2501,6 @@ namespace System.Data
             return clone;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable Copy()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Copy|API> {0}", ObjectID);
@@ -2735,7 +2709,6 @@ namespace System.Data
         }
 #nullable enable
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow AddRecords(int oldRecord, int newRecord)
         {
             DataRow row;
@@ -2754,16 +2727,12 @@ namespace System.Data
             return row;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddRow(DataRow row) => AddRow(row, -1);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddRow(DataRow row, int proposedID) => InsertRow(row, proposedID, -1);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void InsertRow(DataRow row, int proposedID, int pos) => InsertRow(row, proposedID, pos, fireEvent: true);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void InsertRow(DataRow row, long proposedID, int pos, bool fireEvent)
         {
             Exception? deferredException = null;
@@ -2840,7 +2809,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CheckNotModifying(DataRow row)
         {
             if (row._tempRecord != -1)
@@ -2852,10 +2820,8 @@ namespace System.Data
         /// <summary>
         /// Clears the table of all data.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Clear() => Clear(true);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Clear(bool clearAll)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Clear|INFO> {0}, clearAll={1}", ObjectID, clearAll);
@@ -2915,7 +2881,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CascadeAll(DataRow row, DataRowAction action)
         {
             if (_dataSet != null && _dataSet._fEnableCascading)
@@ -2927,7 +2892,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CommitRow(DataRow row)
         {
             // Fire Changing event
@@ -2990,7 +2954,7 @@ namespace System.Data
         /// <summary>
         /// Computes the given expression on the current rows that pass the filter criteria.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Members of types used in the filter or expression might be trimmed.")]
         public object Compute(string? expression, string? filter)
         {
             DataRow[] rows = Select(filter, "", DataViewRowState.CurrentRows);
@@ -3000,7 +2964,6 @@ namespace System.Data
 
         bool IListSource.ContainsListCollection => false;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CopyRow(DataTable table, DataRow row)
         {
             int oldRecord = -1, newRecord = -1;
@@ -3042,7 +3005,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void DeleteRow(DataRow row)
         {
             if (row._newRecord == -1)
@@ -3059,7 +3021,6 @@ namespace System.Data
             if (_primaryKey == null) throw ExceptionBuilder.TableMissingPrimaryKey();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow? FindByPrimaryKey(object?[] values)
         {
             CheckPrimaryKey();
@@ -3072,7 +3033,6 @@ namespace System.Data
             return FindRow(_primaryKey!.Key, value);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataRow? FindRow(DataKey key, object?[] values)
         {
             Index index = GetIndex(NewIndexDesc(key));
@@ -3118,7 +3078,6 @@ namespace System.Data
             _recordManager.FreeRecord(ref record);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable? GetChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.GetChanges|API> {0}", ObjectID);
@@ -3149,7 +3108,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable? GetChanges(DataRowState rowStates)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.GetChanges|API> {0}, rowStates={1}", ObjectID, rowStates);
@@ -3238,8 +3196,6 @@ namespace System.Data
 
         // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         IList IListSource.GetList() => DefaultView;
 
         internal List<DataViewListener> GetListeners() => _dataViewListeners;
@@ -3266,7 +3222,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void ImportRow(DataRow? row)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.ImportRow|API> {0}", ObjectID);
@@ -3319,7 +3274,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void InsertRow(DataRow row, long proposedID)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.InsertRow|INFO> {0}, row={1}", ObjectID, row._objectID);
@@ -3415,7 +3369,6 @@ namespace System.Data
             return newIndexDesc;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewRecord() => NewRecord(-1);
 
         internal int NewUninitializedRecord()
@@ -3423,7 +3376,6 @@ namespace System.Data
             return _recordManager.NewRecordBase();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewRecordFromArray(object?[] value)
         {
             int colCount = _columnCollection.Count; // Perf: use the readonly columnCollection field directly
@@ -3488,14 +3440,12 @@ namespace System.Data
             return dr;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataRow NewUninitializedRow() => NewRow(NewUninitializedRecord());
 
         /// <summary>
         /// Creates a new <see cref='System.Data.DataRow'/>
         /// with the same schema as the table.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataRow NewRow()
         {
             DataRow dr = NewRow(-1);
@@ -3504,7 +3454,6 @@ namespace System.Data
         }
 
         // Only initialize DataRelation mapping columns (approximately hidden columns)
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow CreateEmptyRow()
         {
             DataRow row = NewUninitializedRow();
@@ -3542,7 +3491,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow NewRow(int record)
         {
             if (-1 == record)
@@ -3801,7 +3749,6 @@ namespace System.Data
 
         // Notify all indexes that record changed.
         // Only called when Error was changed.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RecordChanged(int record)
         {
             Debug.Assert(record != -1, "Record number must be given");
@@ -3827,7 +3774,6 @@ namespace System.Data
         // for each index in liveindexes invok RecordChanged
         // oldIndex and newIndex keeps  position of record before delete and after insert in each index in order
         // LiveIndexes[n-m] will have its information in oldIndex[n-m] and  newIndex[n-m]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RecordChanged(int[] oldIndex, int[] newIndex)
         {
             SetShadowIndexes();
@@ -3851,7 +3797,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RecordStateChanged(int record, DataViewRowState oldState, DataViewRowState newState)
         {
             SetShadowIndexes();
@@ -3874,7 +3819,6 @@ namespace System.Data
             // System.Data.XML.Store.Store.OnROMChanged(record, oldState, newState);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RecordStateChanged(int record1, DataViewRowState oldState1, DataViewRowState newState1,
                                          int record2, DataViewRowState oldState2, DataViewRowState newState2)
         {
@@ -3913,7 +3857,6 @@ namespace System.Data
         // RemoveRecordFromIndexes removes the given record (using row and version) from all indexes and it  stores and returns the position of deleted
         // record from each index
         // IT SHOULD NOT CAUSE ANY EVENT TO BE FIRED
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int[] RemoveRecordFromIndexes(DataRow row, DataRowVersion version)
         {
             int indexCount = LiveIndexes.Count;
@@ -3948,7 +3891,6 @@ namespace System.Data
         // InsertRecordToIndexes inserts the given record (using row and version) to all indexes and it  stores and returns the position of inserted
         // record to each index
         // IT SHOULD NOT CAUSE ANY EVENT TO BE FIRED
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int[] InsertRecordToIndexes(DataRow row, DataRowVersion version)
         {
             int indexCount = LiveIndexes.Count;
@@ -3974,7 +3916,6 @@ namespace System.Data
             return positionIndexes;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SilentlySetValue(DataRow dr, DataColumn dc, DataRowVersion version, object newValue)
         {
             // get record for version
@@ -4016,7 +3957,6 @@ namespace System.Data
         /// Rolls back all changes that have been made to the table
         /// since it was loaded, or the last time <see cref='System.Data.DataTable.AcceptChanges'/> was called.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RejectChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.RejectChanges|API> {0}", ObjectID);
@@ -4036,7 +3976,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RemoveRow(DataRow row, bool check)
         {
             if (row.rowID == -1)
@@ -4076,7 +4015,6 @@ namespace System.Data
         }
 
         // Resets the table back to its original state.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public virtual void Reset()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Reset|API> {0}", ObjectID);
@@ -4110,10 +4048,8 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ResetIndexes() => ResetInternalIndexes(null);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ResetInternalIndexes(DataColumn? column)
         {
             Debug.Assert(null != _indexes, "unexpected null indexes");
@@ -4158,7 +4094,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RollbackRow(DataRow row)
         {
             row.CancelEdit();
@@ -4227,7 +4162,6 @@ namespace System.Data
             return args;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataRowChangeEventArgs? RaiseRowChanging(DataRowChangeEventArgs? args, DataRow eRow, DataRowAction eAction, bool fireEvent)
         {
             // check all constraints
@@ -4269,7 +4203,8 @@ namespace System.Data
         /// <summary>
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Filter expression is empty therefore this is safe.")]
         public DataRow[] Select()
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}", ObjectID);
@@ -4280,7 +4215,7 @@ namespace System.Data
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter criteria in order of
         /// primary key (or lacking one, order of addition.)
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(Data.Select.RequiresUnreferencedCodeMessage)]
         public DataRow[] Select(string? filterExpression)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}, filterExpression='{1}'", ObjectID, filterExpression);
@@ -4291,7 +4226,7 @@ namespace System.Data
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter criteria, in the
         /// specified sort order.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(Data.Select.RequiresUnreferencedCodeMessage)]
         public DataRow[] Select(string? filterExpression, string? sort)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}, filterExpression='{1}', sort='{2}'", ObjectID, filterExpression, sort);
@@ -4302,14 +4237,13 @@ namespace System.Data
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter in the order of the
         /// sort, that match the specified state.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(Data.Select.RequiresUnreferencedCodeMessage)]
         public DataRow[] Select(string? filterExpression, string? sort, DataViewRowState recordStates)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}, filterExpression='{1}', sort='{2}', recordStates={3}", ObjectID, filterExpression, sort, recordStates);
             return new Select(this, filterExpression, sort, recordStates).SelectRows();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetNewRecord(DataRow row, int proposedRecord, DataRowAction action = DataRowAction.Change, bool isInMerge = false, bool fireEvent = true, bool suppressEnsurePropertyChanged = false)
         {
             Exception? deferredException = null;
@@ -4320,7 +4254,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SetNewRecordWorker(DataRow row, int proposedRecord, DataRowAction action, bool isInMerge, bool suppressEnsurePropertyChanged,
             int position, bool fireEvent, out Exception? deferredException)
         {
@@ -4540,7 +4473,6 @@ namespace System.Data
 
         // this is the event workhorse... it will throw the changing/changed events
         // and update the indexes.
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetOldRecord(DataRow row, int proposedRecord)
         {
             if (!_inDataLoad)
@@ -4650,7 +4582,6 @@ namespace System.Data
             TableName :
             TableName + " + " + DisplayExpressionInternal;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void BeginLoadData()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.BeginLoadData|API> {0}", ObjectID);
@@ -4701,7 +4632,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void EndLoadData()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.EndLoadData|API> {0}", ObjectID);
@@ -4752,7 +4682,6 @@ namespace System.Data
         /// Finds and updates a specific row. If no matching
         /// row is found, a new row is created using the given values.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataRow LoadDataRow(object?[] values, bool fAcceptChanges)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.LoadDataRow|API> {0}, fAcceptChanges={1}", ObjectID, fAcceptChanges);
@@ -4814,7 +4743,6 @@ namespace System.Data
         /// <summary>
         /// Finds and updates a specific row. If no matching row is found, a new row is created using the given values.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataRow LoadDataRow(object?[] values, LoadOption loadOption)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.LoadDataRow|API> {0}, loadOption={1}", ObjectID, loadOption);
@@ -4871,7 +4799,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow UpdatingAdd(object?[] values)
         {
             Index? index = null;
@@ -4957,7 +4884,8 @@ namespace System.Data
 
         internal DataColumn AddUniqueKey() => AddUniqueKey(-1);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Expression is null and potential problem with data type has already been reported when constructing parentKey")]
         internal DataColumn AddForeignKey(DataColumn parentKey)
         {
             Debug.Assert(parentKey != null, "AddForeignKey: Invalid paramter.. related primary key is null");
@@ -4981,7 +4909,6 @@ namespace System.Data
         /// additional properties.  The returned array of properties will be
         /// filtered by the given set of attributes.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal PropertyDescriptorCollection GetPropertyDescriptorCollection(Attribute[]? attributes)
         {
             if (_propertyDescriptorCollectionCache == null)
@@ -5010,15 +4937,12 @@ namespace System.Data
             set { _typeName = value; }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Merge(DataTable table) =>
             Merge(table, false, MissingSchemaAction.Add);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Merge(DataTable table, bool preserveChanges) =>
             Merge(table, preserveChanges, MissingSchemaAction.Add);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Merge(DataTable table, bool preserveChanges, MissingSchemaAction missingSchemaAction)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Merge|API> {0}, table={1}, preserveChanges={2}, missingSchemaAction={3}", ObjectID, (table != null) ? table.ObjectID : 0, preserveChanges, missingSchemaAction);
@@ -5048,13 +4972,10 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Load(IDataReader reader) => Load(reader, LoadOption.PreserveChanges, null);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Load(IDataReader reader, LoadOption loadOption) => Load(reader, loadOption, null);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Load|API> {0}, loadOption={1}", ObjectID, loadOption);
@@ -5088,7 +5009,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataRow LoadRow(object?[] values, LoadOption loadOption, Index? searchIndex)
         {
             int recordNo;
@@ -5193,7 +5113,6 @@ namespace System.Data
             return dataRow;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SetDataRowWithLoadOption(DataRow dataRow, int recordNo, LoadOption loadOption, bool checkReadOnly)
         {
             bool hasError = false;
@@ -5395,7 +5314,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTableReader CreateDataReader() => new DataTableReader(this);
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
@@ -5753,7 +5671,6 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(XmlReader? reader) => ReadXml(reader, false);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void RestoreConstraint(bool originalEnforceConstraint)
         {
             if (DataSet != null)
@@ -6036,7 +5953,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
             IDisposable? restrictedScope = null;
@@ -6769,8 +6685,6 @@ namespace System.Data
 
         XmlSchema? IXmlSerializable.GetSchema() => GetSchema();
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         protected virtual XmlSchema? GetSchema()
         {
             if (GetType() == typeof(DataTable))
@@ -6791,8 +6705,6 @@ namespace System.Data
         // TODO: Enable after System.Private.Xml is annotated
 #nullable disable
 #pragma warning disable 8632
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             IXmlTextParser? textReader = reader as IXmlTextParser;
@@ -6810,17 +6722,20 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            WriteXmlSchema(writer, false);
-            WriteXml(writer, XmlWriteMode.DiffGram, false);
+            WriteXmlCore(writer);
         }
 #pragma warning restore 8632
 #nullable enable
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        // This method exists so that suppression can be placed on `IXmlSerializable.WriteXml(XmlWriter writer)`
+        private void WriteXmlCore(XmlWriter writer)
+        {
+            WriteXmlSchema(writer, false);
+            WriteXml(writer, XmlWriteMode.DiffGram, false);
+        }
+
         protected virtual void ReadXmlSerializable(XmlReader? reader) => ReadXml(reader, XmlReadMode.DiffGram, true);
 
         // RowDiffIdUsageSection & DSRowDiffIdUsageSection Usage:
@@ -7001,7 +6916,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void EvaluateExpressions()
         {
             // evaluates all expressions for all rows in table
@@ -7028,7 +6942,8 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This is unsafe only when columns have associated expression. All ways to add such expression are marked unsafe.")]
         internal void EvaluateExpressions(DataRow row, DataRowAction action, List<DataRow>? cachedRows)
         {
             // evaluate all expressions for specified row
@@ -7113,7 +7028,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void EvaluateExpressions(DataColumn column)
         {
             Debug.Assert(column._table != null);
@@ -7168,7 +7082,6 @@ namespace System.Data
             EvaluateDependentExpressions(column);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void EvaluateDependentExpressions(DataColumn column)
         {
             // DataTable.Clear(), DataRowCollection.Clear() & DataColumn.set_Expression
@@ -7184,7 +7097,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void EvaluateDependentExpressions(List<DataColumn>? columns, DataRow row, DataRowVersion version, List<DataRow>? cachedRows)
         {
             if (columns == null)

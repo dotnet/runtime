@@ -21,14 +21,10 @@ namespace System.Data
 
         private static readonly NotSupportedException s_notSupported = new NotSupportedException();
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "DataSet is null and unsafe operations are bypassed.")]
         public DataViewManager() : this(null, false) { }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataViewManager(DataSet? dataSet) : this(dataSet, false) { }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataViewManager(DataSet? dataSet, bool locked)
         {
             GC.SuppressFinalize(this);
@@ -48,7 +44,6 @@ namespace System.Data
         public DataSet? DataSet
         {
             get { return _dataSet; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -102,6 +97,7 @@ namespace System.Data
                 builder.Append("</DataViewSettingCollectionString>");
                 return builder.ToString();
             }
+            [RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed.")]
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -306,7 +302,6 @@ namespace System.Data
             return new PropertyDescriptorCollection(null);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView CreateDataView(DataTable table)
         {
             if (_dataSet == null)
@@ -332,7 +327,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void TableCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             PropertyDescriptor? NullProp = null;
@@ -344,7 +338,6 @@ namespace System.Data
             );
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void RelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;

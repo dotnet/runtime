@@ -24,7 +24,6 @@ namespace System.Data
             _propsCollection = null;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataView GetDataView(DataTable table)
         {
             DataView dataView = new DataView(table);
@@ -113,7 +112,6 @@ namespace System.Data
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
             GetPropertiesInternal();
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal PropertyDescriptorCollection GetPropertiesInternal()
         {
             if (_propsCollection == null)

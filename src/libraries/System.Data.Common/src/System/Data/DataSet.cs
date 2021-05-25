@@ -30,6 +30,7 @@ namespace System.Data
     [XmlSchemaProvider(nameof(GetDataSetSchema))]
     [XmlRoot(nameof(DataSet))]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] // needed by Clone() to preserve derived ctors
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
         internal const string RequiresUnreferencedCodeMessage = "Members from serialized types or types used in expressions may be trimmed if not referenced directly";
@@ -565,7 +566,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void FailedEnableConstraints()
         {
             EnforceConstraints = false;
@@ -581,7 +581,6 @@ namespace System.Data
         public bool CaseSensitive
         {
             get { return _caseSensitive; }
-            [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_caseSensitive != value)
@@ -615,7 +614,6 @@ namespace System.Data
         [Browsable(false)]
         public DataViewManager DefaultViewManager
         {
-            [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
             get
             {
                 if (_defaultViewManager == null)
@@ -640,7 +638,6 @@ namespace System.Data
         public bool EnforceConstraints
         {
             get { return _enforceConstraints; }
-            [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.set_EnforceConstraints|API> {0}, {1}", ObjectID, value);
@@ -667,7 +664,6 @@ namespace System.Data
             _enforceConstraints = value;
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void EnableConstraints()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.EnableConstraints|INFO> {0}", ObjectID);
@@ -844,7 +840,6 @@ namespace System.Data
                 Debug.Assert(null != _culture, "DataSet.Locale: null culture");
                 return _culture;
             }
-            [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.set_Locale|API> {0}", ObjectID);
@@ -866,7 +861,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void SetLocaleValue(CultureInfo value, bool userSet)
         {
             bool flag = false;
@@ -1028,7 +1022,6 @@ namespace System.Data
         /// Commits all the changes made to this <see cref='System.Data.DataSet'/> since it was loaded or the last
         /// time <see cref='System.Data.DataSet.AcceptChanges'/> was called.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void AcceptChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.AcceptChanges|API> {0}", ObjectID);
@@ -1062,8 +1055,6 @@ namespace System.Data
             _fInitInProgress = true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public void EndInit()
         {
             Tables.FinishInitCollection();
@@ -1086,7 +1077,6 @@ namespace System.Data
         /// <summary>
         /// Clears the <see cref='System.Data.DataSet'/> of any data by removing all rows in all tables.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Clear()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Clear|API> {0}", ObjectID);
@@ -1107,19 +1097,25 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Only parameterless constructors are used here but warning is about serialization constructor.")]
+        private DataSet CreateInstanceOfThisType()
+        {
+            return (DataSet)Activator.CreateInstance(GetType(), true)!;
+        }
+
         /// <summary>
         /// Clones the structure of the <see cref='System.Data.DataSet'/>, including all <see cref='System.Data.DataTable'/> schemas, relations, and
         /// constraints.
         /// </summary>
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public virtual DataSet Clone()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Clone|API> {0}", ObjectID);
             try
             {
-                DataSet ds = (DataSet)Activator.CreateInstance(GetType(), true)!;
+                DataSet ds = CreateInstanceOfThisType();
 
                 if (ds.Tables.Count > 0)  // To clean up all the schema in strong typed dataset.
                 {
@@ -1193,7 +1189,7 @@ namespace System.Data
                     {
                         if (col.Expression.Length != 0)
                         {
-                            ds.Tables[table.TableName, table.Namespace]!.Columns[col.ColumnName]!.Expression = col.Expression;
+                            ds.Tables[table.TableName, table.Namespace]!.Columns[col.ColumnName]!.CopyExpressionFrom(col);
                         }
                     }
                 }
@@ -1216,7 +1212,6 @@ namespace System.Data
         /// <summary>
         /// Copies both the structure and data for this <see cref='System.Data.DataSet'/>.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataSet Copy()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Copy|API> {0}", ObjectID);
@@ -1267,7 +1262,6 @@ namespace System.Data
         /// Returns a copy of the <see cref='System.Data.DataSet'/> that contains all changes made to
         /// it since it was loaded or <see cref='System.Data.DataSet.AcceptChanges'/> was last called.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataSet? GetChanges() =>
             GetChanges(DataRowState.Added | DataRowState.Deleted | DataRowState.Modified);
 
@@ -1295,7 +1289,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataSet? GetChanges(DataRowState rowStates)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.GetChanges|API> {0}, rowStates={1}", ObjectID, rowStates);
@@ -1420,8 +1413,6 @@ namespace System.Data
 
         // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         IList IListSource.GetList() => DefaultViewManager;
 #nullable enable
 
@@ -2945,7 +2936,6 @@ namespace System.Data
         /// <summary>
         /// Merges this <see cref='System.Data.DataSet'/> into a specified <see cref='System.Data.DataSet'/>.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataSet dataSet)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, dataSet={1}", ObjectID, (dataSet != null) ? dataSet.ObjectID : 0);
@@ -2964,7 +2954,6 @@ namespace System.Data
         /// Merges this <see cref='System.Data.DataSet'/> into a specified <see cref='System.Data.DataSet'/> preserving changes according to
         /// the specified argument.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataSet dataSet, bool preserveChanges)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, dataSet={1}, preserveChanges={2}", ObjectID, (dataSet != null) ? dataSet.ObjectID : 0, preserveChanges);
@@ -2984,7 +2973,6 @@ namespace System.Data
         /// the specified argument, and handling an incompatible schema according to the
         /// specified argument.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataSet dataSet, bool preserveChanges, MissingSchemaAction missingSchemaAction)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, dataSet={1}, preserveChanges={2}, missingSchemaAction={3}", ObjectID, (dataSet != null) ? dataSet.ObjectID : 0, preserveChanges, missingSchemaAction);
@@ -3018,7 +3006,6 @@ namespace System.Data
         /// <summary>
         /// Merges this <see cref='System.Data.DataTable'/> into a specified <see cref='System.Data.DataTable'/>.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataTable table)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, table={1}", ObjectID, (table != null) ? table.ObjectID : 0);
@@ -3037,7 +3024,6 @@ namespace System.Data
         /// Merges this <see cref='System.Data.DataTable'/> into a specified <see cref='System.Data.DataTable'/>. with a value to preserve changes
         /// made to the target, and a value to deal with missing schemas.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataTable table, bool preserveChanges, MissingSchemaAction missingSchemaAction)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, table={1}, preserveChanges={2}, missingSchemaAction={3}", ObjectID, (table != null) ? table.ObjectID : 0, preserveChanges, missingSchemaAction);
@@ -3068,7 +3054,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataRow[] rows)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, rows", ObjectID);
@@ -3082,7 +3067,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Merge(DataRow[] rows, bool preserveChanges, MissingSchemaAction missingSchemaAction)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Merge|API> {0}, preserveChanges={1}, missingSchemaAction={2}", ObjectID, preserveChanges, missingSchemaAction);
@@ -3214,7 +3198,6 @@ namespace System.Data
         /// Any rows still in edit-mode cancel their edits.  New rows get removed.  Modified and
         /// Deleted rows return back to their original state.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public virtual void RejectChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.RejectChanges|API> {0}", ObjectID);
@@ -3238,7 +3221,6 @@ namespace System.Data
         /// Resets the dataSet back to it's original state.  Subclasses should override
         /// to restore back to it's original state.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public virtual void Reset()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Reset|API> {0}", ObjectID);
@@ -3470,8 +3452,6 @@ namespace System.Data
         private static bool PublishLegacyWSDL() => false;
 
 #pragma warning disable 8632
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         XmlSchema? IXmlSerializable.GetSchema()
         {
             if (GetType() == typeof(DataSet))
@@ -3490,8 +3470,6 @@ namespace System.Data
             return XmlSchema.Read(new XmlTextReader(stream), null);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             bool fNormalization = true;
@@ -3524,8 +3502,6 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
             WriteXmlSchema(writer, SchemaFormat.WebService, null);
@@ -3533,7 +3509,6 @@ namespace System.Data
         }
 #pragma warning restore 8632
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Load|API> reader, loadOption={0}", loadOption);
@@ -3568,11 +3543,9 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Load(IDataReader reader, LoadOption loadOption, params DataTable[] tables) =>
             Load(reader, loadOption, null, tables);
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Load(IDataReader reader, LoadOption loadOption, params string[] tables)
         {
             ADP.CheckArgumentNull(tables, nameof(tables));
@@ -3590,7 +3563,6 @@ namespace System.Data
             Load(reader, loadOption, null, dataTables);
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataTableReader CreateDataReader()
         {
             if (Tables.Count == 0)
@@ -3606,7 +3578,6 @@ namespace System.Data
             return CreateDataReader(dataTables);
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataTableReader CreateDataReader(params DataTable[] dataTables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.GetDataReader|API> {0}", ObjectID);

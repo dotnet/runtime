@@ -19,7 +19,6 @@ namespace System.Data
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class DataColumnCollection : InternalDataCollectionBase
     {
-        private const string RequiresUnreferencedCodeMessage = "Members might be trimmed for some column data types.";
         private readonly DataTable _table;
         private readonly ArrayList _list = new ArrayList();
         private int _defaultNameIndex = 1;
@@ -130,13 +129,11 @@ namespace System.Data
         /// Adds the specified <see cref='System.Data.DataColumn'/>
         /// to the columns collection.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Add(DataColumn column)
         {
             AddAt(-1, column);
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void AddAt(int index, DataColumn column)
         {
             if (column != null && column.ColumnMapping == MappingType.SimpleContent)
@@ -185,12 +182,11 @@ namespace System.Data
             }
             if (!_table.fInitInProgress && column != null && column.Computed)
             {
-                column.Expression = column.Expression;
+                column.CopyExpressionFrom(column);
             }
             OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, column));
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void AddRange(DataColumn[] columns)
         {
             if (_table.fInitInProgress)
@@ -228,8 +224,7 @@ namespace System.Data
         /// with the
         /// specified name and type to the columns collection.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        public DataColumn Add(string? columnName, Type type)
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             var column = new DataColumn(columnName, type);
             Add(column);
@@ -240,8 +235,6 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name to the columns collection.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Add is safe when column data type is string.")]
         public DataColumn Add(string? columnName)
         {
             var column = new DataColumn(columnName);
@@ -252,8 +245,6 @@ namespace System.Data
         /// <summary>
         /// Creates and adds a <see cref='System.Data.DataColumn'/> to a columns collection.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Add is safe when column data type is string.")]
         public DataColumn Add()
         {
             var column = new DataColumn();
@@ -325,7 +316,6 @@ namespace System.Data
         /// A DuplicateNameException is thrown if this collection already has a column with the same
         /// name (case insensitive).
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void BaseAdd([NotNull] DataColumn? column)
         {
             if (column == null)
@@ -385,7 +375,6 @@ namespace System.Data
         /// <summary>
         /// BaseGroupSwitch will intelligently remove and add tables from the collection.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void BaseGroupSwitch(DataColumn[] oldArray, int oldLength, DataColumn[] newArray, int newLength)
         {
             // We're doing a smart diff of oldArray and newArray to find out what
@@ -438,7 +427,6 @@ namespace System.Data
         /// if this column doesn't belong to this collection or if this column is part of a relationship.
         /// An ArgumentException is thrown if another column's compute expression depends on this column.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void BaseRemove(DataColumn column)
         {
             if (CanRemove(column, true))
@@ -601,8 +589,6 @@ namespace System.Data
         /// <summary>
         /// Clears the collection of any columns.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "BaseGroupSwitch with empty collection is safe.")]
         public void Clear()
         {
             int oldLength = _list.Count;
@@ -757,7 +743,6 @@ namespace System.Data
             return cachedI;
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void FinishInitCollection()
         {
             if (_delayedAddRangeColumns != null)
@@ -890,7 +875,6 @@ namespace System.Data
         /// Removes the specified <see cref='System.Data.DataColumn'/>
         /// from the collection.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Remove(DataColumn column)
         {
             OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Remove, column));
@@ -907,7 +891,6 @@ namespace System.Data
         /// <summary>
         /// Removes the column at the specified index from the collection.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void RemoveAt(int index)
         {
             DataColumn dc = this[index];
@@ -921,7 +904,6 @@ namespace System.Data
         /// <summary>
         /// Removes the column with the specified name from the collection.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void Remove(string name)
         {
             DataColumn? dc = this[name];

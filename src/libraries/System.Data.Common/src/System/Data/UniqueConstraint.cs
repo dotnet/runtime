@@ -215,7 +215,6 @@ namespace System.Data
             return true;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override bool IsConstraintViolated()
         {
             bool result = false;
@@ -246,7 +245,6 @@ namespace System.Data
             return result;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override void CheckConstraint(DataRow row, DataRowAction action)
         {
             if (Table!.EnforceConstraints &&

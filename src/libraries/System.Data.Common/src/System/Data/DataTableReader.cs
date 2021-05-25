@@ -3,7 +3,6 @@
 
 using System.Data.Common;
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -27,7 +26,6 @@ namespace System.Data
         private DataTableReaderListener _listener = default!; // Always initialized in Init
         private bool _tableCleared;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTableReader(DataTable dataTable)
         {
             if (dataTable == null)
@@ -39,7 +37,6 @@ namespace System.Data
             Init();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTableReader(DataTable[] dataTables)
         {
             if (dataTables == null)
@@ -133,8 +130,6 @@ namespace System.Data
             _isOpen = false;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DataTable GetSchemaTable()
         {
             ValidateOpen(nameof(GetSchemaTable));
@@ -724,7 +719,6 @@ namespace System.Data
             return new DbEnumerator((IDataReader)this);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal static DataTable GetSchemaTableFromDataTable(DataTable table)
         {
             if (table == null)

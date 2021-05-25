@@ -169,7 +169,6 @@ namespace System.Data
             return true;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override bool IsConstraintViolated()
         {
             Index childIndex = _childKey.GetSortIndex();
@@ -221,7 +220,6 @@ namespace System.Data
             return true;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CascadeCommit(DataRow row)
         {
             if (row.RowState == DataRowState.Detached)
@@ -257,7 +255,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CascadeDelete(DataRow row)
         {
             Debug.Assert(row.Table.DataSet != null);
@@ -358,7 +355,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CascadeRollback(DataRow row)
         {
             Debug.Assert(row.Table.DataSet != null);
@@ -404,7 +400,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CascadeUpdate(DataRow row)
         {
             Debug.Assert(Table?.DataSet != null && row.Table.DataSet != null);
@@ -520,7 +515,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void CheckCascade(DataRow row, DataRowAction action)
         {
             Debug.Assert(Table?.DataSet != null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
@@ -566,7 +560,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override void CheckConstraint(DataRow childRow, DataRowAction action)
         {
             if ((action == DataRowAction.Change ||

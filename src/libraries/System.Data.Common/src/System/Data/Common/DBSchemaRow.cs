@@ -13,7 +13,8 @@ namespace System.Data.Common
         private readonly DbSchemaTable _schemaTable;
         private readonly DataRow _dataRow;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Filter expression is null.")]
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {
             DataColumn? sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];

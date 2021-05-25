@@ -40,7 +40,6 @@ namespace System.Data
             new Function("Avg", FunctionId.Avg, typeof(object), false, false, 1, null, null, null),
         };
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal FunctionNode(DataTable? table, string name) : base(table)
         {
             // Because FunctionNode instances are created eagerly but evaluated lazily,
@@ -112,13 +111,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return Eval(null, DataRowVersion.Default);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             Debug.Assert(_info < s_funcs.Length && _info >= 0, "Invalid function info.");
@@ -177,6 +176,7 @@ namespace System.Data
             return EvalFunction(s_funcs[_info]._id, argumentValues, row, version);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             throw ExprException.ComputeNotAggregate(ToString()!);
@@ -246,6 +246,8 @@ namespace System.Data
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Constant expressions are safe to be evaluated.")]
         internal override ExpressionNode Optimize()
         {
             for (int i = 0; i < _argumentCount; i++)
@@ -309,6 +311,7 @@ namespace System.Data
             return dataType;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object EvalFunction(FunctionId id, object[] argumentValues, DataRow? row, DataRowVersion version)
         {
             StorageType storageType;

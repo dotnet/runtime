@@ -26,6 +26,7 @@ namespace System.Data
     [DefaultProperty(nameof(ColumnName))]
     [Editor("Microsoft.VSDesigner.Data.Design.DataColumnEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] // needed by Clone() to preserve derived ctors
     public class DataColumn : MarshalByValueComponent
     {
         private bool _allowNull = true;
@@ -1188,7 +1189,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void InitializeRecord(int record)
         {
             Debug.Assert(null != _storage, "no storage");
@@ -1321,7 +1321,6 @@ namespace System.Data
         public virtual MappingType ColumnMapping
         {
             get { return _columnMapping; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_ColumnMapping|API> {0}, {1}", ObjectID, value);
@@ -1541,7 +1540,8 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Only using parameterless constructor which is safe. Class has appropriate attribute.")]
         internal DataColumn Clone()
         {
             DataColumn clone = (DataColumn)Activator.CreateInstance(GetType())!;
@@ -1696,7 +1696,6 @@ namespace System.Data
             return false;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool IsMaxLengthViolated()
         {
             if (MaxLength < 0)
@@ -1742,7 +1741,6 @@ namespace System.Data
             return error;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool IsNotAllowDBNullViolated()
         {
             Index index = SortIndex;
@@ -1898,6 +1896,14 @@ namespace System.Data
                 _table.AddDependentColumn(this);
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "User has already got warning when creating original column.")]
+        internal void CopyExpressionFrom(DataColumn source)
+        {
+            Expression = source.Expression;
+        }
+
     }
 
     internal abstract class AutoIncrementValue
