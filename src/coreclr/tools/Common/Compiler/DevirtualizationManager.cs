@@ -68,6 +68,28 @@ namespace ILCompiler
 
             if (declMethod.OwningType.IsInterface)
             {
+                if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || implType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    DefType[] implTypeRuntimeInterfaces = implType.RuntimeInterfaces;
+                    int canonicallyMatchingInterfacesFound = 0;
+                    DefType canonicalInterfaceType = (DefType)declMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    for (int i = 0; i < implTypeRuntimeInterfaces.Length; i++)
+                    {
+                        DefType runtimeInterface = implTypeRuntimeInterfaces[i];
+                        if (canonicalInterfaceType.HasSameTypeDefinition(runtimeInterface) &&
+                            runtimeInterface.ConvertToCanonForm(CanonicalFormKind.Specific) == canonicalInterfaceType)
+                        {
+                            canonicallyMatchingInterfacesFound++;
+                            if (canonicallyMatchingInterfacesFound > 1)
+                            {
+                                // We cannot resolve the interface as we don't know with exact enough detail which interface
+                                // of multiple possible interfaces is being called.
+                                return null;
+                            }
+                        }
+                    }
+                }
+
                 impl = implType.ResolveInterfaceMethodTarget(declMethod);
                 if (impl != null)
                 {
