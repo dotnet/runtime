@@ -24,15 +24,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="EnsureAllAssembliesAreLinked"
-          BeforeTargets="PrepareForILLink"> 
-    <ItemGroup>
-      <ManagedAssemblyToLink>
-        <IsTrimmable>true</IsTrimmable>
-      </ManagedAssemblyToLink>
-    </ItemGroup>
-  </Target>
-
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"

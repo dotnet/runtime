@@ -6,6 +6,7 @@
     <UseDefaultiOSFeatureSwitches>false</UseDefaultiOSFeatureSwitches>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
     <TrimMode>link</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
