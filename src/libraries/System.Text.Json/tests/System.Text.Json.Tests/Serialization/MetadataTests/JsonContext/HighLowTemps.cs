@@ -22,15 +22,15 @@ namespace System.Text.Json.Tests.Serialization
                     }
                     else
                     {
-                        JsonTypeInfo<HighLowTemps> objectInfo = JsonMetadataServices.CreateObjectInfo<HighLowTemps>();
+                        JsonTypeInfo<HighLowTemps> objectInfo = JsonMetadataServices.CreateObjectInfo<HighLowTemps>(Options);
                         _HighLowTemps = objectInfo;
     
                         JsonMetadataServices.InitializeObjectInfo(
                             objectInfo,
-                            Options,
                             createObjectFunc: static () => new HighLowTemps(),
                             HighLowTempsPropInitFunc,
-                            default);
+                            default,
+                            serializeFunc: null);
                     }
                 }
 

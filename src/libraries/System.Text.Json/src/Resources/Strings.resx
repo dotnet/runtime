@@ -596,4 +596,7 @@
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
   </data>
+  <data name="PropInitAndSerializeFuncsNull" xml:space="preserve">
+    <value>'propInitFunc' and 'serializeFunc' cannot both be 'null'. </value>
+  </data>
 </root>
