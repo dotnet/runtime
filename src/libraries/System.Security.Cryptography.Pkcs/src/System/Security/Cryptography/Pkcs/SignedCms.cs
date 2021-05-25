@@ -557,7 +557,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (existingLength > 0 || newCerts.Count > 1)
             {
-                var certs = new HashSet<X509Certificate2>(Certificates.OfType<X509Certificate2>());
+                var certs = new HashSet<X509Certificate2>(Certificates);
 
                 for (int i = 0; i < newCerts.Count; i++)
                 {

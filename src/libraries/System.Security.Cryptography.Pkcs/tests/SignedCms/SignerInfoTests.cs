@@ -1073,7 +1073,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 // Since adding a counter-signer DER-normalizes the document the certificates
                 // get rewritten to be smallest cert first.
                 X509Certificate2Collection certs = cms.Certificates;
-                List<X509Certificate2> certList = new List<X509Certificate2>(certs.OfType<X509Certificate2>());
+                List<X509Certificate2> certList = new List<X509Certificate2>(certs);
 
                 int lastSize = -1;
 
