@@ -478,10 +478,18 @@
 
     <!-- strip -->
     <PropertyGroup>
+      <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</MonoToolchainPrebuiltOS>
+      <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</MonoToolchainPrebuiltOS>
+      <MonoToolchainPrebuiltOS Condition="'$(OS)' == 'Windows_NT'">windows-x86_64</MonoToolchainPrebuiltOS>
       <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true'">gnu</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' == 'true'">android</_LinuxAbi>
       <_Objcopy>objcopy</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-gnueabihf-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-gnu-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabihf-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/$(_Objcopy)</_Objcopy>
     </PropertyGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from $(_MonoRuntimeFilePath)" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="dsymutil --flat --minimize $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
