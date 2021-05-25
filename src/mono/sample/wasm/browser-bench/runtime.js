@@ -6,6 +6,11 @@ var Module = {
     },
 
     onConfigLoaded: function (config) {
+        if (!config || config.error){
+            alert("An error occured while loading the config file");
+            return;
+        }
+
         config.loaded_cb = function () {
             try {
                 App.init ();
