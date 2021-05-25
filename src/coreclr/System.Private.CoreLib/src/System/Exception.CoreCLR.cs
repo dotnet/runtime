@@ -85,35 +85,6 @@ namespace System
             }
         }
 
-        // Returns the stack trace as a string.  If no stack trace is
-        // available, null is returned.
-        public virtual string? StackTrace
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-                string? remoteStackTraceString = _remoteStackTraceString;
-
-                // if no stack trace, try to get one
-                if (stackTraceString != null)
-                {
-                    return remoteStackTraceString + stackTraceString;
-                }
-                if (_stackTrace == null)
-                {
-                    return remoteStackTraceString;
-                }
-
-                return remoteStackTraceString + GetStackTrace();
-            }
-        }
-
-        private string GetStackTrace()
-        {
-            // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(this, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
-        }
-
         private string? CreateSourceName()
         {
             StackTrace st = new StackTrace(this, fNeedFileInfo: false);
@@ -243,22 +214,9 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
+        private bool HasBeenThrown => _stackTrace != null;
+
         private object? SerializationWatsonBuckets => _watsonBuckets;
-
-        private string? SerializationStackTraceString
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-
-                if (stackTraceString == null && _stackTrace != null)
-                {
-                    stackTraceString = GetStackTrace();
-                }
-
-                return stackTraceString;
-            }
-        }
 
         // This piece of infrastructure exists to help avoid deadlocks
         // between parts of CoreLib that might throw an exception while

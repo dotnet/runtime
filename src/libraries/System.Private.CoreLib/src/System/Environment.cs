@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System
@@ -201,6 +202,12 @@ namespace System
                 // Return zeros rather then failing if the version string fails to parse
                 return Version.TryParse(versionSpan, out Version? version) ? version : new Version();
             }
+        }
+
+        public static string StackTrace
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
+            get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)

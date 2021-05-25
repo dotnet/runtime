@@ -586,6 +586,9 @@ namespace Internal.TypeSystem
         //    See current interface call resolution for details on how that happens.
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
+            if (currentType.IsInterface)
+                return null;
+
             MethodDesc methodImpl = FindImplFromDeclFromMethodImpls(currentType, interfaceMethod);
             if (methodImpl != null)
                 return methodImpl;
@@ -721,6 +724,77 @@ namespace Internal.TypeSystem
 
                 currentType = currentType.MetadataBaseType;
             }
+        }
+
+        public override DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl)
+        {
+            return ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, (MetadataType)currentType, out impl);
+        }
+
+        private static DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, MetadataType currentType, out MethodDesc impl)
+        {
+            TypeDesc interfaceMethodOwningType = interfaceMethod.OwningType;
+            MetadataType mostSpecificInterface = null;
+            bool diamondCase = false;
+            impl = null;
+
+            foreach (MetadataType runtimeInterface in currentType.RuntimeInterfaces)
+            {
+                if (runtimeInterface == interfaceMethodOwningType)
+                {
+                    // Also consider the default interface method implementation on the interface itself
+                    // if we don't have anything else yet
+                    if (mostSpecificInterface == null && !interfaceMethod.IsAbstract)
+                    {
+                        mostSpecificInterface = runtimeInterface;
+                        impl = interfaceMethod;
+                    }
+                }
+                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) != -1)
+                {
+                    // This interface might provide a default implementation
+                    MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
+                    if (possibleImpls != null)
+                    {
+                        foreach (MethodImplRecord implRecord in possibleImpls)
+                        {
+                            if (implRecord.Decl == interfaceMethod)
+                            {
+                                // This interface provides a default implementation.
+                                // Is it also most specific?
+                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) != -1)
+                                {
+                                    mostSpecificInterface = runtimeInterface;
+                                    impl = implRecord.Body;
+                                    diamondCase = false;
+                                }
+                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) == -1)
+                                {
+                                    diamondCase = true;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (diamondCase)
+            {
+                impl = null;
+                return DefaultInterfaceMethodResolution.Diamond;
+            }
+            else if (impl == null)
+            {
+                return DefaultInterfaceMethodResolution.None;
+            }
+            else if (impl.IsAbstract)
+            {
+                return DefaultInterfaceMethodResolution.Reabstraction;
+            }
+
+            return DefaultInterfaceMethodResolution.DefaultImplementation;
         }
 
         public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
