@@ -3742,4 +3742,7 @@
   <data name="NotSupported_COM" xml:space="preserve">
     <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
   </data>
+  <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
+    <value>Queue empty.</value>
+  </data>
 </root>
