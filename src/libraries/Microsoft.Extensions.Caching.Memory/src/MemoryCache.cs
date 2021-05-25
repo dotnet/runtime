@@ -92,6 +92,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal void SetEntry(CacheEntry entry)
         {
+            var absoluteExpirationUndecided = false;
+            var slidingExpirationUndecided = false;
+
             if (_disposed)
             {
                 // No-op instead of throwing since this is called during CacheEntry.Dispose
@@ -103,38 +106,43 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
 
-            // Determine exact time only when (potentially) needed
             Internal.ClockQuantization.LazyClockOffsetSerialPosition position = default;
-            if (entry.SlidingExpiration.HasValue)
+            long? now = null;
+
+            if (entry.SlidingExpirationClockOffsetUnits.HasValue)
             {
-                ClockQuantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: true);
+                // Initialize the last access timestamp at the time the entry is added (needed at this point only for expiration check of entries with sliding expiration)
+                now = ClockQuantizer.UtcNowClockOffset;
+                Internal.ClockQuantization.LazyClockOffsetSerialPosition.AssignExactClockOffsetSerialPosition(now!.Value, ref position);
+                entry.LastAccessedClockOffsetSerialPosition = position;
+                slidingExpirationUndecided = true;
             }
 
-            DateTimeOffset? absoluteExpiration = null;
+            long? absoluteExpirationClockOffset = entry.AbsoluteExpirationClockOffset;
             if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                var now = ClockQuantizer.ClockOffsetToUtcDateTimeOffset(position.IsExact ? position.ClockOffset : ClockQuantizer.UtcNowClockOffset);
-                absoluteExpiration = now + entry.AbsoluteExpirationRelativeToNow;
-            }
-            else if (entry.AbsoluteExpiration.HasValue)
-            {
-                absoluteExpiration = entry.AbsoluteExpiration;
+                if (!now.HasValue)
+                {
+                    now = ClockQuantizer.UtcNowClockOffset;
+                }
+                absoluteExpirationClockOffset = now!.Value + ClockQuantizer.TimeSpanToClockOffsetUnits(entry.AbsoluteExpirationRelativeToNow!.Value);
             }
 
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
             // it was set by cascading it to its parent.
-            if (absoluteExpiration.HasValue)
+            if (absoluteExpirationClockOffset.HasValue)
             {
-                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration.Value < entry.AbsoluteExpiration.Value)
+                if (!entry.AbsoluteExpirationClockOffset.HasValue || absoluteExpirationClockOffset!.Value < entry.AbsoluteExpirationClockOffset!.Value)
                 {
-                    entry.AbsoluteExpiration = absoluteExpiration;
+                    entry.AbsoluteExpirationClockOffset = absoluteExpirationClockOffset;
+                    absoluteExpirationUndecided = true;
+                }
+                else
+                {
+                    absoluteExpirationUndecided = entry.AbsoluteExpirationClockOffset.HasValue;
                 }
             }
-
-            // Initialize the last access timestamp at the time the entry is added
-            ClockQuantizer.EnsureInitializedClockOffsetSerialPosition(ref position);
-            entry.LastAccessedClockOffsetSerialPosition = position;
 
             if (_entries.TryGetValue(entry.Key, out CacheEntry priorEntry))
             {
@@ -143,8 +151,15 @@ namespace Microsoft.Extensions.Caching.Memory
 
             bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
 
-            if (!entry.CheckExpired(ref position) && !exceedsCapacity)
+            if (!entry.CheckExpired(ref position, absoluteExpirationUndecided, slidingExpirationUndecided) && !exceedsCapacity)
             {
+                if (!slidingExpirationUndecided)
+                {
+                    // Initialize the last access timestamp at the time the entry is being added (already done for entries with sliding expiration before expired check)
+                    ClockQuantizer.EnsureInitializedClockOffsetSerialPosition(ref position);
+                    entry.LastAccessedClockOffsetSerialPosition = position;
+                }
+
                 bool entryAdded = false;
 
                 if (priorEntry == null)
@@ -236,8 +251,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
                 if (!entry.CheckExpired(ref position) || entry.EvictionReason == EvictionReason.Replaced)
                 {
+                    // Update "last accessed" for LRU and slide-expiring entries
                     ClockQuantizer.EnsureInitializedClockOffsetSerialPosition(ref position);
                     entry.LastAccessedClockOffsetSerialPosition = position;
+
                     result = entry.Value;
 
                     if (entry.CanPropagateOptions())
@@ -329,12 +346,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            DateTimeOffset now = cache.ClockQuantizer.UtcNow;
-            cache._lastExpirationScanClockOffset = cache.ClockQuantizer.DateTimeOffsetToClockOffset(now);
+            Internal.ClockQuantization.LazyClockOffsetSerialPosition position = default;
+            cache.ClockQuantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: false); // Just get an exact clock offset, don't mess with clock quantization intervals
+
+            cache._lastExpirationScanClockOffset = position.ClockOffset;
 
             foreach (CacheEntry entry in cache._entries.Values)
             {
-                if (entry.CheckExpired(now))
+                if (entry.CheckExpired(ref position))
                 {
                     cache.RemoveEntry(entry);
                 }
@@ -414,10 +433,12 @@ namespace Microsoft.Extensions.Caching.Memory
             long removedSize = 0;
 
             // Sort items by expired & priority status
-            DateTimeOffset now = ClockQuantizer.UtcNow;
+            Internal.ClockQuantization.LazyClockOffsetSerialPosition position = default;
+            ClockQuantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: false); // Just get an exact clock offset, don't mess with clock quantization intervals
+
             foreach (CacheEntry entry in _entries.Values)
             {
-                if (entry.CheckExpired(now))
+                if (entry.CheckExpired(ref position))
                 {
                     entriesToRemove.Add(entry);
                     removedSize += computeEntrySize(entry);
@@ -470,7 +491,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 // TODO: Refine policy
 
                 // LRU
-                priorityEntries.Sort((e1, e2) => Compare(e1.LastAccessedClockOffsetSerialPosition, e2.LastAccessedClockOffsetSerialPosition));
+                priorityEntries.Sort((e1, e2) => e1.LastAccessedClockOffsetSerialPosition.CompareTo(e2.LastAccessedClockOffsetSerialPosition));
                 foreach (CacheEntry entry in priorityEntries)
                 {
                     entry.SetExpired(EvictionReason.Capacity);
@@ -481,17 +502,6 @@ namespace Microsoft.Extensions.Caching.Memory
                     {
                         break;
                     }
-                }
-
-                static int Compare(Internal.ClockQuantization.LazyClockOffsetSerialPosition t1, Internal.ClockQuantization.LazyClockOffsetSerialPosition t2)
-                {
-                    int result = t1.ClockOffset.CompareTo(t2.ClockOffset);
-                    if (result == 0)
-                    {
-                        return t1.SerialPosition.CompareTo(t2.SerialPosition);
-                    }
-
-                    return result;
                 }
             }
         }
