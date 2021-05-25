@@ -12,18 +12,36 @@ var JSSupportLib = {
             if (callback){
                 callback(config);
             }
-        }
-        var xobj = new XMLHttpRequest();
-        xobj.overrideMimeType("application/json");
-        xobj.open('GET', './mono-config.json', true);
-        xobj.onreadystatechange = function () {
-            if (xobj.readyState == 4 && xobj.status == "200") {
-                const config = JSON.parse(xobj.responseText);
-                if (callback){
-                    callback(config);
+        } else {
+            var xobj = new XMLHttpRequest();
+            xobj.overrideMimeType("application/json");
+            xobj.open('GET', './mono-config.json', true);
+            xobj.onreadystatechange = function() {
+                if (callback && xobj.readyState == XMLHttpRequest.DONE) {
+                    if (xobj.status === 0 || (xobj.status >= 200 && xobj.status < 400)) {
+                        const config = JSON.parse(xobj.responseText);
+                        callback(config);
+                    } else {
+                        // error if the request to load the file was successful but loading failed
+                        callback({error: "Error loading mono-config.json file from current directory"});
+                    }
+                }
+            };
+            xobj.onerror = function() {
+                // error if the request failed
+                if (callback){ 
+                    callback({error: "Error loading mono-config.json file from current directory"});
                 }
             }
-        };
-        xobj.send();  
+
+            try {
+                xobj.send()
+            } catch(e) {
+                // other kinds of errors
+                if (callback){ 
+                    callback({error: "Error loading mono-config.json file from current directory"});
+                }
+            }
+        }
     },
 }

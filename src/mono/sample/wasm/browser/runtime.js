@@ -10,6 +10,11 @@ var Module = {
     // Called once the config file is loaded. THe contents of the config file
     // are passed as a JS object within the config parameter
     onConfigLoaded: function (config) {
+        if (!config || config.error){
+            alert("An error occured while loading the config file");
+            return;
+        }
+
         config.loaded_cb = function () {
             try {
                 App.init ();
