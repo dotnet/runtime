@@ -38,6 +38,7 @@ namespace
             Flags_InCache = 4,
 
             // The EOC is "detached" and no longer used to map between identity and a managed object.
+            // This will only be set if the EOC was inserted into the cache.
             Flags_Detached = 8,
         };
         DWORD Flags;
@@ -75,7 +76,7 @@ namespace
 
         bool IsActive() const
         {
-            return !IsSet(Flags_Collected | Flags_Detached)
+            return !IsSet(Flags_Collected)
                 && (SyncBlockIndex != InvalidSyncBlockIndex);
         }
 
@@ -468,7 +469,7 @@ namespace
             for (; curr != end; ++curr)
             {
                 cxt = *curr;
-                if (cxt->IsActive()
+                if (!cxt->IsSet(ExternalObjectContext::Flags_Detached)
                     && !GCHeapUtilities::GetGCHeap()->IsPromoted(OBJECTREFToObject(cxt->GetObjectRef())))
                 {
                     cxt->MarkDetached();
