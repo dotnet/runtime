@@ -74,7 +74,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesAfterAnother(string function1Name, string function2Name, bool reverse)
+        public void SettingUpdatesPropertiesAfterAnother()
         {
             // Browser is excluded as there is only 1 effective time store.
 
