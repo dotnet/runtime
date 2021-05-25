@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 var Module = { 
-    onRuntimeInitialized: function () {
-        JSSupportLib.load_config(this.setupConfig);
-    },
+	onRuntimeInitialized: function () {
+		JSSupportLib.load_config(this.onConfigLoaded);
+	},
 
-    setupConfig: function (config) {
-        config.loaded_cb = function () {
+	onConfigLoaded: function (config) {
+		config.loaded_cb = function () {
 			App.init ();
 		};
 		// For custom logging patch the functions below
@@ -20,5 +20,5 @@ var Module = {
 		MONO.mono_wasm_setenv ("MONO_LOG_MASK", "all");
 		*/
 		MONO.mono_load_runtime_and_bcl_args (config)
-    },
+	},
 };
