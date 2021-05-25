@@ -1577,7 +1577,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		msg = g_strdup ("compiled with --aot=full");
 		usable = FALSE;
 	}
-	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, "mscorlib")) {
+	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME)) {
 		/* mscorlib contains necessary interpreter trampolines */
 		msg = g_strdup ("not compiled with --aot=interp");
 		usable = FALSE;
@@ -2183,8 +2183,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = (guint8 *)info->ftnptr_arg_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = (guint8 *)info->unbox_arbitrary_trampolines;
 
-	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, "mscorlib") || !strcmp (assembly->aname.name, "System.Private.CoreLib"))
+	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME)) {
+		g_assert (!mscorlib_aot_module);
 		mscorlib_aot_module = amodule;
+	}
 
 	/* Compute method addresses */
 	amodule->methods = (void **)g_malloc0 (amodule->info.nmethods * sizeof (gpointer));
@@ -5834,7 +5836,7 @@ aot_is_slim_amodule (MonoAotModule *amodule)
 		return FALSE;
 
 	/* "slim" only applies to mscorlib.dll */
-	if (strcmp (amodule->aot_name, "mscorlib"))
+	if (strcmp (amodule->aot_name, MONO_ASSEMBLY_CORLIB_NAME))
 		return FALSE;
 
 	guint32 f = amodule->info.flags;
