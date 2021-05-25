@@ -26,7 +26,7 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        public static JsonValue? Create<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)]T>(T? value, JsonNodeOptions? options = null)
+        public static JsonValue? Create<T>(T? value, JsonNodeOptions? options = null)
         {
             if (value == null)
             {
