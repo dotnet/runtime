@@ -171,7 +171,7 @@ namespace System.Net.Quic.Implementations.Mock
             return streamLimit.Bidirectional.WaitForAvailableStreams(cancellationToken);
         }
 
-        internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
             if (streamLimit is null)
@@ -191,10 +191,10 @@ namespace System.Net.Quic.Implementations.Mock
                 _nextOutboundUnidirectionalStream += 4;
             }
 
-            return new ValueTask<QuicStreamProvider>(OpenStream(streamId, false));
+            return OpenStream(streamId, false);
         }
 
-        internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        internal override QuicStreamProvider OpenBidirectionalStream()
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
             if (streamLimit is null)
@@ -214,7 +214,7 @@ namespace System.Net.Quic.Implementations.Mock
                 _nextOutboundBidirectionalStream += 4;
             }
 
-            return new ValueTask<QuicStreamProvider>(OpenStream(streamId, true));
+            return OpenStream(streamId, true);
         }
 
         internal MockStream OpenStream(long streamId, bool bidirectional)

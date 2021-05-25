@@ -167,15 +167,13 @@ namespace System.Net.Http
             {
                 if (_connection != null)
                 {
-                    ValueTask<QuicStream> openStreamTask = default;
-
                     while (true)
                     {
                         lock (SyncObj)
                         {
                             if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
                             {
-                                openStreamTask = _connection.OpenBidirectionalStreamAsync(cancellationToken);
+                                quicStream = _connection.OpenBidirectionalStream();
                                 break;
                             }
                         }
@@ -183,8 +181,6 @@ namespace System.Net.Http
                         // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
                         await _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
                     }
-
-                    quicStream = await openStreamTask.ConfigureAwait(false);
                 }
                 lock (SyncObj)
                 {
@@ -200,8 +196,6 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
-                // 0-byte write to force QUIC to allocate a stream ID.
-                await quicStream.WriteAsync(Array.Empty<byte>(), cancellationToken).ConfigureAwait(false);
                 requestStream!.StreamId = quicStream.StreamId;
 
                 bool goAway;
@@ -352,7 +346,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
+                _clientControl = _connection!.OpenUnidirectionalStream();
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)

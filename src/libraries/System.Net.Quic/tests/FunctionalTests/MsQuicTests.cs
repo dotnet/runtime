@@ -86,7 +86,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    await using QuicStream stream = await clientConnection.OpenUnidirectionalStreamAsync();
+                    await using QuicStream stream = clientConnection.OpenUnidirectionalStream();
 
                     foreach (int[] bufferLengths in writes)
                     {
@@ -184,7 +184,7 @@ namespace System.Net.Quic.Tests
             ReadOnlySequence<byte> ros = CreateReadOnlySequenceFromBytes(helloWorld.ToArray());
 
             Assert.False(ros.IsSingleSegment);
-            using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
             ValueTask writeTask = clientStream.WriteAsync(ros);
             using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
 
@@ -330,7 +330,7 @@ namespace System.Net.Quic.Tests
                     },
                     clientFunction: async connection =>
                     {
-                        await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                        await using QuicStream stream = connection.OpenBidirectionalStream();
 
                         for (int pos = 0; pos < data.Length; pos += writeSize)
                         {
@@ -364,7 +364,7 @@ namespace System.Net.Quic.Tests
                 using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                 await clientTask;
 
-                using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 Assert.Equal(0, clientStream.StreamId);
 
                 // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer

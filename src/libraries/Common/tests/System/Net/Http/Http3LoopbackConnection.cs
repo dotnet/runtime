@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Net.Http.Functional.Tests;
-using System.Threading;
 
 namespace System.Net.Test.Common
 {
@@ -63,14 +62,14 @@ namespace System.Net.Test.Common
             _closed = true;
         }
 
-        public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        public Http3LoopbackStream OpenUnidirectionalStream()
         {
-            return new Http3LoopbackStream(await _connection.OpenUnidirectionalStreamAsync(cancellationToken).ConfigureAwait(false));
+            return new Http3LoopbackStream(_connection.OpenUnidirectionalStream());
         }
 
-        public async ValueTask<Http3LoopbackStream> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        public Http3LoopbackStream OpenBidirectionalStream()
         {
-            return new Http3LoopbackStream(await _connection.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false));
+            return new Http3LoopbackStream(_connection.OpenBidirectionalStream());
         }
 
         public static int GetRequestId(QuicStream stream)

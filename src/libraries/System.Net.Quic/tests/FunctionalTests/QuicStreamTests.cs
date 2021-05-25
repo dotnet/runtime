@@ -36,7 +36,7 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
 
                     await stream.WriteAsync(s_data, endStream: true);
 
@@ -85,7 +85,7 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
 
                     for (int i = 0; i < sendCount; i++)
                     {
@@ -131,8 +131,8 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
-                    await using QuicStream stream2 = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
+                    await using QuicStream stream2 = connection.OpenBidirectionalStream();
 
                     await stream.WriteAsync(s_data, endStream: true);
                     await stream2.WriteAsync(s_data, endStream: true);
@@ -164,7 +164,7 @@ namespace System.Net.Quic.Tests
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
 
-            using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
             Assert.Equal(0, clientStream.StreamId);
 
             // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
@@ -201,7 +201,7 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
 
                     for (int pos = 0; pos < data.Length; pos += writeSize)
                     {
@@ -249,7 +249,7 @@ namespace System.Net.Quic.Tests
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
-            using QuicStream s1 = await c1.OpenBidirectionalStreamAsync();
+            using QuicStream s1 = c1.OpenBidirectionalStream();
             Assert.True(s1.CanRead);
             Assert.True(s1.CanWrite);
 
@@ -263,7 +263,7 @@ namespace System.Net.Quic.Tests
 
         private static async Task CreateAndTestUnidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
-            using QuicStream s1 = await c1.OpenUnidirectionalStreamAsync();
+            using QuicStream s1 = c1.OpenUnidirectionalStream();
 
             Assert.False(s1.CanRead);
             Assert.True(s1.CanWrite);
@@ -357,7 +357,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    await using QuicStream clientStream = await clientConnection.OpenUnidirectionalStreamAsync();
+                    await using QuicStream clientStream = clientConnection.OpenUnidirectionalStream();
 
                     ReadOnlyMemory<byte> sendBuffer = testBuffer;
                     while (sendBuffer.Length != 0)
@@ -421,7 +421,7 @@ namespace System.Net.Quic.Tests
 
                 using QuicConnection serverConnection = await serverConnectionTask;
 
-                await using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 await clientStream.WriteAsync(new byte[1]);
 
                 await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
@@ -451,7 +451,7 @@ namespace System.Net.Quic.Tests
 
                 using QuicConnection serverConnection = await serverConnectionTask;
 
-                await using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 await clientStream.WriteAsync(new byte[1]);
 
                 await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();

@@ -121,7 +121,7 @@ namespace System.Net.Quic.Tests
                         listener.ListenEndPoint,
                         new SslClientAuthenticationOptions() { ApplicationProtocols = new List<SslApplicationProtocol>() { protocol } });
                     await connection2.ConnectAsync();
-                    stream2 = await connection2.OpenBidirectionalStreamAsync();
+                    stream2 = connection2.OpenBidirectionalStream();
                 }));
 
             var result = new StreamPairWithOtherDisposables(stream1, stream2);

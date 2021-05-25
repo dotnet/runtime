@@ -113,7 +113,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
-                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.IMMEDIATE);
+                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED);
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
             catch
@@ -190,8 +190,21 @@ namespace System.Net.Quic.Implementations.MsQuic
             HandleWriteCompletedState();
         }
 
-        private async ValueTask<CancellationTokenRegistration> HandleStartState(CancellationToken cancellationToken)
+        private async ValueTask<CancellationTokenRegistration> HandleWriteStartState(CancellationToken cancellationToken)
         {
+            if (!_canWrite)
+            {
+                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            }
+
+            lock (_state)
+            {
+                if (_state.SendState == SendState.Aborted)
+                {
+                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
+                }
+            }
+
             CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
@@ -220,23 +233,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             return registration;
-        }
-
-        private ValueTask<CancellationTokenRegistration> HandleWriteStartState(CancellationToken cancellationToken)
-        {
-            if (!_canWrite)
-            {
-                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
-            }
-
-            lock (_state)
-            {
-                if (_state.SendState == SendState.Aborted)
-                {
-                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
-                }
-            }
-            return HandleStartState(cancellationToken);
         }
 
         private void HandleWriteCompletedState()
@@ -394,13 +390,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
-        }
-
-        internal async override ValueTask StartCompleted(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-
-            using CancellationTokenRegistration registration = await HandleStartState(cancellationToken).ConfigureAwait(false);
         }
 
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
@@ -647,7 +636,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // Check send state before completing as send cancellation is shared between start and send.
-                if (state.SendState == SendState.None || state.SendState == SendState.Pending)
+                if (state.SendState == SendState.None)
                 {
                     shouldComplete = true;
                 }
