@@ -105,6 +105,7 @@ elseif($FullPGO)
 {
     $SetupArguments = "$SetupArguments --full-pgo"
     $Configurations += " PGOType=fullpgo"
+    $ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
 }
 
 if($MonoDotnet -ne "")
