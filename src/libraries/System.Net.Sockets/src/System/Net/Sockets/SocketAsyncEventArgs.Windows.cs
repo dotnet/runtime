@@ -235,13 +235,15 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        /// <summary>Handles the result of an IOCP operation for which we have deferred single buffer pinning.</summary>
+        /// <summary>Handles the result of an IOCP operation for which we have deferred async processing logic (buffer pinning or cancellation).</summary>
         /// <param name="success">true if the IOCP operation indicated synchronous success; otherwise, false.</param>
         /// <param name="bytesTransferred">The number of bytes transferred, if the operation completed synchronously and successfully.</param>
         /// <param name="overlapped">The overlapped that was used for this operation. Will be freed if the operation result will be handled synchronously.</param>
+        /// <param name="bufferToPin">The buffer to pin. May be Memory.Empty if no buffer should be pinned.
+        ///     Note this buffer (if not empty) should already be pinned locally using `fixed` prior to the OS async call and until after this method returns.</param>
         /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
         /// <returns>The result status of the operation.</returns>
-        private unsafe SocketError ProcessIOCPResultWithDeferredSingleBufferPinning(bool success, int bytesTransferred, NativeOverlapped* overlapped, CancellationToken cancellationToken = default)
+        private unsafe SocketError ProcessIOCPResultWithDeferredAsyncHandling(bool success, int bytesTransferred, NativeOverlapped* overlapped, Memory<byte> bufferToPin, CancellationToken cancellationToken = default)
         {
             Debug.Assert(_asyncProcessingState == AsyncProcessingState.InProcess);
 
@@ -251,34 +253,7 @@ namespace System.Net.Sockets
             {
                 RegisterToCancelPendingIO(overlapped, cancellationToken);
 
-                _singleBufferHandle = _buffer.Pin();
-
-                _asyncProcessingState = AsyncProcessingState.Set;
-            }
-            else
-            {
-                _asyncProcessingState = AsyncProcessingState.None;
-                FinishOperationSync(socketError, bytesTransferred, SocketFlags.None);
-            }
-
-            return socketError;
-        }
-
-        /// <summary>Handles the result of an IOCP operation that supports cancellation.</summary>
-        /// <param name="success">true if the IOCP operation indicated synchronous success; otherwise, false.</param>
-        /// <param name="bytesTransferred">The number of bytes transferred, if the operation completed synchronously and successfully.</param>
-        /// <param name="overlapped">The overlapped that was used for this operation. Will be freed if the operation result will be handled synchronously.</param>
-        /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
-        /// <returns>The result status of the operation.</returns>
-        private unsafe SocketError ProcessIOCPResultWithCancellation(bool success, int bytesTransferred, NativeOverlapped* overlapped, CancellationToken cancellationToken)
-        {
-            Debug.Assert(_asyncProcessingState == AsyncProcessingState.InProcess);
-
-            SocketError socketError = GetIOCPResult(success, overlapped);
-
-            if (socketError == SocketError.IOPending)
-            {
-                RegisterToCancelPendingIO(overlapped, cancellationToken);
+                _singleBufferHandle = bufferToPin.Pin();
 
                 _asyncProcessingState = AsyncProcessingState.Set;
             }
@@ -381,7 +356,7 @@ namespace System.Net.Sockets
                     (int)(DisconnectReuseSocket ? TransmitFileOptions.ReuseSocket : 0),
                     0);
 
-                return ProcessIOCPResultWithCancellation(success, 0, overlapped, cancellationToken);
+                return ProcessIOCPResultWithDeferredAsyncHandling(success, 0, overlapped, Memory<byte>.Empty, cancellationToken);
             }
             catch
             {
@@ -416,7 +391,7 @@ namespace System.Net.Sockets
                         overlapped,
                         IntPtr.Zero);
 
-                    return ProcessIOCPResultWithDeferredSingleBufferPinning(socketError == SocketError.Success, bytesTransferred, overlapped, cancellationToken);
+                    return ProcessIOCPResultWithDeferredAsyncHandling(socketError == SocketError.Success, bytesTransferred, overlapped, _buffer, cancellationToken);
                 }
                 catch
                 {
@@ -488,7 +463,7 @@ namespace System.Net.Sockets
                         overlapped,
                         IntPtr.Zero);
 
-                    return ProcessIOCPResultWithDeferredSingleBufferPinning(socketError == SocketError.Success, bytesTransferred, overlapped, cancellationToken);
+                    return ProcessIOCPResultWithDeferredAsyncHandling(socketError == SocketError.Success, bytesTransferred, overlapped, _buffer, cancellationToken);
                 }
                 catch
                 {
@@ -623,7 +598,7 @@ namespace System.Net.Sockets
                         IntPtr.Zero);
 
                     return _bufferList == null ?
-                        ProcessIOCPResultWithDeferredSingleBufferPinning(socketError == SocketError.Success, bytesTransferred, overlapped, cancellationToken) :
+                        ProcessIOCPResultWithDeferredAsyncHandling(socketError == SocketError.Success, bytesTransferred, overlapped, _buffer, cancellationToken) :
                         ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
                 }
                 catch
@@ -659,7 +634,7 @@ namespace System.Net.Sockets
                         overlapped,
                         IntPtr.Zero);
 
-                    return ProcessIOCPResultWithDeferredSingleBufferPinning(socketError == SocketError.Success, bytesTransferred, overlapped, cancellationToken);
+                    return ProcessIOCPResultWithDeferredAsyncHandling(socketError == SocketError.Success, bytesTransferred, overlapped, _buffer, cancellationToken);
                 }
                 catch
                 {
@@ -783,7 +758,7 @@ namespace System.Net.Sockets
                     overlapped,
                     _sendPacketsFlags);
 
-                return ProcessIOCPResultWithCancellation(result, 0, overlapped, cancellationToken);
+                return ProcessIOCPResultWithDeferredAsyncHandling(result, 0, overlapped, Memory<byte>.Empty, cancellationToken);
             }
             catch
             {
@@ -830,7 +805,7 @@ namespace System.Net.Sockets
                         overlapped,
                         IntPtr.Zero);
 
-                    return ProcessIOCPResultWithDeferredSingleBufferPinning(socketError == SocketError.Success, bytesTransferred, overlapped, cancellationToken);
+                    return ProcessIOCPResultWithDeferredAsyncHandling(socketError == SocketError.Success, bytesTransferred, overlapped, _buffer, cancellationToken);
                 }
                 catch
                 {
