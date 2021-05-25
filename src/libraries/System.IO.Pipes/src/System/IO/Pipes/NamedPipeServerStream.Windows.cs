@@ -141,10 +141,7 @@ namespace System.IO.Pipes
             if (IsAsync)
             {
                 ValueTask vt = WaitForConnectionCoreAsync(CancellationToken.None);
-                if (!vt.IsCompleted)
-                {
-                    vt.AsTask().GetAwaiter().GetResult();
-                }
+                vt.AsTask().GetAwaiter().GetResult();
             }
             else
             {
