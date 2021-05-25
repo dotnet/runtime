@@ -201,6 +201,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyValuePair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\List.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Stack.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\StackDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Queue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\QueueDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\RandomizedStringEqualityComparer.cs" />
@@ -1737,6 +1739,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
       <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs">
+      <Link>Common\System\IO\FileSystem.Attributes.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs">
+      <Link>Common\System\IO\FileSystem.DirectoryCreation.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
@@ -1832,12 +1840,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs">
-      <Link>Common\System\IO\FileSystem.Attributes.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs">
-      <Link>Common\System\IO\FileSystem.DirectoryCreation.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -1868,8 +1870,14 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ChDir.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ChMod.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.CopyFile.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.CopyFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>
@@ -1888,6 +1896,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
@@ -1910,6 +1921,12 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.LChflags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Link.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LockFileRegion.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LockFileRegion.cs</Link>
     </Compile>
@@ -1924,6 +1941,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemAlloc.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MemAlloc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MkDir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MksTemps.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
@@ -1958,8 +1978,17 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Rename.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Rename.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RmDir.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.RmDir.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Stat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Stat.Span.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.SysConf.cs</Link>
@@ -1970,8 +1999,14 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Unlink.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UTimensat.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.UTimensat.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs">
+      <Link>Common\System\Text\ValueUtf8Converter.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
