@@ -1,9 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(TargetFrameworkForNETFramework)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <!-- Ignore nullable warnings on net4* -->
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\Common\IsExternalInit.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
@@ -13,13 +22,29 @@
   </ItemGroup>
 
   <Target Name="PublishBuilder"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
+          AfterTargets="Build">
+
+    <!-- needed for publishing with multi-targeting. We are publishing essentially to get the SR.MetadataLoadContext.dll :/ -->
+    <ItemGroup>
+      <_PublishFramework Include="$(TargetFrameworks)" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity)" />
+  </Target>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
-      <FilesToPackage Include="$(PublishDir)System.Reflection.MetadataLoadContext.dll" TargetPath="tasks" />
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <!-- non-net4* -->
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\publish\System.Reflection.MetadataLoadContext.dll"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+
+      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFramework)\publish\*"
+                      TargetPath="tasks\$(TargetFrameworkForNETFramework)" />
     </ItemGroup>
   </Target>
 

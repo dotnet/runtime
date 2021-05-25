@@ -2377,12 +2377,6 @@ void CodeGen::genEmitMachineCode()
 
     compiler->unwindReserve();
 
-#if DISPLAY_SIZES
-
-    size_t dataSize = GetEmitter()->emitDataSize();
-
-#endif // DISPLAY_SIZES
-
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -2602,6 +2596,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
 #if DISPLAY_SIZES
 
+    size_t dataSize = GetEmitter()->emitDataSize();
     grossVMsize += compiler->info.compILCodeSize;
     totalNCsize += codeSize + dataSize + compiler->compInfoBlkSize;
     grossNCsize += codeSize + dataSize;
@@ -4243,7 +4238,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
 
-                GetEmitter()->emitIns_R_R(insCopy, size, xtraReg, begRegNum);
+                GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
 
                 regSet.verifyRegUsed(xtraReg);
 
@@ -4260,7 +4255,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
                     regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType);
 
-                    GetEmitter()->emitIns_R_R(insCopy, size, destRegNum, srcRegNum);
+                    GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
 
                     regSet.verifyRegUsed(destRegNum);
 
@@ -4312,7 +4307,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
 
-                GetEmitter()->emitIns_R_R(insCopy, size, destRegNum, xtraReg);
+                GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
 
                 regSet.verifyRegUsed(destRegNum);
 #ifdef USING_SCOPE_INFO
@@ -4381,7 +4376,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             /* Register argument - hopefully it stays in the same register */
             regNumber destRegNum  = REG_NA;
-            var_types destMemType = varDsc->TypeGet();
+            var_types destMemType = varDsc->GetRegisterType();
 
             if (regArgTab[argNum].slot == 1)
             {
@@ -4499,8 +4494,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     size = EA_8BYTE;
                 }
 #endif
-                instruction copyIns = ins_Copy(regNum, destMemType);
-                GetEmitter()->emitIns_R_R(copyIns, size, destRegNum, regNum);
+                inst_Mov(destMemType, destRegNum, regNum, /* canSkip */ false, size);
 #ifdef USING_SCOPE_INFO
                 psiMoveToReg(varNum);
 #endif // USING_SCOPE_INFO
@@ -4556,7 +4550,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             noway_assert(regArgTab[nextArgNum].varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
-                            GetEmitter()->emitIns_R_R(INS_mov, EA_8BYTE, destRegNum, nextRegNum);
+                            GetEmitter()->emitIns_Mov(INS_mov, EA_8BYTE, destRegNum, nextRegNum, /* canSkip */ false);
                         }
                     }
 #if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
@@ -4657,8 +4651,6 @@ void CodeGen::genEnregisterIncomingStackArgs()
             continue;
         }
 
-        var_types type = genActualType(varDsc->TypeGet());
-
         /* Is the variable dead on entry */
 
         if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
@@ -4673,7 +4665,9 @@ void CodeGen::genEnregisterIncomingStackArgs()
         regNumber regNum = varDsc->GetArgInitReg();
         assert(regNum != REG_STK);
 
-        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), regNum, varNum, 0);
+        var_types regType = varDsc->GetActualRegisterType();
+
+        GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
         regSet.verifyRegUsed(regNum);
 #ifdef USING_SCOPE_INFO
         psiMoveToReg(varNum);
@@ -4747,15 +4741,21 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (varDsc->lvIsTemp && !varDsc->HasGCPtr())
+        const bool isTemp      = varDsc->lvIsTemp;
+        const bool hasGCPtr    = varDsc->HasGCPtr();
+        const bool isTracked   = varDsc->lvTracked;
+        const bool isStruct    = varTypeIsStruct(varDsc);
+        const bool compInitMem = compiler->info.compInitMem;
+
+        if (isTemp && !hasGCPtr)
         {
             varDsc->lvMustInit = 0;
             continue;
         }
 
-        if (compiler->info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
+        if (compInitMem || hasGCPtr || varDsc->lvMustInit)
         {
-            if (varDsc->lvTracked)
+            if (isTracked)
             {
                 /* For uninitialized use of tracked variables, the liveness
                  * will bubble to the top (compiler->fgFirstBB) in fgInterBlockLocalVarLiveness()
@@ -4794,20 +4794,42 @@ void CodeGen::genCheckUseBlockInit()
                 }
             }
 
-            /* With compInitMem, all untracked vars will have to be init'ed */
-            /* VSW 102460 - Do not force initialization of compiler generated temps,
-                unless they are untracked GC type or structs that contain GC pointers */
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame)
+            if (varDsc->lvOnFrame)
             {
-
-                varDsc->lvMustInit = true;
-
-                if (!counted)
+                bool mustInitThisVar = false;
+                if (hasGCPtr && !isTracked)
                 {
-                    initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
-                    counted = true;
+                    JITDUMP("must init V%02u because it has a GC ref\n", varNum);
+                    mustInitThisVar = true;
+                }
+                else if (hasGCPtr && isStruct)
+                {
+                    // TODO-1stClassStructs: support precise liveness reporting for such structs.
+                    JITDUMP("must init a tracked V%02u because it a struct with a GC ref\n", varNum);
+                    mustInitThisVar = true;
+                }
+                else
+                {
+                    // We are done with tracked or GC vars, now look at untracked vars without GC refs.
+                    if (!isTracked)
+                    {
+                        assert(!hasGCPtr && !isTemp);
+                        if (compInitMem)
+                        {
+                            JITDUMP("must init V%02u because compInitMem is set and it is not a temp\n", varNum);
+                            mustInitThisVar = true;
+                        }
+                    }
+                }
+                if (mustInitThisVar)
+                {
+                    varDsc->lvMustInit = true;
+
+                    if (!counted)
+                    {
+                        initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
+                        counted = true;
+                    }
                 }
             }
         }
@@ -5103,7 +5125,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
             if (fltInitReg != REG_NA)
             {
                 // Copy from float.
-                inst_RV_RV(ins_Copy(TYP_FLOAT), reg, fltInitReg, TYP_FLOAT);
+                inst_Mov(TYP_FLOAT, reg, fltInitReg, /* canSkip */ false);
             }
             else
             {
@@ -5117,7 +5139,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 else
                 {
                     // Copy from int.
-                    inst_RV_RV(INS_vmov_i2f, reg, initReg, TYP_FLOAT, EA_4BYTE);
+                    inst_Mov(TYP_FLOAT, reg, initReg, /* canSkip */ false);
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
@@ -5138,7 +5160,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
             if (dblInitReg != REG_NA)
             {
                 // Copy from double.
-                inst_RV_RV(ins_Copy(TYP_DOUBLE), reg, dblInitReg, TYP_DOUBLE);
+                inst_Mov(TYP_DOUBLE, reg, dblInitReg, /* canSkip */ false);
             }
             else
             {
@@ -5272,7 +5294,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             {
                 // Restore sp from fp
                 //      mov sp, fp
-                inst_RV_RV(INS_mov, REG_SPBASE, REG_FPBASE);
+                inst_Mov(TYP_I_IMPL, REG_SPBASE, REG_FPBASE, /* canSkip */ false);
                 compiler->unwindSetFrameReg(REG_FPBASE, 0);
             }
 
@@ -6885,7 +6907,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 
     if (delta == 0)
     {
-        GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, /* canSkip */ false);
 #ifdef USING_SCOPE_INFO
         psiMoveESPtoEBP();
 #endif // USING_SCOPE_INFO
@@ -6916,7 +6938,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 
     if (delta == 0)
     {
-        GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, /* canSkip */ false);
     }
     else
     {
@@ -7420,7 +7442,7 @@ void CodeGen::genFnProlog()
 #ifdef TARGET_ARM
     if (compiler->compLocallocUsed)
     {
-        GetEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, REG_SAVED_LOCALLOC_SP, REG_SPBASE);
+        GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, REG_SAVED_LOCALLOC_SP, REG_SPBASE, /* canSkip */ false);
         regSet.verifyRegUsed(REG_SAVED_LOCALLOC_SP);
         compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
@@ -7711,11 +7733,8 @@ void CodeGen::genFnProlog()
 
         if (varDsc->lvIsInReg())
         {
-            if (varDsc->GetRegNum() != REG_EAX)
-            {
-                GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, varDsc->GetRegNum(), REG_EAX);
-                regSet.verifyRegUsed(varDsc->GetRegNum());
-            }
+            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, varDsc->GetRegNum(), REG_EAX, /* canSkip */ true);
+            regSet.verifyRegUsed(varDsc->GetRegNum());
         }
         else
         {
@@ -7826,7 +7845,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         }
 
         // mov R9 into SP
-        inst_RV_RV(INS_mov, REG_SP, REG_SAVED_LOCALLOC_SP);
+        inst_Mov(TYP_I_IMPL, REG_SP, REG_SAVED_LOCALLOC_SP, /* canSkip */ false);
         compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
 
@@ -7863,7 +7882,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         regNumber vptrReg1   = REG_LR;
 
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
-        GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, vptrReg1, indCallReg);
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, vptrReg1, indCallReg, /* canSkip */ false);
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
         GetEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, indCallReg, vptrReg1);
     }
@@ -8308,7 +8327,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         if (needMovEspEbp)
         {
             // mov esp, ebp
-            inst_RV_RV(INS_mov, REG_SPBASE, REG_FPBASE);
+            inst_Mov(TYP_I_IMPL, REG_SPBASE, REG_FPBASE, /* canSkip */ false);
         }
 #endif // !TARGET_AMD64
 
@@ -10940,14 +10959,9 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 
     genConsumeReg(loRetVal);
     genConsumeReg(hiRetVal);
-    if (loRetVal->GetRegNum() != REG_LNGRET_LO)
-    {
-        inst_RV_RV(ins_Copy(targetType), REG_LNGRET_LO, loRetVal->GetRegNum(), TYP_INT);
-    }
-    if (hiRetVal->GetRegNum() != REG_LNGRET_HI)
-    {
-        inst_RV_RV(ins_Copy(targetType), REG_LNGRET_HI, hiRetVal->GetRegNum(), TYP_INT);
-    }
+
+    inst_Mov(targetType, REG_LNGRET_LO, loRetVal->GetRegNum(), /* canSkip */ true, emitActualTypeSize(TYP_INT));
+    inst_Mov(targetType, REG_LNGRET_HI, hiRetVal->GetRegNum(), /* canSkip */ true, emitActualTypeSize(TYP_INT));
 }
 #endif // TARGET_X86 || TARGET_ARM
 
@@ -11019,7 +11033,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (targetType == TYP_FLOAT)
                 {
-                    GetEmitter()->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, REG_INTRET, op1->GetRegNum());
+                    GetEmitter()->emitIns_Mov(INS_vmov_f2i, EA_4BYTE, REG_INTRET, op1->GetRegNum(),
+                                              /* canSkip */ false);
                 }
                 else
                 {
@@ -11032,10 +11047,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 #endif // TARGET_ARM
             {
                 regNumber retReg = varTypeUsesFloatReg(treeNode) ? REG_FLOATRET : REG_INTRET;
-                if (op1->GetRegNum() != retReg)
-                {
-                    inst_RV_RV(ins_Move_Extend(targetType, true), retReg, op1->GetRegNum(), targetType);
-                }
+                inst_Mov_Extend(targetType, /* srcInReg */ true, retReg, op1->GetRegNum(), /* canSkip */ true);
             }
 #endif // !TARGET_ARM64
         }
@@ -11263,11 +11275,11 @@ void CodeGen::genStructReturn(GenTree* treeNode)
                 assert(compiler->lvaGetDesc(fieldVarNum)->lvOnFrame);
                 GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, fieldVarNum, 0);
             }
-            else if (fromReg != toReg)
+            else
             {
                 // Note that ins_Copy(fromReg, type) will return the appropriate register to copy
                 // between register files if needed.
-                inst_RV_RV(ins_Copy(fromReg, type), toReg, fromReg, type);
+                inst_Mov(type, toReg, fromReg, /* canSkip */ true);
             }
         }
     }
@@ -11379,11 +11391,10 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             if (varReg != REG_NA)
             {
                 hasRegs = true;
-                if (varReg != reg)
-                {
-                    // We may need a cross register-file copy here.
-                    inst_RV_RV(ins_Copy(reg, destType), varReg, reg, destType);
-                }
+
+                // We may need a cross register-file copy here.
+                inst_Mov(destType, varReg, reg, /* canSkip */ true);
+
                 fieldVarDsc->SetRegNum(varReg);
             }
             else
@@ -11520,7 +11531,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
     assert(targetReg != REG_NA);
     assert(targetType != TYP_STRUCT);
 
-    inst_RV_RV(ins_Copy(srcReg, targetType), targetReg, srcReg, targetType);
+    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ false);
 
     if (op1->IsLocal())
     {
@@ -11611,7 +11622,7 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
             unsigned   fieldVarNum  = parentVarDsc->lvFieldLclStart + multiRegIndex;
             LclVarDsc* fieldVarDsc  = compiler->lvaGetDesc(fieldVarNum);
             type                    = fieldVarDsc->TypeGet();
-            inst_RV_RV(ins_Copy(type), targetReg, sourceReg, type);
+            inst_Mov(type, targetReg, sourceReg, /* canSkip */ false);
             if (!op1->AsLclVar()->IsLastUse(multiRegIndex) && fieldVarDsc->GetRegNum() != REG_STK)
             {
                 // The old location is dying
@@ -11631,7 +11642,7 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
         else
         {
             type = op1->GetRegTypeByIndex(multiRegIndex);
-            inst_RV_RV(ins_Copy(type), targetReg, sourceReg, type);
+            inst_Mov(type, targetReg, sourceReg, /* canSkip */ false);
             // We never spill after a copy, so to produce the single register, we simply need to
             // update the GC info for the defined register.
             gcInfo.gcMarkRegPtrVal(targetReg, type);
@@ -11863,9 +11874,28 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     // Is the first "VariableLiveRange" or the previous one has been closed so its "m_EndEmitLocation" is valid
     noway_assert(m_VariableLiveRanges->empty() || m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 
-    // Creates new live range with invalid end
-    m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
-    m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    if (!m_VariableLiveRanges->empty() &&
+        siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) &&
+        m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit))
+    {
+        JITDUMP("Extending debug range...\n");
+
+        // The variable is being born just after the instruction at which it died.
+        // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
+        m_VariableLiveRanges->back().m_EndEmitLocation.Init();
+    }
+    else
+    {
+        JITDUMP("New debug range: %s\n",
+                m_VariableLiveRanges->empty()
+                    ? "first"
+                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
+                          ? "new var or location"
+                          : "not adjacent");
+        // Creates new live range with invalid end
+        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+        m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    }
 
 #ifdef DEBUG
     if (!m_VariableLifeBarrier->hasLiveRangesToDump())

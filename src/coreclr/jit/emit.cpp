@@ -64,6 +64,32 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
     return emit->emitCurIGsize;
 }
 
+//------------------------------------------------------------------------
+// IsPreviousInsNum: Returns true if the emitter is on the next instruction
+//  of the same group as this emitLocation.
+//
+// Arguments:
+//  emit - an emitter* instance
+//
+bool emitLocation::IsPreviousInsNum(emitter* emit) const
+{
+    assert(Valid());
+
+    // Within the same IG?
+    if (ig == emit->emitCurIG)
+    {
+        return (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
+    }
+
+    // Spanning an IG boundary?
+    if (ig->igNext == emit->emitCurIG)
+    {
+        return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emit->emitCurIGinsCnt == 1);
+    }
+
+    return false;
+}
+
 #ifdef DEBUG
 void emitLocation::Print(LONG compMethodID) const
 {
@@ -5329,8 +5355,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     BYTE* consBlock;
+    BYTE* consBlockRW;
     BYTE* codeBlock;
+    BYTE* codeBlockRW;
     BYTE* coldCodeBlock;
+    BYTE* coldCodeBlockRW;
     BYTE* cp;
 
     assert(emitCurIG == nullptr);
@@ -5487,6 +5516,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN);
     }
 
+    AllocMemArgs args;
+    memset(&args, 0, sizeof(args));
+
 #ifdef TARGET_ARM64
     // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
@@ -5503,14 +5535,40 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
         assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
     }
-    emitCmpHandle->allocMem(emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs, emitTotalColdCodeSize, 0,
-                            xcptnsCount, allocMemFlag, (void**)&codeBlock, (void**)&coldCodeBlock, (void**)&consBlock);
 
-    consBlock = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
+    args.hotCodeSize  = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
+    args.coldCodeSize = emitTotalColdCodeSize;
+    args.roDataSize   = 0;
+    args.xcptnsCount  = xcptnsCount;
+    args.flag         = allocMemFlag;
+
+    emitCmpHandle->allocMem(&args);
+
+    codeBlock       = (BYTE*)args.hotCodeBlock;
+    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
+    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
+    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
+
+    consBlock   = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
+    consBlockRW = codeBlockRW + emitTotalHotCodeSize + roDataAlignmentDelta;
 
 #else
-    emitCmpHandle->allocMem(emitTotalHotCodeSize, emitTotalColdCodeSize, emitConsDsc.dsdOffs, xcptnsCount, allocMemFlag,
-                            (void**)&codeBlock, (void**)&coldCodeBlock, (void**)&consBlock);
+
+    args.hotCodeSize  = emitTotalHotCodeSize;
+    args.coldCodeSize = emitTotalColdCodeSize;
+    args.roDataSize   = emitConsDsc.dsdOffs;
+    args.xcptnsCount  = xcptnsCount;
+    args.flag         = allocMemFlag;
+
+    emitCmpHandle->allocMem(&args);
+
+    codeBlock       = (BYTE*)args.hotCodeBlock;
+    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
+    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
+    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
+    consBlock       = (BYTE*)args.roDataBlock;
+    consBlockRW     = (BYTE*)args.roDataBlockRW;
+
 #endif
 
 #ifdef DEBUG
@@ -5735,7 +5793,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     /* Issue all instruction groups in order */
-    cp = codeBlock;
+    cp              = codeBlock;
+    writeableOffset = codeBlockRW - codeBlock;
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
@@ -5752,7 +5811,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             assert(emitCurCodeOffs(cp) == emitTotalHotCodeSize);
 
             assert(coldCodeBlock);
-            cp = coldCodeBlock;
+            cp              = coldCodeBlock;
+            writeableOffset = coldCodeBlockRW - coldCodeBlock;
 #ifdef DEBUG
             if (emitComp->opts.disAsm || emitComp->verbose)
             {
@@ -6039,11 +6099,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     // Patch Forward Short Jump
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
-                    *(BYTE*)adr -= (BYTE)adj;
+                    *(BYTE*)(adr + writeableOffset) -= (BYTE)adj;
 #elif defined(TARGET_ARM)
                     // The following works because the jump offset is in the low order bits of the instruction.
                     // Presumably we could also just call "emitOutputLJ(NULL, adr, jmp)", like for long jumps?
-                    *(short int*)adr -= (short)adj;
+                    *(short int*)(adr + writeableOffset) -= (short)adj;
 #elif defined(TARGET_ARM64)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
@@ -6056,7 +6116,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     // Patch Forward non-Short Jump
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
-                    *(int*)adr -= adj;
+                    *(int*)(adr + writeableOffset) -= adj;
 #elif defined(TARGET_ARMARCH)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
@@ -6091,10 +6151,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
 
+    BYTE* cpRW = cp + writeableOffset;
     for (unsigned i = 0; i < unusedSize; ++i)
     {
-        *cp++ = DEFAULT_CODE_BUFFER_INIT;
+        *cpRW++ = DEFAULT_CODE_BUFFER_INIT;
     }
+    cp = cpRW - writeableOffset;
     assert(emitTotalCodeSize == emitCurCodeOffs(cp));
 
     // Total code size is sum of all IG->size and doesn't include padding in the last IG.
@@ -6608,6 +6670,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     {
         size_t dscSize = dsc->dsSize;
 
+        BYTE* dstRW = dst + writeableOffset;
+
         // absolute label table
         if (dsc->dsType == dataSection::blockAbsoluteAddr)
         {
@@ -6615,7 +6679,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
             assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t         numElems = dscSize / TARGET_POINTER_SIZE;
-            target_size_t* bDst     = (target_size_t*)dst;
+            target_size_t* bDstRW   = (target_size_t*)dstRW;
             for (unsigned i = 0; i < numElems; i++)
             {
                 BasicBlock* block = ((BasicBlock**)dsc->dsCont)[i];
@@ -6629,13 +6693,13 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef TARGET_ARM
                 target = (BYTE*)((size_t)target | 1); // Or in thumb bit
 #endif
-                bDst[i] = (target_size_t)(size_t)target;
+                bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    emitRecordRelocation(&(bDst[i]), target, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation(&(bDstRW[i]), target, IMAGE_REL_BASED_HIGHLOW);
                 }
 
-                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDst[i]);
+                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
             }
         }
         // relative label table
@@ -6644,7 +6708,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
 
             size_t    numElems = dscSize / 4;
-            unsigned* uDst     = (unsigned*)dst;
+            unsigned* uDstRW   = (unsigned*)dstRW;
             insGroup* labFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
 
             for (unsigned i = 0; i < numElems; i++)
@@ -6655,9 +6719,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 insGroup* lab = (insGroup*)emitCodeGetCookie(block);
 
                 assert(FitsIn<uint32_t>(lab->igOffs - labFirst->igOffs));
-                uDst[i] = lab->igOffs - labFirst->igOffs;
+                uDstRW[i] = lab->igOffs - labFirst->igOffs;
 
-                JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDst[i]);
+                JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDstRW[i]);
             }
         }
         else
@@ -6665,7 +6729,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
-            memcpy(dst, dsc->dsCont, dscSize);
+            memcpy(dstRW, dsc->dsCont, dscSize);
 
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -7325,8 +7389,8 @@ void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, boo
     regPtrNext->rpdGCtype = gcType;
 
     regPtrNext->rpdOffs            = emitCurCodeOffs(addr);
-    regPtrNext->rpdArg             = FALSE;
-    regPtrNext->rpdCall            = FALSE;
+    regPtrNext->rpdArg             = false;
+    regPtrNext->rpdCall            = false;
     regPtrNext->rpdIsThis          = isThis;
     regPtrNext->rpdCompiler.rpdAdd = (regMaskSmall)regMask;
     regPtrNext->rpdCompiler.rpdDel = 0;
@@ -7355,9 +7419,9 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
     regPtrNext->rpdGCtype = gcType;
 
     regPtrNext->rpdOffs            = emitCurCodeOffs(addr);
-    regPtrNext->rpdCall            = FALSE;
-    regPtrNext->rpdIsThis          = FALSE;
-    regPtrNext->rpdArg             = FALSE;
+    regPtrNext->rpdCall            = false;
+    regPtrNext->rpdIsThis          = false;
+    regPtrNext->rpdArg             = false;
     regPtrNext->rpdCompiler.rpdAdd = 0;
     regPtrNext->rpdCompiler.rpdDel = (regMaskSmall)regMask;
 }
@@ -7369,7 +7433,8 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
 
 unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
 {
-    *castto(dst, unsigned char*) = (unsigned char)val;
+    BYTE* dstRW = dst + writeableOffset;
+    *castto(dstRW, unsigned char*) = (unsigned char)val;
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
@@ -7388,7 +7453,8 @@ unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputWord(BYTE* dst, ssize_t val)
 {
-    MISALIGNED_WR_I2(dst, (short)val);
+    BYTE* dstRW = dst + writeableOffset;
+    MISALIGNED_WR_I2(dstRW, (short)val);
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
@@ -7407,7 +7473,8 @@ unsigned char emitter::emitOutputWord(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 {
-    MISALIGNED_WR_I4(dst, (int)val);
+    BYTE* dstRW = dst + writeableOffset;
+    MISALIGNED_WR_I4(dstRW, (int)val);
 
 #ifdef DEBUG
 #ifdef TARGET_AMD64
@@ -7426,10 +7493,11 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 {
+    BYTE* dstRW = dst + writeableOffset;
 #if !defined(TARGET_64BIT)
-    MISALIGNED_WR_I4(dst, (int)val);
+    MISALIGNED_WR_I4(dstRW, (int)val);
 #else
-    MISALIGNED_WR_ST(dst, val);
+    MISALIGNED_WR_ST(dstRW, val);
 #endif
 
     return TARGET_POINTER_SIZE;
@@ -7714,12 +7782,12 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
             regPtrDsc* regPtrNext = gcInfo->gcRegPtrAllocDsc();
             regPtrNext->rpdGCtype = gcType;
             regPtrNext->rpdOffs   = emitCurCodeOffs(addr);
-            regPtrNext->rpdArg    = TRUE;
-            regPtrNext->rpdCall   = FALSE;
+            regPtrNext->rpdArg    = true;
+            regPtrNext->rpdCall   = false;
             noway_assert(FitsIn<unsigned short>(offs));
             regPtrNext->rpdPtrArg  = (unsigned short)offs;
             regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
-            regPtrNext->rpdIsThis  = FALSE;
+            regPtrNext->rpdIsThis  = false;
         }
     }
     else
@@ -8176,15 +8244,15 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
                 regPtrNext->rpdGCtype = gcType;
 
                 regPtrNext->rpdOffs = emitCurCodeOffs(addr);
-                regPtrNext->rpdArg  = TRUE;
-                regPtrNext->rpdCall = FALSE;
+                regPtrNext->rpdArg  = true;
+                regPtrNext->rpdCall = false;
                 if (level.IsOverflow() || !FitsIn<unsigned short>(level.Value()))
                 {
                     IMPL_LIMITATION("Too many/too big arguments to encode GC information");
                 }
                 regPtrNext->rpdPtrArg  = (unsigned short)level.Value();
                 regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
-                regPtrNext->rpdIsThis  = FALSE;
+                regPtrNext->rpdIsThis  = false;
             }
 
             /* This is an "interesting" argument push */
@@ -8314,7 +8382,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
 #endif
     regPtrNext->rpdCallGCrefRegs = gcrefRegs;
     regPtrNext->rpdCallByrefRegs = byrefRegs;
-    regPtrNext->rpdArg           = TRUE;
+    regPtrNext->rpdArg           = true;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
 }
@@ -8421,7 +8489,8 @@ void emitter::emitRecordRelocation(void* location,            /* IN */
     // late disassembly; maybe we'll need it?
     if (emitComp->info.compMatchedVM)
     {
-        emitCmpHandle->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+        void* locationRW = (BYTE*)location + writeableOffset;
+        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
     }
 #if defined(LATE_DISASM)
     codeGen->getDisAssembler().disRecordRelocation((size_t)location, (size_t)target);

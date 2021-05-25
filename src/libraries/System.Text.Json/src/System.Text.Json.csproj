@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
@@ -47,20 +47,25 @@
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArray.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArray.IList.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Dynamic.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Operators.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Parse.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.To.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.IDictionary.cs" />
-    <Compile Include="System\Text\Json\Node\JsonValue.cs" />
-    <Compile Include="System\Text\Json\Node\JsonValueOfT.cs" />
-    <Compile Include="System\Text\Json\Node\MetaDynamic.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.Dynamic.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.Operators.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.Parse.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNode.To.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonNodeOptions.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.Dynamic.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.ValueCollection.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueTrimmable.cs" />
+    <Compile Include="System\Text\Json\Nodes\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -262,6 +267,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>
@@ -305,6 +311,9 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.csproj" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->

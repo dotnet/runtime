@@ -1,26 +1,46 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net5.0-windows;net5.0;netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <OmitResources Condition="'$(TargetsWindows)' == 'true'">true</OmitResources>
-    <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true' and '$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
+    <!-- API Compat will fail for these since we use a fake System.IO.Pipes to forward to. -->
+    <RunApiCompat Condition="'$(IsPartialFacadeAssembly)' == 'true' and '$(TargetFramework)' != '$(NetCoreAppCurrent)-windows'">false</RunApiCompat>
   </PropertyGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="System\IO\PipesAclExtensions.net461.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeSecurity.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeAccessRights.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeAccessRule.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeAuditRule.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipesAclExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime" />
-  </ItemGroup>
-  <!-- Include src projects during restore as TargetsWindows isn't set. -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" SkipUseReferenceAssembly="true" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" SkipUseReferenceAssembly="true" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
-    <!-- Referencing the ref project directly as the src project doesn't have a RID less configuration. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
-    <Reference Include="System.IO.Pipes" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+
+    <!-- Compile against the shipping reference assembly when not targeting Windows. -->
+    <Reference Include="System.IO.Pipes" Condition="'$(TargetsWindows)' != 'true'" />
+    <!-- Compile against the shipping implementation assembly when targeting NetCoreAppCurrent-Windows. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'" SkipUseReferenceAssembly="true" />
+    <!-- Compile against the non-shipping reference assembly when targeting Windows for older .NETCoreApp tfms. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\ref\System.IO.Pipes.csproj" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)-windows' and '$(TargetsWindows)' == 'true'" />
   </ItemGroup>
 </Project>

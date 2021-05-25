@@ -71,7 +71,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallLateArgs        = nullptr;
     call->fgArgInfo             = nullptr;
     call->gtRetClsHnd           = nullptr;
-    call->gtCallMoreFlags       = 0;
+    call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
 
@@ -183,20 +183,15 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         // do we need to do it in two steps R -> I, '-> smallType
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
         if (dstSize < genTypeSize(TYP_INT))
         {
-            oper = gtNewCastNodeL(TYP_INT, oper, tree->IsUnsigned(), TYP_INT);
+            oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            // We must not mistreat the original cast, which was from a floating point type,
+            // as from an unsigned type, since we now have a TYP_INT node for the source and
+            // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
+            assert(!tree->IsUnsigned());
         }
-#else
-        if (dstSize < TARGET_POINTER_SIZE)
-        {
-            oper = gtNewCastNodeL(TYP_I_IMPL, oper, false, TYP_I_IMPL);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-        }
-#endif
         else
         {
             /* Note that if we need to use a helper call then we can not morph oper */
@@ -307,7 +302,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // U8 -> R4   = U8 -> R8 -> R4
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -337,7 +332,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -588,7 +583,7 @@ OPTIMIZECAST:
                     srcType = genActualType(srcType);
                 }
 
-                srcType = genUnsignedType(srcType);
+                srcType = varTypeToUnsigned(srcType);
             }
 
             if (srcType == dstType)
@@ -3663,7 +3658,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     GenTreeCall::Use* args;
     GenTree*          argx;
 
-    unsigned flagsSummary = 0;
+    GenTreeFlags flagsSummary = GTF_EMPTY;
 
     unsigned argIndex = 0;
 
@@ -4267,8 +4262,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 //
 void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 {
-    bool     foundStructArg = false;
-    unsigned flagsSummary   = 0;
+    bool         foundStructArg = false;
+    GenTreeFlags flagsSummary   = GTF_EMPTY;
 
 #ifdef TARGET_X86
     assert(!"Logic error: no MultiregStructArgs for X86");
@@ -6014,7 +6009,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
-        GenTree* newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
+        GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
         if (newTree != tree)
         {
             newTree = fgMorphSmpOp(newTree);
@@ -7659,6 +7654,9 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
                 // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
                 // to temp locals over and over.
+                //
+                // Also allow casts on the RHSs of the assignments, and blocks with GT_NOPs.
+                //
                 if (nextNextBlock->bbJumpKind != BBJ_RETURN)
                 {
                     // Make sure the block has a single statement
@@ -7673,9 +7671,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     {
                         assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
                         asgNode = nextNextBlock->firstStmt()->GetRootNode();
-                        assert(asgNode->OperIs(GT_ASG));
-                        assert(lcl == asgNode->gtGetOp2()->AsLclVarCommon()->GetLclNum());
-                        lcl           = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        if (!asgNode->OperIs(GT_NOP))
+                        {
+                            assert(asgNode->OperIs(GT_ASG));
+
+                            GenTree* rhs = asgNode->gtGetOp2();
+                            while (rhs->OperIs(GT_CAST))
+                            {
+                                assert(!rhs->gtOverflow());
+                                rhs = rhs->gtGetOp1();
+                            }
+
+                            assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
+                            lcl = rhs->AsLclVarCommon()->GetLclNum();
+                        }
                         nextNextBlock = nextNextBlock->GetUniqueSucc();
                     }
                 }
@@ -8344,7 +8353,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 //
 GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP*         pLookup,
-                                 unsigned                handleFlags,
+                                 GenTreeFlags            handleFlags,
                                  void*                   compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
@@ -8508,7 +8517,7 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent ? TRUE : FALSE, &embedInfo);
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);
@@ -12013,29 +12022,33 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
 }
 
 /*****************************************************************************
-*  If a read operation tries to access simd struct field, then transform the
-*  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
-*  Otherwise, return the old tree.
+*  If a read operation tries to access simd struct field, then transform the operation
+*  to the SimdGetElementNode, and return the new tree. Otherwise, return the old tree.
 *  Argument:
 *   tree - GenTree*. If this pointer points to simd struct which is used for simd
-*          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
+*          intrinsic, we will morph it as simd intrinsic NI_Vector128_GetElement.
 *  Return:
 *   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
 */
 
-GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
+GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
 {
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
     GenTree*    simdStructNode  = getSIMDStructFromField(tree, &simdBaseJitType, &index, &simdSize);
+
     if (simdStructNode != nullptr)
     {
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        GenTree*  op2          = gtNewIconNode(index, TYP_INT);
+
+        assert(simdSize <= 16);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
-        GenTree* op2 = gtNewIconNode(index);
-        tree = gtNewSIMDNode(simdBaseType, simdStructNode, op2, SIMDIntrinsicGetItem, simdBaseJitType, simdSize);
+
+        tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
+                                       /* isSimdAsHWIntrinsic */ true);
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -12044,9 +12057,8 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 }
 
 /*****************************************************************************
-*  Transform an assignment of a SIMD struct field to SIMD intrinsic
-*  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
-*  then return the old tree.
+*  Transform an assignment of a SIMD struct field to SimdWithElementNode, and
+*  return a new tree. If it is not such an assignment, then return the old tree.
 *  Argument:
 *   tree - GenTree*. If this pointer points to simd struct which is used for simd
 *          intrinsic, we will morph it as simd intrinsic set.
@@ -12055,46 +12067,32 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 *   return nullptr.
 */
 
-GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
+GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
 {
     assert(tree->OperGet() == GT_ASG);
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
 
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
-    GenTree*    simdOp1Struct   = getSIMDStructFromField(op1, &simdBaseJitType, &index, &simdSize);
-    if (simdOp1Struct != nullptr)
+    GenTree*    simdStructNode  = getSIMDStructFromField(tree->gtGetOp1(), &simdBaseJitType, &index, &simdSize);
+
+    if (simdStructNode != nullptr)
     {
+        var_types simdType     = simdStructNode->gtType;
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
-        // Generate the simd set intrinsic
+        assert(simdSize <= 16);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
 
-        SIMDIntrinsicID simdIntrinsicID = SIMDIntrinsicInvalid;
-        switch (index)
-        {
-            case 0:
-                simdIntrinsicID = SIMDIntrinsicSetX;
-                break;
-            case 1:
-                simdIntrinsicID = SIMDIntrinsicSetY;
-                break;
-            case 2:
-                simdIntrinsicID = SIMDIntrinsicSetZ;
-                break;
-            case 3:
-                simdIntrinsicID = SIMDIntrinsicSetW;
-                break;
-            default:
-                noway_assert(!"There is no set intrinsic for index bigger than 3");
-        }
+        GenTree*       op2         = gtNewIconNode(index, TYP_INT);
+        GenTree*       op3         = tree->gtGetOp2();
+        NamedIntrinsic intrinsicId = NI_Vector128_WithElement;
 
-        GenTree* target = gtClone(simdOp1Struct);
+        GenTree* target = gtClone(simdStructNode);
         assert(target != nullptr);
-        var_types simdType = target->gtType;
-        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, simdBaseJitType, simdSize);
+
+        GenTree* simdTree = gtNewSimdWithElementNode(simdType, simdStructNode, op2, op3, simdBaseJitType, simdSize,
+                                                     /* isSimdAsHWIntrinsic */ true);
 
         tree->AsOp()->gtOp1 = target;
         tree->AsOp()->gtOp2 = simdTree;
@@ -12244,7 +12242,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // We should check whether op2 should be assigned to a SIMD field or not.
                 // If it is, we should tranlate the tree to simd intrinsic.
                 assert(!fgGlobalMorph || ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0));
-                GenTree* newTree = fgMorphFieldAssignToSIMDIntrinsicSet(tree);
+                GenTree* newTree = fgMorphFieldAssignToSimdSetElement(tree);
                 typ              = tree->TypeGet();
                 op1              = tree->gtGetOp1();
                 op2              = tree->gtGetOp2();
@@ -13430,6 +13428,31 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled())
+            {
+                GenTree* op1 = tree->AsOp()->gtOp1;
+                GenTree* op2 = tree->AsOp()->gtOp2;
+                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1->TypeGet()) && op2->IsIntegralConst(0))
+                {
+                    GenTree* op1op2 = op1->AsOp()->gtOp2;
+                    if (op1op2->IsCnsIntOrI())
+                    {
+                        ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                        }
+                    }
+                }
+            }
+
             cns2 = op2;
 
             /* Check for "(expr +/- icon1) ==/!= (non-zero-icon2)" */
@@ -14049,6 +14072,15 @@ DONE_MORPHING_CHILDREN:
 
                 op1 = op2;
                 op2 = tree->AsOp()->gtOp2;
+            }
+
+            // Fold "cmp & 1" to just "cmp"
+            if (tree->OperIs(GT_AND) && tree->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1) &&
+                !gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(op2))
+            {
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(tree);
+                return op1;
             }
 
             // See if we can fold floating point operations (can regress minopts mode)
@@ -14743,12 +14775,12 @@ DONE_MORPHING_CHILDREN:
                 // TBD: this transformation is currently necessary for correctness -- it might
                 // be good to analyze the failures that result if we don't do this, and fix them
                 // in other ways.  Ideally, this should be optional.
-                GenTree* commaNode = op1;
-                unsigned treeFlags = tree->gtFlags;
-                commaNode->gtType  = typ;
-                commaNode->gtFlags = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
-                                                                     // dangerous, clear the GTF_REVERSE_OPS at
-                                                                     // least.
+                GenTree*     commaNode = op1;
+                GenTreeFlags treeFlags = tree->gtFlags;
+                commaNode->gtType      = typ;
+                commaNode->gtFlags     = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
+                                                                         // dangerous, clear the GTF_REVERSE_OPS at
+                                                                         // least.
 #ifdef DEBUG
                 commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -17700,8 +17732,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    unsigned    propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
-    BasicBlock* remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+    BasicBlockFlags propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
+    BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* helperBlock = fgNewBBafter(BBJ_NONE, block, true);
@@ -17878,8 +17910,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    unsigned    propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
-    BasicBlock* remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+    BasicBlockFlags propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
+    BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_COND, block, true);
@@ -19284,6 +19316,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
     //  1) ret(void)
     //  2) ret(cast*(callResultLclVar))
     //  3) lclVar = callResultLclVar, the actual ret(lclVar) in another block
+    //  4) nop
     if (nextMorphStmt != nullptr)
     {
         GenTree* callExpr = callStmt->GetRootNode();
@@ -19310,8 +19343,13 @@ bool Compiler::fgCheckStmtAfterTailCall()
             //
             // And if we're returning a small type we may see a cast
             // on the source side.
-            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG)))
+            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG, GT_NOP)))
             {
+                if (nextMorphStmt->GetRootNode()->OperIs(GT_NOP))
+                {
+                    nextMorphStmt = nextMorphStmt->GetNextStmt();
+                    continue;
+                }
                 Statement* moveStmt = nextMorphStmt;
                 GenTree*   moveExpr = nextMorphStmt->GetRootNode();
                 GenTree*   moveDest = moveExpr->gtGetOp1();
@@ -19379,9 +19417,9 @@ bool Compiler::fgCanTailCallViaJitHelper()
 #endif
 }
 
-static const int      numberOfTrackedFlags               = 5;
-static const unsigned trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
-                                                            GTF_ORDER_SIDEEFF};
+static const int          numberOfTrackedFlags               = 5;
+static const GenTreeFlags trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
+                                                                GTF_ORDER_SIDEEFF};
 
 //------------------------------------------------------------------------
 // fgMorphArgList: morph argument list tree without recursion.

@@ -24,7 +24,7 @@
 #include "float.h"      // for isnan
 #include "dbginterface.h"
 #include "dllimport.h"
-#include "dllimportcallback.h"
+#include "callconvbuilder.hpp"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
 #include "corprof.h"
@@ -4384,6 +4384,12 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
     case ELEMENT_TYPE_R8:
         result = CORINFO_TYPE_DOUBLE;
         break;
+    case ELEMENT_TYPE_I:
+        result = CORINFO_TYPE_NATIVEINT;
+        break;
+    case ELEMENT_TYPE_U:
+        result = CORINFO_TYPE_NATIVEUINT;
+        break;
 
     default:
         // Error case, we will return CORINFO_TYPE_UNDEF
@@ -5118,7 +5124,7 @@ void CEEInfo::getCallInfo(
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
     TypeHandle constrainedType;
-    if ((flags & CORINFO_CALLINFO_CALLVIRT) && (pConstrainedResolvedToken != NULL))
+    if (pConstrainedResolvedToken != NULL)
     {
         constrainedType = TypeHandle(pConstrainedResolvedToken->hClass);
     }
@@ -5346,12 +5352,36 @@ void CEEInfo::getCallInfo(
         // Direct calls to abstract methods are not allowed
         if (IsMdAbstract(dwTargetMethodAttrs) &&
             // Compensate for always treating delegates as direct calls above
-            !(((flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt)))
+            !(((flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt))
+            && !(IsMdStatic(dwTargetMethodAttrs) && fForceUseRuntimeLookup))
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
         }
 
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
+
+        // If the target method is resolved via constrained static virtual dispatch
+        // And it requires an instParam, we do not have the generic dictionary infrastructure
+        // to load the correct generic context arg via EmbedGenericHandle.
+        // Instead, force the call to go down the CORINFO_CALL_CODE_POINTER code path
+        // which should have somewhat inferior performance. This should only actually happen in the case
+        // of shared generic code calling a shared generic implementation method, which should be rare.
+        //
+        // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
+        // of the constrained target instead, and use that in some circumstances; however, implementation of
+        // that design requires refactoring variuos parts of the JIT interface as well as
+        // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
+        // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
+        // via a single use of CORINFO_CALL_CODE_POINTER, or would be better done with a CORINFO_CALL + embedded
+        // constrained generic handle, or if there is a case where we would want to use both a CORINFO_CALL and
+        // embedded constrained generic handle. Given the current expected high performance use case of this feature
+        // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
+        // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
+        // sensitive.
+        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup)
+        {
+            allowInstParam = FALSE;
+        }
 
         // Create instantiating stub if necesary
         if (!allowInstParam && pTargetMD->RequiresInstArg())
@@ -5395,9 +5425,20 @@ void CEEInfo::getCallInfo(
             {
                 pResult->kind = CORINFO_CALL_CODE_POINTER;
 
-                // For reference types, the constrained type does not affect method resolution
-                DictionaryEntryKind entryKind = (!constrainedType.IsNull() && constrainedType.IsValueType()) ? ConstrainedMethodEntrySlot : MethodEntrySlot;
-
+                DictionaryEntryKind entryKind;
+                if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
+                {
+                    // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
+                    // constraint, it doesn't effect it either
+                    entryKind = MethodEntrySlot;
+                }
+                else
+                {
+                    // constrained. callvirt case where the constraint type is a valuetype
+                    // OR
+                    // constrained. call or constrained. ldftn case
+                    entryKind = ConstrainedMethodEntrySlot;
+                }
                 ComputeRuntimeLookupForSharedGenericToken(entryKind,
                                                             pResolvedToken,
                                                             pConstrainedResolvedToken,
@@ -5700,7 +5741,19 @@ void CEEInfo::getCallInfo(
 
     pResult->methodFlags = getMethodAttribsInternal(pResult->hMethod);
 
-    SignatureKind signatureKind = flags & CORINFO_CALLINFO_CALLVIRT && !(pResult->kind == CORINFO_CALL) ? SK_VIRTUAL_CALLSITE : SK_CALLSITE;
+    SignatureKind signatureKind;
+    if (flags & CORINFO_CALLINFO_CALLVIRT && !(pResult->kind == CORINFO_CALL))
+    {
+        signatureKind = SK_VIRTUAL_CALLSITE;
+    }
+    else if ((pResult->kind == CORINFO_CALL_CODE_POINTER) && IsMdVirtual(dwTargetMethodAttrs) && IsMdStatic(dwTargetMethodAttrs))
+    {
+        signatureKind = SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
+    }
+    else
+    {
+        signatureKind = SK_CALLSITE;
+    }
     getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
@@ -8633,9 +8686,10 @@ CEEInfo::getMethodSigInternal(
         // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
         //
         BOOL isCallSiteThatGoesThroughInstantiatingStub =
-            signatureKind == SK_VIRTUAL_CALLSITE &&
+            (signatureKind == SK_VIRTUAL_CALLSITE &&
             !ftn->IsStatic() &&
-            ftn->GetMethodTable()->IsInterface();
+            ftn->GetMethodTable()->IsInterface()) ||
+            signatureKind == SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
         if (!isCallSiteThatGoesThroughInstantiatingStub)
             sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
     }
@@ -8775,20 +8829,6 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
                 if (pMustExpand != nullptr)
                 {
                     *pMustExpand = true;
-                }
-            }
-            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN)))
-            {
-                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__SPAN__GET_ITEM)))
-                {
-                    result = CORINFO_INTRINSIC_Span_GetItem;
-                }
-            }
-            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN)))
-            {
-                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__READONLY_SPAN__GET_ITEM)))
-                {
-                    result = CORINFO_INTRINSIC_ReadOnlySpan_GetItem;
                 }
             }
         }
@@ -9903,7 +9943,7 @@ namespace
         {
             CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
+            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
 
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
@@ -9911,7 +9951,7 @@ namespace
             CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
             if (callConvLocal == CallConvBuilder::UnsetValue)
             {
-                callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
+                callConvLocal = CallConv::GetDefaultUnmanagedCallingConvention();
             }
 
             *pSuppressGCTransition = builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
@@ -9943,13 +9983,15 @@ namespace
             _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
             if (pMD->IsNDirect())
             {
-                if (pSuppressGCTransition)
-                {
-                    *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
-                }
+#ifdef CROSSGEN_COMPILE
+                // Return CorInfoCallConvExtension::Managed to indicate that crossgen does not support handling UnmanagedCallConv
+                if (pMD->HasUnmanagedCallConvAttribute())
+                    return CorInfoCallConvExtension::Managed;
+#endif // CROSSGEN_COMPILE
 
-                PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                return sigInfo.GetCallConv();
+                CorInfoCallConvExtension unmanagedCallConv;
+                NDirect::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, pSuppressGCTransition);
+                return unmanagedCallConv;
             }
             else
             {
@@ -9958,7 +10000,7 @@ namespace
                 return CorInfoCallConvExtension::Managed;
 #else
                 CorInfoCallConvExtension unmanagedCallConv;
-                if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
+                if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
@@ -9966,7 +10008,7 @@ namespace
                     }
                     return unmanagedCallConv;
                 }
-                return MetaSig::GetDefaultUnmanagedCallingConvention();
+                return CallConv::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }
@@ -11148,7 +11190,7 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    CodeHeader* pCodeHeader = GetCodeHeader();
+    CodeHeader* pCodeHeader = m_CodeHeader;
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
 }
@@ -11271,7 +11313,7 @@ void CEEJitInfo::CompressDebugInfo()
             NULL,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
-        GetCodeHeader()->SetDebugInfo(pDebugInfo);
+        m_CodeHeader->SetDebugInfo(pDebugInfo);
     }
     EX_CATCH
     {
@@ -11546,6 +11588,7 @@ void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
 // A jump thunk may be inserted if we are jitting
 
 void CEEJitInfo::recordRelocation(void * location,
+                                  void * locationRW,
                                   void * target,
                                   WORD   fRelocType,
                                   WORD   slot,
@@ -11566,7 +11609,7 @@ void CEEJitInfo::recordRelocation(void * location,
     {
     case IMAGE_REL_BASED_DIR64:
         // Write 64-bits into location
-        *((UINT64 *) ((BYTE *) location + slot)) = (UINT64) target;
+        *((UINT64 *) ((BYTE *) locationRW + slot)) = (UINT64) target;
         break;
 
 #ifdef TARGET_AMD64
@@ -11575,6 +11618,7 @@ void CEEJitInfo::recordRelocation(void * location,
             target = (BYTE *)target + addlDelta;
 
             INT32 * fixupLocation = (INT32 *) ((BYTE *) location + slot);
+            INT32 * fixupLocationRW = (INT32 *) ((BYTE *) locationRW + slot);
             BYTE * baseAddr = (BYTE *)fixupLocation + sizeof(INT32);
 
             delta  = (INT64)((BYTE *)target - baseAddr);
@@ -11620,7 +11664,7 @@ void CEEJitInfo::recordRelocation(void * location,
                  DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, delta));
 
             // Write the 32-bits pc-relative delta into location
-            *fixupLocation = (INT32) delta;
+            *fixupLocationRW = (INT32) delta;
         }
         break;
 #endif // TARGET_AMD64
@@ -11635,6 +11679,7 @@ void CEEJitInfo::recordRelocation(void * location,
             _ASSERTE((branchTarget & 0x3) == 0);   // the low two bits must be zero
 
             PCODE fixupLocation = (PCODE) location;
+            PCODE fixupLocationRW = (PCODE) locationRW;
             _ASSERTE((fixupLocation & 0x3) == 0);  // the low two bits must be zero
 
             delta = (INT64)(branchTarget - fixupLocation);
@@ -11698,7 +11743,7 @@ void CEEJitInfo::recordRelocation(void * location,
 
             _ASSERTE(FitsInRel28(delta));
 
-            PutArm64Rel28((UINT32*) fixupLocation, (INT32)delta);
+            PutArm64Rel28((UINT32*) fixupLocationRW, (INT32)delta);
         }
         break;
 
@@ -11712,7 +11757,7 @@ void CEEJitInfo::recordRelocation(void * location,
             INT64 locationPage = (INT64)location & 0xFFFFFFFFFFFFF000LL;
             INT64 relPage = (INT64)(targetPage - locationPage);
             INT32 imm21 = (INT32)(relPage >> 12) & 0x1FFFFF;
-            PutArm64Rel21((UINT32 *)location, imm21);
+            PutArm64Rel21((UINT32 *)locationRW, imm21);
         }
         break;
 
@@ -11723,7 +11768,7 @@ void CEEJitInfo::recordRelocation(void * location,
 
             // Write the 12 bits page offset into location.
             INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
-            PutArm64Rel12((UINT32 *)location, imm12);
+            PutArm64Rel12((UINT32 *)locationRW, imm12);
         }
         break;
 
@@ -12136,16 +12181,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     return hr;
 }
 
-void CEEJitInfo::allocMem (
-    uint32_t            hotCodeSize,    /* IN */
-    uint32_t            coldCodeSize,   /* IN */
-    uint32_t            roDataSize,     /* IN */
-    uint32_t            xcptnsCount,    /* IN */
-    CorJitAllocMemFlag  flag,           /* IN */
-    void **             hotCodeBlock,   /* OUT */
-    void **             coldCodeBlock,  /* OUT */
-    void **             roDataBlock     /* OUT */
-            )
+void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 {
     CONTRACTL {
         THROWS;
@@ -12155,39 +12191,40 @@ void CEEJitInfo::allocMem (
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(coldCodeSize == 0);
-    if (coldCodeBlock)
+    _ASSERTE(pArgs->coldCodeSize == 0);
+    if (pArgs->coldCodeBlock)
     {
-        *coldCodeBlock = NULL;
+        pArgs->coldCodeBlock = NULL;
     }
 
-    ULONG codeSize      = hotCodeSize;
-    void **codeBlock    = hotCodeBlock;
+    ULONG codeSize      = pArgs->hotCodeSize;
+    void **codeBlock    = &pArgs->hotCodeBlock;
+    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
 
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 32;
     }
-    else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 16;
     }
-    else if (roDataSize >= 8)
+    else if (pArgs->roDataSize >= 8)
     {
         roDataAlignment = 8;
     }
-    if (roDataSize > 0)
+    if (pArgs->roDataSize > 0)
     {
         size_t codeAlignment = sizeof(void*);
 
-        if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
         {
             codeAlignment = 32;
         }
-        else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
         {
             codeAlignment = 16;
         }
@@ -12197,7 +12234,7 @@ void CEEJitInfo::allocMem (
             // Add padding to align read-only data.
             totalSize += (roDataAlignment - codeAlignment);
         }
-        totalSize += roDataSize;
+        totalSize += pArgs->roDataSize;
     }
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -12231,10 +12268,10 @@ void CEEJitInfo::allocMem (
         }
 
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
-            hotCodeSize + coldCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
+            pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), flag
+    m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag
 #ifdef FEATURE_EH_FUNCLETS
                                            , m_totalUnwindInfos
                                            , &m_moduleBase
@@ -12244,17 +12281,20 @@ void CEEJitInfo::allocMem (
     BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
 
     *codeBlock = current;
+    *codeBlockRW = current;
     current += codeSize;
 
-    if (roDataSize > 0)
+    if (pArgs->roDataSize > 0)
     {
         current = (BYTE *)ALIGN_UP(current, roDataAlignment);
-        *roDataBlock = current;
-        current += roDataSize;
+        pArgs->roDataBlock = current;
+        pArgs->roDataBlockRW = current;
+        current += pArgs->roDataSize;
     }
     else
     {
-        *roDataBlock = NULL;
+        pArgs->roDataBlock = NULL;
+        pArgs->roDataBlockRW = NULL;
     }
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -12408,6 +12448,8 @@ void CEEJitInfo::getEHinfo(
 
     EE_TO_JIT_TRANSITION();
 }
+
+
 #endif // CROSSGEN_COMPILE
 
 #if defined(CROSSGEN_COMPILE)
@@ -14233,16 +14275,7 @@ bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     return false;
 }
 
-void CEEInfo::allocMem (
-        uint32_t            hotCodeSize,    /* IN */
-        uint32_t            coldCodeSize,   /* IN */
-        uint32_t            roDataSize,     /* IN */
-        uint32_t            xcptnsCount,    /* IN */
-        CorJitAllocMemFlag  flag,           /* IN */
-        void **             hotCodeBlock,   /* OUT */
-        void **             coldCodeBlock,  /* OUT */
-        void **             roDataBlock     /* OUT */
-        )
+void CEEInfo::allocMem (AllocMemArgs *pArgs)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
@@ -14397,6 +14430,7 @@ void CEEInfo::recordCallSite(
 
 void CEEInfo::recordRelocation(
         void *                 location,   /* IN  */
+        void *                 locationRW, /* IN  */
         void *                 target,     /* IN  */
         WORD                   fRelocType, /* IN  */
         WORD                   slotNum,  /* IN  */

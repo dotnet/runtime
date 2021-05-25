@@ -22,18 +22,37 @@ namespace ComWrappersTests.GlobalInstance
         {
             try
             {
+                bool builtInComDisabled=false;
+                var comConfig = AppContext.GetData("System.Runtime.InteropServices.BuiltInComInterop.IsSupported");
+                if(comConfig != null && !bool.Parse(comConfig.ToString()))
+                {
+                    builtInComDisabled=true;
+                }
+                Console.WriteLine($"Built-in COM Disabled?: {builtInComDisabled}");
+
+
                 // The first test registers a global ComWrappers instance for marshalling
                 // Subsequents tests assume the global instance has already been registered.
                 ValidateRegisterForMarshalling();
 
                 ValidateMarshalAPIs(validateUseRegistered: true);
-                ValidateMarshalAPIs(validateUseRegistered: false);
+                if(!builtInComDisabled)
+                {
+                    ValidateMarshalAPIs(validateUseRegistered: false);
+                }
 
                 ValidatePInvokes(validateUseRegistered: true);
-                ValidatePInvokes(validateUseRegistered: false);
+                if(!builtInComDisabled)
+                {
+                    ValidatePInvokes(validateUseRegistered: false);
+                }
 
-                ValidateComActivation(validateUseRegistered: true);
-                ValidateComActivation(validateUseRegistered: false);
+                if(!builtInComDisabled)
+                {
+                    // This calls ValidateNativeServerActivation which calls Marshal.GetTypeFromCLSID that is not supported
+                    ValidateComActivation(validateUseRegistered: true);
+                    ValidateComActivation(validateUseRegistered: false);
+                }
 
                 ValidateNotRegisteredForTrackerSupport();
 

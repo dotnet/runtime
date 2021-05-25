@@ -112,6 +112,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -1981,6 +1982,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	MonoMethod *orig_method = method;
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
+	MonoMemoryManager *mem_manager = NULL;
 	gboolean found;
 
 	g_assert (method && m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class &&
@@ -2091,8 +2093,12 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		cache_key = sig;
 	}
 
+	if (subtype == WRAPPER_SUBTYPE_NONE)
+		/* FIXME: Other subtypes */
+		mem_manager = m_method_get_mem_manager (method);
+
 	if (!static_method_with_first_arg_bound) {
-		invoke_sig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		invoke_sig = mono_metadata_signature_dup_mem_manager (mem_manager, sig);
 		invoke_sig->hasthis = 0;
 	}
 
@@ -2109,6 +2115,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	else
 		mb = mono_mb_new (get_wrapper_target_class (get_method_image (method)), name, MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
+	mb->mem_manager = mem_manager;
+
+	if (subtype == WRAPPER_SUBTYPE_NONE)
+		/* FIXME: Other subtypes */
+		mb->mem_manager = m_method_get_mem_manager (method);
 
 	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
 
@@ -2384,6 +2395,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	char *name;
 	const char *param_names [16];
 	WrapperInfo *info;
+	MonoMemoryManager *mem_manager = NULL;
 	MonoWrapperMethodCacheKey *method_key;
 	MonoWrapperMethodCacheKey method_key_lookup_only;
 	memset (&method_key_lookup_only, 0, sizeof (method_key_lookup_only));
@@ -2410,7 +2422,9 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	res = mono_marshal_find_in_cache (method_cache, method_key);
 	if (res)
 		return res;
-		
+
+	mem_manager = m_method_get_mem_manager (method);
+
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature_internal (method));
 		if (!callsig)
@@ -2460,9 +2474,9 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 			return res;
 		}
 
-		/* Make a copy of the signature from the image mempool */
+		/* Make a copy of the signature */
 		tmp_sig = callsig;
-		callsig = mono_metadata_signature_dup_full (m_class_get_image (target_klass), callsig);
+		callsig = mono_metadata_signature_dup_mem_manager (mem_manager, callsig);
 		g_free (tmp_sig);
 	}
 
@@ -2488,6 +2502,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	name = mono_signature_to_name (callsig, virtual_ ? "runtime_invoke_virtual" : (need_direct_wrapper ? "runtime_invoke_direct" : "runtime_invoke"));
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
+	mb->mem_manager = mem_manager;
 
 	param_names [0] = "this";
 	param_names [1] = "params";
@@ -3024,14 +3039,33 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
-static void 
+static void
+mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
+{
+	MonoClass *callconv_class_maybe = mono_class_from_mono_type_internal (type);
+	if ((m_class_get_image (callconv_class_maybe) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (callconv_class_maybe), "System.Runtime.CompilerServices")) {
+		const char *class_name = m_class_get_name (callconv_class_maybe);
+		if (!strcmp (class_name, "CallConvCdecl"))
+			csig->call_convention = MONO_CALL_C;
+		else if (!strcmp (class_name, "CallConvStdcall"))
+			csig->call_convention = MONO_CALL_STDCALL;
+		else if (!strcmp (class_name, "CallConvFastcall"))
+			csig->call_convention = MONO_CALL_FASTCALL;
+		else if (!strcmp (class_name, "CallConvThiscall"))
+			csig->call_convention = MONO_CALL_THISCALL;
+		else if (!strcmp (class_name, "CallConvSuppressGCTransition") && skip_gc_trans != NULL)
+			*skip_gc_trans = TRUE;
+	}
+}
+
+static void
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig, gboolean set_default)
 {
 	MonoMethodSignature *sig;
 	int i;
 
 #ifdef TARGET_WIN32
-	/* 
+	/*
 	 * Under windows, delegates passed to native code must use the STDCALL
 	 * calling convention.
 	 */
@@ -3055,19 +3089,76 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 		gboolean required;
 		MonoType *cmod_type = mono_type_get_custom_modifier (sig->ret, i, &required, error);
 		mono_error_assert_ok (error);
-		MonoClass *cmod_class = mono_class_from_mono_type_internal (cmod_type);
-		if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
-			const char *cmod_class_name = m_class_get_name (cmod_class);
-			if (!strcmp (cmod_class_name, "CallConvCdecl"))
-				csig->call_convention = MONO_CALL_C;
-			else if (!strcmp (cmod_class_name, "CallConvStdcall"))
-				csig->call_convention = MONO_CALL_STDCALL;
-			else if (!strcmp (cmod_class_name, "CallConvFastcall"))
-				csig->call_convention = MONO_CALL_FASTCALL;
-			else if (!strcmp (cmod_class_name, "CallConvThiscall"))
-				csig->call_convention = MONO_CALL_THISCALL;
+		mono_marshal_set_callconv_for_type (cmod_type, csig, NULL);
+	}
+}
+
+static MonoArray*
+mono_marshal_get_callconvs_array_from_attribute (MonoCustomAttrEntry *attr, CattrNamedArg **arginfo)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	ERROR_DECL (error);
+	MonoArrayHandleOut typed_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandleOut named_args_h = MONO_HANDLE_NEW (MonoArray, NULL);
+	mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, typed_args_h, named_args_h, arginfo, error);
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+	}
+
+	HANDLE_FUNCTION_RETURN_OBJ (named_args_h);
+}
+
+static void
+mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
+{
+	MonoClass *attr_class = mono_class_try_get_unmanaged_callconv_attribute_class ();
+	if (!attr_class)
+		return;
+
+	ERROR_DECL (error);
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_method_checked (method, error);
+	if (!is_ok (error) || !cinfo) {
+		mono_error_cleanup (error);
+		return;
+	}
+
+	int i;
+	MonoCustomAttrEntry *attr = NULL;
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
+		if (ctor_class == attr_class) {
+			attr = &cinfo->attrs [i];
+			break;
 		}
 	}
+
+	if (attr != NULL)
+	{
+		CattrNamedArg *arginfo;
+		MonoArray *named_args = mono_marshal_get_callconvs_array_from_attribute(attr, &arginfo);
+		if (named_args)
+		{
+			for (i = 0; i < mono_array_length_internal(named_args); ++i) {
+				CattrNamedArg *info = &arginfo[i];
+				g_assert(info->field);
+				if (strcmp(info->field->name, "CallConvs") != 0)
+					continue;
+
+				/* CallConvs is an array of types */
+				MonoArray *callconv_array = mono_array_get_internal(named_args, MonoArray *, i);
+				for (int j = 0; j < mono_array_length_internal(callconv_array); ++j) {
+					MonoReflectionType *callconv_type = mono_array_get_internal(callconv_array, MonoReflectionType *, j);
+					mono_marshal_set_callconv_for_type(callconv_type->type, csig, skip_gc_trans);
+				}
+			}
+		}
+
+		g_free (arginfo);
+	}
+
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
 }
 
 /**
@@ -3310,6 +3401,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			mono_custom_attrs_free (cinfo);
 	}
 
+	if (csig->call_convention == MONO_CALL_DEFAULT) {
+		/* If the calling convention has not been set, check the UnmanagedCallConv attribute */
+		mono_marshal_set_callconv_from_unmanaged_callconv_attribute (method, csig, &skip_gc_trans);
+	}
+
 	MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;
 	flags |= check_exceptions ? EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS : (MonoNativeWrapperFlags)0;
 	flags |= skip_gc_trans ? EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS : (MonoNativeWrapperFlags)0;
@@ -3476,7 +3572,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	MonoImage *image = m_class_get_image (caller_class);
 	g_assert (sig->pinvoke);
 	g_assert (!sig->hasthis && ! sig->explicit_this);
-	g_assert (!sig->is_inflated && !sig->has_type_parameters);
+	g_assert (!sig->has_type_parameters);
 
 #if 0
 	/*
@@ -5760,12 +5856,13 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 
 	mb = mono_mb_new_no_dup_name (klass, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
+	mb->mem_manager = m_method_get_mem_manager (method);
 
 	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |
 		METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_HIDE_BY_SIG | METHOD_ATTRIBUTE_FINAL;
 
 	sig = mono_method_signature_internal (method);
-	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+	csig = mono_metadata_signature_dup_mem_manager (mb->mem_manager, sig);
 	csig->generic_param_count = 0;
 
 	get_marshal_cb ()->emit_generic_array_helper (mb, method, csig);

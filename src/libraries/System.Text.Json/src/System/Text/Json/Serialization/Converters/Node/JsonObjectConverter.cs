@@ -2,12 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonObjectConverter : JsonConverter<JsonObject>
+    internal sealed class JsonObjectConverter : JsonConverter<JsonObject>
     {
+        internal override object CreateObject(JsonSerializerOptions options)
+        {
+            return new JsonObject(options.GetNodeOptions());
+        }
+
+        internal override void ReadElementAndSetProperty(
+            object obj,
+            string propertyName,
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state)
+        {
+            bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out object? value);
+            Debug.Assert(success); // Node converters are not resumable.
+
+            Debug.Assert(obj is JsonObject);
+            JsonObject jObject = (JsonObject)obj;
+
+            Debug.Assert(value == null || value is JsonNode);
+            JsonNode? jNodeValue = (JsonNode?)value;
+
+            jObject[propertyName] = jNodeValue;
+        }
+
         public override void Write(Utf8JsonWriter writer, JsonObject value, JsonSerializerOptions options)
         {
             Debug.Assert(value != null);
@@ -20,8 +44,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartObject:
                     return ReadObject(ref reader, options.GetNodeOptions());
-                case JsonTokenType.Null:
-                    return null;
                 default:
                     Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedObject(reader.TokenType);

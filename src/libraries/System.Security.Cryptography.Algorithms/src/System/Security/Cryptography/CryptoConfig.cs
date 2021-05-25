@@ -119,11 +119,15 @@ namespace System.Security.Cryptography
                 Type HMACSHA256Type = typeof(System.Security.Cryptography.HMACSHA256);
                 Type HMACSHA384Type = typeof(System.Security.Cryptography.HMACSHA384);
                 Type HMACSHA512Type = typeof(System.Security.Cryptography.HMACSHA512);
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
                 Type RijndaelManagedType = typeof(System.Security.Cryptography.RijndaelManaged);
+#pragma warning restore SYSLIB0022
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
                 Type AesManagedType = typeof(System.Security.Cryptography.AesManaged);
                 Type SHA256DefaultType = typeof(System.Security.Cryptography.SHA256Managed);
                 Type SHA384DefaultType = typeof(System.Security.Cryptography.SHA384Managed);
                 Type SHA512DefaultType = typeof(System.Security.Cryptography.SHA512Managed);
+#pragma warning restore SYSLIB0021
 
                 string SHA1CryptoServiceProviderType = "System.Security.Cryptography.SHA1CryptoServiceProvider, " + AssemblyName_Csp;
                 string MD5CryptoServiceProviderType = "System.Security.Cryptography.MD5CryptoServiceProvider," + AssemblyName_Csp;
@@ -181,8 +185,13 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.RSA", RSACryptoServiceProviderType);
                 ht.Add("System.Security.Cryptography.AsymmetricAlgorithm", RSACryptoServiceProviderType);
 
-                ht.Add("DSA", DSACryptoServiceProviderType);
-                ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
+                if (!OperatingSystem.IsIOS() &&
+                    !OperatingSystem.IsTvOS() &&
+                    !OperatingSystem.IsMacCatalyst())
+                {
+                    ht.Add("DSA", DSACryptoServiceProviderType);
+                    ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
+                }
 
                 // Windows will register the public ECDsaCng type.  Non-Windows gets a special handler.
                 if (OperatingSystem.IsWindows())

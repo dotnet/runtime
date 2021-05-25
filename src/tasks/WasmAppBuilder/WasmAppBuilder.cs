@@ -144,18 +144,18 @@ public class WasmAppBuilder : Task
         var config = new WasmAppConfig ();
 
         // Create app
-        var asmRootPath = Path.Join(AppDir, config.AssemblyRoot);
+        var asmRootPath = Path.Combine(AppDir, config.AssemblyRoot);
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
         {
-            FileCopyChecked(assembly, Path.Join(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+            FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
             if (DebugLevel != 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    FileCopyChecked(pdb, Path.Join(asmRootPath, Path.GetFileName(pdb)), "Assemblies");
+                    FileCopyChecked(pdb, Path.Combine(asmRootPath, Path.GetFileName(pdb)), "Assemblies");
             }
         }
 
@@ -165,10 +165,10 @@ public class WasmAppBuilder : Task
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
-        FileCopyChecked(MainJS!, Path.Join(AppDir, "runtime.js"), string.Empty);
+        FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
 
         var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
-        File.WriteAllText(Path.Join(AppDir, "index.html"), html);
+        File.WriteAllText(Path.Combine(AppDir, "index.html"), html);
 
         foreach (var assembly in _assemblies)
         {
@@ -190,16 +190,16 @@ public class WasmAppBuilder : Task
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
                 string fullPath = assembly.GetMetadata("Identity");
                 string name = Path.GetFileName(fullPath);
-                string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
+                string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
                 Directory.CreateDirectory(directory);
-                FileCopyChecked(fullPath, Path.Join(directory, name), "SatelliteAssemblies");
+                FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
                 config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
             }
         }
 
         if (FilesToIncludeInFileSystem != null)
         {
-            string supportFilesDir = Path.Join(AppDir, "supportFiles");
+            string supportFilesDir = Path.Combine(AppDir, "supportFiles");
             Directory.CreateDirectory(supportFilesDir);
 
             var i = 0;
@@ -216,7 +216,7 @@ public class WasmAppBuilder : Task
 
                 var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
-                FileCopyChecked(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), "FilesToIncludeInFileSystem");
+                FileCopyChecked(item.ItemSpec, Path.Combine(supportFilesDir, generatedFileName), "FilesToIncludeInFileSystem");
 
                 var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
                     VirtualPath = targetPath
@@ -246,7 +246,7 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        string monoConfigPath = Path.Join(AppDir, "mono-config.js");
+        string monoConfigPath = Path.Combine(AppDir, "mono-config.js");
         using (var sw = File.CreateText(monoConfigPath))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
@@ -284,9 +284,9 @@ public class WasmAppBuilder : Task
             return true;
 
         // Try parsing as a quoted string
-        if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![^1] == '"')
+        if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![rawValue!.Length - 1] == '"')
         {
-            valueObject = rawValue![1..^1];
+            valueObject = rawValue!.Substring(1, rawValue!.Length - 2);
             return true;
         }
 

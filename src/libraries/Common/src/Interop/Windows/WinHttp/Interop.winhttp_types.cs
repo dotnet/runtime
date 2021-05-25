@@ -61,6 +61,7 @@ internal static partial class Interop
 
         public const uint WINHTTP_FLAG_SECURE = 0x00800000;
         public const uint WINHTTP_FLAG_ESCAPE_DISABLE = 0x00000040;
+        public const uint WINHTTP_FLAG_AUTOMATIC_CHUNKING = 0x00000200;
 
         public const uint WINHTTP_QUERY_FLAG_NUMBER = 0x20000000;
         public const uint WINHTTP_QUERY_VERSION = 18;

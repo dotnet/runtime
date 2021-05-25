@@ -82,6 +82,7 @@
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpCertificateHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpChannelBinding.cs" />
+    <Compile Include="System\Net\Http\WinHttpChunkMode.cs" />
     <Compile Include="System\Net\Http\WinHttpCookieContainerAdapter.cs" />
     <Compile Include="System\Net\Http\WinHttpException.cs" />
     <Compile Include="System\Net\Http\WinHttpHandler.cs" />

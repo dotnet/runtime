@@ -389,7 +389,7 @@ namespace System.Data
         /// <summary>
         /// Compares this constraint to a second to determine if both are identical.
         /// </summary>
-        public override bool Equals(object? key2)
+        public override bool Equals([NotNullWhen(true)] object? key2)
         {
             if (!(key2 is UniqueConstraint))
                 return false;

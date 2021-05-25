@@ -313,8 +313,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
 
-            if (spec.CanUseWithBindingCache() && pDomainAssembly->CanUseWithBindingCache())
-                pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
+            pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
 
             pAssembly = pDomain->LoadAssembly(&spec, pAssemblyHolder, FILE_LOADED);
 
@@ -967,6 +966,14 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     }
 
     return FALSE;
+}
+
+BOOL CEECompileInfo::IsUnmanagedCallConvMethod(CORINFO_METHOD_HANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodDesc * pMethod = GetMethod(handle);
+    return pMethod->HasUnmanagedCallConvAttribute();
 }
 
 BOOL CEECompileInfo::IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle)
@@ -5736,7 +5743,7 @@ void CEEPreloader::GenerateMethodStubs(
         {
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
             PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
+            NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
             pStubMD = NDirect::GetILStubMethodDesc((NDirectMethodDesc*)pMD, &sigInfo, dwNGenStubFlags);
         }
 #ifdef FEATURE_COMINTEROP
@@ -6480,8 +6487,6 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
         spec.ConvertPublicKeyToToken();
         pRefSpec = &spec;
     }
-
-    _ASSERTE(pRefSpec->HasUniqueIdentity());
 
     //
     // See if we've already added the contents of the ref

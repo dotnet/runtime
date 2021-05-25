@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContextExtensions.cs" />

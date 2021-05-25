@@ -11,9 +11,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/49881</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_49826/test49826/*">
-            <Issue>https://github.com/dotnet/runtime/issues/51542</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -730,30 +727,11 @@
             <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
         </ExcludeList>
         <!-- Tracing failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsvalidation/ThreadPool/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48727</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/48786</Issue>
         </ExcludeList>
-        <!-- Crossgen2 issues -->
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/crossgen2/crossgen2smoke/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48001</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/multifolder/multifolder/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48001</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/FrameworkTests/R2RDumpTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48001</Issue>
-        </ExcludeList>
         <!-- Intermittent failures disable to improve pass rate -->
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrash/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashWorkerThreads/*">
             <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/runtime_32848/*">
@@ -767,6 +745,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
             <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)readytorun/crossgen2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/49365</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)readytorun/determinism/crossgen2determinism/**">
+            <Issue>https://github.com/dotnet/runtime/issues/52529</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -1169,6 +1153,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/CompatibleWithTest/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/**">
+            <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
+        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizeexcep/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
@@ -1257,6 +1244,9 @@
         <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/** ">
             <Issue>https://github.com/dotnet/runtime/issues/41180</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/ObjectiveCMarshalAPI/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsByValArray/AsByValArrayTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1331,6 +1321,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/signed_overflow_conversions_are_not_treated_as_unsigned/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51323</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/compiler/FilterToHandler/**">
             <Issue>needs triage</Issue>
@@ -2729,7 +2722,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
@@ -3266,7 +3262,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">
@@ -3397,6 +3393,12 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
+            <Issue>https://github.com/dotnet/runtime/issues/52763</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/53077</Issue>
         </ExcludeList>
     </ItemGroup>
 

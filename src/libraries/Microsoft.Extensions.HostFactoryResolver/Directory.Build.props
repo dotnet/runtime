@@ -1,7 +1,6 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

@@ -31,7 +31,7 @@
     <CoreClrLibName>coreclr</CoreClrLibName>
     <CoreClrFileName>$(LibPrefix)$(CoreClrLibName)$(SharedLibExt)</CoreClrFileName>
     <MonoLibName>monosgen-2.0</MonoLibName>
-    <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
+    <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
     <MonoSharedLibName Condition="'$(MonoSharedLibName)' == ''">$(CoreClrLibName)</MonoSharedLibName>
     <MonoSharedLibFileName>$(LibPrefix)$(MonoSharedLibName)$(SharedLibExt)</MonoSharedLibFileName>
     <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibExt)</MonoStaticLibFileName>
@@ -45,12 +45,9 @@
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsMacCatalyst)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <MonoAOTEnableLLVM Condition="'$(TargetsiOS)' == 'true'">true</MonoAOTEnableLLVM>
-    <MonoAOTEnableLLVM Condition="'$(TargetstvOS)' == 'true'">true</MonoAOTEnableLLVM>
-    <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
-    <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
@@ -84,7 +81,7 @@
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -229,6 +226,13 @@
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
     </ItemGroup>
 
+    <!-- s390x Linux cross build options -->
+    <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 's390x'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=s390x" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/s390x-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
     <!-- Windows specific options -->
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_MonoCPPFLAGS Include="-DWIN32" />
@@ -309,6 +313,8 @@
       <_MonoCMakeSystemName Condition="'$(TargetstvOS)' == 'true'">tvOS</_MonoCMakeSystemName>
       <_MonoCMakeVersionMin Condition="'$(TargetsiOS)' == 'true'">$(iOSVersionMin)</_MonoCMakeVersionMin>
       <_MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</_MonoCMakeVersionMin>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
       <_IcuLibdir>$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/lib</_IcuLibdir>
     </PropertyGroup>
     <ItemGroup Condition="('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true') and '$(Platform)' == 'arm64'">
@@ -318,14 +324,16 @@
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=$(_MonoCMakeSystemName)"/>
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(_MonoCMakeVersionMin)" />
       <_MonoCMakeArgs Include="-DCMAKE_OSX_SYSROOT='$(_MonoCMakeSysroot)'" />
-      <_MonoCMakeArgs Include="-DICU_LIBDIR=$(_IcuLibdir)"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;"/>
       <_MonoCFLAGS Include="-Wl,-application_extension" />
-      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/include" />
       <_MonoCXXFLAGS Include="-Wl,-application_extension" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
+      <_MonoCMakeArgs Include="-DICU_LIBDIR=$(_IcuLibdir)"/>
+      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/include" />
     </ItemGroup>
     <!-- iOS/tvOS simulator specific options -->
     <ItemGroup Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true')">
@@ -352,13 +360,16 @@
       <_MonoRunInitCompiler>false</_MonoRunInitCompiler>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
-      <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=Android"/>
-      <_MonoCMakeArgs Include="-DCMAKE_ANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
-      <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VERSION=$(AndroidApiVersion)"/>
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a" />
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a" />
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86" />
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86_64" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake"/>
+      <_MonoCMakeArgs Include="-DANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
+      <_MonoCMakeArgs Include="-DANDROID_STL=none"/>
+      <_MonoCMakeArgs Include="-DANDROID_CPP_FEATURES=&quot;no-rtti no-exceptions&quot;"/>
+      <_MonoCMakeArgs Include="-DANDROID_NATIVE_API_LEVEL=$(AndroidApiVersion)"/>
+      <_MonoCMakeArgs Include="-DANDROID_PLATFORM=android-$(AndroidApiVersion)"/>
+      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DANDROID_ABI=arm64-v8a" />
+      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DANDROID_ABI=armeabi-v7a" />
+      <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
+      <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,logging" />
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
@@ -410,7 +421,7 @@
 
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
-      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_LISTEN_PORTS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" />
     </ItemGroup>
 
@@ -445,9 +456,22 @@
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
+
     <!-- configure -->
-    <Message Condition="'$(SkipMonoCrossJitConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(SkipMonoCrossJitConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <PropertyGroup>
+      <_MonoCMakeCmdLineUpToDate Condition="Exists('$(MonoObjDir)cmake_cmd_line.txt') and '$([System.IO.File]::ReadAllText($(MonoObjDir)cmake_cmd_line.txt).Trim())' == '$(_MonoCMakeConfigureCommand.Trim())'">true</_MonoCMakeCmdLineUpToDate>
+      <_MonoSkipCMakeConfigure>false</_MonoSkipCMakeConfigure>
+      <_MonoSkipCMakeConfigure Condition="'$(SkipMonoCrossJitConfigure)' == 'true' or '$(_MonoCMakeCmdLineUpToDate)' == 'true'">true</_MonoSkipCMakeConfigure>
+    </PropertyGroup>
+    <Message Condition="'$(_MonoSkipCMakeConfigure)' == 'true'" Text="The CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
+    <Message Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
+    <Exec Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <WriteLinesToFile
+      Condition="'$(_MonoSkipCMakeConfigure)' != 'true'"
+      File="$(MonoObjDir)cmake_cmd_line.txt"
+      Lines="$(_MonoCMakeConfigureCommand)"
+      Overwrite="true" />
+
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
@@ -470,7 +494,14 @@
       <MonoAotAbi Condition="'$(Platform)' == 'x86'">i386-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
     </PropertyGroup>
-    <ItemGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+      <MonoUseCrossTool>true</MonoUseCrossTool>
+      <MonoAotCMakeSysroot Condition="'$(TargetsMacCatalyst)' == 'true'">$(XcodeDir)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk</MonoAotCMakeSysroot>
+      <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
+      <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-maccatalyst</MonoAotAbi>
+      <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-maccatalyst</MonoAotAbi>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
     </ItemGroup>
 
@@ -527,8 +558,13 @@
 
     <!-- Android specific options -->
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+      <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</MonoToolchainPrebuiltOS>
+      <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</MonoToolchainPrebuiltOS>
+      <MonoToolchainPrebuiltOS Condition="'$(OS)' == 'Windows_NT'">windows-x86_64</MonoToolchainPrebuiltOS>
+
       <MonoUseCrossTool>true</MonoUseCrossTool>
-      <MonoAOTCMakeSysroot>$(ANDROID_NDK_ROOT)/sysroot</MonoAOTCMakeSysroot>
+      <MonoAotCMakeSysroot Condition="Exists('$(ANDROID_NDK_ROOT)/sysroot')">$(ANDROID_NDK_ROOT)/sysroot</MonoAotCMakeSysroot>
+      <MonoAotCMakeSysroot Condition="'$(MonoAotCMakeSysroot)' == '' And Exists('$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/sysroot')">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/sysroot</MonoAotCMakeSysroot>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-v8a-linux-android</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'arm'">armv7-none-linux-androideabi</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x86'">i686-none-linux-android</MonoAotAbi>
@@ -536,9 +572,13 @@
       <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-$(Platform)-android.h</MonoAotOffsetsFile>
     </PropertyGroup>
 
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*"/>
+    </ItemGroup>
+
     <PropertyGroup>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(MonoLibClang)' == ''">$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(MonoLibClang)' == ''">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/lib64/libclang.so.9svn</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(MonoLibClang)' == ''">@(_LibClang)</MonoLibClang>
       <MonoLibClang Condition="'$(OS)' == 'Windows_NT' and '$(MonoLibClang)' == ''">c:/dev/LLVM/bin/libclang.dll</MonoLibClang>
       <MonoAotCMakeSysroot Condition="'$(MonoAotCMakeSysroot)' == ''">$(MonoCrossDir)</MonoAotCMakeSysroot>
     </PropertyGroup>
@@ -593,14 +633,28 @@
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjCrossDir)" />
+
     <!-- offsets tool -->
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Out-of-tree offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)'))" />
     <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
     <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" />
+
     <!-- configure -->
-    <Message Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
-    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
+    <PropertyGroup>
+      <_MonoAotCMakeCmdLineUpToDate Condition="Exists('$(MonoObjCrossDir)cmake_cmd_line.txt') and '$([System.IO.File]::ReadAllText($(MonoObjCrossDir)cmake_cmd_line.txt).Trim())' == '$(_MonoAotCMakeConfigureCommand.Trim())'">true</_MonoAotCMakeCmdLineUpToDate>
+      <_MonoSkipAotCMakeConfigure>false</_MonoSkipAotCMakeConfigure>
+      <_MonoSkipAotCMakeConfigure Condition="'$(MonoGenerateOffsetsOSGroups)' != '' or '$(_MonoAotCMakeCmdLineUpToDate)' == 'true'">true</_MonoSkipAotCMakeConfigure>
+    </PropertyGroup>
+    <Message Condition="'$(_MonoSkipAotCMakeConfigure)' == 'true'" Text="The AOT Cross CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
+    <Message Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjCrossDir)'" Importance="High"/>
+    <Exec Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
+    <WriteLinesToFile
+      Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'"
+      File="$(MonoObjCrossDir)cmake_cmd_line.txt"
+      Lines="$(_MonoAotCMakeConfigureCommand)"
+      Overwrite="true" />
+
     <!-- build -->
     <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
@@ -635,7 +689,7 @@
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\$(MonoStaticLibFileName)</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
-      <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</_MonoIncludeIcuFiles>
+      <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
       <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\mono-sgen$(ExeExt)</_MonoAotCrossFilePath>

@@ -238,39 +238,54 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs"
+             Link="Common\System\Net\Http\TlsCertificateExtensions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
+             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
+    <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
+    <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
+    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
+    <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
+             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
-             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs"
-             Link="Common\System\Net\Http\TlsCertificateExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
              Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
-             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
-             Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
-             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
-    <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
-    <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
-    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
-    <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetstvOS)' == 'true'">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.PlatformNotSupported.cs"
+             Link="Common\System\Net\ContextFlagsAdapterPal.PlatformNotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
@@ -331,6 +346,8 @@
              Link="Common\System\Net\Security\Unix\SafeFreeSslCredentials.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
              Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.cs"
@@ -391,6 +408,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
@@ -407,7 +425,6 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
