@@ -386,7 +386,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!(DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId) && objectId.Scheme == "cfo_res"))
                             break;
 
-                        await SendMonoCommand(id, MonoCommands.ReleaseObject(objectId), token);
+                        //await SendMonoCommand(id, MonoCommands.ReleaseObject(objectId), token);
                         SendResponse(id, Result.OkFromObject(new { }), token);
                         return true;
                     }

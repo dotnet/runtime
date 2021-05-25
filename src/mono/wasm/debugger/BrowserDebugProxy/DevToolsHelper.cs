@@ -180,12 +180,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetLoadedFiles() => new MonoCommands("MONO.mono_wasm_get_loaded_files()");
 
-        public static MonoCommands EvaluateMemberAccess(int scopeId, string expr, params VarInfo[] vars)
-        {
-            var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
-            return new MonoCommands($"MONO.mono_wasm_eval_member_access({scopeId}, {JsonConvert.SerializeObject(var_ids)}, '', '{expr}')");
-        }
-
         public static MonoCommands SendDebuggerAgentCommand(int id, int command_set, int command, string command_parameters)
         {
             return new MonoCommands($"MONO.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
@@ -195,8 +189,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             return new MonoCommands($"MONO.mono_wasm_send_dbg_command_with_parms ({id}, {command_set}, {command},'{command_parameters}', {len}, {type}, '{parm}')");
         }
-
-        public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"MONO.mono_wasm_release_object('{objectId}')");
 
         public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"MONO.mono_wasm_call_function_on ({args.ToString()})");
 
