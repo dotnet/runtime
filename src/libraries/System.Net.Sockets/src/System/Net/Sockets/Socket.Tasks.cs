@@ -1378,7 +1378,7 @@ namespace System.Net.Sockets
 
             private void ThrowException(SocketError error, CancellationToken cancellationToken)
             {
-                // Most operations will report OperationAborted when cancelled.
+                // Most operations will report OperationAborted when canceled.
                 // On Windows, SendFileAsync will report ConnectionAborted.
                 // There's a race here anyway, so there's no harm in also checking for ConnectionAborted in all cases.
                 if (error == SocketError.OperationAborted || error == SocketError.ConnectionAborted)
