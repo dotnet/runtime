@@ -128,7 +128,7 @@ namespace System.Net
             const uint HostNameBufferLength = 256;
             char* buffer = stackalloc char[(int)HostNameBufferLength];
             uint bufferused = HostNameBufferLength;
-            if (Interop.Kernel32.GetComputerNameEx(Interop.Kernel32.COMPUTER_NAME_FORMAT.ComputerNameDnsHostname, buffer, ref bufferused) == 0)
+            if (Interop.Kernel32.GetComputerNameEx(Interop.Kernel32.COMPUTER_NAME_FORMAT.ComputerNameDnsHostname, buffer, &bufferused) == Interop.BOOL.FALSE)
             {
                 var exception = new SocketException(Marshal.GetLastWin32Error());
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"GetHostName failed with {exception.SocketErrorCode}");
