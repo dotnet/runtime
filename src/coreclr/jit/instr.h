@@ -90,6 +90,7 @@ enum insFlags : uint32_t
 {
     INS_FLAGS_None = 0,
 
+    // Reads EFLAGS
     INS_FLAGS_ReadsCF = 1 << 0,
     INS_FLAGS_ReadsPF = 1 << 1,
     INS_FLAGS_ReadsAF = 1 << 2,
@@ -98,8 +99,12 @@ enum insFlags : uint32_t
     INS_FLAGS_ReadsDF = 1 << 5,
     INS_FLAGS_ReadsOF = 1 << 6,
     INS_FLAGS_ReadsAllFlagsExceptAF = INS_FLAGS_ReadsCF | INS_FLAGS_ReadsPF | INS_FLAGS_ReadsZF | INS_FLAGS_ReadsSF | INS_FLAGS_ReadsOF,
+    INS_FLAGS_Reads_CF_ZF_Flags = INS_FLAGS_ReadsCF | INS_FLAGS_ReadsZF,
+    INS_FLAGS_Reads_OF_SF_Flags = INS_FLAGS_ReadsOF | INS_FLAGS_ReadsSF,
+    INS_FLAGS_Reads_OF_SF_ZF_Flags = INS_FLAGS_ReadsOF | INS_FLAGS_ReadsSF | INS_FLAGS_ReadsZF,
     INS_FLAGS_ReadsAllFlags = INS_FLAGS_ReadsAF | INS_FLAGS_ReadsAllFlagsExceptAF,
 
+    // Writes EFLAGS
     INS_FLAGS_WritesCF = 1 << 7,
     INS_FLAGS_WritesPF = 1 << 8,
     INS_FLAGS_WritesAF = 1 << 9,
@@ -111,10 +116,19 @@ enum insFlags : uint32_t
     INS_FLAGS_WritesAllFlagsExceptOF = INS_FLAGS_WritesCF | INS_FLAGS_WritesPF | INS_FLAGS_WritesAF | INS_FLAGS_WritesZF | INS_FLAGS_WritesSF,
     INS_FLAGS_WritesAllFlags = INS_FLAGS_WritesCF | INS_FLAGS_WritesAllFlagsExceptCF,
 
-    INS_FLAGS_x87Instr = 1 << 14,
+    // Resets EFLAGS
+    INS_FLAGS_Resets_OF_Flags       = 1 << 14,
+    INS_FLAGS_Resets_CF_OF_Flags    = 1 << 15,
+    INS_FLAGS_Resets_OF_SF_PF_Flags = 1 << 16,
+    INS_FLAGS_Resets_OF_SF_PF_Flags = 1 << 17,
+    INS_FLAGS_ResetsAllFlagsExceptZF = 1 << 18,
 
-    INS_Flags_IsDstDstSrcAVXInstruction = 1 << 15,
-    INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 16,
+    // x87 instruction
+    INS_FLAGS_x87Instr = 1 << 19,
+
+    // Avx
+    INS_Flags_IsDstDstSrcAVXInstruction = 1 << 20,
+    INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 21,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,

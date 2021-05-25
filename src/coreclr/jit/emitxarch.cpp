@@ -144,6 +144,16 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
     return ((CodeGenInterface::instInfo[ins] & INS_Flags_IsDstSrcSrcAVXInstruction) != 0) && IsAVXInstruction(ins);
 }
 
+//------------------------------------------------------------------------
+// IsWriteZFFlags: check if the instruction write the
+//     ZF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the ZF flag, false otherwise.
+//
 bool emitter::IsWriteZFFlags(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
