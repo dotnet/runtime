@@ -313,7 +313,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50958", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void WriteFooterTest_Callstack()
         {

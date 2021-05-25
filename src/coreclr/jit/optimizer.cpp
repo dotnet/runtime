@@ -585,30 +585,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
 /*****************************************************************************
  *
- *  Given the beginBlock of the loop, return the index of this loop
- *  to the loop table.
- */
-
-unsigned Compiler::optFindLoopNumberFromBeginBlock(BasicBlock* begBlk)
-{
-    unsigned lnum = 0;
-
-    for (lnum = 0; lnum < optLoopCount; lnum++)
-    {
-        if (optLoopTable[lnum].lpHead->bbNext == begBlk)
-        {
-            // Found the loop.
-            return lnum;
-        }
-    }
-
-    noway_assert(!"Loop number not found.");
-
-    return optLoopCount;
-}
-
-/*****************************************************************************
- *
  *  Print loop info in an uniform way.
  */
 
@@ -1157,7 +1133,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
 
     optLoopTable[loopInd].lpAsgVars = AllVarSetOps::UninitVal();
 
-    optLoopTable[loopInd].lpFlags = 0;
+    optLoopTable[loopInd].lpFlags = LPFLG_EMPTY;
 
     // We haven't yet recorded any side effects.
     for (MemoryKind memoryKind : allMemoryKinds())
@@ -2703,14 +2679,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
 
         case BBJ_SWITCH:
         {
-            to->bbJumpSwt            = new (this, CMK_BasicBlock) BBswtDesc();
-            to->bbJumpSwt->bbsCount  = from->bbJumpSwt->bbsCount;
-            to->bbJumpSwt->bbsDstTab = new (this, CMK_BasicBlock) BasicBlock*[from->bbJumpSwt->bbsCount];
-
-            for (unsigned i = 0; i < from->bbJumpSwt->bbsCount; i++)
-            {
-                to->bbJumpSwt->bbsDstTab[i] = from->bbJumpSwt->bbsDstTab[i];
-            }
+            to->bbJumpSwt = new (this, CMK_BasicBlock) BBswtDesc(this, from->bbJumpSwt);
         }
         break;
 
@@ -5180,7 +5149,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit && (dstSize <= genTypeSize(tree->gtType)))
                 {
-                    tree->gtType = genSignedType(dstt);
+                    if (!varTypeIsSmall(dstt))
+                    {
+                        dstt = varTypeToSigned(dstt);
+                    }
+
+                    tree->gtType = dstt;
                     tree->SetVNs(vnpNarrow);
 
                     /* Make sure we don't mess up the variable type */
@@ -5231,7 +5205,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                     if (doit)
                     {
-                        dstt = genSignedType(dstt);
+                        if (!varTypeIsSmall(dstt))
+                        {
+                            dstt = varTypeToSigned(dstt);
+                        }
 
                         if ((oprSize == dstSize) &&
                             ((varTypeIsUnsigned(dstt) == varTypeIsUnsigned(oprt)) || !varTypeIsSmall(dstt)))

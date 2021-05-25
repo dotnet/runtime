@@ -329,6 +329,18 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Adds a regex char class if the classes are mergeable.</summary>
+        public bool TryAddCharClass(RegexCharClass cc)
+        {
+            if (cc.CanMerge && CanMerge)
+            {
+                AddCharClass(cc);
+                return true;
+            }
+
+            return false;
+        }
+
         private StringBuilder EnsureCategories() =>
             _categories ??= new StringBuilder();
 

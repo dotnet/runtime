@@ -3,6 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
+    <!-- SYSLIB0021: Derived cryptographic types are obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
@@ -98,23 +100,23 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(UseAndroidCrypto)' != 'true'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
-    <Compile Include="DefaultECDsaProvider.Android.cs" />
-    <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
+    <Compile Include="DefaultECDsaProvider.Android.cs" />
+    <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"

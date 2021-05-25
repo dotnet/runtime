@@ -968,7 +968,7 @@ void MethodContext::repGetVars(CORINFO_METHOD_HANDLE      ftn,
 void MethodContext::recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      unsigned int*                 cILOffsets,
                                      uint32_t**                    pILOffsets,
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries)
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     if (GetBoundaries == nullptr)
         GetBoundaries = new LightWeightMap<DWORDLONG, Agnostic_GetBoundaries>();
@@ -978,7 +978,7 @@ void MethodContext::recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
     value.cILOffsets = (DWORD)*cILOffsets;
     value.pILOffset_offset =
         (DWORD)GetBoundaries->AddBuffer((unsigned char*)*pILOffsets, sizeof(DWORD) * (*cILOffsets));
-    value.implicitBoundaries = *implictBoundaries;
+    value.implicitBoundaries = *implicitBoundaries;
 
     DWORDLONG key = CastHandle(ftn);
     GetBoundaries->Add(key, value);
@@ -1000,7 +1000,7 @@ void MethodContext::dmpGetBoundaries(DWORDLONG key, const Agnostic_GetBoundaries
 void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      unsigned int*                 cILOffsets,
                                      uint32_t**                    pILOffsets,
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries)
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     DWORDLONG key = CastHandle(ftn);
     AssertMapAndKeyExist(GetBoundaries, key, ": key %016llX", key);
@@ -1011,7 +1011,7 @@ void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
     *cILOffsets = (unsigned int)value.cILOffsets;
     if (*cILOffsets > 0)
         *pILOffsets    = (uint32_t*)GetBoundaries->GetBuffer(value.pILOffset_offset);
-    *implictBoundaries = (ICorDebugInfo::BoundaryTypes)value.implicitBoundaries;
+    *implicitBoundaries = (ICorDebugInfo::BoundaryTypes)value.implicitBoundaries;
 }
 
 void MethodContext::recInitClass(CORINFO_FIELD_HANDLE   field,
@@ -5608,8 +5608,11 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                     printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
+                    printf("T %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
@@ -6927,7 +6930,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
                 if (hasEdgeProfile && hasClassProfile && hasLikelyClass)

@@ -75,6 +75,8 @@
 
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
+    <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
@@ -256,7 +258,6 @@
                                  '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
   </PropertyGroup>
 
-
   <!-- Language configuration -->
   <PropertyGroup>
     <!-- default to allowing all language features -->
@@ -274,5 +275,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
+    <CustomAfterTraversalProps>$(RepositoryEngineeringDir)TraversalSdk.AfterProps.props</CustomAfterTraversalProps>
   </PropertyGroup>
 </Project>

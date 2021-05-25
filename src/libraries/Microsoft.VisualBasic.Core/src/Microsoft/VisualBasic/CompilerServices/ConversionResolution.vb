@@ -176,7 +176,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Debug.Assert(TypeCode.String = 18, "wrong value!")
         End Sub
 
-        <RequiresUnreferencedCode("Calls ClassifyUserDefinedConversion")>
+        <RequiresUnreferencedCode("Calls ClassifyUserDefinedConversion and ClassifyPredefinedConversion")>
         Friend Shared Function ClassifyConversion(ByVal targetType As System.Type, ByVal sourceType As System.Type, ByRef operatorMethod As Method) As ConversionClass
             'This function classifies the nature of the conversion from the source type to the target
             'type. If such a conversion requires a user-defined conversion, it will be supplied as an
@@ -205,6 +205,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return s_conversionTable(targetTypeCode)(sourceTypeCode)
         End Function
 
+        <RequiresUnreferencedCode("Calls GetInterfaceConstraints but does so recursively on various types")>
         Friend Shared Function ClassifyPredefinedCLRConversion(ByVal targetType As System.Type, ByVal sourceType As System.Type) As ConversionClass
             ' This function classifies all intrinsic CLR conversions, such as inheritance,
             ' implementation, and array covariance.
@@ -355,6 +356,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <RequiresUnreferencedCode("Calls ClassifyPredefinedCLRConversion")>
         Private Shared Function ClassifyCLRArrayToInterfaceConversion(ByVal targetInterface As System.Type, ByVal sourceArrayType As System.Type) As ConversionClass
 
             Debug.Assert(IsInterface(targetInterface), "Non-Interface type unexpected!!!")
@@ -424,6 +426,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
 
+        <RequiresUnreferencedCode("Calls ClassifyPredefinedCLRConversion")>
         Private Shared Function ClassifyCLRConversionForArrayElementTypes(ByVal targetElementType As System.Type, ByVal sourceElementType As System.Type) As ConversionClass
 
             ' The element types must either be the same or
@@ -467,6 +470,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
 
+        <RequiresUnreferencedCode("Calls ClassifyPredefinedCLRConversion")>
         Friend Shared Function ClassifyPredefinedConversion(ByVal targetType As System.Type, ByVal sourceType As System.Type) As ConversionClass
             ' This function classifies all intrinsic language conversions, such as inheritance,
             ' implementation, array covariance, and conversions between intrinsic types.
@@ -553,6 +557,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return result
         End Function
 
+        <RequiresUnreferencedCode("Calls ClassifyPredefinedConversion")>
         Private Shared Function Encompasses(ByVal larger As System.Type, ByVal smaller As System.Type) As Boolean
             'Definition: LARGER is said to encompass SMALLER if SMALLER widens to or is LARGER.
 
@@ -564,6 +569,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return result = ConversionClass.Widening OrElse result = ConversionClass.Identity
         End Function
 
+        <RequiresUnreferencedCode("Calls ClassifyPredefinedConversion")>
         Private Shared Function NotEncompasses(ByVal larger As System.Type, ByVal smaller As System.Type) As Boolean
             'Definition: LARGER is said to not encompass SMALLER if SMALLER narrows to or is LARGER.
 
@@ -575,7 +581,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return result = ConversionClass.Narrowing OrElse result = ConversionClass.Identity
         End Function
 
-
+        <RequiresUnreferencedCode("Calls Encompasses")>
         Private Shared Function MostEncompassing(ByVal types As List(Of System.Type)) As System.Type
             'Given a set TYPES, determine the most encompassing type. An element
             'CANDIDATE of TYPES is said to be most encompassing if no other element of
@@ -601,7 +607,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return maxEncompassing
         End Function
 
-
+        <RequiresUnreferencedCode("Calls Encompasses")>
         Private Shared Function MostEncompassed(ByVal types As List(Of System.Type)) As System.Type
             'Given a set TYPES, determine the most encompassed type. An element
             'CANDIDATE of TYPES is said to be most encompassed if CANDIDATE encompasses
@@ -687,6 +693,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             operatorList.Add(operatorToInsert)
         End Sub
 
+        <RequiresUnreferencedCode("Calls ClassifyPredefinedConversion")>
         Private Shared Function ResolveConversion(
             ByVal targetType As System.Type,
             ByVal sourceType As System.Type,

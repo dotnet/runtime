@@ -172,7 +172,8 @@ public:
     // ------------------------------------------------------------
 
     // Path is the file path to the file; empty if not a file
-    const SString &GetPath();
+    const SString& GetPath();
+    const SString& GetIdentityPath();
 
 #ifdef DACCESS_COMPILE
     // This is the metadata module name. Used as a hint as file name.

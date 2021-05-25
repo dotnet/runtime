@@ -13,11 +13,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-
+    [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
     public class DSAKeyValueTest
     {
         [Fact]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Collections;
@@ -57,6 +58,8 @@ namespace System.ComponentModel.Design
             return uri.LocalPath + uri.Fragment;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821")]
         public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
         {
             if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName] == null)

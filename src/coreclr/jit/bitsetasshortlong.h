@@ -509,7 +509,7 @@ public:
             for (;;)
             {
                 DWORD nextBit;
-                BOOL  hasBit;
+                bool  hasBit;
 #ifdef HOST_64BIT
                 static_assert_no_msg(sizeof(size_t) == 8);
                 hasBit = BitScanForward64(&nextBit, m_bits);

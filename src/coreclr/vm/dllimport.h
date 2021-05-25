@@ -56,14 +56,15 @@ public:
 class NDirect
 {
 public:
-    // Get the calling convention for a method by checking:
+    // Get the calling convention and whether to suppress GC transition for a method by checking:
+    //   - SuppressGCTransition attribute
     //   - For delegates: UnmanagedFunctionPointer attribute
     //   - For non-delegates: P/Invoke metadata
     //   - Any modopts encoded in the method signature
     // If no calling convention is specified, the default calling convention is returned
     // This function ignores any errors when reading attributes/metadata, treating them as
     // if no calling convention was specified through that mechanism.
-    static CorInfoCallConvExtension GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD);
+    static void GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD, _Out_opt_ CorInfoCallConvExtension* callConv, _Out_opt_ bool* suppressGCTransition);
 
     //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
@@ -75,6 +76,10 @@ public:
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
 
     // Either MD or signature & module must be given.
+    // Note: This method can be called at a time when the associated NDirectMethodDesc
+    // has not been fully populated. This means the optimized path for this call is to rely
+    // on the most basic P/Invoke metadata. An example when this can happen is when the JIT
+    // is compiling a method containing a P/Invoke that is being considered for inlining.
     static BOOL MarshalingRequired(
         _In_opt_ MethodDesc* pMD,
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
@@ -143,7 +148,7 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_SUPPRESSGCTRANSITION     = 0x00008000,
     NDIRECTSTUB_FL_STUB_HAS_THIS            = 0x00010000,
     NDIRECTSTUB_FL_TARGET_HAS_THIS          = 0x00020000,
-    // unused                               = 0x00040000,
+    NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
     // unused                               = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
@@ -202,6 +207,7 @@ inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
 inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
+inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION)); }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
@@ -311,19 +317,20 @@ public:
 
     PInvokeStaticSigInfo(_In_ MethodDesc* pMdDelegate);
 
-    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
 
 private:
-    void ThrowError(WORD errorResourceID);
-    void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
-    void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
-    void PreInit(Module* pModule, MethodTable *pClass);
-    void PreInit(MethodDesc* pMD);
+    void ThrowError(_In_ WORD errorResourceID);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ BOOL bIsVarArg);
+    void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
+    void PreInit(_In_ Module* pModule, _In_ MethodTable* pClass);
+    void PreInit(_In_ MethodDesc* pMD);
 
 private:
     enum
     {
-        PINVOKE_STATIC_SIGINFO_IS_STATIC = 0x0001,
+        PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION = 0x0001,
         PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR = 0x0002,
         PINVOKE_STATIC_SIGINFO_BEST_FIT = 0x0004,
 
@@ -337,33 +344,38 @@ private:
     #define COR_NATIVE_LINK_TYPE_SHIFT 3 // Keep in synch with above mask
     #define COR_NATIVE_LINK_FLAGS_SHIFT 6  // Keep in synch with above mask
 
-public: // getters
+public: // public getters
     DWORD GetStubFlags() const
     {
         WRAPPER_NO_CONTRACT;
-        return (GetThrowOnUnmappableChar() ? NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR : 0) |
-               (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
-               (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
+        DWORD flags = 0;
+        if (GetThrowOnUnmappableChar())
+            flags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+
+        if (GetBestFitMapping())
+            flags |= NDIRECTSTUB_FL_BESTFIT;
+
+        if (IsDelegateInterop())
+            flags |= NDIRECTSTUB_FL_DELEGATE;
+
+        if (ShouldSuppressGCTransition())
+            flags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+
+        return flags;
     }
     Module* GetModule() const { LIMITED_METHOD_CONTRACT; return m_pModule; }
-    BOOL IsStatic() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
-    BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
-    BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
     BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
     CorInfoCallConvExtension GetCallConv() const { LIMITED_METHOD_CONTRACT; return m_callConv; }
     Signature GetSignature() const { LIMITED_METHOD_CONTRACT; return m_sig; }
     CorNativeLinkType GetCharSet() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
     CorNativeLinkFlags GetLinkFlags() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
 
+public: // private getters
+    BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
+    BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
+    BOOL ShouldSuppressGCTransition() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION; }
+
 private: // setters
-    void SetIsStatic(BOOL isStatic)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (isStatic)
-            m_wFlags |= PINVOKE_STATIC_SIGINFO_IS_STATIC;
-        else
-            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC;
-    }
     void SetThrowOnUnmappableChar(BOOL throwOnUnmappableChar)
     {
         LIMITED_METHOD_CONTRACT;
@@ -379,6 +391,14 @@ private: // setters
             m_wFlags |= PINVOKE_STATIC_SIGINFO_BEST_FIT;
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
+    }
+    void SetShouldSuppressGCTransition(BOOL suppress)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (suppress)
+            m_wFlags |= PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION;
+        else
+            m_wFlags &= ~PINVOKE_STATIC_SIGINFO_SUPPRESS_GC_TRANSITION;
     }
     void SetIsDelegateInterop(BOOL delegateInterop)
     {

@@ -182,21 +182,7 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 
     BEGIN_QCALL;
 
-#ifndef TARGET_UNIX
-    CPUGroupInfo::EnsureInitialized();
-
-    if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-    {
-        processorCount = CPUGroupInfo::GetNumActiveProcessors();
-    }
-    else
-#endif // !TARGET_UNIX
-    {
-        // This similar to GetSystemInfo() + dwNumberOfProcessors except:
-        // - GetCurrentProcessCpuCount() tries to take into account the processor affinity mask where applicable
-        // - GetCurrentProcessCpuCount() on Unixes tries to take into account cgroups CPU quota limits where applicable
-        processorCount = GetCurrentProcessCpuCount();
-    }
+    processorCount = GetCurrentProcessCpuCount();
 
     END_QCALL;
 

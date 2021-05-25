@@ -400,6 +400,7 @@ BEGIN
     IDS_CLASSLOAD_MI_MISSING_SIG_BODY       "Signature for the body in a method implementation cannot be found.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_MISSING_SIG_DECL       "Signature for the declaration in a method implementation cannot be found.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_BADRETURNTYPE          "Return type in method '%1' on type '%2' from assembly '%3' is not compatible with base type method '%4'."
+    IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL     "Virtual static method '%3' is not implemented on type '%1' from assembly '%2'."
 
     IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS   "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a method."
     IDS_CLASSLOAD_EQUIVALENTSTRUCTFIELDS    "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a static or non-public field."

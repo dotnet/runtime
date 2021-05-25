@@ -692,7 +692,7 @@ get_intrins_id (IntrinsicId id)
 #if LLVM_API_VERSION >= 1100
 #define Generic IndependentIntrinsics
 #define X86 X86Intrinsics
-#define Arm64 AArch64Intrinsics
+#define Arm64 AARCH64Intrinsics
 #define Wasm WASMIntrinsics
 #define INTRINS(id, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
 #else
