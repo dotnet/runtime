@@ -31,7 +31,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             else
             {
-                return Interop.Crypto.BioDestroy(h);
+                return Interop.Crypto.BioDestroy(h) != 0;
             }
         }
 

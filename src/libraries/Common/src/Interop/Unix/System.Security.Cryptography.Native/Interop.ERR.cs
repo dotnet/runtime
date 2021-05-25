@@ -14,7 +14,7 @@ internal static partial class Interop
         internal static extern ulong ErrClearError();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
-        private static extern ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+        private static extern unsafe ulong ErrGetErrorAlloc(int* isAllocFailure);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static extern ulong ErrPeekError();
@@ -53,19 +53,23 @@ internal static partial class Interop
             // Windows code and the OpenSSL-calling code, drain the queue
             // whenever an Exception is desired, and report the exception
             // related to the last value in the queue.
-            bool isAllocFailure;
-            ulong error = ErrGetErrorAlloc(out isAllocFailure);
-            ulong lastRead = error;
-            bool lastIsAllocFailure = isAllocFailure;
-
-            // 0 (there's no named constant) is only returned when the calls
-            // to ERR_get_error exceed the calls to ERR_set_error.
-            while (lastRead != 0)
+            int isAllocFailure = 0;
+            ulong error = 0;
+            unsafe
             {
-                error = lastRead;
-                isAllocFailure = lastIsAllocFailure;
+                int lastIsAllocFailure = isAllocFailure;
+                while (true)
+                {
+                    ulong lastRead = ErrGetErrorAlloc(&lastIsAllocFailure);
 
-                lastRead = ErrGetErrorAlloc(out lastIsAllocFailure);
+                    // 0 (there's no named constant) is only returned when the calls
+                    // to ERR_get_error exceed the calls to ERR_set_error.
+                    if (lastRead == 0)
+                        break;
+
+                    error = lastRead;
+                    isAllocFailure = lastIsAllocFailure;
+                }
             }
 
             // If we're in an error flow which results in an Exception, but
@@ -76,7 +80,7 @@ internal static partial class Interop
                 return new CryptographicException();
             }
 
-            if (isAllocFailure)
+            if (isAllocFailure != 0)
             {
                 return new OutOfMemoryException();
             }
