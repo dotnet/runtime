@@ -38,14 +38,4 @@ mono_component_diagnostics_server (void)
 	return diagnostics_server;
 }
 
-/* Declare each copomnents stub init function here */
-MonoComponentHotReload *
-mono_component_hot_reload_stub_init (void);
-
-MonoComponentEventPipe *
-mono_component_event_pipe_stub_init (void);
-
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_stub_init (void);
-
 #endif/*_MONO_METADATA_COMPONENTS_H*/
