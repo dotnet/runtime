@@ -1568,12 +1568,6 @@ var MonoSupportLib = {
 				MONO.mono_wasm_init_coverage_profiler (args.coverage_profiler_options);
 
 			MONO._custom_marshaler_name_table = args.custom_marshalers || {};
-
-			// HACK: Until the msbuild goo necessary for this is wired up
-			var cmt = MONO._custom_marshaler_name_table;
-			/*
-			cmt["Sample.CustomClass"] = "Sample.CustomClassMarshaler";
-			*/
 		},
 
 		_get_fetch_file_cb_from_args: function (args) {
