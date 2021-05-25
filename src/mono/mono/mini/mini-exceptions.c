@@ -2655,11 +2655,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame, &last_mono_wrapper_runtime_invoke, enable_trace);
 
 		if (res == MONO_FIRST_PASS_UNHANDLED) {
-			if (FALSE && mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-				/* Reached the top interpreted frames, but there might be native frames above us */
-				throw_exception (obj, TRUE);
-				g_assert_not_reached ();
-			}
 			if (mini_debug_options.break_on_exc)
 				G_BREAKPOINT ();
 			mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
