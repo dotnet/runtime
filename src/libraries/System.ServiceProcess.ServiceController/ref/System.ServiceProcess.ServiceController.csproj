@@ -3,14 +3,11 @@
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.ServiceProcess.ServiceController.cs" />
+    <Compile Include="System.ServiceProcess.ServiceController.cs" Condition="'$(TargetFramework)' != 'net461'" />
+    <Compile Include="System.ServiceProcess.ServiceController.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>

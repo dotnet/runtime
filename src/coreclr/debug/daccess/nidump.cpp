@@ -3691,10 +3691,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     DisplayWriteFieldPointer( m_file, DPtrToPreferredAddr(file), Module,
                               MODULE );
 
-    PTR_MethodDesc dllMain( TO_TADDR(module->m_pDllMain) );
-    WriteFieldMethodDesc( m_pDllMain, dllMain, Module,
-                          MODULE );
-
     _ASSERTE(module->m_dwTransientFlags == 0U);
     DisplayWriteFieldUInt(m_dwTransientFlags, module->m_dwTransientFlags,
                           Module, MODULE );

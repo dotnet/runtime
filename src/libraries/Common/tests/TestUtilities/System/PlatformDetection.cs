@@ -137,6 +137,9 @@ namespace System
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
+        public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
+
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
 
@@ -242,7 +245,7 @@ namespace System
             int version = 0;
             try
             {
-                Type interopGlobalization = Type.GetType("Interop+Globalization");
+                Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
                 if (interopGlobalization != null)
                 {
                     MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);

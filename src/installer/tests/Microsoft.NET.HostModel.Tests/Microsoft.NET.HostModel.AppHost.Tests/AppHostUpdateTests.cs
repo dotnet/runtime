@@ -291,7 +291,7 @@ namespace Microsoft.NET.HostModel.Tests
 
             static CoreFxFileStatusProvider()
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     try
                     {

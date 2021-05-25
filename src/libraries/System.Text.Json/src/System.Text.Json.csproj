@@ -60,8 +60,11 @@
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.KeyCollection.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.ValueCollection.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueTrimmable.cs" />
     <Compile Include="System\Text\Json\Nodes\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
@@ -308,6 +311,9 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.csproj" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->

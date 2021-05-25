@@ -223,7 +223,11 @@ namespace System.Text.RegularExpressions
                                         (classes[classPos++] ??= new RegexCharClass()).AddChar(concatChild.Ch);
                                         break;
                                     case RegexNode.Set:
-                                        (classes[classPos++] ??= new RegexCharClass()).AddCharClass(RegexCharClass.Parse(concatChild.Str!));
+                                        if (!(classes[classPos++] ??= new RegexCharClass()).TryAddCharClass(RegexCharClass.Parse(concatChild.Str!)))
+                                        {
+                                            // If the classes can't be merged, give up.
+                                            return null;
+                                        }
                                         break;
                                     case RegexNode.Multi:
                                         for (int c = 0; c < concatChild.Str!.Length && classPos < classes.Length; c++)

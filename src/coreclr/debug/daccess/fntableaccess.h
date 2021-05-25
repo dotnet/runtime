@@ -41,6 +41,18 @@ struct FakeHeapList
     DWORD_PTR           pHdrMap;        // changed from DWORD*
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    DWORD_PTR           CLRPersonalityRoutine;
+#endif
+
+    DWORD_PTR GetModuleBase()
+    {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        return CLRPersonalityRoutine;
+#else
+        return mapBase;
+#endif
+    }
 };
 
 typedef struct _FakeHpRealCodeHdr

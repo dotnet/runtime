@@ -357,7 +357,8 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
     // If the first Vtable entry is part of the ManagedObjectWrapper IUnknown impl,
     // we know how to interpret the IUnknown.
     void** vtable = *reinterpret_cast<void***>(pUnk);
-    if (*vtable != ManagedObjectWrapper_IUnknownImpl.QueryInterface)
+    if (*vtable != ManagedObjectWrapper_IUnknownImpl.QueryInterface
+        && *vtable != ManagedObjectWrapper_IReferenceTrackerTargetImpl.QueryInterface)
         return nullptr;
 
     ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);
@@ -841,7 +842,7 @@ void* NativeObjectWrapperContext::GetRuntimeContext() const noexcept
 
 IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const noexcept
 {
-    return ((_trackerObjectState == TrackerObjectState::NotSet) ? nullptr : _trackerObject);
+    return ((_trackerObjectState == TrackerObjectState::NotSet || _trackerObjectDisconnected) ? nullptr : _trackerObject);
 }
 
 // See TrackerObjectManager::AfterWrapperCreated() for AddRefFromTrackerSource() usage.

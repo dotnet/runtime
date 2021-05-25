@@ -49,6 +49,11 @@ public:
     static FCDECL2(Object*, GetDelegateForFunctionPointerInternal, LPVOID FPtr, ReflectClassBaseObject* refTypeUNSAFE);
     static FCDECL1(LPVOID, GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE);
 
+#ifdef _DEBUG
+    using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
+    static IsInCooperativeGCMode_fn QCALLTYPE GetIsInCooperativeGCModeFunctionPointer();
+#endif
+
 #ifdef FEATURE_COMINTEROP
     //====================================================================
     // return the IUnknown* for an Object

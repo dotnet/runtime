@@ -7,6 +7,9 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     public sealed partial class AesGcm : IDisposable
     {
         private const int NonceSize = 12;
