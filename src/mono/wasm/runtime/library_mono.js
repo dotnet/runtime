@@ -1571,16 +1571,15 @@ var MonoSupportLib = {
 
 			// HACK: Until the msbuild goo necessary for this is wired up
 			var cmt = MONO._custom_marshaler_name_table;
+			/*
 			cmt["System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomClass"] =
 				"System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomClassMarshaler";
 			cmt["System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomStruct"] =
 				"System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomStructMarshaler";
 			cmt["System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDate"] =
 				"System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDateMarshaler";
-			cmt["System.Uri"] = "System.Runtime.InteropServices.JavaScript.UriMarshaler";
-			cmt["System.DateTime"] = "System.Runtime.InteropServices.JavaScript.DateTimeMarshaler";
-			cmt["System.DateTimeOffset"] = "System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler";
 			cmt["Sample.CustomClass"] = "Sample.CustomClassMarshaler";
+			*/
 		},
 
 		_get_fetch_file_cb_from_args: function (args) {

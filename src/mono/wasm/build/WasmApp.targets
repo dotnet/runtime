@@ -137,6 +137,12 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(WasmIncludeDefaultMarshalers)' != 'false'">
+      <WasmMarshaledType Include="System.Uri" MarshalerType="System.Runtime.InteropServices.JavaScript.UriMarshaler" />
+      <WasmMarshaledType Include="System.DateTime" MarshalerType="System.Runtime.InteropServices.JavaScript.DateTimeMarshaler" />
+      <WasmMarshaledType Include="System.DateTimeOffset" MarshalerType="System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler" />
+    </ItemGroup>
+
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
@@ -149,7 +155,9 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)">
+      DebugLevel="$(WasmDebugLevel)"
+      MarshaledTypes="@(WasmMarshaledType)"
+      >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 
