@@ -9,25 +9,25 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCreate")]
-        internal static extern SafeHmacCtxHandle HmacCreate(ref byte key, int keyLen, IntPtr md);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCreate")]
+        internal static partial SafeHmacCtxHandle HmacCreate(ref byte key, int keyLen, IntPtr md);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacDestroy")]
         internal static extern void HmacDestroy(IntPtr ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
-        internal static extern int HmacReset(SafeHmacCtxHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
+        internal static partial int HmacReset(SafeHmacCtxHandle ctx);
 
         internal static int HmacUpdate(SafeHmacCtxHandle ctx, ReadOnlySpan<byte> data, int len) =>
             HmacUpdate(ctx, ref MemoryMarshal.GetReference(data), len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
-        private static extern int HmacUpdate(SafeHmacCtxHandle ctx, ref byte data, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
+        private static partial int HmacUpdate(SafeHmacCtxHandle ctx, ref byte data, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
-        internal static extern int HmacFinal(SafeHmacCtxHandle ctx, ref byte data, ref int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
+        internal static partial int HmacFinal(SafeHmacCtxHandle ctx, ref byte data, ref int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCurrent")]
-        internal static extern int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCurrent")]
+        internal static partial int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
     }
 }

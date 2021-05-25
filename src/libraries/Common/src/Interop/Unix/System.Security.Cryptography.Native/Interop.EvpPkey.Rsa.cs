@@ -11,8 +11,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
-        private static extern SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
         internal static SafeEvpPKeyHandle RsaGenerateKey(int keySize)
         {
@@ -27,8 +27,8 @@ internal static partial class Interop
             return pkey;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_RsaDecrypt(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_RsaDecrypt(
             SafeEvpPKeyHandle pkey,
             ref byte source,
             int sourceLength,
@@ -62,8 +62,8 @@ internal static partial class Interop
             return written;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_RsaEncrypt(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_RsaEncrypt(
             SafeEvpPKeyHandle pkey,
             ref byte source,
             int sourceLength,
@@ -97,8 +97,8 @@ internal static partial class Interop
             return written;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_RsaSignHash(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
             IntPtr digestAlgorithm,
@@ -132,8 +132,8 @@ internal static partial class Interop
             return written;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_RsaVerifyHash(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_RsaVerifyHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
             IntPtr digestAlgorithm,
@@ -172,15 +172,15 @@ internal static partial class Interop
             throw CreateOpenSslCryptographicException();
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetRsa")]
-        internal static extern SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetRsa")]
+        internal static partial SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
+        internal static partial bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, IntPtr rsa);
+        internal static partial bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, IntPtr rsa);
     }
 }
