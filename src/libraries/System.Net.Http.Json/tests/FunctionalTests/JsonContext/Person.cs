@@ -31,7 +31,8 @@ namespace System.Net.Http.Json.Functional.Tests
                             Options,
                             createObjectFunc: static () => new Person(),
                             PersonPropInitFunc,
-                            default);
+                            default,
+                            serializeFunc: null);
                     }
                 }
 

@@ -13,11 +13,11 @@ namespace System.Net.Http.Json.Functional.Tests
         private static JsonContext s_default;
         public static JsonContext Default => s_default ??= new JsonContext(new JsonSerializerOptions());
 
-        public JsonContext() : base(null)
+        public JsonContext() : base(null, null)
         {
         }
 
-        public JsonContext(JsonSerializerOptions options) : base(options)
+        public JsonContext(JsonSerializerOptions options) : base(options, null)
         {
         }
 
