@@ -11,7 +11,6 @@
     <!--<MonoAOTCompilerDefaultAotArguments Include="direct-pinvoke" />--> <!-- TODO: enable direct-pinvokes (to get rid of -force_loads)-->
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
-    <MonoAOTCompilerDefaultProcessArguments Include="-O=-float32" />
     <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
