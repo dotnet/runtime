@@ -16,7 +16,6 @@ using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
 public static partial class XmlSerializerTests
 {
     [Fact]
