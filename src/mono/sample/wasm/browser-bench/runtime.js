@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 var Module = { 
     onRuntimeInitialized: function () {
+        JSSupportLib.load_config(this.setupConfig);
+    },
+
+    setupConfig: function (config) {
         config.loaded_cb = function () {
             try {
                 App.init ();
@@ -13,6 +16,14 @@ var Module = {
         };
         config.fetch_file_cb = function (asset) {
             return fetch (asset, { credentials: 'same-origin' });
+        }
+
+        if (config.enable_profiler)
+        {
+            config.aot_profiler_options = {
+                write_at:"Sample.Test::StopProfile",
+                send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
+            }
         }
 
         try

@@ -215,11 +215,7 @@ function loadScript (url){
 	}
 }
 
-if (is_node) {
-	eval (read ("mono-config.js").toString());
-} else {
-	loadScript("mono-config.js");
-}
+JSSupportLib.load_config();
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
