@@ -213,8 +213,17 @@ namespace ComWrappersTests.Common
 
         ~ITrackerObjectWrapper()
         {
-            ComWrappersHelper.Cleanup(ref this.classNative);
+            if (this.ReregisterForFinalize)
+            {
+                GC.ReRegisterForFinalize(this);
+            }
+            else
+            {
+                ComWrappersHelper.Cleanup(ref this.classNative);
+            }
         }
+
+        public bool ReregisterForFinalize { get; set; } = false;
 
         public int AddObjectRef(IntPtr obj)
         {
