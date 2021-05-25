@@ -126,7 +126,7 @@
     <HelixWorkItem Include="@(Partition)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</PreCommands>
-      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
+      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories NonGenericCollections $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
       <Timeout>$(WorkItemTimeout)</Timeout>
     </HelixWorkItem>
