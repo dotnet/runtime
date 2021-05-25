@@ -32,7 +32,7 @@ internal static partial class Interop
         internal static extern int EvpDigestCurrent(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EvpDigestOneShot")]
-        internal static unsafe extern int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, ref uint mdSize);
+        internal static unsafe extern int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint* mdSize);
 
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static extern int EvpMdSize(IntPtr md);

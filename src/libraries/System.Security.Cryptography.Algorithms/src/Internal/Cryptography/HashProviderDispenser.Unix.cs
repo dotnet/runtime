@@ -39,7 +39,7 @@ namespace Internal.Cryptography
                 fixed (byte* pDestination = destination)
                 {
                     uint length = (uint)destination.Length;
-                    Check(Interop.Crypto.EvpDigestOneShot(evpType, pSource, source.Length, pDestination, ref length));
+                    Check(Interop.Crypto.EvpDigestOneShot(evpType, pSource, source.Length, pDestination, &length));
                     Debug.Assert(length == hashSize);
                 }
 

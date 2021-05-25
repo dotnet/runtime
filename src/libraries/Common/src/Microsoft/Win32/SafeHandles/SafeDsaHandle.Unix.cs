@@ -35,7 +35,7 @@ namespace Microsoft.Win32.SafeHandles
             // that we don't lose a tracked reference in low-memory situations.
             SafeDsaHandle safeHandle = new SafeDsaHandle();
 
-            if (!Interop.Crypto.DsaUpRef(handle))
+            if (Interop.Crypto.DsaUpRef(handle) == 0)
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }

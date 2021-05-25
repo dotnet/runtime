@@ -11,12 +11,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaCreate")]
-        internal static extern SafeRsaHandle RsaCreate();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaCreate")]
+        internal static partial SafeRsaHandle RsaCreate();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaUpRef")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RsaUpRef(IntPtr rsa);
+        internal static extern int RsaUpRef(IntPtr rsa);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaDestroy")]
         internal static extern void RsaDestroy(IntPtr rsa);
@@ -24,11 +23,11 @@ internal static partial class Interop
         internal static SafeRsaHandle DecodeRsaPublicKey(ReadOnlySpan<byte> buf) =>
             DecodeRsaPublicKey(ref MemoryMarshal.GetReference(buf), buf.Length);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeRsaPublicKey")]
-        private static extern SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeRsaPublicKey")]
+        private static partial SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSize")]
-        internal static extern int RsaSize(SafeRsaHandle rsa);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSize")]
+        internal static partial int RsaSize(SafeRsaHandle rsa);
 
         internal static RSAParameters ExportRsaParameters(SafeEvpPKeyHandle key, bool includePrivateParameters)
         {
@@ -92,9 +91,9 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetRsaParameters")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetRsaParameters(
+        private static partial bool GetRsaParameters(
             SafeRsaHandle key,
             out IntPtr n,
             out IntPtr e,
@@ -105,9 +104,9 @@ internal static partial class Interop
             out IntPtr dmq1,
             out IntPtr iqmp);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetRsaParameters")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool SetRsaParameters(
+        internal static partial bool SetRsaParameters(
             SafeRsaHandle key,
             byte[]? n,
             int nLength,

@@ -35,7 +35,7 @@ namespace Microsoft.Win32.SafeHandles
             // that we don't lose a tracked reference in low-memory situations.
             SafeRsaHandle safeHandle = new SafeRsaHandle();
 
-            if (!Interop.Crypto.RsaUpRef(handle))
+            if (Interop.Crypto.RsaUpRef(handle) == 0)
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
