@@ -273,7 +273,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                 Assert.Equal(numOfCerts + 1, cms.Certificates.Count);
 
-                X509Certificate2 addedCert = cms.Certificates.Where((cert) => cert.Equals(newCert)).Single();
+                X509Certificate2 addedCert = cms.Certificates.OfType<X509Certificate2>().Where((cert) => cert.Equals(newCert)).Single();
                 Assert.False(addedCert.HasPrivateKey);
 
                 Assert.Equal(newCert, addedCert);
@@ -288,7 +288,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
 
-            var expectedCerts = new HashSet<X509Certificate2>(cms.Certificates);
+            var expectedCerts = new HashSet<X509Certificate2>(cms.Certificates.OfType<X509Certificate2>());
 
             using (X509Certificate2 cert1 = Certificates.RSAKeyTransfer1.GetCertificate())
             using (X509Certificate2 cert2 = Certificates.RSAKeyTransfer2.GetCertificate())
