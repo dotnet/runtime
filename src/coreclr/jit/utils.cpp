@@ -2716,8 +2716,8 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 // For the remaining cases, we could use a value that is the first representable one for the respective type
 // and is less than the infinitely precise MIN: -(1 + 2^-N) * 2^(M - 1).
 // However, a simpler approach is to just use a different comparison.
-// Instead of "MIN < fromValue", we'll do "MAX_MIN <= fromValue", where
-// "MAX_MIN" is just "-(2^(M - 1))" - the smallest representable value that can be cast safely.
+// Instead of "MIN < fromValue", we'll do "MIN <= fromValue", where
+// MIN is just "-(2^(M - 1))" - the smallest representable value that can be cast safely.
 // The following table shows the final values and operations for MIN:
 //
 //     | Cast            | MIN                     | Comparison |
