@@ -1219,7 +1219,7 @@ var BindingSupportLib = {
 				} else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
-						convMethod, 0, signature, "ToJavaScript_type" + typePtr
+						convMethod, 0, signature, "ToJavaScript_" + this._get_type_name(typePtr)
 					);
 
 					this._struct_unboxer_cache.set (typePtr, this._compile_post_filter (typePtr, boundConverter, postFilter));
@@ -1310,7 +1310,7 @@ var BindingSupportLib = {
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
-					convMethod, 0, signature, "FromJavaScript_type" + typePtr
+					convMethod, 0, signature, "FromJavaScript_" + this._get_type_name(typePtr)
 				);
 
 				var result = this._compile_pre_filter (typePtr, boundConverter, preFilter);
