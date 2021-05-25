@@ -6,7 +6,7 @@
     <MinorVersion>0</MinorVersion>
     <PatchVersion>100</PatchVersion>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>5</PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>6</PreReleaseVersionIteration>
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
   </PropertyGroup>
@@ -16,14 +16,14 @@
     <MicrosoftNETSdkILPackageVersion>6.0.0-preview.6.21274.1</MicrosoftNETSdkILPackageVersion>
     <!-- see https://github.com/dotnet/runtime/issues/1338 -->
     <MicrosoftNETCoreILAsmVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETCoreILAsmVersion>
-    <!-- These should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
+    <!-- SRM version should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
     <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
-    <MicrosoftBuildFrameworkVersion>16.10.0-preview-21112-04</MicrosoftBuildFrameworkVersion>
-    <MicrosoftBuildUtilitiesCoreVersion>16.10.0-preview-21112-04</MicrosoftBuildUtilitiesCoreVersion>
+    <MicrosoftBuildFrameworkVersion>17.0.0-preview-21267-01</MicrosoftBuildFrameworkVersion>
+    <MicrosoftBuildUtilitiesCoreVersion>17.0.0-preview-21267-01</MicrosoftBuildUtilitiesCoreVersion>
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21271.3</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21105.12</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.21203.6</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisVersion>3.10.0-2.21203.6</MicrosoftCodeAnalysisVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21271.1</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisVersion>3.10.0-2.final</MicrosoftCodeAnalysisVersion>
     <MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion>1.0.1-beta1.*</MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion>
     <!-- This controls the version of the cecil package, or the version of cecil in the project graph
          when we build the cecil submodule. The reference assembly package will depend on this version of cecil.
