@@ -479,13 +479,16 @@
     <!-- strip -->
     <PropertyGroup>
       <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
+      <_Objcopy>objcopy</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-gnueabihf-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-gnu-$(_Objcopy)</_Objcopy>
     </PropertyGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from $(_MonoRuntimeFilePath)" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="dsymutil --flat --minimize $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="strip -no_code_signature_warning -S $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="objcopy --only-keep-debug $(_MonoRuntimeFilePath) $(_MonoRuntimeFilePath).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="objcopy --strip-unneeded $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="objcopy --add-gnu-debuglink=$(_MonoRuntimeFilePath).dbg $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --only-keep-debug $(_MonoRuntimeFilePath) $(_MonoRuntimeFilePath).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --strip-unneeded $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --add-gnu-debuglink=$(_MonoRuntimeFilePath).dbg $(_MonoRuntimeFilePath)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
