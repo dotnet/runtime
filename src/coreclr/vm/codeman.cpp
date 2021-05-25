@@ -2680,7 +2680,11 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdr = ((CodeHeader *)pCode) - 1;
 
         *pAllocatedSize = sizeof(CodeHeader) + totalSize;
+#ifdef FEATURE_WXORX
         pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
+#else
+        pCodeHdrRW = pCodeHdr;
+#endif
 
 #ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
