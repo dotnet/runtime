@@ -742,8 +742,7 @@ mono_codeman_enable_write (void)
 		pthread_jit_write_protect_np (0);
 	}
 #elif defined(HOST_MACCAT) && defined(__aarch64__)
-	/* JITing in Catalyst apps is not allowed on Apple Silicon. */
-	g_assert_not_reached ();
+	/* JITing in Catalyst apps is not allowed on Apple Silicon, so assume if we're here we don't really have executable pages. */
 #endif
 }
 
@@ -768,7 +767,6 @@ mono_codeman_disable_write (void)
 			pthread_jit_write_protect_np (1);
 	}
 #elif defined(HOST_MACCAT) && defined(__aarch64__)
-	/* JITing in Catalyst apps is not allowed on Apple Silicon. */
-	g_assert_not_reached ();
+	/* JITing in Catalyst apps is not allowed on Apple Silicon, so assume if we're here we don't really have executable pages */
 #endif
 }
