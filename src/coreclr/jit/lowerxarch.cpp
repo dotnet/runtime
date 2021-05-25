@@ -3089,6 +3089,16 @@ void Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                     ssize_t controlBits1;
                     ssize_t controlBits2;
 
+                    // The comments beside the control bits below are listed using the managed API operands
+                    //
+                    // In practice, for the first step the value being inserted (op3) is in tmp1
+                    // while the other elements of the result (op1) are in tmp2. The result ends
+                    // up containing the value being inserted and its immediate neighbor.
+                    //
+                    // The second step takes that result (which is in op1) plus the other elements
+                    // from op2 (a clone of op1/tmp2 from the previous step) and combines them to
+                    // create the final result.
+
                     switch (imm8)
                     {
                         case 1:
@@ -5555,7 +5565,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                         // These intrinsics only expect 16 or 32-byte nodes for containment
                         break;
                     }
-                    assert(supportsSIMDScalarLoads == false);
+                    assert(!supportsSIMDScalarLoads);
 
                     supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
