@@ -98,7 +98,6 @@
       <_EmccFlags Include="-s BINARYEN=1" />
       <_EmccFlags Include="-s ALIASING_FUNCTION_POINTERS=0" />
       <_EmccFlags Include="-s USE_ZLIB=1" />
-      <_EmccFlags Include="-DENABLE_NETCORE=1" Condition="'$(Configuration)' == 'Release'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_EmccDefaultsRspPath)"
