@@ -42,6 +42,7 @@ jobs:
       buildConfig: release
       platforms:
       - Linux_arm64
+      - Linux_x64
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -50,6 +51,7 @@ jobs:
       buildConfig: release
       platforms:
       - Linux_arm64
+      - Linux_x64
       jobParameters:
         testGroup: perf
 
@@ -92,20 +94,21 @@ jobs:
           archiveType: zip
           archiveExtension: .zip
 
-    # run mono microbenchmarks perf job
+  #run mono wasm microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: wasm
       platforms:
       - Linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        runtimeType: mono
+        runtimeType: wasm
+        codeGenType: 'wasm'
         projectFile: microbenchmarks.proj
-        runKind: micro_mono
+        runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'javascriptcore'
