@@ -1332,7 +1332,7 @@ class TestHFAandHVA
             T value = vector[Vector<T>.Count];
             System.Diagnostics.Debug.Assert(false);
         }
-        catch (IndexOutOfRangeException)
+        catch (ArgumentOutOfRangeException)
         {
             return;
         }
