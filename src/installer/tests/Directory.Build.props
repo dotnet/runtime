@@ -10,8 +10,9 @@
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
-    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' != 'true'">-notrait category=failing</TestRunnerAdditionalArguments>
-    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' == 'true'">-trait category=failing</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' != 'true'">$(TestRunnerAdditionalArguments) -notrait category=FlakyAppHostTests</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' == 'true'">$(TestRunnerAdditionalArguments) -trait category=FlakyAppHostTests</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 

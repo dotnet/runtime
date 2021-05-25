@@ -32,7 +32,7 @@ class NameConfigWithPid
             }
 
             string corerun = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 corerun = corerun + ".exe";
 
             // Use dll directory as temp directory

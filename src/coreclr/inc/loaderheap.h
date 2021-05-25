@@ -201,8 +201,6 @@ private:
     PTR_BYTE            m_pPtrToEndOfCommittedRegion;
     PTR_BYTE            m_pEndReservedRegion;
 
-    PTR_LoaderHeapBlock m_pCurBlock;
-
     // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
     DWORD               m_dwReserveBlockSize;
 
@@ -299,6 +297,12 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pEndReservedRegion - m_pAllocPtr;
+    }
+
+    PTR_BYTE UnlockedGetAllocPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAllocPtr;
     }
 
 private:
@@ -847,6 +851,18 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         return UnlockedGetReservedBytesFree();
+    }
+
+    PTR_BYTE GetAllocPtr()
+    {
+        WRAPPER_NO_CONTRACT;
+        return UnlockedGetAllocPtr();
+    }
+
+    void ReservePages(size_t size)
+    {
+        WRAPPER_NO_CONTRACT;
+        UnlockedReservePages(size);
     }
 };
 

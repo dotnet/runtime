@@ -2084,4 +2084,9 @@ mono_runtime_get_managed_cmd_line (void);
 char *
 mono_runtime_get_cmd_line (int argc, char **argv);
 
+#ifdef HOST_WASM
+int
+mono_string_instance_is_interned (MonoString *str);
+#endif
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

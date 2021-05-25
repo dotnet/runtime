@@ -30,7 +30,7 @@ namespace System.Tests
             fixed (char *ptr = settingValue)
             {
                 char *endptr;
-                int value = (int)wcstoul(ptr, &endptr, 16);
+                int value = (int)wcstoul(ptr, &endptr, 10);
 
                 if (0 < value && value <= MAX_PROCESSOR_COUNT)
                     return value;
@@ -64,11 +64,12 @@ namespace System.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52910", TestRuntimes.Mono)]
         [InlineData(8000, 0, null)]
         [InlineData(8000, 2000, null)]
         [InlineData(8000, 0, "1")]
         [InlineData(2000, 0, null)]
-        [InlineData(2000, 0, " 0x11 ")]
+        [InlineData(2000, 0, " 17 ")]
         [InlineData(0, 0, "3")]
         public static unsafe void ProcessorCount_Windows_RespectsJobCpuRateAndConfigurationSetting(
             ushort maxRate, ushort minRate, string procCountConfig)

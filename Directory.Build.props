@@ -258,7 +258,6 @@
                                  '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
   </PropertyGroup>
 
-
   <!-- Language configuration -->
   <PropertyGroup>
     <!-- default to allowing all language features -->
@@ -276,5 +275,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
+    <CustomAfterTraversalProps>$(RepositoryEngineeringDir)TraversalSdk.AfterProps.props</CustomAfterTraversalProps>
   </PropertyGroup>
 </Project>

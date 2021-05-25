@@ -318,7 +318,7 @@ class AsAnyTests
             TestUnicodeString();
             TestUnicodeStringArray();
             TestUnicodeStringBuilder();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 RunBestFitMappingTests();
             }

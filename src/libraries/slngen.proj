@@ -5,7 +5,6 @@
 -->
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <ProjTemplatePath>$(RepositoryEngineeringDir)slngen.template.proj</ProjTemplatePath>
     <NuGetConfigTemplatePath>$(RepositoryEngineeringDir)slngen.nuget.config</NuGetConfigTemplatePath>
   </PropertyGroup>

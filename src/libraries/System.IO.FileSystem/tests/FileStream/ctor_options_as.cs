@@ -27,6 +27,18 @@ namespace System.IO.Tests
                         PreallocationSize = PreallocationSize
                     });
 
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            => new FileStream(path,
+                    new FileStreamOptions
+                    {
+                        Mode = mode,
+                        Access = access,
+                        Share = share,
+                        BufferSize = bufferSize,
+                        Options = options,
+                        PreallocationSize = PreallocationSize
+                    });
+
         protected FileStreamOptions GetOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options, long preAllocationSize)
             => new FileStreamOptions
             {

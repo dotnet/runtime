@@ -66,7 +66,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        public sealed override bool Equals(object? obj) => obj is RoAssemblyName other && Equals(other);
+        public sealed override bool Equals([NotNullWhen(true)] object? obj) => obj is RoAssemblyName other && Equals(other);
         public sealed override int GetHashCode() => Name.GetHashCode();
         public sealed override string ToString() => FullName;
 

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -94,9 +95,9 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is EntityHandle && Equals((EntityHandle)obj);
+            return obj is EntityHandle entityHandle && Equals(entityHandle);
         }
 
         public bool Equals(EntityHandle other)

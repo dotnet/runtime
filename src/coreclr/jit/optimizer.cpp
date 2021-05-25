@@ -2679,14 +2679,7 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
 
         case BBJ_SWITCH:
         {
-            to->bbJumpSwt            = new (this, CMK_BasicBlock) BBswtDesc();
-            to->bbJumpSwt->bbsCount  = from->bbJumpSwt->bbsCount;
-            to->bbJumpSwt->bbsDstTab = new (this, CMK_BasicBlock) BasicBlock*[from->bbJumpSwt->bbsCount];
-
-            for (unsigned i = 0; i < from->bbJumpSwt->bbsCount; i++)
-            {
-                to->bbJumpSwt->bbsDstTab[i] = from->bbJumpSwt->bbsDstTab[i];
-            }
+            to->bbJumpSwt = new (this, CMK_BasicBlock) BBswtDesc(this, from->bbJumpSwt);
         }
         break;
 
@@ -5156,7 +5149,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit && (dstSize <= genTypeSize(tree->gtType)))
                 {
-                    tree->gtType = genSignedType(dstt);
+                    if (!varTypeIsSmall(dstt))
+                    {
+                        dstt = varTypeToSigned(dstt);
+                    }
+
+                    tree->gtType = dstt;
                     tree->SetVNs(vnpNarrow);
 
                     /* Make sure we don't mess up the variable type */
@@ -5207,7 +5205,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                     if (doit)
                     {
-                        dstt = genSignedType(dstt);
+                        if (!varTypeIsSmall(dstt))
+                        {
+                            dstt = varTypeToSigned(dstt);
+                        }
 
                         if ((oprSize == dstSize) &&
                             ((varTypeIsUnsigned(dstt) == varTypeIsUnsigned(oprt)) || !varTypeIsSmall(dstt)))

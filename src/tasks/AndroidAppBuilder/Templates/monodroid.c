@@ -239,6 +239,8 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
         arg->kind = 0;
         arg->runtimeconfig.name.path = file_path;
         monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+    } else {
+        free (file_path);
     }
 
     monovm_initialize(2, appctx_keys, appctx_values);

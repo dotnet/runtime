@@ -3481,7 +3481,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
         TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
         size_t size = block->dwVirtualSize;
 
-        BOOL bCurrentBlock = (block == pLoaderHeap->m_pCurBlock);
+        BOOL bCurrentBlock = (block == pLoaderHeap->m_pFirstBlock);
 
         pFunc(addr,size,bCurrentBlock);
 
@@ -3538,7 +3538,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
                 TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
                 size_t size = block->dwVirtualSize;
 
-                BOOL bCurrentBlock = (block == pLoaderHeap->m_pCurBlock);
+                BOOL bCurrentBlock = (block == pLoaderHeap->m_pFirstBlock);
                 pFunc(addr, size, bCurrentBlock);
 
                 block = block->pNext;

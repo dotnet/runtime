@@ -130,6 +130,38 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
+    else if (node->AsStoreInd()->Data()->OperIs(GT_CNS_DBL))
+    {
+        // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
+        GenTree*  data   = node->AsStoreInd()->Data();
+        double    dblCns = data->AsDblCon()->gtDconVal;
+        ssize_t   intCns = 0;
+        var_types type   = TYP_UNKNOWN;
+
+        if (node->TypeIs(TYP_FLOAT))
+        {
+            float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
+            type         = TYP_UINT;
+        }
+#ifdef TARGET_AMD64
+        else
+        {
+            assert(node->TypeIs(TYP_DOUBLE));
+            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
+            type   = TYP_ULONG;
+        }
+#endif
+
+        if (type != TYP_UNKNOWN)
+        {
+            data->SetContained();
+            data->ChangeOperConst(GT_CNS_INT);
+            data->AsIntCon()->SetIconValue(intCns);
+            data->ChangeType(type);
+            node->ChangeType(type);
+        }
+    }
     ContainCheckStoreIndir(node);
 }
 
@@ -609,7 +641,7 @@ void Lowering::LowerCast(GenTree* tree)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     // We should never see the following casts as they are expected to be lowered
@@ -4845,7 +4877,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (node->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     if (!node->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(srcType)))
@@ -5042,8 +5074,8 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
 
     if (!IsRMWMemOpRootedAtStoreInd(storeInd, &indirCandidate, &indirOpSource))
     {
-        JITDUMP("Lower of StoreInd didn't mark the node as self contained for reason: %d\n",
-                storeInd->AsStoreInd()->GetRMWStatus());
+        JITDUMP("Lower of StoreInd didn't mark the node as self contained for reason: %s\n",
+                RMWStatusDescription(storeInd->AsStoreInd()->GetRMWStatus()));
         DISPTREERANGE(BlockRange(), storeInd);
         return false;
     }

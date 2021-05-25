@@ -5,6 +5,8 @@
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
     <Nullable>Annotations</Nullable>
+    <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwaded down.-->
+    <NoWarn>$(NoWarn);CP0001</NoWarn>
     <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>
   

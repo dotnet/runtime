@@ -55,6 +55,7 @@ namespace System.Diagnostics
 
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {

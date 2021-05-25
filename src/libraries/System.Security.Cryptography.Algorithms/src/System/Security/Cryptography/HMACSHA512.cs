@@ -82,11 +82,7 @@ namespace System.Security.Cryptography
         protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
             _hMacCommon.TryFinalizeHashAndReset(destination, out bytesWritten);
 
-        public override void Initialize()
-        {
-            // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the
-            // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
-        }
+        public override void Initialize() => _hMacCommon.Reset();
 
         protected override void Dispose(bool disposing)
         {
