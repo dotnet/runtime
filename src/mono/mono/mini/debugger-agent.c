@@ -8255,6 +8255,23 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		buffer_add_int (buf, value_size);
 		break;
 	}
+	case MDBGPROT_CMD_TYPE_GET_PARENTS: {
+		MonoClass *parent_klass = m_class_get_parent (klass);
+		int count = 0;
+		while (parent_klass != NULL)
+		{
+			count++;
+			parent_klass = m_class_get_parent (parent_klass);
+		}
+		buffer_add_int (buf, count);
+		parent_klass = m_class_get_parent (klass);
+		while (parent_klass != NULL)
+		{
+			buffer_add_typeid (buf, domain, parent_klass);
+			parent_klass = m_class_get_parent (parent_klass);
+		}
+		break;
+	}
 	default:
 		err = ERR_NOT_IMPLEMENTED;
 		goto exit;
