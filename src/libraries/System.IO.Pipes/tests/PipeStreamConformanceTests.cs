@@ -652,14 +652,14 @@ namespace System.IO.Pipes.Tests
         public async Task TwoServerInstances_OnceDisposed_Throws()
         {
             string pipeName = GetUniquePipeName();
-            Stream server1 = CreateServerStream(pipeName, 2);
-            using Stream server2 = CreateServerStream(pipeName, 2);
+            NamedPipeServerStream server1 = CreateServerStream(pipeName, 2);
+            using NamedPipeServerStream server2 = CreateServerStream(pipeName, 2);
 
             Task wait1 = server1.WaitForConnectionAsync();
             Task wait2 = server2.WaitForConnectionAsync();
             server1.Dispose();
 
-            using Stream client = CreateClientStream(pipeName);
+            using NamedPipeClientStream client = CreateClientStream(pipeName);
             await client.ConnectAsync();
 
             await Assert.ThrowsAsync<IOException>(() => wait1);
