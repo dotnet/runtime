@@ -80,7 +80,7 @@
           BeforeTargets="GetFiles">
     <PropertyGroup>
       <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
-      <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId)_%(NETStandardCompatError.Supported.Trim('.'))</_NETStandardCompatErrorFileTarget>
+      <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId)_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
       <_NETStandardCompatErrorFileContent>
 <![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
   <Target Name="$(_NETStandardCompatErrorFileTarget)"
@@ -93,8 +93,8 @@
 
     <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
                       Lines="$(_NETStandardCompatErrorFileContent)"
-                      WriteOnlyWhenDifferent="true"
-                      Encoding="Unicode" />
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
       <None Include="$(_NETStandardCompatErrorFilePath)"
