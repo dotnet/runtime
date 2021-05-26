@@ -548,13 +548,11 @@ namespace System.Diagnostics
                     while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
                         startIdx++;
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                     if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
                     {
                         AddNewActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource);
                     }
                     else
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
                     {
                         specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);
                     }
@@ -563,13 +561,12 @@ namespace System.Diagnostics
                     if (endIdx < 0)
                         break;
                 }
-#if EVENTSOURCE_ACTIVITY_SUPPORT
+
                 if (eventSource._activitySourceSpecs != null)
                 {
                     NormalizeActivitySourceSpecsList(eventSource);
                     CreateActivityListener(eventSource);
                 }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
             }
 
             /// <summary>
@@ -579,11 +576,9 @@ namespace System.Diagnostics
             /// <param name="eventSource"></param>
             public static void DestroyFilterAndTransformList(ref FilterAndTransform? specList, DiagnosticSourceEventSource eventSource)
             {
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                 eventSource._activityListener?.Dispose();
                 eventSource._activityListener = null;
                 eventSource._activitySourceSpecs = null; // nothing to dispose inside this list.
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
                 var curSpec = specList;
                 specList = null;            // Null out the list
@@ -737,7 +732,6 @@ namespace System.Diagnostics
                 }));
             }
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
             internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
             {
                 _eventSource = eventSource;
@@ -1063,7 +1057,6 @@ namespace System.Diagnostics
 
                 eventSource._activitySourceSpecs = firstSpecificList;
             }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
             private void Dispose()
             {
@@ -1156,13 +1149,11 @@ namespace System.Diagnostics
 
             // Specific ActivitySource Transforms information
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
             internal const string c_ActivitySourcePrefix = "[AS]";
             internal string? SourceName { get; set; }
             internal string? ActivityName { get; set; }
             internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
             internal ActivitySamplingResult SamplingResult { get; set; }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
             #region private
 
@@ -1364,25 +1355,13 @@ namespace System.Diagnostics
                             return new PropertyFetch(type);     // returns null on any fetch.
                         if (propertyName == CurrentActivityPropertyName)
                         {
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                             return new CurrentActivityPropertyFetch();
-#else
-                            // In netstandard1.1 the Activity.Current API doesn't exist
-                            Logger.Message($"{CurrentActivityPropertyName} not supported for this TFM");
-                            return new PropertyFetch(type);
-#endif
                         }
 
                         Debug.Assert(type != null, "Type should only be null for the well-known static fetchers already checked");
                         TypeInfo typeInfo = type.GetTypeInfo();
                         if (propertyName == EnumeratePropertyName)
                         {
-#if !EVENTSOURCE_ENUMERATE_SUPPORT
-                            // In netstandard1.1 and 1.3 the reflection APIs needed to implement Enumerate support aren't
-                            // available
-                            Logger.Message($"{EnumeratePropertyName} not supported for this TFM");
-                            return new PropertyFetch(type);
-#else
                             // If there are multiple implementations of IEnumerable<T>, this arbitrarily uses the first one
                             foreach (Type iFaceType in typeInfo.GetInterfaces())
                             {
@@ -1402,7 +1381,6 @@ namespace System.Diagnostics
                             // no implementation of IEnumerable<T> found, return a null fetcher
                             Logger.Message($"*Enumerate applied to non-enumerable type {type}");
                             return new PropertyFetch(type);
-#endif
                         }
                         else
                         {
@@ -1470,8 +1448,6 @@ namespace System.Diagnostics
                         private readonly StructFunc<TStruct, TProperty> _propertyFetch;
                     }
 
-
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                     /// <summary>
                     /// A fetcher that returns the result of Activity.Current
                     /// </summary>
@@ -1483,7 +1459,6 @@ namespace System.Diagnostics
                             return Activity.Current;
                         }
                     }
-#endif
 
                     /// <summary>
                     /// A fetcher that enumerates and formats an IEnumerable
@@ -1546,10 +1521,8 @@ namespace System.Diagnostics
         #endregion
 
         private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
-#if EVENTSOURCE_ACTIVITY_SUPPORT
         private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
         private ActivityListener? _activityListener;
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
         #endregion
     }
 }
