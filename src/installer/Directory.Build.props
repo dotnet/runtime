@@ -175,6 +175,7 @@
     <TargetsOracle>false</TargetsOracle>
     <TargetsSles>false</TargetsSles>
     <TargetsBrowser>false</TargetsBrowser>
+    <TargetsCblMariner>false</TargetsCblMariner>
   </PropertyGroup>
   <Choose>
     <When Condition="$(OutputRid.StartsWith('win'))">
@@ -303,6 +304,13 @@
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
+    <When Condition="$(OutputRid.StartsWith('cm'))">
+      <PropertyGroup>
+        <TargetsCblMariner>true</TargetsCblMariner>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>
@@ -325,7 +333,7 @@
     <InstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.msi</InstallerExtension>
     <InstallerExtension Condition="'$(TargetOS)' == 'OSX'">.pkg</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true' or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(TargetsCblMariner)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
     <CombinedInstallerExtension Condition="'$(TargetOS)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
