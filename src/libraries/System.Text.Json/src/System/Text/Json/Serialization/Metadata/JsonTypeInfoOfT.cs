@@ -26,6 +26,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// A method that serializes an instance of <typeparamref name="T"/> using
         /// <see cref="JsonSerializerOptionsAttribute"/> values specified at design time.
         /// </summary>
-        public Action<Utf8JsonWriter, T>? Serialize { get; internal set; }
+        public Action<Utf8JsonWriter, T>? Serialize { get; private protected set; }
     }
 }

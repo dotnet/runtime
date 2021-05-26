@@ -11,8 +11,6 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
     internal class TypeGenerationSpec
     {
-        private bool _hasBeenInitialized;
-
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
@@ -73,13 +71,6 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? converterInstantiationLogic)
         {
-            if (_hasBeenInitialized)
-            {
-                throw new InvalidOperationException("Type metadata has already been initialized.");
-            }
-
-            _hasBeenInitialized = true;
-
             TypeRef = $"global::{typeRef}";
             TypeInfoPropertyName = typeInfoPropertyName;
             Type = type;

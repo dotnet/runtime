@@ -20,6 +20,35 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
+        /// Creates serialization metadata for an object.
+        /// </summary>
+        public JsonTypeInfoInternal(
+            JsonSerializerOptions options,
+            Func<T>? createObjectFunc,
+            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc
+            ) : base(typeof(T), options, ConverterStrategy.Object)
+        {
+            if (propInitFunc == null && serializeFunc == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_PropInitAndSerializeFuncsNull();
+            }
+
+#pragma warning disable CS8714
+            // The type cannot be used as type parameter in the generic type or method.
+            // Nullability of type argument doesn't match 'notnull' constraint.
+            JsonConverter converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
+#pragma warning restore CS8714
+
+            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
+            NumberHandling = numberHandling;
+            PropInitFunc = propInitFunc;
+            Serialize = serializeFunc;
+            SetCreateObjectFunc(createObjectFunc);
+        }
+
+        /// <summary>
         /// Creates serialization metadata for a <see cref="ConverterStrategy.Enumerable"/>.
         /// </summary>
         public JsonTypeInfoInternal(
@@ -64,33 +93,6 @@ namespace System.Text.Json.Serialization.Metadata
             ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo));
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
-            Serialize = serializeFunc;
-            SetCreateObjectFunc(createObjectFunc);
-        }
-
-        /// <summary>
-        /// Initializes serialization metadata for a <see cref="ConverterStrategy.Object"/>.
-        /// </summary>
-        public void InitializeAsObject(
-            Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
-            JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc)
-        {
-            if (propInitFunc == null && serializeFunc == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_PropInitAndSerializeFuncsNull();
-            }
-
-#pragma warning disable CS8714
-            // The type cannot be used as type parameter in the generic type or method.
-            // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
-#pragma warning restore CS8714
-
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
-            NumberHandling = numberHandling;
-            PropInitFunc = propInitFunc;
             Serialize = serializeFunc;
             SetCreateObjectFunc(createObjectFunc);
         }
