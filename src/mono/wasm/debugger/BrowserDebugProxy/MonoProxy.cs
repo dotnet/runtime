@@ -551,6 +551,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, res, token);
                             return true;
                         }
+                        if (objectId.Scheme == "cfo_res")
+                        {
+                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                            SendResponse(id, res, token);
+                            return true;
+                        }
                         return false;
                     }
             }
@@ -617,6 +624,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     var ret = new JArray(await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token));
                     Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
+                    return res2;
+                }
+                if (objectId.Scheme == "cfo_res")
+                {
+                    Result res2 = await SendMonoCommand(id, MonoCommands.GetDetails(int.Parse(objectId.Value), args), token);
+                    // Runtime.callFunctionOn result object
+                    string value_json_str = res2.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
+                    if (value_json_str != null)
+                    {
+                        res2 = Result.OkFromObject(new
+                        {
+                            result = JArray.Parse(value_json_str)
+                        });
+                    }
+                    else
+                    {
+                        res2 = Result.OkFromObject(new { result = new { } });
+                    }
                     return res2;
                 }
             }

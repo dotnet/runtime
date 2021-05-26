@@ -525,287 +525,6 @@ var MonoSupportLib = {
 			},
 		},
 
-		mono_wasm_get_exception_object: function() {
-			var exception_obj = MONO.active_exception;
-			MONO.active_exception = null;
-			return exception_obj ;
-		},
-
-		_fixup_name_value_objects: function (var_list) {
-			let out_list = [];
-
-			var i = 0;
-			while (i < var_list.length) {
-				let o = var_list [i];
-				const this_has_name = o.name !== undefined;
-				let next_has_value_or_get_set = false;
-
-				if (i + 1 < var_list.length) {
-					const next = var_list [i+1];
-					next_has_value_or_get_set = next.value !== undefined || next.get !== undefined || next.set !== undefined;
-				}
-
-				if (!this_has_name) {
-					// insert the object as-is
-					// Eg. in case of locals, the names are added
-					// later
-					i ++;
-				} else if (next_has_value_or_get_set) {
-					// found a {name} followed by a {value/get}
-					o = Object.assign (o, var_list [i + 1]);
-					i += 2;
-				} else {
-					// missing value/get, so add a placeholder one
-					o.value = {
-						type: "symbol",
-						value: "<unreadable value>",
-						description: "<unreadable value>"
-					};
-					i ++;
-				}
-
-				out_list.push (o);
-			}
-
-			return out_list;
-		},
-
-		_filter_automatic_properties: function (props, accessors_only=false) {
-			// Note: members in @props, have derived class members, followed by
-			//       those from parent classes
-
-			// Note: Auto-properties have backing fields, named with a special suffix.
-			//       @props here will have the backing field, *and* the getter.
-			//
-			//       But we want to return only one name/value pair:
-			//          [name of the auto-property] = value of the backing field
-
-			let getters = {};
-			let all_fields_except_backing_fields = {};
-			let backing_fields = {};
-
-			// Split props into the 3 groups - backing_fields, getters, and all_fields_except_backing_fields
-			props.forEach(p => {
-				if (p.name === undefined) {
-					console.debug(`Bug: Found a member with no name. Skipping it. p: ${JSON.stringify(p)}`);
-					return;
-				}
-
-				if (p.name.endsWith('k__BackingField')) {
-					const auto_prop_name = p.name.replace ('k__BackingField', '')
-						.replace ('<', '')
-						.replace ('>', '');
-
-					// Only take the first one, as that is overriding others
-					if (!(auto_prop_name in backing_fields))
-						backing_fields[auto_prop_name] = Object.assign(p, { name: auto_prop_name });
-
-				} else if (p.get !== undefined) {
-					// if p wasn't overridden by a getter or a field,
-					// from a more derived class
-					if (!(p.name in getters) && !(p.name in all_fields_except_backing_fields))
-						getters[p.name] = p;
-
-				} else if (!(p.name in all_fields_except_backing_fields)) {
-					all_fields_except_backing_fields[p.name] = p;
-				}
-			});
-
-			// Filter/merge backing fields, and getters
-			Object.values(backing_fields).forEach(backing_field => {
-				const auto_prop_name = backing_field.name;
-				const getter = getters[auto_prop_name];
-
-				if (getter === undefined) {
-					// backing field with no getter
-					// eg. when a field overrides/`new string foo=..`
-					//     an autoproperty
-					return;
-				}
-
-				if (auto_prop_name in all_fields_except_backing_fields) {
-					delete getters[auto_prop_name];
-				} else if (getter.__args.owner_class === backing_field.__args.owner_class) {
-					// getter+backing_field are from the same class.
-					// Add the backing_field value as a field
-					all_fields_except_backing_fields[auto_prop_name] = backing_field;
-
-					// .. and drop the auto-prop getter
-					delete getters[auto_prop_name];
-				}
-			});
-
-			if (accessors_only)
-				return Object.values(getters);
-
-			return Object.values(all_fields_except_backing_fields).concat(Object.values(getters));
-		},
-
-		/** Given `dotnet:object:foo:bar`,
-		 * returns { scheme:'object', value: 'foo:bar' }
-		 *
-		 * Given `dotnet:pointer:{ b: 3 }`
-		 * returns { scheme:'object', value: '{b:3}`, o: {b:3}
-		 *
-		 * @param  {string} idStr
-		 * @param  {boolean} [throwOnError=false]
-		 *
-		 * @returns {WasmId}
-		 */
-		_parse_object_id: function (idStr, throwOnError = false) {
-			if (idStr === undefined || idStr == "" || !idStr.startsWith ('dotnet:')) {
-				if (throwOnError)
-					throw new Error (`Invalid id: ${idStr}`);
-
-				return undefined;
-			}
-
-			const [, scheme, ...rest] = idStr.split(':');
-			let res = {
-				scheme,
-				value: rest.join (':'),
-				idStr,
-				o: {}
-			};
-
-			try {
-				res.o = JSON.parse(res.value);
-			// eslint-disable-next-line no-empty
-			} catch (e) {}
-
-			return res;
-		},
-
-        _resolve_member_by_name: function (base_object, base_name, expr_parts) {
-            if (base_object === undefined || base_object.value === undefined)
-                throw new Error(`Bug: base_object is undefined`);
-
-            if (base_object.value.type === 'object' && base_object.value.subtype === 'null')
-                throw new ReferenceError(`Null reference: ${base_name} is null`);
-
-            if (base_object.value.type !== 'object')
-                throw new ReferenceError(`'.' is only supported on non-primitive types. Failed on '${base_name}'`);
-
-            if (expr_parts.length == 0)
-                throw new Error(`Invalid member access expression`);//FIXME: need the full expression here
-
-            const root = expr_parts[0];
-            const props = this.mono_wasm_get_details(base_object.value.objectId, {});
-            let resObject = props.find(l => l.name == root);
-            if (resObject !== undefined) {
-                if (resObject.value === undefined && resObject.get !== undefined)
-                    resObject = this._invoke_getter(base_object.value.objectId, root);
-            }
-
-            if (resObject === undefined || expr_parts.length == 1)
-                return resObject;
-            else {
-                expr_parts.shift();
-                return this._resolve_member_by_name(resObject, root, expr_parts);
-            }
-        },
-
-        mono_wasm_eval_member_access: function (scope, var_list, rootObjectId, expr) {
-            if (expr === undefined || expr.length == 0)
-                throw new Error(`expression argument required`);
-
-            let parts = expr.split('.');
-            if (parts.length == 0)
-                throw new Error(`Invalid member access expression: ${expr}`);
-
-            const root = parts[0];
-
-            const locals = this.mono_wasm_get_variables(scope, var_list);
-            let rootObject = locals.find(l => l.name === root);
-            if (rootObject === undefined) {
-                // check `this`
-                const thisObject = locals.find(l => l.name == "this");
-                if (thisObject === undefined)
-                    throw new ReferenceError(`Could not find ${root} in locals, and no 'this' found.`);
-
-                const thisProps = this.mono_wasm_get_details(thisObject.value.objectId, {});
-                rootObject = thisProps.find(tp => tp.name == root);
-                if (rootObject === undefined)
-                    throw new ReferenceError(`Could not find ${root} in locals, or in 'this'`);
-
-                if (rootObject.value === undefined && rootObject.get !== undefined)
-                    rootObject = this._invoke_getter(thisObject.value.objectId, root);
-            }
-
-            parts.shift();
-
-            if (parts.length == 0)
-                return rootObject;
-
-            if (rootObject === undefined || rootObject.value === undefined)
-                throw new Error(`Could not get a value for ${root}`);
-
-            return this._resolve_member_by_name(rootObject, root, parts);
-		},
-
-		/**
-		 * @param  {WasmId} id
-		 * @returns {object[]}
-		 */
-		_get_vt_properties: function (id, args={}) {
-			let entry = this._get_id_props (id.idStr);
-
-			if (entry === undefined || entry.members === undefined) {
-				if (!isNaN (id.o.containerId)) {
-					// We are expanding, so get *all* the members.
-					// Which ones to return based on @args, can be determined
-					// at the time of return
-					this._get_object_properties (id.o.containerId, { expandValueTypes: true });
-				} else if (!isNaN (id.o.arrayId))
-					this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
-				else
-					throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
-			}
-
-			// Let's try again
-			entry = this._get_id_props (id.idStr);
-
-			if (entry !== undefined && entry.members !== undefined) {
-				if (args.accessorPropertiesOnly === true)
-					return entry.accessors;
-
-				return entry.members;
-			}
-
-			throw new Error (`Unknown valuetype id: ${id.idStr}. Failed to get properties for it.`);
-		},
-
-		/**
-		 *
-		 * @callback GetIdArgsCallback
-		 * @param {object} var
-		 * @param {number} idx
-		 * @returns {object}
-		 */
-
-		/**
-		 * @param  {object[]} vars
-		 * @param  {GetIdArgsCallback} getIdArgs
-		 * @returns {object}
-		 */
-		_assign_vt_ids: function (vars, getIdArgs)
-		{
-			vars.forEach ((v, i) => {
-				// we might not have a `.value`, like in case of getters which have a `.get` instead
-				const value = v.value;
-				if (value === undefined || !value.isValueType)
-					return;
-
-				if (value.objectId !== undefined)
-					throw new Error (`Bug: Trying to assign valuetype id, but the var already has one: ${v}`);
-
-				value.objectId = this._new_or_add_id_props ({ scheme: 'valuetype', idArgs: getIdArgs (v, i), props: value._props });
-				delete value._props;
-			});
-
-			return vars;
-		},
-
 		mono_wasm_add_dbg_command_received: function(res_ok, id, buffer, buffer_len) {
 			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
 			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
@@ -1054,33 +773,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_get_details: function (objectId, args={}) {
-			let id = this._parse_object_id (objectId, true);
-
-			switch (id.scheme) {
-				case "object": {
-					if (isNaN (id.value))
-						throw new Error (`Invalid objectId: ${objectId}. Expected a numeric id.`);
-
-					args.expandValueTypes = false;
-					return this._get_object_properties(id.value, args);
-				}
-
-				case "array":
-					return this._get_array_values (id);
-
-				case "valuetype":
-					return this._get_vt_properties(id, args);
-
-				case "cfo_res":
-					return this._get_cfo_res_details (objectId, args);
-
-				case "pointer": {
-					return this._get_deref_ptr_value (objectId);
-				}
-
-				default:
-					throw new Error(`Unknown object id format: ${objectId}`);
-			}
+				return this._get_cfo_res_details (`dotnet:cfo_res:${objectId}`, args);
 		},
 
 		_cache_call_function_res: function (obj) {
@@ -1147,9 +840,23 @@ var MonoSupportLib = {
 			if (fn_res === undefined)
 				return { type: "undefined" };
 
-			if (fn_res.value !== undefined ) {
-				return fn_res;
+			if (request.returnByValue)
+				return {type: "object", value: fn_res};
+			if (Object.getPrototypeOf (fn_res) == Array.prototype) {
+
+				const fn_res_id = this._cache_call_function_res (fn_res);
+
+				return {
+					type: "object",
+					subtype: "array",
+					className: "Array",
+					description: `Array(${fn_res.length})`,
+					objectId: fn_res_id
+				};
 			}
+			if (fn_res.value !== undefined )
+				return fn_res;
+
 			return { type: "object", className: "Object", description: "Object", objectId: objId };
 		},
 

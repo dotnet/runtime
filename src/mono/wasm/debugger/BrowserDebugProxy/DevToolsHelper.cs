@@ -192,6 +192,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"MONO.mono_wasm_call_function_on ({args.ToString()})");
 
+        public static MonoCommands GetDetails(int objectId, JToken args = null) => new MonoCommands($"MONO.mono_wasm_get_details ({objectId}, {(args ?? "{ }")})");
+
         public static MonoCommands Resume() => new MonoCommands($"MONO.mono_wasm_debugger_resume ()");
 
         public static MonoCommands SetPauseOnExceptions(string state) => new MonoCommands($"MONO.mono_wasm_set_pause_on_exceptions(\"{state}\")");
