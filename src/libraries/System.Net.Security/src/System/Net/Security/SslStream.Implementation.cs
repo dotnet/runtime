@@ -313,12 +313,12 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "NegotiateClientCertificateAsync", "renegotiate"));
             }
 
-            if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 1)
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
-            if (Interlocked.CompareExchange(ref _nestedWrite, 1, 0) == 1)
+            if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
             {
                 _nestedRead = 0;
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
