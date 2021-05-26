@@ -59,6 +59,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresThroughReflectionInMethodFromCopiedAssembly ();
 			TestRequiresInDynamicallyAccessedMethodFromCopiedAssembly (typeof (RequiresUnreferencedCodeInCopyAssembly.IDerivedInterface));
 			TestRequiresInDynamicDependency ();
+			TestRequiresOnAttributeOnGenericParameter ();
 		}
 
 		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageOnly--.")]
@@ -400,6 +401,25 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		static void TestRequiresInDynamicDependency ()
 		{
 			RequiresUnreferencedCodeInDynamicDependency ();
+		}
+
+		class AttributeWhichRequiresUnreferencedCodeAttribute : Attribute
+		{
+			[RequiresUnreferencedCode ("Message for --AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
+			public AttributeWhichRequiresUnreferencedCodeAttribute ()
+			{
+			}
+		}
+
+		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
+		class GenericTypeWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T>
+		{
+			public static void TestMethod () { }
+		}
+
+		static void TestRequiresOnAttributeOnGenericParameter ()
+		{
+			GenericTypeWithAttributedParameter<int>.TestMethod ();
 		}
 	}
 }
