@@ -284,6 +284,8 @@ elif [[ "$platform" == "Darwin" ]]; then
 else
   if command -v nproc > /dev/null 2>&1; then
     __NumProc=$(nproc --all)
+  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+    __NumProc=$(getconf _NPROCESSORS_ONLN)
   else
     __NumProc=1
   fi

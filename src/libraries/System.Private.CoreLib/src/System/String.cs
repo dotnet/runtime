@@ -461,14 +461,11 @@ namespace System
                 elementCount: (uint)count);
         }
 
-        // TODO: https://github.com/dotnet/runtime/issues/51061
-        // Make these {Try}CopyTo methods public and use throughout dotnet/runtime.
-
         /// <summary>Copies the contents of this string into the destination span.</summary>
         /// <param name="destination">The span into which to copy this string's contents.</param>
         /// <exception cref="System.ArgumentException">The destination span is shorter than the source string.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void CopyTo(Span<char> destination)
+        public void CopyTo(Span<char> destination)
         {
             if ((uint)Length <= (uint)destination.Length)
             {
@@ -484,7 +481,7 @@ namespace System
         /// <param name="destination">The span into which to copy this string's contents.</param>
         /// <returns>true if the data was copied; false if the destination was too short to fit the contents of the string.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryCopyTo(Span<char> destination)
+        public bool TryCopyTo(Span<char> destination)
         {
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)

@@ -190,21 +190,21 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>50f5645789f9119c906755cb1d2549acdeb0d0b7</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21271.2">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21273.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>018b25068e2051c8b03217069d03d7f6f15e44fd</Sha>
+      <Sha>f2f7434eccc2437b8e38ea803814914ea9e115d5</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21271.2">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21273.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>018b25068e2051c8b03217069d03d7f6f15e44fd</Sha>
+      <Sha>f2f7434eccc2437b8e38ea803814914ea9e115d5</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21271.2">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21273.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>018b25068e2051c8b03217069d03d7f6f15e44fd</Sha>
+      <Sha>f2f7434eccc2437b8e38ea803814914ea9e115d5</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21271.2">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21273.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>018b25068e2051c8b03217069d03d7f6f15e44fd</Sha>
+      <Sha>f2f7434eccc2437b8e38ea803814914ea9e115d5</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.12.Node.win-x64" Version="6.0.0-preview.6.21270.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>

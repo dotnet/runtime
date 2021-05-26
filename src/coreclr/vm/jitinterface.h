@@ -626,6 +626,7 @@ protected:
 /*********************************************************************/
 
 class  EEJitManager;
+struct  HeapList;
 struct _hpCodeHdr;
 typedef struct _hpCodeHdr CodeHeader;
 
@@ -676,7 +677,8 @@ public:
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema** pSchema, /* OUT */
             uint32_t* pCountSchemaItems, /* OUT */
-            uint8_t**pInstrumentationData /* OUT */
+            uint8_t**pInstrumentationData, /* OUT */
+            PgoSource *pPgoSource /* OUT */
             ) override final;
 
     void recordCallSite(
@@ -704,7 +706,19 @@ public:
             GC_NOTRIGGER;
         } CONTRACTL_END;
 
+        if (m_CodeHeaderRW != m_CodeHeader)
+        {
+            delete [] (BYTE*)m_CodeHeaderRW;
+        }
+
         m_CodeHeader = NULL;
+        m_CodeHeaderRW = NULL;
+
+        m_codeWriteBufferSize = 0;
+#ifdef USE_INDIRECT_CODEHEADER
+        m_pRealCodeHeader = NULL;
+#endif
+        m_pCodeHeap = NULL;
 
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
@@ -804,6 +818,12 @@ public:
         : CEEInfo(fd, fVerifyOnly, allowInlining),
           m_jitManager(jm),
           m_CodeHeader(NULL),
+          m_CodeHeaderRW(NULL),
+          m_codeWriteBufferSize(0),
+#ifdef USE_INDIRECT_CODEHEADER
+          m_pRealCodeHeader(NULL),
+#endif
+          m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
           m_moduleBase(NULL),
@@ -851,6 +871,11 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
         } CONTRACTL_END;
+
+        if (m_CodeHeaderRW != m_CodeHeader)
+        {
+            delete [] (BYTE*)m_CodeHeaderRW;
+        }
 
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
@@ -909,6 +934,8 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
+    void WriteCode(EEJitManager * jitMgr);
+
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
@@ -927,6 +954,7 @@ protected :
         UINT32 m_cSchemaElems;
         BYTE *m_pInstrumentationData = nullptr;
         HRESULT m_hr = E_NOTIMPL;
+        PgoSource m_pgoSource = PgoSource::Unknown;
     };
     ComputedPgoData*        m_foundPgoData = nullptr;
 #endif
@@ -934,6 +962,12 @@ protected :
 
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
+    CodeHeader*             m_CodeHeaderRW;
+    size_t                  m_codeWriteBufferSize;
+#ifdef USE_INDIRECT_CODEHEADER
+    BYTE*                   m_pRealCodeHeader;
+#endif
+    HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos

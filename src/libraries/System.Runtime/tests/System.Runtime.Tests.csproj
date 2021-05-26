@@ -219,8 +219,8 @@
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DefaultInterpolatedStringHandlerTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\FormattableStringFactoryTests.cs" />
-    <Compile Include="System\Runtime\CompilerServices\InterpolatedStringBuilderTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBoxTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttributeTests.cs" />

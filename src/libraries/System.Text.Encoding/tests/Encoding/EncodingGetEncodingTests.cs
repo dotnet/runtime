@@ -90,8 +90,6 @@ namespace System.Text.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TestEncodingNameAndCopdepageNumber()
         {
             foreach (var map in s_mapping)
@@ -103,8 +101,6 @@ namespace System.Text.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetEncoding_EncodingName()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -125,8 +121,6 @@ namespace System.Text.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetEncoding_WebName()
         {
             foreach (var mapping in s_codePageToWebNameMappings)

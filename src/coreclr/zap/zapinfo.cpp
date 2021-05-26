@@ -1007,8 +1007,9 @@ HRESULT ZapInfo::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
 
 HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                               PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-                                              uint32_t *                   pCountSchemaItems,          // pointer to the count schema items
-                                              uint8_t **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                              uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
+                                              uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                              PgoSource*                 pPgoSource)
 {
     _ASSERTE(pCountSchemaItems != nullptr);
     _ASSERTE(pInstrumentationData != nullptr);
@@ -1020,6 +1021,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     *pCountSchemaItems = 0;
     *pSchema = nullptr;
     *pInstrumentationData = nullptr;
+    *pPgoSource = PgoSource::Unknown;
 
     int32_t numRuns = 0;
 
@@ -1141,6 +1143,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     *pCountSchemaItems = pgoResults->m_schema.GetCount();
     *pSchema = pgoResults->m_schema.GetElements();
     *pInstrumentationData = pgoResults->pInstrumentationData;
+    *pPgoSource = PgoSource::IBC;
 
     return pgoResults->m_hr;
 }
@@ -4288,6 +4291,7 @@ BOOL ZapInfo::CurrentMethodHasProfileData()
     UINT32 size;
     ICorJitInfo::PgoInstrumentationSchema * pSchema;
     BYTE* pData;
-    return SUCCEEDED(getPgoInstrumentationResults(m_currentMethodHandle, &pSchema, &size, &pData));
+    ICorJitInfo::PgoSource pgoSource;
+    return SUCCEEDED(getPgoInstrumentationResults(m_currentMethodHandle, &pSchema, &size, &pData, &pgoSource));
 }
 

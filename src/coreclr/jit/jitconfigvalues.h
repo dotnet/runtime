@@ -116,7 +116,8 @@ CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
 CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                 // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoRegLoc, W("JitNoRegLoc"), 0)
-CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion in Jit32
+CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion 1 - for all, 2 - for
+                                                                   // params.
 CONFIG_INTEGER(JitNoUnroll, W("JitNoUnroll"), 0)
 CONFIG_INTEGER(JitOrder, W("JitOrder"), 0)
 CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldClass"), 1)
@@ -486,7 +487,9 @@ CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect 
 CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
 #if defined(DEBUG)
 CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange")) // Enable pgo data for only some methods
-#endif                                                   // debug
+CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
+CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
+#endif // debug
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
