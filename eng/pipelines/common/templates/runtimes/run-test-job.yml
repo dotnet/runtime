@@ -466,6 +466,7 @@ jobs:
           - forcerelocs
           - gcstress0xf
         ${{ if in(parameters.testGroup, 'pgo') }}:
+          scenarios:
           - nopgo
           - defaultpgo
           - dynamicpgo
