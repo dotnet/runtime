@@ -8926,6 +8926,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // Can't devirtualize from __Canon.
     if (ObjClassHnd == TypeHandle(g_pCanonMethodTableClass))
     {
+        info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
         return false;
     }
 
@@ -8936,7 +8937,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Don't try and devirtualize com interface calls.
         if (pObjMT->IsComObjectType())
         {
-            return nullptr;
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_COM;
+            return false;
         }
 #endif // FEATURE_COMINTEROP
 
@@ -8946,6 +8948,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // interface corresponding to pBaseMD.
         if (!pObjMT->CanCastToInterface(pBaseMT))
         {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
             return false;
         }
 
@@ -8972,6 +8975,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pDevirtMD == nullptr)
         {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
             return false;
         }
 
@@ -8980,6 +8984,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_DIM;
             return false;
         }
     }
@@ -9002,6 +9007,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pCheckMT == nullptr)
         {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS;
             return false;
         }
 
@@ -9025,6 +9031,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (dslot != slot)
         {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
             return false;
         }
     }
@@ -9064,6 +9071,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (!allowDevirt)
         {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE;
             return false;
         }
     }
@@ -9074,6 +9082,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     info->requiresInstMethodTableArg = false;
+    info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
     return true;
 }
@@ -12157,8 +12166,9 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 HRESULT CEEJitInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-            uint32_t *                   pCountSchemaItems,          // pointer to the count schema items
-            uint8_t **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
+            uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            PgoSource *                pPgoSource                  // source of pgo data
             )
 {
     CONTRACTL {
@@ -12170,6 +12180,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     HRESULT hr = E_FAIL;
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
+    *pPgoSource = PgoSource::Unknown;
 
     JIT_TO_EE_TRANSITION();
 
@@ -12195,13 +12206,15 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData);
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, 
+            &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
         pDataCur = m_foundPgoData;
     }
 
     *pSchema = pDataCur->m_schema;
     *pCountSchemaItems = pDataCur->m_cSchemaElems;
     *pInstrumentationData = pDataCur->m_pInstrumentationData;
+    *pPgoSource = pDataCur->m_pgoSource;
     hr = pDataCur->m_hr;
 #else
     _ASSERTE(!"getPgoInstrumentationResults not implemented on CEEJitInfo!");
@@ -14454,7 +14467,8 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
-            uint8_t **                 pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            PgoSource *                pPgoSource
             )
 {
     LIMITED_METHOD_CONTRACT;

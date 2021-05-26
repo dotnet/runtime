@@ -1645,8 +1645,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
                                                                     (UINT32)schema.size(), &profileMemory);
 
-    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
-
     // Deal with allocation failures.
     //
     if (!SUCCEEDED(res))
@@ -1667,6 +1665,8 @@ PhaseStatus Compiler::fgInstrumentMethod()
         fgClassInstrumentor->SuppressProbes();
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
 
     // Add the instrumentation code
     //
@@ -1740,8 +1740,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have profile data: %d schema records (schema at %p, data at %p)\n", fgPgoSchemaCount, dspPtr(fgPgoSchema),
-            dspPtr(fgPgoData));
+    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
+            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -3932,6 +3932,45 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     }
 
     return missingEdges == 0;
+}
+
+//------------------------------------------------------------------------------
+// pgoSourceToString: describe source of pgo data
+//
+// Arguments:
+//    r - source enum to describe
+//
+// Returns:
+//    descriptive string
+//
+const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
+{
+    const char* pgoSource = "unknown";
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+            pgoSource = "dynamic";
+            break;
+        case ICorJitInfo::PgoSource::Static:
+            pgoSource = "static";
+            break;
+        case ICorJitInfo::PgoSource::Text:
+            pgoSource = "text";
+            break;
+        case ICorJitInfo::PgoSource::Blend:
+            pgoSource = "static+dynamic";
+            break;
+        case ICorJitInfo::PgoSource::IBC:
+            pgoSource = "IBC";
+            break;
+        case ICorJitInfo::PgoSource::Sampling:
+            pgoSource = "Sampling";
+            break;
+        default:
+            break;
+    }
+
+    return pgoSource;
 }
 
 #endif // DEBUG

@@ -677,7 +677,8 @@ public:
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema** pSchema, /* OUT */
             uint32_t* pCountSchemaItems, /* OUT */
-            uint8_t**pInstrumentationData /* OUT */
+            uint8_t**pInstrumentationData, /* OUT */
+            PgoSource *pPgoSource /* OUT */
             ) override final;
 
     void recordCallSite(
@@ -953,6 +954,7 @@ protected :
         UINT32 m_cSchemaElems;
         BYTE *m_pInstrumentationData = nullptr;
         HRESULT m_hr = E_NOTIMPL;
+        PgoSource m_pgoSource = PgoSource::Unknown;
     };
     ComputedPgoData*        m_foundPgoData = nullptr;
 #endif
