@@ -7,26 +7,26 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
-    //public interface ITestContext
-    //{
-    //    public JsonTypeInfo<Location> Location { get; }
-    //    public JsonTypeInfo<RepeatedTypes.Location> RepeatedLocation { get; }
-    //    public JsonTypeInfo<ActiveOrUpcomingEvent> ActiveOrUpcomingEvent { get; }
-    //    public JsonTypeInfo<CampaignSummaryViewModel> CampaignSummaryViewModel { get; }
-    //    public JsonTypeInfo<IndexViewModel> IndexViewModel { get; }
-    //    public JsonTypeInfo<WeatherForecastWithPOCOs> WeatherForecastWithPOCOs { get; }
-    //    public JsonTypeInfo<EmptyPoco> EmptyPoco { get; }
-    //    public JsonTypeInfo<HighLowTemps> HighLowTemps { get; }
-    //    public JsonTypeInfo<MyType> MyType { get; }
-    //    public JsonTypeInfo<MyType2> MyType2 { get; }
-    //    public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
-    //    public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
-    //    public JsonTypeInfo<ContextTests.MyNestedClass> MyNestedClass { get; }
-    //    public JsonTypeInfo<ContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
-    //    public JsonTypeInfo<object[]> ObjectArray { get; }
-    //    public JsonTypeInfo<string> String { get; }
-    //    public JsonTypeInfo<ContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
-    //}
+    public interface ITestContext
+    {
+        public JsonTypeInfo<Location> Location { get; }
+        public JsonTypeInfo<RepeatedTypes.Location> RepeatedLocation { get; }
+        public JsonTypeInfo<ActiveOrUpcomingEvent> ActiveOrUpcomingEvent { get; }
+        public JsonTypeInfo<CampaignSummaryViewModel> CampaignSummaryViewModel { get; }
+        public JsonTypeInfo<IndexViewModel> IndexViewModel { get; }
+        public JsonTypeInfo<WeatherForecastWithPOCOs> WeatherForecastWithPOCOs { get; }
+        public JsonTypeInfo<EmptyPoco> EmptyPoco { get; }
+        public JsonTypeInfo<HighLowTemps> HighLowTemps { get; }
+        public JsonTypeInfo<MyType> MyType { get; }
+        public JsonTypeInfo<MyType2> MyType2 { get; }
+        public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
+        public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
+        public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }
+        public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
+        public JsonTypeInfo<object[]> ObjectArray { get; }
+        public JsonTypeInfo<string> String { get; }
+        public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
+    }
 
     internal partial class JsonContext : JsonSerializerContext
     {
@@ -64,15 +64,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 if (_JsonMessage == null)
                 {
-                    JsonTypeInfo<JsonMessage> objectInfo = JsonMetadataServices.CreateObjectInfo<JsonMessage>(Options);
-                    _JsonMessage = objectInfo;
-
-                    JsonMetadataServices.InitializeObjectInfo(
-                        objectInfo,
+                    JsonTypeInfo<JsonMessage> objectInfo = JsonMetadataServices.CreateObjectInfo<JsonMessage>(
+                        Options,
                         createObjectFunc: static () => new JsonMessage(),
                         propInitFunc: null,
                         default,
                         serializeFunc: JsonMessageSerialize);
+
+                    _JsonMessage = objectInfo;
                 }
 
                 return _JsonMessage;

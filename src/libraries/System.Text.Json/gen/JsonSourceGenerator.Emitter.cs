@@ -474,14 +474,6 @@ namespace {_currentContext.ContextType.Namespace}
                     ? $"createObjectFunc: static () => new {typeMetadata.TypeRef}()"
                     : "createObjectFunc: null";
 
-                List<PropertyGenerationSpec>? properties = typeMetadata.PropertiesMetadata;
-
-                StringBuilder sb = new();
-
-                sb.Append($@"{JsonTypeInfoTypeRef}<{typeCompilableName}> objectInfo = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeCompilableName}>({OptionsInstanceVariableName});
-                _{typeFriendlyName} = objectInfo;
-");
-
                 string propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
                 string? propMetadataInitFuncSource = null;
                 string propMetadataInitFuncNamedArg;
@@ -489,6 +481,8 @@ namespace {_currentContext.ContextType.Namespace}
                 string serializeMethodName = $"{typeFriendlyName}{SerializeMethodNameSuffix}";
                 string? serializeFuncSource = null;
                 string serializeFuncNamedArg;
+
+                List<PropertyGenerationSpec>? properties = typeMetadata.PropertiesMetadata;
 
                 if (typeMetadata.GenerateMetadata)
                 {
@@ -510,15 +504,14 @@ namespace {_currentContext.ContextType.Namespace}
                     serializeFuncNamedArg = @"serializeFunc: null";
                 }
 
-                sb.Append($@"
-                {JsonMetadataServicesTypeRef}.InitializeObjectInfo(
-                    objectInfo,
+                string objectInfoInitSource = $@"{JsonTypeInfoTypeRef}<{typeCompilableName}> objectInfo = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeCompilableName}>(
+                    {OptionsInstanceVariableName},
                     {createObjectFuncTypeArg},
                     {propMetadataInitFuncNamedArg},
                     {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
-                    {serializeFuncNamedArg});");
+                    {serializeFuncNamedArg});
 
-                string objectInfoInitSource = sb.ToString();
+                    _{typeFriendlyName} = objectInfo;";
 
                 string additionalSource;
                 if (propMetadataInitFuncSource == null || serializeFuncSource == null)

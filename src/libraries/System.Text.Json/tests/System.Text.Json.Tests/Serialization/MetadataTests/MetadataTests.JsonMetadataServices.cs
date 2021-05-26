@@ -105,40 +105,35 @@ namespace System.Text.Json.Tests.Serialization
         public void CreateObjectInfo()
         {
             JsonSerializerOptions options = new();
-            JsonTypeInfo<MyClass> info = JsonMetadataServices.CreateObjectInfo<MyClass>(options);
 
             // Null options
-            ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateObjectInfo<MyClass>(null!));
-            Assert.Contains("options", ane.ToString());
-
-            // Null info
-            ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.InitializeObjectInfo<MyClass>(
-                info: null,
+            ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateObjectInfo<MyClass>(
+                options: null,
                 createObjectFunc: null,
                 propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
                 numberHandling: default,
                 serializeFunc: null));
-            Assert.Contains("info", ane.ToString());
+            Assert.Contains("options", ane.ToString());
 
             // Null prop init func is fine if serialize func is provided.
-            JsonMetadataServices.InitializeObjectInfo(
-                info,
+            JsonMetadataServices.CreateObjectInfo<MyClass>(
+                options,
                 createObjectFunc: null,
                 propInitFunc: null,
                 numberHandling: default,
                 serializeFunc: (writer, obj) => { });
 
             // Null serialize func is fine if prop init func is provided.
-            JsonMetadataServices.InitializeObjectInfo(
-                info,
+            JsonMetadataServices.CreateObjectInfo<MyClass>(
+                options,
                 createObjectFunc: null,
                 propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
                 numberHandling: default,
                 serializeFunc: null);
 
             // Null prop init func and serialize func
-            InvalidOperationException ioe = Assert.Throws<InvalidOperationException>(() => JsonMetadataServices.InitializeObjectInfo(
-                info,
+            InvalidOperationException ioe = Assert.Throws<InvalidOperationException>(() => JsonMetadataServices.CreateObjectInfo<MyClass>(
+                options,
                 createObjectFunc: null,
                 propInitFunc: null,
                 numberHandling: default,
