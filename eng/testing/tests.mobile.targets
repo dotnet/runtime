@@ -28,7 +28,6 @@
     <EventSourceSupport>false</EventSourceSupport>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <StartupHookSupport>false</StartupHookSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
   </PropertyGroup>
 
