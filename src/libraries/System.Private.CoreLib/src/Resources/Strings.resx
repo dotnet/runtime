@@ -3745,9 +3745,6 @@
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>
   </data>
-  <data name="InvalidOperation_EmptyStack" xml:space="preserve">
-    <value>Stack empty.</value>
-  </data>
   <data name="Arg_FileIsDirectory_Name" xml:space="preserve">
     <value>The target file '{0}' is a directory, not a file.</value>
   </data>
