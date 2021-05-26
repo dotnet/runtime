@@ -143,7 +143,7 @@ namespace System.IO
             => GetFiles(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetFiles(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => EnumerableHelpers.ToArray(InternalEnumeratePaths(path, searchPattern, SearchTarget.Files, enumerationOptions), out _);
+            => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Files, enumerationOptions)).ToArray();
 
         public static string[] GetDirectories(string path) => GetDirectories(path, "*", enumerationOptions: EnumerationOptions.Compatible);
 
@@ -153,7 +153,7 @@ namespace System.IO
             => GetDirectories(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetDirectories(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => EnumerableHelpers.ToArray(InternalEnumeratePaths(path, searchPattern, SearchTarget.Directories, enumerationOptions), out _);
+            => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Directories, enumerationOptions)).ToArray();
 
         public static string[] GetFileSystemEntries(string path) => GetFileSystemEntries(path, "*", enumerationOptions: EnumerationOptions.Compatible);
 
@@ -163,7 +163,7 @@ namespace System.IO
             => GetFileSystemEntries(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => EnumerableHelpers.ToArray(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions), out _);
+            => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
 
         internal static IEnumerable<string> InternalEnumeratePaths(
             string path,
