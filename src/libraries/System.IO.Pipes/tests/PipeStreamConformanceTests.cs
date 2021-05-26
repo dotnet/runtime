@@ -69,8 +69,8 @@ namespace System.IO.Pipes.Tests
         protected (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams()
         {
             string pipeName = GetUniquePipeName();
-            var server = CreateServerStream(pipeName);
-            var client = CreateClientStream(pipeName);
+            NamedPipeServerStream server = CreateServerStream(pipeName);
+            NamedPipeClientStream client = CreateClientStream(pipeName);
             return (server, client);
         }
 
@@ -652,14 +652,14 @@ namespace System.IO.Pipes.Tests
         public async Task TwoServerInstances_OnceDisposed_Throws()
         {
             string pipeName = GetUniquePipeName();
-            var server1 = CreateServerStream(pipeName, 2);
-            using var server2 = CreateServerStream(pipeName, 2);
+            Stream server1 = CreateServerStream(pipeName, 2);
+            using Stream server2 = CreateServerStream(pipeName, 2);
 
-            var wait1 = server1.WaitForConnectionAsync();
-            var wait2 = server2.WaitForConnectionAsync();
+            Task wait1 = server1.WaitForConnectionAsync();
+            Task wait2 = server2.WaitForConnectionAsync();
             server1.Dispose();
 
-            using var client = CreateClientStream(pipeName);
+            using Stream client = CreateClientStream(pipeName);
             await client.ConnectAsync();
 
             await Assert.ThrowsAsync<IOException>(() => wait1);
