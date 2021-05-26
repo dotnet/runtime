@@ -497,7 +497,7 @@
         <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
       </Exec>
     <PropertyGroup>
-      <!-- If all else fails in finding a valid objcopy, fall back to no-prefix from $PATH (used fo x64 on CentOS) -->
+      <!-- if all else fails in finding a valid objcopy, fall back to no-prefix from $PATH (used for x64 on CentOS) -->
       <_Objcopy Condition="'$(_ObjcopyFound)' != '0'">objcopy</_Objcopy>
     </PropertyGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from $(_MonoRuntimeFilePath)" Importance="High"/>
