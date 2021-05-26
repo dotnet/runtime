@@ -768,6 +768,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventSendComplete(State state, ref StreamEvent evt)
         {
+            StreamEventDataSendComplete sendCompleteEvent = evt.Data.SendComplete;
+            bool canceled = sendCompleteEvent.Canceled != 0;
+
             bool complete = false;
 
             lock (state)
@@ -777,13 +780,26 @@ namespace System.Net.Quic.Implementations.MsQuic
                     state.SendState = SendState.Finished;
                     complete = true;
                 }
+
+                if (canceled)
+                {
+                    state.SendState = SendState.Aborted;
+                }
             }
 
             if (complete)
             {
                 CleanupSendState(state);
-                // TODO throw if a write was canceled.
-                state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
+
+                if (!canceled)
+                {
+                    state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
+                }
+                else
+                {
+                    state.SendResettableCompletionSource.CompleteException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Write was canceled")));
+                }
             }
 
             return MsQuicStatusCodes.Success;
