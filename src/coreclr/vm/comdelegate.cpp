@@ -225,24 +225,24 @@ public:
             //
             // Each offset is encode as a log2 size and a 12-bit unsigned scaled offset.
             int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
-            int log2size = 3;
+            int log2Size = 3;
 
             switch(bytesRemaining)
             {
                 case 1:
-                    log2size = 0;
+                    log2Size = 0;
                     m_currentByteStackIndex += 1;
                     break;
                 case 2:
                 case 3: // Handle same as 2 then 1
-                    log2size = 1;
+                    log2Size = 1;
                     m_currentByteStackIndex += 2;
                     break;
                 case 4:
                 case 5:
                 case 6:
                 case 7:
-                    log2size = 2;
+                    log2Size = 2;
                     m_currentByteStackIndex += 4;
                     break;
                 default:
@@ -253,14 +253,14 @@ public:
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
             // Arm64 current implementation only supports 12 bit unsigned scaled offset
-            if ((byteIndex >> log2size) > 0xfff)
+            if ((byteIndex >> log2Size) > 0xfff)
             {
                 COMPlusThrow(kNotSupportedException);
             }
 
             _ASSERTE((byteIndex & ((1 << log2Size) - 1)) == 0);
 
-            return (byteIndex >> log2size) | (log2size << 12);
+            return (byteIndex >> log2Size) | (log2Size << 12);
 #endif
         }
 
