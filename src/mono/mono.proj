@@ -733,6 +733,12 @@
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)" Condition="Exists($(_MonoRuntimeFilePath))">
         <Destination>$(RuntimeBinDir)$(MonoFileName)</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath).dbg" Condition="Exists('$(_MonoRuntimeFilePath).dbg')">
+        <Destination>$(RuntimeBinDir)$(MonoFileName).dbg</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath).dwarf" Condition="Exists('$(_MonoRuntimeFilePath).dwarf')">
+        <Destination>$(RuntimeBinDir)$(MonoFileName).dwarf</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)" Condition="Exists($(_MonoRuntimeStaticFilePath)) and '$(_MonoRuntimeStaticFilePath)' != '$(_MonoRuntimeFilePath)'">
         <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>
       </_MonoRuntimeArtifacts>
