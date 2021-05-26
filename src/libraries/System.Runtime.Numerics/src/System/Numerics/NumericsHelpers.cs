@@ -108,11 +108,12 @@ namespace System.Numerics
         // a mutation and needs to be used with care for immutable types.
         public static void DangerousMakeTwosComplement(Span<uint> d)
         {
-            if (d != null && d.Length > 0)
+            if (d.Length > 0)
             {
                 d[0] = unchecked(~d[0] + 1);
 
                 int i = 1;
+
                 // first do complement and +1 as long as carry is needed
                 for (; d[i - 1] == 0 && i < d.Length; i++)
                 {
