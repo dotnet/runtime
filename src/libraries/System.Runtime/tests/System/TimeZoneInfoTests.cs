@@ -2703,6 +2703,8 @@ namespace System.Tests
         [InlineData("AUS Eastern Standard Time", "Australia/Sydney", "au")]
         [InlineData("Tasmania Standard Time", "Australia/Hobart", "au")]
         [InlineData("Romance Standard Time", "Europe/Madrid", "es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "Es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "eS")]
         [InlineData("GMT Standard Time", "Europe/London", "gb")]
         [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
         [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]

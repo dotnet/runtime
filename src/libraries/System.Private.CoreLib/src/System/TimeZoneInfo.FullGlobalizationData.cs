@@ -65,8 +65,6 @@ namespace System
                 }
             }
 
-            char* buffer = stackalloc char[100];
-
             // regionPtr will point at the region name encoded as ASCII.
             IntPtr regionPtr = IntPtr.Zero;
 
@@ -91,6 +89,8 @@ namespace System
 
                 // In case getting unexpected region names, we just fallback using the default region (pasing null region name to the ICU API).
             }
+
+            char* buffer = stackalloc char[100];
 
             int length = Interop.Globalization.WindowsIdToIanaId(windowsId, regionPtr, buffer, 100);
             if (length > 0)
