@@ -732,7 +732,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
 											return true;
 
-										if (loggedMessages.Any (m => m.Text.Contains (attrProvider.FullName)))
+										// Compensate for cases where for some reason the OM doesn't preserve the declaring types
+										// on certain things after trimming.
+										if (mc.Origin?.MemberDefinition != null && mc.Origin?.MemberDefinition.DeclaringType == null &&
+											mc.Origin?.MemberDefinition.Name == attrProvider.Name)
 											return true;
 
 										return false;
