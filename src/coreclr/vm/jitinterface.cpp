@@ -11209,7 +11209,10 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
     }
 #endif // USE_INDIRECT_CODEHEADER
 
-    memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
+    if (m_CodeHeaderRW != m_CodeHeader)
+    {
+        memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
+    }
 
     // Now that the code header was written to the final location, publish the code via the nibble map
     jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), TRUE);

@@ -705,11 +705,12 @@ public:
             GC_NOTRIGGER;
         } CONTRACTL_END;
 
+        if (m_CodeHeaderRW != m_CodeHeader)
+        {
+            delete [] (BYTE*)m_CodeHeaderRW;
+        }
+
         m_CodeHeader = NULL;
-        
-#ifdef FEATURE_WXORX
-        delete [] (BYTE*)m_CodeHeaderRW;
-#endif
         m_CodeHeaderRW = NULL;
 
         m_codeWriteBufferSize = 0;
@@ -870,9 +871,11 @@ public:
             MODE_ANY;
         } CONTRACTL_END;
 
-#ifdef FEATURE_WXORX
-        delete [] (BYTE*)m_CodeHeaderRW;
-#endif
+        if (m_CodeHeaderRW != m_CodeHeader)
+        {
+            delete [] (BYTE*)m_CodeHeaderRW;
+        }
+
         if (m_pOffsetMapping != NULL)
             delete [] ((BYTE*) m_pOffsetMapping);
 
