@@ -7,9 +7,6 @@
     <ProjectReference Include="$(RepoTasksDir)tasks.proj" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
-  <!-- Custom arcade target which isn't available in Microsoft.Build.Traversal. -->
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
 
   <!-- Upfront restore hooks -->

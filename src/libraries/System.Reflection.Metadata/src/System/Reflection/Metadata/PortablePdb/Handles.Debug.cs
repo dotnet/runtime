@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -70,7 +71,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals(object? obj)
         {
-            return obj is DocumentHandle && ((DocumentHandle)obj)._rowId == _rowId;
+            return obj is DocumentHandle documentHandle && documentHandle._rowId == _rowId;
         }
 
         public bool Equals(DocumentHandle other)
@@ -153,7 +154,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals(object? obj)
         {
-            return obj is MethodDebugInformationHandle && ((MethodDebugInformationHandle)obj)._rowId == _rowId;
+            return obj is MethodDebugInformationHandle mdih && mdih._rowId == _rowId;
         }
 
         public bool Equals(MethodDebugInformationHandle other)
@@ -248,7 +249,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals(object? obj)
         {
-            return obj is LocalScopeHandle && ((LocalScopeHandle)obj)._rowId == _rowId;
+            return obj is LocalScopeHandle lsh && lsh._rowId == _rowId;
         }
 
         public bool Equals(LocalScopeHandle other)
@@ -331,7 +332,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals(object? obj)
         {
-            return obj is LocalVariableHandle && ((LocalVariableHandle)obj)._rowId == _rowId;
+            return obj is LocalVariableHandle lvh && lvh._rowId == _rowId;
         }
 
         public bool Equals(LocalVariableHandle other)
@@ -412,9 +413,9 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is LocalConstantHandle && ((LocalConstantHandle)obj)._rowId == _rowId;
+            return obj is LocalConstantHandle lch && lch._rowId == _rowId;
         }
 
         public bool Equals(LocalConstantHandle other)
@@ -495,9 +496,9 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is ImportScopeHandle && ((ImportScopeHandle)obj)._rowId == _rowId;
+            return obj is ImportScopeHandle ish && ish._rowId == _rowId;
         }
 
         public bool Equals(ImportScopeHandle other)
@@ -578,9 +579,9 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is CustomDebugInformationHandle && ((CustomDebugInformationHandle)obj)._rowId == _rowId;
+            return obj is CustomDebugInformationHandle cdih && cdih._rowId == _rowId;
         }
 
         public bool Equals(CustomDebugInformationHandle other)

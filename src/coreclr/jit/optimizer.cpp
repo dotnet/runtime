@@ -5149,7 +5149,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit && (dstSize <= genTypeSize(tree->gtType)))
                 {
-                    tree->gtType = genSignedType(dstt);
+                    if (!varTypeIsSmall(dstt))
+                    {
+                        dstt = varTypeToSigned(dstt);
+                    }
+
+                    tree->gtType = dstt;
                     tree->SetVNs(vnpNarrow);
 
                     /* Make sure we don't mess up the variable type */
@@ -5200,7 +5205,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                     if (doit)
                     {
-                        dstt = genSignedType(dstt);
+                        if (!varTypeIsSmall(dstt))
+                        {
+                            dstt = varTypeToSigned(dstt);
+                        }
 
                         if ((oprSize == dstSize) &&
                             ((varTypeIsUnsigned(dstt) == varTypeIsUnsigned(oprt)) || !varTypeIsSmall(dstt)))

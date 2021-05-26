@@ -127,14 +127,16 @@ namespace
         OBJC_MSGSEND "Super_stret",
     };
 
+    bool IsObjectiveCMessageSendFunction(_In_z_ const char* libraryName, _In_z_ const char* entrypointName)
+    {
+        // Is the function in libobjc and named appropriately.
+        return ((strcmp(libraryName, ObjectiveCLibrary) == 0)
+                && (strncmp(entrypointName, OBJC_MSGSEND, _countof(OBJC_MSGSEND) -1) == 0));
+    }
+
     const void* STDMETHODCALLTYPE MessageSendPInvokeOverride(_In_z_ const char* libraryName, _In_z_ const char* entrypointName)
     {
-        // All overrides are in libobjc
-        if (strcmp(libraryName, ObjectiveCLibrary) != 0)
-            return nullptr;
-
-        // All overrides start with objc_msgSend
-        if (strncmp(entrypointName, OBJC_MSGSEND, _countof(OBJC_MSGSEND) -1) != 0)
+        if (!IsObjectiveCMessageSendFunction(libraryName, entrypointName))
             return nullptr;
 
         for (int i = 0; i < _countof(MsgSendEntryPoints); ++i)
@@ -227,7 +229,7 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* is
     return true;
 }
 
-bool ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(
+bool ObjCMarshalNative::IsRuntimeMessageSendFunction(
     _In_z_ const char* libraryName,
     _In_z_ const char* entrypointName)
 {
@@ -240,7 +242,7 @@ bool ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(
     }
     CONTRACTL_END;
 
-    return MessageSendPInvokeOverride(libraryName, entrypointName) != NULL;
+    return IsObjectiveCMessageSendFunction(libraryName, entrypointName);
 }
 
 namespace

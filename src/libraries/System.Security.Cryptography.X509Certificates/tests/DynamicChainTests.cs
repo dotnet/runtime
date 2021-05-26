@@ -592,6 +592,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52976", TestPlatforms.Android)]
         public static void MismatchKeyIdentifiers()
         {
             X509Extension[] intermediateExtensions = new []

@@ -34,6 +34,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             int truncateSize = -1)
         {
             byte[] digestBytes = ByteUtils.HexToByteArray(digest);
+            byte[] data = _testData[testCaseId];
             byte[] computedDigest;
 
             using (HMAC hmac = Create())
@@ -51,7 +52,28 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 key[0] = (byte)(key[0] + 1);
                 Assert.NotEqual<byte>(key, hmac.Key);
 
-                computedDigest = hmac.ComputeHash(_testData[testCaseId]);
+                computedDigest = hmac.ComputeHash(data);
+            }
+
+            if (truncateSize != -1)
+            {
+                byte[] tmp = new byte[truncateSize];
+                Array.Copy(computedDigest, tmp, truncateSize);
+                computedDigest = tmp;
+            }
+
+            Assert.Equal(digestBytes, computedDigest);
+
+            using (HMAC hmac = Create())
+            {
+                byte[] key = (byte[])_testKeys[testCaseId].Clone();
+                hmac.Key = key;
+
+                hmac.TransformBlock(data, 0, data.Length, null, 0);
+                hmac.Initialize();
+                hmac.TransformBlock(data, 0, data.Length, null, 0);
+                hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                computedDigest = hmac.Hash;
             }
 
             if (truncateSize != -1)

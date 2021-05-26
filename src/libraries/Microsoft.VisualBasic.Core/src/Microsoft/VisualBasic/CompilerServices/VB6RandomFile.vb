@@ -123,6 +123,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
@@ -140,6 +141,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnsupportedOSPlatform("ios")>
+        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)

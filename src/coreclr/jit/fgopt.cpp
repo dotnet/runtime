@@ -3804,7 +3804,6 @@ bool Compiler::fgOptimizeSwitchJumps()
         GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
         Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetILOffsetX());
         fgInsertStmtAtEnd(block, jmpStmt);
-        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
 
         // Reattach switch value to the switch. This may introduce a comma
         // in the upstream compare tree, if the switch value expression is complex.
@@ -3815,7 +3814,7 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
         jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
-        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
+        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
 
         // Wire up the new control flow.
         //

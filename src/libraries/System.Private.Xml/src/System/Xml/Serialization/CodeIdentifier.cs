@@ -35,7 +35,7 @@ namespace System.Xml.Serialization
             {
                 return string.Create(identifier.Length, identifier, static (buffer, identifier) =>
                 {
-                    identifier.AsSpan().CopyTo(buffer);
+                    identifier.CopyTo(buffer);
                     buffer[0] = char.ToUpperInvariant(buffer[0]); // convert only first char to uppercase; leave all else as-is
                 });
             }
@@ -59,7 +59,7 @@ namespace System.Xml.Serialization
             {
                 return string.Create(identifier.Length, identifier, static (buffer, identifier) =>
                 {
-                    identifier.AsSpan().CopyTo(buffer);
+                    identifier.CopyTo(buffer);
                     buffer[0] = char.ToLowerInvariant(buffer[0]); // convert only first char to lowercase; leave all else as-is
                 });
             }

@@ -16,7 +16,7 @@ namespace System
         // Note: CreateInstance returns null for Nullable<T>, e.g. CreateInstance(typeof(int?)) returns null.
         //
 
-        public static object? CreateInstance(Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
@@ -39,6 +39,7 @@ namespace System
         }
 
         [System.Security.DynamicSecurityMethod]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -54,6 +55,7 @@ namespace System
         }
 
         [System.Security.DynamicSecurityMethod]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -69,6 +71,7 @@ namespace System
         }
 
         [System.Security.DynamicSecurityMethod]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;

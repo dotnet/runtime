@@ -172,7 +172,7 @@ namespace System.Text.Json.Nodes
         ///   The current <see cref="JsonNode"/> is not a <see cref="JsonValue"/> or
         ///   is not compatible with {TValue}.
         /// </exception>
-        public virtual TValue GetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>() =>
+        public virtual TValue GetValue<TValue>() =>
             throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonValue)));
 
         /// <summary>

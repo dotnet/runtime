@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private X509RevocationMode _revocationMode = X509RevocationMode.Offline;
         private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
 
-        private sealed class State
+        internal sealed class State
         {
             public SafeMsQuicConnectionHandle Handle = null!; // set inside of MsQuicConnection ctor.
 
@@ -87,6 +87,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] inbound connection created");
+            }
         }
 
         // constructor for outbound connections
@@ -120,6 +125,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 _stateHandle.Free();
                 throw;
+            }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] outbound connection created");
             }
         }
 
@@ -188,7 +198,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
             var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            var stream = new MsQuicStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
+            var stream = new MsQuicStream(state, streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
 
             state.AcceptQueue.Writer.TryWrite(stream);
             return MsQuicStatusCodes.Success;
@@ -284,18 +294,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
                     if (!success && NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(state.Connection, "Remote certificate rejected by verification callback");
+                        NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] remote  certificate rejected by verification callback");
                     return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(state.Connection, $"Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
+                    NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
 
                 return (sslPolicyErrors == SslPolicyErrors.None) ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state.Connection, $"Certificate validation failed ${ex.Message}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] certificate validation failed ${ex.Message}");
             }
 
             return MsQuicStatusCodes.InternalError;
@@ -313,11 +323,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (ChannelClosedException)
             {
-                throw _state.AbortErrorCode switch
-                {
-                    -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                    long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
-                };
+                throw ThrowHelper.GetConnectionAbortedException(_state.AbortErrorCode);
             }
 
             return stream;
@@ -326,13 +332,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
@@ -430,6 +436,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             ref ConnectionEvent connectionEvent)
         {
             var state = (State)GCHandle.FromIntPtr(context).Target!;
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] received event {connectionEvent.Type}");
+            }
+
             try
             {
                 switch (connectionEvent.Type)
