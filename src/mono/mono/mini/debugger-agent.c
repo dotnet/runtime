@@ -3591,6 +3591,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		case EVENT_KIND_EXCEPTION: {
 			EventInfo *ei = (EventInfo *)arg;
 			buffer_add_objid (&buf, ei->exc);
+#ifdef TARGET_WASM
+			buffer_add_byte (&buf, ei->caught);
+#endif				
 			/*
 			 * We are not yet suspending, so get_objref () will not keep this object alive. So we need to do it
 			 * later after the suspension. (#12494).
@@ -4513,7 +4516,6 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	
 	g_assert (tls);
 	if (!tls->context.valid) {
-		printf("Received a single step request on a thread with no managed frames.\n");
 		PRINT_DEBUG_MSG (1, "Received a single step request on a thread with no managed frames.\n");
 		return ERR_INVALID_ARGUMENT;
 	}
@@ -4754,8 +4756,8 @@ debugger_agent_unhandled_exception (MonoException *exc)
 	process_event (EVENT_KIND_EXCEPTION, &ei, 0, NULL, events, suspend_policy);
 }
 
-static void
-debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
+void
+mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 									  MonoContext *catch_ctx, StackFrameInfo *catch_frame)
 {
 	if (catch_ctx == NULL && catch_frame == NULL && mini_debug_options.suspend_on_unhandled && mono_object_class (exc) != mono_defaults.threadabortexception_class) {
@@ -4763,23 +4765,17 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 		while (1)
 			;
 	}
-	
 	int i, j, suspend_policy;
 	GSList *events;
 	MonoJitInfo *ji, *catch_ji;
 	EventInfo ei;
 	DebuggerTlsData *tls = NULL;
-
-	if (thread_to_tls != NULL) {
-		MonoInternalThread *thread = mono_thread_internal_current ();
-
-		mono_loader_lock ();
-		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
-		mono_loader_unlock ();
-
-		if (tls && tls->abort_requested)
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	GET_TLS_DATA(thread);
+	if (tls != NULL) {
+		if (tls->abort_requested)
 			return;
-		if (tls && tls->disable_breakpoints)
+		if (tls->disable_breakpoints)
 			return;
 	}
 
@@ -10219,7 +10215,7 @@ mono_debugger_agent_init (void)
 	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
 	cbs.free_mem_manager = debugger_agent_free_mem_manager;
 	cbs.unhandled_exception = debugger_agent_unhandled_exception;
-	cbs.handle_exception = debugger_agent_handle_exception;
+	cbs.handle_exception = mono_debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;
 	cbs.end_exception_filter = debugger_agent_end_exception_filter;
 	cbs.user_break = mono_dbg_debugger_agent_user_break;

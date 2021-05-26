@@ -106,4 +106,7 @@ mono_wasm_get_tls (void);
 MdbgProtErrorCode
 mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
 
+void
+mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
+
 #endif

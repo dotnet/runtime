@@ -400,30 +400,8 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 static void
 handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame)
 {
-	ERROR_DECL (error);
-	const char *default_error_message = "Failed to get exception message.";
-
-	PRINT_DEBUG_MSG (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
-	
-    //normal mono_runtime_try_invoke does not capture the exception and this is a temporary workaround.
-	exception_on_runtime_invoke = (MonoObject*)exc;
-
-	if (pause_on_exc == EXCEPTION_MODE_NONE)
-		return;
-	if (pause_on_exc == EXCEPTION_MODE_UNCAUGHT && catch_ctx != NULL)
-		return;
-
-	int obj_id = get_object_id ((MonoObject *)exc);
-	char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
-
-	const char *class_name = mono_class_full_name (mono_object_class (exc));
-	PRINT_DEBUG_MSG (2, "handle exception - calling mono_wasm_fire_exc(): %d - message - %s, class_name: %s\n", obj_id,  !is_ok (error) ? error_message : default_error_message, class_name);
-
-	mono_wasm_fire_exception (obj_id, !is_ok (error) ? error_message : default_error_message, class_name, !catch_ctx);
-
-	if (error_message != NULL)
-		g_free (error_message);
-	PRINT_DEBUG_MSG (2, "handle exception - done\n");
+	mono_wasm_save_thread_context();
+	mono_debugger_agent_handle_exception (exc, throw_ctx, catch_ctx, catch_frame);
 }
 
 

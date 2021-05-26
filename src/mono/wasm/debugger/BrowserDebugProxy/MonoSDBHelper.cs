@@ -1576,7 +1576,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return array;
         }
+        public async Task<bool> EnableExceptions(SessionId sessionId, string state, CancellationToken token)
+        {
 
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write((byte)EventKind.EXCEPTION);
+            command_params_writer.Write((byte)SuspendPolicy.SUSPEND_POLICY_NONE);
+            command_params_writer.Write((byte)1);
+            command_params_writer.Write((byte)ModifierKind.EXCEPTION_ONLY);
+            command_params_writer.Write(0); //exc_class
+            if (state == "all")
+                command_params_writer.Write((byte)1); //caught
+            else
+                command_params_writer.Write((byte)0); //caught
+            if (state == "uncaught" || state == "all")
+                command_params_writer.Write((byte)1); //uncaught
+            else
+                command_params_writer.Write((byte)0); //uncaught
+            command_params_writer.Write((byte)1);//subclasses
+            command_params_writer.Write((byte)0);//not_filtered_feature
+            command_params_writer.Write((byte)0);//everything_else
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
+            return true;
+        }
         public async Task<JArray> GetObjectValues(SessionId sessionId, int objectId, bool withProperties, bool withSetter, bool accessorPropertiesOnly, bool ownProperties, CancellationToken token)
         {
             var typeId = await GetTypeIdFromObject(sessionId, objectId, true, token);
