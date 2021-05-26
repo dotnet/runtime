@@ -204,7 +204,7 @@ public:
             }
 
             // Only Apple Silicon ABI currently supports unaligned stack argument shuffling
-            _ASSERTE(byteIndex == index * TARGET_POINTER_SIZE);
+            _ASSERTE(byteIndex == unsigned(index * TARGET_POINTER_SIZE));
             return index;
 #else
             // Tha Apple Silicon ABI does not consume an entire stack slot for every argument
