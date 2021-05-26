@@ -576,11 +576,11 @@ namespace System.Text.RegularExpressions
                     span[FlagsIndex] = '\0';
                     span[SetLengthIndex] = (char)state.set.Length;
                     span[CategoryLengthIndex] = (char)state.category.Length;
-                    state.set.AsSpan().CopyTo(span.Slice(SetStartIndex));
+                    state.set.CopyTo(span.Slice(SetStartIndex));
                     index = SetStartIndex + state.set.Length;
                 }
 
-                state.category.AsSpan().CopyTo(span.Slice(index));
+                state.category.CopyTo(span.Slice(index));
             });
         }
 
