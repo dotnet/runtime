@@ -11,9 +11,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        /// <summary>Counter used to produce a unique handle value.</summary>
-        private static long s_counter;
-
         /// <summary>
         /// The underlying FileStream.  May be null.  We hold onto the stream rather than just
         /// onto the underlying handle to ensure that logic associated with disposing the stream
@@ -59,9 +56,8 @@ namespace Microsoft.Win32.SafeHandles
             _options = options;
             _capacity = capacity;
 
-            // Fake a unique int handle value > 0.
-            int nextHandleValue = (int)((Interlocked.Increment(ref s_counter) % (int.MaxValue - 1)) + 1);
-            SetHandle(new IntPtr(nextHandleValue));
+            IntPtr handle = fileStream != null ? fileStream.SafeFileHandle.DangerousGetHandle() : new IntPtr(-1);
+            SetHandle(handle);
         }
 
         protected override void Dispose(bool disposing)
