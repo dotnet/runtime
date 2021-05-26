@@ -6,9 +6,6 @@
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
 
     <PublishingTestsRun>true</PublishingTestsRun>
-    <UseDefaultBlazorWASMFeatureSwitches Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == ''">true</UseDefaultBlazorWASMFeatureSwitches>
-    <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
-    <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
