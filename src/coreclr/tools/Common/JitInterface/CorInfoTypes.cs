@@ -1070,6 +1070,21 @@ namespace Internal.JitInterface
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
+    public enum CORINFO_DEVIRTUALIZATION_DETAIL
+    {
+        CORINFO_DEVIRTUALIZATION_UNKNOWN,         // no details available
+        CORINFO_DEVIRTUALIZATION_SUCCESS,         // devirtualization was successful
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,    // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_COM,      // object class was com
+        CORINFO_DEVIRTUALIZATION_FAILED_CAST,     // object class could not be cast to interface class
+        CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,   // interface method could not be found
+        CORINFO_DEVIRTUALIZATION_FAILED_DIM,      // interface method was default interface method
+        CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS, // object not subclass of base class
+        CORINFO_DEVIRTUALIZATION_FAILED_SLOT,     // virtual method installed via explicit override
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,   // devirtualization crossed version bubble
+        CORINFO_DEVIRTUALIZATION_COUNT,           // sentinel for maximum value
+    }
+
     public unsafe struct CORINFO_DEVIRTUALIZATION_INFO
     {
         //
@@ -1085,13 +1100,13 @@ namespace Internal.JitInterface
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
         // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
-        // - failureReason is optionally set to asciiz string describing why devirtualization failed
+        // - detail describes the computation done by the jit host
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public byte _requiresInstMethodTableArg;
         public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
-        public byte* failureReason;
+        public CORINFO_DEVIRTUALIZATION_DETAIL detail;
     }
 
     //----------------------------------------------------------------------------

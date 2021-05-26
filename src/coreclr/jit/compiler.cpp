@@ -9679,3 +9679,33 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
+
+#if defined(DEBUG)
+//------------------------------------------------------------------------------
+// devirtualizationDetailToString: describe the detailed devirtualization reason
+//
+// Arguments:
+//    detail - detail to describe
+//
+// Returns:
+//    descriptive string
+//
+const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail)
+{
+    switch (detail)
+    {
+        case CORINFO_DEVIRTUALIZATION_UNKNOWN: return "unknown";
+        case CORINFO_DEVIRTUALIZATION_SUCCESS: return "success";
+        case CORINFO_DEVIRTUALIZATION_FAILED_CANON: return "object class was canonical";
+        case CORINFO_DEVIRTUALIZATION_FAILED_COM: return "object class was com";
+        case CORINFO_DEVIRTUALIZATION_FAILED_CAST: return "object class could not be cast to interface class";
+        case CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP: return "interface method could not be found";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DIM: return "interface method was default interface method";
+        case CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS: return "object not subclass of base class";
+        case CORINFO_DEVIRTUALIZATION_FAILED_SLOT: return "virtual method installed via explicit override";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE: return "devirtualization crossed version bubble";
+        default: return "undefined";
+    }
+}
+#endif // defined(DEBUG)
+

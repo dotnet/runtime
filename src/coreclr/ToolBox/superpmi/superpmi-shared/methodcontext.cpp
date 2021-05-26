@@ -3175,14 +3175,15 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
     result.exactContext = CastHandle(info->exactContext);
+    result.detail = (DWORD) info->detail;
     ResolveVirtualMethod->Add(key, result);
     DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX",
-        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext);
+    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX, detail-%d",
+        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext, result.detail);
 }
 
 bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
@@ -3201,6 +3202,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
+    info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     return result.returnValue;
 }
 

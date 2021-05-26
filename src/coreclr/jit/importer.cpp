@@ -20907,7 +20907,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dvInfo.virtualMethod = baseMethod;
     dvInfo.objClass      = objClass;
     dvInfo.context       = *pContextHandle;
-    dvInfo.failureReason = "unspecified";
+    dvInfo.detail        = CORINFO_DEVIRTUALIZATION_UNKNOWN;
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
@@ -20939,7 +20939,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if (derivedMethod == nullptr)
     {
-        JITDUMP("--- no derived method: %s\n", dvInfo.failureReason);
+        JITDUMP("--- no derived method: %s\n", devirtualizationDetailToString(dvInfo.detail));
     }
     else
     {
@@ -20990,7 +20990,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (!isLateDevirtualization && (isExact || objClassIsFinal) && JitConfig.JitNoteFailedExactDevirtualization())
         {
             printf("@@@ Exact/Final devirt failure in %s at [%06u] $ %s\n", info.compFullName, dspTreeID(call),
-                   dvInfo.failureReason);
+                   devirtualizationDetailToString(dvInfo.detail));
         }
 #endif
 

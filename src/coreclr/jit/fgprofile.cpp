@@ -3926,6 +3926,15 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     return missingEdges == 0;
 }
 
+//------------------------------------------------------------------------------
+// pgoSourceToString: describe source of pgo data
+//
+// Arguments:
+//    r - source enum to describe
+//
+// Returns:
+//    descriptive string
+//
 const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
 {
     const char* pgoSource = "unknown";

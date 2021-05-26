@@ -568,6 +568,7 @@ struct Agnostic_ResolveVirtualMethodResult
     DWORDLONG devirtualizedMethod;
     bool      requiresInstMethodTableArg;
     DWORDLONG exactContext;
+    DWORD     detail;
 };
 
 struct ResolveTokenValue

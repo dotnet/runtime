@@ -8926,7 +8926,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // Can't devirtualize from __Canon.
     if (ObjClassHnd == TypeHandle(g_pCanonMethodTableClass))
     {
-        info->failureReason = "object class is canonical";
+        info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
         return false;
     }
 
@@ -8937,7 +8937,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Don't try and devirtualize com interface calls.
         if (pObjMT->IsComObjectType())
         {
-            info->failureReason = "object class is Com";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_COM;
             return false;
         }
 #endif // FEATURE_COMINTEROP
@@ -8948,7 +8948,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // interface corresponding to pBaseMD.
         if (!pObjMT->CanCastToInterface(pBaseMT))
         {
-            info->failureReason = "can't cast obj to interface type";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
             return false;
         }
 
@@ -8975,7 +8975,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pDevirtMD == nullptr)
         {
-            info->failureReason = "can't find interface method";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
             return false;
         }
 
@@ -8984,7 +8984,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
-            info->failureReason = "default interface method";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_DIM;
             return false;
         }
     }
@@ -9007,7 +9007,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pCheckMT == nullptr)
         {
-            info->failureReason = "object class not subclass";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS;
             return false;
         }
 
@@ -9031,7 +9031,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (dslot != slot)
         {
-            info->failureReason = "explicit slot overeride";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
             return false;
         }
     }
@@ -9071,7 +9071,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (!allowDevirt)
         {
-            info->failureReason = "crosses version bubble";
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE;
             return false;
         }
     }
@@ -9082,7 +9082,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     info->requiresInstMethodTableArg = false;
-    info->failureReason = "success";
+    info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
     return true;
 }
