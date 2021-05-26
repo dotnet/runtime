@@ -5,16 +5,28 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
+#if CODEDOM
+namespace System.CodeDom
+#else
 namespace System.Runtime.Serialization
+#endif
 {
     [Flags]
+#if CODEDOM
+    public enum CodeTypeReferenceOptions
+#else
     internal enum CodeTypeReferenceOptions
+#endif
     {
         GlobalReference = 0x00000001,
         GenericTypeParameter = 0x00000002
     }
 
+#if CODEDOM
+    public class CodeTypeReference : CodeObject
+#else
     internal sealed class CodeTypeReference : CodeObject
+#endif
     {
         private string? _baseType;
         private readonly bool _isInterface;
@@ -268,6 +280,14 @@ namespace System.Runtime.Serialization
                 TypeArguments.AddRange(typeArguments);
             }
         }
+
+#if CODEDOM
+        public CodeTypeReference(CodeTypeParameter typeParameter) :
+            this(typeParameter?.Name)
+        {
+            Options = CodeTypeReferenceOptions.GenericTypeParameter;
+        }
+#endif
 
         public CodeTypeReference(string baseType, int rank)
         {

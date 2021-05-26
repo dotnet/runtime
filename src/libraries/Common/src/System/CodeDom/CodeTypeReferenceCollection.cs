@@ -3,9 +3,17 @@
 
 using System.Collections;
 
+#if CODEDOM
+namespace System.CodeDom
+#else
 namespace System.Runtime.Serialization
+#endif
 {
+#if CODEDOM
+    public class CodeTypeReferenceCollection : CollectionBase
+#else
     internal sealed class CodeTypeReferenceCollection : CollectionBase
+#endif
     {
         public CodeTypeReferenceCollection() { }
 
