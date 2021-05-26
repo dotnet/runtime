@@ -261,7 +261,6 @@ namespace System.Collections.Immutable
             internal ref readonly T ItemRef(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
-                Debug.Assert(_left != null && _right != null);
 
                 return ref ItemRefUnchecked(index);
             }
