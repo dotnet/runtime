@@ -192,8 +192,6 @@
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\Memory\FixedBufferExtensions.cs"
              Link="Common\System\Memory\FixedBufferExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
-             Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
              Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
