@@ -36,7 +36,6 @@ partial class Test
 internal unsafe class ComWrappersImpl : ComWrappers
 {
     private static readonly ComInterfaceEntry* wrapperEntry;
-    private static readonly IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
 
     static ComWrappersImpl()
     {
@@ -49,7 +48,7 @@ internal unsafe class ComWrappersImpl : ComWrappers
         vtblRaw[6] = (IntPtr)(delegate* unmanaged<IntPtr, int, IntPtr, int, ComTypes.INVOKEKIND, IntPtr, IntPtr, IntPtr, IntPtr, int>)&IDispatchVtbl.InvokeInternal;
 
         wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IDispatchVtbl), sizeof(ComInterfaceEntry));
-        wrapperEntry->IID = IID_IDispatch;
+        wrapperEntry->IID = IDispatchVtbl.IID_IDispatch;
         wrapperEntry->Vtable = (IntPtr)vtblRaw;
     }
 
@@ -72,6 +71,8 @@ internal unsafe class ComWrappersImpl : ComWrappers
 }
 public struct IDispatchVtbl
 {
+    private static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
+
     [UnmanagedCallersOnly]
     public static int GetTypeInfoCountInternal(IntPtr thisPtr, IntPtr i)
     {
