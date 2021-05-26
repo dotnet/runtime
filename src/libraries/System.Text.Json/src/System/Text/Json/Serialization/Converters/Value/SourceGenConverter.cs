@@ -68,7 +68,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (!state.SupportContinuation && jsonTypeInfo is JsonTypeInfo<T> info && info.UseFastPathOnWrite)
+            if (!state.SupportContinuation &&
+                jsonTypeInfo is JsonTypeInfo<T> info &&
+                info.Serialize != null &&
+                info.Options._context?.CanUseSerializationLogic == true)
             {
                 Debug.Assert(info.Serialize != null);
                 info.Serialize(writer, value);

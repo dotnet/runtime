@@ -12,7 +12,45 @@ namespace System.Text.Json.Serialization
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract partial class JsonSerializerContext
     {
+        private bool? _canUseSerializationLogic;
+        private JsonSerializerOptions? _defaultOptions;
+
         internal JsonSerializerOptions? _options;
+
+        /// <summary>
+        /// Indicates whether pre-generated serialization logic for types in the context
+        /// is compatible with the run-time specified <see cref="JsonSerializerOptions"/>.
+        /// </summary>
+        internal bool CanUseSerializationLogic
+        {
+            get
+            {
+                if (!_canUseSerializationLogic.HasValue)
+                {
+                    if (_defaultOptions == null)
+                    {
+                        _canUseSerializationLogic = false;
+                    }
+                    else
+                    {
+                        _canUseSerializationLogic =
+                            // Guard against unsupported features
+                            Options.Encoder == null &&
+                            Options.NumberHandling == JsonNumberHandling.Strict &&
+                            Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
+                            // Ensure options values are consistent with expected defaults.
+                            Options.DefaultIgnoreCondition == _defaultOptions.DefaultIgnoreCondition &&
+                            Options.IgnoreReadOnlyFields == _defaultOptions.IgnoreReadOnlyFields &&
+                            Options.IgnoreReadOnlyProperties == _defaultOptions.IgnoreReadOnlyProperties &&
+                            Options.IncludeFields == _defaultOptions.IncludeFields &&
+                            Options.PropertyNamingPolicy == _defaultOptions.PropertyNamingPolicy &&
+                            Options.WriteIndented == _defaultOptions.WriteIndented;
+                    }
+                }
+
+                return _canUseSerializationLogic.Value;
+            }
+        }
 
         /// <summary>
         /// Gets the run-time specified options of the context. If no options were passed
@@ -36,11 +74,6 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSerializerOptionsAttribute"/>.
-        /// </summary>
-        internal JsonSerializerOptions? DefaultOptions { get; }
-
-        /// <summary>
         /// Creates an instance of <see cref="JsonSerializerContext"/> and binds it with the indicated <see cref="JsonSerializerOptions"/>.
         /// </summary>
         /// <param name="instanceOptions">The run-time provided options for the context instance.</param>
@@ -51,8 +84,6 @@ namespace System.Text.Json.Serialization
         /// </remarks>
         protected JsonSerializerContext(JsonSerializerOptions? instanceOptions, JsonSerializerOptions? defaultOptions)
         {
-            DefaultOptions = defaultOptions;
-
             if (instanceOptions != null)
             {
                 if (instanceOptions._context != null)
@@ -63,6 +94,8 @@ namespace System.Text.Json.Serialization
                 _options = instanceOptions;
                 instanceOptions._context = this;
             }
+
+            _defaultOptions = defaultOptions;
         }
 
         /// <summary>
