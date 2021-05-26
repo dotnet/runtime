@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using System.Text.Json.SourceGeneration.Reflection;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -18,6 +19,8 @@ namespace System.Text.Json.SourceGeneration
 
         public List<TypeGenerationSpec>? RootSerializableTypes { get; init; }
 
+        public List<string> ContextClassDeclarationList { get; init; }
+
         /// <summary>
         /// Types that we have initiated serialization metadata generation for. A type may be discoverable in the object graph,
         /// but not reachable for serialization (e.g. it is [JsonIgnore]'d); thus we maintain a separate cache.
@@ -29,6 +32,6 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public HashSet<string> RuntimePropertyNames { get; } = new();
 
-        public string ContextTypeRef => $"global::{ContextType.FullName}";
+        public string ContextTypeRef => $"global::{ContextType.GetUniqueCompilableTypeName()}";
     }
 }

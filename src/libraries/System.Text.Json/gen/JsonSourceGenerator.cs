@@ -19,12 +19,6 @@ namespace System.Text.Json.SourceGeneration
     public sealed partial class JsonSourceGenerator : ISourceGenerator
     {
         /// <summary>
-        /// Helper for unit tests.
-        /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
-        private List<TypeGenerationSpec>? _rootTypes;
-
-        /// <summary>
         /// Registers a syntax resolver to receive compilation units.
         /// </summary>
         /// <param name="context"></param>
@@ -39,6 +33,7 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
+            //if (!Diagnostics.Debugger.IsAttached) { Diagnostics.Debugger.Launch(); };
             SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
             List<ClassDeclarationSyntax>? contextClasses = receiver.ClassDeclarationSyntaxList;
             if (contextClasses == null)
@@ -46,7 +41,7 @@ namespace System.Text.Json.SourceGeneration
                 return;
             }
 
-            Parser parser = new(executionContext.Compilation);
+            Parser parser = new(executionContext);
             SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList);
             if (spec != null)
             {
@@ -56,6 +51,14 @@ namespace System.Text.Json.SourceGeneration
                 emitter.Emit();
             }
         }
+
+        private const string SystemTextJsonSourceGenerationName = "System.Text.Json.SourceGeneration";
+
+        /// <summary>
+        /// Helper for unit tests.
+        /// </summary>
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
+        private List<TypeGenerationSpec>? _rootTypes;
 
         private sealed class SyntaxReceiver : ISyntaxReceiver
         {
