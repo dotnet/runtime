@@ -491,7 +491,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
         
         {
-            EvacuationCounterHolder(pDetachInfo->m_pProfilerInfo);
+            EvacuationCounterHolder evacuationCounter(pDetachInfo->m_pProfilerInfo);
             pDetachInfo->m_pProfilerInfo->pProfInterface->ProfilerDetachSucceeded();
         }
         
