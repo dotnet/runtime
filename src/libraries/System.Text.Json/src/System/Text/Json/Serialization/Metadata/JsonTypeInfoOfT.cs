@@ -27,12 +27,5 @@ namespace System.Text.Json.Serialization.Metadata
         /// <see cref="JsonSerializerOptionsAttribute"/> values specified at design time.
         /// </summary>
         public Action<Utf8JsonWriter, T>? Serialize { get; internal set; }
-
-        /// <summary>
-        /// When serializing objects with source-gen converters, indicates whether the
-        /// configured <see cref="JsonSerializerOptions"/> is compatible with the generated
-        /// <see cref="JsonTypeInfo{T}.Serialize"/> func.
-        /// </summary>
-        internal bool UseFastPathOnWrite { get; set; }
     }
 }

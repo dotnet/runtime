@@ -41,9 +41,11 @@ namespace System.Text.Json
 
         private static void WriteUsingMetadata<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo && typedInfo.UseFastPathOnWrite)
+            if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
+                typedInfo.Serialize != null &&
+                typedInfo.Options._context?.CanUseSerializationLogic == true)
             {
-                typedInfo.Serialize!(writer, value);
+                typedInfo.Serialize(writer, value);
             }
             else
             {
