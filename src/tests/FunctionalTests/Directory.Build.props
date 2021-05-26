@@ -28,7 +28,7 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
     <EventSourceSupport>false</EventSourceSupport>
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
