@@ -432,57 +432,17 @@ LIR::Range::Range(GenTree* firstNode, GenTree* lastNode) : ReadOnlyRange(firstNo
 }
 
 //------------------------------------------------------------------------
-// LIR::Range::LastPhiNode: Returns the last phi node in the range or
-//                          `nullptr` if no phis exist.
+// LIR::Range::FirstNonCatchArgNode: Returns the first node after all catch arg nodes in this range.
 //
-GenTree* LIR::Range::LastPhiNode() const
-{
-    GenTree* lastPhiNode = nullptr;
-    for (GenTree* node : *this)
-    {
-        if (!node->IsPhiNode())
-        {
-            break;
-        }
-
-        lastPhiNode = node;
-    }
-
-    return lastPhiNode;
-}
-
-//------------------------------------------------------------------------
-// LIR::Range::FirstNonPhiNode: Returns the first non-phi node in the
-//                              range or `nullptr` if no non-phi nodes
-//                              exist.
-//
-GenTree* LIR::Range::FirstNonPhiNode() const
+GenTree* LIR::Range::FirstNonCatchArgNode() const
 {
     for (GenTree* node : *this)
     {
-        if (!node->IsPhiNode())
-        {
-            return node;
-        }
-    }
-
-    return nullptr;
-}
-
-//------------------------------------------------------------------------
-// LIR::Range::FirstNonPhiOrCatchArgNode: Returns the first node after all
-//                                        phi or catch arg nodes in this
-//                                        range.
-//
-GenTree* LIR::Range::FirstNonPhiOrCatchArgNode() const
-{
-    for (GenTree* node : NonPhiNodes())
-    {
-        if (node->OperGet() == GT_CATCH_ARG)
+        if (node->OperIs(GT_CATCH_ARG))
         {
             continue;
         }
-        else if ((node->OperGet() == GT_STORE_LCL_VAR) && (node->gtGetOp1()->OperGet() == GT_CATCH_ARG))
+        else if ((node->OperIs(GT_STORE_LCL_VAR)) && (node->gtGetOp1()->OperIs(GT_CATCH_ARG)))
         {
             continue;
         }
@@ -491,35 +451,6 @@ GenTree* LIR::Range::FirstNonPhiOrCatchArgNode() const
     }
 
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// LIR::Range::PhiNodes: Returns the range of phi nodes inside this range.
-//
-LIR::ReadOnlyRange LIR::Range::PhiNodes() const
-{
-    GenTree* lastPhiNode = LastPhiNode();
-    if (lastPhiNode == nullptr)
-    {
-        return ReadOnlyRange();
-    }
-
-    return ReadOnlyRange(m_firstNode, lastPhiNode);
-}
-
-//------------------------------------------------------------------------
-// LIR::Range::PhiNodes: Returns the range of non-phi nodes inside this
-//                       range.
-//
-LIR::ReadOnlyRange LIR::Range::NonPhiNodes() const
-{
-    GenTree* firstNonPhiNode = FirstNonPhiNode();
-    if (firstNonPhiNode == nullptr)
-    {
-        return ReadOnlyRange();
-    }
-
-    return ReadOnlyRange(firstNonPhiNode, m_lastNode);
 }
 
 //------------------------------------------------------------------------

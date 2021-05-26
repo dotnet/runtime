@@ -4037,7 +4037,7 @@ void Lowering::InsertPInvokeMethodProlog()
     store->AsOp()->gtOp1 = call;
     store->gtFlags |= GTF_VAR_DEF;
 
-    GenTree* const insertionPoint = firstBlockRange.FirstNonPhiOrCatchArgNode();
+    GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
 
     comp->fgMorphTree(store);
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));

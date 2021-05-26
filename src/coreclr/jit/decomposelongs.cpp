@@ -101,7 +101,7 @@ void DecomposeLongs::DecomposeRangeHelper()
 {
     assert(m_range != nullptr);
 
-    GenTree* node = Range().FirstNonPhiNode();
+    GenTree* node = Range().FirstNode();
     while (node != nullptr)
     {
         node = DecomposeNode(node);
