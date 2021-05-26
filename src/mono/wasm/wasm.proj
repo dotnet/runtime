@@ -123,6 +123,7 @@
       <MonoIncludeDir>$(MonoArtifactsPath)include/mono-2.0</MonoIncludeDir>
       <SystemNativeDir>$(RepoRoot)src\libraries\Native\Unix\System.Native</SystemNativeDir>
     </PropertyGroup>
+    <Import Project="$(IcuLibDir)ICU.DataFiles.props" Condition="'$(EnableSharding)' == 'true'" />
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a" />
@@ -136,7 +137,6 @@
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
-
     <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -I&quot;$(MonoIncludeDir)&quot; runtime/corebindings.c -c -o &quot;$(MonoObjDir)corebindings.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />

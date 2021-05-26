@@ -81,7 +81,7 @@ namespace Wasm.Build.Tests
                             var culture = new CultureInfo(""{testCulture}"", false);
                             string s = new string( new char[] {{'\u0063', '\u0301', '\u0327', '\u00BE'}});
                             string normalized = s.Normalize();
-                            Console.WriteLine($""{{culture.NativeName}} - {{culture.NumberFormat.CurrencySymbol}} - {{culture.DateTimeFormat.FullDateTimePattern}} - {{normalized.IsNormalized(NormalizationForm.FormC)}}"");
+                            Console.WriteLine($""{{culture.NativeName}} - {{culture.NumberFormat.CurrencySymbol}} - {{culture.DateTimeFormat.FullDateTimePattern}} - {{culture.CompareInfo.LCID}} - {{normalized.IsNormalized(NormalizationForm.FormC)}}"");
                         }}
                         catch (CultureNotFoundException e){{
                             Console.WriteLine($""Culture Not Found {{e.Message}}"");
@@ -105,7 +105,7 @@ namespace Wasm.Build.Tests
 
             string expectedOutputString = expectToThrow == true
                                             ? "Culture Not Found"
-                                            : $"{culture.NativeName} - {culture.NumberFormat.CurrencySymbol} - {culture.DateTimeFormat.FullDateTimePattern} - True";
+                                            : $"{culture.NativeName} - {culture.NumberFormat.CurrencySymbol} - {culture.DateTimeFormat.FullDateTimePattern} - {culture.CompareInfo.LCID} - True";
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                 test: output => Assert.Contains(expectedOutputString, output), host: host, id: id);
