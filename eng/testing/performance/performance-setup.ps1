@@ -88,7 +88,7 @@ elseif($DynamicPGO)
 elseif($FullPGO)
 {
     $Configurations += " PGOType=fullpgo"
-    #$ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
+    $ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
@@ -106,7 +106,6 @@ elseif($DynamicPGO)
 elseif($FullPGO)
 {
     $SetupArguments = "$SetupArguments --full-pgo"
-    #$ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoAOT"
 }
 
 if ($RunFromPerformanceRepo) {
