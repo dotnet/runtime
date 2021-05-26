@@ -1548,8 +1548,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
 
     SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocatorDebugOnly());
 
-    bool     pastPhis = false;
-    GenTree* prev     = nullptr;
+    GenTree* prev = nullptr;
     for (Iterator node = begin(), end = this->end(); node != end; prev = *node, ++node)
     {
         // Verify that the node is allowed in LIR.
@@ -1566,16 +1565,6 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         assert((node->gtFlags & GTF_REVERSE_OPS) == 0);
 
         // TODO: validate catch arg stores
-
-        // Check that all phi nodes (if any) occur at the start of the range.
-        if ((node->OperGet() == GT_PHI_ARG) || (node->OperGet() == GT_PHI) || node->IsPhiDefn())
-        {
-            assert(!pastPhis);
-        }
-        else
-        {
-            pastPhis = true;
-        }
 
         for (GenTree** useEdge : node->UseEdges())
         {
