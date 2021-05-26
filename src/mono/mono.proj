@@ -493,7 +493,9 @@
       <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/$(_Objcopy)</_Objcopy>
     </PropertyGroup>
       <!-- test viability of objcopy command -->
-      <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) -V" ExitCode="_ObjcopyFound" IgnoreStandardErrorWarningFormat="true" />
+      <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true">
+        <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
+      </Exec>
     <PropertyGroup>
       <!-- If all else fails in finding a valid objcopy, fall back to no-prefix from $PATH (used fo x64 on CentOS) -->
       <_Objcopy Condition="'$(_ObjcopyFound)' != '0'">objcopy</_Objcopy>
