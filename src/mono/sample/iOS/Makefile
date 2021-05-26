@@ -24,7 +24,7 @@ run-sim: clean appbuilder
 
 run-catalyst:
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=MacCatalyst /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=False /p:ForceAOT=False
+	/p:UseLLVM=False /p:ForceAOT=True
 
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=iOSSimulator /p:TargetArchitecture=$(MONO_ARCH) \
@@ -32,7 +32,7 @@ run-sim-interp: clean appbuilder
 
 run-catalyst-interp:
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=MacCatalyst /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=False /p:ForceAOT=False /p:MonoForceInterpreter=true
+	/p:UseLLVM=False /p:ForceAOT=True /p:MonoForceInterpreter=True
 
 clean:
 	rm -rf bin
