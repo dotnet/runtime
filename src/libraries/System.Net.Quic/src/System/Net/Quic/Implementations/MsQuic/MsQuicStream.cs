@@ -201,6 +201,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.SendState == SendState.Aborted)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
             }

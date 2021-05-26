@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -463,6 +464,43 @@ namespace System.Net.Quic.Tests
                 QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
             }).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public async Task WriteCancelled_NextWriteThrows()
+        {
+            long expectedErrorCode = 1234;
+
+            await RunClientServer(
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = connection.OpenUnidirectionalStream();
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var task = stream.WriteAsync(new byte[1024 * 1024], cts.Token);
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => task.AsTask());
+
+                    // next write would also throw
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+
+                    // manual write abort is still required
+                    stream.AbortWrite(expectedErrorCode);
+
+                    await stream.ShutdownCompleted();
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                    byte[] buffer = new byte[1024 * 1024];
+
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
+                    Assert.Equal(expectedErrorCode, ex.ErrorCode);
+
+                    await stream.ShutdownCompleted();
+                }
+            );
         }
     }
 
