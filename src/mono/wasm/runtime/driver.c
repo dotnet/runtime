@@ -603,7 +603,11 @@ mono_wasm_find_corlib_class (const char *namespace, const char *name)
 EMSCRIPTEN_KEEPALIVE MonoClass* 
 mono_wasm_find_system_class (const char *namespace, const char *name)
 {
-	MonoAssembly* assembly = mono_wasm_assembly_load ("System");
+	// FIXME: We're looking for System.Uri which is a forwarder in System (pointing to
+	//  System.Private.Uri), but enabling the linker causes this class lookup to fail
+	// Looking directly in System.Private.Uri always works, but we shouldn't need to
+	//  do this. This is either a bug in the linker or the runtime
+	MonoAssembly* assembly = mono_wasm_assembly_load ("System.Private.Uri");
 	if (!assembly)
 		return NULL;
 	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
