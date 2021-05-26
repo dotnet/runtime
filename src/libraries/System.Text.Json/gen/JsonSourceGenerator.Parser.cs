@@ -11,6 +11,8 @@ using System.Text.Json.Serialization;
 using System.Text.Json.SourceGeneration.Reflection;
 using System.Linq;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -32,7 +34,7 @@ namespace System.Text.Json.SourceGeneration
 
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
 
-            private readonly Compilation _compilation;
+            private readonly GeneratorExecutionContext _executionContext;
 
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
@@ -60,10 +62,18 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private readonly Dictionary<Type, TypeGenerationSpec> _typeGenerationSpecCache = new();
 
-            public Parser(Compilation compilation)
+            private static DiagnosticDescriptor ContextClassesMustBePartial { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1032",
+                title: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public Parser(in GeneratorExecutionContext executionContext)
             {
-                _compilation = compilation;
-                _metadataLoadContext = new MetadataLoadContextInternal(compilation);
+                _executionContext = executionContext;
+                _metadataLoadContext = new MetadataLoadContextInternal(executionContext.Compilation);
 
                 _ienumerableType = _metadataLoadContext.Resolve(typeof(IEnumerable));
                 _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
@@ -85,9 +95,10 @@ namespace System.Text.Json.SourceGeneration
 
             public SourceGenerationSpec? GetGenerationSpec(List<ClassDeclarationSyntax> classDeclarationSyntaxList)
             {
-                INamedTypeSymbol jsonSerializerContextSymbol = _compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
-                INamedTypeSymbol jsonSerializableAttributeSymbol = _compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
-                INamedTypeSymbol jsonSerializerOptionsAttributeSymbol = _compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerOptionsAttribute");
+                Compilation compilation = _executionContext.Compilation;
+                INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
+                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
+                INamedTypeSymbol jsonSerializerOptionsAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerOptionsAttribute");
 
                 if (jsonSerializerContextSymbol == null || jsonSerializableAttributeSymbol == null || jsonSerializerOptionsAttributeSymbol == null)
                 {
@@ -99,9 +110,9 @@ namespace System.Text.Json.SourceGeneration
                 foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxList)
                 {
                     CompilationUnitSyntax compilationUnitSyntax = classDeclarationSyntax.FirstAncestorOrSelf<CompilationUnitSyntax>();
-                    SemanticModel compilationSemanticModel = _compilation.GetSemanticModel(compilationUnitSyntax.SyntaxTree);
+                    SemanticModel compilationSemanticModel = compilation.GetSemanticModel(compilationUnitSyntax.SyntaxTree);
 
-                    if (!IsConfigurableJsonSerializerContext(classDeclarationSyntax, jsonSerializerContextSymbol, compilationSemanticModel))
+                    if (!DerivesFromJsonSerializerContext(classDeclarationSyntax, jsonSerializerContextSymbol, compilationSemanticModel))
                     {
                         continue;
                     }
@@ -140,8 +151,15 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
-                    ITypeSymbol contextTypeSymbol = (ITypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+                    INamedTypeSymbol contextTypeSymbol = (INamedTypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
                     Debug.Assert(contextTypeSymbol != null);
+
+                    if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
+                    {
+                        // Class or one of its containing types is not partial so we can't add to it.
+                        _executionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        continue;
+                    }
 
                     contextGenSpecList ??= new List<ContextGenerationSpec>();
                     contextGenSpecList.Add(new ContextGenerationSpec
@@ -149,6 +167,7 @@ namespace System.Text.Json.SourceGeneration
                         SerializerOptions = options ?? new JsonSerializerOptionsAttribute(),
                         ContextType = contextTypeSymbol.AsType(_metadataLoadContext),
                         RootSerializableTypes = rootTypes,
+                        ContextClassDeclarationList = classDeclarationList
                     });
 
                     // Clear the cache of generated metadata between the processing of context classes.
@@ -174,11 +193,8 @@ namespace System.Text.Json.SourceGeneration
                 };
             }
 
-            // Returns true if a given type
-            // - derives from JsonSerializerContext
-            // - is partial
-            // - has no members
-            private bool IsConfigurableJsonSerializerContext(
+            // Returns true if a given type derives directly from JsonSerializerContext.
+            private bool DerivesFromJsonSerializerContext(
                 ClassDeclarationSyntax classDeclarationSyntax,
                 INamedTypeSymbol jsonSerializerContextSymbol,
                 SemanticModel compilationSemanticModel)
@@ -201,18 +217,56 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                if (match == null)
+                return match != null;
+            }
+
+            private static bool TryGetClassDeclarationList(INamedTypeSymbol typeSymbol, [NotNullWhenAttribute(true)] out List<string> classDeclarationList)
+            {
+                classDeclarationList = new();
+
+                INamedTypeSymbol currentSymbol = typeSymbol;
+
+                while (currentSymbol != null)
                 {
-                    return false;
+                    ClassDeclarationSyntax? classDeclarationSyntax = currentSymbol.DeclaringSyntaxReferences.First().GetSyntax() as ClassDeclarationSyntax;
+
+                    if (classDeclarationSyntax != null)
+                    {
+                        SyntaxTokenList tokenList = classDeclarationSyntax.Modifiers;
+                        int tokenCount = tokenList.Count;
+
+                        bool isPartial = false;
+
+                        string[] declarationElements = new string[tokenCount + 2];
+
+                        for (int i = 0; i < tokenCount; i++)
+                        {
+                            SyntaxToken token = tokenList[i];
+                            declarationElements[i] = token.Text;
+
+                            if (token.IsKind(SyntaxKind.PartialKeyword))
+                            {
+                                isPartial = true;
+                            }
+                        }
+
+                        if (!isPartial)
+                        {
+                            classDeclarationList = null;
+                            return false;
+                        }
+
+                        declarationElements[tokenCount] = "class";
+                        declarationElements[tokenCount + 1] = currentSymbol.Name;
+
+                        classDeclarationList.Add(string.Join(" ", declarationElements));
+                    }
+
+                    currentSymbol = currentSymbol.ContainingType;
                 }
 
-                bool isPartial = classDeclarationSyntax.Modifiers.Where(token => token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword)).FirstOrDefault() != default;
-                if (!isPartial)
-                {
-                    return false;
-                }
-
-                return classDeclarationSyntax.Members.Count() == 0;
+                Debug.Assert(classDeclarationList.Count > 0);
+                return true;
             }
 
             private TypeGenerationSpec? GetRootSerializableType(SemanticModel compilationSemanticModel, AttributeSyntax attributeSyntax)
