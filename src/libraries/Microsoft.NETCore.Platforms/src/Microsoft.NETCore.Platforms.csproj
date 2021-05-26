@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.SDK">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
+    <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
