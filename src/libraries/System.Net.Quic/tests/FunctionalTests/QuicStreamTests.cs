@@ -467,7 +467,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task WriteCancelled_NextWriteThrows()
+        public async Task WriteCanceled_NextWriteThrows()
         {
             long expectedErrorCode = 1234;
 
