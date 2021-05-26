@@ -78,8 +78,8 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             Stream stream = ConnectionHelper.GetStandardTransport(pid);
 
-            // 0x04 = ProcessCommandSet, 0x03 = ProcessInfo2
-            var processInfoMessage = new IpcMessage(0x04, 0x03);
+            // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+            var processInfoMessage = new IpcMessage(0x04, 0x04);
             Logger.logger.Log($"Wrote: {processInfoMessage}");
             IpcMessage response = IpcClient.SendMessage(stream, processInfoMessage);
             Logger.logger.Log($"Received: <omitted>");
