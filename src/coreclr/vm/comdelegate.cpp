@@ -147,8 +147,11 @@ public:
     }
 
     // Get next offset to shuffle. There has to be at least one offset left.
-    // For register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
-    // For stack arguments it returns stack offset in bytes with negative sign.
+    // It returns an offset encoded properly for a ShuffleEntry offset.
+    // - For floating resgister arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // - For register arguments it returns regNum | ShuffleEntry::REGMASK.
+    // - For stack arguments it returns stack offset index in stack slots for most architectures. For macOS-arm64,
+    //     it returns an encoded stack offset, see below.
     int GetNextOfs()
     {
         int index;
@@ -191,10 +194,10 @@ public:
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
 
 #if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
+            index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
-            index = byteIndex / TARGET_POINTER_SIZE;
             if (index >= ShuffleEntry::REGMASK)
             {
                 COMPlusThrow(kNotSupportedException);
@@ -204,6 +207,23 @@ public:
             _ASSERTE(byteIndex == index * TARGET_POINTER_SIZE);
             return index;
 #else
+            // Tha Apple Silicon ABI does not consume an entire stack slot for every argument
+            // Arguments smaller than TARGET_POINTER_SIZE are always aligned to their argument size
+            // But may not begin at the beginning of a stack slot
+            //
+            // The argument location description has been updated to describe the stack offest and
+            // size in bytes.  We will use it as our source of truth.
+            //
+            // The ShuffleEntries will be implemented by the Arm64 StubLinkerCPU::EmitLoadStoreRegImm
+            // using the 12-bit scaled immediate stack offset. The load/stores can be implemented as 1/2/4/8
+            // bytes each (natural binary sizes).
+            //
+            // We emit offsets of these natural binary sizes, emitting larger entries first to keep them aligned
+            //
+            // The algorithm is generalized to move an arbitrary stack size argument.  This keeps the ABI details
+            // localized to the population of ArgLocDesc. We are relying on ArgLoc as the source of truth.
+            //
+            // Each offset is encode as a log2 size and a 12-bit unsigned scaled offset.
             int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
             int log2size = 3;
 
@@ -237,6 +257,8 @@ public:
             {
                 COMPlusThrow(kNotSupportedException);
             }
+
+            _ASSERTE((byteIndex & ((1 << log2Size) - 1)) == 0);
 
             return (byteIndex >> log2size) | (log2size << 12);
 #endif

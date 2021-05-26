@@ -1753,6 +1753,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             EmitLoadStoreRegImm(eLOAD, IntReg(9), RegSp, pEntry->srcofs * sizeof(void*));
             EmitLoadStoreRegImm(eSTORE, IntReg(9), RegSp, pEntry->dstofs * sizeof(void*));
 #else
+            // Decode ShuffleIterator::GetNextOfs() encoded entries
+            // See comments in that function
+
             // We expect src and dst stack size to be the same.
             _ASSERTE((pEntry->srcofs >> 12) == (pEntry->dstofs >> 12));
             int log2Size = (pEntry->srcofs >> 12);
