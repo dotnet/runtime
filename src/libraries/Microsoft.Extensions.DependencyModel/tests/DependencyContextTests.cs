@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class DependencyContextTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData("System.Collections.dll", "System.Collections")]
         [InlineData("System.Collections.ni.dll", "System.Collections")]
         [InlineData("mscorlib", "mscorlib")]
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assets.Should().OnlyContain(a => a.Name == expected);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetRuntimeAssemblyNamesReturnsRIDLessAssetsIfNoRIDSpecificAssetsInLibrary()
         {
             var context = BuildTestContext();
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assets.Should().OnlyContain(a => a.Name == "System.Collections");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetRuntimeAssemblyNamesReturnsMostSpecificAssetIfRIDSpecificAssetInLibrary()
         {
             var context = BuildTestContext();
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assets.Should().BeEmpty();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetRuntimeNativeAssetsReturnsEmptyIfNoGroupsMatch()
         {
             var context = BuildTestContext();

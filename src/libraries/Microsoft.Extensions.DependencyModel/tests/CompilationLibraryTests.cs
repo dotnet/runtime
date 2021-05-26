@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class CompilationLibraryTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ResolveReferencePathsAcceptsCustomResolvers()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Times.Never());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ResolveReferencePathsAcceptsNullCustomResolvers()
         {
             var library = TestLibraryFactory.Create();

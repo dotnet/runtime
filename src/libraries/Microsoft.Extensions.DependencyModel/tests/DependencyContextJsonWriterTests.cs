@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void SavesRuntimeGraph()
         {
             var result = Save(Create(

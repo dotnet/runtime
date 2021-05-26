@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class LoggerFactoryTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void AddProvider_ThrowsAfterDisposed()
         {
             var factory = new LoggerFactory();
@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Logging.Test
             factory.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Dispose_ProvidersAreDisposed()
         {
             // Arrange
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Dispose_ThrowException_SwallowsException()
         {
             // Arrange
@@ -493,7 +493,7 @@ namespace Microsoft.Extensions.Logging.Test
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateDisposeDisposesInnerServiceProvider()
         {
             var disposed = false;

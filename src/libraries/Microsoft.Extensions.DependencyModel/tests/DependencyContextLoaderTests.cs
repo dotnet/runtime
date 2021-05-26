@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class DependencyContextLoaderTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetEntryAssembly() returns null")]
         public void LoadLoadsExtraPaths()
         {
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Banana");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void LoadCanLoadANonEntryAssembly()
         {
             var loader = new DependencyContextLoader();

@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
             Assert.Empty(files);
         }
 
-        [Fact]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDirectoryContents_ReturnsCombinaisionOFFiles()
         {
             // Arrange
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
                 file => Assert.Same(file3, file));
         }
 
-        [Fact]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDirectoryContents_ReturnsCombinaitionOFFiles_WhenSomeFileProviderRetunsNoContent()
         {
             // Arrange

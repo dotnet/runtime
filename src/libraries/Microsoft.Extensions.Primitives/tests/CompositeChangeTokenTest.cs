@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, count2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void HasChanged_IsTrue_IfAnyTokenHasChanged()
         {
             // Arrange
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(compositeChangeToken.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void HasChanged_IsFalse_IfNoTokenHasChanged()
         {
             // Arrange
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(compositeChangeToken.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ActiveChangeCallbacks_IsTrue_IfAnyTokenHasActiveChangeCallbacks()
         {
             // Arrange
@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(compositeChangeToken.ActiveChangeCallbacks);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ActiveChangeCallbacks_IsFalse_IfNoTokenHasActiveChangeCallbacks()
         {
             // Arrange

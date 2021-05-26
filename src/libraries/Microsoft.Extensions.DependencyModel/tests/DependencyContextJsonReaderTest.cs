@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             context.Target.Framework.Should().Be(".NETCoreApp,Version=v1.0");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsRuntimeGraph()
         {
             var context = Read(
@@ -253,7 +253,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Fallbacks.Should().BeEquivalentTo("linux-x64", "unix");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsCompilationTarget()
         {
             var context = Read(
@@ -324,7 +324,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             Assert.Equal($"Cannot find library information for System.Banana/1.0.0", exception.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void IgnoresUnknownPropertiesInLibrary()
         {
             var context = Read(
@@ -362,7 +362,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.HashPath.Should().BeNull();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsCompilationTargetWithNullPathAndHashPath()
         {
             var context = Read(
@@ -401,7 +401,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.HashPath.Should().BeNull();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsCompilationTargetWithMissingPathAndHashPath()
         {
             var context = Read(
@@ -481,13 +481,13 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable()
         {
             ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableCore(false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableWithAssemblyVersions()
         {
             ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortableCore(true);
@@ -592,7 +592,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.NativeLibraryGroups.GetRuntimeAssets("win7-x64").Should().Contain("lib/win7/Banana.dll");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadsRuntimeTargetPlaceholdersAsEmptyGroups()
         {
             var context = Read(
@@ -628,7 +628,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Which.AssetPaths.Should().BeEmpty();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void IgnoresUnknownPropertiesInRuntimeTargets()
         {
             var context = Read(
