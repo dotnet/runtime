@@ -779,6 +779,7 @@ ds_process_protocol_helper_handle_ipc_message (
 		break;
 	case DS_PROCESS_COMMANDID_SET_ENV_VAR:
 		result = process_protocol_helper_set_environment_variable (message, stream);
+        break;
 	case DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2:
 		result = process_protocol_helper_get_process_info_2 (message, stream);
 		break;
