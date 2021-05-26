@@ -263,17 +263,7 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
                 Debug.Assert(_left != null && _right != null);
 
-                if (index < _left._count)
-                {
-                    return ref _left.ItemRefUnchecked(index);
-                }
-
-                if (index > _left._count)
-                {
-                    return ref _right.ItemRefUnchecked(index - _left._count - 1);
-                }
-
-                return ref _key;
+                return ref ItemRefUnchecked(index);
             }
 
             internal ref readonly T ItemRefUnchecked(int index)
