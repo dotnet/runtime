@@ -5818,6 +5818,11 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 
 	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
 
+	/*
+	 * Emit a call to the interp entry function. We emit it here instead of the llvm backend since
+	 * calling conventions etc. are easier to handle here. The LLVM backend will only emit the
+	 * entry/exit bblocks.
+	 */
 	g_assert (cfg->cbb == cfg->bb_init);
 	/* Obtain the interp entry function */
 	ftndesc = mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_get_interp_entry, iargs);
@@ -5827,8 +5832,15 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
 	ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
 	/* Do a normal return */
-	if (cfg->ret)
+	if (cfg->ret) {
 		emit_setret (cfg, ins);
+		/*
+		 * Since only bb_entry/bb_exit is emitted if interp_entry_only is set,
+		 * its possible that the return value becomes an OP_PHI node whose inputs
+		 * are not emitted. Make it volatile to prevent that.
+		 */
+		cfg->ret->flags |= MONO_INST_VOLATILE;
+	}
 	MONO_INST_NEW (cfg, ins, OP_BR);
 	ins->inst_target_bb = cfg->bb_exit;
 	MONO_ADD_INS (cfg->cbb, ins);

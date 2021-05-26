@@ -3406,7 +3406,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		// FIXME:
 		if (cfg->ret) {
 			// Allow SSA on the result value
-			cfg->ret->flags &= ~MONO_INST_VOLATILE;
+			if (!cfg->interp_entry_only)
+				cfg->ret->flags &= ~MONO_INST_VOLATILE;
 
 			// Add an explicit return instruction referencing the return value
 			MONO_INST_NEW (cfg, ins, OP_SETRET);
