@@ -5,19 +5,20 @@ Subject: [PATCH] Exclude Microsoft.Extensions.Hosting.WindowsServices from
  source-build
 
 ---
- .../Directory.Build.props                                       | 2 ++
- 1 file changed, 2 insertions(+)
+ .../Directory.Build.props                                       | 3 ++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props b/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
 index c5f4d2e6da1..5493f19bc19 100644
 --- a/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
 +++ b/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
-@@ -3,5 +3,7 @@
+@@ -2,5 +2,8 @@
    <Import Project="..\Directory.Build.props" />
    <PropertyGroup>
      <PackageTags>hosting</PackageTags>
 +    <!-- Source build does not support Windows. -->
 +    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
++    <IsPackable>false</IsPackable>
    </PropertyGroup>
  </Project>
 -- 

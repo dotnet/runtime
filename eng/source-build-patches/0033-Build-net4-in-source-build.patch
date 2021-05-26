@@ -37,19 +37,19 @@ diff --git a/src/libraries/Directory.Build.props b/src/libraries/Directory.Build
 index 94606e51460..807578c11ed 100644
 --- a/src/libraries/Directory.Build.props
 +++ b/src/libraries/Directory.Build.props
-@@ -26,8 +26,10 @@
+@@ -27,8 +27,10 @@
+
    <PropertyGroup>
-     <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</BuildTargetFramework>
      <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
 -    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
 -    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
 +    <NETFrameworkTargetFrameworksExcept48>net45;net451;net452;net46;net461;net462;net47;net471;net472</NETFrameworkTargetFrameworksExcept48>
-+    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">$(AdditionalBuildTargetFrameworks);$(NETFrameworkTargetFrameworksExcept48)</AdditionalBuildTargetFrameworks>
-+    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0;net48;$(NETFrameworkTargetFrameworksExcept48)</AdditionalBuildTargetFrameworks>
-+
-     <!-- Initialize BuildSettings from the individual properties. -->
-     <BuildSettings>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
-     <BuildSettings Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
++    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">$(NETFrameworkTargetFrameworksExcept48)</AdditionalBuildTargetFrameworks>
++    <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
++    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(NETFrameworkTargetFrameworksExcept48);net48;netstandard2.0</AdditionalBuildTargetFrameworks>
+   </PropertyGroup>
+
+   <!-- Define test projects and companions -->
 diff --git a/src/libraries/Microsoft.Extensions.Configuration.Xml/src/Microsoft.Extensions.Configuration.Xml.csproj b/src/libraries/Microsoft.Extensions.Configuration.Xml/src/Microsoft.Extensions.Configuration.Xml.csproj
 index e1dad4a470d..ac14aaad7d6 100644
 --- a/src/libraries/Microsoft.Extensions.Configuration.Xml/src/Microsoft.Extensions.Configuration.Xml.csproj
@@ -69,20 +69,20 @@ index 4adc0b2edb5..66d4e2aa47d 100644
 --- a/src/libraries/System.Configuration.ConfigurationManager/ref/System.Configuration.ConfigurationManager.csproj
 +++ b/src/libraries/System.Configuration.ConfigurationManager/ref/System.Configuration.ConfigurationManager.csproj
 @@ -10,7 +10,7 @@
-    <Compile Include="System.Configuration.ConfigurationManager.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-  </ItemGroup>
+     <Compile Include="System.Configuration.ConfigurationManager.net461.cs" />
+     <Reference Include="System.Configuration" />
+   </ItemGroup>
 -  <ItemGroup>
 +  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
      <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
    </ItemGroup>
-   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'  == 'true'">
+ </Project>
 diff --git a/src/libraries/System.ServiceProcess.ServiceController/ref/System.ServiceProcess.ServiceController.csproj b/src/libraries/System.ServiceProcess.ServiceController/ref/System.ServiceProcess.ServiceController.csproj
 index 50d5af47646..3451105192e 100644
 --- a/src/libraries/System.ServiceProcess.ServiceController/ref/System.ServiceProcess.ServiceController.csproj
 +++ b/src/libraries/System.ServiceProcess.ServiceController/ref/System.ServiceProcess.ServiceController.csproj
 @@ -13,7 +13,7 @@
-   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
      <Reference Include="System.ServiceProcess" />
    </ItemGroup>
 -  <ItemGroup>

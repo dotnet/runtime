@@ -12,12 +12,17 @@ diff --git a/eng/Subsets.props b/eng/Subsets.props
 index 24b4bd2..5e6e299 100644
 --- a/eng/Subsets.props
 +++ b/eng/Subsets.props
-@@ -51,6 +51,7 @@
-     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
- 
-     <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
-+    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">libs.native+libs.ref+libs.src+libs.packages</DefaultLibrariesSubsets>
- 
+@@ -52,8 +52,11 @@
+
+     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
+                                         '$(BuildTargetFramework)' == '' or
++                                        '$(DotNetBuildFromSource)' == 'true' or
+                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
+-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
++    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src+libs.packages</DefaultLibrariesSubsets>
++    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultLibrariesSubsets)libs.pretest</DefaultLibrariesSubsets>
++
+
      <DefaultHostSubsets>host.native+host.pkg+host.tools+host.tests</DefaultHostSubsets>
      <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono'"></DefaultHostSubsets>
 @@ -201,12 +202,12 @@

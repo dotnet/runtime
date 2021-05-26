@@ -27,8 +27,8 @@ diff --git a/src/libraries/Directory.Build.props b/src/libraries/Directory.Build
 index 3daf1a941be..94606e51460 100644
 --- a/src/libraries/Directory.Build.props
 +++ b/src/libraries/Directory.Build.props
-@@ -33,6 +33,24 @@
-     <BuildSettings Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
+@@ -45,6 +45,24 @@
+     <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">false</IsShipping>
    </PropertyGroup>
  
 +  <!-- If building from source, remove netcoreapp2.x from any project. -->
@@ -49,9 +49,9 @@ index 3daf1a941be..94606e51460 100644
 +    <TargetFrameworks>$(TargetFrameworks.Trim(';'))</TargetFrameworks>
 +  </PropertyGroup>
 +
-   <!-- Define test projects and companions -->
-   <PropertyGroup Condition="'$(IsSourceProject)' != 'true'">
-     <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
+   <!-- Warnings that should be disabled in our test projects. -->
+   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
+     <!-- don't warn on usage of BinaryFormatter from test projects -->
 -- 
 2.25.4
 

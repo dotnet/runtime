@@ -13,8 +13,8 @@ index cc4a7b62914..cef8de452b4 100644
 --- a/eng/Versions.props
 +++ b/eng/Versions.props
 @@ -167,6 +167,4 @@
-     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.21260.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21260.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.21267.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21267.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
    </PropertyGroup>
 -  <!-- Override isolated build dependency versions with versions from Repo API. -->
 -  <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
