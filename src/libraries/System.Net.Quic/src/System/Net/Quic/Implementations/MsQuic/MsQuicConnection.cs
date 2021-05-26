@@ -323,11 +323,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (ChannelClosedException)
             {
-                throw _state.AbortErrorCode switch
-                {
-                    -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                    long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
-                };
+                throw ThrowHelper.GetConnectionAbortedException(_state.AbortErrorCode);
             }
 
             return stream;

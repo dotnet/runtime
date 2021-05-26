@@ -77,8 +77,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.Handle = streamHandle;
             _state.ConnectionState = connectionState;
             _canRead = true;
-            bool unidirectional = flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
-            _canWrite = !unidirectional;
+            _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
 
             _stateHandle = GCHandle.Alloc(_state);
@@ -99,7 +98,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] inbound {(unidirectional ? "uni" : "bi")}directional stream created " +
+                    $"[Stream#{_state.GetHashCode()}] inbound {(_canWrite ? "bi" : "uni")}directional stream created " +
                         $"in Connection#{_state.ConnectionState.GetHashCode()}.");
             }
         }
@@ -110,8 +109,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Debug.Assert(connectionState.Handle != null);
 
             _state.ConnectionState = connectionState;
-            bool unidirectional = flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
-            _canRead = !unidirectional;
+            _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
 
             _stateHandle = GCHandle.Alloc(_state);
@@ -140,7 +138,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] outbound {(unidirectional ? "uni" : "bi")}directional stream created " +
+                    $"[Stream#{_state.GetHashCode()}] outbound {(_canRead ? "bi" : "uni")}directional stream created " +
                         $"in Connection#{_state.ConnectionState.GetHashCode()}.");
             }
         }
@@ -226,7 +224,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
                 else if (_state.SendState == SendState.ConnectionClosed)
                 {
-                    throw GetConnectionClosedException(_state);
+                    throw GetConnectionAbortedException(_state);
                 }
             }
 
@@ -304,15 +302,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
                 else if (_state.ReadState == ReadState.Aborted)
                 {
-                    throw _state.ReadErrorCode switch
-                    {
-                        -1 => new QuicOperationAbortedException(),
-                        long err => new QuicStreamAbortedException(err)
-                    };
+                    throw ThrowHelper.GetStreamAbortedException(_state.ReadErrorCode);
                 }
                 else if (_state.ReadState == ReadState.ConnectionClosed)
                 {
-                    throw GetConnectionClosedException(_state);
+                    throw GetConnectionAbortedException(_state);
                 }
             }
 
@@ -429,7 +423,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.ShutdownWriteState == ShutdownWriteState.ConnectionClosed)
                 {
-                    throw GetConnectionClosedException(_state);
+                    throw GetConnectionAbortedException(_state);
                 }
             }
 
@@ -465,7 +459,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.ShutdownState == ShutdownState.ConnectionClosed)
                 {
-                    throw GetConnectionClosedException(_state);
+                    throw GetConnectionAbortedException(_state);
                 }
             }
 
@@ -728,7 +722,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shutdownCompleteEvent.ConnectionShutdown != 0)
             {
-                return HandleConnectionClose(state);
+                return HandleEventConnectionClose(state);
             }
 
             bool shouldReadComplete = false;
@@ -1079,7 +1073,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private static uint HandleConnectionClose(State state)
+        private static uint HandleEventConnectionClose(State state)
         {
             long errorCode = state.ConnectionState.AbortErrorCode;
             if (NetEventSource.Log.IsEnabled())
@@ -1099,65 +1093,56 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     shouldCompleteRead = true;
                 }
+                state.ReadState = ReadState.ConnectionClosed;
 
                 if (state.SendState == SendState.None || state.SendState == SendState.Pending)
                 {
                     shouldCompleteSend = true;
                 }
+                state.SendState = SendState.ConnectionClosed;
 
                 if (state.ShutdownWriteState == ShutdownWriteState.None)
                 {
                     shouldCompleteShutdownWrite = true;
                 }
+                state.ShutdownWriteState = ShutdownWriteState.ConnectionClosed;
 
                 if (state.ShutdownState == ShutdownState.None)
                 {
                     shouldCompleteShutdown = true;
                 }
-
-                state.ReadState = ReadState.ConnectionClosed;
-                state.SendState = SendState.ConnectionClosed;
-                state.ShutdownWriteState = ShutdownWriteState.ConnectionClosed;
                 state.ShutdownState = ShutdownState.ConnectionClosed;
             }
 
             if (shouldCompleteRead)
             {
                 state.ReceiveResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionClosedException(state)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
             if (shouldCompleteSend)
             {
                 state.SendResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionClosedException(state)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
             if (shouldCompleteShutdownWrite)
             {
                 state.ShutdownWriteCompletionSource.SetException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionClosedException(state)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
             if (shouldCompleteShutdown)
             {
                 state.ShutdownCompletionSource.SetException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionClosedException(state)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
             return MsQuicStatusCodes.Success;
         }
 
-        private static Exception GetConnectionClosedException(State state)
-        {
-            long errorCode = state.ConnectionState.AbortErrorCode;
-
-            return errorCode switch
-            {
-                -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
-            };
-        }
+        private static Exception GetConnectionAbortedException(State state) =>
+            ThrowHelper.GetConnectionAbortedException(state.ConnectionState.AbortErrorCode);
 
         private enum ReadState
         {
