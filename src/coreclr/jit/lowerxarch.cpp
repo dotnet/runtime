@@ -6360,8 +6360,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     MakeSrcContained(node, op1);
                                     // MultiplyNoFlags is a Commutative operation, so swap the first two operands here
                                     // to make the containment checks in codegen significantly simpler
-                                    *(originalArgList->pCurrent())         = op2;
-                                    *(originalArgList->Rest()->pCurrent()) = op1;
+                                    originalArgList->Current()         = op2;
+                                    originalArgList->Rest()->Current() = op1;
                                 }
                                 else if (supportsRegOptional)
                                 {
