@@ -14,7 +14,7 @@
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT;NO_ARRAY_EMPTY_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
@@ -49,7 +49,20 @@
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
+    <Compile Include="System\Diagnostics\LinkedList.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Counter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.netcore.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' Or '$(TargetFramework)' == 'net5.0'" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.netfx.cs" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)' And '$(TargetFramework)' != 'net5.0'" />
+    <Compile Include="System\Diagnostics\Metrics\Measurement.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Meter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\MeterListener.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableCounter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableGauge.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableInstrument.cs" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">

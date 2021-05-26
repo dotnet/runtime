@@ -100,7 +100,7 @@
     <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
 
     <!-- run on MacCatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=maccatalyst --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />
 
   </Target>
 

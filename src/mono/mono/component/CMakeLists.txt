@@ -1,57 +1,67 @@
+set(MONO_COMPONENT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../component")
+set(SHARED_EVENTPIPE_INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../native/")
+set(SHARED_EVENTPIPE_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../native/eventpipe/")
+set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../eventpipe/")
+set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
+
+set(MONO_HOT_RELOAD_COMPONENT_NAME "hot_reload")
+set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
+
 # a list of every component.
 set(components "")
 
 # the sources for each individiable component define a new
-# component_name-sources_base list for each component, and a
-# component_name-stub-sources_base list for the component stub.
+# component_name-sources list for each component, and a
+# component_name-stub-sources list for the component stub.
 
 # hot_reload
 list(APPEND components
-    hot_reload
+  ${MONO_HOT_RELOAD_COMPONENT_NAME}
 )
-set(hot_reload-sources_base
-  hot_reload.c
-  hot_reload.h
+set(${MONO_HOT_RELOAD_COMPONENT_NAME}-sources
+  ${MONO_COMPONENT_PATH}/hot_reload.c
+  ${MONO_COMPONENT_PATH}/hot_reload.h
   )
-set(hot_reload-stub-sources_base
-  hot_reload-stub.c
+set(${MONO_HOT_RELOAD_COMPONENT_NAME}-stub-sources
+  ${MONO_COMPONENT_PATH}/hot_reload-stub.c
   )
 
 # diagnostics_tracing (event_pipe/diagnostics_server)
 list(APPEND components
-    diagnostics_tracing
+  ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}
 )
-
-set(SHARED_EVENTPIPE_INCLUDE_PATH "../../../native/")
-set(SHARED_EVENTPIPE_SOURCE_PATH "../../../native/eventpipe/")
-set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "../eventpipe/")
 
 include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
 
 include_directories(
   ${SHARED_EVENTPIPE_INCLUDE_PATH}
   ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
+  ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}
 )
 
-set(diagnostics_tracing-sources_base
+set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
   ${eventpipe_sources}
   ${diagnostic_server_sources}
-  event_pipe.c
-  event_pipe.h
-  diagnostics_server.c
-  diagnostics_server.h
+  ${MONO_COMPONENT_PATH}/event_pipe.c
+  ${MONO_COMPONENT_PATH}/event_pipe.h
+  ${MONO_COMPONENT_PATH}/diagnostics_server.c
+  ${MONO_COMPONENT_PATH}/diagnostics_server.h
   )
-set(diagnostics_tracing-stub-sources_base
-  event_pipe-stub.c
-  diagnostics_server-stub.c
+set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-stub-sources
+  ${MONO_COMPONENT_PATH}/event_pipe-stub.c
+  ${MONO_COMPONENT_PATH}/diagnostics_server-stub.c
   )
+set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
+  ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers
+  ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources
+)
 
 # from here down, all the components are treated in the same way
 
 # a generic component interface that all components implement
 add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
-  ../component/component.h
+  ${MONO_COMPONENT_PATH}/component.h
 )
 
 if(DISABLE_COMPONENTS OR (NOT STATIC_COMPONENTS AND HOST_WIN32))
@@ -61,12 +71,13 @@ endif()
 # define a component_name-objects and component_name-stub-objects object
 # targets with the relative source file names
 foreach(component IN LISTS components)
-  addprefix("${component}-sources" ../component "${${component}-sources_base}")
   if(NOT DISABLE_COMPONENT_OBJECTS)
     add_library("${component}-objects" OBJECT "${${component}-sources}")
     target_link_libraries("${component}-objects" component_base)
+    foreach(dependency IN LISTS "${component}-dependencies")
+      add_dependencies("${component}-objects" "${dependency}")
+    endforeach()
   endif()
-  addprefix("${component}-stub-sources" ../component "${${component}-stub-sources_base}")
   add_library("${component}-stub-objects" OBJECT "${${component}-stub-sources}")
   target_link_libraries("${component}-stub-objects" component_base)
 endforeach()
@@ -80,6 +91,9 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
     else()
       add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
     endif()
+    foreach(dependency IN LISTS "${component}-dependencies")
+      add_dependencies("mono-component-${component}" "${dependency}")
+    endforeach()
     # each shared library component gets its own copy for eglib
     #
     # FIXME: this is bad for things like the g_log_set_default_handler/g_logv

@@ -95,6 +95,7 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 #define NEED_OPENSSL_1_1 true
 #define NEED_OPENSSL_3_0 true
 
+int OpenLibrary(void);
 void InitializeOpenSSLShim(void);
 
 #if !HAVE_OPENSSL_EC2M

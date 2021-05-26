@@ -202,7 +202,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_DISPATCH:
-                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetComInterfaceForObject<object, IDispatch>(value);
+                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetIDispatchForObject(value);
                     break;
 
                 case VarEnum.VT_BSTR:
@@ -628,11 +628,15 @@ namespace System.Runtime.InteropServices
 
         // VT_BSTR
 
-        public string AsBstr
+        public string? AsBstr
         {
             get
             {
                 Debug.Assert(VariantType == VarEnum.VT_BSTR);
+                if (_typeUnion._unionTypes._bstr == IntPtr.Zero)
+                {
+                    return null;
+                }
                 return (string)Marshal.PtrToStringBSTR(this._typeUnion._unionTypes._bstr);
             }
             set
@@ -694,7 +698,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    _typeUnion._unionTypes._dispatch = Marshal.GetComInterfaceForObject<object, IDispatch>(value);
+                    _typeUnion._unionTypes._dispatch = Marshal.GetIDispatchForObject(value);
                 }
             }
         }

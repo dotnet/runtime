@@ -2,7 +2,7 @@ namespace System
 {
     public static class LineEndingsHelper
     {
-        private const string CompiledNewline = @"
+        public const string CompiledNewline = @"
 ";
         public static readonly bool s_consistentNewlines = StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);
 

@@ -5124,7 +5124,7 @@ void CEEInfo::getCallInfo(
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
     TypeHandle constrainedType;
-    if ((flags & CORINFO_CALLINFO_CALLVIRT) && (pConstrainedResolvedToken != NULL))
+    if (pConstrainedResolvedToken != NULL)
     {
         constrainedType = TypeHandle(pConstrainedResolvedToken->hClass);
     }
@@ -5352,12 +5352,36 @@ void CEEInfo::getCallInfo(
         // Direct calls to abstract methods are not allowed
         if (IsMdAbstract(dwTargetMethodAttrs) &&
             // Compensate for always treating delegates as direct calls above
-            !(((flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt)))
+            !(((flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt))
+            && !(IsMdStatic(dwTargetMethodAttrs) && fForceUseRuntimeLookup))
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
         }
 
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
+
+        // If the target method is resolved via constrained static virtual dispatch
+        // And it requires an instParam, we do not have the generic dictionary infrastructure
+        // to load the correct generic context arg via EmbedGenericHandle.
+        // Instead, force the call to go down the CORINFO_CALL_CODE_POINTER code path
+        // which should have somewhat inferior performance. This should only actually happen in the case
+        // of shared generic code calling a shared generic implementation method, which should be rare.
+        //
+        // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
+        // of the constrained target instead, and use that in some circumstances; however, implementation of
+        // that design requires refactoring variuos parts of the JIT interface as well as
+        // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
+        // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
+        // via a single use of CORINFO_CALL_CODE_POINTER, or would be better done with a CORINFO_CALL + embedded
+        // constrained generic handle, or if there is a case where we would want to use both a CORINFO_CALL and
+        // embedded constrained generic handle. Given the current expected high performance use case of this feature
+        // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
+        // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
+        // sensitive.
+        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup)
+        {
+            allowInstParam = FALSE;
+        }
 
         // Create instantiating stub if necesary
         if (!allowInstParam && pTargetMD->RequiresInstArg())
@@ -5401,9 +5425,20 @@ void CEEInfo::getCallInfo(
             {
                 pResult->kind = CORINFO_CALL_CODE_POINTER;
 
-                // For reference types, the constrained type does not affect method resolution
-                DictionaryEntryKind entryKind = (!constrainedType.IsNull() && constrainedType.IsValueType()) ? ConstrainedMethodEntrySlot : MethodEntrySlot;
-
+                DictionaryEntryKind entryKind;
+                if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
+                {
+                    // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
+                    // constraint, it doesn't effect it either
+                    entryKind = MethodEntrySlot;
+                }
+                else
+                {
+                    // constrained. callvirt case where the constraint type is a valuetype
+                    // OR
+                    // constrained. call or constrained. ldftn case
+                    entryKind = ConstrainedMethodEntrySlot;
+                }
                 ComputeRuntimeLookupForSharedGenericToken(entryKind,
                                                             pResolvedToken,
                                                             pConstrainedResolvedToken,
@@ -5706,7 +5741,19 @@ void CEEInfo::getCallInfo(
 
     pResult->methodFlags = getMethodAttribsInternal(pResult->hMethod);
 
-    SignatureKind signatureKind = flags & CORINFO_CALLINFO_CALLVIRT && !(pResult->kind == CORINFO_CALL) ? SK_VIRTUAL_CALLSITE : SK_CALLSITE;
+    SignatureKind signatureKind;
+    if (flags & CORINFO_CALLINFO_CALLVIRT && !(pResult->kind == CORINFO_CALL))
+    {
+        signatureKind = SK_VIRTUAL_CALLSITE;
+    }
+    else if ((pResult->kind == CORINFO_CALL_CODE_POINTER) && IsMdVirtual(dwTargetMethodAttrs) && IsMdStatic(dwTargetMethodAttrs))
+    {
+        signatureKind = SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
+    }
+    else
+    {
+        signatureKind = SK_CALLSITE;
+    }
     getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
@@ -8639,9 +8686,10 @@ CEEInfo::getMethodSigInternal(
         // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
         //
         BOOL isCallSiteThatGoesThroughInstantiatingStub =
-            signatureKind == SK_VIRTUAL_CALLSITE &&
+            (signatureKind == SK_VIRTUAL_CALLSITE &&
             !ftn->IsStatic() &&
-            ftn->GetMethodTable()->IsInterface();
+            ftn->GetMethodTable()->IsInterface()) ||
+            signatureKind == SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
         if (!isCallSiteThatGoesThroughInstantiatingStub)
             sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
     }
@@ -8781,20 +8829,6 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
                 if (pMustExpand != nullptr)
                 {
                     *pMustExpand = true;
-                }
-            }
-            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN)))
-            {
-                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__SPAN__GET_ITEM)))
-                {
-                    result = CORINFO_INTRINSIC_Span_GetItem;
-                }
-            }
-            else if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN)))
-            {
-                if (method->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__READONLY_SPAN__GET_ITEM)))
-                {
-                    result = CORINFO_INTRINSIC_ReadOnlySpan_GetItem;
                 }
             }
         }
@@ -9949,12 +9983,15 @@ namespace
             _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
             if (pMD->IsNDirect())
             {
-                if (pSuppressGCTransition)
-                {
-                    *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
-                }
+#ifdef CROSSGEN_COMPILE
+                // Return CorInfoCallConvExtension::Managed to indicate that crossgen does not support handling UnmanagedCallConv
+                if (pMD->HasUnmanagedCallConvAttribute())
+                    return CorInfoCallConvExtension::Managed;
+#endif // CROSSGEN_COMPILE
 
-                return NDirect::GetCallingConvention_IgnoreErrors(pMD);
+                CorInfoCallConvExtension unmanagedCallConv;
+                NDirect::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, pSuppressGCTransition);
+                return unmanagedCallConv;
             }
             else
             {

@@ -2242,8 +2242,8 @@ struct UnsignedMagic
     typedef T DivisorType;
 
     T    magic;
-    bool add;
-    int  shift;
+    bool increment;
+    char postShift;
 };
 
 template <typename T>
@@ -2260,7 +2260,7 @@ const UnsignedMagic<uint32_t>* TryGetUnsignedMagic(uint32_t divisor)
         {},
         {0xcccccccd, false, 2}, // 5
         {0xaaaaaaab, false, 2}, // 6
-        {0x24924925, true, 3},  // 7
+        {0x49249249, true, 1},  // 7
         {},
         {0x38e38e39, false, 1}, // 9
         {0xcccccccd, false, 3}, // 10
@@ -2279,7 +2279,7 @@ const UnsignedMagic<uint64_t>* TryGetUnsignedMagic(uint64_t divisor)
         {},
         {0xcccccccccccccccd, false, 2}, // 5
         {0xaaaaaaaaaaaaaaab, false, 2}, // 6
-        {0x2492492492492493, true, 3},  // 7
+        {0x9249249249249249, true, 2},  // 7
         {},
         {0xe38e38e38e38e38f, false, 3}, // 9
         {0xcccccccccccccccd, false, 3}, // 10
@@ -2296,99 +2296,138 @@ const UnsignedMagic<uint64_t>* TryGetUnsignedMagic(uint64_t divisor)
 //
 // Arguments:
 //    d     - The divisor
-//    add   - Pointer to a flag indicating the kind of code to generate
-//    shift - Pointer to the shift value to be returned
+//    increment   - Pointer to a flag indicating if incrementing the numerator is required
+//    preShift - Pointer to the pre-shift value to be returned
+//    postShift - Pointer to the post-shift value to be returned
 //
 // Returns:
 //    The magic number.
 //
 // Notes:
-//    This code is adapted from _The_PowerPC_Compiler_Writer's_Guide_, pages 57-58.
-//    The paper is based on "Division by invariant integers using multiplication"
-//    by Torbjorn Granlund and Peter L. Montgomery in PLDI 94
+//    Based on "Faster Unsigned Division by Constants" by ridiculous_fish.
+//    https://ridiculousfish.com/files/faster_unsigned_division_by_constants.pdf
+//    https://github.com/ridiculousfish/libdivide/blob/master/doc/divide_by_constants_codegen_reference.c
 
 template <typename T>
-T GetUnsignedMagic(T d, bool* add /*out*/, int* shift /*out*/)
+T GetUnsignedMagic(T d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned num_bits)
 {
     assert((d >= 3) && !isPow2(d));
 
-    const UnsignedMagic<T>* magic = TryGetUnsignedMagic(d);
+    // The numerator must fit in a uint
+    assert(num_bits > 0 && num_bits <= sizeof(T) * CHAR_BIT);
 
-    if (magic != nullptr)
+    // Bits in a uint
+    const unsigned UINT_BITS = sizeof(T) * CHAR_BIT;
+
+    if (num_bits == UINT_BITS)
     {
-        *shift = magic->shift;
-        *add   = magic->add;
-        return magic->magic;
+        const UnsignedMagic<T>* magic = TryGetUnsignedMagic(d);
+
+        if (magic != nullptr)
+        {
+            *increment = magic->increment;
+            *preShift  = 0;
+            *postShift = magic->postShift;
+            return magic->magic;
+        }
     }
 
-    typedef typename std::make_signed<T>::type ST;
+    // The extra shift implicit in the difference between UINT_BITS and num_bits
+    const unsigned extra_shift = UINT_BITS - num_bits;
 
-    const unsigned bits       = sizeof(T) * 8;
-    const unsigned bitsMinus1 = bits - 1;
-    const T        twoNMinus1 = T(1) << bitsMinus1;
+    // The initial power of 2 is one less than the first one that can possibly work
+    const T initial_power_of_2 = (T)1 << (UINT_BITS - 1);
 
-    *add        = false;
-    const T  nc = -ST(1) - -ST(d) % ST(d);
-    unsigned p  = bitsMinus1;
-    T        q1 = twoNMinus1 / nc;
-    T        r1 = twoNMinus1 - (q1 * nc);
-    T        q2 = (twoNMinus1 - 1) / d;
-    T        r2 = (twoNMinus1 - 1) - (q2 * d);
-    T        delta;
+    // The remainder and quotient of our power of 2 divided by d
+    T quotient = initial_power_of_2 / d, remainder = initial_power_of_2 % d;
 
-    do
+    // The magic info for the variant "round down" algorithm
+    T        down_multiplier = 0;
+    unsigned down_exponent   = 0;
+    int      has_magic_down  = 0;
+
+    // Compute ceil(log_2 D)
+    unsigned ceil_log_2_D = 0;
+    for (T tmp = d; tmp > 0; tmp >>= 1)
+        ceil_log_2_D += 1;
+
+    // Begin a loop that increments the exponent, until we find a power of 2 that works.
+    unsigned exponent;
+    for (exponent = 0;; exponent++)
     {
-        p++;
-
-        if (r1 >= (nc - r1))
+        // Quotient and remainder is from previous exponent; compute it for this exponent.
+        if (remainder >= d - remainder)
         {
-            q1 = 2 * q1 + 1;
-            r1 = 2 * r1 - nc;
+            // Doubling remainder will wrap around D
+            quotient  = quotient * 2 + 1;
+            remainder = remainder * 2 - d;
         }
         else
         {
-            q1 = 2 * q1;
-            r1 = 2 * r1;
+            // Remainder will not wrap
+            quotient  = quotient * 2;
+            remainder = remainder * 2;
         }
 
-        if ((r2 + 1) >= (d - r2))
+        // We're done if this exponent works for the round_up algorithm.
+        // Note that exponent may be larger than the maximum shift supported,
+        // so the check for >= ceil_log_2_D is critical.
+        if ((exponent + extra_shift >= ceil_log_2_D) || (d - remainder) <= ((T)1 << (exponent + extra_shift)))
+            break;
+
+        // Set magic_down if we have not set it yet and this exponent works for the round_down algorithm
+        if (!has_magic_down && remainder <= ((T)1 << (exponent + extra_shift)))
         {
-            if (q2 >= (twoNMinus1 - 1))
-            {
-                *add = true;
-            }
-
-            q2 = 2 * q2 + 1;
-            r2 = 2 * r2 + 1 - d;
+            has_magic_down  = 1;
+            down_multiplier = quotient;
+            down_exponent   = exponent;
         }
-        else
+    }
+
+    if (exponent < ceil_log_2_D)
+    {
+        // magic_up is efficient
+        *increment = false;
+        *preShift  = 0;
+        *postShift = (int)exponent;
+        return quotient + 1;
+    }
+    else if (d & 1)
+    {
+        // Odd divisor, so use magic_down, which must have been set
+        assert(has_magic_down);
+        *increment = true;
+        *preShift  = 0;
+        *postShift = (int)down_exponent;
+        return down_multiplier;
+    }
+    else
+    {
+        // Even divisor, so use a prefix-shifted dividend
+        unsigned pre_shift = 0;
+        T        shifted_D = d;
+        while ((shifted_D & 1) == 0)
         {
-            if (q2 >= twoNMinus1)
-            {
-                *add = true;
-            }
-
-            q2 = 2 * q2;
-            r2 = 2 * r2 + 1;
+            shifted_D >>= 1;
+            pre_shift += 1;
         }
-
-        delta = d - 1 - r2;
-
-    } while ((p < (bits * 2)) && ((q1 < delta) || ((q1 == delta) && (r1 == 0))));
-
-    *shift = p - bits; // resulting shift
-    return q2 + 1;     // resulting magic number
+        T result = GetUnsignedMagic<T>(shifted_D, increment, preShift, postShift, num_bits - pre_shift);
+        assert(*increment == 0 && *preShift == 0); // expect no increment or pre_shift in this path
+        *preShift = (int)pre_shift;
+        return result;
+    }
 }
 
-uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/)
+uint32_t GetUnsigned32Magic(uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/)
 {
-    return GetUnsignedMagic<uint32_t>(d, add, shift);
+    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, 32);
 }
 
 #ifdef TARGET_64BIT
-uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/)
+uint64_t GetUnsigned64Magic(
+    uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
-    return GetUnsignedMagic<uint64_t>(d, add, shift);
+    return GetUnsignedMagic<uint64_t>(d, increment, preShift, postShift, bits);
 }
 #endif
 

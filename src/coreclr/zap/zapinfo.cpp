@@ -421,6 +421,13 @@ void ZapInfo::CompileMethod()
         ThrowHR(E_NOTIMPL);
     }
 
+    if (GetCompileInfo()->IsUnmanagedCallConvMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallConvAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+
     m_currentMethodInfo = CORINFO_METHOD_INFO();
     if (!getMethodInfo(m_currentMethodHandle, &m_currentMethodInfo))
     {
@@ -2387,6 +2394,13 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     void * pTarget = NULL;
 
     _ASSERTE(pResult);
+
+    if ((flags & CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != nullptr)
+    {
+        // Defer constrained call / ldftn instructions used for static virtual methods
+        // to runtime resolution.
+        ThrowHR(E_NOTIMPL);
+    }
 
     // Fill in the kind of the virtual call.
     // We set kindOnly=true since we don't want the EE to actually give us

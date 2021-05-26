@@ -805,5 +805,10 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
+
+#if DEBUG // Used for testing in Checked or Debug
+        [DllImport(RuntimeHelpers.QCall)]
+        internal static unsafe extern delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
+#endif
     }
 }

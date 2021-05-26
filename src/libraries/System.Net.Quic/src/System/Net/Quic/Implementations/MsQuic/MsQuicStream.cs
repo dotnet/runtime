@@ -195,7 +195,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
+
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
+
             HandleWriteCompletedState();
         }
 
@@ -265,6 +267,17 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.SendState == SendState.Finished || _state.SendState == SendState.Aborted)
                 {
                     _state.SendState = SendState.None;
+                }
+            }
+        }
+
+        private void HandleWriteFailedState()
+        {
+            lock (_state)
+            {
+                if (_state.SendState == SendState.Pending)
+                {
+                    _state.SendState = SendState.Finished;
                 }
             }
         }
@@ -899,6 +912,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
+                HandleWriteFailedState();
                 CleanupSendState(_state);
 
                 // TODO this may need to be an aborted exception.
@@ -968,6 +982,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
+                HandleWriteFailedState();
                 CleanupSendState(_state);
 
                 // TODO this may need to be an aborted exception.
@@ -1033,6 +1048,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
+                HandleWriteFailedState();
                 CleanupSendState(_state);
 
                 // TODO this may need to be an aborted exception.

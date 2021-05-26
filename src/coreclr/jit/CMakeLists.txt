@@ -213,6 +213,8 @@ if (CLR_CMAKE_TARGET_WIN32)
     loopcloningopts.h
     lower.h
     lsra_reftypes.h
+    lsra_stats.h
+    lsra_score.h
     lsra.h
     namedintrinsiclist.h
     objectalloc.h
@@ -238,6 +240,10 @@ if (CLR_CMAKE_TARGET_WIN32)
     ssarenamestate.h
     stacklevelsetter.h
     target.h
+    targetx86.h
+    targetamd64.h
+    targetarm.h
+    targetarm64.h
     tinyarray.h
     titypes.h
     treelifeupdater.h
@@ -250,6 +256,10 @@ if (CLR_CMAKE_TARGET_WIN32)
     varset.h
     vartype.h
   )
+
+  # Append clrjit.natvis file
+  list (APPEND JIT_SOURCES
+    clrjit.natvis)
 
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
     list (APPEND JIT_HEADERS
@@ -451,6 +461,10 @@ function(add_jit jitName)
         ${JIT_LINK_LIBRARIES}
         ${JIT_ARCH_LINK_LIBRARIES}
     )
+
+    if (CLR_CMAKE_HOST_WIN32)
+        link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
+    endif()
 
     # add the install targets
     install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)

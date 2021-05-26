@@ -3,8 +3,8 @@
   <file datatype="xml" source-language="en" target-language="zh-Hant" original="../Strings.resx">
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
-        <source>Argument {0} is not referenced from the logging message</source>
-        <target state="new">Argument {0} is not referenced from the logging message</target>
+        <source>Argument '{0}' is not referenced from the logging message</source>
+        <target state="new">Argument '{0}' is not referenced from the logging message</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
@@ -73,8 +73,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentMessage">
-        <source>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="new">One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</target>
+        <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="new">One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentTitle">
+        <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="new">One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldMessage">

@@ -5486,7 +5486,7 @@ namespace System.Diagnostics.Tracing
             if (!channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 // If we were not given an explicit channel, allocate one.
-                if (channelKeyword != 0)
+                if (channelKeyword == 0)
                 {
                     channelKeyword = nextChannelKeywordBit;
                     nextChannelKeywordBit >>= 1;

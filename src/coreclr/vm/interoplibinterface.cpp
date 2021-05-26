@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_COMWRAPPERS
+
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
@@ -1296,8 +1298,6 @@ namespace InteropLibImports
     }
 }
 
-#ifdef FEATURE_COMWRAPPERS
-
 BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
@@ -1751,9 +1751,7 @@ bool ComWrappersNative::HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ 
     return cxt.HasWrapper;
 }
 
-#endif // FEATURE_COMWRAPPERS
-
-void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
+void ComWrappersNative::OnFullGCStarted()
 {
     CONTRACTL
     {
@@ -1762,42 +1760,26 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMWRAPPERS
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
-    // See Interop::OnGCFinished()
-    if (nCondemnedGeneration >= 2)
+    // If no cache exists, then there is nothing to do here.
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
     {
-        // If no cache exists, then there is nothing to do here.
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-        if (cache != NULL)
-        {
-            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
-            ExtObjCxtRefCache* refCache = cache->GetRefCache();
+        STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
+        ExtObjCxtRefCache* refCache = cache->GetRefCache();
 
-            // Reset the ref cache
-            refCache->ResetDependentHandles();
+        // Reset the ref cache
+        refCache->ResetDependentHandles();
 
-            // Create a call context for the InteropLib.
-            InteropLibImports::RuntimeCallContext cxt(cache);
-            (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
+        // Create a call context for the InteropLib.
+        InteropLibImports::RuntimeCallContext cxt(cache);
+        (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
 
-            // Shrink cache and clear unused handles.
-            refCache->ShrinkDependentHandles();
-        }
+        // Shrink cache and clear unused handles.
+        refCache->ShrinkDependentHandles();
     }
-#endif // FEATURE_COMWRAPPERS
 }
 
-void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
+void ComWrappersNative::OnFullGCFinished()
 {
     CONTRACTL
     {
@@ -1806,26 +1788,12 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMWRAPPERS
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
-    // See Interop::OnGCStarted()
-    if (nCondemnedGeneration >= 2)
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
     {
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-        if (cache != NULL)
-        {
-            (void)InteropLib::Com::EndExternalObjectReferenceTracking();
-            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
-        }
+        (void)InteropLib::Com::EndExternalObjectReferenceTracking();
+        STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
     }
-#endif // FEATURE_COMWRAPPERS
 }
+
+#endif // FEATURE_COMWRAPPERS

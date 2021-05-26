@@ -170,12 +170,14 @@ internal class Xcode
         }
 
         string aotSources = "";
+        string aotList = "";
         foreach (string asm in asmFiles)
         {
             // these libraries are linked via modules.m
             var name = Path.GetFileNameWithoutExtension(asm);
             aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
             toLink += $"    {name}{Environment.NewLine}";
+            aotList += $" {name}";
         }
 
         string frameworks = "";
@@ -187,6 +189,7 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
+        cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
 
         var defines = new StringBuilder();

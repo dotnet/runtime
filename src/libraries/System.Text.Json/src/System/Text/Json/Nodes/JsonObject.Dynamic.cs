@@ -29,7 +29,7 @@ namespace System.Text.Json.Nodes
                 node = value as JsonNode;
                 if (node == null)
                 {
-                    node = new JsonValue<object>(value, Options);
+                    node = new JsonValueNotTrimmable<object>(value, Options);
                 }
             }
 

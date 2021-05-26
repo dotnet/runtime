@@ -472,7 +472,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public abstract Type[] GetInterfaces();
 
-        public virtual InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        public virtual InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o == null ? false : IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;

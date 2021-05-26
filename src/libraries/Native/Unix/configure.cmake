@@ -210,6 +210,16 @@ check_symbol_exists(
     HAVE_POSIX_ADVISE)
 
 check_symbol_exists(
+    posix_fallocate
+    fcntl.h
+    HAVE_POSIX_FALLOCATE)
+
+check_symbol_exists(
+    posix_fallocate64
+    fcntl.h
+    HAVE_POSIX_FALLOCATE64)
+
+check_symbol_exists(
     ioctl
     sys/ioctl.h
     HAVE_IOCTL)

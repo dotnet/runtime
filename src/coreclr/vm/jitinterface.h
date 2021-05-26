@@ -34,6 +34,7 @@ enum SignatureKind
     SK_NOT_CALLSITE,
     SK_CALLSITE,
     SK_VIRTUAL_CALLSITE,
+    SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
 class Stub;

@@ -199,7 +199,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetMembers(bindingAttr);
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             return m_typeBuilder.GetInterfaceMap(interfaceType);
         }

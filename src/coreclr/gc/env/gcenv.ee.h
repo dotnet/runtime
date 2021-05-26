@@ -26,12 +26,12 @@ public:
     // start of GC call back - single threaded
     static void GcStartWork(int condemned, int max_gen);
 
+    // Called before scanning roots
+    static void BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent);
+
     //EE can perform post stack scanning action, while the
     // user threads are still suspended
     static void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc);
-
-    // Called before BGC starts sweeping, the heap is walkable
-    static void GcBeforeBGCSweepWork();
 
     // post-gc callback.
     static void GcDone(int condemned);

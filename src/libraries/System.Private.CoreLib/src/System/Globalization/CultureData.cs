@@ -673,8 +673,9 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (GlobalizationMode.PredefinedCulturesOnly && !GlobalizationMode.Invariant)
+            if (GlobalizationMode.PredefinedCulturesOnly)
             {
+                Debug.Assert(!GlobalizationMode.Invariant);
                 if (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName))
                     return null;
             }

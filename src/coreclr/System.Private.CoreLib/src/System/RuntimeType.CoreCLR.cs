@@ -1089,6 +1089,10 @@ namespace System
                     return list.ToArray();
                 }
 
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                    Justification = "Calls to ResolveTypeHandle technically require all types to be kept " +
+                        "But this is not a public API to enumerate reflection items, all the public APIs which do that " +
+                        "should be annotated accordingly.")]
                 private RuntimeType[] PopulateNestedClasses(Filter filter)
                 {
                     RuntimeType declaringType = ReflectedType;
@@ -1733,6 +1737,7 @@ namespace System
                 typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
             return GetMethodBase(new ModuleHandle(scope).ResolveMethodHandle(typeMetadataToken).GetMethodInfo());
@@ -2667,7 +2672,7 @@ namespace System
             return members;
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
@@ -2691,15 +2696,15 @@ namespace System
             if (IsSZArray && ifaceType.IsGenericType)
                 throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
 
-            int ifaceInstanceMethodCount = RuntimeTypeHandle.GetNumVirtuals(ifaceRtType);
+            int ifaceVirtualMethodCount = RuntimeTypeHandle.GetNumVirtualsAndStaticVirtuals(ifaceRtType);
 
             InterfaceMapping im;
             im.InterfaceType = ifaceType;
             im.TargetType = this;
-            im.InterfaceMethods = new MethodInfo[ifaceInstanceMethodCount];
-            im.TargetMethods = new MethodInfo[ifaceInstanceMethodCount];
+            im.InterfaceMethods = new MethodInfo[ifaceVirtualMethodCount];
+            im.TargetMethods = new MethodInfo[ifaceVirtualMethodCount];
 
-            for (int i = 0; i < ifaceInstanceMethodCount; i++)
+            for (int i = 0; i < ifaceVirtualMethodCount; i++)
             {
                 RuntimeMethodHandleInternal ifaceRtMethodHandle = RuntimeTypeHandle.GetMethodAt(ifaceRtType, i);
 

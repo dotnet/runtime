@@ -1312,7 +1312,7 @@ public:
     HRESULT DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags flags, STRINGREF orefStackTrace);
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     HRESULT DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, CLRDATA_ADDRESS ccwPtr);
     HRESULT EnumMemStowedException(CLRDataEnumMemoryFlags flags);
 #endif

@@ -391,6 +391,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             throw new COMException(string.Empty, CLASS_E_CLASSNOTAVAILABLE);
         }
 
+        [RequiresUnreferencedCode("The trimmer might remove types which are needed by the assemblies loaded in this method.")]
         private static AssemblyLoadContext GetALC(string assemblyPath)
         {
             AssemblyLoadContext? alc;

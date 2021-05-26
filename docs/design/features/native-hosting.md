@@ -592,3 +592,6 @@ hostfxr_close(host_context_handle);
 The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigated. The assumption is that new APIs will have to be added to `hostpolicy` to implement the proposed functionality.
 
 Part if this investigation will also be compatibility behavior. Currently "any" version of `hostfxr` needs to be able to use "any" version of `hostpolicy`. But the proposed functionality will need both new `hostfxr` and new `hostpolicy` to work. It is likely the proposed APIs will fail if the app resolves to a framework with old `hostpolicy` without the necessary new APIs. Part of the investigation will be if it's feasible to use the new `hostpolicy` APIs to implement existing old `hostfxr` APIs.
+
+## Incompatible with trimming
+Native hosting support on managed side is disabled by default on trimmed apps. Native hosting and trimming are incompatible since the trimmer cannot analyze methods that are called by native hosts. Native hosting support for trimming can be managed through the [feature switch](https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md) settings specific to each native host.

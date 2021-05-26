@@ -128,7 +128,7 @@ internal partial class VectorTest
                     case 32: check = A[32]; break;
                 }
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -138,7 +138,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for index == Count of " + Vector<T>.Count);
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for index == Count of " + Vector<T>.Count);
                 returnVal = Fail;
             }
 
@@ -148,7 +148,7 @@ internal partial class VectorTest
             {
                 check = A[-1];
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -158,7 +158,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for index == -1");
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for index == -1");
                 returnVal = Fail;
             }
 

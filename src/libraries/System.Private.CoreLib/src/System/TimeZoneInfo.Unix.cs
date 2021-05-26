@@ -37,6 +37,8 @@ namespace System
             "Zulu"
         };
 
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
+
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
             _id = id;

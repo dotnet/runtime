@@ -3585,7 +3585,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     // force the fromType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
     {
-        fromType = genUnsignedType(fromType);
+        fromType = varTypeToUnsigned(fromType);
     }
 
     // If we have a cast involving floating point types, then bail.
@@ -5152,8 +5152,9 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_INTRINSIC:
             break;
 
+        case GT_INC_SATURATE:
         case GT_MULHI:
-            assert(false && "Unexpected GT_MULHI node encountered before lowering");
+            assert(false && "Unexpected GT_INC_SATURATE/GT_MULHI node encountered before lowering");
             break;
 
         case GT_JTRUE:

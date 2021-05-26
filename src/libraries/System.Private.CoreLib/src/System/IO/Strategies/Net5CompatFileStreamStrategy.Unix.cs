@@ -39,7 +39,8 @@ namespace System.IO.Strategies
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="originalPath">The original path specified for the FileStream.</param>
         /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
+        /// <param name="preallocationSize">passed to posix_fallocate</param>
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options, long preallocationSize)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -101,6 +102,25 @@ namespace System.IO.Strategies
                         // truncated.  Ignore the error in such cases; in all others, throw.
                         throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
                     }
+                }
+            }
+
+            // If preallocationSize has been provided for a creatable and writeable file
+            if (FileStreamHelpers.ShouldPreallocate(preallocationSize, _access, mode))
+            {
+                int fallocateResult = Interop.Sys.PosixFAllocate(_fileHandle, 0, preallocationSize);
+                if (fallocateResult != 0)
+                {
+                    _fileHandle.Dispose();
+                    Interop.Sys.Unlink(_path!); // remove the file to mimic Windows behaviour (atomic operation)
+
+                    if (fallocateResult == -1)
+                    {
+                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, _path, preallocationSize));
+                    }
+
+                    Debug.Assert(fallocateResult == -2);
+                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, _path, preallocationSize));
                 }
             }
         }

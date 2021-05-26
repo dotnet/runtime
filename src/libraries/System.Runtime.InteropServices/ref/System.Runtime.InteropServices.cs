@@ -1091,6 +1091,12 @@ namespace System.Runtime.InteropServices
         public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class UnmanagedCallConvAttribute : System.Attribute
+    {
+        public UnmanagedCallConvAttribute() { }
+        public System.Type[]? CallConvs;
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
@@ -1800,6 +1806,43 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
         VAR_CONST = 2,
         VAR_DISPATCH = 3,
+    }
+}
+namespace System.Runtime.InteropServices.ObjectiveC
+{
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ObjectiveCTrackedTypeAttribute : System.Attribute
+    {
+        public ObjectiveCTrackedTypeAttribute() { }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.CLSCompliantAttribute(false)]
+    public static class ObjectiveCMarshal
+    {
+        public unsafe delegate delegate* unmanaged<System.IntPtr, void> UnhandledExceptionPropagationHandler(
+            System.Exception exception,
+            System.RuntimeMethodHandle lastMethod,
+            out System.IntPtr context);
+        public static unsafe void Initialize(
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+        public static GCHandle CreateReferenceTrackingHandle(
+            object obj,
+            out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public enum MessageSendFunction
+        {
+            MsgSend,
+            MsgSendFpret,
+            MsgSendStret,
+            MsgSendSuper,
+            MsgSendSuperStret,
+        }
+        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
+        public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
 namespace System.Security

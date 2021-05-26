@@ -45,7 +45,8 @@ namespace System.IO.Enumeration
             if (isUnknown)
             {
                 isSymlink = entry.IsSymbolicLink;
-                isDirectory = entry._status.IsDirectory(entry.FullPath);
+                // Need to fail silently in case we are enumerating
+                isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
             }
             // Same idea as the directory check, just repeated for (and tweaked due to the
             // nature of) symlinks.
@@ -53,7 +54,8 @@ namespace System.IO.Enumeration
             // so we need to reflect that in our isDirectory variable.
             else if (isSymlink)
             {
-                isDirectory = entry._status.IsDirectory(entry.FullPath);
+                // Need to fail silently in case we are enumerating
+                isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
             }
 
             entry._status.InitiallyDirectory = isDirectory;

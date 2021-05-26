@@ -224,7 +224,7 @@ namespace System.Text.Json.Tests.Serialization
                 keyInfo: null,
                 valueInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 numberHandling: default));
-            Assert.Contains("valueInfo", ane.ToString());
+            Assert.Contains("keyInfo", ane.ToString());
 
             // Null value info
             ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateDictionaryInfo<StringToGenericDictionaryWrapper<int>, string, int>(
