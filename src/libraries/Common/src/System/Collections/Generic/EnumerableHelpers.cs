@@ -8,13 +8,6 @@ namespace System.Collections.Generic
     /// </summary>
     internal static partial class EnumerableHelpers
     {
-        private static int MaxArrayLength =>
-#if !MS_IO_REDIST
-                        Array.MaxLength;
-#else
-                        0X7FFFFFC7;
-#endif
-
         /// <summary>Converts an enumerable to an array using the same logic as List{T}.</summary>
         /// <param name="source">The enumerable to convert.</param>
         /// <param name="length">The number of items stored in the resulting array, 0-indexed.</param>
@@ -63,9 +56,9 @@ namespace System.Collections.Generic
                                 // constrain the length to be Array.MaxLength (this overflow check works because of the
                                 // cast to uint).
                                 int newLength = count << 1;
-                                if ((uint)newLength > MaxArrayLength)
+                                if ((uint)newLength > Array.MaxLength)
                                 {
-                                    newLength = MaxArrayLength <= count ? count + 1 : MaxArrayLength;
+                                    newLength = Array.MaxLength <= count ? count + 1 : Array.MaxLength;
                                 }
 
                                 Array.Resize(ref arr, newLength);
