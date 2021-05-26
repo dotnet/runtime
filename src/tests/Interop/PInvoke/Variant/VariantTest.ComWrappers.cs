@@ -71,7 +71,7 @@ internal unsafe class ComWrappersImpl : ComWrappers
 }
 public struct IDispatchVtbl
 {
-    private static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
+    internal static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
 
     [UnmanagedCallersOnly]
     public static int GetTypeInfoCountInternal(IntPtr thisPtr, IntPtr i)
