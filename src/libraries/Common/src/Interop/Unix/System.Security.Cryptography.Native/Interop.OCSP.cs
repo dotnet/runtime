@@ -15,14 +15,14 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspRequestDestroy")]
         internal static extern void OcspRequestDestroy(IntPtr ocspReq);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOcspRequestDerSize")]
-        internal static extern int GetOcspRequestDerSize(SafeOcspRequestHandle req);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOcspRequestDerSize")]
+        internal static partial int GetOcspRequestDerSize(SafeOcspRequestHandle req);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
-        internal static extern int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
+        internal static partial int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern SafeOcspResponseHandle CryptoNative_DecodeOcspResponse(ref byte buf, int len);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial SafeOcspResponseHandle CryptoNative_DecodeOcspResponse(ref byte buf, int len);
 
         internal static SafeOcspResponseHandle DecodeOcspResponse(ReadOnlySpan<byte> buf)
         {
@@ -34,8 +34,8 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
         internal static extern void OcspResponseDestroy(IntPtr ocspReq);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_X509ChainGetCachedOcspStatus(
+        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        private static partial int CryptoNative_X509ChainGetCachedOcspStatus(
             SafeX509StoreCtxHandle ctx,
             string cachePath,
             int chainDepth);
@@ -53,8 +53,8 @@ internal static partial class Interop
             return response;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_X509ChainVerifyOcsp(
+        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        private static partial int CryptoNative_X509ChainVerifyOcsp(
             SafeX509StoreCtxHandle ctx,
             SafeOcspRequestHandle req,
             SafeOcspResponseHandle resp,
@@ -79,8 +79,8 @@ internal static partial class Interop
             return response;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(
             SafeX509StoreCtxHandle storeCtx,
             int chainDepth);
 
