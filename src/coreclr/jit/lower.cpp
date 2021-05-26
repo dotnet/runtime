@@ -6046,6 +6046,11 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             break;
         }
 
+        case GT_PHI:
+        case GT_PHI_ARG:
+            assert(!"Should not see phi nodes after rationalize");
+            break;
+
         default:
             break;
     }
