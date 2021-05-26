@@ -97,6 +97,12 @@
 
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+  </Target>
+
+  <Target Name="RunAppBundle"
+          AfterTargets="BuildAppBundle"
+          Condition="'$(ArchiveTests)' != 'true'">
+    <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
 
     <!-- install and run on ios simulator -->
     <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
