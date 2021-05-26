@@ -12,25 +12,6 @@
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
-    <DebuggerSupport>false</DebuggerSupport>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-    <EventSourceSupport>false</EventSourceSupport>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <StartupHookSupport>false</StartupHookSupport>
-    <UseNativeHttpHandler>true</UseNativeHttpHandler>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator') and '$(UseDefaultiOSFeatureSwitches)' == 'true'">
-    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EventSourceSupport>false</EventSourceSupport>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <StartupHookSupport>false</StartupHookSupport>
-    <UseNativeHttpHandler>true</UseNativeHttpHandler>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
