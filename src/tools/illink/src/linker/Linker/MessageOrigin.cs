@@ -22,6 +22,11 @@ namespace Mono.Linker
 
 		const int HiddenLineNumber = 0xfeefee;
 
+		public MessageOrigin (IMemberDefinition memberDefinition)
+			: this (memberDefinition, null)
+		{
+		}
+
 		public MessageOrigin (string fileName, int sourceLine = 0, int sourceColumn = 0)
 		{
 			FileName = fileName;
@@ -31,7 +36,7 @@ namespace Mono.Linker
 			ILOffset = null;
 		}
 
-		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset = null)
+		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset)
 		{
 			FileName = null;
 			MemberDefinition = memberDefinition;

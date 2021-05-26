@@ -1060,7 +1060,7 @@ namespace Mono.Linker.Dataflow
 									// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 									reflectionContext.RecordHandledPattern ();
 								} else {
-									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition), callingMethodDefinition));
+									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition)));
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (foundType));
 									_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType));
 								}
@@ -1684,7 +1684,7 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.AnalyzingPattern ();
 						foreach (var typeHandleValue in methodParams[0].UniqueValues ()) {
 							if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
-								_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.Source), reflectionContext.Source);
+								_markStep.MarkStaticConstructorVisibleToReflection (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.Source));
 								reflectionContext.RecordHandledPattern ();
 							} else if (typeHandleValue == NullValue.Instance)
 								reflectionContext.RecordHandledPattern ();
@@ -1745,7 +1745,7 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.RecordHandledPattern ();
 					}
 
-					_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition, new MessageOrigin (callingMethodDefinition, operation.Offset));
+					_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition);
 
 					// To get good reporting of errors we need to track the origin of the value for all method calls
 					// but except Newobj as those are special.
@@ -2209,8 +2209,9 @@ namespace Mono.Linker.Dataflow
 					MarkInterfaceImplementation (ref reflectionContext, interfaceImplementation, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case null:
-					var source = reflectionContext.Source;
-					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, includeInterfaceTypes: true, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, source), source));
+					DependencyInfo dependencyInfo = new DependencyInfo (DependencyKind.DynamicallyAccessedMember, reflectionContext.Source);
+					var origin = new MessageOrigin (reflectionContext.Source, reflectionContext.Instruction?.Offset);
+					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, includeInterfaceTypes: true, dependencyInfo, origin));
 					break;
 				}
 			}
@@ -2218,54 +2219,39 @@ namespace Mono.Linker.Dataflow
 
 		void MarkType (ref ReflectionPatternContext reflectionContext, TypeReference typeReference, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			var source = reflectionContext.Source;
+			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
 			TypeDefinition type = _context.TryResolve (typeReference);
-			reflectionContext.RecordRecognizedPattern (type, () => _markStep.MarkTypeVisibleToReflection (typeReference, type, new DependencyInfo (dependencyKind, source), source));
+			reflectionContext.RecordRecognizedPattern (type, () => _markStep.MarkTypeVisibleToReflection (typeReference, type, dependencyInfo));
 		}
 
 		void MarkMethod (ref ReflectionPatternContext reflectionContext, MethodDefinition method, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			var source = reflectionContext.Source;
-			var offset = reflectionContext.Instruction?.Offset;
-			reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkMethodVisibleToReflection (method, new DependencyInfo (dependencyKind, source), new MessageOrigin (source, offset)));
+			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
+			reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkMethodVisibleToReflection (method, dependencyInfo));
 		}
 
 		void MarkField (ref ReflectionPatternContext reflectionContext, FieldDefinition field, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			var source = reflectionContext.Source;
-			reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (dependencyKind, source)));
+			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
+			reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkFieldVisibleToReflection (field, dependencyInfo));
 		}
 
 		void MarkProperty (ref ReflectionPatternContext reflectionContext, PropertyDefinition property, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			var source = reflectionContext.Source;
-			var dependencyInfo = new DependencyInfo (dependencyKind, source);
-			reflectionContext.RecordRecognizedPattern (property, () => {
-				// Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
-				_markStep.MarkProperty (property, dependencyInfo);
-				// We don't track PropertyInfo, so we can't tell if any accessor is needed by the app, so include them both.
-				// With better tracking it might be possible to be more precise here: mono/linker/issues/1948
-				_markStep.MarkMethodIfNotNull (property.GetMethod, dependencyInfo, source);
-				_markStep.MarkMethodIfNotNull (property.SetMethod, dependencyInfo, source);
-				_markStep.MarkMethodsIf (property.OtherMethods, m => true, dependencyInfo, source);
-			});
+			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
+			reflectionContext.RecordRecognizedPattern (property, () => { _markStep.MarkPropertyVisibleToReflection (property, dependencyInfo); });
 		}
 
 		void MarkEvent (ref ReflectionPatternContext reflectionContext, EventDefinition @event, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			var source = reflectionContext.Source;
 			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
-			reflectionContext.RecordRecognizedPattern (@event, () => {
-				// MarkEvent actually marks the add/remove/invoke methods as well, so no need to mark those explicitly
-				_markStep.MarkEvent (@event, dependencyInfo);
-				_markStep.MarkMethodsIf (@event.OtherMethods, m => true, dependencyInfo, source);
-			});
+			reflectionContext.RecordRecognizedPattern (@event, () => { _markStep.MarkEventVisibleToReflection (@event, dependencyInfo); });
 		}
 
 		void MarkInterfaceImplementation (ref ReflectionPatternContext reflectionContext, InterfaceImplementation interfaceImplementation, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			var source = reflectionContext.Source;
-			reflectionContext.RecordRecognizedPattern (interfaceImplementation, () => _markStep.MarkInterfaceImplementation (interfaceImplementation, source, new DependencyInfo (dependencyKind, source)));
+			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
+			reflectionContext.RecordRecognizedPattern (interfaceImplementation, () => _markStep.MarkInterfaceImplementation (interfaceImplementation, null, dependencyInfo));
 		}
 
 		void MarkConstructorsOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
