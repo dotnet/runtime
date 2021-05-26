@@ -18,16 +18,10 @@ internal static partial class Interop
 #if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, ExactSpelling = true)]
         private static unsafe partial int FormatMessage(
-            int dwFlags,
-            IntPtr lpSource,
-            uint dwMessageId,
-            int dwLanguageId,
-            void* lpBuffer,
-            int nSize,
-            IntPtr arguments);
 #else
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true, ExactSpelling = true)]
         private static extern unsafe int FormatMessage(
+#endif
             int dwFlags,
             IntPtr lpSource,
             uint dwMessageId,
@@ -35,7 +29,6 @@ internal static partial class Interop
             void* lpBuffer,
             int nSize,
             IntPtr arguments);
-#endif
 
         /// <summary>
         ///     Returns a string message for the specified Win32 error code.
