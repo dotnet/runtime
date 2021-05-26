@@ -14,17 +14,7 @@
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
 
-    <!-- These can be removed once we get an SDK with https://github.com/mono/linker/pull/1385. -->
-    <LinkerNoWarn>IL2026</LinkerNoWarn>
-    <!-- IL2032,IL2055,IL2057-IL2061: Reflection intrinsics with unknown arguments -->
-    <LinkerNoWarn>$(LinkerNoWarn);IL2032;IL2055;IL2057;IL2058;IL2059;IL2060;IL2061</LinkerNoWarn>
-    <!-- IL2062-IL2066: Unknown values passed to locations with DynamicallyAccessedMemberTypes -->
-    <LinkerNoWarn>$(LinkerNoWarn);IL2062;IL2063;IL2064;IL2065;IL2066</LinkerNoWarn>
-    <!-- IL2067-IL2091: Unsatisfied DynamicallyAccessedMembers requirements -->
-    <LinkerNoWarn>$(LinkerNoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</LinkerNoWarn>
-    <!-- https://github.com/dotnet/runtime/issues/40336 - need to suppress IL2008;IL2009;IL2037 on non-Windows -->
-    <LinkerNoWarn Condition="!$(RuntimeIdentifier.StartsWith('win'))">$(LinkerNoWarn);IL2008;IL2009;IL2037</LinkerNoWarn>
-    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs) --nowarn $(LinkerNoWarn)</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

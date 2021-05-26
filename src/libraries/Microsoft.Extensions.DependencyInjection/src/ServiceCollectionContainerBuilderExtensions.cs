@@ -58,23 +58,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(options));
             }
 
-            IServiceProviderEngine engine;
-
-#if !NETSTANDARD2_1
-            engine = new DynamicServiceProviderEngine(services);
-#else
-            if (RuntimeFeature.IsDynamicCodeCompiled)
-            {
-                engine = new DynamicServiceProviderEngine(services);
-            }
-            else
-            {
-                // Don't try to compile Expressions/IL if they are going to get interpreted
-                engine = new RuntimeServiceProviderEngine(services);
-            }
-#endif
-
-            return new ServiceProvider(services, engine, options);
+            return new ServiceProvider(services, options);
         }
     }
 }
