@@ -74,7 +74,7 @@ public:
         bool IsDummyUse() const;
 
         void ReplaceWith(Compiler* compiler, GenTree* replacement);
-        unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM);
+        unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** assign = nullptr);
     };
 
     //------------------------------------------------------------------------

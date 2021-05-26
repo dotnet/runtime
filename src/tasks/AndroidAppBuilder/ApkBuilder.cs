@@ -26,7 +26,8 @@ public class ApkBuilder
     public bool ForceAOT { get; set; }
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
-    public string? StaticLinkedComponentNames { get; set; }
+    public bool StaticLinkedRuntime { get; set; }
+    public string? RuntimeComponents { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     public (string apk, string packageId) BuildApk(
@@ -175,62 +176,74 @@ public class ApkBuilder
         // 1. Build libmonodroid.so` via cmake
 
         string nativeLibraries = "";
-        string monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+        string monoRuntimeLib = "";
+        if (StaticLinkedRuntime)
+        {
+            monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+        }
+        else
+        {
+            monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
+        }
+
         if (!File.Exists(monoRuntimeLib))
         {
-            throw new ArgumentException($"libmonosgen-2.0.a was not found in {AppDir}");
+            throw new ArgumentException($"{monoRuntimeLib} was not found");
         }
         else
         {
             nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
         }
 
-        string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
-        bool staticLinkAllComponents = false;
-        string[] componentNames = Array.Empty<string>();
-
-        if (!string.IsNullOrEmpty(StaticLinkedComponentNames) && StaticLinkedComponentNames.Equals("*", StringComparison.OrdinalIgnoreCase))
-            staticLinkAllComponents = true;
-        else if (!string.IsNullOrEmpty(StaticLinkedComponentNames))
-            componentNames = StaticLinkedComponentNames.Split(";");
-
-        // by default, component stubs will be linked and depending on how mono runtime has been build,
-        // stubs can disable or dynamic load components.
-        foreach (string staticComponentStubLib in staticComponentStubLibs)
+        if (StaticLinkedRuntime)
         {
-            string componentLibToLink = staticComponentStubLib;
-            if (staticLinkAllComponents)
+            string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
+            bool staticLinkAllComponents = false;
+            string[] staticLinkedComponents = Array.Empty<string>();
+
+            if (!string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
+                staticLinkAllComponents = true;
+            else if (!string.IsNullOrEmpty(RuntimeComponents))
+                staticLinkedComponents = RuntimeComponents.Split(";");
+
+            // by default, component stubs will be linked and depending on how mono runtime has been build,
+            // stubs can disable or dynamic load components.
+            foreach (string staticComponentStubLib in staticComponentStubLibs)
             {
-                // static link component.
-                componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                foreach (string componentName in componentNames)
+                string componentLibToLink = staticComponentStubLib;
+                if (staticLinkAllComponents)
                 {
-                    if (componentLibToLink.Contains(componentName, StringComparison.OrdinalIgnoreCase))
+                    // static link component.
+                    componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    foreach (string staticLinkedComponent in staticLinkedComponents)
                     {
-                        // static link component.
-                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                        break;
+                        if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // static link component.
+                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        }
                     }
                 }
+
+                // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+                if (!File.Exists(componentLibToLink))
+                {
+                    Utils.LogInfo($"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                    componentLibToLink = staticComponentStubLib;
+                }
+
+                nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
             }
 
-            // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
-            if (!File.Exists(componentLibToLink))
-            {
-                Utils.LogInfo($"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                componentLibToLink = staticComponentStubLib;
-            }
-
-            nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
+            // There's a circular dependecy between static mono runtime lib and static component libraries.
+            // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
+            // due to circular dependecy.
+            nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
-
-        // There's a circular dependecy between static mono runtime lib and static component libraries.
-        // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-        // due to circular dependecy.
-        nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
 
         string aotSources = "";
         foreach (string asm in assemblerFiles)
@@ -323,19 +336,54 @@ public class ApkBuilder
         dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
 
         // add all *.so files to lib/%abi%/
+
+        string[] dynamicLinkedComponents = Array.Empty<string>();
+        bool dynamicLinkAllComponents = false;
+        if (!StaticLinkedRuntime && !string.IsNullOrEmpty(RuntimeComponents) && RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
+                dynamicLinkAllComponents = true;
+        if (!string.IsNullOrEmpty(RuntimeComponents) && !StaticLinkedRuntime)
+            dynamicLinkedComponents = RuntimeComponents.Split(";");
+
         Directory.CreateDirectory(Path.Combine(OutputDir, "lib", abi));
         foreach (var dynamicLib in dynamicLibs)
         {
             string dynamicLibName = Path.GetFileName(dynamicLib);
-            if (dynamicLibName == "libmonosgen-2.0.so")
+            string destRelative = Path.Combine("lib", abi, dynamicLibName);
+
+            if (dynamicLibName == "libmonosgen-2.0.so" && StaticLinkedRuntime)
             {
                 // we link mono runtime statically into libmonodroid.so
+                // make sure dynamic runtime is not included in package.
+                if (File.Exists(destRelative))
+                    File.Delete(destRelative);
                 continue;
+            }
+
+            if (dynamicLibName.Contains("libmono-component-", StringComparison.OrdinalIgnoreCase))
+            {
+                bool includeComponent = dynamicLinkAllComponents;
+                if (!StaticLinkedRuntime && !includeComponent)
+                {
+                    foreach (string dynamicLinkedComponent in dynamicLinkedComponents)
+                    {
+                        if (dynamicLibName.Contains(dynamicLinkedComponent, StringComparison.OrdinalIgnoreCase))
+                        {
+                            includeComponent = true;
+                            break;
+                        }
+                    }
+                }
+                if (!includeComponent)
+                {
+                    // make sure dynamic component is not included in package.
+                    if (File.Exists(destRelative))
+                        File.Delete(destRelative);
+                    continue;
+                }
             }
 
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
 
-            string destRelative = Path.Combine("lib", abi, dynamicLibName);
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
             Utils.RunProcess(aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
