@@ -12,8 +12,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 {
     public class CallSiteTests
     {
-        private static readonly CallSiteRuntimeResolver CallSiteRuntimeResolver = new CallSiteRuntimeResolver();
-
         public static IEnumerable<object[]> TestServiceDescriptors(ServiceLifetime lifetime)
         {
             Func<object, object, bool> compare;
@@ -81,7 +79,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void BuiltExpressionWillReturnResolvedServiceWhenAppropriate(
             ServiceDescriptor[] descriptors, Type serviceType, Func<object, object, bool> compare)
         {
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
 
             var callSite = provider.CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             var collectionCallSite = provider.CallSiteFactory.GetCallSite(typeof(IEnumerable<>).MakeGenericType(serviceType), new CallSiteChain());
@@ -112,7 +110,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddScoped<ServiceB>();
             descriptors.AddScoped<ServiceC>();
 
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
@@ -136,7 +134,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.Add(ServiceDescriptor.Describe(typeof(ServiceC), typeof(DisposableServiceC), lifetime));
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -162,7 +160,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 typeof(ServiceC), p => new DisposableServiceC(p.GetService<ServiceB>()), lifetime));
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -191,7 +189,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddTransient<ServiceC>();
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -216,7 +214,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.Add(ServiceDescriptor.Describe(typeof(ServiceD), typeof(ServiceD), lifetime));
 
             var disposables = new List<object>();
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
             provider.Root._captureDisposableCallback = obj =>
             {
                 disposables.Add(obj);
@@ -237,7 +235,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddTransient<ClassWithThrowingCtor>();
             descriptors.AddTransient<IFakeService, FakeService>();
 
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
 
             var callSite1 = provider.CallSiteFactory.GetCallSite(typeof(ClassWithThrowingEmptyCtor), new CallSiteChain());
             var compiledCallSite1 = CompileCallSite(callSite1, provider);
@@ -260,7 +258,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.AddTransient<ServiceD>();
             descriptors.AddTransient<ServiceE>();
 
-            var provider = new DynamicServiceProviderEngine(descriptors);
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
 
             var callSite1 = provider.CallSiteFactory.GetCallSite(typeof(ServiceE), new CallSiteChain());
             var compileCallSite = CompileCallSite(callSite1, provider);
@@ -377,12 +375,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private static object Invoke(ServiceCallSite callSite, ServiceProviderEngineScope scope)
         {
-            return CallSiteRuntimeResolver.Resolve(callSite, scope);
+            return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
         }
 
-        private static Func<ServiceProviderEngineScope, object> CompileCallSite(ServiceCallSite callSite, ServiceProviderEngine engine)
+        private static Func<ServiceProviderEngineScope, object> CompileCallSite(ServiceCallSite callSite, ServiceProvider provider)
         {
-            return new ExpressionResolverBuilder(CallSiteRuntimeResolver, engine, engine.Root).Build(callSite);
+            return new ExpressionResolverBuilder(provider).Build(callSite);
         }
     }
 }

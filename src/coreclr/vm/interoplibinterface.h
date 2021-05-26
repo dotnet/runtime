@@ -63,6 +63,7 @@ public: // Unwrapping support
 public: // GC interaction
     static void OnFullGCStarted();
     static void OnFullGCFinished();
+    static void AfterRefCountedHandleCallbacks();
 };
 
 class GlobalComWrappersForMarshalling
@@ -181,13 +182,19 @@ public:
         _Outptr_ void** context);
 
     // Notify started/finished when GC is running.
+    // These methods are called in a blocking fashion when a
+    // GC of generation is started. These calls may overlap
+    // so care must be taken when taking locks.
     static void OnGCStarted(_In_ int nCondemnedGeneration);
     static void OnGCFinished(_In_ int nCondemnedGeneration);
 
     // Notify before/after when GC is scanning roots.
     // Present assumption is that calls will never be nested.
-    static void OnBeforeGCScanRoots();
-    static void OnAfterGCScanRoots();
+    // The input indicates if the call is from a concurrent GC
+    // thread or not. These will be nested within OnGCStarted
+    // and OnGCFinished.
+    static void OnBeforeGCScanRoots(_In_ bool isConcurrent);
+    static void OnAfterGCScanRoots(_In_ bool isConcurrent);
 };
 
 #endif // _INTEROPLIBINTERFACE_H_

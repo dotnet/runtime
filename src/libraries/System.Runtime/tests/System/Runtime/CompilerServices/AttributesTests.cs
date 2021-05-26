@@ -295,5 +295,30 @@ namespace System.Runtime.CompilerServices.Tests
         {
             new EnumeratorCancellationAttribute();
         }
+
+        [Fact]
+        public static void InterpolatedStringHandlerAttributeTests()
+        {
+            new InterpolatedStringHandlerAttribute();
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("param1")]
+        public static void InterpolatedStringHandlerArgumentAttributeTests(string firstParameterName)
+        {
+            var attr1 = new InterpolatedStringHandlerArgumentAttribute(firstParameterName);
+            Assert.NotNull(attr1.Arguments);
+            Assert.Same(attr1.Arguments, attr1.Arguments);
+            Assert.Equal(1, attr1.Arguments.Length);
+            Assert.Equal(firstParameterName, attr1.Arguments[0]);
+
+            string[] arguments = new[] { firstParameterName, "param2" };
+            var attr2 = new InterpolatedStringHandlerArgumentAttribute(arguments);
+            Assert.NotNull(attr2.Arguments);
+            Assert.Same(arguments, attr2.Arguments);
+            Assert.Equal(firstParameterName, attr2.Arguments[0]);
+            Assert.Equal("param2", attr2.Arguments[1]);
+        }
     }
 }
