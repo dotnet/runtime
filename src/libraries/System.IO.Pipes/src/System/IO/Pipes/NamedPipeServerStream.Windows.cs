@@ -18,6 +18,8 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
+        private ConnectionValueTaskSource? _reusableConnectionValueTaskSource; // reusable ConnectionValueTaskSource that is currently NOT being used
+
         internal NamedPipeServerStream(
             string pipeName,
             PipeDirection direction,
@@ -39,6 +41,31 @@ namespace System.IO.Pipes
             }
 
             Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, pipeSecurity, inheritability, additionalAccessRights);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null)?.Dispose();
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
+        }
+
+        internal override void TryToReuse<TResult>(PipeValueTaskSource<TResult> source)
+        {
+            base.TryToReuse(source);
+
+            if (source is ConnectionValueTaskSource connectionSource)
+            {
+                if (Interlocked.CompareExchange(ref _reusableConnectionValueTaskSource, connectionSource, null) is not null)
+                {
+                    source._preallocatedOverlapped.Dispose();
+                }
+            }
         }
 
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
@@ -303,39 +330,45 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
             }
 
-            var valueTaskSource = new ConnectionValueTaskSource(this);
-
-            if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, valueTaskSource.Overlapped))
+            var valueTaskSource = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null) ?? new ConnectionValueTaskSource(this);
+            try
             {
-                int errorCode = Marshal.GetLastPInvokeError();
-
-                switch (errorCode)
+                valueTaskSource.PrepareForOperation();
+                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, valueTaskSource.Overlapped))
                 {
-                    case Interop.Errors.ERROR_IO_PENDING:
-                        break;
+                    int errorCode = Marshal.GetLastPInvokeError();
 
-                    // If we are here then the pipe is already connected, or there was an error
-                    // so we should unpin and free the overlapped.
-                    case Interop.Errors.ERROR_PIPE_CONNECTED:
-                        // IOCompletitionCallback will not be called because we completed synchronously.
-                        valueTaskSource.ReleaseResources();
-                        if (State == PipeState.Connected)
-                        {
-                            throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
-                        }
-                        valueTaskSource.SetCompletedSynchronously();
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            valueTaskSource.RegisterForCancellation(cancellationToken);
+                            break;
 
-                        // We return a cached task instead of TaskCompletionSource's Task allowing the GC to collect it.
-                        return ValueTask.CompletedTask;
+                        // If we are here then the pipe is already connected, or there was an error
+                        // so we should unpin and free the overlapped.
+                        case Interop.Errors.ERROR_PIPE_CONNECTED:
+                            // IOCompletitionCallback will not be called because we completed synchronously.
+                            valueTaskSource.Dispose();
+                            if (State == PipeState.Connected)
+                            {
+                                throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
+                            }
+                            valueTaskSource.SetCompletedSynchronously();
 
-                    default:
-                        valueTaskSource.ReleaseResources();
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                            // We return a cached task instead of TaskCompletionSource's Task allowing the GC to collect it.
+                            return ValueTask.CompletedTask;
+
+                        default:
+                            valueTaskSource.Dispose();
+                            return ValueTask.FromException(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                    }
                 }
             }
-
-            // If we are here then connection is pending.
-            valueTaskSource.RegisterForCancellation(cancellationToken);
+            catch
+            {
+                valueTaskSource.Dispose();
+                throw;
+            }
 
             return new ValueTask(valueTaskSource, valueTaskSource.Version);
         }
