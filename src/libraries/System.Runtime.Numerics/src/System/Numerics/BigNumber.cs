@@ -595,9 +595,10 @@ namespace System.Numerics
                     {
                         result = default;
                         return false;
+
                     }
                     totalDigitCount = Math.Min(number.digits.Length - 1, numberScale);
-                    var bufferSize = (totalDigitCount + MaxPartialDigits - 1) / MaxPartialDigits;
+                    int bufferSize = (totalDigitCount + MaxPartialDigits - 1) / MaxPartialDigits;
 
                     Span<uint> buffer = new uint[bufferSize];
 
