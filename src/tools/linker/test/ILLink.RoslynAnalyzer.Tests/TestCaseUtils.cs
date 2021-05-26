@@ -50,29 +50,39 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var diags = comp.GetAnalyzerDiagnosticsAsync ().Result;
 
 			var filtered = diags.Where (d => d.Location.SourceSpan.IntersectsWith (m.Span))
-								.Select (d => d.GetMessage ());
+								.Select (d => new { Id = d.Id, Message = d.GetMessage () });
 			foreach (var attr in attrs) {
 				switch (attr.Name.ToString ()) {
-				case "ExpectedWarning":
-					var expectedWarningCode = attr.ArgumentList!.Arguments[0];
-					if (!GetStringFromExpr (expectedWarningCode.Expression).Contains ("IL"))
-						break;
-					List<string> expectedMessages = new List<string> ();
-					foreach (var argument in attr.ArgumentList!.Arguments) {
-						if (argument.NameEquals != null)
-							Assert.True (false, $"Analyzer does not support named arguments at this moment: {argument.NameEquals} {argument.Expression}");
-						expectedMessages.Add (GetStringFromExpr (argument.Expression));
-					}
-					expectedMessages.RemoveAt (0);
-					Assert.True (
-						filtered.Any (mc => {
-							foreach (var expectedMessage in expectedMessages)
-								if (!mc.Contains (expectedMessage))
+				case "ExpectedWarning": {
+						var args = GetAttributeArguments (attr);
+						string expectedWarningCode = GetStringFromExpr (args["#0"]);
+
+						if (!expectedWarningCode.StartsWith ("IL"))
+							break;
+
+						if (args.TryGetValue ("GlobalAnalysisOnly", out var globalAnalysisOnly) &&
+							globalAnalysisOnly is LiteralExpressionSyntax { Token: { Value: true } })
+							break;
+
+						List<string> expectedMessages = args
+							.Where (arg => arg.Key.StartsWith ("#") && arg.Key != "#0")
+							.Select (arg => GetStringFromExpr (arg.Value))
+							.ToList ();
+
+						Assert.True (
+							filtered.Any (mc => {
+								if (mc.Id != expectedWarningCode)
 									return false;
-							return true;
-						}),
-					$"Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
-					$", but no such message was found.{ Environment.NewLine}In diagnostics: {string.Join (Environment.NewLine, filtered)}");
+
+								foreach (var expectedMessage in expectedMessages)
+									if (!mc.Message.Contains (expectedMessage))
+										return false;
+
+								return true;
+							}),
+						$"Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
+						$", but no such message was found.{ Environment.NewLine}In diagnostics: {string.Join (Environment.NewLine, filtered)}");
+					}
 					break;
 				case "LogContains": {
 						var arg = Assert.Single (attr.ArgumentList!.Arguments);
@@ -93,7 +103,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 						}
 						bool found = false;
 						foreach (var d in filtered) {
-							if (d.Contains (text)) {
+							if (d.Message.Contains (text)) {
 								found = true;
 								break;
 							}
@@ -111,7 +121,7 @@ In diagnostics:
 						var arg = Assert.Single (attr.ArgumentList!.Arguments);
 						var text = GetStringFromExpr (arg.Expression);
 						foreach (var d in filtered) {
-							Assert.DoesNotContain (text, d);
+							Assert.DoesNotContain (text, d.Message);
 						}
 					}
 					break;
@@ -134,6 +144,24 @@ In diagnostics:
 					Assert.True (false, "Unsupported expr kind " + expr.Kind ());
 					return null!;
 				}
+			}
+
+			static Dictionary<string, ExpressionSyntax> GetAttributeArguments (AttributeSyntax attribute)
+			{
+				Dictionary<string, ExpressionSyntax> arguments = new Dictionary<string, ExpressionSyntax> ();
+				int ordinal = 0;
+				foreach (var argument in attribute.ArgumentList!.Arguments) {
+					string argName;
+					if (argument.NameEquals != null) {
+						argName = argument.NameEquals.ChildNodes ().OfType<IdentifierNameSyntax> ().First ().Identifier.ValueText;
+					} else {
+						argName = "#" + ordinal.ToString ();
+						ordinal++;
+					}
+					arguments.Add (argName, argument.Expression);
+				}
+
+				return arguments;
 			}
 		}
 

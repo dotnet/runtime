@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
@@ -88,6 +89,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 			void MethodInBaseInterface ();
 		}
 
+		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--")]
 		public interface IDerivedInterface : IBaseInterface
 		{
 			[RequiresUnreferencedCode ("Message for --IDerivedInterface.MethodInDerivedInterface--")]
