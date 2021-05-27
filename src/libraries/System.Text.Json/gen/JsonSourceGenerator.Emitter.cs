@@ -127,12 +127,16 @@ namespace {_currentContext.ContextType.Namespace}
                     string declarationSource = $@"
 {declarationList[declarationCount - 1 - i]}
 {{";
-                    sb.Append(IndentSource(declarationSource, numIndentations: i + 1));
+                    sb.Append($@"
+{IndentSource(declarationSource, numIndentations: i + 1)}
+");
                 }
 
                 // Add the core implementation for the derived context class.
-                string partialContextImplementation = $@"{generatedCodeAttributeSource}{declarationList[0]}
-{{{IndentSource(source, Math.Max(1, declarationCount - 1))}
+                string partialContextImplementation = $@"
+{generatedCodeAttributeSource}{declarationList[0]}
+{{
+    {IndentSource(source, Math.Max(1, declarationCount - 1))}
 }}";
                 sb.AppendLine(IndentSource(partialContextImplementation, numIndentations: declarationCount));
 
@@ -419,12 +423,12 @@ namespace {_currentContext.ContextType.Namespace}
 
                 string serializationLogic = $@"{WriterVarName}.WriteStartArray();
 
-        for (int i = 0; i < {ValueVarName}.{lengthPropName}; i++)
-        {{
-            {elementSerializationLogic}
-        }}
+    for (int i = 0; i < {ValueVarName}.{lengthPropName}; i++)
+    {{
+        {elementSerializationLogic}
+    }}
 
-        {WriterVarName}.WriteEndArray();";
+    {WriterVarName}.WriteEndArray();";
 
                 return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, serializationLogic, canBeNull);
             }
@@ -455,12 +459,12 @@ namespace {_currentContext.ContextType.Namespace}
 
                 string serializationLogic = $@"{WriterVarName}.WriteStartObject();
 
-        foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {ValueVarName})
-        {{
-            {elementSerializationLogic}
-        }}
+    foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {ValueVarName})
+    {{
+        {elementSerializationLogic}
+    }}
 
-        {WriterVarName}.WriteEndObject();";
+    {WriterVarName}.WriteEndObject();";
 
                 return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, serializationLogic, canBeNull);
             }
@@ -544,12 +548,12 @@ namespace {_currentContext.ContextType.Namespace}
 
                 sb.Append($@"
 
-    private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerContextTypeRef} context)
-    {{
-        {contextTypeRef} {JsonContextVarName} = ({contextTypeRef})context;
-        {JsonSerializerOptionsTypeRef} options = context.Options;
+private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerContextTypeRef} context)
+{{
+    {contextTypeRef} {JsonContextVarName} = ({contextTypeRef})context;
+    {JsonSerializerOptionsTypeRef} options = context.Options;
 
-        {JsonPropertyInfoTypeRef}[] {PropVarName} = {propertyArrayInstantiationValue};
+    {JsonPropertyInfoTypeRef}[] {PropVarName} = {propertyArrayInstantiationValue};
 ");
 
                 if (properties != null)
@@ -604,25 +608,25 @@ namespace {_currentContext.ContextType.Namespace}
                         string memberTypeCompilableName = memberTypeMetadata.TypeRef;
 
                         sb.Append($@"
-        {PropVarName}[{i}] = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>(
-            options,
-            isProperty: {memberMetadata.IsProperty.ToString().ToLowerInvariant()},
-            declaringType: typeof({memberMetadata.DeclaringTypeRef}),
-            {typeTypeInfoNamedArg},
-            {converterNamedArg},
-            {getterNamedArg},
-            {setterNamedArg},
-            {ignoreConditionNamedArg},
-            numberHandling: {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
-            propertyName: ""{clrPropertyName}"",
-            {jsonPropertyNameNamedArg});
-        ");
+    {PropVarName}[{i}] = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>(
+        options,
+        isProperty: {memberMetadata.IsProperty.ToString().ToLowerInvariant()},
+        declaringType: typeof({memberMetadata.DeclaringTypeRef}),
+        {typeTypeInfoNamedArg},
+        {converterNamedArg},
+        {getterNamedArg},
+        {setterNamedArg},
+        {ignoreConditionNamedArg},
+        numberHandling: {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
+        propertyName: ""{clrPropertyName}"",
+        {jsonPropertyNameNamedArg});
+    ");
                     }
                 }
 
                 sb.Append(@$"
-        return {PropVarName};
-    }}");
+    return {PropVarName};
+}}");
 
                 return sb.ToString();
             }
@@ -767,21 +771,21 @@ namespace {_currentContext.ContextType.Namespace}
             {
                 return $@"
 
-    private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {typeInfoTypeRef} {ValueVarName})
-    {{
-        {GetEarlyNullCheckSource(canBeNull)}
-        {serializationLogic}
-    }}";
+private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {typeInfoTypeRef} {ValueVarName})
+{{
+    {GetEarlyNullCheckSource(canBeNull)}
+    {serializationLogic}
+}}";
             }
 
             private string GetEarlyNullCheckSource(bool canBeNull)
             {
                 return canBeNull
                     ? $@"if ({ValueVarName} == null)
-        {{
-            {WriterVarName}.WriteNullValue();
-            return;
-        }}
+    {{
+        {WriterVarName}.WriteNullValue();
+        return;
+    }}
 "
                     : null;
             }
