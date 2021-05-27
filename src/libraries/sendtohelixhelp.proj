@@ -98,6 +98,7 @@
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Include="export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
@@ -149,15 +150,14 @@
   </ItemGroup>
 
     <!-- 
-      We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
-      We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
-      For the HTTPS endpoint we need development SSL certificate.
+      We are hosting the payloads for the WASM/browser on Kestrel in the xharness process.
+      We also run some network (HTTP and HTTPS) tests that connect to this server.
+      In order to set up an HTTPS endpoint we need to install a development SSL certificate.
     -->
   <PropertyGroup Condition="''$(TestPackages)' != 'true' and $(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">
     <!-- install SDK so that, we could use `dotnet dev-certs https`. -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
-    <HelixPreCommand Include="export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <HelixCommand>dotnet dev-certs https &amp;&amp; </HelixCommand>
 
     <HelixCommand>$(HelixCommand) ./RunTests.sh</HelixCommand>
