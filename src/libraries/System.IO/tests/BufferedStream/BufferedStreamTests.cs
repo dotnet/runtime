@@ -53,16 +53,6 @@ namespace System.IO.Tests
             Assert.Equal(1234, bufferedStream.BufferSize);
         }
 
-        [Fact]
-        public void Write_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
-        {
-            using (var bs = new BufferedStream(Stream.Null))
-            {
-                int inputSize = int.MaxValue / 2 + 1;
-                bs.Write(new byte[inputSize], 0, inputSize);
-            }
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
