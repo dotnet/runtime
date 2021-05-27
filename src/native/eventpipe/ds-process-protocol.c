@@ -589,6 +589,8 @@ ep_on_exit:
 	ep_rt_utf16_string_free (arch_info);
 	ep_rt_utf16_string_free (os_info);
 	ep_rt_utf16_string_free (command_line);
+	ep_rt_utf16_string_free (managed_entrypoint_assembly_name);
+	ep_rt_utf16_string_free (clr_product_version);
 	ds_ipc_stream_free (stream);
 	return result;
 
