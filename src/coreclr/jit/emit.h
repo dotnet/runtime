@@ -245,6 +245,7 @@ struct insGroup
 #if defined(DEBUG) || defined(LATE_DISASM)
     BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
     double               igPerfScore; // The PerfScore for this insGroup
+    double               igPerfScoreSimple; // The PerfScore for this insGroup, not weighted by block weight
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes

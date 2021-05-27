@@ -2517,6 +2517,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
     {
         emitCurIG->igWeight    = getCurrentBlockWeight();
         emitCurIG->igPerfScore = 0.0;
+        emitCurIG->igPerfScoreSimple = 0.0;
     }
 #endif
 
@@ -3607,7 +3608,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         if (emitComp->compCodeGenDone)
         {
-            printf("%sbbWeight=%s PerfScore %.2f", separator, refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("%sbbWeight=%s PerfScore %.2f PerfScoreSimple %.2f", separator, refCntWtd2str(ig->igWeight), ig->igPerfScore, ig->igPerfScoreSimple);
             separator = ", ";
         }
 
@@ -3751,8 +3752,10 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     float insExeCost = insEvaluateExecutionCost(id);
     // All compPerfScore calculations must be performed using doubles
     double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
+    double insPerfScoreSimple = (double)insExeCost;
     emitComp->info.compPerfScore += insPerfScore;
     ig->igPerfScore += insPerfScore;
+    ig->igPerfScoreSimple += insPerfScoreSimple;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
 // printf("[S=%02u]\n", emitCurStackLvl);
@@ -5971,7 +5974,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
         if (emitComp->opts.disAsm || emitComp->verbose)
         {
-            printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f PerfScoreSimple %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore, ig->igPerfScoreSimple);
         }
         *instrCount += ig->igInsCnt;
 #endif // DEBUG
@@ -7935,6 +7938,7 @@ insGroup* emitter::emitAllocIG()
 #if defined(DEBUG) || defined(LATE_DISASM)
     ig->igWeight    = getCurrentBlockWeight();
     ig->igPerfScore = 0.0;
+    ig->igPerfScoreSimple = 0.0;
 #endif
 
 #if EMITTER_STATS
