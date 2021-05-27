@@ -154,7 +154,7 @@
       We also run some network (HTTP and HTTPS) tests that connect to this server.
       In order to set up an HTTPS endpoint we need to install a development SSL certificate.
     -->
-  <PropertyGroup Condition="'$(TestPackages)' != 'true' and $(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">
+  <PropertyGroup Condition="'$(TestPackages)' != 'true' and '$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">
     <!-- install SDK so that, we could use `dotnet dev-certs https`. -->
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <HelixCommand>dotnet dev-certs https &amp;&amp; </HelixCommand>
