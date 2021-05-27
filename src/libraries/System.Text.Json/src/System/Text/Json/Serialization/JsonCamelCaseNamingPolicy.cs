@@ -15,7 +15,11 @@ namespace System.Text.Json
 #if BUILDING_INBOX_LIBRARY
             return string.Create(name.Length, name, (chars, name) =>
             {
-                name.AsSpan().CopyTo(chars);
+                name
+#if !NET6_0_OR_GREATER
+                .AsSpan()
+#endif
+                .CopyTo(chars);
                 FixCasing(chars);
             });
 #else

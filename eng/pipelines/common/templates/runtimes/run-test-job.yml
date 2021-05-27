@@ -63,7 +63,11 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'))  }}:
+          # minijit and mono interpreter runtimevariants do not require any special build of the runtime
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
@@ -83,6 +87,13 @@ jobs:
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
       - name: runtimeFlavorArgs
         value: '-excludemonofailures'
+
+    - name: runtimeVariantArg
+      value: ''
+
+    - ${{ if not(eq(parameters.runtimeVariant, '')) }}:
+      - name: runtimeVariantArg
+        value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
 
     - name: crossgenArg
       value: ''
@@ -255,7 +266,7 @@ jobs:
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(runtimeVariantArg) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
@@ -291,10 +302,10 @@ jobs:
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross $(runtimeVariantArg)
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
@@ -354,8 +365,7 @@ jobs:
           - normal
           - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
             - no_tiered_compilation
-          - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-            - interpreter
+
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
           - jitminopts

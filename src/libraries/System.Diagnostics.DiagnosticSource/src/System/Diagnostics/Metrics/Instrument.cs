@@ -19,6 +19,16 @@ namespace System.Diagnostics.Metrics
         internal static KeyValuePair<string, object?>[] EmptyTags { get; } = Array.Empty<KeyValuePair<string, object?>>();
 #endif // NO_ARRAY_EMPTY_SUPPORT
 
+        // The SyncObject is used to synchronize the following operations:
+        //  - Instrument.Publish()
+        //  - Meter constructor
+        //  - Meter.Dispose
+        //  - MeterListener.EnableMeasurementEvents
+        //  - MeterListener.DisableMeasurementEvents
+        //  - MeterListener.Start
+        //  - MeterListener.Dispose
+        internal static object SyncObject { get; } = new object();
+
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // LinkedList is thread safe for Add and Remove operations.
         internal LinkedList<ListenerSubscription> _subscriptions = new LinkedList<ListenerSubscription>();
@@ -54,8 +64,24 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected void Publish()
         {
-            Meter.AddInstrument(this);
-            MeterListener.NotifyForPublishedInstrument(this);
+            List<MeterListener>? allListeners = null;
+            lock (Instrument.SyncObject)
+            {
+                if (Meter.Disposed || !Meter.AddInstrument(this))
+                {
+                    return;
+                }
+
+                allListeners = MeterListener.GetAllListeners();
+            }
+
+            if (allListeners is not null)
+            {
+                foreach (MeterListener listener in allListeners)
+                {
+                    listener.InstrumentPublished?.Invoke(this, listener);
+                }
+            }
         }
 
         /// <summary>
@@ -112,16 +138,19 @@ namespace System.Diagnostics.Metrics
         }
 
         // Called from MeterListener.EnableMeasurementEvents
-        internal void EnableMeasurement(ListenerSubscription subscription)
+        internal object? EnableMeasurement(ListenerSubscription subscription, out bool oldStateStored)
         {
-            while (!_subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)))
+            oldStateStored = false;
+
+            if (!_subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)))
             {
                 ListenerSubscription oldSubscription = _subscriptions.Remove(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener));
-                if (object.ReferenceEquals(oldSubscription.Listener, subscription.Listener))
-                {
-                    oldSubscription.Listener.MeasurementsCompleted?.Invoke(this, oldSubscription.State);
-                }
+                _subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener));
+                oldStateStored = object.ReferenceEquals(oldSubscription.Listener, subscription.Listener);
+                return oldSubscription.State;
             }
+
+            return false;
         }
 
         // Called from MeterListener.DisableMeasurementEvents

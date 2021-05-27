@@ -35,11 +35,9 @@ enum var_types : BYTE
 #ifdef TARGET_64BIT
 #define TYP_I_IMPL TYP_LONG
 #define TYP_U_IMPL TYP_ULONG
-#define TYPE_REF_IIM TYPE_REF_LNG
 #else
 #define TYP_I_IMPL TYP_INT
 #define TYP_U_IMPL TYP_UINT
-#define TYPE_REF_IIM TYPE_REF_INT
 #ifdef _PREFAST_
 // We silence this in the 32-bit build because for portability, we like to have asserts like this:
 // assert(op2->gtType == TYP_INT || op2->gtType == TYP_I_IMPL);
