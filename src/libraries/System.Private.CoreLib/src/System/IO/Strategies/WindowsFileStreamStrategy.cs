@@ -45,7 +45,7 @@ namespace System.IO.Strategies
             _access = access;
             _share = share;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, preallocationSize);
+            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {

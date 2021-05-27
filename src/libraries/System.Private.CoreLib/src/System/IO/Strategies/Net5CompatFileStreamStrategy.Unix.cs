@@ -51,78 +51,7 @@ namespace System.IO.Strategies
             if (_useAsyncIO)
                 _asyncState = new AsyncState();
 
-            _fileHandle.IsAsync = _useAsyncIO;
-
-            // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
-            // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
-            // and not atomic with file opening, it's better than nothing.
-            Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
-            {
-                // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
-                // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
-                // EACCES (the file system doesn't allow us to lock), will only hamper FileStream's usage without providing value,
-                // given again that this is only advisory / best-effort.
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EWOULDBLOCK)
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                }
-            }
-
-            // These provide hints around how the file will be accessed.  Specifying both RandomAccess
-            // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
-            // so if both are specified, we prefer RandomAccess (behavior on Windows is unspecified if both are provided).
-            Interop.Sys.FileAdvice fadv =
-                (options & FileOptions.RandomAccess) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_RANDOM :
-                (options & FileOptions.SequentialScan) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_SEQUENTIAL :
-                0;
-            if (fadv != 0)
-            {
-                CheckFileCall(Interop.Sys.PosixFAdvise(_fileHandle, 0, 0, fadv),
-                    ignoreNotSupported: true); // just a hint.
-            }
-
-            if (mode == FileMode.Append)
-            {
-                // Jump to the end of the file if opened as Append.
-                _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
-            }
-            else if (mode == FileMode.Create || mode == FileMode.Truncate)
-            {
-                // Truncate the file now if the file mode requires it. This ensures that the file only will be truncated
-                // if opened successfully.
-                if (Interop.Sys.FTruncate(_fileHandle, 0) < 0)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error != Interop.Error.EBADF && errorInfo.Error != Interop.Error.EINVAL)
-                    {
-                        // We know the file descriptor is valid and we know the size argument to FTruncate is correct,
-                        // so if EBADF or EINVAL is returned, it means we're dealing with a special file that can't be
-                        // truncated.  Ignore the error in such cases; in all others, throw.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                    }
-                }
-            }
-
-            // If preallocationSize has been provided for a creatable and writeable file
-            if (FileStreamHelpers.ShouldPreallocate(preallocationSize, _access, mode))
-            {
-                int fallocateResult = Interop.Sys.PosixFAllocate(_fileHandle, 0, preallocationSize);
-                if (fallocateResult != 0)
-                {
-                    _fileHandle.Dispose();
-                    Interop.Sys.Unlink(_path!); // remove the file to mimic Windows behaviour (atomic operation)
-
-                    if (fallocateResult == -1)
-                    {
-                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, _path, preallocationSize));
-                    }
-
-                    Debug.Assert(fallocateResult == -2);
-                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, _path, preallocationSize));
-                }
-            }
+            Debug.Assert(_fileHandle.IsAsync == _useAsyncIO);
         }
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
