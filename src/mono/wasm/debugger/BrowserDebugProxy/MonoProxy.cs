@@ -465,106 +465,75 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Runtime.callFunctionOn":
                     {
-
-                        if (!DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId))
-                            return false;
-
-                        if (objectId.Scheme == "scope")
-                        {
+                        try {
+                            return await CallOnFunction(id, args, token);
+                        }
+                        catch (Exception){
                             SendResponse(id,
                                 Result.Exception(new ArgumentException(
-                                    $"Runtime.callFunctionOn not supported with scope ({objectId}).")),
+                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
                                 token);
                             return true;
                         }
-                        if (objectId.Scheme == "valuetype")
-                        {
-                            args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
-                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                            if (res.IsErr)
-                                return false;
-                            if (res.Value?["result"]?["value"]?["value"] != null)
-                            {
-                                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
-                                var ret_debugger_cmd = new MemoryStream(newBytes);
-                                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
-                                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, token);
-                                /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
-                                res = Result.OkFromObject(new { result = obj["value"]});
-                                SendResponse(id, res, token);
-                                return true;
-                            }
-                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
-                            SendResponse(id, res, token);
-                            return true;
-                        }
-                        if (objectId.Scheme == "object")
-                        {
-                            args["details"]  = await sdbHelper.GetObjectProxy(id, int.Parse(objectId.Value), token);
-                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                            if (res.IsErr)
-                                return false;
-                            if (res.Value?["result"]?["value"]?["value"] != null)
-                            {
-                                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
-                                var ret_debugger_cmd = new MemoryStream(newBytes);
-                                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
-                                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, token);
-                                res = Result.OkFromObject(new { result = obj["value"]});
-                                SendResponse(id, res, token);
-                                return true;
-                            }
-                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
-                            SendResponse(id, res, token);
-                            return true;
-
-                        }
-                        if (objectId.Scheme == "pointer")
-                        {
-                            args["details"]  = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token);
-                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                            if (res.IsErr)
-                                return false;
-                            if (res.Value?["result"]?["value"]?["value"] != null)
-                            {
-                                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
-                                var ret_debugger_cmd = new MemoryStream(newBytes);
-                                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
-                                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, token);
-                                res = Result.OkFromObject(new { result = obj["value"]});
-                                SendResponse(id, res, token);
-                                return true;
-                            }
-                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
-                            SendResponse(id, res, token);
-                            return true;
-
-                        }
-                        if (objectId.Scheme == "array")
-                        {
-                            args["details"]  = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
-                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
-                            SendResponse(id, res, token);
-                            return true;
-                        }
-                        if (objectId.Scheme == "cfo_res")
-                        {
-                            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
-                            SendResponse(id, res, token);
-                            return true;
-                        }
-                        return false;
                     }
             }
 
             return false;
         }
-
+        private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
+        {
+            if (!DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId)) {
+                return false;
+            }
+            if (objectId.Scheme == "scope")
+            {
+                SendResponse(id,
+                    Result.Exception(new ArgumentException(
+                        $"Runtime.callFunctionOn not supported with scope ({objectId}).")),
+                    token);
+                return true;
+            }
+            if (objectId.Scheme == "object" || objectId.Scheme == "valuetype" || objectId.Scheme == "pointer" || objectId.Scheme == "array")
+            {
+                if (objectId.Scheme == "object")
+                    args["details"]  = await sdbHelper.GetObjectProxy(id, int.Parse(objectId.Value), token);
+                if (objectId.Scheme == "valuetype")
+                    args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
+                if (objectId.Scheme == "pointer")
+                    args["details"]  = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token);
+                if (objectId.Scheme == "array")
+                    args["details"]  = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
+                Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                if (res.IsErr)
+                {
+                    SendResponse(id, res, token);
+                    return true;
+                }
+                if (res.Value?["result"]?["value"]?["value"] != null && objectId.Scheme != "array")
+                {
+                    byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+                    var ret_debugger_cmd = new MemoryStream(newBytes);
+                    var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
+                    ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                    var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, token);
+                    /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
+                    res = Result.OkFromObject(new { result = obj["value"]});
+                    SendResponse(id, res, token);
+                    return true;
+                }
+                res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                SendResponse(id, res, token);
+                return true;
+            }
+            if (objectId.Scheme == "cfo_res")
+            {
+                Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                SendResponse(id, res, token);
+                return true;
+            }
+            return false;
+        }
         private async Task<bool> OnSetVariableValue(MessageId id, int scopeId, string varName, JToken varValue, CancellationToken token)
         {
             ExecutionContext ctx = GetContext(id);

@@ -806,7 +806,7 @@ var MonoSupportLib = {
 				} else if (prop.set !== undefined ){
 					Object.defineProperty (proxy,
 						prop.name,
-						{ get () { return prop.value.value; },
+						{ get () { return prop.value; },
 						  set: function (newValue) { MONO.mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return MONO.commands_received.res_ok;}}
 					);
 				} else {
@@ -839,6 +839,13 @@ var MonoSupportLib = {
 			const fn_res = eval (fn_eval_str);
 			if (fn_res === undefined)
 				return { type: "undefined" };
+
+			if (Object (fn_res) !== fn_res)
+			{
+				if (typeof(fn_res) == "object" && fn_res == null)
+					return { type: typeof(fn_res), subtype: `${fn_res}`, value: null };
+				return { type: typeof(fn_res), description: `${fn_res}`, value: `${fn_res}`};
+			}
 
 			if (request.returnByValue)
 				return {type: "object", value: fn_res};
