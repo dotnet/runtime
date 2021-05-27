@@ -52,7 +52,7 @@ namespace Internal.Cryptography
                 _currentIv = null;
                 if (currentIv != null)
                 {
-                    Array.Clear(currentIv, 0, currentIv.Length);
+                    Array.Clear(currentIv);
                 }
             }
 

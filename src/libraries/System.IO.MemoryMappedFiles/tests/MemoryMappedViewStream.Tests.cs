@@ -206,7 +206,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     s.Position = s.Length - data.Length;
                     s.Write(data, 0, data.Length);
                     s.Position = s.Length - data.Length;
-                    Array.Clear(data, 0, data.Length);
+                    Array.Clear(data);
                     Assert.Equal(3, s.Read(data, 0, data.Length));
                     Assert.Equal(new byte[] { 1, 2, 3 }, data);
 
