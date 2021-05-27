@@ -261,7 +261,7 @@ namespace System.IO
 
             // Attempt to figure out which directories don't exist, and only create the ones we need.
             bool somepathexists = false;
-            Stack<string> stackDir = new Stack<string>();
+            List<string> stackDir = new List<string>();
             int lengthRoot = PathInternal.GetRootLength(fullPath);
             if (length > lengthRoot)
             {
@@ -270,7 +270,7 @@ namespace System.IO
                 {
                     if (!DirectoryExists(fullPath.AsSpan(0, i + 1))) // Create only the ones missing
                     {
-                        stackDir.Push(fullPath.Substring(0, i + 1));
+                        stackDir.Add(fullPath.Substring(0, i + 1));
                     }
                     else
                     {
@@ -300,9 +300,9 @@ namespace System.IO
             int result = 0;
             Interop.ErrorInfo firstError = default(Interop.ErrorInfo);
             string errorString = fullPath;
-            while (stackDir.Count > 0)
+            for (int i = stackDir.Count - 1; i >= 0; i--)
             {
-                string name = stackDir.Pop();
+                string name = stackDir[i];
 
                 // The mkdir command uses 0777 by default (it'll be AND'd with the process umask internally).
                 // We do the same.
