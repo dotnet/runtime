@@ -6694,7 +6694,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoInst *var = ins->inst_i0;
 			MonoClass *klass = var->klass;
 
-			if (var->opcode == OP_VTARG_ADDR && !MONO_CLASS_IS_SIMD(cfg, klass)) {
+			if (var->opcode == OP_VTARG_ADDR && !MONO_CLASS_IS_SIMD(cfg, klass) && !simd_class_to_llvm_type (ctx, klass)) {
 				/* The variable contains the vtype address */
 				values [ins->dreg] = values [var->dreg];
 			} else if (var->opcode == OP_GSHAREDVT_LOCAL) {
@@ -7309,12 +7309,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					dst = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (LLVMInt8Type (), 0));
 				}
 				break;
-			case OP_LOADV_MEMBASE:
+			case OP_LOADV_MEMBASE: {
 				if (!addresses [ins->dreg])
 					addresses [ins->dreg] = build_alloca (ctx, m_class_get_byval_arg (klass));
-				src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (LLVMInt8Type (), 0));
+				LLVMValueRef base = convert (ctx, values [ins->inst_basereg], IntPtrType ());
+				src = convert (ctx, LLVMBuildAdd (builder, base, LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (LLVMInt8Type (), 0));
 				dst = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
 				break;
+			}
 			case OP_VMOVE:
 				if (!addresses [ins->sreg1])
 					addresses [ins->sreg1] = build_alloca (ctx, m_class_get_byval_arg (klass));
