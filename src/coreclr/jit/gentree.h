@@ -1506,6 +1506,16 @@ public:
         return OperIsSimple(gtOper);
     }
 
+    static bool OperIsRelop(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsRelop() const
+    {
+        return OperIsRelop(gtOper);
+    }
+
 #ifdef FEATURE_SIMD
     bool isCommutativeSIMDIntrinsic();
 #else  // !

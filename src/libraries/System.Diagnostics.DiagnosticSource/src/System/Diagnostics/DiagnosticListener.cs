@@ -263,14 +263,6 @@ namespace System.Diagnostics
                 curSubscription.Observer.OnNext(new KeyValuePair<string, object?>(name, value));
         }
 
-        /// <summary>
-        /// We don't have Activities in NetStandard1.1. but it is a pain to ifdef out all references to the Activity type
-        /// in DiagnosticSubscription so we just define a private type for it here just so things compile.
-        /// </summary>
-#if NETSTANDARD1_1
-        private sealed class Activity {}
-#endif
-
         // Note that Subscriptions are READ ONLY.   This means you never update any fields (even on removal!)
         private sealed class DiagnosticSubscription : IDisposable
         {

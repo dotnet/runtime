@@ -21,5 +21,11 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(false, "This constructor should not be called.");
         }
+
+        /// <summary>
+        /// A method that serializes an instance of <typeparamref name="T"/> using
+        /// <see cref="JsonSerializerOptionsAttribute"/> values specified at design time.
+        /// </summary>
+        public Action<Utf8JsonWriter, T>? Serialize { get; private protected set; }
     }
 }

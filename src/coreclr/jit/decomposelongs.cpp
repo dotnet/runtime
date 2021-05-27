@@ -101,7 +101,7 @@ void DecomposeLongs::DecomposeRangeHelper()
 {
     assert(m_range != nullptr);
 
-    GenTree* node = Range().FirstNonPhiNode();
+    GenTree* node = Range().FirstNode();
     while (node != nullptr)
     {
         node = DecomposeNode(node);
@@ -408,8 +408,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
 
     GenTree* tree = use.Def();
     GenTree* rhs  = tree->gtGetOp1();
-    if ((rhs->OperGet() == GT_PHI) || (rhs->OperGet() == GT_CALL) ||
-        ((rhs->OperGet() == GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
+    if (rhs->OperIs(GT_CALL) || (rhs->OperIs(GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
     {
         // GT_CALLs are not decomposed, so will not be converted to GT_LONG
         // GT_STORE_LCL_VAR = GT_CALL are handled in genMultiRegCallStoreToLocal

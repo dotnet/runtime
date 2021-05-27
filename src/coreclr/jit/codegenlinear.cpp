@@ -403,7 +403,7 @@ void CodeGen::genCodeForBBlist()
         // Set the use-order numbers for each node.
         {
             int useNum = 0;
-            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            for (GenTree* node : LIR::AsRange(block))
             {
                 assert((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0);
 
@@ -422,7 +422,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
 
         IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
-        for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+        for (GenTree* node : LIR::AsRange(block))
         {
             // Do we have a new IL offset?
             if (node->OperGet() == GT_IL_OFFSET)

@@ -809,7 +809,6 @@ namespace System
                         return new string(fileMuiPath);
                     }
 
-                    Debug.Fail("Shouldn't get here, as there's always at least one language installed.");
                     return string.Empty;
                 }
 

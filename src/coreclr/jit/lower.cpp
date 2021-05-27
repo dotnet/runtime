@@ -2042,9 +2042,6 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
             continue;
         }
 
-        // This should not be a GT_PHI_ARG.
-        assert(treeNode->OperGet() != GT_PHI_ARG);
-
         GenTreeLclVarCommon* lcl = treeNode->AsLclVarCommon();
 
         if (lcl->GetLclNum() != lclNum)
@@ -3118,7 +3115,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
         CheckMultiRegLclVar(lclStore->AsLclVar(), retTypeDesc);
     }
-    if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg && (src->OperGet() != GT_PHI))
+    if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg)
     {
         bool convertToStoreObj;
         if (src->OperGet() == GT_CALL)
@@ -4040,7 +4037,7 @@ void Lowering::InsertPInvokeMethodProlog()
     store->AsOp()->gtOp1 = call;
     store->gtFlags |= GTF_VAR_DEF;
 
-    GenTree* const insertionPoint = firstBlockRange.FirstNonPhiOrCatchArgNode();
+    GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
 
     comp->fgMorphTree(store);
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
@@ -6048,6 +6045,11 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             }
             break;
         }
+
+        case GT_PHI:
+        case GT_PHI_ARG:
+            assert(!"Should not see phi nodes after rationalize");
+            break;
 
         default:
             break;

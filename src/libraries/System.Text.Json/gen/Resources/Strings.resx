@@ -129,4 +129,10 @@
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Did not generate serialization metadata for type.</value>
   </data>
+  <data name="ContextClassesMustBePartialMessageFormat" xml:space="preserve">
+    <value>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</value>
+  </data>
+  <data name="ContextClassesMustBePartialTitle" xml:space="preserve">
+    <value>Derived 'JsonSerializerContext' types and all containing types must be partial.</value>
+  </data>
 </root>

@@ -3632,6 +3632,7 @@ namespace System
         [System.ObsoleteAttribute("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
         public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
+        public void CopyTo(System.Span<char> destination) { }
         public static System.String Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(System.String value) { throw null; }
@@ -3767,6 +3768,7 @@ namespace System
         public System.String TrimStart() { throw null; }
         public System.String TrimStart(char trimChar) { throw null; }
         public System.String TrimStart(params char[]? trimChars) { throw null; }
+        public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string?>, System.Collections.Generic.IEqualityComparer<string?>, System.Collections.IComparer, System.Collections.IEqualityComparer
     {

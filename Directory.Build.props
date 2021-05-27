@@ -258,6 +258,7 @@
     <GeneratePackage Condition="(('$(PreReleaseVersionLabel)' == 'servicing' or
                                   '$(GitHubRepositoryName)' == 'runtimelab') and
                                  '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
+    <PlaceholderFile>$(RepositoryEngineeringDir)_._</PlaceholderFile>
   </PropertyGroup>
 
   <!-- Language configuration -->
