@@ -129,6 +129,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
   <!-- Ensure we run ResolveProjectReferences to add the message DLL to the package.
