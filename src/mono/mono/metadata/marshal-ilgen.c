@@ -1448,6 +1448,7 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		g_assert_not_reached ();
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_CLASS: 
 	case MONO_TYPE_OBJECT: 
@@ -1578,6 +1579,7 @@ handle_enum:
 		case MONO_TYPE_CLASS:  
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
 			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));

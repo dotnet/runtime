@@ -53,9 +53,10 @@ inline void FATAL_GC_ERROR()
 // 
 // This means any empty regions can be freely used for any generation. For 
 // Server GC we will balance regions between heaps.
-#ifdef HOST_64BIT
-//#define USE_REGIONS
-#endif //HOST_64BIT
+// For now enable regions by default for only StandAlone GC builds
+#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE)
+#define USE_REGIONS
+#endif //HOST_64BIT && BUILD_AS_STANDALONE
 
 #ifdef USE_REGIONS
 // Currently this -

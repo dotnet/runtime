@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-
 namespace System.IO.Tests
 {
     public class File_Open_str_fm : FileStream_ctor_str_fm
@@ -11,7 +9,6 @@ namespace System.IO.Tests
         {
             return File.Open(path, mode);
         }
-
     }
 
     public class File_Open_str_fm_fa : FileStream_ctor_str_fm_fa
@@ -86,5 +83,4 @@ namespace System.IO.Tests
                 return reader.ReadToEnd();
         }
     }
-
 }

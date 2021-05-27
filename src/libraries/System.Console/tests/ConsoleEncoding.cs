@@ -22,7 +22,7 @@ public partial class ConsoleEncoding
 
     [Theory]
     [MemberData(nameof(InputData))]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void TestEncoding(string inputString)
     {
         TextWriter outConsoleStream = Console.Out;
@@ -79,7 +79,7 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>

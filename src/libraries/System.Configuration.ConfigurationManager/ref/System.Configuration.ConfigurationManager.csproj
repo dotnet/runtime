@@ -3,18 +3,15 @@
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-  </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
     <Compile Include="System.Configuration.ConfigurationManager.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Compile Include="System.Configuration.ConfigurationManager.net461.cs" />
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'  == 'true'">
-    <Reference Include="System.Configuration" />
   </ItemGroup>
 </Project>

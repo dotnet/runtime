@@ -31,6 +31,10 @@
     <Compile Include="System\Security\Principal\WindowsPrincipal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.BOOLEAN.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.SECURITY_QUALITY_OF_SERVICE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs"

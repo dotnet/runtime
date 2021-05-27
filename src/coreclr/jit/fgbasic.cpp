@@ -145,11 +145,13 @@ void Compiler::fgInit()
 #ifdef DEBUG
     if (!compIsForInlining())
     {
-        if ((JitConfig.JitNoStructPromotion() & 1) == 1)
+        const int noStructPromotionValue = JitConfig.JitNoStructPromotion();
+        assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
+        if (noStructPromotionValue == 1)
         {
             fgNoStructPromotion = true;
         }
-        if ((JitConfig.JitNoStructPromotion() & 2) == 2)
+        if (noStructPromotionValue == 2)
         {
             fgNoStructParamPromotion = true;
         }
@@ -395,11 +397,18 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-
-        //
-        // Remove the old edge [oldSwitchBlock => bJump]
-        //
-        fgRemoveRefPred(bJump, oldSwitchBlock);
+        if (bJump->countOfInEdges() > 0)
+        {
+            //
+            // Remove the old edge [oldSwitchBlock => bJump]
+            //
+            fgRemoveRefPred(bJump, oldSwitchBlock);
+        }
+        else
+        {
+            // bJump->countOfInEdges() must not be zero after preds are calculated.
+            assert(!fgComputePredsDone);
+        }
 
         //
         // Create the new edge [newSwitchBlock => bJump]
@@ -1143,9 +1152,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 
-                    if (actualOpcode != CEE_CALLVIRT)
+                    if (actualOpcode != CEE_CALLVIRT && actualOpcode != CEE_CALL && actualOpcode != CEE_LDFTN)
                     {
-                        BADCODE("constrained. has to be followed by callvirt");
+                        BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                     }
                 }
                 goto OBSERVE_OPCODE;

@@ -353,7 +353,7 @@ class PEDecoder
     void *GetNativeEntryPoint() const;
 
     // Look up a named symbol in the export directory
-    void *GetExport(LPCSTR exportName) const;
+    PTR_VOID GetExport(LPCSTR exportName) const;
 
 #ifdef _DEBUG
     // Stress mode for relocations

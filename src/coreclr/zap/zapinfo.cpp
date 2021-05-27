@@ -421,6 +421,13 @@ void ZapInfo::CompileMethod()
         ThrowHR(E_NOTIMPL);
     }
 
+    if (GetCompileInfo()->IsUnmanagedCallConvMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallConvAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+
     m_currentMethodInfo = CORINFO_METHOD_INFO();
     if (!getMethodInfo(m_currentMethodHandle, &m_currentMethodInfo))
     {
@@ -1000,8 +1007,9 @@ HRESULT ZapInfo::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
 
 HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                               PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-                                              uint32_t *                   pCountSchemaItems,          // pointer to the count schema items
-                                              uint8_t **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                              uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
+                                              uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                              PgoSource*                 pPgoSource)
 {
     _ASSERTE(pCountSchemaItems != nullptr);
     _ASSERTE(pInstrumentationData != nullptr);
@@ -1013,6 +1021,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     *pCountSchemaItems = 0;
     *pSchema = nullptr;
     *pInstrumentationData = nullptr;
+    *pPgoSource = PgoSource::Unknown;
 
     int32_t numRuns = 0;
 
@@ -1134,6 +1143,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     *pCountSchemaItems = pgoResults->m_schema.GetCount();
     *pSchema = pgoResults->m_schema.GetElements();
     *pInstrumentationData = pgoResults->pInstrumentationData;
+    *pPgoSource = PgoSource::IBC;
 
     return pgoResults->m_hr;
 }
@@ -2387,6 +2397,13 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     void * pTarget = NULL;
 
     _ASSERTE(pResult);
+
+    if ((flags & CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != nullptr)
+    {
+        // Defer constrained call / ldftn instructions used for static virtual methods
+        // to runtime resolution.
+        ThrowHR(E_NOTIMPL);
+    }
 
     // Fill in the kind of the virtual call.
     // We set kindOnly=true since we don't want the EE to actually give us
@@ -4274,6 +4291,7 @@ BOOL ZapInfo::CurrentMethodHasProfileData()
     UINT32 size;
     ICorJitInfo::PgoInstrumentationSchema * pSchema;
     BYTE* pData;
-    return SUCCEEDED(getPgoInstrumentationResults(m_currentMethodHandle, &pSchema, &size, &pData));
+    ICorJitInfo::PgoSource pgoSource;
+    return SUCCEEDED(getPgoInstrumentationResults(m_currentMethodHandle, &pSchema, &size, &pData, &pgoSource));
 }
 

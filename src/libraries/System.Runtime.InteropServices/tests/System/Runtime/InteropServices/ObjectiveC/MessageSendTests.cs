@@ -104,6 +104,11 @@ namespace System.Runtime.InteropServices.Tests
         {
             foreach (var (msgSend, func) in msgSendOverrides)
             {
+                if (!LibObjC.SupportedOnPlatform(msgSend))
+                {
+                    continue;
+                }
+
                 bool shouldOverride = Array.IndexOf(funcsToOverride, msgSend) >= 0;
 
                 IntPtr expected;

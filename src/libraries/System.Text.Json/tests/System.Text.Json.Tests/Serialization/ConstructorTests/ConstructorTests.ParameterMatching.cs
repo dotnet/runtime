@@ -496,6 +496,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task TupleDeserializationWorks()
         {
+            var dont_trim_ctor = typeof(Tuple<,>).GetConstructors();
+
             var tuple = await Serializer.DeserializeWrapper<Tuple<string, double>>(@"{""Item1"":""New York"",""Item2"":32.68}");
             Assert.Equal("New York", tuple.Item1);
             Assert.Equal(32.68, tuple.Item2);
@@ -514,6 +516,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
+            var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
+            dont_trim_ctor = typeof(Tuple<,,,,,,,>).GetConstructors();
+
             // Seven is okay
             string json = JsonSerializer.Serialize(Tuple.Create(1, 2, 3, 4, 5, 6, 7));
             var obj = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int>>(json);
@@ -609,6 +614,8 @@ namespace System.Text.Json.Serialization.Tests
             sb.Append("}");
 
             string complexTupleJson = sb.ToString();
+
+            var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
 
             var complexTuple = await Serializer.DeserializeWrapper<Tuple<
                 SimpleTestClass,

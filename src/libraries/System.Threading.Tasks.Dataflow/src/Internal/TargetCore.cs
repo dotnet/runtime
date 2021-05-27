@@ -371,7 +371,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 var taskForInputProcessing = new Task(thisTargetCore => ((TargetCore<TInput>)thisTargetCore!).ProcessMessagesLoopCore(), this,
                                                       Common.GetCreationOptionsForTask(repeat));
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -379,7 +378,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         _owningTarget, taskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
                         _messages.Count + (_boundingState != null ? _boundingState.PostponedMessages.Count : 0));
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -781,7 +779,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 _completionSource.TrySetResult(default(VoidResult));
             }
-#if FEATURE_TRACING
             // We only want to do tracing for block completion if this target core represents the whole block.
             // If it only represents a part of the block (i.e. there's a source associated with it as well),
             // then we shouldn't log just for the first half of the block; the source half will handle logging.
@@ -791,7 +788,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 etwLog.DataflowBlockCompleted(_owningTarget);
             }
-#endif
         }
 
         /// <summary>Gets whether the target core is operating in a bounded mode.</summary>

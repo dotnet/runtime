@@ -39,11 +39,6 @@ namespace System.IO.Pipes
         public PipeAuditRule(string identity, System.IO.Pipes.PipeAccessRights rights, System.Security.AccessControl.AuditFlags flags) : base (default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public System.IO.Pipes.PipeAccessRights PipeAccessRights { get { throw null; } }
     }
-    public static partial class PipesAclExtensions
-    {
-        public static System.IO.Pipes.PipeSecurity GetAccessControl(this System.IO.Pipes.PipeStream stream) { throw null; }
-        public static void SetAccessControl(this System.IO.Pipes.PipeStream stream, System.IO.Pipes.PipeSecurity pipeSecurity) { }
-    }
     public partial class PipeSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public PipeSecurity() : base (default(bool), default(System.Security.AccessControl.ResourceType)) { }

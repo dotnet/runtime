@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -59,10 +60,12 @@ namespace System.Reflection
 
         public string? CodeBase
         {
+            [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
             get => _codeBase;
             set => _codeBase = value;
         }
 
+        [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase
         {
             get
@@ -258,6 +261,7 @@ namespace System.Reflection
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
 
+        [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
         internal static string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)

@@ -9,8 +9,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="ContextClasses.cs" />
+    <Compile Include="JsonSerializerContextTests.cs" />
+    <Compile Include="JsonTestHelper.cs" />
+    <Compile Include="MetadataAndSerializationContextTests.cs" />
+    <Compile Include="MetadataContextTests.cs" />
+    <Compile Include="MixedModeContextTests.cs" />
+    <Compile Include="SerializationContextTests.cs" />
+    <Compile Include="SerializationLogicTests.cs" />
     <Compile Include="TestClasses.cs" />
-    <Compile Include="JsonSourceGeneratorTests.cs" />
+    <Compile Include="RealWorldContextTests.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

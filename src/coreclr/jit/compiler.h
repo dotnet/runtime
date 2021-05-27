@@ -120,11 +120,7 @@ void* __cdecl operator new(size_t n, void* p, const jitstd::placement_t& syntax_
 unsigned genLog2(unsigned value);
 unsigned genLog2(unsigned __int64 value);
 
-var_types genActualType(var_types type);
-var_types genUnsignedType(var_types type);
-var_types genSignedType(var_types type);
-
-unsigned ReinterpretHexAsDecimal(unsigned);
+unsigned ReinterpretHexAsDecimal(unsigned in);
 
 /*****************************************************************************/
 
@@ -2906,6 +2902,21 @@ public:
     GenTreeHWIntrinsic* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
+    GenTreeHWIntrinsic* gtNewSimdGetElementNode(var_types   type,
+                                                GenTree*    op1,
+                                                GenTree*    op2,
+                                                CorInfoType simdBaseJitType,
+                                                unsigned    simdSize,
+                                                bool        isSimdAsHWIntrinsic);
+
+    GenTreeHWIntrinsic* gtNewSimdWithElementNode(var_types   type,
+                                                 GenTree*    op1,
+                                                 GenTree*    op2,
+                                                 GenTree*    op3,
+                                                 CorInfoType simdBaseJitType,
+                                                 unsigned    simdSize,
+                                                 bool        isSimdAsHWIntrinsic);
+
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
                                                    CorInfoType    simdBaseJitType,
@@ -3175,7 +3186,7 @@ public:
                                    CorInfoInlineTypeCheck typeCheckInliningResult);
     GenTree* gtFoldExprCall(GenTreeCall* call);
     GenTree* gtFoldTypeCompare(GenTree* tree);
-    GenTree* gtFoldTypeEqualityCall(CorInfoIntrinsics methodID, GenTree* op1, GenTree* op2);
+    GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -3805,9 +3816,6 @@ public:
 
     StructPromotionHelper* structPromotionHelper;
 
-#if !defined(TARGET_64BIT)
-    void lvaPromoteLongVars();
-#endif // !defined(TARGET_64BIT)
     unsigned lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOffset);
     lvaPromotionType lvaGetPromotionType(const LclVarDsc* varDsc);
     lvaPromotionType lvaGetPromotionType(unsigned varNum);
@@ -4116,6 +4124,7 @@ protected:
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType);
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
+    GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -5184,7 +5193,7 @@ public:
         else
         {
             assert(elemTyp != TYP_STRUCT);
-            elemTyp = varTypeUnsignedToSigned(elemTyp);
+            elemTyp = varTypeToSigned(elemTyp);
             return CORINFO_CLASS_HANDLE(size_t(elemTyp) << 1 | 0x1);
         }
     }
@@ -5570,9 +5579,15 @@ public:
     unsigned fgGetCodeEstimate(BasicBlock* block);
 
 #if DUMP_FLOWGRAPHS
+    enum class PhasePosition
+    {
+        PrePhase,
+        PostPhase
+    };
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
-    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
-    bool fgDumpFlowGraph(Phases phase);
+    static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
+    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type);
+    bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
@@ -5730,6 +5745,7 @@ protected:
 public:
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled;
+    ICorJitInfo::PgoSource                 fgPgoSource;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -5893,8 +5909,8 @@ private:
                                     unsigned*    indexOut,
                                     unsigned*    simdSizeOut,
                                     bool         ignoreUsedInSIMDIntrinsic = false);
-    GenTree* fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree);
-    GenTree* fgMorphFieldToSIMDIntrinsicGet(GenTree* tree);
+    GenTree* fgMorphFieldAssignToSimdSetElement(GenTree* tree);
+    GenTree* fgMorphFieldToSimdGetElement(GenTree* tree);
     bool fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt);
     void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
 
@@ -6497,7 +6513,6 @@ protected:
     unsigned optLoopsCloned;       // number of loops cloned in the current method.
 
 #ifdef DEBUG
-    unsigned optFindLoopNumberFromBeginBlock(BasicBlock* begBlk);
     void optPrintLoopInfo(unsigned      loopNum,
                           BasicBlock*   lpHead,
                           BasicBlock*   lpFirst,
@@ -8211,6 +8226,23 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
+    bool IsBaselineSimdIsaSupported()
+    {
+#ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
+        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+#elif defined(TARGET_ARM64)
+        CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        return compOpportunisticallyDependsOn(minimumIsa) && JitConfig.EnableHWIntrinsic();
+#else
+        return false;
+#endif
+    }
+
     // Get highest available level for SIMD codegen
     SIMDLevel getSIMDSupportLevel()
     {
@@ -8539,9 +8571,6 @@ private:
     // Pops and returns GenTree node from importers type stack.
     // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
     GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
-
-    // Create a GT_SIMD tree for a Get property of SIMD vector with a fixed index.
-    GenTreeSIMD* impSIMDGetFixed(var_types simdType, CorInfoType simdBaseJitType, unsigned simdSize, int index);
 
     // Transforms operands and returns the SIMD intrinsic to be applied on
     // transformed operands to obtain given relop result.
@@ -9373,6 +9402,9 @@ public:
             printf("[%06d]", dspTreeID(tree));
         }
     }
+
+    const char* pgoSourceToString(ICorJitInfo::PgoSource p);
+    const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
 #endif // DEBUG
 
@@ -10788,6 +10820,7 @@ public:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
             case GT_KEEPALIVE:
+            case GT_INC_SATURATE:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

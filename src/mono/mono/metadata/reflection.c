@@ -242,10 +242,13 @@ mono_assembly_get_object_handle (MonoAssembly *assembly, MonoError *error)
 MonoReflectionModule*   
 mono_module_get_object (MonoDomain *domain, MonoImage *image)
 {
+	MonoReflectionModuleHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionModuleHandle result = mono_module_get_object_handle (image, error);
+	result = mono_module_get_object_handle (image, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -308,10 +311,13 @@ mono_module_get_object_handle (MonoImage *image, MonoError *error)
 MonoReflectionModule*
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
+	MonoReflectionModuleHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionModuleHandle result = mono_module_file_get_object_handle (image, table_index, error);
+	result = mono_module_file_get_object_handle (image, table_index, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -692,10 +698,13 @@ mono_method_clear_object (MonoMethod *method)
 MonoReflectionField*
 mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
 {
+	MonoReflectionFieldHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionFieldHandle result = mono_field_get_object_handle (klass, field, error);
+	result = mono_field_get_object_handle (klass, field, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -770,10 +779,13 @@ mono_field_get_object_checked (MonoClass *klass, MonoClassField *field, MonoErro
 MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
+	MonoReflectionPropertyHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionPropertyHandle result = mono_property_get_object_handle (klass, property, error);
+	result = mono_property_get_object_handle (klass, property, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -834,10 +846,13 @@ mono_property_get_object_checked (MonoClass *klass, MonoProperty *property, Mono
 MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
+	MonoReflectionEventHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionEventHandle result = mono_event_get_object_handle (klass, event, error);
+	result = mono_event_get_object_handle (klass, event, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -1134,10 +1149,13 @@ fail:
 MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
+	MonoArrayHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoArrayHandle result = mono_param_get_objects_internal (method, NULL, error);
+	result = mono_param_get_objects_internal (method, NULL, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -1202,10 +1220,13 @@ leave:
 MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
+	MonoReflectionMethodBodyHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionMethodBodyHandle result = mono_method_body_get_object_handle (method, error);
+	result = mono_method_body_get_object_handle (method, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -1902,9 +1923,12 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 {
+	gboolean result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	gboolean result = mono_reflection_parse_type_checked (name, info, error);
+	result = mono_reflection_parse_type_checked (name, info, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result ? 1 : 0;
 }
 
@@ -2133,9 +2157,12 @@ leave:
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
 {
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoType *result = mono_reflection_get_type_with_rootimage (mono_alc_get_default (), image, image, info, ignorecase, TRUE, type_resolve, error);
+	result = mono_reflection_get_type_with_rootimage (mono_alc_get_default (), image, image, info, ignorecase, TRUE, type_resolve, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -2333,13 +2360,16 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
-	MonoType * const result = mono_reflection_type_from_name_checked (name, alc, image, error);
+	result = mono_reflection_type_from_name_checked (name, alc, image, error);
 
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -2385,11 +2415,15 @@ leave:
 guint32
 mono_reflection_get_token (MonoObject *obj_raw)
 {
+	guint32 result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	MONO_HANDLE_DCL (MonoObject, obj);
 	ERROR_DECL (error);
-	guint32 result = mono_reflection_get_token_checked (obj, error);
+	result = mono_reflection_get_token_checked (obj, error);
 	mono_error_assert_ok (error);
+	
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 

@@ -225,6 +225,9 @@
   <data name="ReferenceFiles" xml:space="preserve">
     <value>Reference file(s) for compilation</value>
   </data>
+  <data name="InputBubbleReferenceFiles" xml:space="preserve">
+    <value>Input bubble reference file(s) to be added to bubble (any use of this option is unsupported!) </value>
+  </data>
   <data name="ResilientOption" xml:space="preserve">
     <value>Disable behavior where unexpected compilation failures cause overall compilation failure</value>
   </data>

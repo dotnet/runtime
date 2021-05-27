@@ -426,7 +426,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     {
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_PHI_ARG:
             RewriteAssignmentIntoStoreLclCore(assignment, location, value, locationOp);
             BlockRange().Remove(location);
             break;
@@ -949,20 +948,23 @@ PhaseStatus Rationalizer::DoPhase()
             assert(statement->GetRootNode() != nullptr);
             assert(statement->GetRootNode()->gtNext == nullptr);
 
-            BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
-
-            // If this statement has correct offset information, change it into an IL offset
-            // node and insert it into the LIR.
-            if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+            if (!statement->IsPhiDefnStmt()) // Note that we get rid of PHI nodes here.
             {
-                assert(!statement->IsPhiDefnStmt());
-                GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
-                BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
-            }
+                BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
-            m_block = block;
-            visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+                // If this statement has correct offset information, change it into an IL offset
+                // node and insert it into the LIR.
+                if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+                {
+                    assert(!statement->IsPhiDefnStmt());
+                    GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
+                        GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
+                    BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
+                }
+
+                m_block = block;
+                visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+            }
         }
 
         block->bbStmtList = nullptr;

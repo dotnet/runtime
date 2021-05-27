@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
 namespace System.CodeDom
 #else
 namespace System.Runtime.Serialization
 #endif
 {
     [Flags]
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public enum CodeTypeReferenceOptions
 #else
     internal enum CodeTypeReferenceOptions
@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
         GenericTypeParameter = 0x00000002
     }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public class CodeTypeReference : CodeObject
 #else
     internal sealed class CodeTypeReference : CodeObject
@@ -281,7 +281,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
         public CodeTypeReference(CodeTypeParameter typeParameter) :
             this(typeParameter?.Name)
         {

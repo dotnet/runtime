@@ -1560,6 +1560,11 @@ public:
 
     inline WORD GetNumNonVirtualSlots();
 
+    inline BOOL HasVirtualStaticMethods() const;
+    inline void SetHasVirtualStaticMethods();
+
+    void VerifyThatAllVirtualStaticMethodsAreImplemented();
+
     inline WORD GetNumVirtuals()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2279,6 +2284,9 @@ public:
 #endif // FEATURE_COMINTEROP
 
 
+    // Resolve virtual static interface method pInterfaceMD on this type.
+    MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL checkDuplicates = FALSE, BOOL allowVariantMatches = TRUE);
+
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
     // Note that this will not necessarily resolve the call exactly, since we might be compiling
@@ -2391,6 +2399,10 @@ public:
     // in a parent class. I.e. if this returns TRUE, this class behaves the same as pParentMT
     // when it comes to dispatching pItfMT methods.
     BOOL HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, MethodTable *pParentMT);
+
+    // Try to resolve a given static virtual method override on this type. Return nullptr
+    // when not found.
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL checkDuplicates);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
@@ -3658,7 +3670,7 @@ private:
         enum_flag_RequiresDispatchTokenFat  = 0x0200,
 
         enum_flag_HasCctor                  = 0x0400,
-        // enum_flag_unused                 = 0x0800,
+        enum_flag_HasVirtualStaticMethods   = 0x0800,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)

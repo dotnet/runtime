@@ -707,6 +707,10 @@ namespace System.Security.Cryptography.Algorithms.Tests
             {
                 expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
             }
+            else if (PlatformDetection.UsesMobileAppleCrypto)
+            {
+                expectedIsSupported = false;
+            }
 
             Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
         }

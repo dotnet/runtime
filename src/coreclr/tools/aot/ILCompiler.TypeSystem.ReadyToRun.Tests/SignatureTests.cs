@@ -14,16 +14,19 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace TypeSystemTests
 {
     public class SignatureTests
     {
+        private readonly ITestOutputHelper _output;
         private TestTypeSystemContext _context;
         private ModuleDesc _testModule;
 
-        public SignatureTests()
+        public SignatureTests(ITestOutputHelper output)
         {
+            _output = output;
             _context = new TestTypeSystemContext(TargetArchitecture.X64);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
@@ -176,6 +179,42 @@ namespace TypeSystemTests
             var typeInLookupContext = lookupContext.GetWellKnownType(WellKnownType.Int32).MakeArrayType(3);
 
             Assert.Equal(typeInLookupContext, int32ArrayFromLookup);
+        }
+
+        [Fact]
+        public void TestMDArrayFunctionReading()
+        {
+            MetadataType mdArrayFunctionResolutionType = _testModule.GetType("", "MDArrayFunctionResolution");
+            MethodDesc methodWithMDArrayUsage = mdArrayFunctionResolutionType.GetMethods().Single(m => string.Equals(m.Name, "MethodWithUseOfMDArrayFunctions"));
+            MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)methodWithMDArrayUsage);
+            ILReader ilReader = new ILReader(methodIL.GetILBytes());
+            int failures = 0;
+            int successes = 0;
+            while (ilReader.HasNext)
+            {
+                ILOpcode opcode = ilReader.ReadILOpcode();
+                switch(opcode)
+                {
+                    case ILOpcode.call:
+                    case ILOpcode.newobj:
+                        int token = ilReader.ReadILToken();
+                        object tokenReferenceResult = methodIL.GetObject(token, NotFoundBehavior.ReturnNull);
+                        if (tokenReferenceResult == null)
+                        {
+                            failures++;
+                            tokenReferenceResult = "null";
+                        }
+                        else
+                        {
+                            successes++;
+                        }
+                        _output.WriteLine($"call {tokenReferenceResult.ToString()}");
+                        break;
+                }
+            }
+
+            Assert.Equal(0, failures);
+            Assert.Equal(4, successes);
         }
     }
 }
