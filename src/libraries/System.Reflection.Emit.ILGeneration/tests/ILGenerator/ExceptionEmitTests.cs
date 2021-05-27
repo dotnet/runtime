@@ -5,9 +5,9 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class ExceptionEmitTests
     {
-        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void TestExceptionEmitCalls()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
