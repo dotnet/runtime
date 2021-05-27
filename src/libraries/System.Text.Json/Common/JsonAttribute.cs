@@ -6,5 +6,10 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// The base class of serialization attributes.
     /// </summary>
-    public abstract class JsonAttribute : Attribute { }
+#if BUILDING_SOURCE_GENERATOR
+    internal
+#else
+    public
+#endif
+    abstract class JsonAttribute : Attribute { }
 }
