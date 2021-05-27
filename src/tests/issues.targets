@@ -746,6 +746,12 @@
         <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
             <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)readytorun/crossgen2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/49365</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)readytorun/determinism/crossgen2determinism/**">
+            <Issue>https://github.com/dotnet/runtime/issues/52529</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
@@ -1020,8 +1026,11 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Known failures for mono runtime on *all* architectures/operating systems -->
+    <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/value_numbering_checked_casts_of_constants/*">
+            <Issue>https://github.com/dotnet/runtime/issues/51323</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>Mono does not define out of range fp to int conversions</Issue>
         </ExcludeList>
@@ -1147,6 +1156,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/CompatibleWithTest/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/**">
+            <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
+        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizeexcep/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
@@ -1235,6 +1247,9 @@
         <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/** ">
             <Issue>https://github.com/dotnet/runtime/issues/41180</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/ObjectiveCMarshalAPI/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsByValArray/AsByValArrayTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1309,6 +1324,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/signed_overflow_conversions_are_not_treated_as_unsigned/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51323</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/compiler/FilterToHandler/**">
             <Issue>needs triage</Issue>
@@ -1921,10 +1939,11 @@
         <ExcludeList Include = "$(XunitTestBinBase)tracing/eventsource/eventsourcetrace/eventsourcetrace/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+    </ItemGroup>
 
-        <!-- The following only fail in the mono interpreter, but we don't have a way to exclude based on scenario yet -->
-
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
+    <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter' ">
+	    <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_21990/**">
@@ -2500,7 +2519,34 @@
         <!-- End interpreter issues -->
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')  and '$(TargetsWindows)' != 'true' " >
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot' ">
+        <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/_il_relu_conv/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_r/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_d/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_d/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/nullabletypes/isinstvaluetype_do/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Generics/Instantiation/Structs/struct01/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/**">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
@@ -2652,12 +2698,14 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b108366/b108366/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+    </ItemGroup>
 
+     <!-- These are known failures on mono-arm64 in the interpreter runtime variant -->
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and ('$(TargetArchitecture)' == 'arm64') and '$(TargetsWindows)' != 'true' and '$(RuntimeVariant)' == 'monointerpreter' " >
         <!-- The following issues only effect the Mono interpreter; there is currently no way to exclude based on that scenario -->
         <ExcludeList Include = "$(XunitTestBinBase)JIT/IL_Conformance/Old/Base/ckfinite/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <!-- End interpreter issues -->
     </ItemGroup>
 
 
@@ -2707,7 +2755,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
@@ -3244,7 +3295,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">
@@ -3375,6 +3426,12 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
+            <Issue>https://github.com/dotnet/runtime/issues/52763</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/53077</Issue>
         </ExcludeList>
     </ItemGroup>
 

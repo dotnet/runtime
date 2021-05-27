@@ -333,7 +333,7 @@ bool Compiler::gsFindVulnerableParams()
         for (UINT lclNum = assignGroup->bitVectGetFirst(); lclNum != (unsigned)-1;
              lclNum      = assignGroup->bitVectGetNext(lclNum))
         {
-            lvaTable[lclNum].lvIsPtr = TRUE;
+            lvaTable[lclNum].lvIsPtr = true;
             propagated->bitVectSet(lclNum);
         }
 

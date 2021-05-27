@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
@@ -48,6 +49,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "CA store is not available")]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(

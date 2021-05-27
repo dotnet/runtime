@@ -160,11 +160,14 @@ namespace Internal.Cryptography
                     Array.Clear(_key, 0, _key.Length);
                 }
             }
+
+            public override void Reset() => _running = false;
         }
 
         private sealed class AppleDigestProvider : HashProvider
         {
             private readonly SafeDigestCtxHandle _ctx;
+            private bool _running;
 
             public override int HashSizeInBytes { get; }
 
@@ -193,6 +196,7 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                _running = true;
                 int ret = Interop.AppleCrypto.DigestUpdate(_ctx, data);
 
                 if (ret != 1)
@@ -207,6 +211,7 @@ namespace Internal.Cryptography
                 Debug.Assert(destination.Length >= HashSizeInBytes);
 
                 int ret = Interop.AppleCrypto.DigestFinal(_ctx, destination);
+                _running = false;
 
                 if (ret != 1)
                 {
@@ -230,6 +235,22 @@ namespace Internal.Cryptography
                 }
 
                 return HashSizeInBytes;
+            }
+
+            public override void Reset()
+            {
+                if (_running)
+                {
+                    int ret = Interop.AppleCrypto.DigestReset(_ctx);
+
+                    if (ret != 1)
+                    {
+                        Debug.Assert(ret == 0, $"DigestReset return value {ret} was not 0 or 1");
+                        throw new CryptographicException();
+                    }
+
+                    _running = false;
+                }
             }
 
             public override void Dispose(bool disposing)

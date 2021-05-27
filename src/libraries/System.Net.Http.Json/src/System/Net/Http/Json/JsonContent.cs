@@ -16,8 +16,6 @@ namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)]
         public Type ObjectType { get; }
@@ -43,7 +41,7 @@ namespace System.Net.Http.Json
             Value = inputValue;
             ObjectType = inputType;
             Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
-            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
+            _jsonSerializerOptions = options ?? JsonHelpers.s_defaultSerializerOptions;
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]

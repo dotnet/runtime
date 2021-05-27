@@ -70,6 +70,11 @@ namespace System.Text.Json.Serialization
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The 'interfaceType' must exist and so trimmer kept it. In which case " +
+                "It also kept it on any type which implements it. The below call to GetInterfaces " +
+                "may return fewer results when trimmed but it will return the 'interfaceType' " +
+                "if the type implemented it, even after trimming.")]
         internal static Type? GetCompatibleGenericInterface(this Type type, Type interfaceType)
         {
             Debug.Assert(interfaceType.IsGenericType);

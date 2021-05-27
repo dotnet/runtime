@@ -223,7 +223,7 @@ int coreclr_initialize(
 
     if (pinvokeOverride != nullptr)
     {
-        PInvokeOverride::SetPInvokeOverride(pinvokeOverride);
+        PInvokeOverride::SetPInvokeOverride(pinvokeOverride, PInvokeOverride::Source::RuntimeConfiguration);
     }
 
     ReleaseHolder<ICLRRuntimeHost4> host;

@@ -44,7 +44,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     // String keyStoreType = "AndroidCAStore";
     // KeyStore keyStore = KeyStore.getInstance(keyStoreType);
     // keyStore.load(null, null);
-    loc[keyStoreType] = JSTRING("AndroidCAStore");
+    loc[keyStoreType] = make_java_string(env, "AndroidCAStore");
     loc[keyStore] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[keyStoreType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[keyStore], g_KeyStoreLoad, NULL, NULL);
@@ -75,7 +75,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     // String certStoreType = "Collection";
     // CollectionCertStoreParameters certStoreParams = new CollectionCertStoreParameters(certList);
     // CertStore certStore = CertStore.getInstance(certStoreType, certStoreParams);
-    loc[certStoreType] = JSTRING("Collection");
+    loc[certStoreType] = make_java_string(env, "Collection");
     loc[certStoreParams] = (*env)->NewObject(
         env, g_CollectionCertStoreParametersClass, g_CollectionCertStoreParametersCtor, loc[certList]);
     loc[certStore] = (*env)->CallStaticObjectMethod(
@@ -85,8 +85,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     // params.addCertStore(certStore);
     (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, loc[certStore]);
 
-    ret = malloc(sizeof(X509ChainContext));
-    memset(ret, 0, sizeof(X509ChainContext));
+    ret = xcalloc(1, sizeof(X509ChainContext));
     ret->params = AddGRef(env, loc[params]);
     ret->errorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
 
@@ -132,7 +131,7 @@ int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeIn
     // String builderType = "PKIX";
     // CertPathBuilder builder = CertPathBuilder.getInstance(builderType);
     // PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult)builder.build(params);
-    loc[builderType] = JSTRING("PKIX");
+    loc[builderType] = make_java_string(env, "PKIX");
     loc[builder] =
         (*env)->CallStaticObjectMethod(env, g_CertPathBuilderClass, g_CertPathBuilderGetInstance, loc[builderType]);
     loc[result] = (*env)->CallObjectMethod(env, loc[builder], g_CertPathBuilderBuild, params);
@@ -330,7 +329,7 @@ static void PopulateValidationError(JNIEnv* env, jobject error, bool isRevocatio
         jsize messageLen = message == NULL ? 0 : (*env)->GetStringLength(env, message);
 
         // +1 for null terminator
-        messagePtr = malloc(sizeof(uint16_t) * (size_t)(messageLen + 1));
+        messagePtr = xmalloc(sizeof(uint16_t) * (size_t)(messageLen + 1));
         messagePtr[messageLen] = '\0';
         (*env)->GetStringRegion(env, message, 0, messageLen, (jchar*)messagePtr);
     }
@@ -448,7 +447,7 @@ static jobject /*CertPath*/ CreateCertPathFromAnchor(JNIEnv* env, jobject /*Trus
     (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, loc[trustedCert]);
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-    loc[certFactoryType] = JSTRING("X.509");
+    loc[certFactoryType] = make_java_string(env, "X.509");
     loc[certFactory] =
         (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certFactoryType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -590,7 +589,7 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
 
     // String validatorType = "PKIX";
     // CertPathValidator validator = CertPathValidator.getInstance(validatorType);
-    loc[validatorType] = JSTRING("PKIX");
+    loc[validatorType] = make_java_string(env, "PKIX");
     loc[validator] = (*env)->CallStaticObjectMethod(
         env, g_CertPathValidatorClass, g_CertPathValidatorGetInstance, loc[validatorType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);

@@ -641,7 +641,7 @@ private:
             if (Compiler::gtHasCallOnStack(&m_ancestors))
             {
                 varDsc->lvQuirkToLong = true;
-                JITDUMP("Adding a quirk for the storage size of V%02u of type %s", val.LclNum(),
+                JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
                         varTypeName(varDsc->TypeGet()));
             }
         }
@@ -872,7 +872,7 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        addr->gtFlags = 0;
+        addr->gtFlags = GTF_EMPTY;
 
         INDEBUG(m_stmtModified = true;)
     }
@@ -917,7 +917,7 @@ private:
             // a variable into a LCL_FLD but that blocks enregistration so we need to
             // detect those case where we can use LCL_VAR instead, perhaps in conjuction
             // with CAST and/or BITCAST.
-            // Also skip SIMD variables for now, fgMorphFieldAssignToSIMDIntrinsicSet and
+            // Also skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
             // others need to be updated to recognize LCL_FLDs.
             return;
         }
@@ -958,7 +958,7 @@ private:
         if (varTypeIsSIMD(indir->TypeGet()))
         {
             // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
-            // but there are exceptions - fgMorphFieldAssignToSIMDIntrinsicSet for example.
+            // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
             // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
             return;
         }
@@ -1044,7 +1044,7 @@ private:
             return;
         }
 
-        unsigned flags = 0;
+        GenTreeFlags flags = GTF_EMPTY;
 
         if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
         {

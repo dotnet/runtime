@@ -18,15 +18,15 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
 
     jstring macName = NULL;
     if (type == CryptoNative_EvpSha1())
-        macName = JSTRING("HmacSHA1");
+        macName = make_java_string(env, "HmacSHA1");
     else if (type == CryptoNative_EvpSha256())
-        macName = JSTRING("HmacSHA256");
+        macName = make_java_string(env, "HmacSHA256");
     else if (type == CryptoNative_EvpSha384())
-        macName = JSTRING("HmacSHA384");
+        macName = make_java_string(env, "HmacSHA384");
     else if (type == CryptoNative_EvpSha512())
-        macName = JSTRING("HmacSHA512");
+        macName = make_java_string(env, "HmacSHA512");
     else if (type == CryptoNative_EvpMd5())
-        macName = JSTRING("HmacMD5");
+        macName = make_java_string(env, "HmacMD5");
     else
         return FAIL;
 
@@ -34,7 +34,7 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
 
     if (key && keyLen > 0)
     {
-        keyBytes = (*env)->NewByteArray(env, keyLen);
+        keyBytes = make_java_byte_array(env, keyLen);
         (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLen, (jbyte*)key);
     }
     else
@@ -43,7 +43,7 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
         // so instead create an empty 1-byte length byte array that's initalized to 0.
         // the HMAC algorithm pads keys with zeros until the key is block-length,
         // so this effectively creates the same key as if it were a zero byte-length key.
-        keyBytes = (*env)->NewByteArray(env, 1);
+        keyBytes = make_java_byte_array(env, 1);
     }
 
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
@@ -87,7 +87,7 @@ int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
 
     abort_if_invalid_pointer_argument (data);
     JNIEnv* env = GetJNIEnv();
-    jbyteArray dataBytes = (*env)->NewByteArray(env, len);
+    jbyteArray dataBytes = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, dataBytes, 0, len, (jbyte*)data);
     (*env)->CallVoidMethod(env, ctx, g_MacUpdate, dataBytes);
     (*env)->DeleteLocalRef(env, dataBytes);
@@ -95,7 +95,7 @@ int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data, int32_t* len)
+ARGS_NON_NULL_ALL static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data, int32_t* len)
 {
     // mac.doFinal();
     jbyteArray dataBytes = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);

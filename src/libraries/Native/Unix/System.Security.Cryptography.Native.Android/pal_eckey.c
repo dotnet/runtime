@@ -11,8 +11,7 @@ EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
     abort_if_invalid_pointer_argument (curveParameters);
     abort_if_invalid_pointer_argument (keyPair);
 
-    EC_KEY* keyInfo = malloc(sizeof(EC_KEY));
-    memset(keyInfo, 0, sizeof(EC_KEY));
+    EC_KEY* keyInfo = xcalloc(1, sizeof(EC_KEY));
     atomic_init(&keyInfo->refCount, 1);
     keyInfo->curveParameters = curveParameters;
     keyInfo->keyPair = keyPair;
@@ -80,25 +79,25 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
     jstring oidStr;
     if (strcmp(oid, "1.3.132.0.33") == 0)
     {
-        oidStr = JSTRING("secp224r1");
+        oidStr = make_java_string(env, "secp224r1");
     }
     else if (strcmp(oid, "1.3.132.0.34") == 0 || strcmp(oid, "nistP384") == 0)
     {
-        oidStr = JSTRING("secp384r1");
+        oidStr = make_java_string(env, "secp384r1");
     }
     else if (strcmp(oid, "1.3.132.0.35") == 0 || strcmp(oid, "nistP521") == 0)
     {
-        oidStr = JSTRING("secp521r1");
+        oidStr = make_java_string(env, "secp521r1");
     }
     else if (strcmp(oid, "1.2.840.10045.3.1.7") == 0 || strcmp(oid, "nistP256") == 0)
     {
-        oidStr = JSTRING("secp256r1");
+        oidStr = make_java_string(env, "secp256r1");
     }
     else
     {
-        oidStr = JSTRING(oid);
+        oidStr = make_java_string(env, oid);
     }
-    jstring ec = JSTRING("EC");
+    jstring ec = make_java_string(env, "EC");
 
     // First, generate the key pair based on the curve defined by the oid.
     jobject paramSpec = (*env)->NewObject(env, g_ECGenParameterSpecClass, g_ECGenParameterSpecCtor, oidStr);
@@ -194,7 +193,7 @@ int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curv
     jsize nameLength = (*env)->GetStringLength(env, curveNameStr);
 
     // add one for the null terminator.
-    uint16_t* buffer = malloc(sizeof(int16_t) * (size_t)(nameLength + 1));
+    uint16_t* buffer = xmalloc(sizeof(int16_t) * (size_t)(nameLength + 1));
     buffer[nameLength] = 0;
 
     (*env)->GetStringRegion(env, curveNameStr, 0, nameLength, (jchar*)buffer);

@@ -252,6 +252,16 @@ static bool s_printEarliestMessageFromGcThread[MAX_NUMBER_OF_HEAPS][2];
 static bool FilterThread(ThreadStressLog* tsl)
 {
     //    return tsl->threadId == 0x6ff8;
+
+    if (s_gcFilterStart != 0)
+    {
+        // we have a filter based on a GC index
+        // include all message for now so we don't miss any
+        // GC start/end messages
+        // we will throw away message for other threads later
+        return true;
+    }
+
     if (s_hadGcThreadFilters)
     {
         GcThread gcThread;

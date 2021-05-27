@@ -6,9 +6,9 @@
 #include "pal_signature.h"
 #include "pal_utilities.h"
 
-static jobject GetEcDsaSignatureObject(JNIEnv* env)
+ARGS_NON_NULL_ALL static jobject GetEcDsaSignatureObject(JNIEnv* env)
 {
-    jstring algorithmName = JSTRING("NONEwithECDSA");
+    jstring algorithmName = make_java_string(env, "NONEwithECDSA");
     jobject signatureObject =
         (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, algorithmName);
     (*env)->DeleteLocalRef(env, algorithmName);

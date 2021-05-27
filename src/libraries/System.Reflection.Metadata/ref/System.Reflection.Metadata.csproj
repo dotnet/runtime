@@ -2,24 +2,17 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Metadata.cs" />
     <Compile Include="System.Reflection.Metadata.Manual.cs" />
-    <None Include="ReferenceSourceExcludeApi.txt" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-  </ItemGroup>
-  <!-- Include these transitive dependencies to overrule NuGet's ProjectReference over PackageReferene behavior. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
-    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
-    <PackageReference Include="System.Collections" Version="$(SystemCollectionsVersion)" />
-    <PackageReference Include="System.Runtime.InteropServices" Version="$(SystemRuntimeInteropServicesVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

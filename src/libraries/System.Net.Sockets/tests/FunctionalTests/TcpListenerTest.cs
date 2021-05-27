@@ -128,6 +128,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(0)] // Sync
         [InlineData(1)] // Async
         [InlineData(2)] // APM
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Accept_AcceptsPendingSocketOrClient(int mode)
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);

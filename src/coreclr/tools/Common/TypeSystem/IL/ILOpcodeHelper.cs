@@ -50,6 +50,11 @@ namespace Internal.IL
             return false;
         }
 
+        public static bool IsUnconditionalBranch(this ILOpcode opcode)
+        {
+            return opcode == ILOpcode.br || opcode == ILOpcode.br_s || opcode == ILOpcode.leave || opcode == ILOpcode.leave_s;
+        }
+
         private static readonly byte[] s_opcodeSizes = new byte[]
         {
             1, // nop = 0x00,

@@ -564,8 +564,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
             info.compCompHnd->getMethodSig(info.compMethodHnd, &sigInfo);
             assert(JITtype2varType(sigInfo.retType) == info.compRetType); // Else shouldn't have a ret buff.
 
-            info.compRetBuffDefStack =
-                (info.compCompHnd->isStructRequiringStackAllocRetBuf(sigInfo.retTypeClass) == TRUE);
+            info.compRetBuffDefStack = (info.compCompHnd->isStructRequiringStackAllocRetBuf(sigInfo.retTypeClass));
             if (info.compRetBuffDefStack)
             {
                 // If we're assured that the ret buff argument points into a callers stack, we will type it as
@@ -2460,94 +2459,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     }
 }
 
-#if !defined(TARGET_64BIT)
-//------------------------------------------------------------------------
-// lvaPromoteLongVars: "Struct promote" all register candidate longs as if they are structs of two ints.
-//
-// Arguments:
-//    None.
-//
-// Return Value:
-//    None.
-//
-void Compiler::lvaPromoteLongVars()
-{
-    if ((opts.compFlags & CLFLG_REGVAR) == 0)
-    {
-        return;
-    }
-
-    // The lvaTable might grow as we grab temps. Make a local copy here.
-    unsigned startLvaCount = lvaCount;
-    for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
-    {
-        LclVarDsc* varDsc = &lvaTable[lclNum];
-        if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || (varDsc->lvRefCnt() == 0) ||
-            varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
-        {
-            continue;
-        }
-
-        assert(!varDsc->lvIsMultiRegArgOrRet());
-        varDsc->lvFieldCnt      = 2;
-        varDsc->lvFieldLclStart = lvaCount;
-        varDsc->lvPromoted      = true;
-        varDsc->lvContainsHoles = false;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nPromoting long local V%02u:", lclNum);
-        }
-#endif
-
-        bool isParam = varDsc->lvIsParam;
-
-        for (unsigned index = 0; index < 2; ++index)
-        {
-            // Grab the temp for the field local.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-            char buf[200];
-            sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
-                      index * 4);
-
-            // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-            size_t len  = strlen(buf) + 1;
-            char*  bufp = getAllocator(CMK_DebugOnly).allocate<char>(len);
-            strcpy_s(bufp, len, buf);
-#endif
-
-            unsigned varNum = lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
-                                                                 // they are long lifetime temps.
-
-            LclVarDsc* fieldVarDsc       = &lvaTable[varNum];
-            fieldVarDsc->lvType          = TYP_INT;
-            fieldVarDsc->lvExactSize     = genTypeSize(TYP_INT);
-            fieldVarDsc->lvIsStructField = true;
-            fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
-            fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
-            fieldVarDsc->lvParentLcl     = lclNum;
-            // Currently we do not support enregistering incoming promoted aggregates with more than one field.
-            if (isParam)
-            {
-                fieldVarDsc->lvIsParam = true;
-                lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LongParamField));
-            }
-        }
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nlvaTable after lvaPromoteLongVars\n");
-        lvaTableDump();
-    }
-#endif // DEBUG
-}
-#endif // !defined(TARGET_64BIT)
-
 //--------------------------------------------------------------------------------------------
 // lvaGetFieldLocal - returns the local var index for a promoted field in a promoted struct var.
 //
@@ -2853,9 +2764,9 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
 
 #ifndef TARGET_64BIT
-    BOOL fDoubleAlignHint = FALSE;
+    bool fDoubleAlignHint = false;
 #ifdef TARGET_X86
-    fDoubleAlignHint = TRUE;
+    fDoubleAlignHint = true;
 #endif
 
     if (info.compCompHnd->getClassAlignmentRequirement(typeHnd, fDoubleAlignHint) == 8)
@@ -4607,7 +4518,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             assert(isRecompute);
 
             const BasicBlock::weight_t weight = block->getBBWeight(this);
-            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            for (GenTree* node : LIR::AsRange(block))
             {
                 switch (node->OperGet())
                 {

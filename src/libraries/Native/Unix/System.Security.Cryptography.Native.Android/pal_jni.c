@@ -481,7 +481,7 @@ void ReleaseLRef(JNIEnv *env, jobject lref)
         (*env)->DeleteLocalRef(env, lref);
 }
 
-static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
+ARGS_NON_NULL_ALL static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
 {
     *out = NULL;
     LOG_DEBUG("Finding %s class", name);
@@ -505,7 +505,7 @@ jclass GetClassGRef(JNIEnv *env, const char* name)
     return klass;
 }
 
-static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
+ARGS_NON_NULL_ALL static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
 {
     jclass klass = NULL;
     if (!TryGetClassGRef(env, name, &klass))
@@ -562,7 +562,7 @@ void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
     {
         free(*dst);
     }
-    *dst = (uint8_t*)malloc(len * sizeof(uint8_t));
+    *dst = (uint8_t*)xmalloc(len * sizeof(uint8_t));
     memcpy(*dst, src, len);
 }
 
@@ -967,7 +967,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
-    g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
+    g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");

@@ -14,19 +14,6 @@
       <RuntimePackILLinkArgs>$(ILLinkArgs)</RuntimePackILLinkArgs>
       <!-- update debug symbols -->
       <RuntimePackILLinkArgs>$(RuntimePackILLinkArgs) -b true</RuntimePackILLinkArgs>
-      <!-- suppress warnings with the following codes:
-           IL2009: Could not find method A in type B specified in resource C
-           IL2025: Duplicate preserve of A in B
-      -->
-      <LinkerNoWarn>IL2009;IL2025</LinkerNoWarn>
-      <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
-           IL2008: Could not find type A specified in resource B
-           and on 32-bit builds:
-           IL2012: Could not find field 'Padding' in type 'System.Runtime.CompilerServices.RawArrayData'
-      -->
-      <LinkerNoWarn Condition="'$(TargetOS)' != 'windows'">$(LinkerNoWarn);IL2008</LinkerNoWarn>
-      <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
-      <RuntimePackILLinkArgs>$(RuntimePackILLinkArgs) --nowarn $(LinkerNoWarn)</RuntimePackILLinkArgs>
     </PropertyGroup>
 
     <ItemGroup>
@@ -43,7 +30,6 @@
       <_RuntimePackSuppressionsXmls Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_RuntimePackSuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
       <_RuntimePackSuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
       <_RuntimePackSuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
     </ItemGroup>

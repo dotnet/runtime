@@ -13,7 +13,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;arm64;wasm</Platforms>
+    <Platforms>x64;x86;arm;arm64;s390x;wasm</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -64,6 +64,10 @@
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 's390x'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_S390X</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -136,6 +140,7 @@
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.OSX.xml"
                            Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
+    <ILLinkDescriptorsXmls Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
 
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
@@ -249,6 +254,8 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalAsAttribute.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.Mono.cs"
+               Condition="'$(FeatureObjCMarshal)' == 'true'"/>
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />

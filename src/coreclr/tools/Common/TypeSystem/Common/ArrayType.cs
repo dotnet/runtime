@@ -233,7 +233,7 @@ namespace Internal.TypeSystem
                                 var parameters = new TypeDesc[_owningType.Rank];
                                 for (int i = 0; i < _owningType.Rank; i++)
                                     parameters[i] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
-                                _signature = new MethodSignature(0, 0, _owningType.ElementType, parameters);
+                                _signature = new MethodSignature(0, 0, _owningType.ElementType, parameters, MethodSignature.EmbeddedSignatureMismatchPermittedFlag);
                                 break;
                             }
                         case ArrayMethodKind.Set:
@@ -242,7 +242,7 @@ namespace Internal.TypeSystem
                                 for (int i = 0; i < _owningType.Rank; i++)
                                     parameters[i] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
                                 parameters[_owningType.Rank] = _owningType.ElementType;
-                                _signature = new MethodSignature(0, 0, this.Context.GetWellKnownType(WellKnownType.Void), parameters);
+                                _signature = new MethodSignature(0, 0, this.Context.GetWellKnownType(WellKnownType.Void), parameters, MethodSignature.EmbeddedSignatureMismatchPermittedFlag);
                                 break;
                             }
                         case ArrayMethodKind.Address:
@@ -250,7 +250,7 @@ namespace Internal.TypeSystem
                                 var parameters = new TypeDesc[_owningType.Rank];
                                 for (int i = 0; i < _owningType.Rank; i++)
                                     parameters[i] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
-                                _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);
+                                _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters, MethodSignature.EmbeddedSignatureMismatchPermittedFlag);
                             }
                             break;
                         case ArrayMethodKind.AddressWithHiddenArg:
@@ -259,7 +259,7 @@ namespace Internal.TypeSystem
                                 parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
                                 for (int i = 0; i < _owningType.Rank; i++)
                                     parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
-                                _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);
+                                _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters, MethodSignature.EmbeddedSignatureMismatchPermittedFlag);
                             }
                             break;
                         default:
@@ -277,7 +277,7 @@ namespace Internal.TypeSystem
                                 var argTypes = new TypeDesc[numArgs];
                                 for (int i = 0; i < argTypes.Length; i++)
                                     argTypes[i] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
-                                _signature = new MethodSignature(0, 0, this.Context.GetWellKnownType(WellKnownType.Void), argTypes);
+                                _signature = new MethodSignature(0, 0, this.Context.GetWellKnownType(WellKnownType.Void), argTypes, MethodSignature.EmbeddedSignatureMismatchPermittedFlag);
                             }
                             break;
                     }

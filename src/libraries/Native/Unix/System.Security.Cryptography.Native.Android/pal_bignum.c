@@ -50,7 +50,7 @@ jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len)
 
     // return new BigInteger(bytes)
     JNIEnv* env = GetJNIEnv();
-    jbyteArray buffArray = (*env)->NewByteArray(env, len);
+    jbyteArray buffArray = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)bytes);
     jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, buffArray);
     (*env)->DeleteLocalRef(env, buffArray);
