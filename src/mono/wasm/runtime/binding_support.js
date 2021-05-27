@@ -52,9 +52,8 @@ var BindingSupportLib = {
 			Float32Array.prototype[Symbol.for("wasm type")] = 17;
 			Float64Array.prototype[Symbol.for("wasm type")] = 18;
 
-			this.assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
-			this._find_corlib_class = Module.cwrap ('mono_wasm_find_corlib_class', 'number', ['string', 'string']);
-			this._find_system_class = Module.cwrap ('mono_wasm_find_system_class', 'number', ['string', 'string']);
+			this._assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
+			this.mono_wasm_get_corlib = Module.cwrap ('mono_wasm_get_corlib', 'number', []);
 			this.find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string']);
 			this._find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
 			this.invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
@@ -169,41 +168,60 @@ var BindingSupportLib = {
 
 		},
 
-		_find_cached_class: function (namespace, name) {
-			if (!this._class_cache) {
-				this._class_cache = new Map();
-				this._class_cache.set(namespace, new Map());
-				return undefined;
-			}
-			
-			var ns = this._class_cache.get(namespace);
-			if (!ns) {
-				this._class_cache.set(namespace, new Map());
-				return undefined;
-			}
-			
-			return this._class_cache.get(name);
-		},
+		assembly_load: function (name) {
+			if (!this._assembly_cache_by_name)
+				this._assembly_cache_by_name = new Map();
 
-		find_corlib_class: function (namespace, name, throw_on_failure) {
-			var result = this._find_cached_class(namespace, name);
-			if (result !== undefined)
-				return result;
-			result = this._find_corlib_class(namespace, name);
-			if (throw_on_failure && !result)
-				throw new Error(`Failed to find mscorlib.dll class ${namespace}.${name}`);
-			this._class_cache.get(namespace).set(name, result);
+			if (this._assembly_cache_by_name.has(name))
+				return this._assembly_cache_by_name.get(name);
+			
+			var result = this._assembly_load(name);
+			this._assembly_cache_by_name.set(name, result);
 			return result;
 		},
 
-		find_system_class: function (namespace, name, throw_on_failure) {
-			var result = this._find_cached_class(namespace, name);
+		_find_cached_class: function (assembly, namespace, name) {
+			if (!this._class_cache_by_assembly)
+				this._class_cache_by_assembly = new Map();
+
+			var namespaces = this._class_cache_by_assembly.get(assembly);
+			if (!namespaces)
+				this._class_cache_by_assembly.set(assembly, namespaces = new Map());
+
+			var classes = namespaces.get(namespace);
+			if (!classes)
+				namespaces.set(namespace, classes = new Map());
+
+			return classes.get(name);
+		},
+
+		_set_cached_class: function (assembly, namespace, name, ptr) {
+			var namespaces = this._class_cache_by_assembly.get(assembly);
+			var classes = namespaces.get(namespace);
+			classes.set(name, ptr);
+		},
+
+		find_corlib_class: function (namespace, name, throw_on_failure) {
+			var corlib = this.mono_wasm_get_corlib();
+			var result = this._find_cached_class (corlib, namespace, name);
 			if (result !== undefined)
 				return result;
-			result = this._find_system_class(namespace, name);
+			result = this.find_class(corlib, namespace, name);
 			if (throw_on_failure && !result)
-				throw new Error(`Failed to find System.dll class ${namespace}.${name}`);
-			this._class_cache.get(namespace).set(name, result);
+				throw new Error(`Failed to find corlib class ${namespace}.${name}`);
+			this._set_cached_class(corlib, namespace, name, result);
+			return result;
+		},
+
+		find_class_in_assembly: function (assembly_name, namespace, name, throw_on_failure) {
+			var assembly = this.assembly_load(assembly_name);
+			var result = this._find_cached_class(assembly, namespace, name);
+			if (result !== undefined)
+				return result;
+			result = this.find_class(assembly, namespace, name);
+			if (throw_on_failure && !result)
+				throw new Error(`Failed to find class ${namespace}.${name} in ${assembly_name}`);
+			this._set_cached_class(assembly, namespace, name, result);
 			return result;
 		},
 
@@ -634,7 +652,7 @@ var BindingSupportLib = {
 		},
 		js_to_mono_uri: function (js_obj) {
 			this.bindings_lazy_init ();
-			return this.box_js_obj_with_converter(js_obj, this.find_system_class ("System", "Uri", true));
+			return this.box_js_obj_with_converter(js_obj, this.find_class_in_assembly ("System.Private.Uri", "System", "Uri", true));
 		},
 		has_backing_array_buffer: function (js_obj) {
 			return typeof SharedArrayBuffer !== 'undefined'
