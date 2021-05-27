@@ -92,15 +92,14 @@ public:
     //     // View the block as a range
     //     LIR::Range& blockRange = LIR::AsRange(block);
     //
-    //     // Create a range from the first non-phi node in the block to the
-    //     // last node in the block
-    //     LIR::ReadOnlyRange nonPhis = blockRange.NonPhiNodes();
+    //     // Create a read only range from from it.
+    //     LIR::ReadOnlyRange readRange = blockRange;
     //
     //     // Remove the last node from the block
     //     blockRange.Remove(blockRange.LastNode());
     //
     // After the removal of the last node in the block, the last node of
-    // nonPhis is no longer linked to any of the other nodes in nonPhis. Due
+    // readRange is no longer linked to any of the other nodes in readRange. Due
     // to issues such as the above, some care must be taken in order to
     // ensure that ranges are not used once they have been invalidated.
     //
@@ -256,12 +255,7 @@ public:
         Range();
         Range(Range&& other);
 
-        GenTree* LastPhiNode() const;
-        GenTree* FirstNonPhiNode() const;
-        GenTree* FirstNonPhiOrCatchArgNode() const;
-
-        ReadOnlyRange PhiNodes() const;
-        ReadOnlyRange NonPhiNodes() const;
+        GenTree* FirstNonCatchArgNode() const;
 
         void InsertBefore(GenTree* insertionPoint, GenTree* node);
         void InsertAfter(GenTree* insertionPoint, GenTree* node);

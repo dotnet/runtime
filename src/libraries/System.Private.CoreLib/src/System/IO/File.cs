@@ -352,7 +352,10 @@ namespace System.IO
                 {
                     int n = fs.Read(bytes, index, count);
                     if (n == 0)
-                        throw Error.GetEndOfFile();
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+
                     index += n;
                     count -= n;
                 }
@@ -815,7 +818,7 @@ namespace System.IO
 #endif
                     if (n == 0)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
 
                     index += n;

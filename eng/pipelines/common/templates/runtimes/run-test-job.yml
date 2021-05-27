@@ -465,6 +465,12 @@ jobs:
           - jitminopts
           - forcerelocs
           - gcstress0xf
+        ${{ if in(parameters.testGroup, 'pgo') }}:
+          scenarios:
+          - nopgo
+          - defaultpgo
+          - dynamicpgo
+          - fullpgo
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -481,10 +487,7 @@ jobs:
           scenarios:
           - jitosr
           - jitosr_stress
-          - jitehwritethru
           - jitobjectstackallocation
-          - jitpgo
-          - jitpgo_inline
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip

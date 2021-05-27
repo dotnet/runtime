@@ -3875,10 +3875,13 @@ mono_llvm_resume_exception (void)
 MonoObject *
 mono_llvm_load_exception (void)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target_internal (jit_tls->thrown_exc);
+
+	MONO_HANDLE_PIN (mono_ex);
 
 	MonoArray *ta = mono_ex->trace_ips;
 
@@ -3915,7 +3918,7 @@ mono_llvm_load_exception (void)
 		mono_error_assert_ok (error);
 	}
 
-	return &mono_ex->object;
+	HANDLE_FUNCTION_RETURN_VAL (&mono_ex->object);
 }
 
 /*
@@ -3927,6 +3930,7 @@ void
 mono_llvm_clear_exception (void)
 {
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+
 	mono_gchandle_free_internal (jit_tls->thrown_exc);
 	jit_tls->thrown_exc = 0;
 	if (jit_tls->thrown_non_exc)

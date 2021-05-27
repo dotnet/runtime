@@ -38,16 +38,14 @@ namespace System.Text.Json.SourceGeneration.Reflection
             return compilableName.Replace(".", "").Replace("<", "").Replace(">", "").Replace(",", "").Replace("[]", "Array");
         }
 
-        public static Type NullableOfTType { get; set; }
-
-        public static bool IsNullableValueType(this Type type, out Type? underlyingType)
+        public static bool IsNullableValueType(this Type type, Type nullableOfTType, out Type? underlyingType)
         {
-            Debug.Assert(NullableOfTType != null);
+            Debug.Assert(nullableOfTType != null);
 
             // TODO: log bug because Nullable.GetUnderlyingType doesn't work due to
             // https://github.com/dotnet/runtimelab/blob/7472c863db6ec5ddab7f411ddb134a6e9f3c105f/src/libraries/System.Private.CoreLib/src/System/Nullable.cs#L124
             // i.e. type.GetGenericTypeDefinition() will never equal typeof(Nullable<>), as expected in that code segment.
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == NullableOfTType)
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == nullableOfTType)
             {
                 underlyingType = type.GetGenericArguments()[0];
                 return true;
@@ -56,6 +54,22 @@ namespace System.Text.Json.SourceGeneration.Reflection
             underlyingType = null;
             return false;
         }
+
+        public static bool IsNullableValueType(this Type type, out Type? underlyingType)
+        {
+            if (type.IsGenericType && type.Name.StartsWith("Nullable`1"))
+            {
+                underlyingType = type.GetGenericArguments()[0];
+                return true;
+            }
+
+            underlyingType = null;
+            return false;
+        }
+
+        public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
+
+        public static bool IsStringType(this Type type) => type.FullName == "System.String";
 
         public static Type? GetCompatibleBaseClass(this Type type, string baseTypeFullName)
         {

@@ -780,7 +780,7 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            bool exists = Internal.IO.File.InternalExists(assemblyPath);
+            bool exists = System.IO.FileSystem.FileExists(assemblyPath);
             if (!exists && Path.IsCaseSensitive)
             {
 #if CORECLR
@@ -790,7 +790,7 @@ namespace System.Runtime.Loader
                 }
 #endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-                exists = Internal.IO.File.InternalExists(assemblyPath);
+                exists = System.IO.FileSystem.FileExists(assemblyPath);
             }
 
             Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;
