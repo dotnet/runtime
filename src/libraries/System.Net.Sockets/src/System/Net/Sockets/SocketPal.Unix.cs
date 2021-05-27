@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
@@ -1906,10 +1907,10 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, Action<long, SocketError> callback)
+        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             long bytesSent;
-            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback);
+            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback, cancellationToken);
             if (socketError == SocketError.Success)
             {
                 callback(bytesSent, SocketError.Success);
@@ -1918,7 +1919,7 @@ namespace System.Net.Sockets
         }
 
         public static async void SendPacketsAsync(
-            Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, FileStream[] files, Action<long, SocketError> callback)
+            Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, FileStream[] files, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             SocketError error = SocketError.Success;
             long bytesTransferred = 0;
@@ -1932,7 +1933,7 @@ namespace System.Net.Sockets
                     {
                         if (e.MemoryBuffer != null)
                         {
-                            bytesTransferred += await socket.SendAsync(e.MemoryBuffer.Value, SocketFlags.None).ConfigureAwait(false);
+                            bytesTransferred += await socket.SendAsync(e.MemoryBuffer.Value, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
@@ -1945,6 +1946,7 @@ namespace System.Net.Sockets
                             var tcs = new TaskCompletionSource<SocketError>();
                             error = SendFileAsync(socket.InternalSafeHandle, fs, e.OffsetLong,
                                 e.Count > 0 ? e.Count : fs.Length - e.OffsetLong,
+                                cancellationToken,
                                 (transferred, se) =>
                                 {
                                     bytesTransferred += transferred;

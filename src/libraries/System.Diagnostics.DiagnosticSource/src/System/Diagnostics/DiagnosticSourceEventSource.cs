@@ -219,7 +219,6 @@ namespace System.Diagnostics
             WriteEvent(1, Message);
         }
 
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
@@ -232,7 +231,7 @@ namespace System.Diagnostics
         {
             WriteEvent(2, SourceName, EventName, Arguments);
         }
-#endif
+
         /// <summary>
         /// This is only used on V4.5 systems that don't have the ability to log KeyValuePairs directly.
         /// It will eventually go away, but we should always reserve the ID for this.
@@ -243,7 +242,6 @@ namespace System.Diagnostics
             WriteEvent(3, SourceName, EventName, ArgmentsJson);
         }
 
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
@@ -321,7 +319,6 @@ namespace System.Diagnostics
         {
             WriteEvent(9, SourceName, EventName, Arguments);
         }
-#endif
 
         /// <summary>
         /// Fires when a new DiagnosticSource becomes available.
@@ -343,11 +340,7 @@ namespace System.Diagnostics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
 #endif
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(11, Keywords = Keywords.Events)]
-#else
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-#endif
         private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
 
@@ -361,65 +354,16 @@ namespace System.Diagnostics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
 #endif
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(12, Keywords = Keywords.Events)]
-#else
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-#endif
         private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
         #region private
 
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        /// <summary>
-        /// Converts a keyvalue bag to JSON. Only used on V4.5 EventSources.
-        /// </summary>
-        private static string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("{");
-            bool first = true;
-            foreach (var keyValue in keyValues)
-            {
-                if (!first)
-                    sb.Append(',').AppendLine();
-                first = false;
-
-                sb.Append('"').Append(keyValue.Key).Append("\":\"");
-
-                // Write out the value characters, escaping things as needed.
-                foreach (var c in keyValue.Value)
-                {
-                    if (char.IsControl(c))
-                    {
-                        if (c == '\n')
-                            sb.Append("\\n");
-                        else if (c == '\r')
-                            sb.Append("\\r");
-                        else
-                            sb.Append("\\u").Append(((int)c).ToString("x").PadLeft(4, '0'));
-                    }
-                    else
-                    {
-                        if (c == '"' || c == '\\')
-                            sb.Append('\\');
-                        sb.Append(c);
-                    }
-                }
-                sb.Append('"');     // Close the string.
-            }
-            sb.AppendLine().AppendLine("}");
-            return sb.ToString();
-        }
-#endif
-
         private DiagnosticSourceEventSource()
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
             : base(EventSourceSettings.EtwSelfDescribingEventFormat)
-#endif
         {
         }
 
@@ -672,7 +616,6 @@ namespace System.Diagnostics
                 Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
                 if (activityName != null && activityName.Contains("Activity"))
                 {
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = activityName switch
                     {
                         nameof(Activity1Start) => _eventSource.Activity1Start,
@@ -683,7 +626,6 @@ namespace System.Diagnostics
                         nameof(RecursiveActivity1Stop) => _eventSource.RecursiveActivity1Stop,
                         _ => null
                     };
-#endif
 
                     if (writeEvent == null)
                         _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
@@ -691,14 +633,7 @@ namespace System.Diagnostics
 
                 if (writeEvent == null)
                 {
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = _eventSource.Event;
-#else
-                    writeEvent = delegate (string sourceName, string eventName, IEnumerable<KeyValuePair<string, string>> arguments)
-                    {
-                        _eventSource.EventJson(sourceName, eventName, ToJson(arguments));
-                    };
-#endif
                 }
 
                 // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
