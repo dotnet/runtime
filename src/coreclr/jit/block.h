@@ -328,15 +328,22 @@ class PredEdgeList
     flowList* m_begin;
 
     // Forward iterator for the predecessor edges linked list.
+    // The caller can't make changes to the preds list when using this.
     //
     class iterator
     {
         flowList* m_pred;
 
+#ifdef DEBUG
+        // Try to guard against the user of the iterator from making changes to the IR that would invalidate
+        // the iterator: cache the edge we think should be next, then check it when we actually do the `++`
+        // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
+        // this iterator implementation.
+        flowList* m_next;
+#endif
+
     public:
-        iterator(flowList* pred) : m_pred(pred)
-        {
-        }
+        iterator(flowList* pred);
 
         flowList* operator*() const
         {
@@ -376,15 +383,22 @@ class PredBlockList
     flowList* m_begin;
 
     // Forward iterator for the predecessor edges linked list, yielding the predecessor block, not the edge.
+    // The caller can't make changes to the preds list when using this.
     //
     class iterator
     {
         flowList* m_pred;
 
+#ifdef DEBUG
+        // Try to guard against the user of the iterator from making changes to the IR that would invalidate
+        // the iterator: cache the edge we think should be next, then check it when we actually do the `++`
+        // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
+        // this iterator implementation.
+        flowList* m_next;
+#endif
+
     public:
-        iterator(flowList* pred) : m_pred(pred)
-        {
-        }
+        iterator(flowList* pred);
 
         BasicBlock* operator*() const;
 
@@ -413,6 +427,9 @@ public:
 };
 
 // BBArrayIterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
+// It is an error (with assert) to yield a nullptr BasicBlock* in this array.
+// `m_bbEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
+// (meaning, no actual iteration will happen).
 //
 class BBArrayIterator
 {
@@ -433,6 +450,7 @@ public:
 
     BBArrayIterator& operator++()
     {
+        assert(m_bbEntry != nullptr);
         ++m_bbEntry;
         return *this;
     }
@@ -452,10 +470,7 @@ class BBSwitchTargetList
     BBswtDesc* m_bbsDesc;
 
 public:
-    BBSwitchTargetList(BBswtDesc* bbsDesc) : m_bbsDesc(bbsDesc)
-    {
-    }
-
+    BBSwitchTargetList(BBswtDesc* bbsDesc);
     BBArrayIterator begin() const;
     BBArrayIterator end() const;
 };
@@ -846,7 +861,6 @@ struct BasicBlock : private LIR::Range
     BBSwitchTargetList SwitchTargets() const
     {
         assert(bbJumpKind == BBJ_SWITCH);
-        assert(bbJumpSwt != nullptr);
         return BBSwitchTargetList(bbJumpSwt);
     }
 
@@ -1474,6 +1488,10 @@ typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkVector> BlkToBl
 typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
 
 // BasicBlockIterator: forward iterator for the BasicBlock linked list.
+// It is allowed to make changes to the BasicBlock list as long as the current block remains in the list.
+// E.g., the current block `m_bbNext` pointer can be altered (such as when inserting a following block),
+// as long as the current block is still in the list.
+// The block list is expected to be properly doubly-linked.
 //
 class BasicBlockIterator
 {
@@ -1491,6 +1509,11 @@ public:
 
     BasicBlockIterator& operator++()
     {
+        assert(m_block != nullptr);
+        // Check that we haven't been spliced out of the list.
+        assert((m_block->bbNext == nullptr) || (m_block->bbNext->bbPrev == m_block));
+        assert((m_block->bbPrev == nullptr) || (m_block->bbPrev->bbNext == m_block));
+
         m_block = m_block->bbNext;
         return *this;
     }
@@ -1601,6 +1624,13 @@ struct BBswtDesc
 
 // BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //
+
+inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc) : m_bbsDesc(bbsDesc)
+{
+    assert(m_bbsDesc != nullptr);
+    assert(m_bbsDesc->bbsDstTab != nullptr);
+}
+
 inline BBArrayIterator BBSwitchTargetList::begin() const
 {
     return BBArrayIterator(m_bbsDesc->bbsDstTab);
@@ -1615,6 +1645,7 @@ inline BBArrayIterator BBSwitchTargetList::end() const
 //
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
+    assert(block != nullptr);
     switch (block->bbJumpKind)
     {
         case BBJ_THROW:
@@ -1660,6 +1691,8 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
+            assert(block->bbJumpSwt != nullptr);
+            assert(block->bbJumpSwt->bbsDstTab != nullptr);
             m_begin = block->bbJumpSwt->bbsDstTab;
             m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
             break;
@@ -1667,6 +1700,8 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         default:
             unreached();
     }
+
+    assert(m_end >= m_begin);
 }
 
 inline BBArrayIterator BasicBlock::BBSuccList::begin() const
@@ -1794,10 +1829,32 @@ public:
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and flowList)
 
+inline PredEdgeList::iterator::iterator(flowList* pred) : m_pred(pred)
+{
+#ifdef DEBUG
+    m_next = (m_pred == nullptr) ? nullptr : m_pred->flNext;
+#endif
+}
+
 inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
 {
-    m_pred = m_pred->flNext;
+    flowList* next = m_pred->flNext;
+
+#ifdef DEBUG
+    // Check that the next block is the one we expect to see.
+    assert(next == m_next);
+    m_next = (next == nullptr) ? nullptr : next->flNext;
+#endif // DEBUG
+
+    m_pred = next;
     return *this;
+}
+
+inline PredBlockList::iterator::iterator(flowList* pred) : m_pred(pred)
+{
+#ifdef DEBUG
+    m_next = (m_pred == nullptr) ? nullptr : m_pred->flNext;
+#endif
 }
 
 inline BasicBlock* PredBlockList::iterator::operator*() const
@@ -1807,7 +1864,15 @@ inline BasicBlock* PredBlockList::iterator::operator*() const
 
 inline PredBlockList::iterator& PredBlockList::iterator::operator++()
 {
-    m_pred = m_pred->flNext;
+    flowList* next = m_pred->flNext;
+
+#ifdef DEBUG
+    // Check that the next block is the one we expect to see.
+    assert(next == m_next);
+    m_next = (next == nullptr) ? nullptr : next->flNext;
+#endif // DEBUG
+
+    m_pred = next;
     return *this;
 }
 

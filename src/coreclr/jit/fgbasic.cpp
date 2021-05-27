@@ -3857,7 +3857,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     // can't cross the non-funclet/funclet region. And you can't unlink the first block
     // of the first funclet with this, either. (If that's necessary, it could be allowed
     // by updating fgFirstFuncletBB to bEnd->bbNext.)
-    for (BasicBlock* const tempBB : Blocks(bBeg, bEnd))
+    for (BasicBlock* tempBB = bBeg; tempBB != bEnd->bbNext; tempBB = tempBB->bbNext)
     {
         assert(tempBB != fgFirstFuncletBB);
     }
