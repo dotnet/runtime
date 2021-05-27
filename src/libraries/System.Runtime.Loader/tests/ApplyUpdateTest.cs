@@ -38,5 +38,49 @@ namespace System.Reflection.Metadata
                 Assert.Equal ("NEWEST STRING", r);
             });
         }
+
+        [Fact]
+        [ActiveIssue("xyz", TestRuntimes.Mono)]
+        void ClassWithCustomAttributes()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                // Get the custom attribtues from the newly-added type and method and check
+                // That they are the expected ones
+                var className = "System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes2";
+                var methodName = "Method2";
+#pragma warning disable CS0612
+                var assm = typeof(ApplyUpdate.Test.ClassWithCustomAttributes).Assembly;
+#pragma warning restore CS0612
+
+                var ty = assm.GetType(className, throwOnError: false);
+
+                Assert.Null (ty);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                ty = assm.GetType(className, throwOnError: false);
+
+                Assert.NotNull (ty);
+
+                var cattrs = Attribute.GetCustomAttributes(ty);
+
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                Assert.NotNull(cattrs[0]);
+                Assert.Equal(typeof(ObsoleteAttribute), cattrs[0].GetType());
+
+                var mi = ty.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+
+                Assert.NotNull (mi);
+
+                cattrs = Attribute.GetCustomAttributes(mi);
+
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                Assert.NotNull(cattrs[0]);
+                Assert.Equal(typeof(ObsoleteAttribute), cattrs[0].GetType());
+            });
+        }
     }
 }
