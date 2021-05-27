@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics
 #if NO_ARRAY_EMPTY_SUPPORT
         internal static KeyValuePair<string, object?>[] EmptyTags { get; } = new KeyValuePair<string, object?>[0];
 #else
-        internal static KeyValuePair<string, object?>[] EmptyTags { get; } = Array.Empty<KeyValuePair<string, object?>>();
+        internal static KeyValuePair<string, object?>[] EmptyTags => Array.Empty<KeyValuePair<string, object?>>();
 #endif // NO_ARRAY_EMPTY_SUPPORT
 
         // The SyncObject is used to synchronize the following operations:
@@ -30,8 +30,8 @@ namespace System.Diagnostics.Metrics
         internal static object SyncObject { get; } = new object();
 
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
-        // LinkedList is thread safe for Add and Remove operations.
-        internal LinkedList<ListenerSubscription> _subscriptions = new LinkedList<ListenerSubscription>();
+        // DiagLinkedList is thread safe for Add and Remove operations.
+        internal readonly DiagLinkedList<ListenerSubscription> _subscriptions = new DiagLinkedList<ListenerSubscription>();
 
         /// <summary>
         /// Protected constructor to initialize the common instrument properties like the meter, name, description, and unit.
@@ -117,7 +117,7 @@ namespace System.Diagnostics.Metrics
         // NotifyForUnpublishedInstrument is called from Meter.Dispose()
         internal void NotifyForUnpublishedInstrument()
         {
-            LinkedListNode<ListenerSubscription>? current = _subscriptions.First;
+            DiagNode<ListenerSubscription>? current = _subscriptions.First;
             while (current is not null)
             {
                 current.Value.Listener.DisableMeasurementEvents(this);
@@ -164,7 +164,7 @@ namespace System.Diagnostics.Metrics
 
         internal object? GetSubscriptionState(MeterListener listener)
         {
-            LinkedListNode<ListenerSubscription>? current = _subscriptions.First;
+            DiagNode<ListenerSubscription>? current = _subscriptions.First;
             while (current is not null)
             {
                 if (object.ReferenceEquals(listener, current.Value.Listener))

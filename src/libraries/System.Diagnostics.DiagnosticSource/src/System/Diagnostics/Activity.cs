@@ -79,8 +79,8 @@ namespace System.Diagnostics
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
-        private LinkedList<ActivityLink>? _links;
-        private LinkedList<ActivityEvent>? _events;
+        private DiagLinkedList<ActivityLink>? _links;
+        private DiagLinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
         private ActivityStatusCode _statusCode;
@@ -341,7 +341,7 @@ namespace System.Diagnostics
                     {
                         if (activity._baggage != null)
                         {
-                            for (LinkedListNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
+                            for (DiagNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
                             {
                                 yield return current.Value;
                             }
@@ -455,7 +455,7 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddEvent(ActivityEvent e)
         {
-            if (_events != null || Interlocked.CompareExchange(ref _events, new LinkedList<ActivityEvent>(e), null) != null)
+            if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
             }
@@ -1030,7 +1030,7 @@ namespace System.Diagnostics
                 {
                     if (enumerator.MoveNext())
                     {
-                        activity._links = new LinkedList<ActivityLink>(enumerator);
+                        activity._links = new DiagLinkedList<ActivityLink>(enumerator);
                     }
                 }
             }
@@ -1325,15 +1325,15 @@ namespace System.Diagnostics
 
         private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
-            private LinkedListNode<KeyValuePair<string, string?>>? _first;
+            private DiagNode<KeyValuePair<string, string?>>? _first;
 
-            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, string?>>(firstValue));
+            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, string?>>(firstValue));
 
-            public LinkedListNode<KeyValuePair<string, string?>>? First => _first;
+            public DiagNode<KeyValuePair<string, string?>>? First => _first;
 
             public void Add(KeyValuePair<string, string?> value)
             {
-                LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                DiagNode<KeyValuePair<string, string?>> newNode = new DiagNode<KeyValuePair<string, string?>>(value);
 
                 lock (this)
                 {
@@ -1352,7 +1352,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    LinkedListNode<KeyValuePair<string, string?>>? current = _first;
+                    DiagNode<KeyValuePair<string, string?>>? current = _first;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1364,7 +1364,7 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                    DiagNode<KeyValuePair<string, string?>> newNode = new DiagNode<KeyValuePair<string, string?>>(value);
                     newNode.Next = _first;
                     _first = newNode;
                 }
@@ -1385,7 +1385,7 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    LinkedListNode<KeyValuePair<string, string?>> previous = _first;
+                    DiagNode<KeyValuePair<string, string?>> previous = _first;
 
                     while (previous.Next != null)
                     {
@@ -1407,20 +1407,20 @@ namespace System.Diagnostics
 
         private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
-            private LinkedListNode<KeyValuePair<string, object?>>? _first;
-            private LinkedListNode<KeyValuePair<string, object?>>? _last;
+            private DiagNode<KeyValuePair<string, object?>>? _first;
+            private DiagNode<KeyValuePair<string, object?>>? _last;
 
             private StringBuilder? _stringBuilder;
 
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, object?>>(firstValue));
 
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {
-                _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
 
                 while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
             }
@@ -1438,24 +1438,24 @@ namespace System.Diagnostics
 
                 if (_first == null)
                 {
-                    _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                 }
                 else
                 {
-                    _last!.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last!.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
 
                 while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
             }
 
             public void Add(KeyValuePair<string, object?> value)
             {
-                LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
 
                 lock (this)
                 {
@@ -1475,7 +1475,7 @@ namespace System.Diagnostics
             public object? Get(string key)
             {
                 // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = _first;
                 while (current != null)
                 {
                     if (current.Value.Key == key)
@@ -1504,7 +1504,7 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    LinkedListNode<KeyValuePair<string, object?>> previous = _first;
+                    DiagNode<KeyValuePair<string, object?>> previous = _first;
 
                     while (previous.Next != null)
                     {
@@ -1528,7 +1528,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                    DiagNode<KeyValuePair<string, object?>>? current = _first;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1540,7 +1540,7 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     if (_first == null)
                     {
                         _first = _last = newNode;
@@ -1561,7 +1561,7 @@ namespace System.Diagnostics
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = _first;
 
                 while (current != null)
                 {
@@ -1588,7 +1588,7 @@ namespace System.Diagnostics
                     _stringBuilder.Append(':');
                     _stringBuilder.Append(_first.Value.Value);
 
-                    LinkedListNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    DiagNode<KeyValuePair<string, object?>>? current = _first.Next;
                     while (current != null)
                     {
                         _stringBuilder.Append(", ");
