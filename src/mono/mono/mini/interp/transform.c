@@ -4103,11 +4103,8 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			interp_add_ins (td, opcode);
 			td->sp -= 2;
 			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
-			if (mt == MINT_TYPE_VT) {
-				int size = mono_class_value_size (field_class, NULL);
-				g_assert (size < G_MAXUINT16);
-				td->last_ins->data [0] = size;
-			}
+			if (mt == MINT_TYPE_VT)
+				td->last_ins->data [0] = get_data_item_index (td, field_class);
 		}
 	} else {
 		gpointer field_addr = mono_static_field_get_addr (vtable, field);

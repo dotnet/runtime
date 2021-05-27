@@ -57,6 +57,44 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Type Name="LinearScan">
     <DisplayString>LinearScan</DisplayString>
     <Expand>
+        <Item Name="inVarToRegMaps">"InVarToRegMaps"</Item>
+        <CustomListItems>
+          <Variable Name="block" InitialValue="this-&gt;compiler-&gt;fgFirstBB" />
+          <Variable Name="bbLiveInMap" InitialValue="block ? block->bbLiveIn[0] : 0" />
+          <Variable Name="inVarMap" InitialValue="block ? this->inVarToRegMaps[block->bbNum] : 0" />
+          <Variable Name="varIndex" InitialValue="0" />
+          <Loop Condition="block">
+              <Item Name="---BB{block->bbNum,2u}---">block->bbNum,2u</Item>
+              <Exec>varIndex = 0</Exec>
+              <Exec>inVarMap = this->inVarToRegMaps[block->bbNum]</Exec>
+              <Exec>bbLiveInMap = block->bbLiveIn[0]</Exec>
+              <Loop Condition="bbLiveInMap != 0">
+                <Item Name="V{this->localVarIntervals[varIndex]->varNum,2u}" Condition="(bbLiveInMap &amp; 1) != 0">((regNumber)inVarMap[varIndex]),en</Item>
+                <Exec>varIndex++</Exec>
+                <Exec>bbLiveInMap = bbLiveInMap >> 1</Exec>
+              </Loop>
+            <Exec>block = block->bbNext</Exec>
+          </Loop>
+        </CustomListItems>
+        <Item Name="outVarToRegMaps">"OutVarToRegMaps"</Item>
+        <CustomListItems>
+          <Variable Name="block" InitialValue="this-&gt;compiler-&gt;fgFirstBB" />
+          <Variable Name="bbLiveInMap" InitialValue="block ? block->bbLiveIn[0] : 0" />
+          <Variable Name="outVarMap" InitialValue="block ? this->outVarToRegMaps[block->bbNum] : 0" />
+          <Variable Name="varIndex" InitialValue="0" />
+          <Loop Condition="block">
+              <Item Name="---BB{block->bbNum,2u}---">block->bbNum,2u</Item>
+              <Exec>varIndex = 0</Exec>
+              <Exec>outVarMap = this->outVarToRegMaps[block->bbNum]</Exec>
+              <Exec>bbLiveInMap = block->bbLiveIn[0]</Exec>
+              <Loop Condition="bbLiveInMap != 0">
+                <Item Name="V{this->localVarIntervals[varIndex]->varNum,2u}" Condition="(bbLiveInMap &amp; 1) != 0">((regNumber)outVarMap[varIndex]),en</Item>
+                <Exec>varIndex++</Exec>
+                <Exec>bbLiveInMap = bbLiveInMap >> 1</Exec>
+              </Loop>
+            <Exec>block = block->bbNext</Exec>
+          </Loop>
+        </CustomListItems>
         <Item Name="AvailableRegs mask">this-&gt;m_AvailableRegs</Item>
         <CustomListItems>
           <Variable Name="reg" InitialValue="this->m_AvailableRegs" />

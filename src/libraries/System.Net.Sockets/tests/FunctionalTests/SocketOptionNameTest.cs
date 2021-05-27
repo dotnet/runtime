@@ -263,7 +263,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal((int)SocketError.ConnectionRefused, errorCode);
 
                 // Then get it again
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // The Windows implementation doesn't clear the error code after retrieved.
                     // https://github.com/dotnet/runtime/issues/17260
@@ -431,14 +431,14 @@ namespace System.Net.Sockets.Tests
             // that allow binding the same address.
             int SOL_SOCKET = -1;
             int option = -1;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 // Linux: use SO_REUSEADDR to allow binding the same address.
                 SOL_SOCKET = 1;
                 const int SO_REUSEADDR = 2;
                 option = SO_REUSEADDR;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 // BSD: use SO_REUSEPORT to allow binding the same address.
                 SOL_SOCKET = 0xffff;
@@ -514,13 +514,13 @@ namespace System.Net.Sockets.Tests
             int SOL_SOCKET;
             int SO_RCVBUF;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsWindows() ||
+                OperatingSystem.IsMacOS())
             {
                 SOL_SOCKET = 0xffff;
                 SO_RCVBUF = 0x1002;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsLinux())
             {
                 SOL_SOCKET = 1;
                 SO_RCVBUF = 8;
@@ -534,7 +534,7 @@ namespace System.Net.Sockets.Tests
             {
                 const int SetSize = 8192;
                 int ExpectedGetSize =
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? SetSize * 2 : // Linux kernel documented to double the size
+                    OperatingSystem.IsLinux() ? SetSize * 2 : // Linux kernel documented to double the size
                     SetSize;
 
                 socket.SetRawSocketOption(SOL_SOCKET, SO_RCVBUF, BitConverter.GetBytes(SetSize));

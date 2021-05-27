@@ -4,12 +4,9 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'net461'">true</IsPartialFacadeAssembly>
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.Cryptography.Pkcs.cs" />
+    <Compile Include="System.Security.Cryptography.Pkcs.cs"  Condition="'$(TargetFramework)' != 'net461'" />
+    <Compile Include="System.Security.Cryptography.Pkcs.net461.cs"  Condition="'$(TargetFramework)' == 'net461'" />
     <Compile Include="System.Security.Cryptography.Pkcs.netcoreapp.cs" Condition="'$(TargetFramework)' != 'net461' and '$(TargetFramework)' != 'netstandard2.0'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

@@ -44,6 +44,21 @@ namespace System.Runtime.InteropServices.Tests
             public IntPtr super_class;
         }
 
+        public static bool SupportedOnPlatform(MessageSendFunction msgSend)
+        {
+            // The objc_msgSend_fpret, objc_msgSend_stret, and objc_msgSendSuper_stret exports
+            // are not present on the ARM64 platform.
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                && (msgSend == MessageSendFunction.MsgSendFpret
+                    || msgSend == MessageSendFunction.MsgSendStret
+                    || msgSend == MessageSendFunction.MsgSendSuperStret))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public static IntPtr CallPInvoke(MessageSendFunction msgSend, IntPtr inst, IntPtr sel)
         {
             switch (msgSend)

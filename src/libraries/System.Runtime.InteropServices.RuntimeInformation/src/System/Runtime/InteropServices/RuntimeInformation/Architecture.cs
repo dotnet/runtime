@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices
         X64,
         Arm,
         Arm64,
-        Wasm
+        Wasm,
+        S390x
     }
 }

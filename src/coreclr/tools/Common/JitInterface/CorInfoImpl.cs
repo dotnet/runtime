@@ -155,7 +155,8 @@ namespace Internal.JitInterface
             bool hasTypeHistogram = false;
             foreach (var elem in pgoData)
             {
-                if (elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
+                if (elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount)
                 {
                     // found histogram
                     hasTypeHistogram = true;
@@ -179,7 +180,8 @@ namespace Internal.JitInterface
 
                 for (int i = 0; i < (pgoData.Length); i++)
                 {
-                    if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
+                    if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
+                        pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount)
                     {
                         PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
                         if (newElem.HasValue)
@@ -637,38 +639,24 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute)
+        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, out bool suppressGCTransition)
         {
+            suppressGCTransition = false;
             CorInfoCallConvExtension callConv = (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
-
-            ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
-            foreach (var arg in unmanagedCallersOnlyAttribute.NamedArguments)
-            {
-                if (arg.Name == "CallConvs")
-                {
-                    callConvArray = (ImmutableArray<CustomAttributeTypedArgument<TypeDesc>>)arg.Value;
-                }
-            }
-
-            // No calling convention was specified in the attribute, so return the default.
-            if (callConvArray.IsDefault)
-            {
-                return callConv;
-            }
 
             bool found = false;
             bool memberFunctionVariant = false;
-            foreach (CustomAttributeTypedArgument<TypeDesc> type in callConvArray)
+            foreach (DefType defType in attributeWithCallConvsArray.EnumerateCallConvsFromAttribute())
             {
-                if (!(type.Value is DefType defType))
-                    continue;
-
-                if (defType.Namespace != "System.Runtime.CompilerServices")
-                    continue;
-
                 if (defType.Name == "CallConvMemberFunction")
                 {
                     memberFunctionVariant = true;
+                    continue;
+                }
+
+                if (defType.Name == "CallConvSuppressGCTransition")
+                {
+                    suppressGCTransition = true;
                     continue;
                 }
 
@@ -1258,11 +1246,28 @@ namespace Internal.JitInterface
             {
                 if (methodDesc.IsPInvoke)
                 {
-                    suppressGCTransition = methodDesc.IsSuppressGCTransition();
+                    suppressGCTransition = methodDesc.HasSuppressGCTransitionAttribute();
                     MethodSignatureFlags unmanagedCallConv = methodDesc.GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
 
                     if (unmanagedCallConv == MethodSignatureFlags.None)
+                    {
+                        MethodDesc methodDescLocal = methodDesc;
+                        if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
+                        {
+                            methodDescLocal = rawPInvoke.Target;
+                        }
+
+                        CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)methodDescLocal).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
+                        if (unmanagedCallConvAttribute != null)
+                        {
+                            bool suppressGCTransitionLocal;
+                            CorInfoCallConvExtension callConvFromAttribute = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value, out suppressGCTransitionLocal);
+                            suppressGCTransition |= suppressGCTransitionLocal;
+                            return callConvFromAttribute;
+                        }
+
                         unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
+                    }
 
                     // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoCallConvExtension via a simple cast
                     Debug.Assert((int)CorInfoCallConvExtension.C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
@@ -1275,7 +1280,7 @@ namespace Internal.JitInterface
                 {
                     Debug.Assert(methodDesc.IsUnmanagedCallersOnly);
                     CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)methodDesc).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
-                    return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute);
+                    return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, out _);
                 }
             }
             return GetUnmanagedCallConv(methodDesc.Signature, out suppressGCTransition);
@@ -1366,7 +1371,7 @@ namespace Internal.JitInterface
 
                 if (typeOrMethodContext is TypeDesc typeContext)
                 {
-                    Debug.Assert(typeContext.HasSameTypeDefinition(owningMethod.OwningType));
+                    Debug.Assert(typeContext.HasSameTypeDefinition(owningMethod.OwningType) || typeContext.IsArray);
                     typeInst = typeContext.Instantiation;
                 }
                 else
@@ -3479,7 +3484,7 @@ namespace Internal.JitInterface
             return _compilation.ProfileData[method]?.SchemaData;
         }
 
-        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData)
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData, Func<TypeDesc, bool> typeFilter = null)
         {
             nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
             MemoryStream msInstrumentationData = new MemoryStream();
@@ -3519,9 +3524,12 @@ namespace Internal.JitInterface
                     {
                         foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
                         {
-                            IntPtr ptrVal = IntPtr.Zero;
-                            if (typeVal.AsType != null)
+                            IntPtr ptrVal;
+
+                            if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
+                            {
                                 ptrVal = (IntPtr)objectToHandle(typeVal.AsType);
+                            }
                             else
                             {
                                 // The "Unknown types are the values from 1-33
@@ -3542,7 +3550,8 @@ namespace Internal.JitInterface
             instrumentationData = msInstrumentationData.ToArray();
         }
 
-        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData)
+        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData, 
+            ref PgoSource pPgoSource)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);
 
@@ -3569,6 +3578,7 @@ namespace Internal.JitInterface
             pSchema = pgoResults.pSchema;
             countSchemaItems = pgoResults.countSchemaItems;
             *pInstrumentationData = pgoResults.pInstrumentationData;
+            pPgoSource = PgoSource.Static;
             return pgoResults.hr;
         }
 

@@ -251,6 +251,7 @@
     <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs"
              Link="Common\System\IO\TempFileCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />

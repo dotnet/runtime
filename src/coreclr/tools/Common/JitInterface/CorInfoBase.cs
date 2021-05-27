@@ -2446,12 +2446,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static HRESULT _getPgoInstrumentationResults(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems, byte** pInstrumentationData)
+        static HRESULT _getPgoInstrumentationResults(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pgoSource)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getPgoInstrumentationResults(ftnHnd, ref *pSchema, ref *pCountSchemaItems, pInstrumentationData);
+                return _this.getPgoInstrumentationResults(ftnHnd, ref *pSchema, ref *pCountSchemaItems, pInstrumentationData, ref *pgoSource);
             }
             catch (Exception ex)
             {
@@ -2718,7 +2718,7 @@ namespace Internal.JitInterface
             callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, uint, byte*, IntPtr, byte>)&_logMsg;
             callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, int, byte*, int>)&_doAssert;
             callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, CorJitResult, void>)&_reportFatalError;
-            callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, HRESULT>)&_getPgoInstrumentationResults;
+            callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, PgoSource*, HRESULT>)&_getPgoInstrumentationResults;
             callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT>)&_allocPgoInstrumentationBySchema;
             callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
             callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, ushort, ushort, int, void>)&_recordRelocation;

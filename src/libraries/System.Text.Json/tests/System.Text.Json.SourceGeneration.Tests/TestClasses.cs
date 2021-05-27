@@ -2,22 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
-using System.Text.Json.SourceGeneration.Tests;
-
-[assembly: JsonSerializable(typeof(Location))]
-[assembly: JsonSerializable(typeof(System.Text.Json.SourceGeneration.Tests.RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
-[assembly: JsonSerializable(typeof(ActiveOrUpcomingEvent))]
-[assembly: JsonSerializable(typeof(CampaignSummaryViewModel))]
-[assembly: JsonSerializable(typeof(IndexViewModel))]
-[assembly: JsonSerializable(typeof(WeatherForecastWithPOCOs))]
-[assembly: JsonSerializable(typeof(EmptyPoco))]
-// Ensure no errors when type of member in previously specified object graph is passed as input type to generator.
-[assembly: JsonSerializable(typeof(HighLowTemps))]
-[assembly: JsonSerializable(typeof(MyType))]
-[assembly: JsonSerializable(typeof(MyType2))]
-[assembly: JsonSerializable(typeof(MyIntermediateType))]
-[assembly: JsonSerializable(typeof(HighLowTempsImmutable))]
 
 namespace System.Text.Json.SourceGeneration.Tests.RepeatedTypes
 {
@@ -122,5 +106,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     public class MyIntermediateType
     {
         public MyType Type = new();
+    }
+
+    public class JsonMessage
+    {
+        public string Message { get; set; }
+        public int Length => Message?.Length ?? 0; // Read-only property
     }
 }

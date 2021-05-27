@@ -180,7 +180,8 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
-        public void DoesCaseSensitiveComparions()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52857", TestPlatforms.MacCatalyst)]
+        public void DoesCaseSensitiveComparisons()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();

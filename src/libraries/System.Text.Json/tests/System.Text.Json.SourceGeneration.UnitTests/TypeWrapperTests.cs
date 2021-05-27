@@ -46,11 +46,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System.Text.Json.Serialization;
             using ReferencedAssembly;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-            [assembly: JsonSerializable(typeof(ReferencedAssembly.ReferencedType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                [JsonSerializable(typeof(ReferencedAssembly.ReferencedType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     public void MyMethod() { }
@@ -82,10 +85,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System;
             using System.Text.Json.Serialization;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     [JsonInclude]

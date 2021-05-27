@@ -11,11 +11,18 @@
     <!--<MonoAOTCompilerDefaultAotArguments Include="direct-pinvoke" />--> <!-- TODO: enable direct-pinvokes (to get rid of -force_loads)-->
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
-    <MonoAOTCompilerDefaultProcessArguments Include="-O=-float32" />
     <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-linux-gnueabi-thumbv7s" />
     <MonoAOTCompilerDefaultAotArguments Include="static" />
+    <!-- Default trampolines run out for libraries tests -->
+    <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
+    <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
+    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
+    <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
+    <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
+    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=21000" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <MonoAOTCompilerDefaultAotArguments Include="no-opt" />

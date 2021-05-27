@@ -15,8 +15,8 @@ namespace System.IO.Strategies
         {
         }
 
-        internal SyncWindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
-            : base(path, mode, access, share, options)
+        internal SyncWindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+            : base(path, mode, access, share, options, preallocationSize)
         {
         }
 

@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX, "On OSX, ProcessName returns the script interpreter.")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
@@ -477,7 +477,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -489,7 +489,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();

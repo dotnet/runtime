@@ -1838,11 +1838,29 @@ CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKi
 
 void CodeFragmentHeap::AddBlock(VOID * pMem, size_t dwSize)
 {
-    LIMITED_METHOD_CONTRACT;
-    FreeBlock * pBlock = (FreeBlock *)pMem;
-    pBlock->m_pNext = m_pFreeBlocks;
-    pBlock->m_dwSize = dwSize;
-    m_pFreeBlocks = pBlock;
+     CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // The new "nothrow" below failure is handled in a non-fault way, so
+    // make sure that callers with FORBID_FAULT can call this method without
+    // firing the contract violation assert.
+    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
+
+    FreeBlock * pBlock = new (nothrow) FreeBlock;
+    // In the OOM case we don't add the block to the list of free blocks
+    // as we are in a FORBID_FAULT code path.
+    if (pBlock != NULL)
+    {
+        pBlock->m_pNext = m_pFreeBlocks;
+        pBlock->m_pBlock = pMem;
+        pBlock->m_dwSize = dwSize;
+        m_pFreeBlocks = pBlock;
+    }
 }
 
 void CodeFragmentHeap::RemoveBlock(FreeBlock ** ppBlock)
@@ -1850,7 +1868,18 @@ void CodeFragmentHeap::RemoveBlock(FreeBlock ** ppBlock)
     LIMITED_METHOD_CONTRACT;
     FreeBlock * pBlock = *ppBlock;
     *ppBlock = pBlock->m_pNext;
-    ZeroMemory(pBlock, sizeof(FreeBlock));
+    delete pBlock;
+}
+
+CodeFragmentHeap::~CodeFragmentHeap()
+{
+    FreeBlock* pBlock = m_pFreeBlocks;
+    while (pBlock != NULL)
+    {
+        FreeBlock *pNextBlock = pBlock->m_pNext;
+        delete pBlock;
+        pBlock = pNextBlock;
+    }
 }
 
 TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
@@ -1869,9 +1898,6 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
 
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
 
-    if (dwRequestedSize < sizeof(FreeBlock))
-        dwRequestedSize = sizeof(FreeBlock);
-
     // We will try to batch up allocation of small blocks into one large allocation
 #define SMALL_BLOCK_THRESHOLD 0x100
     SIZE_T nFreeSmallBlocks = 0;
@@ -1881,7 +1907,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     while (*ppFreeBlock != NULL)
     {
         FreeBlock * pFreeBlock = *ppFreeBlock;
-        if (((BYTE *)pFreeBlock + pFreeBlock->m_dwSize) - (BYTE *)ALIGN_UP(pFreeBlock, dwAlignment) >= (SSIZE_T)dwRequestedSize)
+        if (((BYTE *)pFreeBlock->m_pBlock + pFreeBlock->m_dwSize) - (BYTE *)ALIGN_UP(pFreeBlock->m_pBlock, dwAlignment) >= (SSIZE_T)dwRequestedSize)
         {
             if (ppBestFit == NULL || pFreeBlock->m_dwSize < (*ppBestFit)->m_dwSize)
                 ppBestFit = ppFreeBlock;
@@ -1898,7 +1924,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     SIZE_T dwSize;
     if (ppBestFit != NULL)
     {
-        pMem = *ppBestFit;
+        pMem = (*ppBestFit)->m_pBlock;
         dwSize = (*ppBestFit)->m_dwSize;
 
         RemoveBlock(ppBestFit);
@@ -1945,8 +1971,6 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
                     )
 {
     CrstHolder ch(&m_CritSec);
-
-    _ASSERTE(dwSize >= sizeof(FreeBlock));
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
@@ -2232,14 +2256,22 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
 
     // this first allocation is critical as it sets up correctly the loader heap info
-    HeapList *pHp = (HeapList*)pCodeHeap->m_LoaderHeap.AllocMem(sizeof(HeapList));
+    HeapList *pHp = new HeapList;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
+#else
+    // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
+    // and GetAllocPtr() calls below return nonzero values.
+    pCodeHeap->m_LoaderHeap.ReservePages(1);
+#endif
 
     pHp->pHeap = pCodeHeap;
 
     size_t heapSize = pCodeHeap->m_LoaderHeap.GetReservedBytesFree();
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
 
-    pHp->startAddress    = (TADDR)pHp + sizeof(HeapList);
+    pHp->startAddress = (TADDR)pCodeHeap->m_LoaderHeap.GetAllocPtr();
 
     pHp->endAddress      = pHp->startAddress;
     pHp->maxCodeHeapSize = heapSize;
@@ -2259,7 +2291,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          ));
 
 #ifdef TARGET_64BIT
-    emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
+    emitJump(pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
 #endif // TARGET_64BIT
 
     pCodeHeap.SuppressRelease();
@@ -2376,13 +2408,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     }
 #endif
 
-    // <BUGNUM> VSW 433293 </BUGNUM>
-    // SETUP_NEW_BLOCK reserves the first sizeof(LoaderHeapBlock) bytes for LoaderHeapBlock.
-    // In other word, the first m_pAllocPtr starts at sizeof(LoaderHeapBlock) bytes
-    // after the allocated memory. Therefore, we need to take it into account.
-    size_t requestAndHeadersSize = sizeof(LoaderHeapBlock) + sizeof(HeapList) + initialRequestSize;
-
-    size_t reserveSize = requestAndHeadersSize;
+    size_t reserveSize = initialRequestSize;
     if (reserveSize < minReserveSize)
         reserveSize = minReserveSize;
     reserveSize = ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
@@ -2420,7 +2446,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 
     EX_TRY
     {
-        TADDR pStartRange = (TADDR) pHp;
+        TADDR pStartRange = pHp->GetModuleBase();
         TADDR pEndRange = (TADDR) &((BYTE*)pHp->startAddress)[pHp->maxCodeHeapSize];
 
         ExecutionManager::AddCodeRange(pStartRange,
@@ -2444,8 +2470,8 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
         // If we failed to alloc memory in ExecutionManager::AddCodeRange()
         // then we will delete the LoaderHeap that we allocated
 
-        // pHp is allocated in pHeap, so only need to delete the LoaderHeap itself
         delete pHp->pHeap;
+        delete pHp;
 
         pHp = NULL;
     }
@@ -2566,18 +2592,20 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     RETURN(mem);
 }
 
-CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
-#ifdef FEATURE_EH_FUNCLETS
-                                    , UINT nUnwindInfos
-                                    , TADDR * pModuleBase
+void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
+                             size_t* pAllocatedSize, HeapList** ppCodeHeap
+#ifdef USE_INDIRECT_CODEHEADER
+                           , BYTE** ppRealHeader
 #endif
-                                    )
+#ifdef FEATURE_EH_FUNCLETS
+                           , UINT nUnwindInfos
+#endif
+                           )
 {
-    CONTRACT(CodeHeader *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //
     // Alignment
@@ -2610,6 +2638,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
     SIZE_T totalSize = blockSize;
 
     CodeHeader * pCodeHdr = NULL;
+    CodeHeader * pCodeHdrRW = NULL;
 
     CodeHeapRequestInfo requestInfo(pMD);
 #if defined(FEATURE_JIT_PITCHING)
@@ -2637,11 +2666,9 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        HeapList *pCodeHeap = NULL;
-
-        TADDR pCode = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), totalSize, alignment, &pCodeHeap);
-
-        _ASSERTE(pCodeHeap);
+        *ppCodeHeap = NULL;
+        TADDR pCode = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), totalSize, alignment, ppCodeHeap);
+        _ASSERTE(*ppCodeHeap);
 
         if (pMD->IsLCGMethod())
         {
@@ -2650,16 +2677,20 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
 
-        // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
-        // map so that we don't have to harden readers against uninitialized data.
-        // However because we hold the lock, this initialization should be fast and cheap!
-
         pCodeHdr = ((CodeHeader *)pCode) - 1;
+
+        *pAllocatedSize = sizeof(CodeHeader) + totalSize;
+#ifdef FEATURE_WXORX
+        pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
+#else
+        pCodeHdrRW = pCodeHdr;
+#endif
 
 #ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
         {
-            pCodeHdr->SetRealCodeHeader((BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*)));
+            // Set the real code header to the writeable mapping so that we can set its members via the CodeHeader methods below
+            pCodeHdrRW->SetRealCodeHeader((BYTE *)(pCodeHdrRW + 1) + ALIGN_UP(blockSize, sizeof(void*)));
         }
         else
         {
@@ -2667,23 +2698,32 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
             //
             // allocate the real header in the low frequency heap
             BYTE* pRealHeader = (BYTE*)(void*)pMD->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(realHeaderSize));
-            pCodeHdr->SetRealCodeHeader(pRealHeader);
+            pCodeHdrRW->SetRealCodeHeader(pRealHeader);
         }
 #endif
 
-        pCodeHdr->SetDebugInfo(NULL);
-        pCodeHdr->SetEHInfo(NULL);
-        pCodeHdr->SetGCInfo(NULL);
-        pCodeHdr->SetMethodDesc(pMD);
+        pCodeHdrRW->SetDebugInfo(NULL);
+        pCodeHdrRW->SetEHInfo(NULL);
+        pCodeHdrRW->SetGCInfo(NULL);
+        pCodeHdrRW->SetMethodDesc(pMD);
 #ifdef FEATURE_EH_FUNCLETS
-        pCodeHdr->SetNumberOfUnwindInfos(nUnwindInfos);
-        *pModuleBase = (TADDR)pCodeHeap;
+        pCodeHdrRW->SetNumberOfUnwindInfos(nUnwindInfos);
 #endif
 
-        NibbleMapSet(pCodeHeap, pCode, TRUE);
+#ifdef USE_INDIRECT_CODEHEADER
+        if (requestInfo.IsDynamicDomain())
+        {
+            *ppRealHeader = (BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*));
+        }
+        else
+        {
+            *ppRealHeader = NULL;
+        }
+#endif // USE_INDIRECT_CODEHEADER
     }
 
-    RETURN(pCodeHdr);
+    *ppCodeHeader = pCodeHdr;
+    *ppCodeHeaderRW = pCodeHdrRW;
 }
 
 EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly)
@@ -2969,7 +3009,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
         pCodeHdr->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        NibbleMapSet(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
         pBlock = (JumpStubBlockHeader *)mem;
 
@@ -3020,7 +3060,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
         pCodeHdr->SetStubCodeBlockKind(kind);
 
-        NibbleMapSet(pCodeHeap, (TADDR)mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
         // Record the jump stub reservation
         pCodeHeap->reserveForJumpStubs += requestInfo.getReserveForJumpStubs();
@@ -3198,7 +3238,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         if (pHp == NULL)
             return;
 
-        NibbleMapSet(pHp, (TADDR)(pCHdr + 1), FALSE);
+        NibbleMapSetUnlocked(pHp, (TADDR)(pCHdr + 1), FALSE);
     }
 
     // Backout the GCInfo
@@ -3360,7 +3400,7 @@ void EEJitManager::FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart)
     // so pCodeHeap can only be a HostCodeHeap.
 
     // clean up the NibbleMap
-    NibbleMapSet(pCodeHeap->m_pHeapList, (TADDR)codeStart, FALSE);
+    NibbleMapSetUnlocked(pCodeHeap->m_pHeapList, (TADDR)codeStart, FALSE);
 
     // The caller of this method doesn't call HostCodeHeap->FreeMemForCode
     // directly because the operation should be protected by m_CodeHeapCritSec.
@@ -3517,9 +3557,9 @@ void EEJitManager::DeleteCodeHeap(HeapList *pHeapList)
         pHp->SetNext(pHeapList->GetNext());
     }
 
-    DeleteEEFunctionTable((PVOID)pHeapList);
+    DeleteEEFunctionTable((PVOID)pHeapList->GetModuleBase());
 
-    ExecutionManager::DeleteRange((TADDR)pHeapList);
+    ExecutionManager::DeleteRange((TADDR)pHeapList->GetModuleBase());
 
     LOG((LF_JIT, LL_INFO100, "DeleteCodeHeap start" FMT_ADDR "end" FMT_ADDR "\n",
                               (const BYTE*)pHeapList->startAddress,
@@ -3531,6 +3571,7 @@ void EEJitManager::DeleteCodeHeap(HeapList *pHeapList)
     // delete pHeapList->pHeap;
     CodeHeap* pHeap = pHeapList->pHeap;
     delete pHeap;
+    delete pHeapList;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -3823,7 +3864,19 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 }
 
 #if !defined(DACCESS_COMPILE)
+
 void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapCritSec);
+    NibbleMapSetUnlocked(pHp, pCode, bSet);
+}
+
+void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
 {
     CONTRACTL {
         NOTHROW;

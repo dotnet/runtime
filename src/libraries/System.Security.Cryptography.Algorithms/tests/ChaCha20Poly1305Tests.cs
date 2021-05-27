@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Test.Cryptography;
 using Xunit;
@@ -446,6 +447,11 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 // Runtime uses a hardcoded OS version to determine support.
                 // The test queries the OS directly to ensure our version check is correct.
                 expectedIsSupported = CngUtility.IsAlgorithmSupported("CHACHA20_POLY1305");
+            }
+            else if (PlatformDetection.IsAndroid)
+            {
+                // Android with API Level 28 is the minimum API Level support for ChaChaPoly1305.
+                expectedIsSupported = OperatingSystem.IsAndroidVersionAtLeast(28);
             }
             else if (PlatformDetection.OpenSslPresentOnSystem &&
                 (PlatformDetection.IsOSX || PlatformDetection.IsOpenSslSupported))

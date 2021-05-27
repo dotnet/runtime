@@ -15,8 +15,9 @@ namespace System.Diagnostics.Metrics
 #endif
     public class Meter : IDisposable
     {
-        private static LinkedList<Meter> s_allMeters = new LinkedList<Meter>();
-        private LinkedList<Instrument>? _instruments;
+        private static List<Meter> s_allMeters = new List<Meter>();
+        private List<Instrument> _instruments = new List<Instrument>();
+        internal bool Disposed { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the Meter using the meter name.
@@ -39,7 +40,10 @@ namespace System.Diagnostics.Metrics
             Name = name;
             Version = version;
 
-            s_allMeters.Add(this);
+            lock (Instrument.SyncObject)
+            {
+                s_allMeters.Add(this);
+            }
         }
 
         /// <summary>
@@ -150,55 +154,60 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Dispose()
         {
-            s_allMeters.Remove(this, (meter1, meter2) => object.ReferenceEquals(meter1, meter2));
+            List<Instrument>? instruments = null;
 
-            if (_instruments is not null)
+            lock (Instrument.SyncObject)
             {
-                LinkedListNode<Instrument>? current = _instruments.First;
-
-                while (current is not null)
+                if (Disposed)
                 {
-                    current.Value.NotifyForUnpublishedInstrument();
-                    current = current.Next;
+                    return;
                 }
+                Disposed = true;
 
-                _instruments.Clear();
+                s_allMeters.Remove(this);
+                instruments = _instruments;
+                _instruments = new List<Instrument>();
+            }
+
+            if (instruments is not null)
+            {
+                foreach (Instrument instrument in instruments)
+                {
+                    instrument.NotifyForUnpublishedInstrument();
+                }
             }
         }
 
         // AddInstrument will be called when publishing the instrument (i.e. calling Instrument.Publish()).
-        internal void AddInstrument(Instrument instrument)
+        internal bool AddInstrument(Instrument instrument)
         {
-            if (_instruments is null)
+            if (!_instruments.Contains(instrument))
             {
-                Interlocked.CompareExchange(ref _instruments, new LinkedList<Instrument>(), null);
+                _instruments.Add(instrument);
+                return true;
             }
-
-            Debug.Assert(_instruments is not null);
-
-            _instruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
+            return false;
         }
 
         // Called from MeterListener.Start
-        internal static void NotifyListenerWithAllPublishedInstruments(MeterListener listener)
+        internal static List<Instrument>? GetPublishedInstruments()
         {
-            Action<Instrument, MeterListener>? instrumentPublished = listener.InstrumentPublished;
-            if (instrumentPublished is null)
+            List<Instrument>? instruments = null;
+
+            if (s_allMeters.Count > 0)
             {
-                return;
+                instruments = new List<Instrument>();
+
+                foreach (Meter meter in s_allMeters)
+                {
+                    foreach (Instrument instrument in meter._instruments)
+                    {
+                        instruments.Add(instrument);
+                    }
+                }
             }
 
-            LinkedListNode<Meter>? current = s_allMeters.First;
-            while (current is not null)
-            {
-                LinkedListNode<Instrument>? currentInstrument = current.Value._instruments?.First;
-                while (currentInstrument is not null)
-                {
-                    instrumentPublished.Invoke(currentInstrument.Value, listener);
-                    currentInstrument = currentInstrument.Next;
-                }
-                current = current.Next;
-            }
+            return instruments;
         }
     }
 }
