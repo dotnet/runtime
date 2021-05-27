@@ -7803,7 +7803,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 // so if we have only EH vars, we'll do that instead of splitting the edge.
                 if ((compiler->compHndBBtabCount > 0) && VarSetOps::IsSubset(compiler, edgeResolutionSet, exceptVars))
                 {
-                    GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNonPhiNode();
+                    GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNode();
                     VarSetOps::Iter edgeSetIter(compiler, edgeResolutionSet);
                     unsigned        edgeVarIndex = 0;
                     while (edgeSetIter.NextElem(&edgeVarIndex))
@@ -8178,7 +8178,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     GenTree* insertionPoint = nullptr;
     if (resolveType == ResolveSplit || resolveType == ResolveCritical)
     {
-        insertionPoint = LIR::AsRange(block).FirstNonPhiNode();
+        insertionPoint = LIR::AsRange(block).FirstNode();
     }
 
     // If this is an edge between EH regions, we may have "extra" live-out EH vars.
@@ -9436,7 +9436,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                    splitEdgeInfo.toBBNum);
         }
 
-        for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+        for (GenTree* node : LIR::AsRange(block))
         {
             GenTree* tree = node;
 
@@ -10358,7 +10358,7 @@ void LinearScan::verifyFinalAllocation()
                     bool foundNonResolutionNode = false;
 
                     LIR::Range& currentBlockRange = LIR::AsRange(currentBlock);
-                    for (GenTree* node : currentBlockRange.NonPhiNodes())
+                    for (GenTree* node : currentBlockRange)
                     {
                         if (IsResolutionNode(currentBlockRange, node))
                         {
@@ -10666,7 +10666,7 @@ void LinearScan::verifyFinalAllocation()
 
             // Verify the moves in this block
             LIR::Range& currentBlockRange = LIR::AsRange(currentBlock);
-            for (GenTree* node : currentBlockRange.NonPhiNodes())
+            for (GenTree* node : currentBlockRange)
             {
                 assert(IsResolutionNode(currentBlockRange, node));
                 if (IsResolutionMove(node))
