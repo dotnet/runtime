@@ -1506,6 +1506,16 @@ public:
         return OperIsSimple(gtOper);
     }
 
+    static bool OperIsRelop(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsRelop() const
+    {
+        return OperIsRelop(gtOper);
+    }
+
 #ifdef FEATURE_SIMD
     bool isCommutativeSIMDIntrinsic();
 #else  // !
@@ -1778,12 +1788,6 @@ public:
     {
         return OperIsAnyList(gtOper);
     }
-
-    inline GenTree* MoveNext();
-
-    inline GenTree* Current();
-
-    inline GenTree** pCurrent();
 
     inline GenTree* gtGetOp1() const;
 
@@ -7197,12 +7201,6 @@ inline bool GenTree::IsBoxedValue()
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
 }
 
-inline GenTree* GenTree::MoveNext()
-{
-    assert(OperIsAnyList());
-    return AsOp()->gtOp2;
-}
-
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // IsValidCallArgument: Given an GenTree node that represents an argument
@@ -7250,18 +7248,6 @@ inline bool GenTree::IsValidCallArgument()
     return true;
 }
 #endif // DEBUG
-
-inline GenTree* GenTree::Current()
-{
-    assert(OperIsAnyList());
-    return AsOp()->gtOp1;
-}
-
-inline GenTree** GenTree::pCurrent()
-{
-    assert(OperIsAnyList());
-    return &(AsOp()->gtOp1);
-}
 
 inline GenTree* GenTree::gtGetOp1() const
 {

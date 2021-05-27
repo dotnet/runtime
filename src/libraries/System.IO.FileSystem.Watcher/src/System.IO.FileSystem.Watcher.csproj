@@ -77,8 +77,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs"
-             Link="System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.Exists.Unix.cs"
+             Link="System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.EventStream.cs"
              Link="Common\Interop\OSX\Interop.EventStream.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"

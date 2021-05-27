@@ -3742,4 +3742,43 @@
   <data name="NotSupported_COM" xml:space="preserve">
     <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
   </data>
+  <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
+    <value>Queue empty.</value>
+  </data>
+  <data name="Arg_FileIsDirectory_Name" xml:space="preserve">
+    <value>The target file '{0}' is a directory, not a file.</value>
+  </data>
+  <data name="Arg_InvalidFileAttrs" xml:space="preserve">
+    <value>Invalid File or Directory attributes value.</value>
+  </data>
+  <data name="Arg_Path2IsRooted" xml:space="preserve">
+    <value>Second path fragment must not be a drive or UNC name.</value>
+  </data>
+  <data name="Arg_PathIsVolume" xml:space="preserve">
+    <value>Path must not be a drive.</value>
+  </data>
+  <data name="Argument_FileNotResized" xml:space="preserve">
+    <value>The stream's length cannot be changed.</value>
+  </data>
+  <data name="Argument_InvalidSubPath" xml:space="preserve">
+    <value>The directory specified, '{0}', is not a subdirectory of '{1}'.</value>
+  </data>
+  <data name="IO_CannotCreateDirectory" xml:space="preserve">
+    <value>The specified directory '{0}' cannot be created.</value>
+  </data>
+  <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
+    <value>Source and destination path must be different.</value>
+  </data>
+  <data name="IO_SourceDestMustHaveSameRoot" xml:space="preserve">
+    <value>Source and destination path must have identical roots. Move will not work across volumes.</value>
+  </data>
+  <data name="IO_SyncOpOnUIThread" xml:space="preserve">
+    <value>Synchronous operations should not be performed on the UI thread.  Consider wrapping this method in Task.Run.</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
+  <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
+    <value>File encryption is not supported on this platform.</value>
+  </data>
 </root>

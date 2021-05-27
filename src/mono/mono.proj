@@ -76,6 +76,7 @@
     <MonoComponentsStatic Condition="'$(TargetsBrowser)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetsAndroid)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <!-- by default, do dynamic components -->
     <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
@@ -419,10 +420,15 @@
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
     </ItemGroup>
 
     <!-- Components -->

@@ -259,7 +259,7 @@ jobs:
 
 
 #
-# Build the whole product using Mono for Android and run runtime tests with Android emulator
+# Build the whole product using Mono for Android and run runtime tests with Android devices
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -268,7 +268,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_x64
     #- Android_arm64  # disabled due to https://github.com/dotnet/runtime/issues/47850
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
