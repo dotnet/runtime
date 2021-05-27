@@ -55,11 +55,10 @@
 
   <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
-    <NeedsDotNetSdkWithCli>true</NeedsDotNetSdkWithCli>
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
 
     <TestRunNamePrefix>packaging-</TestRunNamePrefix>
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -105,16 +104,16 @@
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- 
       We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
       We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
       For the HTTPS endpoint we need development SSL certificate.
     -->
-    <InstallDevCerts>true</InstallDevCerts>
+    <InstallDevCerts Condition="'$(Scenario)' != 'BuildWasmApps'">true</InstallDevCerts>
 
     <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
-    <NeedsDotNetSdkWithCli>true</NeedsDotNetSdkWithCli>
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
@@ -123,10 +122,9 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
-    <NeedsDotNetSdkWithCli>true</NeedsDotNetSdkWithCli>
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
@@ -163,9 +161,14 @@
     <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(NeedsDotNetSdkWithCli)' == 'true'">
+  <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
@@ -176,10 +179,10 @@
     -->
     <HelixCommand Condition="'$(InstallDevCerts)' == 'true'">dotnet dev-certs https &amp;&amp; </HelixCommand>
 
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand) call RunTests.cmd</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)call RunTests.cmd</HelixCommand>
     <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
 
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand) ./RunTests.sh</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand)./RunTests.sh</HelixCommand>
     <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
