@@ -203,9 +203,19 @@ public class AppleAppBuilderTask : Task
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
-        if (!string.IsNullOrEmpty(DiagnosticPorts) && (string.IsNullOrEmpty(RuntimeComponents) || !RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
         {
-            throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
+            bool validDiagnosticsConfig = false;
+
+            if (string.IsNullOrEmpty(RuntimeComponents))
+                validDiagnosticsConfig = false;
+            else if (RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
+                validDiagnosticsConfig = true;
+            else if (RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase))
+                validDiagnosticsConfig = true;
+
+            if (!validDiagnosticsConfig)
+                throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
         if (GenerateXcodeProject)

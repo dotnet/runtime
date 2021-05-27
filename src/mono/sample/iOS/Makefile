@@ -4,8 +4,8 @@ DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
 #RUNTIME_COMPONENTS=diagnostics_tracing
-#DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
-#DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
+#DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
+#DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 #DIAGNOSTIC_PORTS=$(DOTNET_DiagnosticPorts)
 
 all: runtimepack run
