@@ -161,6 +161,11 @@
     <HelixCommand>dotnet dev-certs https &amp;&amp; </HelixCommand>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TestPackages)' != 'true' and '$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">
     <HelixCommand>$(HelixCommand) ./RunTests.sh</HelixCommand>
     <HelixCommand Condition="'$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
@@ -173,11 +178,6 @@
     -->
     <HelixCommand>$(HelixCommand) call RunTests.cmd</HelixCommand>
     <HelixCommand Condition="'$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
-    <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
   </PropertyGroup>
 
   <ItemGroup>
