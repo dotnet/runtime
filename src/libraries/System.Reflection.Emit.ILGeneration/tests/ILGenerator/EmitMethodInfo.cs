@@ -15,6 +15,8 @@ namespace System.Reflection.Emit.Tests
     {
         void Method(in int arg);
     }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class ILGeneratorEmitMethodInfo
     {
         [Fact]

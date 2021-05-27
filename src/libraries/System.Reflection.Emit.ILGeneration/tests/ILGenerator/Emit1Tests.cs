@@ -7,7 +7,7 @@ namespace System.Reflection.Emit.Tests
 {
     public class ILGeneratorEmit1
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest1()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -42,7 +42,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedRet, createdMethod2.Invoke(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest2()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedRet, createdMethod2.Invoke(Activator.CreateInstance(createdType2), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest3()
         {
             ModuleBuilder modbuild = Helpers.DynamicModule();
@@ -114,7 +114,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedRet, createdMethod2.Invoke(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest4()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -152,7 +152,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedRet, createdMethod2.Invoke(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest5()
         {
             ModuleBuilder module = Helpers.DynamicModule();

@@ -468,7 +468,7 @@ namespace System.Composition.Convention.Tests
             AssertExtensions.Throws<ArgumentNullException>("propertyFilter", () => builder.ForTypesMatching((t) => true).ExportProperties<IFirst>(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void InsideTheLambdaCallGetCustomAttributesShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -486,7 +486,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -503,7 +503,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedAttributeAppliedToBaseClass_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -520,7 +520,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedMultipleNotifications_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -536,7 +536,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(2, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedTwice_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -553,7 +553,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedInvalidMethod_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -569,7 +569,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(0, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedPropertiesAndFields_ShouldSucceed()
         {
             var builder = new ConventionBuilder();

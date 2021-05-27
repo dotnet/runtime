@@ -15,6 +15,7 @@ using Xunit;
 
 namespace System.Net.Http.Json.Functional.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class TranscodingWriteStreamTest
     {
         public static TheoryData WriteAsyncInputLatin =>

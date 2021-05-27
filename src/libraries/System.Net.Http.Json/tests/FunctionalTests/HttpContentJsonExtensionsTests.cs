@@ -22,7 +22,7 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync(typeof(Person)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadFromJsonTestData))]
         public async Task HttpContentGetThenReadFromJsonAsync(string json)
         {
@@ -53,7 +53,7 @@ namespace System.Net.Http.Json.Functional.Tests
             yield return new object[] { per.SerializeWithNumbersAsStrings() };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task HttpContentReturnValueIsNull()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -75,7 +75,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: _headers, content: "null"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestReadFromJsonNoMessageBodyAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -94,7 +94,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: _headers));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestGetFromJsonQuotedCharSetAsync()
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
@@ -117,7 +117,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestGetFromJsonThrowOnInvalidCharSetAsync()
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
@@ -140,7 +140,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestGetFromJsonAsyncTextPlainUtf16Async()
         {
             string json = Person.Create().Serialize();
@@ -168,7 +168,8 @@ namespace System.Net.Http.Json.Functional.Tests
                     await server.HandleRequestAsync(statusCode: HttpStatusCode.OK, headers: headers, bytes: Encoding.Unicode.GetBytes(json));
                 });
         }
-        [Fact]
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task EnsureDefaultJsonSerializerOptionsAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -184,7 +185,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: _headers, content: "{}"));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData("application/json")]
         [InlineData("Application/Json")]
         [InlineData("application/foo+json")] // Structured Syntax Json Suffix

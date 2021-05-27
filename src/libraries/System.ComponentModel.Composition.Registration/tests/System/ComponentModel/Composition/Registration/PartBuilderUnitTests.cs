@@ -122,6 +122,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class PartBuilderUnitTests
     {
         [Fact]

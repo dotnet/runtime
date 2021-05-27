@@ -16,13 +16,13 @@ namespace System.Net.Http.Json.Functional.Tests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request) => Task.Run(() => client.Send(request));
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void JsonContent_CopyTo_Succeeds()
         {
             Person person = Person.Create();
             using JsonContent content = JsonContent.Create(person);
             using MemoryStream stream = new MemoryStream();
-            // HttpContent.CopyTo internally calls overriden JsonContent.SerializeToStream, which is the targeted method of this test.
+            // HttpContent.CopyTo internally calls overridden JsonContent.SerializeToStream, which is the targeted method of this test.
             content.CopyTo(stream, context: null, cancellationToken: default);
             stream.Seek(0, SeekOrigin.Begin);
             using StreamReader reader = new StreamReader(stream);

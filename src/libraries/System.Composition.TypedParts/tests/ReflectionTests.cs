@@ -11,6 +11,7 @@ namespace System.Composition.TypedParts.Tests
     /// <summary>
     /// Tests dealing with reflection usage in System.Composition
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class ReflectionTests
     {
         public static bool HasMultiplerProcessors { get; } = Environment.ProcessorCount > 1;

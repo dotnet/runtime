@@ -7,7 +7,7 @@ namespace System.Reflection.Emit.Tests
 {
     public class ExceptionEmitTests
     {
-        [Fact]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void TestExceptionEmitCalls()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);

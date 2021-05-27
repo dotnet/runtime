@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void MergeMergesRuntimeGraph()
         {
             var context = new DependencyContext(

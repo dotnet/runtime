@@ -13,7 +13,7 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class HttpClientJsonExtensionsTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadFromJsonTestData))]
         public async Task TestGetFromJsonAsync(string json, bool containsQuotedNumbers)
         {
@@ -80,7 +80,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(statusCode: HttpStatusCode.InternalServerError));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestPostAsJsonAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -123,7 +123,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestPutAsJsonAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -231,7 +231,7 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Equal("application/json; charset=utf-8", contentType.Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task AllowNullRequesturlAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class ExportBuilderUnitTests
     {
         public interface IFoo {}
