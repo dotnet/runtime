@@ -72,11 +72,12 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <IncludeDotNetCli>true</IncludeDotNetCli>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestPackages)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <HelixPreCommand Include="set DOTNET_NOLOGO=1" />
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
@@ -98,7 +99,7 @@
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
-    <HelixPreCommand Include="export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <HelixPreCommand Include="export DOTNET_NOLOGO=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
@@ -156,7 +157,6 @@
     -->
   <PropertyGroup Condition="''$(TestPackages)' != 'true' and $(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">
     <!-- install SDK so that, we could use `dotnet dev-certs https`. -->
-    <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <HelixCommand>dotnet dev-certs https &amp;&amp; </HelixCommand>
 
