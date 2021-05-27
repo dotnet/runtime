@@ -895,6 +895,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };

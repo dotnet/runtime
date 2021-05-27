@@ -1218,25 +1218,27 @@ public:
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count = 1;
-        schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+        schemaElem.Other = ICorJitInfo::ClassProfile32::CLASS_FLAG;
         if (call->IsVirtualStub())
         {
-            schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+            schemaElem.Other |= ICorJitInfo::ClassProfile32::INTERFACE_FLAG;
         }
         else
         {
             assert(call->IsVirtualVtable());
         }
 
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
-        schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-        schemaElem.Offset              = 0;
+        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
         schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-        schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+        schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -1283,8 +1285,11 @@ public:
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
-        assert(m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-               ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+        bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
+        assert(is32 || is64);
 
         // Figure out where the table is located.
         //
@@ -1301,10 +1306,12 @@ public:
         GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
         GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const helperCallNode = compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const          helperCallNode =
+            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
+                                          args);
+        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
         GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
@@ -1638,8 +1645,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
                                                                     (UINT32)schema.size(), &profileMemory);
 
-    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
-
     // Deal with allocation failures.
     //
     if (!SUCCEEDED(res))
@@ -1660,6 +1665,8 @@ PhaseStatus Compiler::fgInstrumentMethod()
         fgClassInstrumentor->SuppressProbes();
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
 
     // Add the instrumentation code
     //
@@ -1733,8 +1740,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have profile data: %d schema records (schema at %p, data at %p)\n", fgPgoSchemaCount, dspPtr(fgPgoSchema),
-            dspPtr(fgPgoData));
+    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
+            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -1757,7 +1764,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
@@ -3924,6 +3932,45 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     }
 
     return missingEdges == 0;
+}
+
+//------------------------------------------------------------------------------
+// pgoSourceToString: describe source of pgo data
+//
+// Arguments:
+//    r - source enum to describe
+//
+// Returns:
+//    descriptive string
+//
+const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
+{
+    const char* pgoSource = "unknown";
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+            pgoSource = "dynamic";
+            break;
+        case ICorJitInfo::PgoSource::Static:
+            pgoSource = "static";
+            break;
+        case ICorJitInfo::PgoSource::Text:
+            pgoSource = "text";
+            break;
+        case ICorJitInfo::PgoSource::Blend:
+            pgoSource = "static+dynamic";
+            break;
+        case ICorJitInfo::PgoSource::IBC:
+            pgoSource = "IBC";
+            break;
+        case ICorJitInfo::PgoSource::Sampling:
+            pgoSource = "Sampling";
+            break;
+        default:
+            break;
+    }
+
+    return pgoSource;
 }
 
 #endif // DEBUG

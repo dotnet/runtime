@@ -105,7 +105,7 @@ namespace System
         {
             get
             {
-                if (IsAndroid || IsiOS || IstvOS || IsMacCatalyst || IsBrowser)
+                if (IsAndroid || UsesMobileAppleCrypto || IsBrowser)
                 {
                     return false;
                 }

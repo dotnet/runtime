@@ -1659,25 +1659,12 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         LIR::Range& nextRange  = LIR::AsRange(bNext);
 
         // Does the next block have any phis?
-        GenTree*           nextFirstNonPhi = nullptr;
-        LIR::ReadOnlyRange nextPhis        = nextRange.PhiNodes();
-        if (!nextPhis.IsEmpty())
-        {
-            GenTree* blockLastPhi = blockRange.LastPhiNode();
-            nextFirstNonPhi       = nextPhis.LastNode()->gtNext;
+        GenTree* nextNode = nextRange.FirstNode();
 
-            LIR::Range phisToMove = nextRange.Remove(std::move(nextPhis));
-            blockRange.InsertAfter(blockLastPhi, std::move(phisToMove));
-        }
-        else
+        // Does the block have any code?
+        if (nextNode != nullptr)
         {
-            nextFirstNonPhi = nextRange.FirstNode();
-        }
-
-        // Does the block have any other code?
-        if (nextFirstNonPhi != nullptr)
-        {
-            LIR::Range nextNodes = nextRange.Remove(nextFirstNonPhi, nextRange.LastNode());
+            LIR::Range nextNodes = nextRange.Remove(nextNode, nextRange.LastNode());
             blockRange.InsertAtEnd(std::move(nextNodes));
         }
     }
@@ -3804,7 +3791,6 @@ bool Compiler::fgOptimizeSwitchJumps()
         GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
         Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetILOffsetX());
         fgInsertStmtAtEnd(block, jmpStmt);
-        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
 
         // Reattach switch value to the switch. This may introduce a comma
         // in the upstream compare tree, if the switch value expression is complex.
@@ -3815,7 +3801,7 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
         jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
-        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED;
+        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
 
         // Wire up the new control flow.
         //

@@ -3657,6 +3657,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
+#if !CORERT
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3773,6 +3774,7 @@ namespace System.Diagnostics.Tracing
                 }
                 idx++;
             }
+#endif
             return -1;
         }
 
@@ -5486,7 +5488,7 @@ namespace System.Diagnostics.Tracing
             if (!channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 // If we were not given an explicit channel, allocate one.
-                if (channelKeyword != 0)
+                if (channelKeyword == 0)
                 {
                     channelKeyword = nextChannelKeywordBit;
                     nextChannelKeywordBit >>= 1;

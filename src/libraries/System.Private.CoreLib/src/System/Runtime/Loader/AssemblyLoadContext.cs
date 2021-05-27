@@ -657,7 +657,7 @@ namespace System.Runtime.Loader
             // Derived type's Load implementation is expected to use one of the LoadFrom* methods to get the assembly
             // which is a RuntimeAssembly instance. However, since Assembly type can be used build any other artifact (e.g. AssemblyBuilder),
             // we need to check for RuntimeAssembly.
-            RuntimeAssembly? rtLoadedAssembly = assembly as RuntimeAssembly;
+            RuntimeAssembly? rtLoadedAssembly = GetRuntimeAssembly(assembly);
             if (rtLoadedAssembly != null)
             {
                 loadedSimpleName = rtLoadedAssembly.GetSimpleName();

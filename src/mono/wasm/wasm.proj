@@ -117,7 +117,7 @@
       <EmccFlags Condition="'$(WasmEnableES6)' == 'true'">$(EmccFlags) -s MODULARIZE=1 -s EXPORT_ES6=1</EmccFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz --llvm-opts 2 -DENABLE_NETCORE=1</EmccConfigurationFlags>
-      <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)/dotnet.wasm&quot; -o &quot;$(NativeBinDir)/dotnet.wasm&quot;</StripCmd>
+      <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)dotnet.wasm&quot; -o &quot;$(NativeBinDir)dotnet.wasm&quot;</StripCmd>
       <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
       <WasmVersionFile>$(WasmObjDir)\emcc-version.txt</WasmVersionFile>
       <MonoIncludeDir>$(MonoArtifactsPath)include/mono-2.0</MonoIncludeDir>
@@ -153,7 +153,7 @@
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)/driver.o&quot; &quot;$(MonoObjDir)/pinvoke.o&quot; &quot;$(MonoObjDir)/corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)/dotnet.js&quot; &amp;&amp; $(StripCmd)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
@@ -178,7 +178,7 @@
           Overwrite="true" />
 
     <Copy SourceFiles="runtime\pinvoke.h"
-          DestinationFolder="$(NativeBinDir)\include\wasm"
+          DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
     
     <Copy SourceFiles="runtime/driver.c;

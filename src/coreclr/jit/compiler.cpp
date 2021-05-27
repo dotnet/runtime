@@ -2865,11 +2865,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSchemaCount = 0;
     fgPgoQueryResult = E_FAIL;
     fgPgoFailReason  = nullptr;
+    fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
-                                                                          &fgPgoSchemaCount, &fgPgoData);
+                                                                          &fgPgoSchemaCount, &fgPgoData, &fgPgoSource);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -3423,7 +3424,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
-            printf("OPTIONS: optimized using profile data\n");
+            printf("OPTIONS: optimized using %s profile data\n", pgoSourceToString(fgPgoSource));
         }
 
         if (fgPgoFailReason != nullptr)
@@ -9678,3 +9679,43 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
+
+#if defined(DEBUG)
+//------------------------------------------------------------------------------
+// devirtualizationDetailToString: describe the detailed devirtualization reason
+//
+// Arguments:
+//    detail - detail to describe
+//
+// Returns:
+//    descriptive string
+//
+const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail)
+{
+    switch (detail)
+    {
+        case CORINFO_DEVIRTUALIZATION_UNKNOWN:
+            return "unknown";
+        case CORINFO_DEVIRTUALIZATION_SUCCESS:
+            return "success";
+        case CORINFO_DEVIRTUALIZATION_FAILED_CANON:
+            return "object class was canonical";
+        case CORINFO_DEVIRTUALIZATION_FAILED_COM:
+            return "object class was com";
+        case CORINFO_DEVIRTUALIZATION_FAILED_CAST:
+            return "object class could not be cast to interface class";
+        case CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP:
+            return "interface method could not be found";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DIM:
+            return "interface method was default interface method";
+        case CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS:
+            return "object not subclass of base class";
+        case CORINFO_DEVIRTUALIZATION_FAILED_SLOT:
+            return "virtual method installed via explicit override";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE:
+            return "devirtualization crossed version bubble";
+        default:
+            return "undefined";
+    }
+}
+#endif // defined(DEBUG)
