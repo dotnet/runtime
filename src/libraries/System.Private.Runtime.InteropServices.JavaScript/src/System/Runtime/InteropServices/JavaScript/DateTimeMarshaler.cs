@@ -15,13 +15,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static DateTime FromJavaScript (string s)
         {
-            // Debug.WriteLine($"DateTime.FromJavaScript('{s}')");
             return DateTime.Parse(s).ToUniversalTime();
         }
 
         public static string ToJavaScript (ref DateTime dt)
         {
-            // Debug.WriteLine($"DateTime.ToJavaScript({dt})");
             return dt.ToString("o");
         }
     }
@@ -33,13 +31,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static DateTimeOffset FromJavaScript (string s)
         {
-            // Debug.WriteLine($"DateTimeOffset.FromJavaScript('{s}')");
             return DateTimeOffset.Parse(s);
         }
 
         public static string ToJavaScript (ref DateTimeOffset dto)
         {
-            // Debug.WriteLine($"DateTimeOffset.ToJavaScript({dto})");
             return dto.ToString("o");
         }
     }

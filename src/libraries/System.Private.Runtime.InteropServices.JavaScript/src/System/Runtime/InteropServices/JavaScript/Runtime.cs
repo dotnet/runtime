@@ -308,7 +308,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         public static string MakeMarshalTypeRecord (Type type) {
-            return $"{{ 'marshalType': {(int)GetMarshalTypeFromType(type)}, 'typePtr': {type.TypeHandle.Value} }}";
+            return $"{{ \"marshalType\": {(int)GetMarshalTypeFromType(type)}, \"typePtr\": {type.TypeHandle.Value} }}";
         }
 
         public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
@@ -332,9 +332,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return null;
 
             var result = "{ " +
-                $"'result': {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, " +
-                $"'typePtr': {typePtr}, 'methodPtr': {methodPtr}, " +
-                "'parameters': [";
+                $"\"result\": {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, " +
+                $"\"typePtr\": {typePtr}, \"methodPtr\": {methodPtr}, " +
+                "\"parameters\": [";
 
             int i = 0;
             foreach (var p in mb.GetParameters()) {
@@ -346,7 +346,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             result += "] }";
 
-            return result.Replace("'", "\"");
+            return result;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -355,14 +355,12 @@ namespace System.Runtime.InteropServices.JavaScript
             var info = type.GetProperty(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
-            if (info == null)
-                return "null";
 
-            var value = info.GetValue(null) as string;
+            var value = info?.GetValue(null) as string;
             if (value == null)
                 return "null";
 
-            var result = "'";
+            var result = "\"";
             foreach (var ch in value) {
                 switch (ch) {
                     case '\'':
@@ -462,10 +460,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
             }
 
-            return ("{\n" + $"'typePtr': {typePtr}, \n" +
-                $"'preFilter': {preFilter}, 'postFilter': {postFilter}, \n" +
-                $"'inputPtr': {inputPtr}, 'outputPtr': {outputPtr} \n" +
-                "}").Replace("'", "\"");
+            return ("{\n" + $"\"typePtr\": {typePtr}, \n" +
+                $"\"preFilter\": {preFilter}, \"postFilter\": {postFilter}, \n" +
+                $"\"inputPtr\": {inputPtr}, \"outputPtr\": {outputPtr} \n" +
+                "}");
         }
 
         public static MarshalType GetMarshalTypeFromType (Type type) {

@@ -13,13 +13,11 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         public static Uri FromJavaScript (string s)
         {
-            // Debug.WriteLine($"Uri.FromJavaScript('{s}')");
             return new Uri(s);
         }
 
         public static string ToJavaScript (Uri u)
         {
-            // Debug.WriteLine($"Uri.ToJavaScript({u})");
             // FIXME: Uri.ToString() escapes certain characters in URIs.
             // This may not be desirable, but the old marshaler seems to have had this limitation too.
             return u.ToString();
