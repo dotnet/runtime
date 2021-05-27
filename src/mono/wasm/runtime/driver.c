@@ -768,13 +768,6 @@ class_is_task (MonoClass *klass)
 	if (!klass)
 		return 0;
 
-	/*
-	char * type_name = mono_type_get_name_full (mono_class_get_type(klass), MONO_TYPE_NAME_FORMAT_REFLECTION);
-	EM_ASM({
-		console.log("class_is_task", Module.UTF8ToString($0));
-	}, type_name);
-	*/
-
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
 		resolved_task_class = 1;
@@ -951,7 +944,7 @@ EMSCRIPTEN_KEEPALIVE MonoClass *
 mono_wasm_get_obj_class (MonoObject *obj)
 {
 	if (!obj)
-		return 0;
+		return NULL;
 
 	return mono_object_get_class (obj);
 }
@@ -1357,7 +1350,7 @@ EMSCRIPTEN_KEEPALIVE MonoType *
 mono_wasm_class_get_type (MonoClass *klass)
 {
 	if (!klass)
-		return 0;
+		return NULL;
 	return mono_class_get_type (klass);
 }
 
@@ -1365,7 +1358,7 @@ EMSCRIPTEN_KEEPALIVE MonoClass *
 mono_wasm_type_get_class (MonoType *type)
 {
 	if (!type)
-		return 0;
+		return NULL;
 	return mono_type_get_class (type);
 }
 
@@ -1373,7 +1366,7 @@ EMSCRIPTEN_KEEPALIVE void *
 mono_wasm_unbox_rooted (MonoObject *obj)
 {
 	if (!obj)
-		return 0;
+		return NULL;
 	MonoClass * klass = mono_object_get_class(obj);
 	return mono_object_unbox (obj);
 }
@@ -1385,7 +1378,7 @@ mono_wasm_get_class_for_bind_or_invoke (MonoObject *this_arg, MonoMethod *method
 	else if (method)
 		return mono_method_get_class (method);
 	else
-		return 0;
+		return NULL;
 }
 
 EMSCRIPTEN_KEEPALIVE char * 
