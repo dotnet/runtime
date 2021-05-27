@@ -2211,7 +2211,7 @@ namespace Mono.Linker.Dataflow
 				case null:
 					DependencyInfo dependencyInfo = new DependencyInfo (DependencyKind.DynamicallyAccessedMember, reflectionContext.Source);
 					var origin = new MessageOrigin (reflectionContext.Source, reflectionContext.Instruction?.Offset);
-					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, includeInterfaceTypes: true, dependencyInfo, origin));
+					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseAndInterfaceTypes: true, dependencyInfo, origin));
 					break;
 				}
 			}
