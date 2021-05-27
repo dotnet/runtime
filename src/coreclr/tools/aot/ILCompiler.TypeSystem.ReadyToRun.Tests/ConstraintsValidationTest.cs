@@ -41,7 +41,7 @@ namespace TypeSystemTests
 
         public ConstraintsValidationTest()
         {
-            _context = new TestTypeSystemContext(TargetArchitecture.Unknown);
+            _context = new TestTypeSystemContext(TargetArchitecture.Unknown, TargetOS.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
             

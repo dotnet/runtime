@@ -110,7 +110,7 @@ namespace TypeSystemTests
             private Dictionary<TypeDesc, MethodDesc> _equalsMethods = new Dictionary<TypeDesc, MethodDesc>();
 
             public SyntheticVirtualOverrideTypeSystemContext()
-                : base(TargetArchitecture.Unknown)
+                : base(TargetArchitecture.Unknown, TargetOS.Unknown)
             {
             }
 

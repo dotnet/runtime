@@ -802,27 +802,31 @@ namespace ILCompiler
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else if (type.HasLayout() && !MayContainGCPointers(type))
+            else if (LayoutContainsNoGCPointers(type))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
             return ComputeAutoFieldLayout(type, numInstanceFields);
         }
 
-        private bool MayContainGCPointers(TypeDesc type)
+        private bool LayoutContainsNoGCPointers(TypeDesc type)
         {
-            if (type.IsPrimitive || type.IsEnum || type.IsPointer || type.IsFunctionPointer || type.IsObject)
+            if (type.IsPrimitive || type.IsEnum || type.IsPointer || type.IsFunctionPointer)
+            {
+                return true;
+            }
+            MetadataType mdType = type as MetadataType;
+            if (mdType == null)
             {
                 return false;
             }
-            if (type.Category != TypeFlags.ValueType && type.Category != TypeFlags.Class && type.Category != TypeFlags.Nullable)
+            if (!mdType.IsValueType && mdType.HasBaseType && !LayoutContainsNoGCPointers(mdType.BaseType))
             {
-                return true;
+                return false;
             }
-            MetadataType mdType = (MetadataType)type;
-            if (!type.IsValueType && type.HasBaseType && MayContainGCPointers((MetadataType)type.BaseType))
+            if (!mdType.IsExplicitLayout && !mdType.IsSequentialLayout)
             {
-                return true;
+                return false;
             }
             if (type.Category == TypeFlags.ValueType ||
                 type.Category == TypeFlags.Class ||
@@ -830,14 +834,14 @@ namespace ILCompiler
             {
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (!field.IsStatic && (field.FieldType.Category == TypeFlags.Class || MayContainGCPointers(field.FieldType)))
+                    if (!field.IsStatic && (field.FieldType.Category == TypeFlags.Class || !LayoutContainsNoGCPointers(field.FieldType)))
                     {
-                        return true;
+                        return false;
                     }
                 }
-                return false;
+                return true;
             }
-            return true;
+            return false;
         }
 
         /// <summary>

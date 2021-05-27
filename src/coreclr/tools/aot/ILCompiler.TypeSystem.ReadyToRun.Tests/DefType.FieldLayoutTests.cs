@@ -14,7 +14,7 @@ namespace TypeSystemTests
 
         public DefTypeTests()
         {
-            var context = new TestTypeSystemContext(TargetArchitecture.X64);
+            var context = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Unknown);
             var systemModule = context.CreateModuleForSimpleName("CoreTestAssembly");
             context.SetSystemModule(systemModule);
 

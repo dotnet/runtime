@@ -264,7 +264,7 @@ namespace
                 pManagedPlacementInfo->m_alignment = pNestedType.GetMethodTable()->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
 #if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(TARGET_64BIT)
                 // On x86, maximum native struct alignment is 4
-                if (pManagedPlacementInfo->m_alignment > TARGET_POINTER_SIZE)
+                if (!pNestedType.GetMethodTable()->IsEnum() && pManagedPlacementInfo->m_alignment > TARGET_POINTER_SIZE)
                 {
                     pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
                 }

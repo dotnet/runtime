@@ -308,10 +308,8 @@ namespace Internal.TypeSystem
         {
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
-            LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
-            LayoutInt cumulativeInstanceFieldPos =
-                type.HasBaseType && !type.IsValueType ? type.BaseType.InstanceByteCount : LayoutInt.Zero;
-            cumulativeInstanceFieldPos -= offsetBias;
+            LayoutInt offsetBias = (!type.IsValueType ? type.Context.Target.LayoutPointerSize : LayoutInt.Zero);
+            LayoutInt cumulativeInstanceFieldPos = (type.HasBaseType && !type.IsValueType ? type.BaseType.InstanceByteCount : LayoutInt.Zero) - offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
             LayoutInt instanceSize = cumulativeInstanceFieldPos + new LayoutInt(layoutMetadata.Size) + offsetBias;
@@ -397,7 +395,7 @@ namespace Internal.TypeSystem
             // For types inheriting from another type, field offsets continue on from where they left off
             // For reference types, we calculate field alignment as if the address after the method table pointer
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
-            LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
+            LayoutInt offsetBias = (!type.IsValueType ? type.Context.Target.LayoutPointerSize : LayoutInt.Zero);
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
@@ -555,7 +553,7 @@ namespace Internal.TypeSystem
             LayoutInt offsetBias = LayoutInt.Zero;
             if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture == TargetArchitecture.X86)
             {
-                offsetBias = new LayoutInt(type.Context.Target.PointerSize);
+                offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;
             }
 
@@ -805,6 +803,10 @@ namespace Internal.TypeSystem
                     DefType metadataType = (DefType)fieldType;
                     result.Size = metadataType.InstanceFieldSize;
                     result.Alignment = metadataType.InstanceFieldAlignment;
+                    if (!fieldType.IsPrimitive && !fieldType.IsEnum)
+                    {
+                        result.Alignment = LayoutInt.Min(metadataType.InstanceFieldAlignment, metadataType.Context.Target.GetObjectAlignment(metadataType.InstanceFieldAlignment));
+                    }
                     layoutAbiStable = metadataType.LayoutAbiStable;
                 }
                 else
@@ -866,7 +868,15 @@ namespace Internal.TypeSystem
             }
             else if (type.IsValueType)
             {
-                LayoutInt sizeAlignment = LayoutInt.Min(alignment, target.GetObjectAlignment(alignment));
+                LayoutInt sizeAlignment;
+                if (type.IsEnum || type.IsPrimitive)
+                {
+                    sizeAlignment = alignment;
+                }
+                else
+                {
+                    sizeAlignment = LayoutInt.Min(alignment, target.GetObjectAlignment(alignment));
+                }
                 instanceSize = LayoutInt.AlignUp(instanceSize, sizeAlignment, target);
             }
 

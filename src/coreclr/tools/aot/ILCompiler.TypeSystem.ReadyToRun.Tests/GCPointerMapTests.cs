@@ -14,7 +14,7 @@ namespace TypeSystemTests
 
         public GCPointerMapTests()
         {
-            _context = new TestTypeSystemContext(TargetArchitecture.X86);
+            _context = new TestTypeSystemContext(TargetArchitecture.X86, TargetOS.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
 

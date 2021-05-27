@@ -17,7 +17,7 @@ namespace TypeSystemTests
 
         public InstanceFieldLayoutTests()
         {
-            _context = new TestTypeSystemContext(TargetArchitecture.X64);
+            _context = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
 

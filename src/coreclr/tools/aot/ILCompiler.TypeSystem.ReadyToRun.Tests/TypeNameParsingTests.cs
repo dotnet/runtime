@@ -31,7 +31,7 @@ namespace TypeSystemTests
 
         public TypeNameParsingTests()
         {
-            _context = new TestTypeSystemContext(TargetArchitecture.X64);
+            _context = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Unknown);
 
             // TODO-NICE: split test types into a separate, non-core, module
             _testModule = _context.CreateModuleForSimpleName("CoreTestAssembly");

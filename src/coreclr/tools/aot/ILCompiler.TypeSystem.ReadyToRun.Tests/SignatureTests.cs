@@ -27,7 +27,7 @@ namespace TypeSystemTests
         public SignatureTests(ITestOutputHelper output)
         {
             _output = output;
-            _context = new TestTypeSystemContext(TargetArchitecture.X64);
+            _context = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
 
@@ -140,7 +140,7 @@ namespace TypeSystemTests
 
 
             // Create new TypeSystemContext with just created assembly inside
-            var lookupContext = new TestTypeSystemContext(TargetArchitecture.X64);
+            var lookupContext = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Unknown);
             var systemModule = lookupContext.CreateModuleForSimpleName("CoreTestAssembly");
             lookupContext.SetSystemModule(systemModule);
 
@@ -168,7 +168,7 @@ namespace TypeSystemTests
 
 
             // Create new TypeSystemContext with just created assembly inside
-            var lookupContext = new TestTypeSystemContext(TargetArchitecture.X64);
+            var lookupContext = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Unknown);
             var systemModule = lookupContext.CreateModuleForSimpleName("CoreTestAssembly");
             lookupContext.SetSystemModule(systemModule);
             lookupContext.CreateModuleForSimpleName("Lookup", peStream);
