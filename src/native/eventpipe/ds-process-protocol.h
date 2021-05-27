@@ -77,7 +77,7 @@ struct _DiagnosticsProcessInfo2Payload_Internal {
 	// array<T> = uint length, length # of Ts
 	// string = (array<char> where the last char must = 0) or (length = 0)
 
-	// ProcessInfo = long pid, string cmdline, string OS, string arch, GUID runtimeCookie, string managed entrypoint assembly path, string clr product version
+	// ProcessInfo = long pid, GUID runtimeCookie, string cmdline, string OS, string arch, string managed entrypoint assembly path, string clr product version
 	uint64_t process_id;
 	const ep_char16_t *command_line;
 	const ep_char16_t *os;
@@ -175,4 +175,3 @@ ds_process_protocol_helper_handle_ipc_message (
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_PROCESS_PROTOCOL_H__ */
-
