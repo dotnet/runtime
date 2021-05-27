@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;net45</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- Make sure that the DebuggableAttribute is set properly. -->
     <DebugOptimization>IMPL</DebugOptimization>
@@ -13,7 +13,6 @@
     <ExtraMacros Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp2.0'">#define netcoreapp</ExtraMacros>
     <CoreAssembly>System.Runtime</CoreAssembly>
     <CoreAssembly Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard</CoreAssembly>
-    <DisableImplicitFrameworkReferences Condition="'$(TargetFramework)' == 'netstandard1.0'">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <CoreAssembly>mscorlib</CoreAssembly>
@@ -26,9 +25,6 @@
     <!-- mscorlib is passed in as an explicit reference from C# targets but not via the IL SDK. -->
     <Reference Include="$(CoreAssembly)"
                Condition="!$(TargetFramework.StartsWith('netstandard'))" />
-
-    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)"
-                      Condition="'$(TargetFramework)' == 'netstandard1.0'" />
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"

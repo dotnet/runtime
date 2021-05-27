@@ -83,20 +83,9 @@ namespace System.Net.Sockets
         [MemberNotNull(nameof(_preAllocatedOverlapped))]
         private void InitializeInternals()
         {
-            // PreAllocatedOverlapped captures ExecutionContext, but SocketAsyncEventArgs ensures
-            // that context is properly flowed if necessary, and thus we don't need the overlapped
-            // infrastructure capturing and flowing as well.
-            bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
-            try
-            {
-                Debug.Assert(OperatingSystem.IsWindows());
-                if (suppressFlow) ExecutionContext.SuppressFlow();
-                _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, _strongThisRef, null);
-            }
-            finally
-            {
-                if (suppressFlow) ExecutionContext.RestoreFlow();
-            }
+            Debug.Assert(OperatingSystem.IsWindows());
+
+            _preAllocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_completionPortCallback, _strongThisRef, null);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"new PreAllocatedOverlapped {_preAllocatedOverlapped}");
         }

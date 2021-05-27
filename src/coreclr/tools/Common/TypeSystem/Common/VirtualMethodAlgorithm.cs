@@ -24,6 +24,8 @@ namespace Internal.TypeSystem
 
         public abstract MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
 
+        public abstract DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl);
+
         /// <summary>
         /// Resolves a virtual method call.
         /// </summary>
@@ -33,5 +35,28 @@ namespace Internal.TypeSystem
         /// Enumerates all virtual slots on '<paramref name="type"/>'.
         /// </summary>
         public abstract IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type);
+    }
+
+    public enum DefaultInterfaceMethodResolution
+    {
+        /// <summary>
+        /// No default implementation was found.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// A default implementation was found.
+        /// </summary>
+        DefaultImplementation,
+
+        /// <summary>
+        /// The implementation was reabstracted.
+        /// </summary>
+        Reabstraction,
+
+        /// <summary>
+        /// The default implementation conflicts.
+        /// </summary>
+        Diamond,
     }
 }

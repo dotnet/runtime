@@ -4992,6 +4992,9 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         bool ignoreRoot = true;
 
         gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
+
+        JITDUMP("Extracted side effects from a constant tree [%06u]:\n", tree->gtTreeID);
+        DISPTREE(sideEffList);
     }
 
     return sideEffList;

@@ -488,6 +488,12 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_SP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_gpregs.gp_sp)
 	#define UCONTEXT_REG_R0(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_gpregs.gp_x [ARMREG_R0])
 	#define UCONTEXT_GREGS(ctx) (&(((ucontext_t*)(ctx))->uc_mcontext.mc_gpregs.gp_x))
+#elif defined(__OpenBSD__)
+	/* ucontext_t == sigcontext */
+	#define UCONTEXT_REG_PC(ctx) (((ucontext_t*)(ctx))->sc_elr)
+	#define UCONTEXT_REG_SP(ctx) (((ucontext_t*)(ctx))->sc_sp)
+	#define UCONTEXT_REG_R0(ctx) (((ucontext_t*)(ctx))->sc_x [ARMREG_R0])
+	#define UCONTEXT_GREGS(ctx) (&(((ucontext_t*)(ctx))->sc_x))
 #elif !defined(HOST_WIN32)
 #include <ucontext.h>
 	#define UCONTEXT_REG_PC(ctx) (((ucontext_t*)(ctx))->uc_mcontext.pc)
