@@ -734,6 +734,12 @@
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\opt$(ExeExt)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+      <_MonoRuntimeArtifacts Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoObjDir)out\lib\mono-framework.framework\mono-framework">
+        <Destination>$(RuntimeBinDir)\mono-framework.framework\mono-framework</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoObjDir)out\lib\mono-framework.framework\Info.plist">
+        <Destination>$(RuntimeBinDir)\mono-framework.framework\Info.plist</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
         <Destination>$(RuntimeBinDir)libmono-ee-interp.a</Destination>
       </_MonoRuntimeArtifacts>
