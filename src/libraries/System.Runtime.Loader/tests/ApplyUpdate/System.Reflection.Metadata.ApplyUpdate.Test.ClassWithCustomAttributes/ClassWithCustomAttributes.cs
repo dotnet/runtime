@@ -5,6 +5,14 @@ using System;
 
 namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
+    public static class ClassWithCustomAttributesHelper {
+        public static Type GetAttributedClass () {
+#pragma warning disable CS0612
+            return typeof(ClassWithCustomAttributes);
+#pragma warning restore CS0612
+        }
+    }
+
     [Obsolete]
     public class ClassWithCustomAttributes {
         [Obsolete]
