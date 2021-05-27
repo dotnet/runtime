@@ -584,12 +584,9 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		case MONO_TYPE_R8:
 			return LLVMVectorType (LLVMDoubleType (), size / 8);
 		default:
-			g_assert_not_reached ();
-			return NULL;
+			return LLVMVectorType (LLVMInt8Type (), size);
 		}
 	} else {
-		printf ("%s\n", klass_name);
-		NOT_IMPLEMENTED;
 		return NULL;
 	}
 }
@@ -3925,9 +3922,19 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
 		{
-			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
+			MonoClass *klass = mono_class_from_mono_type_internal (ainfo->type);
+			if (MONO_CLASS_IS_SIMD (ctx->cfg, klass)) {
 				/* Treat these as normal values */
 				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "simd_vtype");
+			} else {
+				LLVMTypeRef simd_t = simd_class_to_llvm_type (ctx, klass);
+				if (simd_t) {
+					/* This is a SIMD type with an invalid non-primitive element type. Generate a
+					 * fake value to allow the resulting LLVM IR to be well-formed.
+					 */
+					 ctx->values [reg] = LLVMGetUndef (simd_t);
+				}
+			}
 			break;
 		}
 		default:
@@ -4482,8 +4489,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #endif
 	}
 
-	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+	MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
+	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, klass);
 	gboolean should_promote_to_value = FALSE;
+	LLVMTypeRef simd_t = simd_class_to_llvm_type (ctx, klass);
 	const char *load_name = NULL;
 	/*
 	 * Convert the result. Non-SIMD value types are manipulated via an
@@ -4554,6 +4563,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		LLVMTypeRef addr_type = LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0);
 		LLVMValueRef addr = convert_full (ctx, addresses [call->inst.dreg], addr_type, FALSE);
 		values [ins->dreg] = LLVMBuildLoad (builder, addr, load_name);
+	} else if (simd_t) {
+		/* This is a SIMD type with an invalid non-primitive element type. Generate a
+		 * fake value to allow the resulting LLVM IR to be well-formed.
+		 */
+		 ctx->values [ins->dreg] = LLVMGetUndef (simd_t);
 	}
 
 	*builder_ref = ctx->builder;
@@ -5688,7 +5702,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						/* The return type is an LLVM aggregate type, so a bare bitcast cannot be used to do this conversion. */
 						int width = mono_type_size (sig->ret, NULL);
 						int elems = width / TARGET_SIZEOF_VOID_P;
-						/* The return value might not be set if there is a throw */
 						LLVMValueRef val = LLVMBuildBitCast (builder, lhs, LLVMVectorType (IntPtrType (), elems), "");
 						for (int i = 0; i < elems; ++i) {
 							LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
@@ -5713,7 +5726,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					break;
 				case LLVMArgVtypeAsScalar:
 					if (is_simd) {
-						retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
+						retval = LLVMBuildBitCast (builder, lhs, ret_type, "setret_simd_vtype_as_scalar");
 					} else {
 						g_assert (addresses [ins->sreg1]);
 						retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
