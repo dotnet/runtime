@@ -6,7 +6,12 @@ namespace System.Text.Json
     /// <summary>
     /// Determines the naming policy used to convert a string-based name to another format, such as a camel-casing format.
     /// </summary>
-    public abstract class JsonNamingPolicy
+#if BUILDING_SOURCE_GENERATOR
+    internal
+#else
+    public
+#endif
+    abstract class JsonNamingPolicy
     {
         /// <summary>
         /// Initializes a new instance of <see cref="JsonNamingPolicy"/>.
@@ -17,8 +22,6 @@ namespace System.Text.Json
         /// Returns the naming policy for camel-casing.
         /// </summary>
         public static JsonNamingPolicy CamelCase { get; } = new JsonCamelCaseNamingPolicy();
-
-        internal static JsonNamingPolicy Default { get; } = new JsonDefaultNamingPolicy();
 
         /// <summary>
         /// When overridden in a derived class, converts the specified name according to the policy.
