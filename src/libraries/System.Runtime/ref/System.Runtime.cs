@@ -7563,6 +7563,7 @@ namespace System.IO
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenHandle(string path, System.IO.FileMode mode = System.IO.FileMode.Open, System.IO.FileAccess access = System.IO.FileAccess.Read, System.IO.FileShare share = System.IO.FileShare.Read, System.IO.FileOptions options = System.IO.FileOptions.None, long preallocationSize = 0) { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
         public static System.IO.FileStream OpenWrite(string path) { throw null; }
