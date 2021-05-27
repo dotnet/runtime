@@ -408,6 +408,9 @@ if(NOT DISABLE_SHARED_LIBS)
       FRAMEWORK_VERSION C
       MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
     )
+    install(TARGETS mono-framework
+      FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
   endif()
 endif()
 
