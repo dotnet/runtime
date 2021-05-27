@@ -84,13 +84,6 @@ namespace System.Security.Cryptography
                 KeySizeValue = _ecc.ImportParameters(parameters);
             }
 
-            public override void ImportSubjectPublicKeyInfo(
-                ReadOnlySpan<byte> source,
-                out int bytesRead)
-            {
-                KeySizeValue = _ecc.ImportSubjectPublicKeyInfo(source, out bytesRead);
-            }
-
             public override void ImportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,
                 ReadOnlySpan<byte> source,

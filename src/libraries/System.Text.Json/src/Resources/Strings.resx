@@ -345,11 +345,8 @@
   <data name="SerializerPropertyNameNull" xml:space="preserve">
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
-  <data name="DeserializeDuplicateKey" xml:space="preserve">
-    <value>An item with the same property name '{0}' has already been added.</value>
-  </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' does not match the required signature of IDictionary&lt;string, JsonElement&gt; or IDictionary&lt;string, object&gt;.</value>
+    <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
@@ -423,29 +420,8 @@
   <data name="SerializerCycleDetected" xml:space="preserve">
     <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHandler.Preserve on JsonSerializerOptions to support cycles.</value>
   </data>
-  <data name="EmptyStringToInitializeNumber" xml:space="preserve">
-    <value>Expected a number, but instead got empty string.</value>
-  </data>
-  <data name="JsonObjectDuplicateKey" xml:space="preserve">
-    <value>Property with name '{0}' already exists.</value>
-  </data>
-  <data name="PropertyNotFound" xml:space="preserve">
-    <value>Property with name '{0}' not found.</value>
-  </data>
-  <data name="PropertyTypeMismatch" xml:space="preserve">
-    <value>Property with name '{0}' has a different type than expected.</value>
-  </data>
-  <data name="InvalidDuplicatePropertyNameHandling" xml:space="preserve">
-    <value>The DuplicatePropertyNameHandling enum must be set to one of the supported values.</value>
-  </data>
   <data name="InvalidLeadingZeroInNumber" xml:space="preserve">
     <value>Invalid leading zero before '{0}'.</value>
-  </data>
-  <data name="ArrayModifiedDuringIteration" xml:space="preserve">
-    <value>The JSON array was modified during iteration.</value>
-  </data>
-  <data name="NotNodeJsonElementParent" xml:space="preserve">
-    <value>This JsonElement instance was not built from a JsonNode and is immutable.</value>
   </data>
   <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
     <value>Cannot parse a JSON object containing metadata properties like '$id' into an array or immutable collection type. Type '{0}'.</value>
@@ -587,8 +563,8 @@
   <data name="NodeWrongType" xml:space="preserve">
     <value>The node must be of type '{0}'.</value>
   </data>
-  <data name="ValueCannotBeNull" xml:space="preserve">
-    <value>Value cannot be null. (Parameter '{0}')</value>
+  <data name="NodeDuplicateKey" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="SerializerContextOptionsImmutable" xml:space="preserve">
     <value>A 'JsonSerializerOptions' instance associated with a 'JsonSerializerContext' instance cannot be mutated once the context has been instantiated.</value>
@@ -607,5 +583,26 @@
   </data>
   <data name="NoMetadataForType" xml:space="preserve">
     <value>Metadata for type '{0}' was not provided to the serializer. The serializer method used does not support reflection-based creation of serialization-related type metadata. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+  </data>
+  <data name="NodeCollectionIsReadOnly" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="NodeArrayIndexNegative" xml:space="preserve">
+    <value>Number was less than 0.</value>
+  </data>
+  <data name="NodeArrayTooSmall" xml:space="preserve">
+    <value>Destination array was not long enough.</value>
+  </data>
+  <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
+    <value>A custom converter for JsonObject is not allowed on an extension property.</value>
+  </data>
+  <data name="PropInitAndSerializeFuncsNull" xml:space="preserve">
+    <value>'propInitFunc' and 'serializeFunc' cannot both be 'null'. </value>
+  </data>
+  <data name="NoMetadataForTypeProperties" xml:space="preserve">
+    <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
+  </data>
+  <data name="NoDefaultOptionsForContext" xml:space="preserve">
+    <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
   </data>
 </root>

@@ -33,7 +33,7 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
             DESTINATIONS . sharedFramework
             COMPONENT crosscomponents
         )
-    endif(CLR_CMAKE_TARGET_UNIX)
+    endif()
 endif()
 
 if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_OSX AND NOT FEATURE_CROSSBITNESS)

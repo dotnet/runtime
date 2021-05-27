@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -424,6 +425,89 @@ namespace System.Net.Security.Tests
             {
                 s.Dispose();
             }
+        }
+
+        [Theory]
+        [InlineData(16384 * 100, 4096, 1024, false)]
+        [InlineData(16384 * 100, 4096, 1024, true)]
+        [InlineData(16384 * 100, 1024 * 20, 1024, true)]
+        [InlineData(16384, 3, 3, true)]
+        public async Task SslStream_RandomSizeWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
+        {
+            byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);
+            byte[] dataReceived = new byte[dataToCopy.Length + readBufferSize]; // make the buffer bigger to have chance to read more
+
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+            var serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(new RandomReadWriteSizeStream(clientStream, readBufferSize)))
+            using (SslStream server = new SslStream(new RandomReadWriteSizeStream(serverStream)))
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                Task writer = Task.Run(() =>
+                {
+                    Memory<byte> data = new Memory<byte>(dataToCopy);
+                    while (data.Length > 0)
+                    {
+                        int writeLength = Math.Min(data.Length, writeBufferSize);
+                        if (useAsync)
+                        {
+                            server.WriteAsync(data.Slice(0, writeLength)).GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            server.Write(data.Span.Slice(0, writeLength));
+                        }
+
+                        data = data.Slice(Math.Min(writeBufferSize, data.Length));
+                    }
+
+                    server.ShutdownAsync().GetAwaiter().GetResult();
+                });
+
+                Task reader = Task.Run(() =>
+                {
+                    Memory<byte> readBuffer = new Memory<byte>(dataReceived);
+                    int totalLength = 0;
+                    int readLength;
+
+                    while (true)
+                    {
+                        if (useAsync)
+                        {
+                            readLength = client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize)).GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            readLength = client.Read(readBuffer.Span.Slice(totalLength, readBufferSize));
+                        }
+
+                        if (readLength == 0)
+                        {
+                            break;
+                        }
+
+                        totalLength += readLength;
+                        Assert.True(totalLength <= bufferSize);
+                    }
+
+                    Assert.Equal(bufferSize, totalLength);
+                    AssertExtensions.SequenceEqual(dataToCopy.AsSpan(), dataReceived.AsSpan().Slice(0, totalLength));
+                });
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(writer, reader);
+            }
+
         }
 
         private static bool ValidateServerCertificate(

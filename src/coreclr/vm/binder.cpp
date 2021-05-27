@@ -1038,8 +1038,7 @@ void CoreLibBinder::CheckExtended()
         else
         if (pMD->IsNDirect())
         {
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc *)pMD, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc *)pMD);
 
             if (pMD->IsQCall())
             {

@@ -58,14 +58,15 @@
 
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(RuntimeIdentifier)\mono-aot-cross"
+        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
+        OutputDir="$(PublishDir)"
         UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(RuntimeIdentifier)">
+        LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
@@ -99,7 +100,7 @@
     <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
 
     <!-- run on MacCatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=maccatalyst --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />
 
   </Target>
 

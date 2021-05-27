@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 #if BIGENDIAN
 using System.Buffers.Binary;
@@ -301,31 +300,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
+        public static SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred) =>
+            SendTo(handle, buffer.AsSpan(offset, size), socketFlags, peerAddress, peerAddressSize, out bytesTransferred);
+
+        public static unsafe SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
         {
             int bytesSent;
-            if (buffer.Length == 0)
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
-                bytesSent = Interop.Winsock.sendto(
-                    handle,
-                    null,
-                    0,
-                    socketFlags,
-                    peerAddress,
-                    peerAddressSize);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = &buffer[0])
-                {
-                    bytesSent = Interop.Winsock.sendto(
-                        handle,
-                        pinnedBuffer + offset,
-                        size,
-                        socketFlags,
-                        peerAddress,
-                        peerAddressSize);
-                }
+                bytesSent = Interop.Winsock.sendto(handle, bufferPtr, buffer.Length, socketFlags, peerAddress, peerAddressSize);
             }
 
             if (bytesSent == (int)SocketError.SocketError)
@@ -529,19 +512,16 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
+        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred) =>
+            ReceiveFrom(handle, buffer.AsSpan(offset, size), SocketFlags.None, socketAddress, ref addressLength, out bytesTransferred);
+
+        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, Span<byte> buffer, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
         {
             int bytesReceived;
-            if (buffer.Length == 0)
+
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
-                bytesReceived = Interop.Winsock.recvfrom(handle, null, 0, socketFlags, socketAddress, ref addressLength);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = &buffer[0])
-                {
-                    bytesReceived = Interop.Winsock.recvfrom(handle, pinnedBuffer + offset, size, socketFlags, socketAddress, ref addressLength);
-                }
+                bytesReceived = Interop.Winsock.recvfrom(handle, bufferPtr, buffer.Length, socketFlags, socketAddress, ref addressLength);
             }
 
             if (bytesReceived == (int)SocketError.SocketError)
@@ -1072,63 +1052,6 @@ namespace System.Net.Sockets
                 {
                     fileHandle!.DangerousRelease();
                 }
-            }
-        }
-
-        public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
-        {
-            asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
-            try
-            {
-                bool success = TransmitFileHelper(
-                    handle,
-                    fileStream?.SafeFileHandle,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    preBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0) : IntPtr.Zero,
-                    preBuffer?.Length ?? 0,
-                    postBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0) : IntPtr.Zero,
-                    postBuffer?.Length ?? 0,
-                    flags);
-
-                return asyncResult.ProcessOverlappedResult(success, 0);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
-        public static unsafe SocketError AcceptAsync(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
-        {
-            // The buffer needs to contain the requested data plus room for two sockaddrs and 16 bytes
-            // of associated data for each.
-            int addressBufferSize = socketAddressSize + 16;
-            byte[] buffer = new byte[receiveSize + ((addressBufferSize) * 2)];
-
-            // Set up asyncResult for overlapped AcceptEx.
-            // This call will use completion ports on WinNT.
-            asyncResult.SetUnmanagedStructures(buffer, addressBufferSize);
-            try
-            {
-                // This can throw ObjectDisposedException.
-                int bytesTransferred;
-                bool success = socket.AcceptEx(
-                    handle,
-                    acceptHandle,
-                    Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult.Buffer!, 0),
-                    receiveSize,
-                    addressBufferSize,
-                    addressBufferSize,
-                    out bytesTransferred,
-                    asyncResult.DangerousOverlappedPointer); // SafeHandle was just created in SetUnmanagedStructures
-
-                return asyncResult.ProcessOverlappedResult(success, 0);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
             }
         }
 

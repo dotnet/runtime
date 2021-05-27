@@ -1006,7 +1006,7 @@ namespace System.Xml.Tests
                     if (MoveToFirstAttribute())
                     {
                         return;
-                    };
+                    }
                 }
             }
             if (EOF)

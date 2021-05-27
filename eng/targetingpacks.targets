@@ -6,13 +6,13 @@
   <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
-    <_UseLocalTargetingRuntimePack>true</_UseLocalTargetingRuntimePack>
+    <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
-  <ItemGroup Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'">
+  <ItemGroup Condition="'$(UseLocalTargetingRuntimePack)' == 'true'">
     <KnownFrameworkReference Include="$(LocalFrameworkOverrideName)"
                              DefaultRuntimeFrameworkVersion="$(ProductVersion)"
                              IsTrimmable="true"
@@ -69,7 +69,7 @@
                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                      $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
     <!-- Point MicrosoftNetCoreAppRefPackRefDir to the acquired targeting pack to use it later for AssemblySearchPaths resolution. -->
-    <PropertyGroup Condition="'$(_UseLocalTargetingRuntimePack)' != 'true'">
+    <PropertyGroup Condition="'$(UseLocalTargetingRuntimePack)' != 'true'">
       <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">netcoreapp</_NetCoreAppTargetFrameworkIdentifier>
       <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">net</_NetCoreAppTargetFrameworkIdentifier>
       <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_NetCoreAppTargetFrameworkIdentifier)$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
@@ -93,7 +93,7 @@
 
   <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
   <Target Name="RemoveRuntimePackFromDownloadItem"
-          Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'"
+          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <PackageDownload Remove="@(PackageDownload)"
@@ -105,7 +105,7 @@
 
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
-          Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'"
+          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
       <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
@@ -123,7 +123,7 @@
 
   <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
   <Target Name="UpdateRuntimeFrameworkVersion"
-          Condition="'$(_UseLocalTargetingRuntimePack)' == 'true'"
+          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <RuntimeFramework Version="$(ProductVersion)"

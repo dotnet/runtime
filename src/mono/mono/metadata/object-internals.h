@@ -533,8 +533,9 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoStackFrame);
 
 typedef enum {
-	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
-	MONO_THREAD_FLAG_NAME_SET = 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_DONT_MANAGE			= 1, // Don't wait for or abort this thread
+	MONO_THREAD_FLAG_NAME_SET				= 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_CLEANUP_FROM_NATIVE	= 4, // Thread initialized in native so clean up in native
 } MonoThreadFlags;
 
 struct _MonoThreadInfo;
@@ -1647,6 +1648,9 @@ mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
+guint8*
+mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field);
+
 MonoMethod*
 mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method, MonoError *error);
 
@@ -2079,5 +2083,10 @@ mono_runtime_get_managed_cmd_line (void);
 
 char *
 mono_runtime_get_cmd_line (int argc, char **argv);
+
+#ifdef HOST_WASM
+int
+mono_string_instance_is_interned (MonoString *str);
+#endif
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

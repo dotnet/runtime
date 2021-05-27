@@ -33,7 +33,7 @@ namespace Mono
             }
         }
 
-        internal static SafeStringMarshal MarshalString(string str)
+        internal static SafeStringMarshal MarshalString(string? str)
         {
             return new SafeStringMarshal(str);
         }

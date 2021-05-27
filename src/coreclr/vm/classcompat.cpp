@@ -3311,7 +3311,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(tkMethod, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(NULL, Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;

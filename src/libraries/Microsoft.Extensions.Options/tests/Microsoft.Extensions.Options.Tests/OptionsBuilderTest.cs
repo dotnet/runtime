@@ -633,11 +633,11 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 5,
-                "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
         }
 
         [Fact]
@@ -659,11 +659,11 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 6,
-                "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
                 "I don't want to go to nowhere!");
         }
 
@@ -687,11 +687,11 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 5,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
         }
 
         [Fact]
@@ -716,11 +716,11 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 6,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
                     "I don't want to go to nowhere!");
         }
 
@@ -746,11 +746,11 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 6,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
                     "I don't want to go to nowhere!");
         }
 

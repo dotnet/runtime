@@ -168,32 +168,40 @@ namespace System.Net.Http
 
         public async ValueTask SetupAsync()
         {
-            _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
-                FrameHeader.Size + FrameHeader.SettingLength +
-                FrameHeader.Size + FrameHeader.WindowUpdateLength);
+            try
+            {
+                _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
+                    FrameHeader.Size + FrameHeader.SettingLength +
+                    FrameHeader.Size + FrameHeader.WindowUpdateLength);
 
-            // Send connection preface
-            s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
-            _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
+                // Send connection preface
+                s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
+                _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
-            // Send SETTINGS frame.  Disable push promise.
-            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
-            _outgoingBuffer.Commit(FrameHeader.Size);
-            BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
-            _outgoingBuffer.Commit(2);
-            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
-            _outgoingBuffer.Commit(4);
+                // Send SETTINGS frame.  Disable push promise.
+                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
+                _outgoingBuffer.Commit(FrameHeader.Size);
+                BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
+                _outgoingBuffer.Commit(2);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
+                _outgoingBuffer.Commit(4);
 
-            // Send initial connection-level WINDOW_UPDATE
-            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
-            _outgoingBuffer.Commit(FrameHeader.Size);
-            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, ConnectionWindowSize - DefaultInitialWindowSize);
-            _outgoingBuffer.Commit(4);
+                // Send initial connection-level WINDOW_UPDATE
+                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
+                _outgoingBuffer.Commit(FrameHeader.Size);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, ConnectionWindowSize - DefaultInitialWindowSize);
+                _outgoingBuffer.Commit(4);
 
-            await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
-            _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
-            _expectingSettingsAck = true;
+                _expectingSettingsAck = true;
+            }
+            catch (Exception e)
+            {
+                Dispose();
+                throw new IOException(SR.net_http_http2_connection_not_established, e);
+            }
 
             _ = ProcessIncomingFramesAsync();
             _ = ProcessOutgoingFramesAsync();
@@ -1444,7 +1452,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, bool finalFlush, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> remaining = buffer;
 
@@ -1456,9 +1464,22 @@ namespace System.Net.Http
 
                 ReadOnlyMemory<byte> current;
                 (current, remaining) = SplitBuffer(remaining, frameSize);
+
+                bool flush = false;
+                if (finalFlush && remaining.Length == 0)
+                {
+                    flush = true;
+                }
+
+                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                if (!_connectionWindow.IsCreditAvailable)
+                {
+                    flush = true;
+                }
+
                 try
                 {
-                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current), static (s, writeBuffer) =>
+                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current, flush), static (s, writeBuffer) =>
                     {
                         // Invoked while holding the lock:
                         if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(writeBuffer.Length)}={writeBuffer.Length}");
@@ -1466,7 +1487,7 @@ namespace System.Net.Http
                         FrameHeader.WriteTo(writeBuffer.Span, s.current.Length, FrameType.Data, FrameFlags.None, s.streamId);
                         s.current.CopyTo(writeBuffer.Slice(FrameHeader.Size));
 
-                        return false; // no need to flush, as the request content may do so explicitly, or worst case we'll do so as part of the end data frame
+                        return s.flush;
                     }, cancellationToken).ConfigureAwait(false);
                 }
                 catch

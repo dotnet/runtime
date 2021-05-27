@@ -23,7 +23,7 @@ namespace System.Text.Json.Tests.Serialization
                     }
                     else
                     {
-                        _ListSystemDateTimeOffset = JsonMetadataServices.CreateListInfo<List<DateTimeOffset>, DateTimeOffset>(Options, () => new List<DateTimeOffset>(), this.DateTimeOffset, default);
+                        _ListSystemDateTimeOffset = JsonMetadataServices.CreateListInfo<List<DateTimeOffset>, DateTimeOffset>(Options, () => new List<DateTimeOffset>(), this.DateTimeOffset, default, serializeFunc: null);
                     }
                 }
 

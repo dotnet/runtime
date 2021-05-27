@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -56,16 +57,6 @@ namespace System.Net.Sockets
         private AddressFamily _addressFamily;
         private SocketType _socketType;
         private ProtocolType _protocolType;
-
-        // These caches are one degree off of Socket since they're not used in the sync case/when disabled in config.
-        private CacheSet? _caches;
-
-        private sealed class CacheSet
-        {
-            internal CallbackClosure? AcceptClosureCache;
-            internal CallbackClosure? SendClosureCache;
-            internal CallbackClosure? ReceiveClosureCache;
-        }
 
         // Bool marked true if the native socket option IP_PKTINFO or IPV6_PKTINFO has been set.
         private bool _receivingPacketInformation;
@@ -425,6 +416,8 @@ namespace System.Net.Sockets
         // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
         // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
         // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
+        [Obsolete("This property has no effect in .NET 5+ and .NET Core.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO
         {
             get { return false; }
@@ -735,7 +728,7 @@ namespace System.Net.Sockets
             {
                 if (AddressFamily != AddressFamily.InterNetworkV6)
                 {
-                    throw new NotSupportedException(SR.net_invalidversion);
+                    return false;
                 }
                 return ((int)GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only)! == 0);
             }
@@ -1390,6 +1383,67 @@ namespace System.Net.Sockets
             return SendTo(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, remoteEP);
         }
 
+        /// <summary>
+        /// Sends data to the specified endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
+        /// <param name="remoteEP">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int SendTo(ReadOnlySpan<byte> buffer, EndPoint remoteEP)
+        {
+            return SendTo(buffer, SocketFlags.None, remoteEP);
+        }
+
+        /// <summary>
+        /// Sends data to a specific endpoint using the specified <see cref="SocketFlags"/>.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="remoteEP">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
+        {
+            ThrowIfDisposed();
+            if (remoteEP == null)
+            {
+                throw new ArgumentNullException(nameof(remoteEP));
+            }
+
+            ValidateBlockingMode();
+
+            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+
+            // Throw an appropriate SocketException if the native call fails.
+            if (errorCode != SocketError.Success)
+            {
+                UpdateSendSocketErrorForDisposed(ref errorCode);
+
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
+
+            if (_rightEndPoint == null)
+            {
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint = remoteEP;
+            }
+
+            return bytesTransferred;
+        }
+
         // Receives data from a connected socket.
         public int Receive(byte[] buffer, int size, SocketFlags socketFlags)
         {
@@ -1774,6 +1828,93 @@ namespace System.Net.Sockets
             return ReceiveFrom(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, ref remoteEP);
         }
 
+        /// <summary>
+        /// Receives a datagram into the data buffer and stores the endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
+        /// <param name="remoteEP">An <see cref="EndPoint"/>, passed by reference, that represents the remote server.</param>
+        /// <returns>The number of bytes received.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int ReceiveFrom(Span<byte> buffer, ref EndPoint remoteEP)
+        {
+            return ReceiveFrom(buffer, SocketFlags.None, ref remoteEP);
+        }
+
+        /// <summary>
+        /// Receives a datagram into the data buffer, using the specified <see cref="SocketFlags"/>, and stores the endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="remoteEP">An <see cref="EndPoint"/>, passed by reference, that represents the remote server.</param>
+        /// <returns>The number of bytes received.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
+        {
+            ThrowIfDisposed();
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
+
+            SocketPal.CheckDualModeReceiveSupport(this);
+
+            ValidateBlockingMode();
+
+            // We don't do a CAS demand here because the contents of remoteEP aren't used by
+            // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
+            // with the right address family.
+            EndPoint endPointSnapshot = remoteEP;
+            Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+            Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
+            // If the native call fails we'll throw a SocketException.
+            SocketException? socketException = null;
+            if (errorCode != SocketError.Success)
+            {
+                socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
+
+                if (socketException.SocketErrorCode != SocketError.MessageSize)
+                {
+                    throw socketException;
+                }
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
+
+            if (!socketAddressOriginal.Equals(socketAddress))
+            {
+                try
+                {
+                    remoteEP = endPointSnapshot.Create(socketAddress);
+                }
+                catch
+                {
+                }
+                if (_rightEndPoint == null)
+                {
+                    // Save a copy of the EndPoint so we can use it for Create().
+                    _rightEndPoint = endPointSnapshot;
+                }
+            }
+
+            if (socketException != null)
+            {
+                throw socketException;
+            }
+
+            return bytesTransferred;
+        }
+
         public int IOControl(int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue)
         {
             ThrowIfDisposed();
@@ -2124,7 +2265,7 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state) =>
-            TaskToApmBeginWithSyncExceptions(DisconnectAsync(reuseSocket).AsTask(), callback, state);
+            TaskToApm.Begin(DisconnectAsync(reuseSocket).AsTask(), callback, state);
 
         public void Disconnect(bool reuseSocket)
         {
@@ -2226,7 +2367,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::DoBeginSendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
-            return BeginSendFileInternal(fileName, preBuffer, postBuffer, flags, callback, state);
+            return TaskToApm.Begin(SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask(), callback, state);
         }
 
         public void EndSendFile(IAsyncResult asyncResult)
@@ -2238,7 +2379,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            EndSendFileInternal(asyncResult);
+            TaskToApm.End(asyncResult);
         }
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
@@ -2421,166 +2562,72 @@ namespace System.Net.Sockets
             return result.ReceivedBytes;
         }
 
-        // Routine Description:
-        //
-        //    BeginAccept - Does an async winsock accept, creating a new socket on success
-        //
-        //     Works by creating a pending accept request the first time,
-        //     and subsequent calls are queued so that when the first accept completes,
-        //     the next accept can be resubmitted in the callback.
-        //     this routine may go pending at which time,
-        //     but any case the callback Delegate will be called upon completion
-        //
-        // Arguments:
-        //
-        //    Callback - Async Callback Delegate that is called upon Async Completion
-        //    State - State used to track callback, set by caller, not required
-        //
-        // Return Value:
-        //
-        //    IAsyncResult - Async result used to retrieve resultant new socket
-        public IAsyncResult BeginAccept(AsyncCallback? callback, object? state)
-        {
-            if (!_isDisconnected)
-            {
-                return BeginAcceptCommon(acceptSocket: null, receiveSize: 0, callback, state);
-            }
+        public IAsyncResult BeginAccept(AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(AcceptAsync(), callback, state);
 
-            Debug.Assert(Disposed);
-            ThrowObjectDisposedException();
-            return null; // unreachable
-        }
-
-        private IAsyncResult BeginAcceptCommon(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        public Socket EndAccept(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
+            return TaskToApm.End<Socket>(asyncResult);
+        }
 
+        // This method provides support for legacy BeginAccept methods that take a "receiveSize" argument and
+        // allow data to be received as part of the accept operation.
+        // There's no direct equivalent of this in the Task APIs, so we mimic it here.
+        private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
+        {
             // Validate input parameters.
             if (receiveSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(receiveSize));
             }
 
-            // Set up the async result with flowing.
-            AcceptOverlappedAsyncResult asyncResult = new AcceptOverlappedAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
+            Socket s = await AcceptAsync(acceptSocket).ConfigureAwait(false);
 
-            // Start the accept.
-            if (_rightEndPoint == null)
+            byte[] buffer;
+            int bytesReceived;
+            if (receiveSize == 0)
             {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
+                buffer = Array.Empty<byte>();
+                bytesReceived = 0;
             }
-
-            if (!_isListening)
+            else
             {
-                throw new InvalidOperationException(SR.net_sockets_mustlisten);
-            }
-
-            SafeSocketHandle? acceptHandle;
-            asyncResult.AcceptSocket = GetOrCreateAcceptSocket(acceptSocket, false, nameof(acceptSocket), out acceptHandle);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStart(_rightEndPoint);
-
-            int socketAddressSize = GetAddressSize(_rightEndPoint);
-            SocketError errorCode;
-            try
-            {
-                errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
-            }
-            catch (Exception ex)
-            {
-                if (SocketsTelemetry.Log.IsEnabled())
+                buffer = new byte[receiveSize];
+                try
                 {
-                    SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
+                    bytesReceived = await s.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
                 }
-
-                throw;
+                catch
+                {
+                    s.Dispose();
+                    throw;
+                }
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
-
-            // Throw an appropriate SocketException if the native call fails synchronously.
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                UpdateAcceptSocketErrorForDisposed(ref errorCode);
-
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
-
-                throw new SocketException((int)errorCode);
-            }
-
-            // Finish the flow capture, maybe complete here.
-            asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
-
-            return asyncResult;
+            return (s, buffer, bytesReceived);
         }
 
-        // Routine Description:
-        //
-        //    EndAccept -  Called by user code after I/O is done or the user wants to wait.
-        //                 until Async completion, so it provides End handling for async Accept calls,
-        //                 and retrieves new Socket object
-        //
-        // Arguments:
-        //
-        //    AsyncResult - the AsyncResult Returned from BeginAccept call
-        //
-        // Return Value:
-        //
-        //    Socket - a valid socket if successful
-        public Socket EndAccept(IAsyncResult asyncResult)
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state) =>
+            BeginAccept(acceptSocket: null, receiveSize, callback, state);
+
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(AcceptAndReceiveHelperAsync(acceptSocket, receiveSize), callback, state);
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
-            return EndAcceptCommon(out _, out _, asyncResult);
-        }
-        private Socket EndAcceptCommon(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            if (Disposed)
-            {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted);
-
-                ThrowObjectDisposedException();
-            }
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-            AcceptOverlappedAsyncResult? castedAsyncResult = asyncResult as AcceptOverlappedAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndAccept"));
-            }
-
-            Socket socket = (Socket)castedAsyncResult.InternalWaitForCompletion()!;
-            bytesTransferred = (int)castedAsyncResult.BytesTransferred;
-            buffer = castedAsyncResult.Buffer;
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-
-            castedAsyncResult.EndCalled = true;
-
-            // Throw an appropriate SocketException if the native call failed asynchronously.
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-
-            if (errorCode != SocketError.Success)
-            {
-                UpdateAcceptSocketErrorForDisposed(ref errorCode);
-
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
-
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Success);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint, socket.LocalEndPoint);
+            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
+            buffer = new byte[bytesTransferred];
+            Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
             return socket;
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            ThrowIfDisposed();
+            Socket s;
+            (s, buffer, bytesTransferred) = TaskToApm.End<(Socket, byte[], int)>(asyncResult);
+            return s;
         }
 
         // Disables sends and receives on a socket.
@@ -3013,7 +3060,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool SendPacketsAsync(SocketAsyncEventArgs e)
+        public bool SendPacketsAsync(SocketAsyncEventArgs e) => SendPacketsAsync(e, default(CancellationToken));
+
+        private bool SendPacketsAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3035,7 +3084,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendPackets(this, _handle);
+                socketError = e.DoOperationSendPackets(this, _handle, cancellationToken);
             }
             catch (Exception)
             {
@@ -3101,19 +3150,6 @@ namespace System.Net.Sockets
         //
         // Internal and private properties
         //
-
-        private CacheSet Caches
-        {
-            get
-            {
-                if (_caches == null)
-                {
-                    // It's not too bad if extra of these are created and lost.
-                    _caches = new CacheSet();
-                }
-                return _caches;
-            }
-        }
 
         internal bool Disposed => _disposed != 0;
 
@@ -3830,18 +3866,6 @@ namespace System.Net.Sockets
                 OperationCanceledException => SocketError.OperationAborted,
                 _ => SocketError.SocketError
             };
-        }
-
-        // Helper to maintain existing behavior of Socket APM methods to throw synchronously from Begin*.
-        private static IAsyncResult TaskToApmBeginWithSyncExceptions(Task task, AsyncCallback? callback, object? state)
-        {
-            if (task.IsFaulted)
-            {
-                task.GetAwaiter().GetResult();
-                Debug.Fail("Task faulted but GetResult did not throw???");
-            }
-
-            return TaskToApm.Begin(task, callback, state);
         }
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -41,6 +40,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(string json, JsonSerializerOptions? options = null)
         {
             if (json == null)
@@ -48,7 +48,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(json));
             }
 
-            return Deserialize<TValue>(json.AsSpan(), typeof(TValue), options);
+            return ReadUsingOptions<TValue>(json.AsSpan(), typeof(TValue), options);
         }
 
         /// <summary>
@@ -74,11 +74,12 @@ namespace System.Text.Json
         /// <remarks>Using a UTF-16 span is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
         {
             // default/null span is treated as empty
 
-            return Deserialize<TValue>(json, typeof(TValue), options);
+            return ReadUsingOptions<TValue>(json, typeof(TValue), options);
         }
 
         /// <summary>
@@ -108,6 +109,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(string json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (json == null)
@@ -120,9 +122,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            object? value = Deserialize<object?>(json.AsSpan(), returnType, options)!;
-
-            return value;
+            return ReadUsingOptions<object?>(json.AsSpan(), returnType, options)!;
         }
 
         /// <summary>
@@ -152,6 +152,7 @@ namespace System.Text.Json
         /// <remarks>Using a UTF-16 span is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(ReadOnlySpan<char> json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             // default/null span is treated as empty
@@ -161,68 +162,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            object? value = Deserialize<object?>(json, returnType, options)!;
-
-            return value;
-        }
-
-        private static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options)
-        {
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-
-            ReadStack state = default;
-            state.Initialize(returnType, options, supportContinuation: false);
-
-            JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-            return Deserialize<TValue>(jsonConverter, json, options, ref state);
-        }
-
-        private static TValue? Deserialize<TValue>(
-            JsonConverter jsonConverter,
-            ReadOnlySpan<char> json,
-            JsonSerializerOptions options,
-            ref ReadStack state)
-        {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
-
-            byte[]? tempArray = null;
-
-            // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
-            Span<byte> utf8 = json.Length <= (ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ?
-                // Use a pooled alloc.
-                tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
-                // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
-                // and by using a normal alloc we can avoid the Clear().
-                new byte[JsonReaderHelper.GetUtf8ByteCount(json)];
-
-            try
-            {
-                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8);
-                utf8 = utf8.Slice(0, actualByteCount);
-
-                var readerState = new JsonReaderState(options.GetReaderOptions());
-                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
-
-                TValue? value = ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
-
-                // The reader should have thrown if we have remaining bytes.
-                Debug.Assert(reader.BytesConsumed == actualByteCount);
-
-                return value;
-            }
-            finally
-            {
-                if (tempArray != null)
-                {
-                    utf8.Clear();
-                    ArrayPool<byte>.Shared.Return(tempArray);
-                }
-            }
+            return ReadUsingOptions<object?>(json, returnType, options)!;
         }
 
         /// <summary>
@@ -257,12 +197,19 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>(string json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            // default/null span is treated as empty
+
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
-            return DeserializeUsingMetadata<TValue?>(json.AsSpan(), jsonTypeInfo);
+            if (jsonTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            return ReadUsingMetadata<TValue?>(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -297,7 +244,14 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            return DeserializeUsingMetadata<TValue?>(json, jsonTypeInfo);
+            // default/null span is treated as empty
+
+            if (jsonTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            return ReadUsingMetadata<TValue?>(json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -392,26 +346,41 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return DeserializeUsingMetadata<object?>(
-                json,
-                JsonHelpers.GetTypeInfo(context, returnType));
+            return ReadUsingMetadata<object?>(json, GetTypeInfo(context, returnType));
         }
 
-        private static TValue? DeserializeUsingMetadata<TValue>(ReadOnlySpan<char> json, JsonTypeInfo? jsonTypeInfo)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options)
+            => ReadUsingMetadata<TValue>(json, GetTypeInfo(returnType, options));
+
+        private static TValue? ReadUsingMetadata<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
+
+            byte[]? tempArray = null;
+
+            // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
+            Span<byte> utf8 = json.Length <= (ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ?
+                // Use a pooled alloc.
+                tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
+                // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
+                // and by using a normal alloc we can avoid the Clear().
+                new byte[JsonReaderHelper.GetUtf8ByteCount(json)];
+
+            try
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8);
+                utf8 = utf8.Slice(0, actualByteCount);
+                return ReadUsingMetadata<TValue>(utf8, jsonTypeInfo, actualByteCount);
             }
-
-            ReadStack state = default;
-            state.Initialize(jsonTypeInfo);
-
-            return Deserialize<TValue>(
-                jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase,
-                json,
-                jsonTypeInfo.Options,
-                ref state);
+            finally
+            {
+                if (tempArray != null)
+                {
+                    utf8.Clear();
+                    ArrayPool<byte>.Shared.Return(tempArray);
+                }
+            }
         }
     }
 }

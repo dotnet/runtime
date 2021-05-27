@@ -233,12 +233,16 @@ namespace
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
+        int radix = CheckLookupOption(options, LookupOptions::ParseIntegerAsBase10)
+            ? 10
+            : 16; // Parse as hex by default.
+
         NewArrayHolder<WCHAR> val = EnvGetString(name, options);
         if (val != NULL)
         {
             errno = 0;
             LPWSTR endPtr;
-            DWORD configMaybe = wcstoul(val, &endPtr, 16); // treat it has hex
+            DWORD configMaybe = wcstoul(val, &endPtr, radix);
             BOOL fSuccess = ((errno != ERANGE) && (endPtr != val));
             if (fSuccess)
             {

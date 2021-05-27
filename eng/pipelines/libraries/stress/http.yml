@@ -88,6 +88,13 @@ jobs:
     name: buildStress
     displayName: Build HttpStress
 
+    # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
+    # See: https://github.com/dotnet/runtime/issues/50854
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
+    name: disableFirewall
+    displayName: Disable Firewall
+
   - powershell: |
       cd '$(httpStressProject)'
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
@@ -103,3 +110,8 @@ jobs:
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
+    name: enableFirewall
+    displayName: Enable Firewall

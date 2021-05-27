@@ -255,6 +255,7 @@
     <Rule Id="CA5403" Action="None" />          <!-- Do not hard-code certificate -->
     <Rule Id="IL3000" Action="None" />          <!-- Avoid using accessing Assembly file path when publishing as a single-file -->
     <Rule Id="IL3001" Action="None" />          <!-- Avoid using accessing Assembly file path when publishing as a single-file -->
+    <Rule Id="IL3002" Action="None" />          <!-- Using member with RequiresAssemblyFilesAttribute can break functionality when embedded in a single-file app -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" />          <!-- Analyzer threw an exception -->

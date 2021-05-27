@@ -24,6 +24,7 @@
 #include "corhost.h"
 #include "reflectioninvocation.h"
 #include "sigbuilder.h"
+#include "callconvbuilder.hpp"
 #include "callsiteinspect.h"
 
 #define DISPATCH_INVOKE_SLOT 6
@@ -165,7 +166,7 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
-                    MetaSig::GetDefaultUnmanagedCallingConvention(),
+                    CallConv::GetDefaultUnmanagedCallingConvention(),
                     dwStubFlags);
 }
 

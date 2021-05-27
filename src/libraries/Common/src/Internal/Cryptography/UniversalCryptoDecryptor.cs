@@ -151,10 +151,10 @@ namespace Internal.Cryptography
             }
             else
             {
-#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
-                byte[] buffer = new byte[inputCount];
-#else
+#if NET5_0_OR_GREATER
                 byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
+#else
+                byte[] buffer = new byte[inputCount];
 #endif
                 int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
                 Debug.Assert(written == buffer.Length);

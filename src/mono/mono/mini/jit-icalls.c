@@ -807,8 +807,7 @@ mono_class_static_field_address (MonoClassField *field)
 {
 	ERROR_DECL (error);
 	MonoVTable *vtable;
-	gpointer addr;
-	
+
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
 	mono_class_init_internal (field->parent);
@@ -827,15 +826,7 @@ mono_class_static_field_address (MonoClassField *field)
 
 	//printf ("SFLDA1 %p\n", (char*)vtable->data + field->offset);
 
-	if (field->offset == -1) {
-		/* Special static */
-		addr = mono_special_static_field_get_offset (field, error);
-		mono_error_assert_ok (error);
-		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-	} else {
-		addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
-	}
-	return addr;
+	return mono_static_field_get_addr (vtable, field);
 }
 
 gpointer

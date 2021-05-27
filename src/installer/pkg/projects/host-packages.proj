@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <PropertyGroup>
-    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.pkgproj" />
     <ProjectReference Include="Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHost.pkgproj" />

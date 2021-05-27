@@ -46,6 +46,7 @@
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
+    <Compile Include="DeflateTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />

@@ -285,7 +285,7 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: how do we get this event?
+        // TODO: how do we get this event? -> HandleEventStreamsAvailable reports currently available Uni/Bi streams
         private void OnMaximumStreamCountIncrease(long newMaximumStreamCount)
         {
             lock (SyncObj)
@@ -295,15 +295,23 @@ namespace System.Net.Http
                     return;
                 }
 
-                _requestStreamsRemaining += (newMaximumStreamCount - _maximumRequestStreams);
+                IncreaseRemainingStreamCount(newMaximumStreamCount - _maximumRequestStreams);
                 _maximumRequestStreams = newMaximumStreamCount;
+            }
+        }
 
-                while (_requestStreamsRemaining != 0 && _waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
+        private void IncreaseRemainingStreamCount(long delta)
+        {
+            Debug.Assert(Monitor.IsEntered(SyncObj));
+            Debug.Assert(delta > 0);
+
+            _requestStreamsRemaining += delta;
+
+            while (_requestStreamsRemaining != 0 && _waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
+            {
+                if (tcs.TrySetResult(true))
                 {
-                    if (tcs.TrySetResult(true))
-                    {
-                        --_requestStreamsRemaining;
-                    }
+                    --_requestStreamsRemaining;
                 }
             }
         }
@@ -405,6 +413,8 @@ namespace System.Net.Http
             {
                 bool removed = _activeRequests.Remove(stream);
                 Debug.Assert(removed == true);
+
+                IncreaseRemainingStreamCount(1);
 
                 if (ShuttingDown)
                 {

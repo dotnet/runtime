@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />
+    <Compile Include="PInvokesCS.cs" />
+    <Compile Include="UnmanagedCallConvTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="PInvokesIL.ilproj" />
+  </ItemGroup>
+</Project>

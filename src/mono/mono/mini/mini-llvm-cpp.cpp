@@ -36,8 +36,18 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/DIBuilder.h>
-#include <llvm/IR/CallSite.h>
 #include <llvm/IR/MDBuilder.h>
+
+#if LLVM_API_VERSION >= 1100
+#include <llvm/IR/InstrTypes.h> // CallBase
+#include <llvm/Support/Host.h> // llvm::sys::getHostCPUFeatures
+#include <llvm/Analysis/TargetTransformInfo.h> // Intrinsic::ID
+#include <llvm/IR/IntrinsicsX86.h>
+#include <llvm/IR/IntrinsicsAArch64.h>
+#include <llvm/IR/IntrinsicsWebAssembly.h>
+#else
+#include <llvm/IR/CallSite.h>
+#endif
 
 #include "mini-llvm-cpp.h"
 
@@ -73,13 +83,31 @@ mono_llvm_dump_type (LLVMTypeRef type)
 	outs ().flush ();
 }
 
+#if LLVM_API_VERSION >= 1100
+static inline llvm::Align
+to_align (int alignment)
+{
+	return llvm::Align (alignment);
+}
+#else
+static inline int
+to_align (int alignment)
+{
+	return alignment;
+}
+#endif
+
 /* Missing overload for building an alloca with an alignment */
 LLVMValueRef
-mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
-						LLVMValueRef ArraySize,
-						int alignment, const char *Name)
+mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, LLVMValueRef ArraySize, int alignment, const char *Name)
 {
-	return wrap (unwrap (builder)->Insert (new AllocaInst (unwrap (Ty), 0, unwrap (ArraySize), alignment), Name));
+	auto ty = unwrap (Ty);
+	auto sz = unwrap (ArraySize);
+	auto b = unwrap (builder);
+	auto ins = alignment > 0
+		? b->Insert (new AllocaInst (ty, 0, sz, to_align (alignment), Name))
+		: b->CreateAlloca (ty, 0, sz, Name);
+	return wrap (ins);
 }
 
 LLVMValueRef 
@@ -97,7 +125,7 @@ mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 {
 	LoadInst *ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
 
-	ins->setAlignment (alignment);
+	ins->setAlignment (to_align (alignment));
 	switch (barrier) {
 	case LLVM_BARRIER_NONE:
 		break;
@@ -122,7 +150,7 @@ mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 	LoadInst *ins;
 
 	ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
-	ins->setAlignment (alignment);
+	ins->setAlignment (to_align (alignment));
 
 	return wrap(ins);
 }
@@ -157,7 +185,7 @@ mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMVal
 	StoreInst *ins;
 
 	ins = unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile);
-	ins->setAlignment (alignment);
+	ins->setAlignment (to_align (alignment));
 
 	return wrap (ins);
 }
@@ -436,9 +464,9 @@ mono_llvm_set_alignment_ret (LLVMValueRef call, int alignment)
 	Instruction *ins = unwrap<Instruction> (call);
 	auto &ctx = ins->getContext ();
 	if (isa<CallInst> (ins))
-		dyn_cast<CallInst>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, alignment));
+		dyn_cast<CallInst>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
 	else
-		dyn_cast<InvokeInst>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, alignment));
+		dyn_cast<InvokeInst>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
 }
 
 static Attribute::AttrKind
@@ -492,9 +520,31 @@ mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind)
 }
 
 void
+mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
+{
+	Function *func = unwrap<Argument> (param)->getParent ();
+	int n = unwrap<Argument> (param)->getArgNo ();
+	func->addParamAttr (n, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+}
+
+void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
+	#if LLVM_API_VERSION >= 1100
+	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
+	#else
 	CallSite (unwrap<Instruction> (val)).addAttribute (index, convert_attr (kind));
+	#endif
+}
+
+void
+mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type)
+{
+#if LLVM_API_VERSION >= 1100
+	unwrap<CallBase> (val)->addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#else
+	CallSite (unwrap<Instruction> (val)).addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#endif
 }
 
 void*
@@ -626,18 +676,34 @@ mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length)
 	return flags;
 }
 
+static const Intrinsic::ID not_intrinsic =
+#if LLVM_API_VERSION >= 1100
+	Intrinsic::IndependentIntrinsics::not_intrinsic;
+#else
+	Intrinsic::ID::not_intrinsic;
+#endif
+
 /* Map our intrinsic ID to the LLVM intrinsic id */
 static Intrinsic::ID
 get_intrins_id (IntrinsicId id)
 {
-	Intrinsic::ID intrins_id = Intrinsic::ID::not_intrinsic;
+	Intrinsic::ID intrins_id = not_intrinsic;
 	switch (id) {
-#define INTRINS(id, llvm_id) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR(id, llvm_id, ty) INTRINS(id, llvm_id)
-#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) INTRINS(id, llvm_id)
-#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) INTRINS(id, llvm_id)
-#define INTRINS_OVR_TAG(id, llvm_id, ...) INTRINS(id, llvm_id)
-#define INTRINS_OVR_TAG_KIND(id, llvm_id, ...) INTRINS(id, llvm_id)
+#if LLVM_API_VERSION >= 1100
+#define Generic IndependentIntrinsics
+#define X86 X86Intrinsics
+#define Arm64 AARCH64Intrinsics
+#define Wasm WASMIntrinsics
+#define INTRINS(id, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
+#else
+#define INTRINS(id, llvm_id, _) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
+#endif
+
+#define INTRINS_OVR(id, llvm_id, arch, ty) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_2_ARG(id, llvm_id, arch, ty1, ty2) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_3_ARG(id, llvm_id, arch, ty1, ty2, ty3) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_TAG(id, llvm_id, arch, ...) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_TAG_KIND(id, llvm_id, arch, ...) INTRINS(id, llvm_id, arch)
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -649,12 +715,12 @@ static bool
 is_overloaded_intrins (IntrinsicId id)
 {
 	switch (id) {
-#define INTRINS(id, llvm_id)
-#define INTRINS_OVR(id, llvm_id, ty) case INTRINS_ ## id: return true;
-#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: return true;
-#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: return true;
-#define INTRINS_OVR_TAG(id, llvm_id, ...) case INTRINS_ ## id: return true;
-#define INTRINS_OVR_TAG_KIND(id, llvm_id, ...) case INTRINS_ ## id: return true;
+#define INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR(id, llvm_id, arch, ty) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_2_ARG(id, llvm_id, arch, ty1, ty2) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_3_ARG(id, llvm_id, arch, ty1, ty2, ty3) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_TAG(id, llvm_id, arch, ...) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_TAG_KIND(id, llvm_id, arch, ...) case INTRINS_ ## id: return true;
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -674,7 +740,7 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
 		return NULL;
 
 	auto intrins_id = get_intrins_id (id);
-	if (intrins_id != Intrinsic::ID::not_intrinsic) {
+	if (intrins_id != not_intrinsic) {
 		Function *f = Intrinsic::getDeclaration (unwrap (module), intrins_id);
 		if (!f) {
 			outs () << id << "\n";

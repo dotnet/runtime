@@ -39,7 +39,7 @@ namespace System.Net.Http.Json
         /// Based on <see cref="JsonContent.SerializeToStreamAsyncCore(Stream, bool, CancellationToken)"/>.
         /// The difference is that this implementation calls overloads of <see cref="JsonSerializer"/> that take type metadata directly.
         /// This is done to avoid rooting unused, built-in <see cref="System.Text.Json.Serialization.JsonConverter"/>s and reflection-based
-        /// warm-up logic (to reduce app size and be ILLinker-friendly), post ILLinker trimming.
+        /// warm-up logic (to reduce app size and be trim-friendly), post trimming.
         /// </summary>
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {

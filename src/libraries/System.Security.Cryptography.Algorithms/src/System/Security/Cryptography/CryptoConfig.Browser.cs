@@ -33,6 +33,7 @@ namespace System.Security.Cryptography
 
             switch (name)
             {
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
                 // hardcode mapping for SHA* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
                 case "SHA":
                 case "SHA1":
@@ -50,6 +51,7 @@ namespace System.Security.Cryptography
                 case "SHA-512":
                 case "System.Security.Cryptography.SHA512":
                     return new SHA512Managed();
+#pragma warning restore SYSLIB0021
             }
 
             return null;

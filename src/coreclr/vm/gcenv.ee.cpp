@@ -49,6 +49,26 @@ VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr
     SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(scanProc, lp1, lp2);
 }
 
+void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef VERIFY_HEAP
+    if (is_bgc)
+    {
+        // Validate byrefs pinned by IL stubs since the last GC.
+        StubHelpers::ProcessByrefValidationList();
+    }
+#endif // VERIFY_HEAP
+
+    Interop::OnBeforeGCScanRoots(is_concurrent);
+}
+
 //EE can perform post stack scanning action, while the
 // user threads are still suspended
 VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
@@ -66,6 +86,8 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     // the RCW cache from resurrecting them.
     ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
+
+    Interop::OnAfterGCScanRoots(sc->concurrent);
 }
 
 /*
@@ -287,9 +309,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     ETW::TypeSystemLog::Cleanup();
 #endif
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCStarted(condemned);
-#endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
     {
@@ -306,9 +326,7 @@ void GCToEEInterface::GcDone(int condemned)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCFinished(condemned);
-#endif // FEATURE_COMINTEROP
 }
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
@@ -332,23 +350,16 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
         return isRooted;
 #endif
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
+        return isReferenced;
+#endif
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCMARSHAL)
+#error COM and Objective-C are not supported at the same time.
+#endif
 
     return false;
-}
-
-void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef VERIFY_HEAP
-    // Validate byrefs pinned by IL stubs since the last GC.
-    StubHelpers::ProcessByrefValidationList();
-#endif // VERIFY_HEAP
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
@@ -441,7 +452,6 @@ bool GCToEEInterface::IsPreemptiveGCDisabled()
     WRAPPER_NO_CONTRACT;
 
     Thread* pThread = ::GetThreadNULLOk();
-    
     return (pThread && pThread->PreemptiveGCDisabled());
 }
 
@@ -1090,6 +1100,13 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
         FinalizeWeakReference(obj);
         return true;
     }
+#ifdef FEATURE_OBJCMARSHAL
+    else if (pMT->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue((OBJECTREF)obj);
+        return false;
+    }
+#endif // FEATURE_OBJCMARSHAL
 
     return false;
 }
@@ -1361,7 +1378,7 @@ namespace
 
         EX_TRY
         {
-            args.Thread = SetupUnstartedThread(FALSE);
+            args.Thread = SetupUnstartedThread(SUTF_ThreadStoreLockAlreadyTaken);
         }
         EX_CATCH
         {
@@ -1382,7 +1399,7 @@ namespace
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial(true);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
-            args->HasStarted = !!args->Thread->HasStarted(false);
+            args->HasStarted = !!args->Thread->HasStarted();
 
             Thread* thread = args->Thread;
             auto threadStart = args->ThreadStart;
@@ -1407,7 +1424,7 @@ namespace
             return false;
         }
 
-        args.Thread->SetBackground(TRUE, FALSE);
+        args.Thread->SetBackground(TRUE);
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
@@ -1623,7 +1640,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             DACNotify::DoGCNotification(gea);
         }
     }
-    
+
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
@@ -1703,4 +1720,9 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
 void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg &msg)
 {
     StressLog::LogMsg(level, facility, msg);
+}
+
+uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return ::GetCurrentProcessCpuCount();
 }

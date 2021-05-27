@@ -19,7 +19,7 @@ WARNING:   When setting properties based on their current state (for example:
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
-  <Target Name="FetchExternalPropertiesForXpalt">
+  <Target Name="FetchExternalPropertiesForXplat">
     <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
     <MSBuild Projects="$(CLRTestProjectToRun)" 
              Targets="GetExecuteShFullPath"
@@ -64,12 +64,13 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXplat;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>
       <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
+      <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -262,7 +263,7 @@ fi
           </BashLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)</_CLRTestRunFile>
 
       <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[

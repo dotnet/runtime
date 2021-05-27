@@ -1093,6 +1093,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->type_token = 0;
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
+	klass->rank = rank;
+	klass->element_class = eclass;
 
 	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
 		/*Arrays of those two types are invalid.*/
@@ -1127,16 +1129,12 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	klass->has_references = MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass)) || m_class_has_references (eclass)? TRUE: FALSE;
 
-	klass->rank = rank;
-	
 	if (eclass->enumtype)
 		klass->cast_class = eclass->element_class;
 	else
 		klass->cast_class = eclass;
 
 	class_composite_fixup_cast_class (klass, FALSE);
-
-	klass->element_class = eclass;
 
 	if ((rank > 1) || bounded) {
 		MonoArrayType *at = mm ? (MonoArrayType *)mono_mem_manager_alloc0 (mm, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));

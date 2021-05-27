@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -126,6 +124,28 @@ namespace System.Text.Json
 #endif
         }
 
+        /// <summary>
+        /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
+        /// </summary>
+        public static Dictionary<TKey, TValue> CreateDictionaryFromCollection<TKey, TValue>(
+            IEnumerable<KeyValuePair<TKey, TValue>> collection,
+            IEqualityComparer<TKey> comparer)
+            where TKey : notnull
+        {
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            var dictionary = new Dictionary<TKey, TValue>(comparer);
+
+            foreach (KeyValuePair<TKey, TValue> item in collection)
+            {
+                dictionary.Add(item.Key, item.Value);
+            }
+
+            return dictionary;
+#else
+            return new Dictionary<TKey, TValue>(collection: collection, comparer);
+#endif
+        }
+
         public static bool IsFinite(double value)
         {
 #if BUILDING_INBOX_LIBRARY
@@ -144,14 +164,6 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
-            IsInRangeInclusive((int)handling, 0,
-                (int)(
-                JsonNumberHandling.Strict |
-                JsonNumberHandling.AllowReadingFromString |
-                JsonNumberHandling.WriteAsString |
-                JsonNumberHandling.AllowNamedFloatingPointLiterals));
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
@@ -159,20 +171,6 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
-        }
-
-        public static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)
-        {
-            Debug.Assert(context != null);
-            Debug.Assert(type != null);
-
-            JsonTypeInfo? info = context.GetTypeInfo(type);
-            if (info == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type);
-            }
-
-            return info;
         }
     }
 }

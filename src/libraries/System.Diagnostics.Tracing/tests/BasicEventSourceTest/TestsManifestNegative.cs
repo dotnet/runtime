@@ -59,6 +59,7 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/runtime/issues/21421")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_GenerateManifest_InvalidEventSources()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

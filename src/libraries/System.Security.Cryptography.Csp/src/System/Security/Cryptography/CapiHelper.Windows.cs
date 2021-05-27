@@ -768,7 +768,7 @@ namespace Internal.NativeCrypto
         /// <returns>returns the error code</returns>
         internal static int GetErrorCode()
         {
-            return Marshal.GetLastWin32Error();
+            return Marshal.GetLastPInvokeError();
         }
 
         /// <summary>

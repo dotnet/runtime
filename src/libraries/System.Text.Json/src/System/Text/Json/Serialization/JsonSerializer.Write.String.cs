@@ -23,6 +23,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes{TValue}(TValue, JsonSerializerOptions?)"/>
         /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             return Write(value, GetRuntimeType(value), options);
@@ -46,6 +47,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes(object?, Type, JsonSerializerOptions?)"/>
         /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static string Serialize(
             object? value,
             [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
@@ -76,7 +78,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            return SerializeUsingMetadata(value, jsonTypeInfo);
+            return WriteUsingMetadata(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -106,18 +108,17 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return SerializeUsingMetadata(value, JsonHelpers.GetTypeInfo(context, runtimeType));
+            return WriteUsingMetadata(value, GetTypeInfo(context, runtimeType));
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static string Write<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-            JsonTypeInfo typeInfo = options.GetOrAddClassForRootType(runtimeType);
-            return SerializeUsingMetadata(value, typeInfo);
+            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
+            return WriteUsingMetadata(value, typeInfo);
         }
 
-        private static string SerializeUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
         {
             if (jsonTypeInfo == null)
             {

@@ -142,7 +142,16 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
-        public static int SizeOf<T>() => SizeOf(typeof(T));
+        public static int SizeOf<T>()
+        {
+            Type t = typeof(T);
+            if (t.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(T));
+            }
+
+            return SizeOfHelper(t, throwIfNotMarshalable: true);
+        }
 
         public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
@@ -1153,7 +1162,26 @@ namespace System.Runtime.InteropServices
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
         {
-            return (TDelegate)(object)GetDelegateForFunctionPointer(ptr, typeof(TDelegate));
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            Type t = typeof(TDelegate);
+            if (t.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(TDelegate));
+            }
+
+            // For backward compatibility, we allow lookup of existing delegate to
+            // function pointer mappings using abstract MulticastDelegate type. We will check
+            // for the non-abstract delegate type later if no existing mapping is found.
+            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
+            {
+                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(TDelegate));
+            }
+
+            return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, t);
         }
 
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
@@ -1173,7 +1201,7 @@ namespace System.Runtime.InteropServices
 
         public static int GetHRForLastWin32Error()
         {
-            int dwLastError = GetLastWin32Error();
+            int dwLastError = GetLastPInvokeError();
             if ((dwLastError & 0x80000000) == 0x80000000)
             {
                 return dwLastError;

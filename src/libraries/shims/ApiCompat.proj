@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TargetFramework>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <PreviousNetCoreApp>net5.0</PreviousNetCoreApp>
@@ -20,17 +19,17 @@
     <PackageDownload Include="$(PreviousNetCoreAppPackageId)" Version="[$(PreviousNetCoreAppPackageVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatVersion)" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <!-- Evaluate these properties inside a Target to gain access to TargetFrameworkIdentifier. -->
+  <!-- Evaluate these properties inside a Target to gain access to IntermediateOutputPath. -->
   <Target Name="SetApiCompatFiles">
     <PropertyGroup>
       <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
-      <ApiCompatTarget>$(TargetFrameworkIdentifier.Substring(1).ToLower())</ApiCompatTarget>
-      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
-      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
-      <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
-      <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
+      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.txt</ApiCompatBaselineFile>
+      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
+      <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandard.txt</ApiCompatNSBaselineFile>
+      <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
     </PropertyGroup>
   </Target>
 
@@ -53,37 +52,25 @@
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
     <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
+          Condition="'$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(TargetFramework)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(NetCoreAppCurrent)" />
 
 
     <!--
-      In order to update the .NET Standard baseline, you can just start the build with either
-
-        /p:UpdateNETStandardBaseline=True
-
-      of
-
-        /p:UpdateNETStandardBaselineLocally=True
-
-      The difference is that the former uses the official .NET Standard while the latter uses a locally built
-      .NET Standard (Debug, in a folder parallel to where you checked out CoreFx).
+      In order to update the .NET Standard baseline, you can just start the build with /p:UpdateNETStandardBaseline=True
     -->
     <PropertyGroup>
       <UpdateNETStandardBaseline Condition="'$(UpdateNETStandardBaseline)' == ''">False</UpdateNETStandardBaseline>
-      <UpdateNETStandardBaselineLocally Condition="'$(UpdateNETStandardBaselineLocally)' == ''">False</UpdateNETStandardBaselineLocally>
-      <_netStandardLibraryRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</_netStandardLibraryRefPath>
       <_netStandardLibrary20RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibraryVersion)', 'build', 'netstandard2.0', 'ref'))</_netStandardLibrary20RefPath>
-      <_netStandard21OnlyRef>$(_netStandardLibraryRefPath)netstandard.dll</_netStandard21OnlyRef>
-      <_netStandard21OnlyRef Condition="$(UpdateNETStandardBaselineLocally)">$(MSBuildThisFileDirectory)..\..\..\standard\artifacts\bin\ref\netstandard\Debug\netstandard.dll</_netStandard21OnlyRef>
+      <_netStandard21OnlyRef>$(NETStandard21RefPath)netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21BaselineModifer>--baseline</_netStandard21BaselineModifer>
-      <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline) or $(UpdateNETStandardBaselineLocally)">&gt;</_netStandard21BaselineModifer>
+      <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline)">&gt;</_netStandard21BaselineModifer>
     </PropertyGroup>
 
     <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; $(_netStandard21BaselineModifer) &quot;$(ApiCompatNSOnlyBaselineFile)&quot;"

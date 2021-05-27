@@ -68,8 +68,10 @@
     <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net48'))">
     <Reference Include="System.Security" />

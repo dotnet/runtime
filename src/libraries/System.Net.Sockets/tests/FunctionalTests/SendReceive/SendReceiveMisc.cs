@@ -240,10 +240,10 @@ namespace System.Net.Sockets.Tests
                 var tcs = new TaskCompletionSource();
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
 
-                var receiveBufer = new byte[600];
-                receiveBufer[0] = data[499] = 0;
+                var receiveBuffer = new byte[600];
+                receiveBuffer[0] = data[499] = 0;
 
-                args.SetBuffer(receiveBufer, 0, receiveBufer.Length);
+                args.SetBuffer(receiveBuffer, 0, receiveBuffer.Length);
                 args.Completed += delegate { tcs.SetResult(); };
 
                 // First peek at the message.
@@ -253,9 +253,9 @@ namespace System.Net.Sockets.Tests
                     await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
-                Assert.Equal(1, receiveBufer[0]);
-                Assert.Equal(1, receiveBufer[499]);
-                receiveBufer[0] = receiveBufer[499] = 0;
+                Assert.Equal(1, receiveBuffer[0]);
+                Assert.Equal(1, receiveBuffer[499]);
+                receiveBuffer[0] = receiveBuffer[499] = 0;
 
                 // Now, we should be able to get same message again.
                 tcs = new TaskCompletionSource();
@@ -265,19 +265,19 @@ namespace System.Net.Sockets.Tests
                     await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
-                Assert.Equal(1, receiveBufer[0]);
-                Assert.Equal(1, receiveBufer[499]);
-                receiveBufer[0] = receiveBufer[499] = 0;
+                Assert.Equal(1, receiveBuffer[0]);
+                Assert.Equal(1, receiveBuffer[499]);
+                receiveBuffer[0] = receiveBuffer[499] = 0;
 
                 // Set buffer smaller than message.
                 tcs = new TaskCompletionSource();
-                args.SetBuffer(receiveBufer, 0, 100);
+                args.SetBuffer(receiveBuffer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {
                     await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.Truncated, args.SocketFlags);
-                Assert.Equal(2, receiveBufer[0]);
+                Assert.Equal(2, receiveBuffer[0]);
 
                 // There should be no more data.
                 Assert.Equal(0, receiver.Available);

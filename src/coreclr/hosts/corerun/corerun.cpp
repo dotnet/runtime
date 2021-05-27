@@ -40,6 +40,11 @@ struct configuration
     int entry_assembly_argc;
     const char_t** entry_assembly_argv;
 
+    // Collection of user-defined key/value pairs that will be appended
+    // to the initialization of the runtime.
+    std::vector<string_t> user_defined_keys;
+    std::vector<string_t> user_defined_values;
+
     // Wait for debugger to be attached.
     bool wait_to_debug;
 
@@ -288,40 +293,48 @@ static int run(const configuration& config)
     pal::string_utf8_t app_path_ni_utf8 = pal::convert_to_utf8(std::move(app_path_ni));
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
 
-    // Allowed property names:
-    //
+    std::vector<pal::string_utf8_t> user_defined_keys_utf8;
+    std::vector<pal::string_utf8_t> user_defined_values_utf8;
+    for (const string_t& str : config.user_defined_keys)
+        user_defined_keys_utf8.push_back(pal::convert_to_utf8(str.c_str()));
+    for (const string_t& str : config.user_defined_values)
+        user_defined_values_utf8.push_back(pal::convert_to_utf8(str.c_str()));
+
+    // Set base initialization properties.
+    std::vector<const char*> propertyKeys;
+    std::vector<const char*> propertyValues;
+
     // TRUSTED_PLATFORM_ASSEMBLIES
     // - The list of complete paths to each of the fully trusted assemblies
-    //
+    propertyKeys.push_back("TRUSTED_PLATFORM_ASSEMBLIES");
+    propertyValues.push_back(tpa_list_utf8.c_str());
+
     // APP_PATHS
     // - The list of paths which will be probed by the assembly loader
-    //
+    propertyKeys.push_back("APP_PATHS");
+    propertyValues.push_back(app_path_utf8.c_str());
+
     // APP_NI_PATHS
     // - The list of additional paths that the assembly loader will probe for ngen images
-    //
+    propertyKeys.push_back("APP_NI_PATHS");
+    propertyValues.push_back(app_path_ni_utf8.c_str());
+
     // NATIVE_DLL_SEARCH_DIRECTORIES
     // - The list of paths that will be probed for native DLLs called by PInvoke
-    const char* propertyKeys[] =
-    {
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "APP_PATHS",
-        "APP_NI_PATHS",
-        "NATIVE_DLL_SEARCH_DIRECTORIES",
-    };
+    propertyKeys.push_back("NATIVE_DLL_SEARCH_DIRECTORIES");
+    propertyValues.push_back(native_search_dirs_utf8.c_str());
 
-    const char* propertyValues[] =
-    {
-        // TRUSTED_PLATFORM_ASSEMBLIES
-        tpa_list_utf8.c_str(),
-        // APP_PATHS
-        app_path_utf8.c_str(),
-        // APP_NI_PATHS
-        app_path_ni_utf8.c_str(),
-        // NATIVE_DLL_SEARCH_DIRECTORIES
-        native_search_dirs_utf8.c_str(),
-    };
+    // Sanity check before adding user-defined properties
+    assert(propertyKeys.size() == propertyValues.size());
 
-    int propertyCount = (int)(sizeof(propertyKeys) / sizeof(propertyKeys[0]));
+    // Insert user defined properties
+    for (const pal::string_utf8_t& str : user_defined_keys_utf8)
+        propertyKeys.push_back(str.c_str());
+    for (const pal::string_utf8_t& str : user_defined_values_utf8)
+        propertyValues.push_back(str.c_str());
+
+    assert(propertyKeys.size() == propertyValues.size());
+    int propertyCount = (int)propertyKeys.size();
 
     // Construct arguments
     pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(std::move(exe_path));
@@ -331,7 +344,7 @@ static int run(const configuration& config)
 
     logger_t logger{
         exe_path_utf8.c_str(),
-        propertyCount, propertyKeys, propertyValues,
+        propertyCount, propertyKeys.data(), propertyValues.data(),
         entry_assembly_utf8.c_str(), config.entry_assembly_argc, argv_utf8.get() };
 
     int result;
@@ -339,8 +352,8 @@ static int run(const configuration& config)
         exe_path_utf8.c_str(),
         "corerun",
         propertyCount,
-        propertyKeys,
-        propertyValues,
+        propertyKeys.data(),
+        propertyValues.data(),
         &CurrentClrInstance,
         &CurrentAppDomainId);
     if (FAILED(result))
@@ -397,12 +410,21 @@ static void display_usage()
         W("Execute the managed assembly with the passed in arguments\n")
         W("\n")
         W("Options:\n")
-        W("    -c, --clr-path - path to CoreCLR binary and managed CLR assemblies\n")
-        W("    -d, --debug - causes corerun to wait for a debugger to attach before executing\n")
-        W("    -?, -h, --help - show this help\n")
+        W("  -c, --clr-path - path to CoreCLR binary and managed CLR assemblies.\n")
+        W("  -p, --property - Property to pass to runtime during initialization.\n")
+        W("                   If a property value contains spaces, quote the entire argument.\n")
+        W("                   May be supplied multiple times. Format: <key>=<value>.\n")
+        W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
+        W("  -?, -h, --help - show this help.\n")
         W("\n")
-        W("CoreCLR is searched for in %%CORE_ROOT%%, then in the directory\n")
-        W("the corerun binary is located.\n"));
+        W("The runtime binary is searched for in --clr-path, CORE_ROOT environment variable, then\n")
+        W("in the directory the corerun binary is located.\n")
+        W("\n")
+        W("Example:\n")
+        W("Wait for a debugger to attach, provide 2 additional properties for .NET\n")
+        W("runtime initialization, and pass an argument to the HelloWorld.dll assembly.\n")
+        W("  corerun -d -p System.GC.Concurrent=true -p \"FancyProp=/usr/first last/root\" HelloWorld.dll arg1\n")
+        );
 }
 
 // Parse the command line arguments
@@ -466,7 +488,29 @@ static bool parse_args(
                 break;
             }
         }
-        else if ((pal::strcmp(option, W("d")) == 0 || (pal::strcmp(option, W("debug")) == 0)))
+        else if (pal::strcmp(option, W("p")) == 0 || (pal::strcmp(option, W("property")) == 0))
+        {
+            i++;
+            if (i >= argc)
+            {
+                pal::fprintf(stderr, W("Option %s: missing property\n"), arg);
+                break;
+            }
+
+            string_t prop = argv[i];
+            size_t delim_maybe = prop.find(W('='));
+            if (delim_maybe == string_t::npos)
+            {
+                pal::fprintf(stderr, W("Option %s: '%s' missing property value\n"), arg, prop.c_str());
+                break;
+            }
+
+            string_t key = prop.substr(0, delim_maybe);
+            string_t value = prop.substr(delim_maybe + 1);
+            config.user_defined_keys.push_back(std::move(key));
+            config.user_defined_values.push_back(std::move(value));
+        }
+        else if (pal::strcmp(option, W("d")) == 0 || (pal::strcmp(option, W("debug")) == 0))
         {
             config.wait_to_debug = true;
         }
@@ -526,6 +570,7 @@ extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clr
 //
 
 #define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
+#define THROW_IF_TRUE(stmt) if (stmt) throw W(#stmt);
 static int self_test()
 {
     try
@@ -555,6 +600,35 @@ static int self_test()
             THROW_IF_FALSE(config.clr_path == W("path"));
             THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
             THROW_IF_FALSE(config.entry_assembly_argc == 1);
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("invalid"), W("foo") };
+            THROW_IF_TRUE(parse_args(4, args, config));
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("empty="), W("foo") };
+            THROW_IF_FALSE(parse_args(4, args, config));
+            THROW_IF_FALSE(config.user_defined_keys.size() == 1);
+            THROW_IF_FALSE(config.user_defined_values.size() == 1);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("one=1"), W("foo") };
+            THROW_IF_FALSE(parse_args(4, args, config));
+            THROW_IF_FALSE(config.user_defined_keys.size() == 1);
+            THROW_IF_FALSE(config.user_defined_values.size() == 1);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("one=1"), W("--property"), W("System.GC.Concurrent=true"), W("foo") };
+            THROW_IF_FALSE(parse_args(6, args, config));
+            THROW_IF_FALSE(config.user_defined_keys.size() == 2);
+            THROW_IF_FALSE(config.user_defined_values.size() == 2);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
         }
         {
             string_t path;

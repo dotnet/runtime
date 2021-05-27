@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -11,6 +12,9 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public IEnumerableWithAddMethodConverter() { }
+
         protected override void Add(in object? value, ref ReadStack state)
         {
             var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonTypeInfo.AddMethodDelegate);
@@ -18,6 +22,8 @@ namespace System.Text.Json.Serialization.Converters
             addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;

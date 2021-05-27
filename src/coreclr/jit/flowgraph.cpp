@@ -321,7 +321,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
-        const unsigned __int64 originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
+        const BasicBlockFlags originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
@@ -812,8 +812,8 @@ GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
-    bool     bNeedClassID = true;
-    unsigned callFlags    = 0;
+    bool         bNeedClassID = true;
+    GenTreeFlags callFlags    = GTF_EMPTY;
 
     var_types type = TYP_BYREF;
 

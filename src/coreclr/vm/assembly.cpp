@@ -1656,9 +1656,17 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             AppDomain * pDomain = pThread->GetDomain();
             pDomain->SetRootAssembly(pMeth->GetAssembly());
 
+            // Perform additional managed thread initialization.
+            // This would is normally done in the runtime when a managed
+            // thread is started, but is done here instead since the
+            // Main thread wasn't started by the runtime.
+            Thread::InitializationForManagedThreadInNative(pThread);
+
             RunStartupHooks();
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+
+            Thread::CleanUpForManagedThreadInNative(pThread);
         }
     }
 

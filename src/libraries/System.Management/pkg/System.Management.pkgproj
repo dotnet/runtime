@@ -2,14 +2,14 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Management.csproj">
-      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Management.csproj" />
-    <InboxOnTargetFramework Include="net45">
+    <InboxOnTargetFramework Include="net461">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
     <File Include="$(PlaceHolderFile)">
-      <TargetPath>runtimes/win/lib/net45</TargetPath>
+      <TargetPath>runtimes/win/lib/net461</TargetPath>
     </File>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

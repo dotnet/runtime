@@ -188,7 +188,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             static _Global()
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
-                testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
+                testBinaryBase = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
                 coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
 

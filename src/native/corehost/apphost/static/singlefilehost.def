@@ -10,8 +10,8 @@ g_CLREngineMetrics                                  @2 data
 ; VS depends on CLRJitAttachState having a ordinal of 3. This cannot change.
 CLRJitAttachState                                   @3 data
 
-; needed by SOS
-DotNetRuntimeInfo
+; needed by SOS, WinDBG, and Watson. This must remain ordinal 4.
+DotNetRuntimeInfo                                   @4 data
 
 ; Used by profilers
 MetaDataGetDispenser

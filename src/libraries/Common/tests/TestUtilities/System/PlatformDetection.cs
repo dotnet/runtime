@@ -24,6 +24,7 @@ namespace System
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
+        public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -50,10 +51,10 @@ namespace System
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsThreadingSupported => !IsBrowser;
-        public static bool IsBinaryFormatterSupported => !IsBrowser;
+        public static bool IsBinaryFormatterSupported => IsNotMobile;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS;
+        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
@@ -135,6 +136,12 @@ namespace System
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+
+        public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
+
+        // Changed to `true` when linking
+        public static bool IsBuiltWithAggressiveTrimming => false;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -238,7 +245,7 @@ namespace System
             int version = 0;
             try
             {
-                Type interopGlobalization = Type.GetType("Interop+Globalization");
+                Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
                 if (interopGlobalization != null)
                 {
                     MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
@@ -374,7 +381,7 @@ namespace System
                         return c == 1 && s == 1;
                     }
                 }
-                catch { };
+                catch { }
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
@@ -404,10 +411,10 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
-            // Browser is always using interpreter right now
+#if NETCOREAPP
             if (IsBrowser)
-                return true;
-
+                return RuntimeFeature.IsDynamicCodeSupported;
+#endif
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");

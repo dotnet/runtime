@@ -194,13 +194,9 @@ run-browser-tests-%:
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		export LC_ALL=en_US.UTF-8; \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter FullyQualifiedName~$(TEST_FILTER); \
-		unset LC_ALL; \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter FullyQualifiedName~$(TEST_FILTER) $(TEST_ARGS); \
 	else \
-		export LC_ALL=en_US.UTF-8; \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) $(TEST_ARGS); \
-		unset LC_ALL; \
 	fi
 
 build-dbg-proxy:
