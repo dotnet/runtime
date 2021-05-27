@@ -12531,11 +12531,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
 #endif
 #endif // !TARGET_64BIT
-
-            if (op2->gtOper == GT_CAST && op2->AsOp()->gtOp1->IsCnsIntOrI())
-            {
-                op2 = gtFoldExprConst(op2);
-            }
             break;
 
         case GT_UDIV:
@@ -12609,15 +12604,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             noway_assert(op2);
             if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD))
             {
-                if (op2->gtOper == GT_CAST && op2->AsCast()->CastOp()->gtOper == GT_CNS_INT &&
-                    op2->AsCast()->CastOp()->AsIntCon()->gtIconVal >= 2 &&
-                    op2->AsCast()->CastOp()->AsIntCon()->gtIconVal <= 0x3fffffff &&
-                    (tree->gtFlags & GTF_UNSIGNED) == (op2->AsCast()->CastOp()->gtFlags & GTF_UNSIGNED))
-                {
-                    tree->AsOp()->gtOp2 = op2 = fgMorphCast(op2);
-                    noway_assert(op2->gtOper == GT_CNS_NATIVELONG);
-                }
-
                 if (op2->gtOper == GT_CNS_NATIVELONG && op2->AsIntConCommon()->LngValue() >= 2 &&
                     op2->AsIntConCommon()->LngValue() <= 0x3fffffff)
                 {
@@ -12688,11 +12674,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
 #endif
 #endif // !TARGET_64BIT
-
-            if (op2->gtOper == GT_CAST && op2->AsOp()->gtOp1->IsCnsIntOrI())
-            {
-                op2 = gtFoldExprConst(op2);
-            }
 
 #ifdef TARGET_ARM64
             // For ARM64 we don't have a remainder instruction,
