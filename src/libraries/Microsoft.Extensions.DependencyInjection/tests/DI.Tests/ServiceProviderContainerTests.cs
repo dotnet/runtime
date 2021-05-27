@@ -1102,6 +1102,45 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Thread.Sleep(10); // Give the background thread time to compile
             }
         }
+        
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation2()
+        {
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<A>()
+                                .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>()
+                                .BuildServiceProvider();
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
+        }
+        
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation3()
+        {
+            // Singleton IFakeX<A> -> Scoped A -> Scoped Aa
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<Aa>()
+                                .AddScoped<A>()
+                                .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>()
+                                .BuildServiceProvider();
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
+        }
+
 
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
@@ -1150,5 +1189,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private class H { }
         private class I { }
         private class J { }
+        private class Aa
+        {
+            public Aa(A a)
+            {
+                PropertyA = a;
+            }
+            public A PropertyA { get; }
+        }
     }
 }

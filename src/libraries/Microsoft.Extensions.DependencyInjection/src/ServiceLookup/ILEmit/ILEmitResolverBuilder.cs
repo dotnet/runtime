@@ -52,7 +52,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            return BuildType(callSite).Lambda;
+            Func<ServiceProviderEngineScope, object> lambda = BuildType(callSite).Lambda;
+
+            return (scope) => scope.IsRootScope ?
+                _runtimeResolver.Resolve(callSite, scope) : lambda(scope);
         }
 
         private GeneratedMethod BuildType(ServiceCallSite callSite)
@@ -99,7 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 "ResolveService", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(object),
                 new[] { typeof(ILEmitResolverBuilderRuntimeContext), typeof(ServiceProviderEngineScope) });
 
-            GenerateMethodBody(callSite, method.GetILGenerator(), info);
+            GenerateMethodBody(callSite, method.GetILGenerator());
             type.CreateTypeInfo();
             assembly.Save(assemblyName + ".dll");
 #endif
