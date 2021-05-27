@@ -471,10 +471,13 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new UnixDomainSocketEndPoint("hello"));
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnixDomainSocketEndPoint_RelativePathDeletesFile()
         {
+            if (!PlatformSupportsUnixDomainSockets)
+            {
+                return;
+            }
             RemoteExecutor.Invoke(() =>
             {
                 using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
