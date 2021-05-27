@@ -215,11 +215,12 @@ function loadScript (url){
 	}
 }
 
-JSSupportLib.load_config();
+//var module = require ('./dotnet.js')(Module).then ((va) => console.log (va));
+//globalThis.Module = Module;
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
-	config,
+	config: null,
 	setenv,
 	read,
 	arguments,
@@ -230,6 +231,21 @@ var Module = {
 		console.log (err.stack);
 		test_exit (1);
 	},
+
+	onConfigLoaded: function (config) {
+        if (!config || config.error){
+            console.log("An error occured while loading the config file");
+            return;
+        }
+
+        Module.config = config;
+
+		if (is_node) {
+			eval (read ("dotnet.js").toString());
+		} else {
+			loadScript ("dotnet.js");
+		}
+    },
 
 	onRuntimeInitialized: function () {
 		try {
@@ -243,7 +259,7 @@ var Module = {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		config.loaded_cb = function () {
+		Module.config.loaded_cb = function () {
 			let wds = FS.stat (working_dir);
 			if (wds === undefined || !FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
@@ -253,13 +269,13 @@ var Module = {
 			FS.chdir (working_dir);
 			App.init ();
 		};
-		config.fetch_file_cb = function (asset) {
+		Module.config.fetch_file_cb = function (asset) {
 			//console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
 			var content = new Uint8Array (read (asset, 'binary'));
-			var path = asset.substr(config.deploy_prefix.length);
+			var path = asset.substr(Module.config.deploy_prefix.length);
 			writeContentToFile(content, path);
 			*/
 
@@ -287,20 +303,12 @@ var Module = {
 			}
 		};
 
-		Module.mono_load_runtime_and_bcl_args (config);
+		Module.mono_load_runtime_and_bcl_args (Module.config);
 	} catch (e) {
 		console.log (e);
 	}
 	},
 };
-
-if (is_node) {
-	eval (read ("dotnet.js").toString());
-} else {
-	loadScript ("dotnet.js");
-}
-//var module = require ('./dotnet.js')(Module).then ((va) => console.log (va));
-//globalThis.Module = Module;
 
 const IGNORE_PARAM_COUNT = -1;
 
