@@ -8964,6 +8964,23 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             if (pObjMT->IsSharedByGenericInstantiations())
             {
                 pOwnerMT = pOwnerMT->GetCanonicalMethodTable();
+
+                // Check to see if the derived class implements multiple variants of a matching interface.
+                // If so, we cannot predict exactly which implementation is in use here.
+                MethodTable::InterfaceMapIterator it = pObjMT->IterateInterfaceMap();
+                int canonicallyMatchingInterfacesFound = 0;
+                while (it.Next())
+                {
+                    if (it.GetInterface()->GetCanonicalMethodTable() == pOwnerMT)
+                    {
+                        canonicallyMatchingInterfacesFound++;
+                        if (canonicallyMatchingInterfacesFound > 1)
+                        {
+                            // Multiple canonically identical interfaces found when attempting to devirtualize an inexact interface dispatch
+                            return false;
+                        }
+                    }
+                }
             }
 
             pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD, FALSE /* throwOnConflict */);

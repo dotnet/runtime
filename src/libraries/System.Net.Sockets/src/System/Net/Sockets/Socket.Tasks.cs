@@ -1098,8 +1098,7 @@ namespace System.Net.Sockets
             {
                 Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
-                // TODO: Support cancellation by passing cancellationToken down through SendPacketsAsync, etc.
-                if (socket.SendPacketsAsync(this))
+                if (socket.SendPacketsAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
                     return new ValueTask(this, _token);
@@ -1379,7 +1378,10 @@ namespace System.Net.Sockets
 
             private void ThrowException(SocketError error, CancellationToken cancellationToken)
             {
-                if (error == SocketError.OperationAborted)
+                // Most operations will report OperationAborted when canceled.
+                // On Windows, SendFileAsync will report ConnectionAborted.
+                // There's a race here anyway, so there's no harm in also checking for ConnectionAborted in all cases.
+                if (error == SocketError.OperationAborted || error == SocketError.ConnectionAborted)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                 }
