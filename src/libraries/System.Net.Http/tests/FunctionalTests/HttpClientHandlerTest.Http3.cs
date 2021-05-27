@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Theory]
+        /*[Theory]
         [InlineData(10)] // 2 bytes settings value.
         [InlineData(100)] // 4 bytes settings value.
         [InlineData(10_000_000)] // 8 bytes settings value.
@@ -160,12 +160,12 @@ namespace System.Net.Http.Functional.Tests
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
-        }
+        }*/
 
         [Theory]
         [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(1000)]
+        //[InlineData(100)]
+        //[InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
@@ -190,11 +190,15 @@ namespace System.Net.Http.Functional.Tests
                     streams[i] = stream;
                 }
 
+                _output.WriteLine($"Server {streamLimit} streams openned.");
+
                 // Make the last request running independently.
                 var lastRequest = Task.Run(async () => {
                     using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
                 });
+
+                _output.WriteLine($"Server last request content should not be completed yet IsCompleted={lastRequestContentStarted.Task.IsCompleted}");
 
                 // All the initial streamLimit streams are still opened so the last request cannot started yet.
                 Assert.False(lastRequestContentStarted.Task.IsCompleted);
@@ -207,10 +211,13 @@ namespace System.Net.Http.Functional.Tests
                     // After the first request is fully processed, the last request should unblock and get processed.
                     if (i == 0)
                     {
+                        _output.WriteLine($"Server awaiting last request content Status={lastRequestContentStarted.Task.Status}");
                         await lastRequestContentStarted.Task;
+                        _output.WriteLine($"Server awaited last request content Status={lastRequestContentStarted.Task.Status}");
                     }
                 }
                 await lastRequest;
+                _output.WriteLine($"Server finished");
             });
 
             Task clientTask = Task.Run(async () =>
@@ -240,6 +247,8 @@ namespace System.Net.Http.Functional.Tests
                     tasks[i] = client.SendAsync(request);
                 });
 
+                _output.WriteLine($"Client waiting for {streamLimit} streams to open.");
+
                 // Wait for the first streamLimit request to get started.
                 countdown.Wait();
 
@@ -259,17 +268,28 @@ namespace System.Net.Http.Functional.Tests
                         }))
                 };
                 var lastTask = client.SendAsync(last);
+                _output.WriteLine($"Client started the last request content Status={lastRequestContentStarted.Task.Status}.");
 
                 // Wait for all requests to finish. Whether the last request was pending is checked on the server side.
                 var responses = await Task.WhenAll(tasks);
+                _output.WriteLine($"Client {streamLimit} requests finished.");
                 foreach (var response in responses)
                 {
                     response.Dispose();
                 }
                 await lastTask;
+                _output.WriteLine($"Client finished.");
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            try
+            {
+                await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            }
+            catch
+            {
+                throw;
+                //Environment.FailFast("On purpose crash to get a dump");
+            }
         }
 
         [Fact]

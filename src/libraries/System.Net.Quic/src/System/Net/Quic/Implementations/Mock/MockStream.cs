@@ -205,6 +205,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override void Shutdown()
         {
+            Console.WriteLine($"MockStream shutdown {this.StreamId}");
             CheckDisposed();
 
             // This seems to mean shutdown send, in particular, not both.
@@ -212,10 +213,12 @@ namespace System.Net.Quic.Implementations.Mock
 
             if (_streamState._inboundStreamBuffer is null) // unidirectional stream
             {
+                Console.WriteLine($"MockStream unidi decrement {this.StreamId}");
                 _connection.LocalStreamLimit!.Unidirectional.Decrement();
             }
             else
             {
+                Console.WriteLine($"MockStream bidi decrement {this.StreamId}");
                 _connection.LocalStreamLimit!.Bidirectional.Decrement();
             }
         }

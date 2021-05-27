@@ -168,6 +168,7 @@ namespace System.Net.Http
             {
                 while (true)
                 {
+                    Console.WriteLine($"H3 connection loop");
                     lock (SyncObj)
                     {
                         if (_connection == null)
@@ -182,12 +183,16 @@ namespace System.Net.Http
                             _activeRequests.Add(quicStream, requestStream);
                             break;
                         }
+                        Console.WriteLine($"H3 connection loop getting wait task");
                         waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
                     }
 
+                    Console.WriteLine($"H3 connection loop waiting");
                     // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
                     await waitTask.ConfigureAwait(false);
+                    Console.WriteLine($"H3 connection loop done waiting");
                 }
+                Console.WriteLine($"H3 connection loop done");
 
                 if (quicStream == null)
                 {
