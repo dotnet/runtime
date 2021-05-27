@@ -105,7 +105,7 @@
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
     <!-- 
       We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
       We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
@@ -115,7 +115,7 @@
 
     <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
     <NeedsDotNetSdkWithCli>true</NeedsDotNetSdkWithCli>
-  </ItemGroup>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
