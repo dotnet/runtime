@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <PackageValidationBaselineVersion>3.1.15</PackageValidationBaselineVersion>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>
 

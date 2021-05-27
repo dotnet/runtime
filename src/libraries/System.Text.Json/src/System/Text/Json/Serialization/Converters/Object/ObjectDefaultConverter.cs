@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
+            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+
             object obj;
 
             if (state.UseFastPath)
@@ -26,12 +28,12 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                if (state.Current.JsonTypeInfo.CreateObject == null)
+                if (jsonTypeInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonTypeInfo.Type, ref reader, ref state);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
                 }
 
-                obj = state.Current.JsonTypeInfo.CreateObject!()!;
+                obj = jsonTypeInfo.CreateObject!()!;
 
                 // Process all properties.
                 while (true)
@@ -98,12 +100,12 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
-                    if (state.Current.JsonTypeInfo.CreateObject == null)
+                    if (jsonTypeInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonTypeInfo.Type, ref reader, ref state);
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
                     }
 
-                    obj = state.Current.JsonTypeInfo.CreateObject!()!;
+                    obj = jsonTypeInfo.CreateObject!()!;
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -216,7 +218,7 @@ namespace System.Text.Json.Serialization.Converters
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
             {
-                state.Current.JsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
+                jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
             }
 
             value = (T)obj;
@@ -224,12 +226,14 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override bool OnTryWrite(
+        internal sealed override bool OnTryWrite(
             Utf8JsonWriter writer,
             T value,
             JsonSerializerOptions options,
             ref WriteStack state)
         {
+            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+
             // Minimize boxing for structs by only boxing once here
             object objectValue = value!;
 
@@ -244,10 +248,10 @@ namespace System.Text.Json.Serialization.Converters
                     }
                 }
 
-                JsonPropertyInfo? dataExtensionProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtensionProperty = jsonTypeInfo.DataExtensionProperty;
 
                 int propertyCount = 0;
-                JsonPropertyInfo[]? propertyCacheArray = state.Current.JsonTypeInfo.PropertyCacheArray;
+                JsonPropertyInfo[]? propertyCacheArray = jsonTypeInfo.PropertyCacheArray;
                 if (propertyCacheArray != null)
                 {
                     propertyCount = propertyCacheArray.Length;
@@ -302,10 +306,10 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.ProcessedStartToken = true;
                 }
 
-                JsonPropertyInfo? dataExtensionProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtensionProperty = jsonTypeInfo.DataExtensionProperty;
 
                 int propertyCount = 0;
-                JsonPropertyInfo[]? propertyCacheArray = state.Current.JsonTypeInfo.PropertyCacheArray;
+                JsonPropertyInfo[]? propertyCacheArray = jsonTypeInfo.PropertyCacheArray;
                 if (propertyCacheArray != null)
                 {
                     propertyCount = propertyCacheArray.Length;

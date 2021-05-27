@@ -3367,7 +3367,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (treeNode->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE

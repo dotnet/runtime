@@ -38,6 +38,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private sealed class State
         {
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
+            public MsQuicConnection.State ConnectionState = null!; // set in ctor.
 
             public ReadState ReadState;
             public long ReadErrorCode = -1;
@@ -71,9 +72,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // inbound.
-        internal MsQuicStream(SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+        internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             _state.Handle = streamHandle;
+            _state.ConnectionState = connectionState;
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
@@ -91,13 +93,22 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(
+                    _state,
+                    $"[Stream#{_state.GetHashCode()}] inbound {(_canWrite ? "bi" : "uni")}directional stream created " +
+                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+            }
         }
 
         // outbound.
-        internal MsQuicStream(SafeMsQuicConnectionHandle connection, QUIC_STREAM_OPEN_FLAGS flags)
+        internal MsQuicStream(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags)
         {
-            Debug.Assert(connection != null);
+            Debug.Assert(connectionState.Handle != null);
 
+            _state.ConnectionState = connectionState;
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
 
@@ -105,7 +116,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 uint status = MsQuicApi.Api.StreamOpenDelegate(
-                    connection,
+                    connectionState.Handle,
                     flags,
                     s_streamDelegate,
                     GCHandle.ToIntPtr(_stateHandle),
@@ -121,6 +132,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle?.Dispose();
                 _stateHandle.Free();
                 throw;
+            }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(
+                    _state,
+                    $"[Stream#{_state.GetHashCode()}] outbound {(_canRead ? "bi" : "uni")}directional stream created " +
+                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
             }
         }
 
@@ -203,6 +222,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
+                else if (_state.SendState == SendState.ConnectionClosed)
+                {
+                    throw GetConnectionAbortedException(_state);
+                }
             }
 
             CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
@@ -268,7 +291,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"[{GetHashCode()}] reading into Memory of '{destination.Length}' bytes.");
+                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] reading into Memory of '{destination.Length}' bytes.");
             }
 
             lock (_state)
@@ -279,11 +302,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
                 else if (_state.ReadState == ReadState.Aborted)
                 {
-                    throw _state.ReadErrorCode switch
-                    {
-                        -1 => new QuicOperationAbortedException(),
-                        long err => new QuicStreamAbortedException(err)
-                    };
+                    throw ThrowHelper.GetStreamAbortedException(_state.ReadErrorCode);
+                }
+                else if (_state.ReadState == ReadState.ConnectionClosed)
+                {
+                    throw GetConnectionAbortedException(_state);
                 }
             }
 
@@ -396,6 +419,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
+            lock (_state)
+            {
+                if (_state.ShutdownWriteState == ShutdownWriteState.ConnectionClosed)
+                {
+                    throw GetConnectionAbortedException(_state);
+                }
+            }
+
             // TODO do anything to stop writes?
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
@@ -423,6 +454,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+
+            lock (_state)
+            {
+                if (_state.ShutdownState == ShutdownState.ConnectionClosed)
+                {
+                    throw GetConnectionAbortedException(_state);
+                }
+            }
 
             // TODO do anything to stop writes?
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
@@ -516,6 +555,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] disposed");
+            }
         }
 
         private void EnableReceive()
@@ -536,7 +580,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[{state.GetHashCode()}] received event {evt.Type}");
+                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] received event {evt.Type}");
             }
 
             try
@@ -570,7 +614,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return HandleEventSendShutdownComplete(state, ref evt);
                     // Shutdown for both sending and receiving is completed.
                     case QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE:
-                        return HandleEventShutdownComplete(state);
+                        return HandleEventShutdownComplete(state, ref evt);
                     default:
                         return MsQuicStatusCodes.Success;
                 }
@@ -596,7 +640,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     shouldComplete = true;
                 }
-                state.ReadState = ReadState.IndividualReadComplete;
+                if (state.ReadState != ReadState.ConnectionClosed)
+                {
+                    state.ReadState = ReadState.IndividualReadComplete;
+                }
             }
 
             if (shouldComplete)
@@ -669,8 +716,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private static uint HandleEventShutdownComplete(State state)
+        private static uint HandleEventShutdownComplete(State state, ref StreamEvent evt)
         {
+            StreamEventDataShutdownComplete shutdownCompleteEvent = evt.Data.ShutdownComplete;
+
+            if (shutdownCompleteEvent.ConnectionShutdown != 0)
+            {
+                return HandleEventConnectionClose(state);
+            }
+
             bool shouldReadComplete = false;
             bool shouldShutdownWriteComplete = false;
             bool shouldShutdownComplete = false;
@@ -678,14 +732,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("Completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
 
                 if (state.ReadState == ReadState.None)
                 {
                     shouldReadComplete = true;
                 }
 
-                state.ReadState = ReadState.ReadsCompleted;
+                if (state.ReadState != ReadState.ConnectionClosed)
+                {
+                    state.ReadState = ReadState.ReadsCompleted;
+                }
 
                 if (state.ShutdownWriteState == ShutdownWriteState.None)
                 {
@@ -747,14 +804,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("Completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
 
                 if (state.ReadState == ReadState.None)
                 {
                     shouldComplete = true;
                 }
 
-                state.ReadState = ReadState.ReadsCompleted;
+                if (state.ReadState != ReadState.ConnectionClosed)
+                {
+                    state.ReadState = ReadState.ReadsCompleted;
+                }
             }
 
             if (shouldComplete)
@@ -1013,6 +1073,77 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
+        private static uint HandleEventConnectionClose(State state)
+        {
+            long errorCode = state.ConnectionState.AbortErrorCode;
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] handling Connection#{state.ConnectionState.GetHashCode()} close" +
+                    (errorCode != -1 ? $" with code {errorCode}" : ""));
+            }
+
+            bool shouldCompleteRead = false;
+            bool shouldCompleteSend = false;
+            bool shouldCompleteShutdownWrite = false;
+            bool shouldCompleteShutdown = false;
+
+            lock (state)
+            {
+                if (state.ReadState == ReadState.None)
+                {
+                    shouldCompleteRead = true;
+                }
+                state.ReadState = ReadState.ConnectionClosed;
+
+                if (state.SendState == SendState.None || state.SendState == SendState.Pending)
+                {
+                    shouldCompleteSend = true;
+                }
+                state.SendState = SendState.ConnectionClosed;
+
+                if (state.ShutdownWriteState == ShutdownWriteState.None)
+                {
+                    shouldCompleteShutdownWrite = true;
+                }
+                state.ShutdownWriteState = ShutdownWriteState.ConnectionClosed;
+
+                if (state.ShutdownState == ShutdownState.None)
+                {
+                    shouldCompleteShutdown = true;
+                }
+                state.ShutdownState = ShutdownState.ConnectionClosed;
+            }
+
+            if (shouldCompleteRead)
+            {
+                state.ReceiveResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+            }
+
+            if (shouldCompleteSend)
+            {
+                state.SendResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+            }
+
+            if (shouldCompleteShutdownWrite)
+            {
+                state.ShutdownWriteCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+            }
+
+            if (shouldCompleteShutdown)
+            {
+                state.ShutdownCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+            }
+
+            return MsQuicStatusCodes.Success;
+        }
+
+        private static Exception GetConnectionAbortedException(State state) =>
+            ThrowHelper.GetConnectionAbortedException(state.ConnectionState.AbortErrorCode);
+
         private enum ReadState
         {
             /// <summary>
@@ -1033,21 +1164,28 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// <summary>
             /// User has aborted the stream, either via a cancellation token on ReadAsync(), or via AbortRead().
             /// </summary>
-            Aborted
+            Aborted,
+
+            /// <summary>
+            /// Connection was closed, either by user or by the peer.
+            /// </summary>
+            ConnectionClosed
         }
 
         private enum ShutdownWriteState
         {
             None,
             Canceled,
-            Finished
+            Finished,
+            ConnectionClosed
         }
 
         private enum ShutdownState
         {
             None,
             Canceled,
-            Finished
+            Finished,
+            ConnectionClosed
         }
 
         private enum SendState
@@ -1055,7 +1193,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             None,
             Pending,
             Aborted,
-            Finished
+            Finished,
+            ConnectionClosed
         }
     }
 }

@@ -1371,7 +1371,8 @@ private:
         {
             dwStubFlags |= NDIRECTSTUB_FL_STUB_HAS_THIS;
         }
-        if (TargetSuppressGCTransition(dwStubFlags, pTargetMD))
+        if ((dwStubFlags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION) == 0
+            && TargetSuppressGCTransition(dwStubFlags, pTargetMD))
         {
             dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
         }
@@ -2785,7 +2786,7 @@ void PInvokeStaticSigInfo::DllImportInit(
     mdModuleRef modref = mdModuleRefNil;
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
-        InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
+        InitCallConv(CallConvWinApiSentinel, pMD);
         return;
     }
 
@@ -2802,7 +2803,7 @@ void PInvokeStaticSigInfo::DllImportInit(
     }
 
     // m_callConv
-    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD->IsVarArg());
+    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD);
 
     // m_bestFit
     CorPinvokeMap bestFitMask = (CorPinvokeMap)(mappingFlags & pmBestFitMask);
@@ -2958,6 +2959,46 @@ CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
     return bIsVarArg ? CorInfoCallConvExtension::C : CallConv::GetDefaultUnmanagedCallingConvention();
 }
 
+void PInvokeStaticSigInfo::InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc *pMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+
+#ifdef CROSSGEN_COMPILE
+    _ASSERTE_MSG(!pMD->HasUnmanagedCallConvAttribute(), "UnmanagedCallConv methods are not supported in crossgen and should be rejected before getting here.");
+#else
+    // If the calling convention has not been determined yet, check the UnmanagedCallConv attribute
+    if (callConv == CallConvWinApiSentinel)
+    {
+        CallConvBuilder builder;
+        UINT errorResID = 0;
+
+        // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+        HRESULT hr = CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &builder, &errorResID);
+        if (FAILED(hr))
+        {
+            // Use a generic error message for P/Invokes or UnmanagedFunction if no specific one was provided
+            ThrowError(errorResID == 0 ? IDS_EE_NDIRECT_BADNATL : errorResID);
+        }
+
+        if (hr == S_OK)
+        {
+            callConv = builder.GetCurrentCallConv();
+            if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
+            {
+                SetShouldSuppressGCTransition(TRUE);
+            }
+        }
+    }
+#endif // CROSSGEN_COMPILE
+
+    InitCallConv(callConv, pMD->IsVarArg());
+}
+
 void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg)
 {
     STANDARD_VM_CONTRACT;
@@ -3007,62 +3048,172 @@ void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
     COMPlusThrow(kTypeLoadException, errorResourceID);
 }
 
-CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD)
+namespace
+{
+    bool HasSuppressGCTransitionAttribute(_In_ MethodDesc* pMD)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        HRESULT hr = pMD->GetCustomAttribute(
+            WellKnownAttribute::SuppressGCTransition,
+            nullptr,
+            nullptr);
+        return hr == S_OK;
+    }
+
+    bool TryGetCallingConventionFromPInvokeMetadata(_In_ MethodDesc* pMD, _Out_ CorInfoCallConvExtension* callConv)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(pMD != NULL);
+            PRECONDITION(pMD->IsNDirect());
+            PRECONDITION(callConv != NULL);
+        }
+        CONTRACTL_END;
+
+        CorInfoCallConvExtension callConvLocal;
+        IMDInternalImport* pInternalImport = pMD->GetMDImport();
+        CorPinvokeMap mappingFlags = pmMaxValue;
+        HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
+        if (FAILED(hr))
+            return false;
+
+        callConvLocal = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask));
+        if (callConvLocal != CallConvWinApiSentinel)
+        {
+            *callConv = callConvLocal;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool TryGetCallingConventionFromUnmanagedFunctionPointer(_In_ MethodTable* pMT, _Out_ CorInfoCallConvExtension* callConv)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(pMT != NULL);
+            PRECONDITION(pMT->IsDelegate());
+            PRECONDITION(callConv != NULL);
+        }
+        CONTRACTL_END;
+
+        BYTE* pData = NULL;
+        LONG cData = 0;
+        HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
+        if (hr != S_OK)
+            return false;
+
+        _ASSERTE(cData > 0);
+        CustomAttributeParser ca(pData, cData);
+        CorInfoCallConvExtension callConvLocal;
+        hr = ParseCallingConventionFromAttributeConstructor(ca, &callConvLocal);
+        if (SUCCEEDED(hr) && callConvLocal != CallConvWinApiSentinel)
+        {
+            *callConv = callConvLocal;
+            return true;
+        }
+
+        return false;
+    }
+}
+
+void NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD, _Out_opt_ CorInfoCallConvExtension* callConv, _Out_opt_ bool* suppressGCTransition)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD != NULL);
         PRECONDITION(pMD->IsNDirect());
+        PRECONDITION(callConv != NULL || suppressGCTransition != NULL);
     }
     CONTRACTL_END;
+
+    if (suppressGCTransition != NULL)
+    {
+        *suppressGCTransition = HasSuppressGCTransitionAttribute(pMD);
+
+        // Caller only cares about SuppressGCTransition and we have already determined it is true.
+        if (callConv == NULL && *suppressGCTransition)
+            return;
+    }
 
     // This method intentionally does not check that any calling convention specified through
     // attributes match that in the signature. We just return once a non-sentinel calling
     // convention is found.
-    CorInfoCallConvExtension callConv;
+    CorInfoCallConvExtension callConvLocal;
     MethodTable* pMT = pMD->GetMethodTable();
     if (pMT->IsDelegate())
     {
+        if (callConv == NULL)
+            return;
+
         // System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute
-        BYTE* pData = NULL;
-        LONG cData = 0;
-        HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
-        if (hr == S_OK)
+        if (TryGetCallingConventionFromUnmanagedFunctionPointer(pMT, &callConvLocal))
         {
-            _ASSERTE(cData > 0);
-            CustomAttributeParser ca(pData, cData);
-            hr = ParseCallingConventionFromAttributeConstructor(ca, &callConv);
-            if (SUCCEEDED(hr) && callConv != CallConvWinApiSentinel)
-                return callConv;
+            *callConv = callConvLocal;
+            return;
         }
     }
     else
     {
         // P/Invoke metadata
-        IMDInternalImport* pInternalImport = pMD->GetMDImport();
-        CorPinvokeMap mappingFlags = pmMaxValue;
-        HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
-        if (SUCCEEDED(hr))
+        if (TryGetCallingConventionFromPInvokeMetadata(pMD, &callConvLocal))
         {
-            callConv = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask));
-            if (callConv != CallConvWinApiSentinel)
-                return callConv;
+            if (callConv != NULL)
+                *callConv = callConvLocal;
+
+            return;
         }
+
+#ifdef CROSSGEN_COMPILE
+        _ASSERTE_MSG(!pMD->HasUnmanagedCallConvAttribute(), "UnmanagedCallConv methods are not supported in crossgen and should be rejected before getting here.");
+#else
+        // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+        CallConvBuilder unmanagedCallConvBuilder;
+        if (CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &unmanagedCallConvBuilder, NULL /*errorResID*/) == S_OK)
+        {
+            if (suppressGCTransition != NULL)
+            {
+                (*suppressGCTransition) |= unmanagedCallConvBuilder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
+            }
+
+            callConvLocal = unmanagedCallConvBuilder.GetCurrentCallConv();
+            if (callConvLocal != CallConvWinApiSentinel)
+            {
+                if (callConv != NULL)
+                    *callConv = callConvLocal;
+
+                return;
+            }
+        }
+#endif // CROSSGEN_COMPILE
+
+        // Caller only cares about SuppressGCTransition - we have checked SuppressGCTransition and UnmanagedCallConv
+        if (callConv == NULL)
+            return;
     }
+
+    _ASSERTE(callConv != NULL);
 
     const Signature& sig = pMD->GetSignature();
     Module* module = pMD->GetModule();
 
-    // modopts
     CallConvBuilder builder;
     UINT errorResID;
-    (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
-    callConv = builder.GetCurrentCallConv();
-    if (callConv != CallConvWinApiSentinel)
-        return callConv;
 
-    return GetDefaultCallConv(pMD->IsVarArg());
+    // modopts
+    (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
+    callConvLocal = builder.GetCurrentCallConv();
+    if (callConvLocal != CallConvWinApiSentinel)
+    {
+        *callConv = callConvLocal;
+        return;
+    }
+
+    *callConv = GetDefaultCallConv(pMD->IsVarArg());
 }
 
 //---------------------------------------------------------

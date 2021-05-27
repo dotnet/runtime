@@ -28,6 +28,8 @@ namespace Internal.TypeSystem.Interop
         AnsiString,
         UnicodeString,
         UTF8String,
+        AnsiBSTRString,
+        BSTRString,
         ByValAnsiString,
         ByValUnicodeString,
         AnsiStringBuilder,

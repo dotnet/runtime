@@ -7589,6 +7589,14 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         assert(varTypeIsIntegralOrI(op1) && varTypeIsIntegralOrI(op2));
         consumedRegs |= genRegMask(op1->GetRegNum());
         consumedRegs |= genRegMask(op2->GetRegNum());
+
+        // Special handling for GT_COPY to not resolve into the source
+        // of switch's operand.
+        if (op1->OperIs(GT_COPY))
+        {
+            GenTree* srcOp1 = op1->gtGetOp1();
+            consumedRegs |= genRegMask(srcOp1->GetRegNum());
+        }
     }
 
 #ifdef TARGET_ARM64
@@ -7717,7 +7725,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             //
             // Another way to achieve similar resolution for vars live only at split edges is by removing them
             // from consideration up-front but it requires that we traverse those edges anyway to account for
-            // the registers that must note be overwritten.
+            // the registers that must not be overwritten.
             if (liveOnlyAtSplitEdge && maybeSameLivePaths)
             {
                 sameToReg = REG_NA;
@@ -7795,7 +7803,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 // so if we have only EH vars, we'll do that instead of splitting the edge.
                 if ((compiler->compHndBBtabCount > 0) && VarSetOps::IsSubset(compiler, edgeResolutionSet, exceptVars))
                 {
-                    GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNonPhiNode();
+                    GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNode();
                     VarSetOps::Iter edgeSetIter(compiler, edgeResolutionSet);
                     unsigned        edgeVarIndex = 0;
                     while (edgeSetIter.NextElem(&edgeVarIndex))
@@ -8170,7 +8178,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     GenTree* insertionPoint = nullptr;
     if (resolveType == ResolveSplit || resolveType == ResolveCritical)
     {
-        insertionPoint = LIR::AsRange(block).FirstNonPhiNode();
+        insertionPoint = LIR::AsRange(block).FirstNode();
     }
 
     // If this is an edge between EH regions, we may have "extra" live-out EH vars.
@@ -9428,7 +9436,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                    splitEdgeInfo.toBBNum);
         }
 
-        for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+        for (GenTree* node : LIR::AsRange(block))
         {
             GenTree* tree = node;
 
@@ -9578,7 +9586,7 @@ void LinearScan::dumpLsraAllocationEvent(
         // Conflicting def/use
         case LSRA_EVENT_DEFUSE_CONFLICT:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("DUconflict ");
+            printf("DUconflict    ");
             dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE1:
@@ -10056,7 +10064,7 @@ void LinearScan::dumpNewBlock(BasicBlock* currentBlock, LsraLocation location)
     if (activeRefPosition->refType == RefTypeDummyDef)
     {
         dumpEmptyRefPosition();
-        printf("DDefs ");
+        printf("DDefs   ");
         printf(regNameFormat, "");
         return;
     }
@@ -10350,7 +10358,7 @@ void LinearScan::verifyFinalAllocation()
                     bool foundNonResolutionNode = false;
 
                     LIR::Range& currentBlockRange = LIR::AsRange(currentBlock);
-                    for (GenTree* node : currentBlockRange.NonPhiNodes())
+                    for (GenTree* node : currentBlockRange)
                     {
                         if (IsResolutionNode(currentBlockRange, node))
                         {
@@ -10658,7 +10666,7 @@ void LinearScan::verifyFinalAllocation()
 
             // Verify the moves in this block
             LIR::Range& currentBlockRange = LIR::AsRange(currentBlock);
-            for (GenTree* node : currentBlockRange.NonPhiNodes())
+            for (GenTree* node : currentBlockRange)
             {
                 assert(IsResolutionNode(currentBlockRange, node));
                 if (IsResolutionMove(node))
