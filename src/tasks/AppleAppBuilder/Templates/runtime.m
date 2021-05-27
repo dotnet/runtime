@@ -231,6 +231,13 @@ mono_ios_runtime_init (void)
     setenv ("MONO_LOG_MASK", "all", TRUE);
 #endif
 
+    // build using DiagnosticPorts property in AppleAppBuilder
+    // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents=diagnostics_tracing
+#ifdef DIAGNOSTIC_PORTS
+    setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
+#endif
+
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
     const char *managed_argv [128];
@@ -308,7 +315,9 @@ mono_ios_runtime_init (void)
         char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
         mono_jit_parse_options (1, options);
     }
-    mono_jit_init_version ("dotnet.ios", "mobile");
+
+    MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
+    assert (domain);
 
 #if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
     // device runtimes are configured to use lazy gc thread creation
@@ -325,6 +334,8 @@ mono_ios_runtime_init (void)
     res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
+
+    mono_jit_cleanup (domain);
 
     exit (res);
 }

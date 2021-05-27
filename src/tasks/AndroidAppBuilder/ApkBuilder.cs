@@ -28,6 +28,7 @@ public class ApkBuilder
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
     public string? RuntimeComponents { get; set; }
+    public string? DiagnosticPorts { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     public (string apk, string packageId) BuildApk(
@@ -77,6 +78,11 @@ public class ApkBuilder
         if (ForceInterpreter && ForceAOT)
         {
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts) && (string.IsNullOrEmpty(RuntimeComponents) || !RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
         // Try to get the latest build-tools version if not specified
@@ -266,6 +272,11 @@ public class ApkBuilder
         else if (ForceAOT)
         {
             defines = "add_definitions(-DFORCE_AOT=1)";
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            defines += "\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")";
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines);
