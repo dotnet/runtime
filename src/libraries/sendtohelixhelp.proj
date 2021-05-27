@@ -172,13 +172,16 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' != 'windows'">dotnet dev-certs https &amp;&amp; </HelixCommand>
+
+    <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell -->
+    <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' == 'windows'">powershell -command &quot;New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment&quot; &amp;&amp; </HelixCommand>
+
     <!--
       For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
       We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
       so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(InstallDevCerts)' == 'true'">dotnet dev-certs https &amp;&amp; </HelixCommand>
-
     <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)call RunTests.cmd</HelixCommand>
     <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
 
