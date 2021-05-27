@@ -8,7 +8,7 @@ namespace System
 {
     internal static partial class SR
     {
-#if (!NETSTANDARD1_0 && !NETSTANDARD1_1 && !NET45) // AppContext is not supported on < NetStandard1.3 or < .NET Framework 4.5
+#if !NET45 // AppContext is not supported on < .NET Framework 4.5
         private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
 #endif
 
@@ -17,7 +17,7 @@ namespace System
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
         // The Linker is also capable of replacing the value of this method when the application is being trimmed.
         private static bool UsingResourceKeys() =>
-#if (!NETSTANDARD1_0 && !NETSTANDARD1_1 && !NET45) // AppContext is not supported on < NetStandard1.3 or < .NET Framework 4.5
+#if !NET45 // AppContext is not supported on < .NET Framework 4.5
             s_usingResourceKeys;
 #else
             false;

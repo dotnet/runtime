@@ -9,12 +9,6 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#ifndef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentHotReload *
-mono_component_hot_reload_init (void);
-#endif
-
 static bool
 hot_reload_available (void);
 
@@ -26,13 +20,6 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_apply_changes,
 };
 
-MonoComponentHotReload *
-mono_component_hot_reload_init (void)
-{
-	/* TODO: implement me */
-	return &fn_table;
-}
-
 static bool
 hot_reload_available (void)
 {
@@ -43,4 +30,11 @@ static void
 hot_reload_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
 {
 	/* TODO: implement me */
+}
+
+MonoComponentHotReload *
+mono_component_hot_reload_init (void)
+{
+	/* TODO: implement me */
+	return &fn_table;
 }
