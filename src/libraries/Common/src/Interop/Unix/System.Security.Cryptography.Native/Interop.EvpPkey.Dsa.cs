@@ -9,11 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetDsa")]
-        internal static extern SafeDsaHandle EvpPkeyGetDsa(SafeEvpPKeyHandle pkey);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetDsa")]
+        internal static partial SafeDsaHandle EvpPkeyGetDsa(SafeEvpPKeyHandle pkey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetDsa")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetDsa")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpPkeySetDsa(SafeEvpPKeyHandle pkey, SafeDsaHandle key);
+        internal static partial bool EvpPkeySetDsa(SafeEvpPKeyHandle pkey, SafeDsaHandle key);
     }
 }

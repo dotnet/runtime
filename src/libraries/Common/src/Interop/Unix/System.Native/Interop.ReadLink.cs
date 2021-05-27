@@ -19,8 +19,8 @@ internal static partial class Interop
         /// <returns>
         /// Returns the number of bytes placed into the buffer on success; bufferSize if the buffer is too small; and -1 on error.
         /// </returns>
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadLink", SetLastError = true)]
-        private static extern int ReadLink(string path, byte[] buffer, int bufferSize);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadLink", SetLastError = true, CharSet = CharSet.Ansi)]
+        private static partial int ReadLink(string path, byte[] buffer, int bufferSize);
 
         /// <summary>
         /// Takes a path to a symbolic link and returns the link target path.

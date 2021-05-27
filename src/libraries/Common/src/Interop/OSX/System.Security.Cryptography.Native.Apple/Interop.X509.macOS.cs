@@ -39,8 +39,8 @@ internal static partial class Interop
                 out pOSStatus);
         }
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509ImportCertificate(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509ImportCertificate(
             ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
@@ -51,8 +51,8 @@ internal static partial class Interop
             out SafeSecIdentityHandle pPrivateKeyOut,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509ImportCollection(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509ImportCollection(
             ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
@@ -62,24 +62,24 @@ internal static partial class Interop
             out SafeCFArrayHandle pCollectionOut,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509ExportData(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509ExportData(
             SafeCreateHandle data,
             X509ContentType type,
             SafeCreateHandle cfExportPassphrase,
             out SafeCFDataHandle pExportOut,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509CopyWithPrivateKey(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509CopyWithPrivateKey(
             SafeSecCertificateHandle certHandle,
             SafeSecKeyRefHandle privateKeyHandle,
             SafeKeychainHandle targetKeychain,
             out SafeSecIdentityHandle pIdentityHandleOut,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509MoveToKeychain(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509MoveToKeychain(
             SafeSecCertificateHandle certHandle,
             SafeKeychainHandle targetKeychain,
             SafeSecKeyRefHandle privateKeyHandle,

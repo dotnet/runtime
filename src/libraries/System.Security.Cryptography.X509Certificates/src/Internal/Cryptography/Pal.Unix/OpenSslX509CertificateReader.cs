@@ -509,7 +509,7 @@ namespace Internal.Cryptography.Pal
                     Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
 
                     byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                    bool critical = Interop.Crypto.X509ExtensionGetCritical(ext);
+                    bool critical = Interop.Crypto.X509ExtensionGetCritical(ext) != 0;
 
                     extensions[i] = new X509Extension(oid, extData, critical);
                 }
