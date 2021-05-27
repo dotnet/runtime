@@ -300,10 +300,9 @@ namespace System.IO
             int result = 0;
             Interop.ErrorInfo firstError = default(Interop.ErrorInfo);
             string errorString = fullPath;
-            while (stackDir.Count > 0)
+            for (int i = stackDir.Count - 1; i >= 0; i--)
             {
-                string name = stackDir[stackDir.Count - 1];
-                stackDir.RemoveAt(stackDir.Count - 1);
+                string name = stackDir[i];
 
                 // The mkdir command uses 0777 by default (it'll be AND'd with the process umask internally).
                 // We do the same.

@@ -30,8 +30,6 @@
              Link="Microsoft\IO\Enumeration\FileSystemName.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\EnumerationOptions.cs"
              Link="Microsoft\IO\EnumerationOptions.cs" />
-    <Compile Include="System\IO\Error.cs"
-             Link="Microsoft\IO\Error.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\File.cs"
              Link="Microsoft\IO\File.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\FileInfo.cs"
@@ -195,6 +193,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
              Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
+    <Compile Include="Microsoft\IO\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
