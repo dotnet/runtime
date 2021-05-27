@@ -156,24 +156,15 @@ namespace System.IO.Tests
 
         public static IEnumerable<object[]> MemberData_FileStreamAsyncWriting()
         {
-            foreach (bool useAsync in new[] { true, false })
+            foreach (bool preSize in new[] { true, false })
             {
-                if (useAsync && !OperatingSystem.IsWindows())
+                foreach (bool cancelable in new[] { true, false })
                 {
-                    // We don't have a special async I/O implementation in FileStream on Unix.
-                    continue;
-                }
-
-                foreach (bool preSize in new[] { true, false })
-                {
-                    foreach (bool cancelable in new[] { true, false })
-                    {
-                        yield return new object[] { useAsync, preSize, false, cancelable, 0x1000, 0x100, 100 };
-                        yield return new object[] { useAsync, preSize, false, cancelable, 0x1, 0x1, 1000 };
-                        yield return new object[] { useAsync, preSize, true, cancelable, 0x2, 0x100, 100 };
-                        yield return new object[] { useAsync, preSize, false, cancelable, 0x4000, 0x10, 100 };
-                        yield return new object[] { useAsync, preSize, true, cancelable, 0x1000, 99999, 10 };
-                    }
+                    yield return new object[] { preSize, false, cancelable, 0x1000, 0x100, 100 };
+                    yield return new object[] { preSize, false, cancelable, 0x1, 0x1, 1000 };
+                    yield return new object[] { preSize, true, cancelable, 0x2, 0x100, 100 };
+                    yield return new object[] { preSize, false, cancelable, 0x4000, 0x10, 100 };
+                    yield return new object[] { preSize, true, cancelable, 0x1000, 99999, 10 };
                 }
             }
         }
@@ -183,7 +174,6 @@ namespace System.IO.Tests
         {
             // For inner loop, just test one case
             return ManyConcurrentWriteAsyncs_OuterLoop(
-                useAsync: OperatingSystem.IsWindows(),
                 presize: false,
                 exposeHandle: false,
                 cancelable: true,
@@ -196,7 +186,7 @@ namespace System.IO.Tests
         [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
         public async Task ManyConcurrentWriteAsyncs_OuterLoop(
-            bool useAsync, bool presize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
+            bool presize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;
             var expectedData = new byte[totalLength];
@@ -204,7 +194,7 @@ namespace System.IO.Tests
             CancellationToken cancellationToken = cancelable ? new CancellationTokenSource().Token : CancellationToken.None;
 
             string path = GetTestFilePath();
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync: true))
             {
                 if (presize)
                 {
@@ -220,17 +210,15 @@ namespace System.IO.Tests
                 {
                     writes[i] = WriteAsync(fs, expectedData, i * writeSize, writeSize, cancellationToken);
                     Assert.Null(writes[i].Exception);
-                    if (useAsync)
+
+                    // To ensure that the buffer of a FileStream opened for async IO is flushed
+                    // by FlushAsync in asynchronous way, we aquire a lock for every buffered WriteAsync.
+                    // The side effect of this is that the Position of FileStream is not updated until
+                    // the lock is released by a previous operation.
+                    // So now all WriteAsync calls should be awaited before starting another async file operation.
+                    if (PlatformDetection.IsNet5CompatFileStreamEnabled)
                     {
-                        // To ensure that the buffer of a FileStream opened for async IO is flushed
-                        // by FlushAsync in asynchronous way, we aquire a lock for every buffered WriteAsync.
-                        // The side effect of this is that the Position of FileStream is not updated until
-                        // the lock is released by a previous operation.
-                        // So now all WriteAsync calls should be awaited before starting another async file operation.
-                        if (PlatformDetection.IsNet5CompatFileStreamEnabled)
-                        {
-                            Assert.Equal((i + 1) * writeSize, fs.Position);
-                        }
+                        Assert.Equal((i + 1) * writeSize, fs.Position);
                     }
                 }
 
@@ -239,10 +227,7 @@ namespace System.IO.Tests
 
             byte[] actualData = File.ReadAllBytes(path);
             Assert.Equal(expectedData.Length, actualData.Length);
-            if (useAsync)
-            {
-                Assert.Equal<byte>(expectedData, actualData);
-            }
+            AssertExtensions.SequenceEqual(expectedData, actualData);
         }
 
         [Theory]

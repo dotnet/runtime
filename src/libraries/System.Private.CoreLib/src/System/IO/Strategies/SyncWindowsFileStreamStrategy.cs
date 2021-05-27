@@ -46,7 +46,7 @@ namespace System.IO.Strategies
             // Read is invoked asynchronously.  But we can do so using the base Stream's internal helper
             // that bypasses delegating to BeginRead, since we already know this is FileStream rather
             // than something derived from it and what our BeginRead implementation is going to do.
-            return (Task<int>)BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+            return BeginReadInternal(buffer, offset, count, null, null);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -56,7 +56,7 @@ namespace System.IO.Strategies
             // internal helper that bypasses delegating to BeginRead, since we already know this is FileStream
             // rather than something derived from it and what our BeginRead implementation is going to do.
             return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                new ValueTask<int>((Task<int>)BeginReadInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                new ValueTask<int>(BeginReadInternal(segment.Array!, segment.Offset, segment.Count, null, null)) :
                 base.ReadAsync(buffer, cancellationToken);
         }
 
@@ -79,7 +79,7 @@ namespace System.IO.Strategies
             // Write is invoked asynchronously.  But we can do so using the base Stream's internal helper
             // that bypasses delegating to BeginWrite, since we already know this is FileStream rather
             // than something derived from it and what our BeginWrite implementation is going to do.
-            return (Task)BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+            return BeginWriteInternal(buffer, offset, count, null, null);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -89,7 +89,7 @@ namespace System.IO.Strategies
             // internal helper that bypasses delegating to BeginWrite, since we already know this is FileStream
             // rather than something derived from it and what our BeginWrite implementation is going to do.
             return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                new ValueTask((Task)BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                new ValueTask(BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null)) :
                 base.WriteAsync(buffer, cancellationToken);
         }
 

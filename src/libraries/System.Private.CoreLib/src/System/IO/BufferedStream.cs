@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -58,6 +59,7 @@ namespace System.IO
                                                             // (perf optimization for successive reads of the same size)
                                                             // Removing a private default constructor is a breaking change for the DataDebugSerializer.
                                                             // Because this ctor was here previously we need to keep it around.
+        private SemaphoreSlim? _asyncActiveSemaphore;       // To serialize async operations.
 
         public BufferedStream(Stream stream)
             : this(stream, DefaultBufferSize)
@@ -135,6 +137,16 @@ namespace System.IO
             if (_buffer == null)
                 _buffer = new byte[_bufferSize];
         }
+
+        [MemberNotNull(nameof(_asyncActiveSemaphore))]
+        private SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized() =>
+            // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
+            // WaitHandle, we don't need to worry about Disposing it in the case of a race condition.
+            #pragma warning disable CS8774 // We lack a NullIffNull annotation for Volatile.Read
+            Volatile.Read(ref _asyncActiveSemaphore) ??
+            #pragma warning restore CS8774
+            Interlocked.CompareExchange(ref _asyncActiveSemaphore, new SemaphoreSlim(1, 1), null) ??
+            _asyncActiveSemaphore;
 
         public Stream UnderlyingStream
         {

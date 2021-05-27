@@ -15,6 +15,7 @@ namespace System.IO.Strategies
     {
         private readonly FileStreamStrategy _strategy;
         private readonly int _bufferSize;
+        private SemaphoreSlim? _asyncActiveSemaphore;
 
         private byte[]? _buffer;
         private int _writePos;
@@ -45,6 +46,16 @@ namespace System.IO.Strategies
                 // e.g. if this stream is wrapping a pipe and the pipe is now broken.
             }
         }
+
+        [MemberNotNull(nameof(_asyncActiveSemaphore))]
+        private SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized() =>
+            // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
+            // WaitHandle, we don't need to worry about Disposing it in the case of a race condition.
+            #pragma warning disable CS8774 // We lack a NullIffNull annotation for Volatile.Read
+            Volatile.Read(ref _asyncActiveSemaphore) ??
+            #pragma warning restore CS8774
+            Interlocked.CompareExchange(ref _asyncActiveSemaphore, new SemaphoreSlim(1, 1), null) ??
+            _asyncActiveSemaphore;
 
         public override bool CanRead => _strategy.CanRead;
 
