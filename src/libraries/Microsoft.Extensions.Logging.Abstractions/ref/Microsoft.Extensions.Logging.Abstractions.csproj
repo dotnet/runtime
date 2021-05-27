@@ -5,5 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.Abstractions.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
   </ItemGroup>
 </Project>
