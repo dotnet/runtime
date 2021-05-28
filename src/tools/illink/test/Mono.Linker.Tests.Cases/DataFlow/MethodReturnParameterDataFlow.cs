@@ -38,6 +38,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.PropagateReturnToReturn (0);
 
 			instance.ReturnWithRequirementsAlwaysThrows ();
+
+			UnsupportedReturnType ();
 		}
 
 		static Type NoRequirements ()
@@ -188,6 +190,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			throw new NotImplementedException ();
 		}
+
+		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnType))]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static object UnsupportedReturnType () => null;
 
 		class TestType
 		{
