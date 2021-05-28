@@ -137,7 +137,8 @@ public:
     static VOID FreeUMEntryThunk(UMEntryThunk* p);
 
 #ifndef DACCESS_COMPILE
-    VOID LoadTimeInit(PCODE                   pManagedTarget,
+    VOID LoadTimeInit(UMEntryThunk           *pUMEntryThunkRX,
+                      PCODE                   pManagedTarget,
                       OBJECTHANDLE            pObjectHandle,
                       UMThunkMarshInfo       *pUMThunkMarshInfo,
                       MethodDesc             *pMD)
@@ -162,7 +163,7 @@ public:
 
         m_pMD = pMD;    // For debugging and profiling, so they can identify the target
 
-        m_code.Encode((BYTE*)TheUMThunkPreStub(), this);
+        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)TheUMThunkPreStub(), pUMEntryThunkRX);
 
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
@@ -171,20 +172,21 @@ public:
 
     void Terminate();
 
-    VOID RunTimeInit()
+    VOID RunTimeInit(UMEntryThunk *pUMEntryThunkRX)
     {
         STANDARD_VM_CONTRACT;
 
         // Ensure method's module is activate in app domain
         m_pMD->EnsureActive();
 
-        m_pUMThunkMarshInfo->RunTimeInit();
+        ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(m_pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+        uMThunkMarshInfoWriterHolder.GetRW()->RunTimeInit();
 
         // Ensure that we have either the managed target or the delegate.
         if (m_pObjectHandle == NULL && m_pManagedTarget == NULL)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        m_code.Encode((BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), this);
+        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), pUMEntryThunkRX);
 
 #ifdef _DEBUG
 #if defined(HOST_OSX) && defined(HOST_ARM64)

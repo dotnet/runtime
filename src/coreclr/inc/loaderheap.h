@@ -16,6 +16,7 @@
 
 #include "utilcode.h"
 #include "ex.h"
+#include "executableallocator.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.

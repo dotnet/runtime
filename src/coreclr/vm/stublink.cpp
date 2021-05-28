@@ -308,7 +308,8 @@ public:
         {
             ReservationList *pNext = pList->pNext;
 
-            pList->GetStub()->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pList->GetStub(), sizeof(Stub));
+            stubWriterHolder.GetRW()->DecRef();
 
             pList = pNext;
         }
@@ -320,7 +321,8 @@ public:
 
         ReservationList *pList = ReservationList::FromStub(pStub);
 
-        pList->pNext = m_pList;
+        ExecutableWriterHolder<ReservationList> listWriterHolder(pList, sizeof(ReservationList));
+        listWriterHolder.GetRW()->pNext = m_pList;
         m_pList = pList;
     }
 };
@@ -844,7 +846,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
                 );
         ASSERT(pStub != NULL);
 
-        bool fSuccess; fSuccess = EmitStub(pStub, globalsize, pHeap);
+        bool fSuccess = EmitStub(pStub, globalsize, pHeap);
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
         if (fSuccess)
@@ -1010,7 +1012,12 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     STANDARD_VM_CONTRACT;
 
     BYTE *pCode = (BYTE*)(pStub->GetBlob());
-    BYTE *pData = pCode+globalsize; // start of data area
+
+    ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+    Stub *pStubRW = stubWriterHolder.GetRW();
+
+    BYTE *pCodeRW = (BYTE*)(pStubRW->GetBlob());
+    BYTE *pDataRW = pCodeRW+globalsize; // start of data area
     {
         int lastCodeOffset = 0;
 
@@ -1020,7 +1027,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
             switch (pCodeElem->m_type) {
                 case CodeElement::kCodeRun:
-                    CopyMemory(pCode + pCodeElem->m_globaloffset,
+                    CopyMemory(pCodeRW + pCodeElem->m_globaloffset,
                                ((CodeRun*)pCodeElem)->m_codebytes,
                                ((CodeRun*)pCodeElem)->m_numcodebytes);
                     currOffset = pCodeElem->m_globaloffset + ((CodeRun *)pCodeElem)->m_numcodebytes;
@@ -1052,8 +1059,9 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
                         pLabelRef->m_refsize,
                         fixupval,
                         pCode + pCodeElem->m_globaloffset,
+                        pCodeRW + pCodeElem->m_globaloffset,
                         pLabelRef->m_variationCode,
-                        pData + pCodeElem->m_dataoffset);
+                        pDataRW + pCodeElem->m_dataoffset);
 
                     currOffset =
                         pCodeElem->m_globaloffset +
@@ -1070,7 +1078,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
         // Fill in zeros at the end, if necessary
         if (lastCodeOffset < globalsize)
-            ZeroMemory(pCode + lastCodeOffset, globalsize - lastCodeOffset);
+            ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
     // Fill in patch offset, if we have one
@@ -1081,7 +1089,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     {
         UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
         _ASSERTE(FitsIn<USHORT>(uLabelOffset));
-        pStub->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
+        pStubRW->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: patch offset:0x%x\n",
             pStub->GetPatchOffset()));
@@ -1090,7 +1098,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (pStub->HasUnwindInfo())
     {
-        if (!EmitUnwindInfo(pStub, globalsize, pHeap))
+        if (!EmitUnwindInfo(pStub, pStubRW, globalsize, pHeap))
             return false;
     }
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
@@ -1266,11 +1274,11 @@ bool FindBlockCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbRes
     return false;
 }
 
-bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
+bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, LoaderHeap* pHeap)
 {
     STANDARD_VM_CONTRACT;
 
-    BYTE *pCode = (BYTE*)(pStub->GetEntryPoint());
+    BYTE *pCode = (BYTE*)(pStubRX->GetEntryPoint());
 
     //
     // Determine the lower bound of the address space containing the stub.
@@ -1307,7 +1315,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     // make that INT32_MAX.
     //
 
-    StubUnwindInfoHeader *pHeader = pStub->GetUnwindInfoHeader();
+    StubUnwindInfoHeader *pHeader = pStubRW->GetUnwindInfoHeader();
     _ASSERTE(IS_ALIGNED(pHeader, sizeof(void*)));
 
     BYTE *pbBaseAddress = pbRegionBaseAddress;
@@ -1334,16 +1342,16 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     // Ensure that the first RUNTIME_FUNCTION struct ends up pointer aligned,
     // so that the StubUnwindInfoHeader struct is aligned.  UNWIND_INFO
     // includes one UNWIND_CODE.
-    _ASSERTE(IS_ALIGNED(pStub, sizeof(void*)));
+    _ASSERTE(IS_ALIGNED(pStubRX, sizeof(void*)));
     _ASSERTE(0 == (FIELD_OFFSET(StubUnwindInfoHeader, FunctionEntry) % sizeof(void*)));
 
-    StubUnwindInfoHeader * pUnwindInfoHeader = pStub->GetUnwindInfoHeader();
+    StubUnwindInfoHeader * pUnwindInfoHeader = pStubRW->GetUnwindInfoHeader();
 
 #ifdef TARGET_AMD64
 
     UNWIND_CODE *pDestUnwindCode = &pUnwindInfoHeader->UnwindInfo.UnwindCode[0];
 #ifdef _DEBUG
-    UNWIND_CODE *pDestUnwindCodeLimit = (UNWIND_CODE*)pStub->GetUnwindInfoHeaderSuffix();
+    UNWIND_CODE *pDestUnwindCodeLimit = (UNWIND_CODE*)pStubRW->GetUnwindInfoHeaderSuffix();
 #endif
 
     UINT FrameRegister = 0;
@@ -2055,8 +2063,6 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     CONTRACTL_END;
 
     Stub* pStub = NewStub(NULL, 0, flags | NEWSTUB_FL_EXTERNAL);
-    _ASSERTE(pStub->HasExternalEntryPoint());
-
     *(PTR_VOID *)(pStub + 1) = pCode;
 
     return pStub;
@@ -2080,6 +2086,11 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    if (flags & NEWSTUB_FL_EXTERNAL)
+    {
+        _ASSERTE(pHeap == NULL);
+    }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     _ASSERTE(!nUnwindInfoSize || !pHeap || pHeap->m_fPermitStubsWithUnwindInfo);
@@ -2121,15 +2132,29 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     else
     {
-        pBlock = (BYTE*)(void*) pHeap->AllocAlignedMem(totalSize, CODE_SIZE_ALIGN);
+        TaggedMemAllocPtr ptr = pHeap->AllocAlignedMem(totalSize, CODE_SIZE_ALIGN);
+        pBlock = (BYTE*)(void*)ptr;
         flags |= NEWSTUB_FL_LOADERHEAP;
     }
 
-    // Make sure that the payload of the stub is aligned
-    Stub* pStub = (Stub*)((pBlock + totalSize) -
-        (sizeof(Stub) + ((flags & NEWSTUB_FL_EXTERNAL) ? sizeof(PTR_PCODE) : numCodeBytes)));
+    size_t stubPayloadOffset = totalSize -
+        (sizeof(Stub) + ((flags & NEWSTUB_FL_EXTERNAL) ? sizeof(PTR_PCODE) : numCodeBytes));
 
-    pStub->SetupStub(
+    // Make sure that the payload of the stub is aligned
+    Stub* pStubRX = (Stub*)(pBlock + stubPayloadOffset);
+    Stub* pStubRW;
+    ExecutableWriterHolder<Stub> stubWriterHolder;
+
+    if (pHeap == NULL)
+    {
+        pStubRW = pStubRX;
+    }
+    else
+    {
+        stubWriterHolder = ExecutableWriterHolder<Stub>(pStubRX, sizeof(Stub));
+        pStubRW = stubWriterHolder.GetRW();
+    }
+    pStubRW->SetupStub(
             numCodeBytes,
             flags
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2137,9 +2162,9 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 #endif
             );
 
-    _ASSERTE((BYTE *)pStub->GetAllocationBase() == pBlock);
+    _ASSERTE((BYTE *)pStubRX->GetAllocationBase() == pBlock);
 
-    return pStub;
+    return pStubRX;
 }
 
 void Stub::SetupStub(int numCodeBytes, DWORD flags
@@ -2298,7 +2323,8 @@ Stub *ArgBasedStubCache::GetStub(UINT_PTR key)
         }
     }
     if (pStub) {
-        pStub->IncRef();
+        ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+        stubWriterHolder.GetRW()->IncRef();
     }
     return pStub;
 }
@@ -2350,12 +2376,14 @@ Stub* ArgBasedStubCache::AttemptToSetStub(UINT_PTR key, Stub *pStub)
 
     CrstHolder ch(&m_crst);
 
+    bool incRefForCache = false;
+
     if (key < m_numFixedSlots) {
         if (m_aStub[key]) {
             pStub = m_aStub[key];
         } else {
             m_aStub[key] = pStub;
-            pStub->IncRef();   // IncRef on cache's behalf
+            incRefForCache = true;
         }
     } else {
         SlotEntry *pSlotEntry;
@@ -2371,14 +2399,19 @@ Stub* ArgBasedStubCache::AttemptToSetStub(UINT_PTR key, Stub *pStub)
         if (!pSlotEntry) {
             pSlotEntry = new SlotEntry;
             pSlotEntry->m_pStub = pStub;
-            pStub->IncRef();   // IncRef on cache's behalf
+            incRefForCache = true;
             pSlotEntry->m_key = key;
             pSlotEntry->m_pNext = m_pSlotEntries;
             m_pSlotEntries = pSlotEntry;
         }
     }
     if (pStub) {
-        pStub->IncRef();  // IncRef because we're returning it to caller
+        ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+        if (incRefForCache)
+        {
+            stubWriterHolder.GetRW()->IncRef();   // IncRef on cache's behalf
+        }
+        stubWriterHolder.GetRW()->IncRef();  // IncRef because we're returning it to caller
     }
     return pStub;
 }
