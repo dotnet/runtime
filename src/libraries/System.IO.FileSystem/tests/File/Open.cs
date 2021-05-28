@@ -46,18 +46,17 @@ namespace System.IO.Tests
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
-            return File.Open(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, FileOptions.SequentialScan);
+            return File.Open(path, mode, new FileStreamOptions { Mode = mode, Access = (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), Share = FileShare.ReadWrite | FileShare.Delete, Options = FileOptions.SequentialScan });
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
         {
-            return File.Open(path, mode, access, FileShare.ReadWrite | FileShare.Delete, FileOptions.SequentialScan);
+            return File.Open(path, mode, new FileStreamOptions { Mode = mode, Access = access, Share = FileShare.ReadWrite | FileShare.Delete, Options = FileOptions.SequentialScan });
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
-            return File.Open(path, mode, access, share, options);
+            return File.Open(path, mode, new FileStreamOptions { Mode = mode, Access = access, Share = share, Options = options, BufferSize = bufferSize });
         }
     }
 

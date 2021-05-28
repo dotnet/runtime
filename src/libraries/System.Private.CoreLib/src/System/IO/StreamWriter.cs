@@ -139,8 +139,8 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, FileOptions options)
-            : this(path, false, UTF8NoBOM, DefaultBufferSize, options)
+        public StreamWriter(string path, FileStreamOptions options)
+            : this(path, UTF8NoBOM, options)
         {
         }
 
@@ -149,18 +149,13 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, bool append, FileOptions options)
-            : this(path, append, UTF8NoBOM, DefaultBufferSize, options)
-        {
-        }
-
         public StreamWriter(string path, bool append, Encoding encoding)
             : this(path, append, encoding, DefaultBufferSize)
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding, FileOptions options)
-            : this(path, append, encoding, DefaultBufferSize, options)
+        public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
         {
         }
 
@@ -169,12 +164,7 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize, FileOptions options) :
-            this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize, options), encoding, bufferSize, leaveOpen: false)
-        {
-        }
-
-        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize, FileOptions options = FileOptions.SequentialScan)
+        private static void ValidateArgs(string path, Encoding encoding)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -182,10 +172,24 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath);
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        {
+            ValidateArgs(path, encoding);
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize, options);
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        {
+            ValidateArgs(path, encoding);
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return new FileStream(path, options);
         }
 
         public override void Close()

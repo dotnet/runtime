@@ -7540,15 +7540,15 @@ namespace System.IO
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.IO.StreamWriter AppendText(string path) { throw null; }
-        public static System.IO.StreamWriter AppendText(string path, System.IO.FileOptions options) { throw null; }
+        public static System.IO.StreamWriter AppendText(string path, System.IO.FileStreamOptions options) { throw null; }
         public static void Copy(string sourceFileName, string destFileName) { }
         public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
         public static System.IO.FileStream Create(string path) { throw null; }
-        public static System.IO.FileStream Create(string path, System.IO.FileOptions options) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileStream Create(string path, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.StreamWriter CreateText(string path) { throw null; }
-        public static System.IO.StreamWriter CreateText(string path, System.IO.FileOptions options) { throw null; }
+        public static System.IO.StreamWriter CreateText(string path, System.IO.FileStreamOptions options) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Decrypt(string path) { }
         public static void Delete(string path) { }
@@ -7565,17 +7565,15 @@ namespace System.IO
         public static void Move(string sourceFileName, string destFileName) { }
         public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileOptions options) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileOptions options) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
-        public static System.IO.FileStream OpenRead(string path, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileStream OpenRead(string path, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
-        public static System.IO.StreamReader OpenText(string path, System.IO.FileOptions options) { throw null; }
+        public static System.IO.StreamReader OpenText(string path, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.FileStream OpenWrite(string path) { throw null; }
-        public static System.IO.FileStream OpenWrite(string path, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileStream OpenWrite(string path, System.IO.FileStreamOptions options) { throw null; }
         public static byte[] ReadAllBytes(string path) { throw null; }
         public static System.Threading.Tasks.Task<byte[]> ReadAllBytesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static string[] ReadAllLines(string path) { throw null; }
@@ -7620,13 +7618,13 @@ namespace System.IO
         public long Length { get { throw null; } }
         public override string Name { get { throw null; } }
         public System.IO.StreamWriter AppendText() { throw null; }
-        public System.IO.StreamWriter AppendText(System.IO.FileOptions options) { throw null; }
+        public System.IO.StreamWriter AppendText(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.FileInfo CopyTo(string destFileName) { throw null; }
         public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
         public System.IO.FileStream Create() { throw null; }
-        public System.IO.FileStream Create(System.IO.FileOptions options) { throw null; }
+        public System.IO.FileStream Create(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.StreamWriter CreateText() { throw null; }
-        public System.IO.StreamWriter CreateText(System.IO.FileOptions options) { throw null; }
+        public System.IO.StreamWriter CreateText(System.IO.FileStreamOptions options) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Decrypt() { }
         public override void Delete() { }
@@ -7635,17 +7633,15 @@ namespace System.IO
         public void MoveTo(string destFileName) { }
         public void MoveTo(string destFileName, bool overwrite) { }
         public System.IO.FileStream Open(System.IO.FileMode mode) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileOptions options) { throw null; }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileOptions options) { throw null; }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.IO.FileOptions options) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileStreamOptions options) { throw null; }
         public System.IO.FileStream OpenRead() { throw null; }
-        public System.IO.FileStream OpenRead(System.IO.FileOptions options) { throw null; }
+        public System.IO.FileStream OpenRead(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.StreamReader OpenText() { throw null; }
-        public System.IO.StreamReader OpenText(System.IO.FileOptions options) { throw null; }
+        public System.IO.StreamReader OpenText(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.FileStream OpenWrite() { throw null; }
-        public System.IO.FileStream OpenWrite(System.IO.FileOptions options) { throw null; }
+        public System.IO.FileStream OpenWrite(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
         public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
         public override string ToString() { throw null; }
@@ -7839,15 +7835,12 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
-        public StreamReader(string path, System.IO.FileOptions options) { }
+        public StreamReader(string path, System.IO.FileStreamOptions options) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, bool detectEncodingFromByteOrderMarks, System.IO.FileOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, System.IO.FileOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, System.IO.FileOptions options) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }
@@ -7877,13 +7870,11 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
-        public StreamWriter(string path, System.IO.FileOptions options) { }
+        public StreamWriter(string path, System.IO.FileStreamOptions options) { }
         public StreamWriter(string path, bool append) { }
-        public StreamWriter(string path, bool append, System.IO.FileOptions options) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding, System.IO.FileOptions options) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize, System.IO.FileOptions options) { }
+        public StreamWriter(string path, System.Text.Encoding encoding, System.IO.FileStreamOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public override System.Text.Encoding Encoding { get { throw null; } }
