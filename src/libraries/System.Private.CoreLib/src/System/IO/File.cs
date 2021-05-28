@@ -1091,7 +1091,7 @@ namespace System.IO
         {
             Strategies.FileStreamHelpers.ValidateArguments(path, mode, access, share, 0 /* bufferSize */, options, preallocationSize);
 
-            return SafeFileHandle.Open(path, mode, access, share, options, preallocationSize);
+            return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
         }
 #endif
     }
