@@ -26,5 +26,13 @@ namespace System.IO.Tests
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
                 () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: -1));
         }
+
+        [Theory, MemberData(nameof(StreamSpecifiers))]
+        public override void FileModeAppendExisting(string streamSpecifier)
+        {
+            // currently not enabled due to https://github.com/dotnet/runtime/issues/53432
+            GC.KeepAlive(streamSpecifier); // to keep the xUnit analyser happy
+        }
+        }
     }
 }
