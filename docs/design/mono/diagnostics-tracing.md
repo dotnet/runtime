@@ -87,20 +87,29 @@ Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/sr
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
 
+dsrouter needs to run using a compatible configration depending on scenario. Either launch a new instance for every run, or have a background instance running over several sessions using same configuration.
+
+```
+dotnet-dsrouter server-server -tcps 127.0.0.1:9000 &
+```
+
 ```
 cd src/mono/sample/iOS/
-dotnet-dsrouter server-server -tcps 127.0.0.1:9000 &
 make run-sim
+```
 
-# In separate terminal.
+```
 dotnet-counters monitor --process-id [dotnet-dsrouter pid]
 ```
+
+Alternative running ```make run-sim``` as a child process of dsrouter:
 
 ```
 cd src/mono/sample/iOS/
 dotnet-dsrouter server-server -tcps 127.0.0.1:9000 -- make run-sim
+```
 
-# In separate terminal.
+```
 dotnet-counters monitor --process-id [dotnet-dsrouter pid]
 ```
 
@@ -111,20 +120,29 @@ Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/sr
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
 
+dsrouter needs to run using a compatible configration depending on scenario. Either launch a new instance for every run, or have a background instance running over several sessions using same configuration.
+
+```
+dotnet-dsrouter server-server -tcps 10.0.2.2:9000 &
+```
+
 ```
 cd src/mono/sample/Android/
-dotnet-dsrouter server-server -tcps 127.0.0.1:9000 &
 make run
+```
 
-# In separate terminal.
+```
 dotnet-counters monitor --process-id [dotnet-dsrouter pid]
 ```
 
+Alternative running ```make run``` as a child process of dsrouter:
+
 ```
 cd src/mono/sample/Android/
-dotnet-dsrouter server-server -tcps 127.0.0.1:9000 -- make run
+dotnet-dsrouter server-server -tcps 10.0.2.2:9000 -- make run
+```
 
-# In separate terminal.
+```
 dotnet-counters monitor --process-id [dotnet-dsrouter pid]
 ```
 
@@ -135,19 +153,28 @@ Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/sr
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 
+dsrouter needs to run using a compatible configration depending on scenario. Either launch a new instance for every run, or have a background instance running over several sessions using same configuration.
+
+```
+dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 &
+```
+
 ```
 dotnet-trace collect --diagnostic-port myport
+```
 
-# In separate terminal.
+```
 cd src/mono/sample/iOS/
-dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 &
 make run-sim
 ```
 
+Alternative running ```make run-sim``` as a child process of dsrouter:
+
 ```
 dotnet-trace collect --diagnostic-port myport
+```
 
-# In separate terminal.
+```
 cd src/mono/sample/iOS/
 dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 & -- make run-sim
 ```
@@ -159,19 +186,28 @@ Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/sr
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
 
+dsrouter needs to run using a compatible configration depending on scenario. Either launch a new instance for every run, or have a background instance running over several sessions using same configuration.
+
+```
+dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 &
+```
+
 ```
 dotnet-trace collect --diagnostic-port myport
+```
 
-# In separate terminal.
+```
 cd src/mono/sample/Android/
-dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 &
 make run
 ```
 
+Alternative running ```make run``` as a child process of dsrouter:
+
 ```
 dotnet-trace collect --diagnostic-port myport
+```
 
-# In separate terminal.
+```
 cd src/mono/sample/Android/
 dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 & -- make run
 ```
