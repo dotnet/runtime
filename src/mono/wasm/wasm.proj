@@ -231,11 +231,7 @@
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-<<<<<<< HEAD
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0 $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
-=======
-    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
->>>>>>> remotes/origin/main
+    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) -s DISABLE_EXCEPTION_CATCHING=0 $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
