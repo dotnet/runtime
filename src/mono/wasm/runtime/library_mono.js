@@ -861,10 +861,14 @@ var MonoSupportLib = {
 					objectId: fn_res_id
 				};
 			}
-			if (fn_res.value !== undefined )
+			if (fn_res.value !== undefined || fn_res.subtype !== undefined) {
 				return fn_res;
+			}
 
-			return { type: "object", className: "Object", description: "Object", objectId: objId };
+			if (fn_res == proxy)
+				return { type: "object", className: "Object", description: "Object", objectId: objId };
+			const fn_res_id = this._cache_call_function_res (fn_res);
+			return { type: "object", className: "Object", description: "Object", objectId: fn_res_id };
 		},
 
 		_clear_per_step_state: function () {

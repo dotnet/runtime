@@ -509,7 +509,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     SendResponse(id, res, token);
                     return true;
                 }
-                if (res.Value?["result"]?["value"]?["value"] != null && objectId.Scheme != "array")
+                if (res.Value?["result"]?["value"]?["type"] == null) //it means that is not a buffer returned from the debugger-agent
                 {
                     byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
                     var ret_debugger_cmd = new MemoryStream(newBytes);

@@ -1720,61 +1720,67 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JArray> GetObjectProxy(SessionId sessionId, int objectId, CancellationToken token)
         {
             var ret = await GetObjectValues(sessionId, objectId, false, true, false, false, token);
-            var typeId = await GetTypeIdFromObject(sessionId, objectId, true, token);
-            var command_params = new MemoryStream();
-            var command_params_writer = new MonoBinaryWriter(command_params);
-            command_params_writer.Write(typeId[0]);
-
-            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_PROPERTIES, command_params, token);
-            var nProperties = ret_debugger_cmd_reader.ReadInt32();
-            for (int i = 0 ; i < nProperties; i++)
+            var typeIds = await GetTypeIdFromObject(sessionId, objectId, true, token);
+            foreach (var typeId in typeIds)
             {
-                ret_debugger_cmd_reader.ReadInt32(); //propertyId
-                string propertyNameStr = ret_debugger_cmd_reader.ReadString();
-                var getMethodId = ret_debugger_cmd_reader.ReadInt32();
-                var setMethodId = ret_debugger_cmd_reader.ReadInt32(); //setmethod
-                ret_debugger_cmd_reader.ReadInt32(); //attrs
-                if (ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any())
+                var command_params = new MemoryStream();
+                var command_params_writer = new MonoBinaryWriter(command_params);
+                command_params_writer.Write(typeId);
+
+                var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_PROPERTIES, command_params, token);
+                var nProperties = ret_debugger_cmd_reader.ReadInt32();
+                for (int i = 0 ; i < nProperties; i++)
                 {
-                    var attr = ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).First();
+                    ret_debugger_cmd_reader.ReadInt32(); //propertyId
+                    string propertyNameStr = ret_debugger_cmd_reader.ReadString();
+                    var getMethodId = ret_debugger_cmd_reader.ReadInt32();
+                    var setMethodId = ret_debugger_cmd_reader.ReadInt32(); //setmethod
+                    var attrValue = ret_debugger_cmd_reader.ReadInt32(); //attrs
+                    Console.WriteLine($"{propertyNameStr} - {attrValue}");
+                    if (ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any())
+                    {
+                        var attr = ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).First();
 
-                    var command_params_to_set = new MemoryStream();
-                    var command_params_writer_to_set = new MonoBinaryWriter(command_params_to_set);
-                    command_params_writer_to_set.Write(setMethodId);
-                    command_params_writer_to_set.Write((byte)ElementType.Class);
-                    command_params_writer_to_set.Write(objectId);
-                    command_params_writer_to_set.Write(1);
+                        var command_params_to_set = new MemoryStream();
+                        var command_params_writer_to_set = new MonoBinaryWriter(command_params_to_set);
+                        command_params_writer_to_set.Write(setMethodId);
+                        command_params_writer_to_set.Write((byte)ElementType.Class);
+                        command_params_writer_to_set.Write(objectId);
+                        command_params_writer_to_set.Write(1);
+                        if (attr["set"] != null)
+                        {
+                            attr["set"] = JObject.FromObject(new {
+                                        commandSet = CommandSet.VM,
+                                        command = CmdVM.INVOKE_METHOD,
+                                        buffer = Convert.ToBase64String(command_params_to_set.ToArray()),
+                                        valtype = attr["set"]["valtype"],
+                                        length = command_params_to_set.ToArray().Length
+                                });
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        var command_params_to_get = new MemoryStream();
+                        var command_params_writer_to_get = new MonoBinaryWriter(command_params_to_get);
+                        command_params_writer_to_get.Write(getMethodId);
+                        command_params_writer_to_get.Write((byte)ElementType.Class);
+                        command_params_writer_to_get.Write(objectId);
+                        command_params_writer_to_get.Write(0);
 
-                    attr["set"] = JObject.FromObject(new {
-                                commandSet = CommandSet.VM,
-                                command = CmdVM.INVOKE_METHOD,
-                                buffer = Convert.ToBase64String(command_params_to_set.ToArray()),
-                                valtype = attr["set"]["valtype"],
-                                length = command_params_to_set.ToArray().Length
-                        });
-                    continue;
+                        ret.Add(JObject.FromObject(new {
+                                get = JObject.FromObject(new {
+                                    commandSet = CommandSet.VM,
+                                    command = CmdVM.INVOKE_METHOD,
+                                    buffer = Convert.ToBase64String(command_params_to_get.ToArray()),
+                                    length = command_params_to_get.ToArray().Length
+                                    }),
+                                name = propertyNameStr
+                            }));
+                    }
+                    if (await MethodIsStatic(sessionId, getMethodId, token))
+                        continue;
                 }
-                else
-                {
-                    var command_params_to_get = new MemoryStream();
-                    var command_params_writer_to_get = new MonoBinaryWriter(command_params_to_get);
-                    command_params_writer_to_get.Write(getMethodId);
-                    command_params_writer_to_get.Write((byte)ElementType.Class);
-                    command_params_writer_to_get.Write(objectId);
-                    command_params_writer_to_get.Write(0);
-
-                    ret.Add(JObject.FromObject(new {
-                            get = JObject.FromObject(new {
-                                commandSet = CommandSet.VM,
-                                command = CmdVM.INVOKE_METHOD,
-                                buffer = Convert.ToBase64String(command_params_to_get.ToArray()),
-                                length = command_params_to_get.ToArray().Length
-                                }),
-                            name = propertyNameStr
-                        }));
-                }
-                if (await MethodIsStatic(sessionId, getMethodId, token))
-                    continue;
             }
             return ret;
         }
