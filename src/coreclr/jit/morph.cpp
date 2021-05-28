@@ -12604,24 +12604,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             noway_assert(op2);
             if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD))
             {
-                if (op2->gtOper == GT_CNS_NATIVELONG && op2->AsIntConCommon()->LngValue() >= 2 &&
+                if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
                     op2->AsIntConCommon()->LngValue() <= 0x3fffffff)
                 {
                     tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
-                    noway_assert(op1->TypeGet() == TYP_LONG);
+                    noway_assert(op1->TypeIs(TYP_LONG));
 
-                    // Update flags for op1 morph
+                    // Update flags for op1 morph.
                     tree->gtFlags &= ~GTF_ALL_EFFECT;
 
-                    tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT); // Only update with op1 as op2 is a constant
+                    // Only update with op1 as op2 is a constant.
+                    tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
-                    // If op1 is a constant, then do constant folding of the division operator
-                    if (op1->gtOper == GT_CNS_NATIVELONG)
+                    // If op1 is a constant, then do constant folding of the division operator.
+                    if (op1->OperIs(GT_CNS_NATIVELONG))
                     {
                         tree = gtFoldExpr(tree);
                     }
 
-                    // We may fail to fold
                     if (!tree->OperIsConst())
                     {
                         tree->AsOp()->CheckDivideByConstOptimized(this);
