@@ -5396,7 +5396,7 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     //    is that the lock is held and not by this thread.
     _ASSERTE(!lockHeld
         || (lockHeld
-            && s_pThreadStore->m_HoldingThread != NULL
+            && !s_pThreadStore->m_holderthreadid.IsUnknown()
             && !ThreadStore::HoldingThreadStore()));
 
     LOG((LF_SYNC, INFO3, "TransferStartedThread obtain lock\n"));
