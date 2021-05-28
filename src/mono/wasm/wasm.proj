@@ -75,7 +75,7 @@
       <_EmccCommonFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccCommonFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccCommonFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccCommonFlags Include="-s &quot;EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
+      <_EmccCommonFlags Include="-s &quot;EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
       <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
       <_EmccCommonFlags Include="-emit-llvm" />
