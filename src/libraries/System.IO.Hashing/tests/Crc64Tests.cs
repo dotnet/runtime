@@ -9,7 +9,10 @@ namespace System.IO.Hashing.Tests
 {
     public class Crc64Tests : NonCryptoHashTestDriver
     {
-        public Crc64Tests() : base(new byte[8])
+        private static readonly byte[] s_emptyHashValue = new byte[8];
+
+        public Crc64Tests()
+            : base(s_emptyHashValue)
         {
         }
 
