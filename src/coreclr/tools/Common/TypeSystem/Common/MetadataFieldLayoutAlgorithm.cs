@@ -305,7 +305,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected virtual bool IsBlittableOrManagedSequential(TypeDesc type) => false;
+        protected virtual bool IsBlittableOrManagedSequential(TypeDesc type) => throw new NotImplementedException();
 
         protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
         {
