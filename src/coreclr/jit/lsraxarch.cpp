@@ -1297,7 +1297,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         switch (blkNode->gtBlkOpKind)
         {
             case GenTreeBlk::BlkOpKindUnroll:
-                if (size >= XMM_REGSIZE_BYTES)
+                if (AMD64_ONLY(!blkNode->MustUsePointerSizeAtomicStores() &&)(size >= XMM_REGSIZE_BYTES))
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     SetContainsAVXFlags();

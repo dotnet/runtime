@@ -218,9 +218,14 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 {
                     // If the size is multiple of XMM register size there's no need to load 0 in a GPR,
                     // codegen will use xorps to generate 0 directly in the temporary XMM register.
-                    if ((size % XMM_REGSIZE_BYTES) == 0)
+                    if (size >= XMM_REGSIZE_BYTES)
                     {
-                        src->SetContained();
+                        const bool canUse16BytesSimdMov = !blkNode->MustUsePointerSizeAtomicStores();
+
+                        if (canUse16BytesSimdMov && (size % 16 == 0)X86_ONLY(|| (size % 8 == 0)))
+                        {
+                            src->SetContained();
+                        }
                     }
                 }
 #ifdef TARGET_AMD64
