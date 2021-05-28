@@ -120,15 +120,14 @@ enum insFlags : uint32_t
     INS_FLAGS_Resets_OF_Flags       = 1 << 14,
     INS_FLAGS_Resets_CF_OF_Flags    = 1 << 15,
     INS_FLAGS_Resets_OF_SF_PF_Flags = 1 << 16,
-    INS_FLAGS_Resets_OF_SF_PF_Flags = 1 << 17,
-    INS_FLAGS_ResetsAllFlagsExceptZF = 1 << 18,
+    INS_FLAGS_ResetsAllFlagsExceptZF = 1 << 17,
 
     // x87 instruction
-    INS_FLAGS_x87Instr = 1 << 19,
+    INS_FLAGS_x87Instr = 1 << 18,
 
     // Avx
-    INS_Flags_IsDstDstSrcAVXInstruction = 1 << 20,
-    INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 21,
+    INS_Flags_IsDstDstSrcAVXInstruction = 1 << 19,
+    INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 20,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,
