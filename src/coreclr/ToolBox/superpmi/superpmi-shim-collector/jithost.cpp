@@ -15,7 +15,7 @@
 // they would get recorded here in the global MethodContext, and copied to all subsequent
 // compilation MethodContexts. This would be incorrect. A solution would be to use a per-compilation
 // MethodContext in addition to the global MethodContext, but we have to allow for multi-threading. That is,
-// There could be multiple JIT compilations happening concurrently, so we can't just replace the global
+// there could be multiple JIT compilations happening concurrently, so we can't just replace the global
 // MethodContext with a per-compilation MethodContext. Perhaps per-compilation MethodContext could be
 // stored in a map from OS thread id to MethodContext, and looked up here based on thread id. The host APIs
 // have no per-compilation knowledge.
