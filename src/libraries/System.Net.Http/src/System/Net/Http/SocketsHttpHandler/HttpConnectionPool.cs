@@ -1446,7 +1446,7 @@ namespace System.Net.Http
 
             stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
 
-            Http2Connection http2Connection = new Http2Connection(this, stream, socket);
+            Http2Connection http2Connection = new Http2Connection(this, stream);
             try
             {
                 await http2Connection.SetupAsync().ConfigureAwait(false);

@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
-        private readonly RttEstimator? _rttEstimator;
+        private readonly RttEstimator _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
@@ -123,7 +123,7 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, System.Net.Sockets.Socket? socket)
+        public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
             _stream = stream;
@@ -137,9 +137,7 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
             InitialStreamWindowSize = pool.Settings._initialStreamWindowSize;
-            _rttEstimator = _pool.Settings._fakeRtt != null || socket != null ?
-                new RttEstimator(this, _pool.Settings._fakeRtt, socket) :
-                null;
+            _rttEstimator = new RttEstimator(this);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -489,6 +487,7 @@ namespace System.Net.Http
             _hpackDecoder.CompleteDecode();
 
             http2Stream?.OnHeadersComplete(endStream);
+            //_rttEstimator.Update();
         }
 
         /// <summary>Nop implementation of <see cref="IHttpHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
@@ -590,7 +589,7 @@ namespace System.Net.Http
 
             if (frameData.Length > 0)
             {
-                _rttEstimator?.UpdateEstimation();
+                _rttEstimator.Update();
                 ExtendWindow(frameData.Length);
             }
 
@@ -1992,11 +1991,19 @@ namespace System.Net.Http
 
         private void ProcessPingAck(long payload)
         {
-            if (_keepAliveState != KeepAliveState.PingSent)
-                ThrowProtocolError();
-            if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
-                ThrowProtocolError();
-            _keepAliveState = KeepAliveState.None;
+            if (payload < 0) // RTT ping
+            {
+                _rttEstimator.OnPingAck(payload);
+                return;
+            }
+            else // Keepalive ping
+            {
+                if (_keepAliveState != KeepAliveState.PingSent)
+                    ThrowProtocolError();
+                if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
+                    ThrowProtocolError();
+                _keepAliveState = KeepAliveState.None;
+            }
         }
 
         private void VerifyKeepAlive()
