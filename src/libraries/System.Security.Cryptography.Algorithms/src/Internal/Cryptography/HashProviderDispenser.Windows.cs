@@ -28,6 +28,18 @@ namespace Internal.Cryptography
             return new HashProviderCng(hashAlgorithmId, key, isHmac: true);
         }
 
+        internal static class OneShotHmacProvider
+        {
+            public static unsafe int MacData(
+                string hashAlgorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public static class OneShotHashProvider
         {
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)

@@ -23,6 +23,46 @@ namespace Internal.Cryptography
             return new HmacHashProvider(evpType, key);
         }
 
+        internal static class OneShotHmacProvider
+        {
+            public static unsafe int MacData(
+                string hashAlgorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination)
+            {
+                IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
+                Debug.Assert(evpType != IntPtr.Zero);
+
+                int hashSize = Interop.Crypto.EvpMdSize(evpType);
+
+                if (hashSize <= 0 || destination.Length < hashSize)
+                {
+                    Debug.Fail("Destination length or hash size not valid.");
+                    throw new CryptographicException();
+                }
+
+                int length = destination.Length;
+
+                fixed (byte* pKey = key)
+                fixed (byte* pSource = source)
+                fixed (byte* pDestination = destination)
+                {
+                    Check(Interop.Crypto.HmacOneShot(
+                        evpType,
+                        pKey,
+                        key.Length,
+                        pSource,
+                        source.Length,
+                        pDestination,
+                        ref length));
+                    Debug.Assert(length == hashSize);
+                }
+
+                return length;
+            }
+        }
+
         internal static class OneShotHashProvider
         {
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)

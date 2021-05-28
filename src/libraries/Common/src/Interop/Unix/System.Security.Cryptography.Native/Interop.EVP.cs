@@ -34,6 +34,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestOneShot")]
         internal static unsafe extern int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, ref uint mdSize);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
+        internal static unsafe extern int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, ref int mdSize);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static extern int EvpMdSize(IntPtr md);
 

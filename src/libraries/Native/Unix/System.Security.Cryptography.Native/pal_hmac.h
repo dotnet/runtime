@@ -69,3 +69,11 @@ PALEXPORT int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* le
  * Returns 1 for success or 0 for failure.
  */
 PALEXPORT int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len);
+
+PALEXPORT int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
+                                           const uint8_t* key,
+                                           int32_t keySize,
+                                           const uint8_t* source,
+                                           int32_t sourceSize,
+                                           uint8_t* md,
+                                           int32_t* mdSize);
