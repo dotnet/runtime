@@ -18,6 +18,18 @@ namespace System.IO.Hashing
         public override void Reset() { }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    public sealed partial class Crc64 : System.IO.Hashing.NonCryptographicHashAlgorithm
+    {
+        public Crc64() : base (default(int)) { }
+        public override void Append(System.ReadOnlySpan<byte> source) { }
+        protected override void GetCurrentHashCore(System.Span<byte> destination) { }
+        protected override void GetHashAndResetCore(System.Span<byte> destination) { }
+        public static byte[] Hash(byte[] source) { throw null; }
+        public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public override void Reset() { }
+        public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
     public abstract partial class NonCryptographicHashAlgorithm
     {
         protected NonCryptographicHashAlgorithm(int hashLengthInBytes) { }

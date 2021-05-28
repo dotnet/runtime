@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Crc32Tests.cs" />
+    <Compile Include="Crc64Tests.cs" />
     <Compile Include="NonCryptoHashBaseTests.cs" />
     <Compile Include="NonCryptoHashTestDriver.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs">
