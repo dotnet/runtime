@@ -162,33 +162,31 @@ namespace System.Net.Http
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
+            ValueTask waitTask = default;
 
             try
             {
-                if (_connection != null)
+                while (true)
                 {
-                    while (true)
+                    lock (SyncObj)
                     {
-                        lock (SyncObj)
+                        if (_connection == null)
                         {
-                            if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
-                            {
-                                quicStream = _connection.OpenBidirectionalStream();
-                                break;
-                            }
+                            break;
                         }
 
-                        // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-                        await _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
+                        if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        {
+                            quicStream = _connection.OpenBidirectionalStream();
+                            requestStream = new Http3RequestStream(request, this, quicStream);
+                            _activeRequests.Add(quicStream, requestStream);
+                            break;
+                        }
+                        waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
                     }
-                }
-                lock (SyncObj)
-                {
-                    if (quicStream != null)
-                    {
-                        requestStream = new Http3RequestStream(request, this, quicStream);
-                        _activeRequests.Add(quicStream, requestStream);
-                    }
+
+                    // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
+                    await waitTask.ConfigureAwait(false);
                 }
 
                 if (quicStream == null)
