@@ -95,11 +95,27 @@ namespace TypeSystemTests
             MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
             MethodSignature methodWithModOpt = modOptTester.GetMethods().Single(m => string.Equals(m.Name, "Method4")).Signature;
 
-            Assert.Equal(6, methodWithModOpt.GetEmbeddedSignatureData().Length);
+            _output.WriteLine($"Found ModOptData '{GetModOptMethodSignatureInfo(methodWithModOpt)}'");
+            Assert.Equal(7, methodWithModOpt.GetEmbeddedSignatureData().Length);
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(0), methodWithModOpt.GetEmbeddedSignatureData()[0].index);
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(1), methodWithModOpt.GetEmbeddedSignatureData()[2].index);
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(2), methodWithModOpt.GetEmbeddedSignatureData()[4].index);
-            Assert.Equal("OptionalCustomModifier0.1.1.2.1.1VoidArrayShape1.2.1.1|3,4|0,1<null>OptionalCustomModifier0.1.1.2.2.1FooModifierArrayShape1.2.2.1|0,9|2,0<null>OptionalCustomModifier0.1.1.2.3.1FooModifierArrayShape1.2.3.1||0<null>", GetModOptMethodSignatureInfo(methodWithModOpt));
+            Assert.Equal("OptionalCustomModifier0.1.1.2.1.1VoidArrayShape1.2.1.1|3,4|0,1<null>OptionalCustomModifier0.1.1.2.2.1FooModifierArrayShape1.2.2.1|0,9|2,0<null>OptionalCustomModifier0.1.1.2.3.1FooModifierArrayShape1.2.3.1||0<null>ArrayShape1.2.4.1||<null>", GetModOptMethodSignatureInfo(methodWithModOpt));
+        }
+
+        [Fact]
+        public void TestSignatureMatchesForArrayShapeDetails_HandlingOfCasesWhichDoNotNeedEmbeddeSignatureData()
+        {
+            // Test that ensure the typical case (where the loBounds is 0, and the hibounds is unspecified) doesn't produce an
+            // EmbeddedSignatureData, but that other cases do. This isn't a complete test as ilasm won't actually properly generate the metadata for many of these cases
+            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MethodSignature methodWithModOpt = modOptTester.GetMethods().Single(m => string.Equals(m.Name, "Method5")).Signature;
+
+            _output.WriteLine($"Found ModOptData '{GetModOptMethodSignatureInfo(methodWithModOpt)}'");
+            Assert.Equal(2, methodWithModOpt.GetEmbeddedSignatureData().Length);
+            Assert.EndsWith(methodWithModOpt.GetEmbeddedSignatureData()[0].index.Split('|')[0], MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(1));
+            Assert.EndsWith(methodWithModOpt.GetEmbeddedSignatureData()[1].index.Split('|')[0], MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(2));
+            Assert.Equal("ArrayShape1.2.2.1||0<null>ArrayShape1.2.3.1||<null>", GetModOptMethodSignatureInfo(methodWithModOpt));
         }
 
         [Fact]
