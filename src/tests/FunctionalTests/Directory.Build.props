@@ -15,7 +15,7 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
   </PropertyGroup>
 
-  <!-- Modeled after Microsoft.Android.Sdk.ILLink.targets https://github.com/xamarin/xamarin-android/blob/da536fcf1b663fd71adee40c06466547a04cc6ed/src/Xamarin.Android.Build.Tasks/Microsoft.Android.Sdk/targets/Microsoft.Android.Sdk.DefaultProperties.targets -->
+  <!-- Modeled after Microsoft.Android.Sdk.ILLink.targets https://github.com/xamarin/xamarin-android/blob/main/src/Xamarin.Android.Build.Tasks/Microsoft.Android.Sdk/targets/Microsoft.Android.Sdk.DefaultProperties.targets -->
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
     <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
