@@ -61,6 +61,8 @@ namespace System.IO.Strategies
             {
                 _appendStart = -1;
             }
+
+            _canSeek = true;
         }
 
         private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
@@ -84,7 +86,8 @@ namespace System.IO.Strategies
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            FileStreamHelpers.GetFileTypeSpecificInformation(handle, out _canSeek, out _isPipe);
+            _canSeek = handle.CanSeek;
+            _isPipe = handle.IsPipe;
 
             handle.InitThreadPoolBindingIfNeeded();
 

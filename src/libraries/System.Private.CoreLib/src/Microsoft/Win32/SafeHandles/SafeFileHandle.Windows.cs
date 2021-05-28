@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,6 +15,7 @@ namespace Microsoft.Win32.SafeHandles
         private const FileOptions Unknown = (FileOptions)(-1);
         private const FileOptions NoBuffering = (FileOptions)(0x20000000);
         private FileOptions _fileOptions = Unknown;
+        private int _fileType = -1;
 
         public SafeFileHandle() : base(true)
         {
@@ -24,30 +26,19 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, FileOptions fileOptions) : base(ownsHandle)
+        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, FileOptions fileOptions, int fileType) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
 
             _fileOptions = fileOptions;
+            _fileType = fileType;
         }
 
-        public bool IsAsync
-        {
-            get
-            {
-                if (IsInvalid)
-                {
-                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
-                }
+        public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
-                if (_fileOptions == Unknown)
-                {
-                    _fileOptions = GetFileOptions();
-                }
+        internal bool CanSeek => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
-                return (_fileOptions & FileOptions.Asynchronous) != 0;
-            }
-        }
+        internal bool IsPipe => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -60,7 +51,8 @@ namespace Microsoft.Win32.SafeHandles
                 SafeFileHandle fileHandle = new SafeFileHandle(
                     NtCreateFile(fullPath, mode, access, share, options, preallocationSize),
                     ownsHandle: true,
-                    options);
+                    options,
+                    Interop.Kernel32.FileTypes.FILE_TYPE_DISK); // similarly to FileStream, we assume that only disk files can be referenced by path on Windows
 
                 fileHandle.Validate(fullPath);
 
@@ -168,6 +160,11 @@ namespace Microsoft.Win32.SafeHandles
 
         private unsafe FileOptions GetFileOptions()
         {
+            if (_fileOptions != (FileOptions)(-1))
+            {
+                return _fileOptions;
+            }
+
             Interop.NtDll.CreateOptions options;
             int status = Interop.NtDll.NtQueryInformationFile(
                 FileHandle: this,
@@ -208,7 +205,22 @@ namespace Microsoft.Win32.SafeHandles
                 result |= NoBuffering;
             }
 
-            return result;
+            return _fileOptions = result;
+        }
+
+        private int GetFileType()
+        {
+            if (_fileType != -1)
+            {
+                _fileType = Interop.Kernel32.GetFileType(this);
+
+                Debug.Assert(_fileType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
+                    || _fileType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
+                    || _fileType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
+                    "Unknown file type!");
+            }
+
+            return _fileType;
         }
     }
 }

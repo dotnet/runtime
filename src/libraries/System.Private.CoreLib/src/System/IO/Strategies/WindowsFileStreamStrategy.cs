@@ -24,16 +24,26 @@ namespace System.IO.Strategies
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
-            InitFromHandle(handle, access, out _canSeek, out _isPipe);
-
-            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
-            // but we can't as they're readonly.
             _access = access;
             _share = share;
             _exposedHandle = true;
 
-            // As the handle was passed in, we must set the handle field at the very end to
-            // avoid the finalizer closing the handle when we throw errors.
+            _canSeek = handle.CanSeek;
+            _isPipe = handle.IsPipe;
+
+            handle.InitThreadPoolBindingIfNeeded();
+
+            if (_canSeek)
+            {
+                // given strategy was created out of existing handle, so we have to perform
+                // a syscall to get the current handle offset
+                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
+            }
+            else
+            {
+                _filePosition = 0;
+            }
+
             _fileHandle = handle;
         }
 
@@ -238,43 +248,6 @@ namespace System.IO.Strategies
             else
             {
                 _appendStart = -1;
-            }
-        }
-
-        private void InitFromHandle(SafeFileHandle handle, FileAccess access, out bool canSeek, out bool isPipe)
-        {
-#if DEBUG
-            bool hadBinding = handle.ThreadPoolBinding != null;
-
-            try
-            {
-#endif
-                InitFromHandleImpl(handle, out canSeek, out isPipe);
-#if DEBUG
-            }
-            catch
-            {
-                Debug.Assert(hadBinding || handle.ThreadPoolBinding == null, "We should never error out with a ThreadPoolBinding we've added");
-                throw;
-            }
-#endif
-        }
-
-        private void InitFromHandleImpl(SafeFileHandle handle, out bool canSeek, out bool isPipe)
-        {
-            FileStreamHelpers.GetFileTypeSpecificInformation(handle, out canSeek, out isPipe);
-
-            handle.InitThreadPoolBindingIfNeeded();
-
-            if (_canSeek)
-            {
-                // given strategy was created out of existing handle, so we have to perform
-                // a syscall to get the current handle offset
-                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
-            }
-            else
-            {
-                _filePosition = 0;
             }
         }
 

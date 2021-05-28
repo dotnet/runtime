@@ -180,18 +180,6 @@ namespace System.IO.Strategies
             }
         }
 
-        internal static void GetFileTypeSpecificInformation(SafeFileHandle handle, out bool canSeek, out bool isPipe)
-        {
-            int handleType = Interop.Kernel32.GetFileType(handle);
-            Debug.Assert(handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
-                || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
-                || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
-                "FileStream was passed an unknown file type!");
-
-            canSeek = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
-            isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
-        }
-
         internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
