@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50717", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50717", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAndroid))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(2)]

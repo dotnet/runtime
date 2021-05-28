@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
     public class GetDelegateForFunctionPointerTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData(typeof(NonGenericDelegate))]
         [InlineData(typeof(MulticastDelegate))]
         [InlineData(typeof(OtherNonGenericDelegate))]
@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDelegateForFunctionPointer_Generic_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDelegateForFunctionPointer_GenericInvalidType_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer((IntPtr)1, t));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDelegateForFunctionPointer_CantCast_ThrowsInvalidCastException()
         {
             MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);

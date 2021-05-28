@@ -279,7 +279,7 @@ public static class XmlDictionaryWriterTest
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void IXmlBinaryReaderWriterInitializerTest()
     {
         DataContractSerializer serializer = new DataContractSerializer(typeof(TestData));

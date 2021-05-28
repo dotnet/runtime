@@ -263,7 +263,7 @@ namespace System.Resources.ResourceWriterTests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidAOT))] // System.NotSupportedException : ResourceManager_ReflectionNotAllowed
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51833", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void ReadV1Resources()
         {

@@ -34,7 +34,7 @@ public static partial class DataContractSerializerTests
         method.Invoke(null, new object[] { 1 });
     }
 #endif
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DateTimeOffsetAsRoot()
     {
         // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
@@ -261,7 +261,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Uri>(new Uri("http://abc/def/x.aspx?p1=12&p2=34"), @"<anyURI xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">http://abc/def/x.aspx?p1=12&amp;p2=34</anyURI>"), new Uri("http://abc/def/x.aspx?p1=12&p2=34"));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayAsRoot()
     {
         SimpleType[] x = new SimpleType[] { new SimpleType { P1 = "abc", P2 = 11 }, new SimpleType { P1 = "def", P2 = 12 } };
@@ -270,7 +270,7 @@ public static partial class DataContractSerializerTests
         Utils.Equal<SimpleType>(x, y, (a, b) => { return SimpleType.AreEqual(a, b); });
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayAsGetSet()
     {
         TypeWithGetSetArrayMembers x = new TypeWithGetSetArrayMembers
@@ -289,7 +289,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal<int>(x.P2, y.P2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayAsGetOnly()
     {
         TypeWithGetOnlyArrayProperties x = new TypeWithGetOnlyArrayProperties();
@@ -305,7 +305,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal<int>(x.P2, y.P2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DictionaryGenericRoot()
     {
         Dictionary<string, int> x = new Dictionary<string, int>();
@@ -320,7 +320,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y["two"] == 2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DictionaryGenericMembers()
     {
         TypeWithDictionaryGenericMembers x = new TypeWithDictionaryGenericMembers
@@ -379,7 +379,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.RO2[false] == 'b');
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DictionaryRoot()
     {
         MyDictionary x = new MyDictionary();
@@ -394,7 +394,7 @@ public static partial class DataContractSerializerTests
         Assert.True((string)y[2] == "two");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DictionaryMembers()
     {
         TypeWithDictionaryMembers x = new TypeWithDictionaryMembers();
@@ -455,7 +455,7 @@ public static partial class DataContractSerializerTests
         Assert.True((char)y.RO2[false] == 'b');
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithIDictionaryPropertyInitWithConcreteType()
     {
         // Test for Bug 876869 : [Serialization] Concrete type not inferred for DCS
@@ -473,7 +473,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ListGenericRoot()
     {
         List<string> x = new List<string>();
@@ -488,7 +488,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y[1] == "one");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ListGenericMembers()
     {
         TypeWithListGenericMembers x = new TypeWithListGenericMembers();
@@ -549,7 +549,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.RO2[1] == 'd');
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionGenericRoot()
     {
         MyCollection<string> x = new MyCollection<string>("a1", "a2");
@@ -563,7 +563,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionGenericMembers()
     {
         TypeWithCollectionGenericMembers x = new TypeWithCollectionGenericMembers
@@ -614,7 +614,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ListRoot()
     {
         MyList x = new MyList("a1", "a2");
@@ -629,7 +629,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ListMembers()
     {
         TypeWithListMembers x = new TypeWithListMembers
@@ -663,7 +663,7 @@ public static partial class DataContractSerializerTests
         Assert.True((string)x.RO2[0] == (string)y.RO2[0], getCheckFailureMsg("RO2"));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableGenericRoot()
     {
         MyEnumerable<string> x = new MyEnumerable<string>("a1", "a2");
@@ -676,7 +676,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("a1a2", actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableGenericMembers()
     {
         TypeWithEnumerableGenericMembers x = new TypeWithEnumerableGenericMembers
@@ -698,7 +698,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.RO1.Count == 1);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionRoot()
     {
         MyCollection x = new MyCollection('a', 45);
@@ -710,7 +710,7 @@ public static partial class DataContractSerializerTests
         Assert.True((int)y[1] == 45);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionMembers()
     {
         TypeWithCollectionMembers x = new TypeWithCollectionMembers
@@ -747,7 +747,7 @@ public static partial class DataContractSerializerTests
         Assert.True((string)y.RO1[0] == "abc");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableRoot()
     {
         MyEnumerable x = new MyEnumerable("abc", 3);
@@ -759,7 +759,7 @@ public static partial class DataContractSerializerTests
         Assert.True((int)y[1] == 3);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableMembers()
     {
         TypeWithEnumerableMembers x = new TypeWithEnumerableMembers
@@ -794,7 +794,7 @@ public static partial class DataContractSerializerTests
         Assert.True((char)y.RO1[0] == 'x');
     }
 	
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
     {
         TypeWithEnumerableMembers x = new TypeWithEnumerableMembers
@@ -821,7 +821,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CustomType()
     {
         MyTypeA x = new MyTypeA
@@ -839,7 +839,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.PropY, y.PropY);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithPrivateFieldAndPrivateGetPublicSetProperty()
     {
         TypeWithPrivateFieldAndPrivateGetPublicSetProperty x = new TypeWithPrivateFieldAndPrivateGetPublicSetProperty
@@ -851,7 +851,7 @@ public static partial class DataContractSerializerTests
         Assert.Null(y.GetName());
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataContractAttribute()
     {
         DataContractSerializerHelper.SerializeAndDeserialize<DCA_1>(new DCA_1 { P1 = "xyz" }, @"<DCA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>");
@@ -861,13 +861,13 @@ public static partial class DataContractSerializerTests
         DataContractSerializerHelper.SerializeAndDeserialize<DCA_5>(new DCA_5 { P1 = "xyz" }, @"<abc xmlns=""def"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataMemberAttribute()
     {
         DataContractSerializerHelper.SerializeAndDeserialize<DMA_1>(new DMA_1 { P1 = "abc", P2 = 12, P3 = true, P4 = 'a', P5 = 10, MyDataMemberInAnotherNamespace = new MyDataContractClass04_1() { MyDataMember = "Test" }, Order100 = true, OrderMaxValue = false }, @"<DMA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyDataMemberInAnotherNamespace xmlns:a=""http://MyDataContractClass04_1.com/""><a:MyDataMember>Test</a:MyDataMember></MyDataMemberInAnotherNamespace><P1>abc</P1><P4>97</P4><P5>10</P5><xyz>12</xyz><P3>true</P3><Order100>true</Order100><OrderMaxValue>false</OrderMaxValue></DMA_1>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_IgnoreDataMemberAttribute()
     {
         IDMA_1 x = new IDMA_1 { MyDataMember = "MyDataMember", MyIgnoreDataMember = "MyIgnoreDataMember", MyUnsetDataMember = "MyUnsetDataMember" };
@@ -892,7 +892,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(ULongEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ULongEnum>(ULongEnum.Option1, @"<ULongEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ULongEnum>"));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumAsMember()
     {
         TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
@@ -903,7 +903,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.P1, y.P1);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DCClassWithEnumAndStruct()
     {
         var x = new DCClassWithEnumAndStruct(true);
@@ -913,7 +913,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.MyEnum1, y.MyEnum1);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SuspensionManager()
     {
         var x = new Dictionary<string, object>();
@@ -928,7 +928,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("subkey1value", ((y["Key1"] as Dictionary<string, object>)["subkey1"]) as string);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BuiltInTypes()
     {
         BuiltInTypes x = new BuiltInTypes
@@ -941,14 +941,14 @@ public static partial class DataContractSerializerTests
         Assert.Equal<byte>(x.ByteArray, y.ByteArray);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CircularLink()
     {
         CircularLinkDerived circularLinkDerived = new CircularLinkDerived(true);
         DataContractSerializerHelper.SerializeAndDeserialize<CircularLinkDerived>(circularLinkDerived, @"<CircularLinkDerived z:Id=""i1"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><Link z:Id=""i2""><Link z:Id=""i3""><Link z:Ref=""i1""/><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink z:Id=""i4""><Link z:Id=""i5""><Link z:Id=""i6"" i:type=""CircularLinkDerived""><Link z:Ref=""i4""/><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink i:nil=""true""/></Link><RandomHangingLink i:nil=""true""/></RandomHangingLink></CircularLinkDerived>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataMemberNames()
     {
         var obj = new AppEnvironment()
@@ -961,7 +961,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(obj.ScreenOrientation, actual.ScreenOrientation);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericBase()
     {
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<GenericBase2<SimpleBaseDerived, SimpleBaseDerived2>>(new GenericBase2<SimpleBaseDerived, SimpleBaseDerived2>(true), @"<GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2zbP0weY4 z:Id=""i1"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><genericData1 z:Id=""i2""><BaseData/><DerivedData/></genericData1><genericData2 z:Id=""i3""><BaseData/><DerivedData/></genericData2></GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2zbP0weY4>");
@@ -970,13 +970,13 @@ public static partial class DataContractSerializerTests
         Assert.True(actual.genericData2 is SimpleBaseDerived2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericContainer()
     {
         DataContractSerializerHelper.SerializeAndDeserialize<GenericContainer>(new GenericContainer(true), @"<GenericContainer z:Id=""i1"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><GenericData z:Id=""i2"" i:type=""GenericBaseOfSimpleBaseContainervjX03eZJ""><genericData z:Id=""i3"" i:type=""SimpleBaseContainer""><Base1 i:nil=""true""/><Base2 i:nil=""true""/></genericData></GenericData></GenericContainer>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DictionaryWithVariousKeyValueTypes()
     {
         var x = new DictionaryWithVariousKeyValueTypes(true);
@@ -992,7 +992,7 @@ public static partial class DataContractSerializerTests
         Assert.Null(y.WithNullables[short.MaxValue]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypesWithArrayOfOtherTypes()
     {
         var x = new TypeHasArrayOfASerializedAsB(true);
@@ -1002,7 +1002,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(x.Items[1].Name, y.Items[1].Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_WithDuplicateNames()
     {
         var x = new WithDuplicateNames(true);
@@ -1015,7 +1015,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.StructA2, y.StructA2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_XElementAsRoot()
     {
         var original = new XElement("ElementName1");
@@ -1026,7 +1026,7 @@ public static partial class DataContractSerializerTests
         VerifyXElementObject(original, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_WithXElement()
     {
         var original = new WithXElement(true);
@@ -1046,7 +1046,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_WithXElementWithNestedXElement()
     {
         var original = new WithXElementWithNestedXElement(true);
@@ -1056,7 +1056,7 @@ public static partial class DataContractSerializerTests
         VerifyXElementObject((XElement)original.e1.FirstNode, (XElement)actual.e1.FirstNode);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_WithArrayOfXElement()
     {
         var original = new WithArrayOfXElement(true);
@@ -1068,7 +1068,7 @@ public static partial class DataContractSerializerTests
         VerifyXElementObject(original.a[2], actual.a[2], checkFirstAttribute: false);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_WithListOfXElement()
     {
         var original = new WithListOfXElement(true);
@@ -1080,7 +1080,7 @@ public static partial class DataContractSerializerTests
         VerifyXElementObject(original.list[2], actual.list[2], checkFirstAttribute: false);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/51679", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
     public static void DCS_DerivedTypeWithDifferentOverrides()
     {
@@ -1094,7 +1094,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(x.Name5, y.Name5);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeNamesWithSpecialCharacters()
     {
         var x = new __TypeNameWithSpecialCharacters\u6F22\u00F1() { PropertyNameWithSpecialCharacters\u6F22\u00F1 = "Test" };
@@ -1103,7 +1103,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(x.PropertyNameWithSpecialCharacters\u6F22\u00F1, y.PropertyNameWithSpecialCharacters\u6F22\u00F1);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_JaggedArrayAsRoot()
     {
         int[][] jaggedIntegerArray = new int[][] { new int[] { 1, 3, 5, 7, 9 }, new int[] { 0, 2, 4, 6 }, new int[] { 11, 22 } };
@@ -1140,7 +1140,7 @@ public static partial class DataContractSerializerTests
         Assert.True(actualJaggedIntegerArray2[2][0].Length == 0);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MyDataContractResolver()
     {
         var myresolver = new MyResolver();
@@ -1157,7 +1157,7 @@ public static partial class DataContractSerializerTests
         Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_WriteObject_Use_DataContractResolver()
     {
         var settings = new DataContractSerializerSettings() { DataContractResolver = null, KnownTypes = new Type[] { typeof(MyOtherType) } };
@@ -1198,7 +1198,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(myresolver, dcs.DataContractResolver);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableStruct()
     {
         var original = new EnumerableStruct();
@@ -1210,7 +1210,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal((IEnumerable<string>)actual, (IEnumerable<string>)original);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableCollection()
     {
         var original = new EnumerableCollection();
@@ -1223,7 +1223,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal((IEnumerable<DateTime>)actual, (IEnumerable<DateTime>)original);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BaseClassAndDerivedClassWithSameProperty()
     {
         var value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
@@ -1240,7 +1240,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("three", actual.ListProperty[2]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ContainsLinkedList()
     {
         var value = new ContainsLinkedList(true);
@@ -1248,7 +1248,7 @@ public static partial class DataContractSerializerTests
         DataContractSerializerHelper.SerializeAndDeserialize<ContainsLinkedList>(value, @"<ContainsLinkedList xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Data><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef><SimpleDCWithRef><Data><Data>23:59:59</Data></Data><RefData><Data>23:59:59</Data></RefData></SimpleDCWithRef></Data></ContainsLinkedList>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SimpleCollectionDataContract()
     {
         var value = new SimpleCDC(true);
@@ -1260,7 +1260,7 @@ public static partial class DataContractSerializerTests
         Assert.Contains("Three", actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MyDerivedCollectionContainer()
     {
         var value = new MyDerivedCollectionContainer();
@@ -1278,7 +1278,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value1, value2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SerializeClassThatImplementsInteface()
     {
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
@@ -1289,7 +1289,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Id, actual.Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_Nullables()
     {
         // Arrange
@@ -1315,7 +1315,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(item.Struct1.Value.B, actual.Struct1.Value.B);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SimpleStructWithProperties()
     {
         SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
@@ -1325,7 +1325,7 @@ public static partial class DataContractSerializerTests
         Assert.True(x.Text == y.Text, "x.Text != y.Text");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_InternalTypeSerialization()
     {
         var value = new InternalType() { InternalProperty = 12 };
@@ -1334,7 +1334,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_PrivateTypeSerialization()
     {
         var value = new PrivateType();
@@ -1371,7 +1371,7 @@ public static partial class DataContractSerializerTests
     }
 #endregion
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_RootNameAndNamespaceThroughConstructorAsString()
     {
         //Constructor# 3
@@ -1382,7 +1382,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("Hello", result.Str);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_RootNameAndNamespaceThroughConstructorAsXmlDictionary()
     {
         //Constructor# 4
@@ -1394,7 +1394,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("Hello", result.Str);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_KnownTypesThroughConstructor()
     {
         //Constructor# 5
@@ -1408,7 +1408,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DuplicatedKnownTypesWithAdapterThroughConstructor()
     {
         //Constructor# 5
@@ -1423,7 +1423,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual((DateTimeOffset)actual.SimpleTypeValue, (DateTimeOffset)actual.SimpleTypeValue);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_KnownTypesThroughSettings()
     {
         //Constructor# 2.1
@@ -1437,7 +1437,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_RootNameNamespaceAndKnownTypesThroughConstructorAsStrings()
     {
         //Constructor# 6
@@ -1451,7 +1451,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_RootNameNamespaceAndKnownTypesThroughConstructorAsXmlDictionary()
     {
         //Constructor# 7
@@ -1466,7 +1466,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ExceptionObject()
     {
         var value = new Exception("Test Exception");
@@ -1479,7 +1479,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MyArgumentExceptionObject()
     {
         var value = new MyArgumentException("Test Exception", "paramName");
@@ -1493,7 +1493,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ExceptionMessageWithSpecialChars()
     {
         var value = new Exception("Test Exception<>&'\"");
@@ -1506,7 +1506,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_InnerExceptionMessageWithSpecialChars()
     {
         var value = new Exception("", new Exception("Test Exception<>&'\""));
@@ -1525,7 +1525,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.InnerException.HelpLink, actual.InnerException.HelpLink);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithUriTypeProperty()
     {
         var value = new TypeWithUriTypeProperty() { ConfigUri = new Uri("http://www.bing.com") };
@@ -1535,7 +1535,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.ConfigUri, actual.ConfigUri);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithDatetimeOffsetTypeProperty()
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
@@ -1555,7 +1555,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_Tuple()
     {
         DCS_Tuple1();
@@ -1624,7 +1624,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual<Tuple<int, int, int, int, int, int, int, Tuple<int>>>(value, deserializedValue);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericQueue()
     {
         Queue<int> value = new Queue<int>();
@@ -1637,7 +1637,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(a1[0], a2[0]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericStack()
     {
         var value = new Stack<int>();
@@ -1652,7 +1652,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(a1[1], a2[1]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_Queue()
     {
         var value = new Queue();
@@ -1666,7 +1666,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(a1[0], a2[0]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_Stack()
     {
         var value = new Stack();
@@ -1681,7 +1681,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(a1[1], a2[1]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SortedList()
     {
         var value = new SortedList();
@@ -1693,7 +1693,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value[1], deserializedValue[1]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SystemVersion()
     {
         Version value = new Version(1, 2, 3, 4);
@@ -1705,7 +1705,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.Revision, deserializedValue.Revision);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithCommonTypeProperties()
     {
         TypeWithCommonTypeProperties value = new TypeWithCommonTypeProperties { Ts = new TimeSpan(1, 1, 1), Id = new Guid("ad948f1e-9ba9-44c8-8e2e-b6ba969ec987") };
@@ -1713,7 +1713,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual<TypeWithCommonTypeProperties>(value, deserializedValue);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithTypeProperty()
     {
         TypeWithTypeProperty value = new TypeWithTypeProperty { Id = 123, Name = "Jon Doe" };
@@ -1723,7 +1723,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.Type, deserializedValue.Type);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithExplicitIEnumerableImplementation()
     {
         TypeWithExplicitIEnumerableImplementation value = new TypeWithExplicitIEnumerableImplementation { };
@@ -1738,7 +1738,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("Bar", (string)enumerator.Current);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithGenericDictionaryAsKnownType()
     {
         TypeWithGenericDictionaryAsKnownType value = new TypeWithGenericDictionaryAsKnownType { };
@@ -1753,7 +1753,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(2, deserializedValue.Foo[20].LevelNo);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithKnownTypeAttributeAndInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
@@ -1764,7 +1764,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("Foo News", deserializedValue.HeadLine.Title);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithKnownTypeAttributeAndListOfInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
@@ -1780,7 +1780,7 @@ public static partial class DataContractSerializerTests
      * Begin tests of the InvalidDataContract generated for illegal types
      */
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_InvalidDataContract_Write_And_Read_Empty_Collection_Of_Invalid_Type_Succeeds()
     {
         // Collections of invalid types can be serialized and deserialized if they are empty.
@@ -1815,7 +1815,7 @@ public static partial class DataContractSerializerTests
      * End tests of the InvalidDataContract generated for illegal types
      */
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DerivedTypeWithBaseTypeWithDataMember()
     {
         DerivedTypeWithDataMemberInBaseType value = new DerivedTypeWithDataMemberInBaseType() { EmbeddedDataMember = new TypeAsEmbeddedDataMember { Name = "Foo" } };
@@ -1824,7 +1824,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("Foo", deserializedValue.EmbeddedDataMember.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_PocoDerivedTypeWithBaseTypeWithDataMember()
     {
         PocoDerivedTypeWithDataMemberInBaseType value = new PocoDerivedTypeWithDataMemberInBaseType() { EmbeddedDataMember = new PocoTypeAsEmbeddedDataMember { Name = "Foo" } };
@@ -1833,7 +1833,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal("Foo", deserializedValue.EmbeddedDataMember.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ClassImplementingIXmlSerialiable()
     {
         ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
@@ -1841,7 +1841,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerialiable()
     {
         TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
@@ -1849,7 +1849,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericTypeWithNestedGenerics()
     {
         GenericTypeWithNestedGenerics<int>.InnerGeneric<double> value = new GenericTypeWithNestedGenerics<int>.InnerGeneric<double>()
@@ -1862,7 +1862,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.data2, deserializedValue.data2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DuplicatedKeyDateTimeOffset()
     {
         DateTimeOffset value = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc).AddMinutes(7));
@@ -1873,7 +1873,7 @@ public static partial class DataContractSerializerTests
         dcjs.WriteObject(stream, value);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DuplicatedKeyXmlQualifiedName()
     {
         XmlQualifiedName qname = new XmlQualifiedName("abc", "def");
@@ -1882,7 +1882,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.Value, deserialized.Value);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DeserializeTypeWithInnerInvalidDataContract()
     {
         DataContractSerializer dcs = new DataContractSerializer(typeof(TypeWithPropertyWithoutDefaultCtor));
@@ -1898,7 +1898,7 @@ public static partial class DataContractSerializerTests
         Assert.Null(deserializedValue.MemberWithInvalidDataContract);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ReadOnlyCollection()
     {
         List<string> list = new List<string>() { "Foo", "Bar" };
@@ -1909,7 +1909,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value[1], deserializedValue[1]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ReadOnlyDictionary()
     {
         var dict = new Dictionary<string, int>();
@@ -1923,7 +1923,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value["Bar"], deserializedValue["Bar"]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_KeyValuePair()
     {
         var value = new KeyValuePair<string, object>("FooKey", "FooValue");
@@ -1933,7 +1933,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.Value, deserializedValue.Value);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ConcurrentDictionary()
     {
         var value = new ConcurrentDictionary<string, int>();
@@ -1947,7 +1947,7 @@ public static partial class DataContractSerializerTests
         Assert.True(deserializedValue["two"] == 2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataContractWithDotInName()
     {
         DataContractWithDotInName value = new DataContractWithDotInName() { Name = "Foo" };
@@ -1957,7 +1957,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Name, deserializedValue.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataContractWithMinusSignInName()
     {
         DataContractWithMinusSignInName value = new DataContractWithMinusSignInName() { Name = "Foo" };
@@ -1967,7 +1967,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Name, deserializedValue.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataContractWithOperatorsInName()
     {
         DataContractWithOperatorsInName value = new DataContractWithOperatorsInName() { Name = "Foo" };
@@ -1977,7 +1977,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Name, deserializedValue.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DataContractWithOtherSymbolsInName()
     {
         DataContractWithOtherSymbolsInName value = new DataContractWithOtherSymbolsInName() { Name = "Foo" };
@@ -1987,7 +1987,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Name, deserializedValue.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionDataContractWithCustomKeyName()
     {
         CollectionDataContractWithCustomKeyName value = new CollectionDataContractWithCustomKeyName();
@@ -2000,7 +2000,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value[200], deserializedValue[200]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionDataContractWithCustomKeyNameDuplicate()
     {
         CollectionDataContractWithCustomKeyNameDuplicate value = new CollectionDataContractWithCustomKeyNameDuplicate();
@@ -2013,7 +2013,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value[200], deserializedValue[200]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithCollectionWithoutDefaultConstructor()
     {
         TypeWithCollectionWithoutDefaultConstructor value = new TypeWithCollectionWithoutDefaultConstructor();
@@ -2057,7 +2057,7 @@ public static partial class DataContractSerializerTests
         Assert.True(exceptionThrown, "An expected exception was not thrown.");
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     [MemberData(nameof(XmlDictionaryReaderQuotasData))]
     public static void DCS_XmlDictionaryQuotas(XmlDictionaryReaderQuotas quotas, bool shouldSucceed)
     {
@@ -2092,7 +2092,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionInterfaceGetOnlyCollection()
     {
         var obj = new TypeWithCollectionInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
@@ -2100,7 +2100,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(obj.Items, deserializedObj.Items);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_EnumerableInterfaceGetOnlyCollection()
     {
         // Expect exception in deserialization process
@@ -2132,7 +2132,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(expected.InnerText, actual.InnerText);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithXmlElementProperty()
     {
         XmlDocument xDoc = new XmlDocument();
@@ -2151,7 +2151,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfSimpleType_PreserveObjectReferences_True()
     {
         var x = new SimpleType[3];
@@ -2179,7 +2179,7 @@ public static partial class DataContractSerializerTests
         Assert.True(x[2].P2 == y[2].P2, "x[2].P2 != y[2].P2");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfSimpleType_PreserveObjectReferences_False()
     {
         var x = new SimpleType[3];
@@ -2209,7 +2209,7 @@ public static partial class DataContractSerializerTests
         Assert.True(x[2].P2 == y[2].P2, "x[2].P2 != y[2].P2");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CircularTypes_PreserveObjectReferences_True()
     {
         var root = new TypeWithListOfReferenceChildren();
@@ -2239,7 +2239,7 @@ public static partial class DataContractSerializerTests
         Assert.True(root2.Children[0] == root2.Children[2], "root2.Children[0] != root2.Children[2]");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CircularTypes_PreserveObjectReferences_False()
     {
         var root = new TypeWithListOfReferenceChildren();
@@ -2269,7 +2269,7 @@ public static partial class DataContractSerializerTests
         Assert.True(root2.Children[0] == root2.Children[2], "root2.Children[0] != root2.Children[2]");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithPrimitiveProperties()
     {
         TypeWithPrimitiveProperties x = new TypeWithPrimitiveProperties { P1 = "abc", P2 = 11 };
@@ -2278,7 +2278,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.P2, y.P2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithPrimitiveFields()
     {
         TypeWithPrimitiveFields x = new TypeWithPrimitiveFields { P1 = "abc", P2 = 11 };
@@ -2287,7 +2287,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.P2, y.P2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithAllPrimitiveProperties()
     {
         TypeWithAllPrimitiveProperties x = new TypeWithAllPrimitiveProperties
@@ -2319,7 +2319,7 @@ public static partial class DataContractSerializerTests
 
 #region Array of primitive types
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfBoolean()
     {
         var value = new bool[] { true, false, true };
@@ -2328,7 +2328,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfDateTime()
     {
         var value = new DateTime[] { new DateTime(2000, 1, 2, 3, 4, 5, DateTimeKind.Utc), new DateTime(2011, 2, 3, 4, 5, 6, DateTimeKind.Utc) };
@@ -2337,7 +2337,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfDecimal()
     {
         var value = new decimal[] { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
@@ -2346,7 +2346,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfInt32()
     {
         var value = new int[] { 123, int.MaxValue, int.MinValue };
@@ -2355,7 +2355,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfInt64()
     {
         var value = new long[] { 123, long.MaxValue, long.MinValue };
@@ -2364,7 +2364,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfSingle()
     {
         var value = new float[] { 1.23f, 4.56f, 7.89f };
@@ -2373,7 +2373,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfDouble()
     {
         var value = new double[] { 1.23, 4.56, 7.89 };
@@ -2382,7 +2382,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfString()
     {
         var value = new string[] { "abc", "def", "xyz" };
@@ -2391,7 +2391,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfTypeWithPrimitiveProperties()
     {
         var value = new TypeWithPrimitiveProperties[]
@@ -2404,7 +2404,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ArrayOfSimpleType()
     {
         // Intentionally set count to 64 to test array resizing functionality during de-serialization.
@@ -2422,7 +2422,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(count-1, deserialized[count-1].P2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithEmitDefaultValueFalse()
     {
         var value = new TypeWithEmitDefaultValueFalse();
@@ -2438,7 +2438,7 @@ public static partial class DataContractSerializerTests
 
 #region Collection
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfBoolean()
     {
         var value = new TypeImplementsGenericICollection<bool>() { true, false, true };
@@ -2447,7 +2447,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfDecimal()
     {
         var value = new TypeImplementsGenericICollection<decimal>() { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
@@ -2456,7 +2456,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfInt32()
     {
         TypeImplementsGenericICollection<int> x = new TypeImplementsGenericICollection<int>(123, int.MaxValue, int.MinValue);
@@ -2467,7 +2467,7 @@ public static partial class DataContractSerializerTests
         Assert.True(x.SequenceEqual(y));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfInt64()
     {
         var value = new TypeImplementsGenericICollection<long>() { 123, long.MaxValue, long.MinValue };
@@ -2476,7 +2476,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfSingle()
     {
         var value = new TypeImplementsGenericICollection<float>() { 1.23f, 4.56f, 7.89f };
@@ -2485,7 +2485,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfDouble()
     {
         var value = new TypeImplementsGenericICollection<double>() { 1.23, 4.56, 7.89 };
@@ -2494,7 +2494,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfString()
     {
         TypeImplementsGenericICollection<string> value = new TypeImplementsGenericICollection<string>("a1", "a2");
@@ -2505,7 +2505,7 @@ public static partial class DataContractSerializerTests
         Assert.True(value.SequenceEqual(deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericICollectionOfTypeWithPrimitiveProperties()
     {
         var value = new TypeImplementsGenericICollection<TypeWithPrimitiveProperties>()
@@ -2518,7 +2518,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_CollectionOfTypeWithNonDefaultNamcespace()
     {
         var value = new CollectionOfTypeWithNonDefaultNamcespace();
@@ -2534,7 +2534,7 @@ public static partial class DataContractSerializerTests
 
 #region Generic Dictionary
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericDictionaryOfInt32Boolean()
     {
         var value = new Dictionary<int, bool>();
@@ -2545,7 +2545,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericDictionaryOfInt32String()
     {
         var value = new Dictionary<int, string>();
@@ -2556,7 +2556,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_GenericDictionaryOfStringInt32()
     {
         var value = new Dictionary<string, int>();
@@ -2571,7 +2571,7 @@ public static partial class DataContractSerializerTests
 
 #region Non-Generic Dictionary
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_NonGenericDictionaryOfInt32Boolean()
     {
         var value = new MyNonGenericDictionary();
@@ -2583,7 +2583,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value.Values.Cast<bool>().ToArray(), deserialized.Values.Cast<bool>().ToArray()));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_NonGenericDictionaryOfInt32String()
     {
         var value = new MyNonGenericDictionary();
@@ -2595,7 +2595,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value.Values.Cast<string>().ToArray(), deserialized.Values.Cast<string>().ToArray()));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_NonGenericDictionaryOfStringInt32()
     {
         var value = new MyNonGenericDictionary();
@@ -2609,7 +2609,7 @@ public static partial class DataContractSerializerTests
 
 #endregion
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundTripResolveDTOTypes()
     {
         ObjectContainer instance = new ObjectContainer(new DTOContainer());
@@ -2629,7 +2629,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(DateTimeOffset.MaxValue, ((DTOContainer)deserialized.Data).nDTO);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ExtensionDataObjectTest()
     {
         var p2 = new PersonV2();
@@ -2672,7 +2672,7 @@ public static partial class DataContractSerializerTests
         Assert.True(result2.Equal, $"{nameof(actualOutput2)} was not as expected: {Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_XPathQueryGeneratorTest()
     {
         Type t = typeof(Order);
@@ -2704,7 +2704,7 @@ public static partial class DataContractSerializerTests
         Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MyISerializableType()
     {
         var value = new MyISerializableType();
@@ -2716,7 +2716,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.StringValue, actual.StringValue);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithNonSerializedField()
     {
         var value = new TypeWithSerializableAttributeAndNonSerializedField();
@@ -2736,7 +2736,7 @@ public static partial class DataContractSerializerTests
         Assert.Null(actual.Member4);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithOptionalField()
     {
         var value = new TypeWithOptionalField();
@@ -2755,7 +2755,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(0, deserialized.Member2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SerializableEnumWithNonSerializedValue()
     {
         var value1 = new TypeWithSerializableEnum();
@@ -2769,7 +2769,7 @@ public static partial class DataContractSerializerTests
         Assert.Throws<SerializationException>(() => DataContractSerializerHelper.SerializeAndDeserialize(value2, ""));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SquareWithDeserializationCallback()
     {
         var value = new SquareWithDeserializationCallback(2);
@@ -2778,7 +2778,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Area, actual.Area);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithDelegate()
     {
         var value = new TypeWithDelegate();
@@ -2791,7 +2791,7 @@ public static partial class DataContractSerializerTests
 
 #region DesktopTest
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ResolveNameReturnsEmptyNamespace()
     {
         SerializationTestTypes.EmptyNsContainer instance = new SerializationTestTypes.EmptyNsContainer(new SerializationTestTypes.EmptyNSAddress());
@@ -2810,7 +2810,7 @@ public static partial class DataContractSerializerTests
         Assert.True(result.address == null, "Address not null");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ResolveDatacontractBaseType()
     {
         SerializationTestTypes.Customer customerInstance = new SerializationTestTypes.PreferredCustomerProxy();
@@ -2852,7 +2852,7 @@ public static partial class DataContractSerializerTests
     /// Roundtrips a Datacontract type  which contains Primitive types assigned to member of type object.
     /// Resolver is plugged in and resolves the primitive types. Verify resolver called during ser and deser
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundTripResolvePrimitiveTypes_NotNetFramework()
     {
         string baseline = @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:PrimitiveContainer_foo"" xmlns:a=""http://www.default.com""><a i:type=""a:Boolean_foo"">false</a><array1><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></array1><b i:type=""a:Byte_foo"">255</b><c i:type=""a:Byte_foo"">0</c><d i:type=""a:Char_foo"">65535</d><e i:type=""a:Decimal_foo"">79228162514264337593543950335</e><f i:type=""a:Decimal_foo"">-1</f><f5 i:type=""a:DateTime_foo"">9999-12-31T23:59:59.9999999</f5><g i:type=""a:Decimal_foo"">-79228162514264337593543950335</g><guidData i:type=""a:Guid_foo"">4bc848b1-a541-40bf-8aa9-dd6ccb6d0e56</guidData><h i:type=""a:Decimal_foo"">1</h><i i:type=""a:Decimal_foo"">0</i><j i:type=""a:Decimal_foo"">0</j><k i:type=""a:Double_foo"">0</k><l i:type=""a:Double_foo"">5E-324</l><lDTO xmlns:b=""http://schemas.datacontract.org/2004/07/System""/><m i:type=""a:Double_foo"">1.7976931348623157E+308</m><n i:type=""a:Double_foo"">-1.7976931348623157E+308</n><nDTO i:type=""a:DateTimeOffset_foo""><DateTime xmlns=""http://schemas.datacontract.org/2004/07/System"">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=""http://schemas.datacontract.org/2004/07/System"">0</OffsetMinutes></nDTO><o i:type=""a:Double_foo"">NaN</o><obj/><p i:type=""a:Double_foo"">-INF</p><q i:type=""a:Double_foo"">INF</q><r i:type=""a:Single_foo"">0</r><s i:type=""a:Single_foo"">1E-45</s><strData i:nil=""true""/><t i:type=""a:Single_foo"">-3.4028235E+38</t><timeSpan i:type=""a:TimeSpan_foo"">P10675199DT2H48M5.4775807S</timeSpan><u i:type=""a:Single_foo"">3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v i:type=""a:Single_foo"">NaN</v><w i:type=""a:Single_foo"">-INF</w><x i:type=""a:Single_foo"">INF</x><xmlQualifiedName i:type=""a:XmlQualifiedName_foo"" xmlns:b=""http://www.microsoft.com"">b:WCF</xmlQualifiedName><y i:type=""a:Int32_foo"">0</y><z i:type=""a:Int32_foo"">2147483647</z><z1 i:type=""a:Int32_foo"">-2147483648</z1><z2 i:type=""a:Int64_foo"">0</z2><z3 i:type=""a:Int64_foo"">9223372036854775807</z3><z4 i:type=""a:Int64_foo"">-9223372036854775808</z4><z5/><z6 i:type=""a:SByte_foo"">0</z6><z7 i:type=""a:SByte_foo"">127</z7><z8 i:type=""a:SByte_foo"">-128</z8><z9 i:type=""a:Int16_foo"">0</z9><z91 i:type=""a:Int16_foo"">32767</z91><z92 i:type=""a:Int16_foo"">-32768</z92><z93 i:type=""a:String_foo"">abc</z93><z94 i:type=""a:UInt16_foo"">0</z94><z95 i:type=""a:UInt16_foo"">65535</z95><z96 i:type=""a:UInt16_foo"">0</z96><z97 i:type=""a:UInt32_foo"">0</z97><z98 i:type=""a:UInt32_foo"">4294967295</z98><z99 i:type=""a:UInt32_foo"">0</z99><z990 i:type=""a:UInt64_foo"">0</z990><z991 i:type=""a:UInt64_foo"">18446744073709551615</z991><z992 i:type=""a:UInt64_foo"">0</z992><z993>AQIDBA==</z993></_data><_data2 i:type=""a:PrimitiveContainer_foo"" xmlns:a=""http://www.default.com""><a i:type=""a:Boolean_foo"">false</a><array1><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></array1><b i:type=""a:Byte_foo"">255</b><c i:type=""a:Byte_foo"">0</c><d i:type=""a:Char_foo"">65535</d><e i:type=""a:Decimal_foo"">79228162514264337593543950335</e><f i:type=""a:Decimal_foo"">-1</f><f5 i:type=""a:DateTime_foo"">9999-12-31T23:59:59.9999999</f5><g i:type=""a:Decimal_foo"">-79228162514264337593543950335</g><guidData i:type=""a:Guid_foo"">4bc848b1-a541-40bf-8aa9-dd6ccb6d0e56</guidData><h i:type=""a:Decimal_foo"">1</h><i i:type=""a:Decimal_foo"">0</i><j i:type=""a:Decimal_foo"">0</j><k i:type=""a:Double_foo"">0</k><l i:type=""a:Double_foo"">5E-324</l><lDTO xmlns:b=""http://schemas.datacontract.org/2004/07/System""/><m i:type=""a:Double_foo"">1.7976931348623157E+308</m><n i:type=""a:Double_foo"">-1.7976931348623157E+308</n><nDTO i:type=""a:DateTimeOffset_foo""><DateTime xmlns=""http://schemas.datacontract.org/2004/07/System"">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=""http://schemas.datacontract.org/2004/07/System"">0</OffsetMinutes></nDTO><o i:type=""a:Double_foo"">NaN</o><obj/><p i:type=""a:Double_foo"">-INF</p><q i:type=""a:Double_foo"">INF</q><r i:type=""a:Single_foo"">0</r><s i:type=""a:Single_foo"">1E-45</s><strData i:nil=""true""/><t i:type=""a:Single_foo"">-3.4028235E+38</t><timeSpan i:type=""a:TimeSpan_foo"">P10675199DT2H48M5.4775807S</timeSpan><u i:type=""a:Single_foo"">3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v i:type=""a:Single_foo"">NaN</v><w i:type=""a:Single_foo"">-INF</w><x i:type=""a:Single_foo"">INF</x><xmlQualifiedName i:type=""a:XmlQualifiedName_foo"" xmlns:b=""http://www.microsoft.com"">b:WCF</xmlQualifiedName><y i:type=""a:Int32_foo"">0</y><z i:type=""a:Int32_foo"">2147483647</z><z1 i:type=""a:Int32_foo"">-2147483648</z1><z2 i:type=""a:Int64_foo"">0</z2><z3 i:type=""a:Int64_foo"">9223372036854775807</z3><z4 i:type=""a:Int64_foo"">-9223372036854775808</z4><z5/><z6 i:type=""a:SByte_foo"">0</z6><z7 i:type=""a:SByte_foo"">127</z7><z8 i:type=""a:SByte_foo"">-128</z8><z9 i:type=""a:Int16_foo"">0</z9><z91 i:type=""a:Int16_foo"">32767</z91><z92 i:type=""a:Int16_foo"">-32768</z92><z93 i:type=""a:String_foo"">abc</z93><z94 i:type=""a:UInt16_foo"">0</z94><z95 i:type=""a:UInt16_foo"">65535</z95><z96 i:type=""a:UInt16_foo"">0</z96><z97 i:type=""a:UInt32_foo"">0</z97><z98 i:type=""a:UInt32_foo"">4294967295</z98><z99 i:type=""a:UInt32_foo"">0</z99><z990 i:type=""a:UInt64_foo"">0</z990><z991 i:type=""a:UInt64_foo"">18446744073709551615</z991><z992 i:type=""a:UInt64_foo"">0</z992><z993>AQIDBA==</z993></_data2></ObjectContainer>";
@@ -2864,7 +2864,7 @@ public static partial class DataContractSerializerTests
     /// Some enums are resolved by Resolver and others by the KT attribute.
     /// Enum and struct members are of base enum type and ValueTyperespecitively
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundTripResolveEnumStructTypes()
     {
         var dataContractSerializerSettings = new DataContractSerializerSettings()
@@ -2883,7 +2883,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundtripDCRVariation1()
     {
         SerializationTestTypes.DCRVariations dcrVariationsGoing = new SerializationTestTypes.DCRVariations();
@@ -2911,7 +2911,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundtripDCRVariation2()
     {
         SerializationTestTypes.DCRVariations dcrVariationsGoing = new SerializationTestTypes.DCRVariations();
@@ -2937,7 +2937,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundtripDCRVariation3()
     {
         SerializationTestTypes.DCRVariations dcrVariationsGoing = new SerializationTestTypes.DCRVariations();
@@ -2964,7 +2964,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(dcrVariationsGoing, dcrVariationsReturning);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundtripDCRVariation4()
     {
         SerializationTestTypes.DCRVariations dcrVariationsGoing = new SerializationTestTypes.DCRVariations();
@@ -3000,7 +3000,7 @@ public static partial class DataContractSerializerTests
                 Environment.NewLine, result.ErrorMessage, baseline, actualOutput));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundTripPOCOWithIgnoreDM()
     {
         var dataContractSerializerSettings = new DataContractSerializerSettings()
@@ -3021,7 +3021,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundtripDCRVerifyWireformatScenarios()
     {
         var dataContractSerializerSettings = new DataContractSerializerSettings()
@@ -3051,7 +3051,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value3, actual3);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ResolveNameVariationTest()
     {
         SerializationTestTypes.ObjectContainer instance = new SerializationTestTypes.ObjectContainer(new SerializationTestTypes.UserTypeContainer());
@@ -3065,7 +3065,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(instance, result);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicRoundtripDCRDefaultCollections()
     {
         var defaultCollections = new SerializationTestTypes.DefaultCollections();
@@ -3080,7 +3080,7 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(defaultCollections, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_IObjectRef()
     {
 
@@ -3097,7 +3097,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.DCIObjRefReturnsPrivate(), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.DCIObjRefReturnsPrivate***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.DCIObjRefReturnsPrivate***""><_data z:Id=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><Data>7b4ac88f-972b-43e5-8f6a-5ae64480eaad</Data></_data></_data><_data2 i:type=""a:SerializationTestTypes.DCIObjRefReturnsPrivate***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.DCIObjRefReturnsPrivate***""><_data z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></_data2></ObjectContainer>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3422,7 +3422,7 @@ public static partial class DataContractSerializerTests
     }
 
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 
@@ -3465,7 +3465,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(valueDataSetPrivate.dataTable.Rows[0][0], resultDataSetPrivate.dataTable.Rows[0][0]);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_TypeInheritedFromIListT()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3479,7 +3479,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.SampleListTExplicitWithCDCContainsPrivateDC(true), $@"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.SampleListTExplicitWithCDCContainsPrivateDC***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.SampleListTExplicitWithCDCContainsPrivateDC***""><Item z:Id=""i2"" i:type=""b:SerializationTestTypes.PrivateDC"" xmlns=""Test"" xmlns:b=""{assemblyName}""><Data xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"">7b4ac88f-972b-43e5-8f6a-5ae64480eaad</Data></Item><Item z:Id=""i3"" i:type=""b:SerializationTestTypes.PrivateDC"" xmlns=""Test"" xmlns:b=""{assemblyName}""><Data xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"">7b4ac88f-972b-43e5-8f6a-5ae64480eaad</Data></Item><Item z:Ref=""i2"" xmlns=""Test""/></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_InheritedFromIList()
     {
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.SampleListExplicitWithoutDC(true), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.SampleListExplicitWithoutDC***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.SampleListExplicitWithoutDC***""><anyType i:type=""b:dateTime"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">0001-01-01T00:00:00</anyType><anyType i:type=""b:duration"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">P10675199DT2H48M5.4775807S</anyType><anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema""/><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">1.7976931348623157E+308</anyType><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">-INF</anyType><anyType i:type=""b:guid"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">0c9e174e-cdd8-4b68-a70d-aaeb26c7deeb</anyType></_data><_data2 i:type=""a:SerializationTestTypes.SampleListExplicitWithoutDC***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.SampleListExplicitWithoutDC***""><anyType i:type=""b:dateTime"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">0001-01-01T00:00:00</anyType><anyType i:type=""b:duration"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">P10675199DT2H48M5.4775807S</anyType><anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema""/><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">1.7976931348623157E+308</anyType><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">-INF</anyType><anyType i:type=""b:guid"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">0c9e174e-cdd8-4b68-a70d-aaeb26c7deeb</anyType></_data2></ObjectContainer>");
@@ -3493,7 +3493,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.SampleListExplicitWithCDCContainsPrivateDC(true), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.SampleListExplicitWithCDCContainsPrivateDC***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.SampleListExplicitWithCDCContainsPrivateDC***""><Item i:type=""b:dateTime"" xmlns=""Test"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">0001-01-01T00:00:00</Item><Item i:type=""z:duration"" xmlns=""Test"">P10675199DT2H48M5.4775807S</Item><Item i:type=""b:string"" xmlns=""Test"" xmlns:b=""http://www.w3.org/2001/XMLSchema""/><Item i:type=""b:double"" xmlns=""Test"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">1.7976931348623157E+308</Item><Item i:type=""b:double"" xmlns=""Test"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">-INF</Item><Item i:type=""z:guid"" xmlns=""Test"">0c9e174e-cdd8-4b68-a70d-aaeb26c7deeb</Item><Item z:Id=""i2"" i:type=""b:PrivateDC"" xmlns=""Test"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes""><b:Data>7b4ac88f-972b-43e5-8f6a-5ae64480eaad</b:Data></Item></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes_SampleICollectionTExplicit()
     {
         var setting = new DataContractSerializerSettings()
@@ -3518,7 +3518,7 @@ public static partial class DataContractSerializerTests
         TestObjectWithDifferentPayload(valueSampleICollectionTExplicitWithCDCContainsPrivateDC, netcorePayloadSampleICollectionTExplicitWithCDCContainsPrivateDC, desktopPayloadSampleICollectionTExplicitWithCDCContainsPrivateDC, setting);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_Collections()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3537,7 +3537,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.DMWithRefInCollection1(true), "<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data z:Id=\"i1\" i:type=\"a:SerializationTestTypes.DMWithRefInCollection1***\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.DMWithRefInCollection1***\"><Data1 z:Id=\"i2\"><Data>This is a string</Data><RefData>This is a string</RefData></Data1><InnerData1>a6d053ed-f7d4-42fb-8e56-e4b425f26fa9</InnerData1><List1><SimpleDCWithSimpleDMRef z:Ref=\"i2\"/><SimpleDCWithSimpleDMRef z:Id=\"i3\"><Data>a6d053ed-f7d4-42fb-8e56-e4b425f26fa9</Data><RefData>This is a string</RefData></SimpleDCWithSimpleDMRef><SimpleDCWithSimpleDMRef z:Ref=\"i3\"/></List1></_data><_data2 z:Ref=\"i1\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"/></ObjectContainer>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_CollectionDataContract()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3552,7 +3552,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.DMWithRefInDict1(true), $"<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data z:Id=\"i1\" i:type=\"a:SerializationTestTypes.DMWithRefInDict1***\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.DMWithRefInDict1***\"><Data1 z:Id=\"i2\"><Data z:Id=\"i3\"><Data>This is a string</Data></Data><RefData z:Ref=\"i3\"/></Data1><Data2 z:Id=\"i4\"><Data z:Id=\"i5\"><Data>This is a string</Data></Data><RefData z:Ref=\"i5\"/></Data2><Dict1 xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Id=\"i6\"><Data z:Id=\"i7\"><Data>This is a string</Data></Data><RefData z:Ref=\"i7\"/></b:Key><b:Value z:Id=\"i8\"><Data z:Id=\"i9\"><Data>6d807157-536f-4794-a157-e463a11029aa</Data></Data><RefData z:Ref=\"i9\"/></b:Value></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Ref=\"i2\"/><b:Value z:Ref=\"i4\"/></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Id=\"i10\"><Data z:Id=\"i11\"><Data>This is a string</Data></Data><RefData z:Ref=\"i11\"/></b:Key><b:Value z:Ref=\"i8\"/></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Ref=\"i8\"/><b:Value z:Id=\"i12\"><Data z:Id=\"i13\"><Data>This is a string</Data></Data><RefData z:Ref=\"i13\"/></b:Value></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO></Dict1><Dict2 i:type=\"c:System.Collections.Generic.Dictionary`2[[SerializationTestTypes.SimpleDCWithRef, {assemblyName}],[SerializationTestTypes.SimpleDCWithRef, {assemblyName}]]\" xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\" xmlns:c=\"{corelibAssemblyName}\"><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Ref=\"i6\"/><b:Value z:Ref=\"i8\"/></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Ref=\"i2\"/><b:Value z:Ref=\"i4\"/></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Ref=\"i10\"/><b:Value z:Ref=\"i8\"/></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO><b:Key z:Ref=\"i8\"/><b:Value z:Ref=\"i12\"/></b:KeyValueOfSimpleDCWithRefSimpleDCWithRefzETuxydO></Dict2><InnerData1 z:Ref=\"i3\"/><InnerInnerData1>6d807157-536f-4794-a157-e463a11029aa</InnerInnerData1><Kvp1 xmlns:b=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\"><b:key z:Ref=\"i8\"/><b:value z:Ref=\"i12\"/></Kvp1></_data><_data2 z:Ref=\"i1\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"/></ObjectContainer>");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_ItRef()
     {
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.TestInheritence9(true), "<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:SerializationTestTypes.TestInheritence9***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.TestInheritence9***\"><base1 i:type=\"b:SerializationTestTypes.Derived2Serializable***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.Derived2Serializable***\"><data>TestString</data><data2>TestString2</data2><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3><data00>TestString00</data00><data122>TestString122</data122><data4>TestString4</data4></base1><baseDC i:type=\"b:SerializationTestTypes.DerivedSerializable***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.DerivedSerializable***\"><data>TestString</data><data2>TestString2</data2><days xmlns:c=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><c:string>Base1</c:string><c:string>Base2</c:string><c:string>Base3</c:string><c:string>Base4</c:string><c:string>Base5</c:string><c:string>Base6</c:string><c:string>Base7</c:string></days><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3></baseDC><derived2><data>TestString</data><data2>TestString2</data2><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3><data00>TestString00</data00><data122>TestString122</data122><data4>TestString4</data4></derived2><derivedDC><data>TestString</data><data2>TestString2</data2><days xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><b:string>Base1</b:string><b:string>Base2</b:string><b:string>Base3</b:string><b:string>Base4</b:string><b:string>Base5</b:string><b:string>Base6</b:string><b:string>Base7</b:string></days><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3></derivedDC></_data><_data2 i:type=\"a:SerializationTestTypes.TestInheritence9***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.TestInheritence9***\"><base1 i:type=\"b:SerializationTestTypes.Derived2Serializable***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.Derived2Serializable***\"><data>TestString</data><data2>TestString2</data2><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3><data00>TestString00</data00><data122>TestString122</data122><data4>TestString4</data4></base1><baseDC i:type=\"b:SerializationTestTypes.DerivedSerializable***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.DerivedSerializable***\"><data>TestString</data><data2>TestString2</data2><days xmlns:c=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><c:string>Base1</c:string><c:string>Base2</c:string><c:string>Base3</c:string><c:string>Base4</c:string><c:string>Base5</c:string><c:string>Base6</c:string><c:string>Base7</c:string></days><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3></baseDC><derived2><data>TestString</data><data2>TestString2</data2><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3><data00>TestString00</data00><data122>TestString122</data122><data4>TestString4</data4></derived2><derivedDC><data>TestString</data><data2>TestString2</data2><days xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><b:string>Base1</b:string><b:string>Base2</b:string><b:string>Base3</b:string><b:string>Base4</b:string><b:string>Base5</b:string><b:string>Base6</b:string><b:string>Base7</b:string></days><data0>TestString0</data0><data1>TestString1</data1><data3>TestString3</data3></derivedDC></_data2></ObjectContainer>");
@@ -3685,7 +3685,7 @@ public static partial class DataContractSerializerTests
 
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_SelfRefCycles()
     {
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.SelfRef1(true), "<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data z:Id=\"i1\" i:type=\"a:SerializationTestTypes.SelfRef1***\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.SelfRef1***\"><Data z:Ref=\"i1\"/></_data><_data2 z:Ref=\"i1\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"/></ObjectContainer>");
@@ -3738,7 +3738,7 @@ public static partial class DataContractSerializerTests
 
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_EnumStruct()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3821,7 +3821,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_EnumStruct_NotNetFramework()
     {
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.AllTypes(), "<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:SerializationTestTypes.AllTypes***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.AllTypes***\"><a>false</a><array1><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/></array1><b>255</b><c>0</c><d>65535</d><e>79228162514264337593543950335</e><enumArrayData><MyEnum1>red</MyEnum1></enumArrayData><enumBase1 i:type=\"b:SerializationTestTypes.MyEnum1***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.MyEnum1***\">red</enumBase1><f>-1</f><f5>0001-01-01T00:00:00</f5><g>-79228162514264337593543950335</g><guidData>5642b5d2-87c3-a724-2390-997062f3f7a2</guidData><h>1</h><i>0</i><j>0</j><k>0</k><l>5E-324</l><lDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"/><m>1.7976931348623157E+308</m><n>-1.7976931348623157E+308</n><nDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"><b:DateTime>9999-12-31T23:59:59.9999999Z</b:DateTime><b:OffsetMinutes>0</b:OffsetMinutes></nDTO><o>NaN</o><obj/><p>-INF</p><q>INF</q><r>0</r><s>1E-45</s><strData i:nil=\"true\"/><t>-3.4028235E+38</t><timeSpan i:type=\"b:duration\" xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/\">P10675199DT2H48M5.4775807S</timeSpan><u>3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v>NaN</v><valType i:type=\"PublicDCStruct\"><Data>Data</Data></valType><w>-INF</w><x>INF</x><q:xmlQualifiedName xmlns:q=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:b=\"http://www.microsoft.com\">b:WCF</q:xmlQualifiedName><y>0</y><z>2147483647</z><z1>-2147483648</z1><z2>0</z2><z3>9223372036854775807</z3><z4>-9223372036854775808</z4><z5/><z6>0</z6><z7>127</z7><z8>-128</z8><z9>0</z9><z91>32767</z91><z92>-32768</z92><z93>abc</z93><z94>0</z94><z95>65535</z95><z96>0</z96><z97>0</z97><z98>4294967295</z98><z99>0</z99><z990>0</z990><z991>18446744073709551615</z991><z992>0</z992></_data><_data2 i:type=\"a:SerializationTestTypes.AllTypes***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.AllTypes***\"><a>false</a><array1><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/></array1><b>255</b><c>0</c><d>65535</d><e>79228162514264337593543950335</e><enumArrayData><MyEnum1>red</MyEnum1></enumArrayData><enumBase1 i:type=\"b:SerializationTestTypes.MyEnum1***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.MyEnum1***\">red</enumBase1><f>-1</f><f5>0001-01-01T00:00:00</f5><g>-79228162514264337593543950335</g><guidData>5642b5d2-87c3-a724-2390-997062f3f7a2</guidData><h>1</h><i>0</i><j>0</j><k>0</k><l>5E-324</l><lDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"/><m>1.7976931348623157E+308</m><n>-1.7976931348623157E+308</n><nDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"><b:DateTime>9999-12-31T23:59:59.9999999Z</b:DateTime><b:OffsetMinutes>0</b:OffsetMinutes></nDTO><o>NaN</o><obj/><p>-INF</p><q>INF</q><r>0</r><s>1E-45</s><strData i:nil=\"true\"/><t>-3.4028235E+38</t><timeSpan i:type=\"b:duration\" xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/\">P10675199DT2H48M5.4775807S</timeSpan><u>3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v>NaN</v><valType i:type=\"PublicDCStruct\"><Data>Data</Data></valType><w>-INF</w><x>INF</x><q:xmlQualifiedName xmlns:q=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:b=\"http://www.microsoft.com\">b:WCF</q:xmlQualifiedName><y>0</y><z>2147483647</z><z1>-2147483648</z1><z2>0</z2><z3>9223372036854775807</z3><z4>-9223372036854775808</z4><z5/><z6>0</z6><z7>127</z7><z8>-128</z8><z9>0</z9><z91>32767</z91><z92>-32768</z92><z93>abc</z93><z94>0</z94><z95>65535</z95><z96>0</z96><z97>0</z97><z98>4294967295</z98><z99>0</z99><z990>0</z990><z991>18446744073709551615</z991><z992>0</z992></_data2></ObjectContainer>");
@@ -3832,7 +3832,7 @@ public static partial class DataContractSerializerTests
 
 #endregion
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithVirtualGenericProperty()
     {
         var value1 = new TypeWithVirtualGenericProperty<int>() { Value = 1 };
@@ -3846,7 +3846,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value2.Value, actual2.Value);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MyPersonSurrogate()
     {
         DataContractSerializer dcs = new DataContractSerializer(typeof(Family));
@@ -3871,7 +3871,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())
@@ -3908,7 +3908,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_KnownTypeMethodName()
     {
         var emp1 = new EmployeeC("Steve");
@@ -3928,7 +3928,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.emps[1].Name, actual.emps[1].Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_SampleICollectionTExplicitWithoutDC()
     {
         var value = new SerializationTestTypes.SampleICollectionTExplicitWithoutDC(true);
@@ -3937,7 +3937,7 @@ public static partial class DataContractSerializerTests
         TestObjectWithDifferentPayload(value, netcorePayload, desktopPayload);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MemoryStream_Serialize_UsesBuiltInAdapter()
     {
         ValidateObject(
@@ -3995,7 +3995,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_MemoryStream_Deserialize_CompatibleWithFullFramework()
     {
         // The payloads in this test were generated by a Full Framework application.
@@ -4135,7 +4135,7 @@ public static partial class DataContractSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ValidateExceptionOnUnspecifiedRootSerializationType()
     {
         var value = new UnspecifiedRootSerializationType();
@@ -4146,7 +4146,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithCollectionAndDateTimeOffset()
     {
         // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
@@ -4161,7 +4161,7 @@ public static partial class DataContractSerializerTests
         Assert.True(Enumerable.SequenceEqual(value.AnIntList, actual.AnIntList));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithCollectionAndDateTimeOffset_ListIsNull()
     {
         // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
@@ -4176,7 +4176,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(0, actual.AnIntList.Count);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_TypeWithPrimitiveKnownTypes()
     {
         var list = new TypeWithPrimitiveKnownTypes();
@@ -4217,7 +4217,7 @@ public static partial class DataContractSerializerTests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/1417", TestPlatforms.OSX)]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_DeeplyLinkedData()
     {
         TypeWithLinkedProperty head = new TypeWithLinkedProperty();
@@ -4240,7 +4240,7 @@ public static partial class DataContractSerializerTests
         });
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void DCS_ReadObject_XmlDictionaryReaderMaxStringContentLengthExceedsQuota()
     {
         DataContractSerializer dcs = new DataContractSerializer(typeof(TypeA));

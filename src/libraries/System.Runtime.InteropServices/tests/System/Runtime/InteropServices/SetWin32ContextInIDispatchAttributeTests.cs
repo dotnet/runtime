@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50714", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50714", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAndroid))]
         public void Ctor_Default_ExistsInSrc()
         {
             Type type = typeof(HandleCollector).Assembly.GetType(TypeName);
