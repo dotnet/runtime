@@ -265,7 +265,7 @@ namespace System.Collections.Immutable
                 return ref ItemRefUnchecked(index);
             }
 
-            internal ref readonly T ItemRefUnchecked(int index)
+            private ref readonly T ItemRefUnchecked(int index)
             {
                 Debug.Assert(_left != null && _right != null);
 
