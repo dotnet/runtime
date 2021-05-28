@@ -7,42 +7,38 @@
     <IsFunctionalTest>true</IsFunctionalTest>
   </PropertyGroup>
 
-  <!-- Modeled after Microsoft.Android.Sdk.ILLink.targets -->
+  <!-- Available feature switches: https://github.com/dotnet/runtime/blob/master/docs/workflow/trimming/feature-switches.md -->
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
+    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
+  </PropertyGroup>
+
+  <!-- Modeled after Microsoft.Android.Sdk.ILLink.targets https://github.com/xamarin/xamarin-android/blob/da536fcf1b663fd71adee40c06466547a04cc6ed/src/Xamarin.Android.Build.Tasks/Microsoft.Android.Sdk/targets/Microsoft.Android.Sdk.DefaultProperties.targets -->
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
     <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
-    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
-    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' != 'true'"></InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
+    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler>
   </PropertyGroup>
 
-  <!-- Modeled after Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets -->
+  <!-- Modeled after Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets https://github.com/dotnet/sdk/blob/main/src/BlazorWasmSdk/Targets/Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets -->
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
-    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
   </PropertyGroup>
 
-  <!-- Modeled after Xamarin.Shared.Sdk.targets -->
+  <!-- Modeled after Xamarin.Shared.Sdk.targets https://github.com/xamarin/xamarin-macios/blob/main/dotnet/targets/Xamarin.Shared.Sdk.targets -->
   <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst'">
-    <_BundlerDebug Condition="'$(_BundlerDebug)' == '' And '$(Configuration)' == 'Debug'">true</_BundlerDebug>
-    <_BundlerDebug Condition="'$(_BundlerDebug)' == ''">false</_BundlerDebug>
-
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">$(_BundlerDebug)</DebuggerSupport>
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
     <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
-    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
-    <InvariantGlobalization Condition="'$(TargetOS)' == 'MacCatalyst' And '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <InvariantGlobalization Condition="'$(TargetOS)' == 'MacCatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler>
   </PropertyGroup>
 
