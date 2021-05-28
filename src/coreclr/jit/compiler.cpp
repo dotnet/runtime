@@ -9714,6 +9714,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "virtual method installed via explicit override";
         case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE:
             return "devirtualization crossed version bubble";
+        case CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL:
+            return "object class has multiple implementations of interface";
         default:
             return "undefined";
     }
