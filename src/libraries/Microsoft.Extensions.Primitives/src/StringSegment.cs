@@ -127,6 +127,32 @@ namespace Microsoft.Extensions.Primitives
         public ReadOnlySpan<char> AsSpan() => Buffer.AsSpan(Offset, Length);
 
         /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
+        /// at the position specified by <paramref name="start"/>, and has the remaining length.
+        /// </summary>
+        /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with the remaining chars that begins at <paramref name="start"/> in
+        /// this <see cref="StringSegment"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
+        public ReadOnlySpan<char> AsSpan(int start) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
+        /// at the position specified by <paramref name="start"/>, and has the specified <paramref name="length"/>.
+        /// </summary>
+        /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
+        /// <param name="length">The number of characters in the span.</param>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with length <paramref name="length"/> that begins at
+        /// <paramref name="start"/> in this <see cref="StringSegment"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> or <paramref name="length"/> is less than zero, or <paramref name="start"/> + <paramref name="length"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
+        public ReadOnlySpan<char> AsSpan(int start, int length) => throw new NotImplementedException();
+
+        /// <summary>
         /// Gets a <see cref="ReadOnlyMemory{T}"/> from the current <see cref="StringSegment"/>.
         /// </summary>
         /// <returns>The <see cref="ReadOnlyMemory{T}"/> from this <see cref="StringSegment"/>.</returns>
