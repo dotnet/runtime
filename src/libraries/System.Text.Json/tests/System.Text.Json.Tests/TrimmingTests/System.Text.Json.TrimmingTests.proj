@@ -19,6 +19,10 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\Hashtable.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+      <!-- Hashtable's ctor is getting trimmed on browser-wasm causing this test to fail.
+      These tests should be converted to use the source generator.
+      See https://github.com/dotnet/runtime/issues/53437 -->    
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\ICollectionOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
