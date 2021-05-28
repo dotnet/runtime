@@ -34,13 +34,7 @@ namespace System.IO.Strategies
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
 
-        /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
-        /// <param name="mode">How the file should be opened.</param>
-        /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
-        /// <param name="originalPath">The original path specified for the FileStream.</param>
-        /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
-        /// <param name="preallocationSize">passed to posix_fallocate</param>
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options, long preallocationSize)
+        private void Init(FileMode mode, string originalPath, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)

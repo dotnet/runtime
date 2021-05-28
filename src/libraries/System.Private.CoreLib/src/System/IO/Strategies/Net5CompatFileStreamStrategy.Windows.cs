@@ -46,40 +46,11 @@ namespace System.IO.Strategies
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private CompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options, long preallocationSize)
+        private void Init(FileMode mode, string originalPath, FileOptions options)
         {
             FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
 
-            // This is necessary for async IO using IO Completion ports via our
-            // managed Threadpool API's.  This (theoretically) calls the OS's
-            // BindIoCompletionCallback method, and passes in a stub for the
-            // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
-            // struct for this request and gets a delegate to a managed callback
-            // from there, which it then calls on a threadpool thread.  (We allocate
-            // our native OVERLAPPED structs 2 pointers too large and store EE state
-            // & GC handles there, one to an IAsyncResult, the other to a delegate.)
-            if (_useAsyncIO)
-            {
-                try
-                {
-                    _fileHandle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_fileHandle);
-                }
-                catch (ArgumentException ex)
-                {
-                    throw new IOException(SR.IO_BindHandleFailed, ex);
-                }
-                finally
-                {
-                    if (_fileHandle.ThreadPoolBinding == null)
-                    {
-                        // We should close the handle so that the handle is not open until SafeFileHandle GC
-                        Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
-                        _fileHandle.Dispose();
-                    }
-                }
-            }
-
-            _canSeek = true;
+            Debug.Assert(!_useAsyncIO || _fileHandle.ThreadPoolBinding != null);
 
             // For Append mode...
             if (mode == FileMode.Append)
@@ -115,35 +86,7 @@ namespace System.IO.Strategies
         {
             FileStreamHelpers.GetFileTypeSpecificInformation(handle, out _canSeek, out _isPipe);
 
-            // This is necessary for async IO using IO Completion ports via our
-            // managed Threadpool API's.  This calls the OS's
-            // BindIoCompletionCallback method, and passes in a stub for the
-            // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
-            // struct for this request and gets a delegate to a managed callback
-            // from there, which it then calls on a threadpool thread.  (We allocate
-            // our native OVERLAPPED structs 2 pointers too large and store EE
-            // state & a handle to a delegate there.)
-            //
-            // If, however, we've already bound this file handle to our completion port,
-            // don't try to bind it again because it will fail.  A handle can only be
-            // bound to a single completion port at a time.
-            if (useAsyncIO && !(handle.IsAsync ?? false))
-            {
-                try
-                {
-                    handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
-                }
-                catch (Exception ex)
-                {
-                    // If you passed in a synchronous handle and told us to use
-                    // it asynchronously, throw here.
-                    throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle), ex);
-                }
-            }
-            else if (!useAsyncIO)
-            {
-                FileStreamHelpers.VerifyHandleIsSync(handle);
-            }
+            handle.InitThreadPoolBindingIfNeeded();
 
             if (_canSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);

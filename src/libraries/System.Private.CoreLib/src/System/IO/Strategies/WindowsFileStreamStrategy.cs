@@ -226,15 +226,9 @@ namespace System.IO.Strategies
 
         internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
 
-        protected abstract void OnInitFromHandle(SafeFileHandle handle);
-
-        protected virtual void OnInit() { }
-
         private void Init(FileMode mode, string originalPath)
         {
             FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
-
-            OnInit();
 
             // For Append mode...
             if (mode == FileMode.Append)
@@ -270,7 +264,7 @@ namespace System.IO.Strategies
         {
             FileStreamHelpers.GetFileTypeSpecificInformation(handle, out canSeek, out isPipe);
 
-            OnInitFromHandle(handle);
+            handle.InitThreadPoolBindingIfNeeded();
 
             if (_canSeek)
             {

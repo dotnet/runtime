@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 fileHandle.Validate(fullPath);
 
-                fileHandle.Init();
+                fileHandle.InitThreadPoolBindingIfNeeded();
 
                 return fileHandle;
             }
@@ -115,6 +115,35 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
+        internal void InitThreadPoolBindingIfNeeded()
+        {
+            if (IsAsync == true && ThreadPoolBinding == null)
+            {
+                // This is necessary for async IO using IO Completion ports via our
+                // managed Threadpool API's.  This (theoretically) calls the OS's
+                // BindIoCompletionCallback method, and passes in a stub for the
+                // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
+                // struct for this request and gets a delegate to a managed callback
+                // from there, which it then calls on a threadpool thread.  (We allocate
+                // our native OVERLAPPED structs 2 pointers too large and store EE state
+                // & GC handles there, one to an IAsyncResult, the other to a delegate.)
+                try
+                {
+                    ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(this);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new IOException(SR.IO_BindHandleFailed, ex);
+                }
+                finally
+                {
+                    if (ThreadPoolBinding == null)
+                    {
+                        // We should close the handle so that the handle is not open until SafeFileHandle GC
+                        Dispose();
+                    }
+                }
+            }
         }
     }
 }

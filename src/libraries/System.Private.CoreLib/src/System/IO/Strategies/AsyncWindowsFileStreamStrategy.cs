@@ -45,63 +45,6 @@ namespace System.IO.Strategies
             Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
         }
 
-        protected override void OnInitFromHandle(SafeFileHandle handle)
-        {
-            // This is necessary for async IO using IO Completion ports via our
-            // managed Threadpool API's.  This calls the OS's
-            // BindIoCompletionCallback method, and passes in a stub for the
-            // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
-            // struct for this request and gets a delegate to a managed callback
-            // from there, which it then calls on a threadpool thread.  (We allocate
-            // our native OVERLAPPED structs 2 pointers too large and store EE
-            // state & a handle to a delegate there.)
-            //
-            // If, however, we've already bound this file handle to our completion port,
-            // don't try to bind it again because it will fail.  A handle can only be
-            // bound to a single completion port at a time.
-            if (handle.IsAsync != true)
-            {
-                try
-                {
-                    handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
-                }
-                catch (Exception ex)
-                {
-                    // If you passed in a synchronous handle and told us to use
-                    // it asynchronously, throw here.
-                    throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle), ex);
-                }
-            }
-        }
-
-        protected override void OnInit()
-        {
-            // This is necessary for async IO using IO Completion ports via our
-            // managed Threadpool API's.  This (theoretically) calls the OS's
-            // BindIoCompletionCallback method, and passes in a stub for the
-            // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
-            // struct for this request and gets a delegate to a managed callback
-            // from there, which it then calls on a threadpool thread.  (We allocate
-            // our native OVERLAPPED structs 2 pointers too large and store EE state
-            // & GC handles there, one to an IAsyncResult, the other to a delegate.)
-            try
-            {
-                _fileHandle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_fileHandle);
-            }
-            catch (ArgumentException ex)
-            {
-                throw new IOException(SR.IO_BindHandleFailed, ex);
-            }
-            finally
-            {
-                if (_fileHandle.ThreadPoolBinding == null)
-                {
-                    // We should close the handle so that the handle is not open until SafeFileHandle GC
-                    _fileHandle.Dispose();
-                }
-            }
-        }
-
         private void TryToReuse(ValueTaskSource source)
         {
             source._source.Reset();

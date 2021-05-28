@@ -93,7 +93,7 @@ namespace System.IO.Strategies
 
             try
             {
-                Init(mode, share, path, options, preallocationSize);
+                Init(mode, path, options);
             }
             catch
             {
