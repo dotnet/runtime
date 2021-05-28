@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
     public static class ClassWithCustomAttributesHelper {
         public static Type GetAttributedClass () {
 #pragma warning disable CS0612
-            return typeof(ClassWithCustomAttributes);
+            return typeof(ClassWithCustomAttributes2);
 #pragma warning restore CS0612
         }
     }

@@ -40,7 +40,7 @@ namespace System.Reflection.Metadata
         }
 
         [Fact]
-        [ActiveIssue("xyz", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         void ClassWithCustomAttributes()
         {
             ApplyUpdateUtil.TestCase(static () =>
@@ -54,6 +54,7 @@ namespace System.Reflection.Metadata
                 Assert.NotNull (ty);
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
 
                 // returns ClassWithCustomAttributes2
                 ty = ApplyUpdate.Test.ClassWithCustomAttributesHelper.GetAttributedClass();
