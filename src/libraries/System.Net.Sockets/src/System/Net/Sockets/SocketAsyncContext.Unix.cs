@@ -2100,7 +2100,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback)
+        public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
@@ -2122,7 +2122,7 @@ namespace System.Net.Sockets
                 BytesTransferred = bytesSent
             };
 
-            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
+            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 bytesSent = operation.BytesTransferred;
                 return operation.ErrorCode;

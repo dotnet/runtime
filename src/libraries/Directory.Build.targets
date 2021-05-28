@@ -146,6 +146,13 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
+  <Import Sdk="Microsoft.DotNet.PackageValidation" Project="Sdk.targets" Condition="'$(IsSourceProject)' == 'true' and !Exists('$(PkgProjPath)')" />
+
+  <PropertyGroup>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <EnablePackageBaselineValidation Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj' and '$(EnablePackageBaselineValidation)' == ''">true</EnablePackageBaselineValidation>
+  </PropertyGroup>
+
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
@@ -234,14 +241,10 @@
     </ItemGroup>
   </Target>
 
-  <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
-  <Choose>
-    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
-      <ItemGroup>
-        <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-      </ItemGroup>
-    </When>
-  </Choose>
+  <!-- Adds Nullable annotation attributes to < .NET 5 builds. -->
+  <ItemGroup Condition="'$(Nullable)' != '' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
 
   <PropertyGroup>
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>

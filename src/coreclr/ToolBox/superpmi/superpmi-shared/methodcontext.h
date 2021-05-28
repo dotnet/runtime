@@ -50,7 +50,9 @@ enum EXTRA_JIT_FLAGS
     HAS_PGO = 63,
     HAS_EDGE_PROFILE = 62,
     HAS_CLASS_PROFILE = 61,
-    HAS_LIKELY_CLASS = 60
+    HAS_LIKELY_CLASS = 60,
+    HAS_STATIC_PROFILE = 59,
+    HAS_DYNAMIC_PROFILE = 58
 };
 
 // Asserts to catch changes in corjit flags definitions.
@@ -59,6 +61,8 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_PGO == (int)CORJIT_FLAGS::CorJitFlag::CO
 static_assert((int)EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED35, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED34, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED33, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED32, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED31, "Jit Flags Mismatch");
 
 class MethodContext
 {
@@ -99,7 +103,7 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
-    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass);
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -699,9 +703,9 @@ public:
     void dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value);
     HRESULT repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
 
-    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, HRESULT result);
+    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, HRESULT result);
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
-    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
+    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
 
     void recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result);
     void dmpMergeClasses(DLDL key, DWORDLONG value);

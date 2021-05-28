@@ -12,4 +12,10 @@
     <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion)" />
   </ItemGroup>
   
+  <PropertyGroup>
+    <!-- to call AsssemblyExtensions.ApplyUpdate we need Optimize=false, EmitDebugInformation=true in all configurations -->
+    <Optimize>false</Optimize>
+    <EmitDebugInformation>true</EmitDebugInformation>
+  </PropertyGroup>
+
 </Project>

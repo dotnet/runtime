@@ -568,14 +568,24 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializeSerializePropCache()
         {
-            Debug.Assert(PropInitFunc != null);
-            Debug.Assert(Options._context != null);
+            JsonSerializerContext? context = Options._context;
 
-            PropertyCacheArray = PropInitFunc(Options._context);
+            Debug.Assert(context != null);
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            if (PropInitFunc == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                return;
+            }
+
+            PropertyCacheArray = PropInitFunc(context);
         }
 
         internal void InitializeDeserializePropCache()
         {
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
             if (PropertyCacheArray == null)
             {
                 InitializeSerializePropCache();

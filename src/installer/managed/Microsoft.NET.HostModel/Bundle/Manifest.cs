@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Microsoft.NET.HostModel.Bundle
 {
@@ -65,7 +66,10 @@ namespace Microsoft.NET.HostModel.Bundle
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
-        public readonly string BundleID;
+        public string BundleID { get; private set; }
+        //Same as Path.GetRandomFileName
+        private const int BundleIdLength = 12;
+        private SHA256 bundleHash = SHA256.Create();
         public readonly uint BundleMajorVersion;
         // The Minor version is currently unused, and is always zero
         public const uint BundleMinorVersion = 0;
@@ -79,14 +83,22 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             BundleMajorVersion = bundleMajorVersion;
             Files = new List<FileEntry>();
-            BundleID = Path.GetRandomFileName();
             Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode : HeaderFlags.None;
         }
 
-        public FileEntry AddEntry(FileType type, string relativePath, long offset, long size, long compressedSize, uint bundleMajorVersion)
+        public FileEntry AddEntry(FileType type, FileStream fileContent, string relativePath, long offset, long compressedSize, uint bundleMajorVersion)
         {
-            FileEntry entry = new FileEntry(type, relativePath, offset, size, compressedSize, bundleMajorVersion);
+            if (bundleHash == null)
+            {
+                throw new InvalidOperationException("It is forbidden to change Manifest state after it was written or BundleId was obtained.");
+            }
+
+            FileEntry entry = new FileEntry(type, relativePath, offset, fileContent.Length, compressedSize, bundleMajorVersion);
             Files.Add(entry);
+
+            fileContent.Position = 0;
+            byte[] hashBytes = ComputeSha256Hash(fileContent);
+            bundleHash.TransformBlock(hashBytes, 0, hashBytes.Length, hashBytes, 0);
 
             switch (entry.Type)
             {
@@ -107,8 +119,28 @@ namespace Microsoft.NET.HostModel.Bundle
             return entry;
         }
 
+        private static byte[] ComputeSha256Hash(Stream stream)
+        {
+            using (SHA256 sha = SHA256.Create())
+            {
+                return sha.ComputeHash(stream);
+            }
+        }
+
+        private string GenerateDeterministicId()
+        {
+            bundleHash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[] manifestHash = bundleHash.Hash;
+            bundleHash.Dispose();
+            bundleHash = null;
+
+            return Convert.ToBase64String(manifestHash).Substring(BundleIdLength).Replace('/', '_');
+        }
+
         public long Write(BinaryWriter writer)
         {
+            BundleID = BundleID ?? GenerateDeterministicId();
+
             long startOffset = writer.BaseStream.Position;
 
             // Write the bundle header

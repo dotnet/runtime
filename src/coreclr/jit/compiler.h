@@ -3433,6 +3433,7 @@ public:
         DNER_NoRegVars,   // opts.compFlags & CLFLG_REGVAR is not set
         DNER_MinOptsGC,   // It is a GC Ref and we are compiling MinOpts
 #if !defined(TARGET_64BIT)
+        DNER_LongParamVar,   // It is a long parameter.
         DNER_LongParamField, // It is a decomposed field of a long parameter.
 #endif
 #ifdef JIT32_GCENCODER
@@ -3816,9 +3817,6 @@ public:
 
     StructPromotionHelper* structPromotionHelper;
 
-#if !defined(TARGET_64BIT)
-    void lvaPromoteLongVars();
-#endif // !defined(TARGET_64BIT)
     unsigned lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOffset);
     lvaPromotionType lvaGetPromotionType(const LclVarDsc* varDsc);
     lvaPromotionType lvaGetPromotionType(unsigned varNum);
@@ -5748,6 +5746,7 @@ protected:
 public:
     const char*                            fgPgoFailReason;
     bool                                   fgPgoDisabled;
+    ICorJitInfo::PgoSource                 fgPgoSource;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -8228,6 +8227,23 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
+    bool IsBaselineSimdIsaSupported()
+    {
+#ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
+        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+#elif defined(TARGET_ARM64)
+        CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        return compOpportunisticallyDependsOn(minimumIsa) && JitConfig.EnableHWIntrinsic();
+#else
+        return false;
+#endif
+    }
+
     // Get highest available level for SIMD codegen
     SIMDLevel getSIMDSupportLevel()
     {
@@ -9387,6 +9403,9 @@ public:
             printf("[%06d]", dspTreeID(tree));
         }
     }
+
+    const char* pgoSourceToString(ICorJitInfo::PgoSource p);
+    const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
 #endif // DEBUG
 
