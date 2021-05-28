@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -55,7 +56,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Func<ServiceProviderEngineScope, object> lambda = BuildType(callSite).Lambda;
 
             return (scope) => scope.IsRootScope ?
-                _runtimeResolver.Resolve(callSite, scope) : lambda(scope);
+                CallSiteRuntimeResolver.Instance.Resolve(callSite, scope) : lambda(scope);
         }
 
         private GeneratedMethod BuildType(ServiceCallSite callSite)

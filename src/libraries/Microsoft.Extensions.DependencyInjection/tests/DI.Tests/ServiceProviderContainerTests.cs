@@ -1141,7 +1141,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
         }
 
-
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
             var types = new Type[]
