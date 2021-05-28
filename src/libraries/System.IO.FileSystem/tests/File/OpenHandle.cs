@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Tests
@@ -33,6 +34,24 @@ namespace System.IO.Tests
             // currently not enabled due to https://github.com/dotnet/runtime/issues/53432
             GC.KeepAlive(streamSpecifier); // to keep the xUnit analyser happy
         }
+
+        [Theory]
+        [InlineData(FileOptions.None)]
+        [InlineData(FileOptions.Asynchronous)]
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation(FileOptions options)
+        {
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
+            {
+                Assert.Equal((options & FileOptions.Asynchronous) != 0, handle.IsAsync);
+
+                // the following code exercises the code path where we don't know FileOptions used for opening the handle
+                // and instead we ask the OS about it
+                if (OperatingSystem.IsWindows()) // async file handles are a Windows concept
+                {
+                    SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
+                    Assert.Equal((options & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
+                }
+            }
         }
     }
 }
