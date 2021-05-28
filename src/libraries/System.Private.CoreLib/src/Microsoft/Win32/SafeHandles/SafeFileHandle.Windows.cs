@@ -11,25 +11,24 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private bool? _isAsync;
+        private const FileOptions Unknown = (FileOptions)(-1);
+        private const FileOptions NoBuffering = (FileOptions)(0x20000000);
+        private FileOptions _fileOptions = Unknown;
 
         public SafeFileHandle() : base(true)
         {
-            _isAsync = null;
         }
 
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
-
-            _isAsync = null;
         }
 
-        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, bool isAsync) : base(ownsHandle)
+        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, FileOptions fileOptions) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
 
-            _isAsync = isAsync;
+            _fileOptions = fileOptions;
         }
 
         public bool IsAsync
@@ -41,12 +40,12 @@ namespace Microsoft.Win32.SafeHandles
                     throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
                 }
 
-                if (_isAsync == null)
+                if (_fileOptions == Unknown)
                 {
-                    _isAsync = !IsHandleSynchronous();
+                    _fileOptions = GetFileOptions();
                 }
 
-                return _isAsync.Value;
+                return (_fileOptions & FileOptions.Asynchronous) != 0;
             }
         }
 
@@ -61,7 +60,7 @@ namespace Microsoft.Win32.SafeHandles
                 SafeFileHandle fileHandle = new SafeFileHandle(
                     NtCreateFile(fullPath, mode, access, share, options, preallocationSize),
                     ownsHandle: true,
-                    isAsync: (options & FileOptions.Asynchronous) != 0);
+                    options);
 
                 fileHandle.Validate(fullPath);
 
@@ -167,13 +166,13 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private unsafe bool IsHandleSynchronous()
+        private unsafe FileOptions GetFileOptions()
         {
-            uint fileMode;
+            Interop.NtDll.CreateOptions options;
             int status = Interop.NtDll.NtQueryInformationFile(
                 FileHandle: this,
                 IoStatusBlock: out _,
-                FileInformation: &fileMode,
+                FileInformation: &options,
                 Length: sizeof(uint),
                 FileInformationClass: Interop.NtDll.FileModeInformation);
 
@@ -182,8 +181,34 @@ namespace Microsoft.Win32.SafeHandles
                 throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
             }
 
-            // If either of these two flags are set, the file handle is synchronous (not overlapped)
-            return (fileMode & (uint)(Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
+            FileOptions result = FileOptions.None;
+
+            if ((options & (Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT)) == 0)
+            {
+                result |= FileOptions.Asynchronous;
+            }
+            if ((options & Interop.NtDll.CreateOptions.FILE_WRITE_THROUGH) != 0)
+            {
+                result |= FileOptions.WriteThrough;
+            }
+            if ((options & Interop.NtDll.CreateOptions.FILE_RANDOM_ACCESS) != 0)
+            {
+                result |= FileOptions.RandomAccess;
+            }
+            if ((options & Interop.NtDll.CreateOptions.FILE_SEQUENTIAL_ONLY) != 0)
+            {
+                result |= FileOptions.SequentialScan;
+            }
+            if ((options & Interop.NtDll.CreateOptions.FILE_DELETE_ON_CLOSE) != 0)
+            {
+                result |= FileOptions.DeleteOnClose;
+            }
+            if ((options & Interop.NtDll.CreateOptions.FILE_NO_INTERMEDIATE_BUFFERING) != 0)
+            {
+                result |= NoBuffering;
+            }
+
+            return result;
         }
     }
 }
