@@ -209,14 +209,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
-        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
-        {
-            var rt = (RuntimeType)structureType;
-            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: true)!;
-            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
-            return structure;
-        }
-
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
         /// </summary>

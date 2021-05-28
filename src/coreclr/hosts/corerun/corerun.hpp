@@ -106,6 +106,11 @@ namespace pal
         return { buffer.get() };
     }
 
+    uint32_t get_process_id()
+    {
+        return (uint32_t)::GetCurrentProcessId();
+    }
+
     debugger_state_t is_debugger_attached()
     {
         return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
@@ -365,6 +370,11 @@ namespace pal
         }
 
         return abs_path;
+    }
+
+    uint32_t get_process_id()
+    {
+        return (uint32_t)getpid();
     }
 
     debugger_state_t is_debugger_attached()

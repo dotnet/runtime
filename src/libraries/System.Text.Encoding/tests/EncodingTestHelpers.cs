@@ -264,7 +264,7 @@ namespace System.Text.Tests
             VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
 
             // Use GetBytes(ReadOnlySpan<char>, Span<byte>)
-            Array.Clear(stringResultAdvanced, 0, stringResultAdvanced.Length);
+            Array.Clear(stringResultAdvanced);
             Assert.Equal(expected.Length, encoding.GetBytes(chars.AsSpan(index, count), (Span<byte>)stringResultAdvanced));
             VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
 
