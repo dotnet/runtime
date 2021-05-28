@@ -9,19 +9,22 @@ namespace System.IO.Tests
     public class File_OpenHandle : FileStream_ctor_options_as
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
-            => new FileStream(File.OpenHandle(path, mode), mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite);
+        {
+            FileAccess access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite;
+            return new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
+        }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
-            => new FileStream(File.OpenHandle(path, mode, access), access);
+            => new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options), access, bufferSize);
+            => new FileStream(File.OpenHandle(path, mode, access, share, options, PreallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
 
         [Fact]
         public override void NegativePreallocationSizeThrows()
         {
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
-                () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, -1));
+                () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: -1));
         }
     }
 }
