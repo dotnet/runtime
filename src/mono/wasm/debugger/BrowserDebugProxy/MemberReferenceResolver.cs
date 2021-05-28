@@ -33,6 +33,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         public async Task<JObject> GetValueFromObject(JToken objRet, CancellationToken token)
         {
+            if (objRet["value"]?["className"]?.Value<string>() == "System.Exception")
+            {
+                if (DotnetObjectId.TryParse(objRet?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                {
+                    var exceptionObject = await proxy.sdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), true, false, false, true, token);
+                    var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
+                    exceptionObjectMessage["value"]["value"] = objRet["value"]?["className"]?.Value<string>() + ": " + exceptionObjectMessage["value"]?["value"]?.Value<string>();
+                    return exceptionObjectMessage["value"]?.Value<JObject>();
+                }
+                return objRet["value"]?.Value<JObject>();
+            }
+
             if (objRet["value"]?.Value<JObject>() != null)
                 return objRet["value"]?.Value<JObject>();
             if (objRet["get"]?.Value<JObject>() != null)
@@ -43,7 +55,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var command_params_writer = new MonoBinaryWriter(command_params);
                     command_params_writer.WriteObj(objectId, proxy.sdbHelper);
                     var ret = await proxy.sdbHelper.InvokeMethod(sessionId, command_params.ToArray(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
-                    return ret["value"]?.Value<JObject>();
+                    return await GetValueFromObject(ret, token);
                 }
 
             }

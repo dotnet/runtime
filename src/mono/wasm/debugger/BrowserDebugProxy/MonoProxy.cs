@@ -515,7 +515,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var ret_debugger_cmd = new MemoryStream(newBytes);
                     var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
                     ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                    var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, token);
+                    var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, -1, token);
                     /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
                     res = Result.OkFromObject(new { result = obj["value"]});
                     SendResponse(id, res, token);

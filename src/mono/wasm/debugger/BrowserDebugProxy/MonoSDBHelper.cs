@@ -326,6 +326,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
     }
 
+    internal enum StepFilter {
+        None = 0,
+        StaticCtor = 1,
+        DebuggerHidden = 2,
+        DebuggerStepThrough = 4,
+        DebuggerNonUserCode = 8
+    }
+
     internal class MonoBinaryReader : BinaryReader
     {
         public MonoBinaryReader(Stream stream) : base(stream) {}
@@ -391,10 +399,21 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             byte[] data = new byte[4];
             Read(data, 0, 4);
-
             int ret;
             fixed (byte *src = &data[0]){
                 PutBytesBE ((byte *) &ret, src, 4);
+            }
+            return ret;
+        }
+
+        public override unsafe double ReadDouble()
+        {
+            byte[] data = new byte[8];
+            Read(data, 0, 8);
+
+            double ret;
+            fixed (byte *src = &data[0]){
+                PutBytesBE ((byte *) &ret, src, 8);
             }
             return ret;
         }
@@ -459,10 +478,12 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public int Id { get; }
         public string Name { get; }
-        public FieldTypeClass(int id, string name)
+        public int TypeId { get; }
+        public FieldTypeClass(int id, string name, int typeId)
         {
             Id = id;
             Name = name;
+            TypeId = typeId;
         }
     }
     internal class ValueTypeClass
@@ -733,6 +754,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(thread_id);
             command_params_writer.Write((int)0);
             command_params_writer.Write((int)kind);
+            command_params_writer.Write((int)StepFilter.StaticCtor); //filter
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
             if (ret_debugger_cmd_reader != null)
                 return true;
@@ -767,7 +789,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 int fieldId = ret_debugger_cmd_reader.ReadInt32(); //fieldId
                 string fieldNameStr = ret_debugger_cmd_reader.ReadString();
-                ret_debugger_cmd_reader.ReadInt32(); //typeId
+                int typeId = ret_debugger_cmd_reader.ReadInt32(); //typeId
                 ret_debugger_cmd_reader.ReadInt32(); //attrs
                 if (fieldNameStr.Contains("k__BackingField"))
                 {
@@ -775,7 +797,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     fieldNameStr = fieldNameStr.Replace("<", "");
                     fieldNameStr = fieldNameStr.Replace(">", "");
                 }
-                ret.Add(new FieldTypeClass(fieldId, fieldNameStr));
+                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, typeId));
             }
             return ret;
         }
@@ -909,7 +931,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(methodId);
-
+            Console.WriteLine("methodId - " + methodId);
+            if (methodId == 0)
+                return "";
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_NAME, command_params, token);
             var methodName = ret_debugger_cmd_reader.ReadString();
 
@@ -927,7 +951,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(0);
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.VM, (int) CmdVM.INVOKE_METHOD, parms, token);
             ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, varName, false, token);
+            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, varName, false, -1, token);
         }
         public async Task<JArray> CreateJArrayForProperties(SessionId sessionId, int typeId, byte[] object_buffer, JArray attributes, bool isAutoExpandable, string objectId, bool isOwn, CancellationToken token)
         {
@@ -992,7 +1016,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var varName = pointerValues[pointerId].varName;
             if (int.TryParse(varName, out _))
                 varName = $"[{varName}]";
-            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "*" + varName, false, token);
+            return await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "*" + varName, false, -1, token);
         }
         public async Task<JArray> GetPropertiesValuesOfValueType(SessionId sessionId, int valueTypeId, CancellationToken token)
         {
@@ -1036,7 +1060,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, string name, bool isOwn, CancellationToken token)
+        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, string name, bool isOwn, int typeIdFromAttribute, CancellationToken token)
         {
             long initialPos = ret_debugger_cmd_reader == null ? 0 : ret_debugger_cmd_reader.BaseStream.Position;
             ElementType etype = (ElementType)ret_debugger_cmd_reader.ReadByte();
@@ -1199,9 +1223,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 case ElementType.R8:
                 {
-                    long high = (long) ret_debugger_cmd_reader.ReadInt32();
-                    long low = (long) ret_debugger_cmd_reader.ReadInt32();
-                    double value = BitConverter.Int64BitsToDouble(((high << 32) | low));
+                    double value = ret_debugger_cmd_reader.ReadDouble();
                     ret = JObject.FromObject(new {
                             value = new
                             {
@@ -1293,12 +1315,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.Object:
                 {
                     var objectId = ret_debugger_cmd_reader.ReadInt32();
+                    var className = "";
                     var type_id = await GetTypeIdFromObject(sessionId, objectId, false, token);
-                    var className = await GetTypeName(sessionId, type_id[0], token);
+                    className = await GetTypeName(sessionId, type_id[0], token);
                     var description = className.ToString();
                     if (await IsDelegate(sessionId, objectId, token))
                     {
+                        if (typeIdFromAttribute != -1)
+                        {
+                            className = await GetTypeName(sessionId, typeIdFromAttribute, token);
+                        }
+
                         description = await GetDelegateMethodDescription(sessionId, objectId, token);
+                        if (description == "")
+                        {
+                            ret = JObject.FromObject(new {
+                                    value = new
+                                    {
+                                        type = "symbol",
+                                        description = className.ToString(),
+                                        value = className.ToString()
+                                    },
+                                    name
+                                });
+                            break;
+                        }
                     }
                     ret = JObject.FromObject(new {
                             value = new
@@ -1326,7 +1367,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         ret_debugger_cmd_reader.ReadByte(); //ignoring the boolean type
                         var isNull = ret_debugger_cmd_reader.ReadInt32();
-                        var value = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, name, false, token);
+                        var value = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, name, false, -1, token);
                         if (isNull != 0)
                             ret = value;
                         else
@@ -1345,7 +1386,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     for (int i = 0; i < numFields ; i++)
                     {
-                        fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, true, token);
+                        fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, token);
                         valueTypeFields.Add(fieldValueType);
                     }
 
@@ -1493,13 +1534,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_VALUES, command_params, token);
             foreach (var var in var_ids)
             {
-                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, var.Name, false, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, var.Name, false, -1, token);
                 locals.Add(var_json);
             }
             if (!method.IsStatic())
             {
                 ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_THIS, command_params, token);
-                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "this", false, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "this", false, -1, token);
                 var_json.Add("fieldOffset", -1);
                 locals.Add(var_json);
             }
@@ -1571,7 +1612,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray array = new JArray();
             for (int i = 0 ; i < length ; i++)
             {
-                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, i.ToString(), false, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, i.ToString(), false, -1, token);
                 array.Add(var_json);
             }
             return array;
@@ -1644,7 +1685,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         long initialPos = ret_debugger_cmd_reader.BaseStream.Position;
                         int valtype = ret_debugger_cmd_reader.ReadByte();
                         ret_debugger_cmd_reader.BaseStream.Position = initialPos;
-                        var fieldValue = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, field.Name, i == 0, token);
+                        var fieldValue = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, field.Name, i == 0, field.TypeId, token);
 
                         if (ret.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any()) {
                             continue;
