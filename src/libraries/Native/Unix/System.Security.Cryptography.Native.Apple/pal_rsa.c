@@ -162,13 +162,6 @@ int32_t AppleCryptoNative_RsaSignaturePrimitive(
         privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSASignatureRaw, SecKeyCreateSignature);
 }
 
-int32_t AppleCryptoNative_RsaDecryptionPrimitive(
-    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
-{
-    return RsaPrimitive(
-        privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateDecryptedData);
-}
-
 int32_t AppleCryptoNative_RsaEncryptionPrimitive(
     SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {

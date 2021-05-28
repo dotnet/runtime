@@ -43,6 +43,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IServiceProvider ServiceProvider => this;
 
+        public bool IsRootScope => this == Engine.Root;
+
         internal object CaptureDisposable(object service)
         {
             _captureDisposableCallback?.Invoke(service);

@@ -62,6 +62,8 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"

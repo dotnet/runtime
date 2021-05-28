@@ -265,6 +265,7 @@ namespace System.Resources.Extensions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void BinaryFormattedResources()
         {
             var values = TestData.BinaryFormatted;
@@ -303,6 +304,7 @@ namespace System.Resources.Extensions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void BinaryFormattedResourcesWithoutTypeName()
         {
             var values = TestData.BinaryFormatted;
@@ -437,6 +439,7 @@ namespace System.Resources.Extensions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void CanReadViaResourceManager()
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));
@@ -475,6 +478,7 @@ namespace System.Resources.Extensions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void EmbeddedResourcesAreUpToDate()
         {
             // this is meant to catch a case where our embedded test resources are out of date with respect to the current writer.

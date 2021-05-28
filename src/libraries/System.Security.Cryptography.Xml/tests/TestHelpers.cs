@@ -129,6 +129,7 @@ namespace System.Security.Cryptography.Xml.Tests
             return new Uri("file://" + (path[0] == '/' ? path : '/' + path));
         }
 
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
         /// <summary>
         /// Get specification URL from algorithm implementation
         /// </summary>
@@ -159,6 +160,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             throw new ArgumentException($"The specified algorithm `{key.GetType().FullName}` is not supported for XML Encryption.");
         }
+#pragma warning restore SYSLIB0022
 
         /// <summary>
         /// Lists functions creating symmetric algorithms

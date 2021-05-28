@@ -65,11 +65,8 @@
 
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-      <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
 
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmBuildApp</BundleTestWasmAppDependsOn>
-      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'helix'">StageEmSdkForHelix</BundleTestWasmAppDependsOn>
-
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
 
@@ -122,20 +119,6 @@
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
-  </Target>
-
-  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
-   attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
-   payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(EmSdkDirForHelixPayload)' == '' or !Exists($(EmSdkDirForHelixPayload))">
-    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDirForHelixPayload) or in EMSDK_PATH=$(EMSDK_PATH)" />
-
-    <ItemGroup>
-      <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
-    <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">

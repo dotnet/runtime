@@ -338,6 +338,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52199", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RoundtripEmptyArray()
         {
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))

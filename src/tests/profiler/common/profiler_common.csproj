@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="ProfilerTestRunner.cs" />
     <Compile Include="ProfilerControl.cs" />
+    <Compile Include="DiagnosticsIPCWorkaround.cs" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)tracing/eventpipe/common/common.csproj" />
   </ItemGroup>
 </Project>

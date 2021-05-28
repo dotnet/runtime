@@ -605,7 +605,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-    CORINFO_HELP_CLASSPROFILE,              // Update class profile for a call site
+    CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
+    CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
 
     CORINFO_HELP_COUNT,
 };
@@ -881,23 +882,16 @@ enum CorInfoException
 
 enum CorInfoIntrinsics
 {
-    CORINFO_INTRINSIC_GetChar,              // fetch character out of string
-    CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
     CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
     CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-    CORINFO_INTRINSIC_StringGetChar,        // fetch character out of string
-    CORINFO_INTRINSIC_StringLength,         // get the length
     CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-    CORINFO_INTRINSIC_GetTypeFromHandle,
     CORINFO_INTRINSIC_RTH_GetValueInternal,
-    CORINFO_INTRINSIC_TypeEQ,
-    CORINFO_INTRINSIC_TypeNEQ,
     CORINFO_INTRINSIC_Object_GetType,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-    CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
     CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
+
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
     CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -910,8 +904,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
-    CORINFO_INTRINSIC_Span_GetItem,
-    CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
     CORINFO_INTRINSIC_GetRawHandle,
 
     CORINFO_INTRINSIC_Count,
@@ -1817,7 +1809,7 @@ struct CORINFO_Object
 struct CORINFO_String : public CORINFO_Object
 {
     unsigned                stringLen;
-    WCHAR                   chars[1];       // actually of variable size
+    char16_t                chars[1];       // actually of variable size
 };
 
 struct CORINFO_Array : public CORINFO_Object
@@ -2635,7 +2627,7 @@ public:
                 unsigned int           *cILOffsets,         // [OUT] size of pILOffsets
                 uint32_t              **pILOffsets,         // [OUT] IL offsets of interest
                                                             //       jit MUST free with freeArray!
-                ICorDebugInfo::BoundaryTypes *implictBoundaries // [OUT] tell jit, all boundries of this type
+                ICorDebugInfo::BoundaryTypes *implicitBoundaries // [OUT] tell jit, all boundaries of this type
                 ) = 0;
 
     // Report back the mapping from IL to native code,

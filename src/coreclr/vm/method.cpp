@@ -1140,7 +1140,7 @@ BOOL MethodDesc::IsVarArg()
 
     Signature signature = GetSignature();
     _ASSERTE(!signature.IsEmpty());
-    return MetaSig::IsVarArg(GetModule(), signature);
+    return MetaSig::IsVarArg(signature);
 }
 
 //*******************************************************************************
@@ -2581,8 +2581,7 @@ void MethodDesc::Save(DataImage *image)
     {
         EX_TRY
         {
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this);
         }
         EX_CATCH
         {
@@ -5425,6 +5424,38 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
+BOOL MethodDesc::HasUnmanagedCallConvAttribute()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    MethodDesc* tgt = this;
+    if (IsILStub())
+    {
+        // From the IL stub, determine if the actual target has been
+        // marked with UnmanagedCallConv.
+        PTR_DynamicMethodDesc ilStubMD = AsDynamicMethodDesc();
+        PTR_ILStubResolver ilStubResolver = ilStubMD->GetILStubResolver();
+        tgt = ilStubResolver->GetStubTargetMethodDesc();
+        if (tgt == nullptr)
+            return FALSE;
+    }
+
+    _ASSERTE(tgt != nullptr);
+    HRESULT hr = tgt->GetCustomAttribute(
+        WellKnownAttribute::UnmanagedCallConv,
+        nullptr,
+        nullptr);
+
+    return (hr == S_OK) ? TRUE : FALSE;
+}
+
+//*******************************************************************************
 BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 {
     CONTRACTL
@@ -5461,9 +5492,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -5491,11 +5522,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     }
 
     _ASSERTE(tgt != nullptr);
-    HRESULT hr = tgt->GetCustomAttribute(
-        WellKnownAttribute::SuppressGCTransition,
-        nullptr,
-        nullptr);
-    return (hr == S_OK) ? TRUE : FALSE;
+    bool suppressGCTransition;
+    NDirect::GetCallingConvention_IgnoreErrors(tgt, NULL /*callConv*/, &suppressGCTransition);
+    return suppressGCTransition ? TRUE : FALSE;
 }
 
 #ifdef FEATURE_COMINTEROP

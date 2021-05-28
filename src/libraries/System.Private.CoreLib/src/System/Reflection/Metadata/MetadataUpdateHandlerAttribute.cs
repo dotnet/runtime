@@ -5,7 +5,20 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
-    /// <summary>Specifies a type that should receive notifications of metadata updates.</summary>
+    /// <summary>
+    /// Specifies a type that should receive notifications of metadata updates.
+    /// <para>
+    /// The <see cref="Type" /> specified by this attribute must have at least one static method with the following signature:
+    /// <c>static void ClearCache(Type[]? updatedTypes)</c>
+    /// <c>static void UpdateApplication(Type[]? updatedTypes)</c>
+    /// </para>
+    /// <para>
+    /// Once a metadata update is applied, <c>ClearCache</c> is invoked for every handler that specifies one. This gives update handlers
+    /// an opportunity to clear any caches that are inferred based from the application's metadata. This is followed by invoking the <c>UpdateHandler</c>
+    /// method is invoked letting applications update their contents, trigger a UI re-render etc. When specified, the <c>updatedTypes</c>
+    /// parameter indicates the sequence of types that were affected by the metadata update.
+    /// </para>
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class MetadataUpdateHandlerAttribute : Attribute
     {

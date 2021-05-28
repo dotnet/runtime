@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -21,16 +22,51 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets a value indicating whether GC transition should be suppressed on the given p/invoke.
+        /// Gets a value indicating whether the method has the SuppressGCTransition attribute
         /// </summary>
-        public static bool IsSuppressGCTransition(this MethodDesc method)
+        public static bool HasSuppressGCTransitionAttribute(this MethodDesc method)
         {
             Debug.Assert(method.IsPInvoke);
 
             if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                 method = rawPinvoke.Target;
 
+            // Check SuppressGCTransition attribute
             return method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute");
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether GC transition should be suppressed on the given p/invoke.
+        /// </summary>
+        public static bool IsSuppressGCTransition(this MethodDesc method)
+        {
+            Debug.Assert(method.IsPInvoke);
+
+            // Check SuppressGCTransition attribute
+            if (method.HasSuppressGCTransitionAttribute())
+                return true;
+
+            MethodSignatureFlags unmanagedCallConv = method.GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
+            if (unmanagedCallConv != MethodSignatureFlags.None)
+                return false;
+
+            if (!(method is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod))
+                return false;
+
+            // Check UnmanagedCallConv attribute
+            System.Reflection.Metadata.CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
+            if (unmanagedCallConvAttribute == null)
+                return false;
+
+            foreach (DefType defType in Internal.JitInterface.CallConvHelper.EnumerateCallConvsFromAttribute(unmanagedCallConvAttribute.Value))
+            {
+                if (defType.Name == "CallConvSuppressGCTransition")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

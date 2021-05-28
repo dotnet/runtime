@@ -33,6 +33,7 @@
 #include "dbginterface.h"
 #include "sigbuilder.h"
 #include "notifyexternals.h"
+#include "callconvbuilder.hpp"
 #include "comdelegate.h"
 #include "finalizerthread.h"
 
@@ -1462,7 +1463,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     return NDirect::CreateCLRToNativeILStub(&sigDesc,
                                             (CorNativeLinkType)0,
                                             (CorNativeLinkFlags)0,
-                                            MetaSig::GetDefaultUnmanagedCallingConvention(),
+                                            CallConv::GetDefaultUnmanagedCallingConvention(),
                                             dwStubFlags);
 }
 

@@ -12,17 +12,10 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-    Target = "M:System.Net.Http.Json.JsonContent.<SerializeToStreamAsyncCore>d__13.MoveNext()",
-    Scope = "member",
-    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as UnconditionalSuppressMessage.")]
-
 namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)]
         public Type ObjectType { get; }
@@ -48,7 +41,7 @@ namespace System.Net.Http.Json
             Value = inputValue;
             ObjectType = inputType;
             Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
-            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
+            _jsonSerializerOptions = options ?? JsonHelpers.s_defaultSerializerOptions;
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -83,14 +76,14 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                        await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
                         // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                         // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
                         using var writer = new Utf8JsonWriter(transcodingStream);
-                        JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                        SerializeHelper(writer, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
                 finally
@@ -111,7 +104,7 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
@@ -123,7 +116,7 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await SerializeAsyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -131,12 +124,24 @@ namespace System.Net.Http.Json
                     // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                     // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
                     using var writer = new Utf8JsonWriter(targetStream);
-                    JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                    SerializeHelper(writer, Value, ObjectType, _jsonSerializerOptions);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
+
+#if NETCOREAPP
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+            static void SerializeHelper(Utf8JsonWriter writer, object? value, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, JsonSerializerOptions? options)
+                => JsonSerializer.Serialize(writer, value, inputType, options);
+#endif
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+            static Task SerializeAsyncHelper(Stream utf8Json, object? value, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
+                => JsonSerializer.SerializeAsync(utf8Json, value, inputType, options, cancellationToken);
         }
     }
 }

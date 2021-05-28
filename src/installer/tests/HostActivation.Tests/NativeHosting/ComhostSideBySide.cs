@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
@@ -22,14 +23,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             string [] args = {
                 "activation",
                 sharedState.ClsidString
@@ -46,14 +42,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void LocateEmbeddedTlb()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // COM activation is only supported on Windows
-                return;
-            }
-
             string [] args = {
                 "typelib_lookup",
                 sharedState.TypeLibId
@@ -77,7 +68,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     // COM activation is only supported on Windows
                     return;

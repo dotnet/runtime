@@ -564,8 +564,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
             info.compCompHnd->getMethodSig(info.compMethodHnd, &sigInfo);
             assert(JITtype2varType(sigInfo.retType) == info.compRetType); // Else shouldn't have a ret buff.
 
-            info.compRetBuffDefStack =
-                (info.compCompHnd->isStructRequiringStackAllocRetBuf(sigInfo.retTypeClass) == TRUE);
+            info.compRetBuffDefStack = (info.compCompHnd->isStructRequiringStackAllocRetBuf(sigInfo.retTypeClass));
             if (info.compRetBuffDefStack)
             {
                 // If we're assured that the ret buff argument points into a callers stack, we will type it as
@@ -2853,9 +2852,9 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
 
 #ifndef TARGET_64BIT
-    BOOL fDoubleAlignHint = FALSE;
+    bool fDoubleAlignHint = false;
 #ifdef TARGET_X86
-    fDoubleAlignHint = TRUE;
+    fDoubleAlignHint = true;
 #endif
 
     if (info.compCompHnd->getClassAlignmentRequirement(typeHnd, fDoubleAlignHint) == 8)
@@ -3843,6 +3842,74 @@ var_types LclVarDsc::lvaArgType()
 #endif // TARGET_AMD64
 
     return type;
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Arguments:
+//    tree - node that uses the local, its type is checked first.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
+{
+    var_types targetType = tree->gtType;
+    var_types lclVarType = TypeGet();
+
+    if (targetType == TYP_STRUCT)
+    {
+        if (lclVarType == TYP_STRUCT)
+        {
+            lclVarType = GetLayout()->GetRegisterType();
+        }
+        targetType = lclVarType;
+    }
+
+#ifdef DEBUG
+    if ((targetType != TYP_UNDEF) && tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+    {
+        const bool phiStore = (tree->gtGetOp1()->OperIsNonPhiLocal() == false);
+        // Ensure that the lclVar node is typed correctly,
+        // does not apply to phi-stores because they do not produce code in the merge block.
+        assert(phiStore || targetType == genActualType(lclVarType));
+    }
+#endif
+    return targetType;
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType() const
+{
+    if (TypeGet() != TYP_STRUCT)
+    {
+#if !defined(TARGET_64BIT)
+        if (TypeGet() == TYP_LONG)
+        {
+            return TYP_UNDEF;
+        }
+#endif
+        return TypeGet();
+    }
+    assert(m_layout != nullptr);
+    return m_layout->GetRegisterType();
+}
+
+//------------------------------------------------------------------------
+// GetActualRegisterType: Determine an actual register type for this local var.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//
+var_types LclVarDsc::GetActualRegisterType() const
+{
+    return genActualType(GetRegisterType());
 }
 
 //----------------------------------------------------------------------------------------------

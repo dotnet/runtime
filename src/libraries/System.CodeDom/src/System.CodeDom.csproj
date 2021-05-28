@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

@@ -715,10 +715,10 @@ void BaseDomain::Init()
 #endif // FEATURE_COMINTEROP
 
     m_dwSizedRefHandles = 0;
-    if (!m_iNumberOfProcessors)
-    {
-        m_iNumberOfProcessors = GetCurrentProcessCpuCount();
-    }
+    // For server GC this value indicates the number of GC heaps used in circular order to allocate sized
+    // ref handles. It must not exceed the array size allocated by the handle table (see getNumberOfSlots
+    // in objecthandle.cpp). We might want to use GetNumberOfHeaps if it were accessible here.
+    m_iNumberOfProcessors = min(GetCurrentProcessCpuCount(), GetTotalProcessorCount());
 }
 
 #undef LOADERHEAP_PROFILE_COUNTER

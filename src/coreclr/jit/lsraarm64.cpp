@@ -809,44 +809,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // No special handling required.
             break;
 
-        case SIMDIntrinsicGetItem:
-        {
-            op1 = simdTree->gtGetOp1();
-            op2 = simdTree->gtGetOp2();
-
-            // We have an object and an index, either of which may be contained.
-            bool setOp2DelayFree = false;
-            if (!op2->IsCnsIntOrI() && (!op1->isContained() || op1->OperIsLocal()))
-            {
-                // If the index is not a constant and the object is not contained or is a local
-                // we will need a general purpose register to calculate the address
-                // internal register must not clobber input index
-                // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                // ensures that the index (op2) doesn't interfere with the target.
-                buildInternalIntRegisterDefForNode(simdTree);
-                setOp2DelayFree = true;
-            }
-            srcCount += BuildOperandUses(op1);
-            if (!op2->isContained())
-            {
-                RefPosition* op2Use = BuildUse(op2);
-                if (setOp2DelayFree)
-                {
-                    setDelayFree(op2Use);
-                }
-                srcCount++;
-            }
-
-            if (!op2->IsCnsIntOrI() && (!op1->isContained()))
-            {
-                // If vector is not already in memory (contained) and the index is not a constant,
-                // we will use the SIMD temp location to store the vector.
-                compiler->getSIMDInitTempVarNum();
-            }
-            buildUses = false;
-        }
-        break;
-
         case SIMDIntrinsicSub:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
@@ -854,10 +816,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // No special handling required.
             break;
 
-        case SIMDIntrinsicSetX:
-        case SIMDIntrinsicSetY:
-        case SIMDIntrinsicSetZ:
-        case SIMDIntrinsicSetW:
         case SIMDIntrinsicNarrow:
         {
             // Op1 will write to dst before Op2 is free
@@ -904,10 +862,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicCopyToArray:
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
-        case SIMDIntrinsicGetX:
-        case SIMDIntrinsicGetY:
-        case SIMDIntrinsicGetZ:
-        case SIMDIntrinsicGetW:
         case SIMDIntrinsicHWAccel:
         case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
@@ -1199,6 +1153,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     op2DelayFree = (varNum1 != varNum2);
                     op3DelayFree = (varNum1 != varNum3);
                     op4DelayFree = (varNum1 != varNum4);
+                }
+            }
+
+            if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
+            {
+                assert(!op2DelayFree);
+
+                if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
+                {
+                    // If the index is not a constant and the object is not contained or is a local
+                    // we will need a general purpose register to calculate the address
+                    // internal register must not clobber input index
+                    // TODO-Cleanup: An internal register will never clobber a source; this code actually
+                    // ensures that the index (op2) doesn't interfere with the target.
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
+                    op2DelayFree = true;
+                }
+
+                if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
+                {
+                    // If the index is not a constant or op1 is in register,
+                    // we will use the SIMD temp location to store the vector.
+                    compiler->getSIMDInitTempVarNum();
                 }
             }
 

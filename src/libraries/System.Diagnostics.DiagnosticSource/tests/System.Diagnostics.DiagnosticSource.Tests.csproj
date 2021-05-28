@@ -11,6 +11,7 @@
     <Compile Include="ActivityTests.cs" />
     <Compile Include="ActivitySourceTests.cs" />
     <Compile Include="ActivityTagsCollectionTests.cs" />
+    <Compile Include="MetricsTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />

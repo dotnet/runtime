@@ -56,16 +56,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(generatorDiags);
             CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
 
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
             // Check base functionality of found types.
-            Assert.Equal(1, generator.SerializableTypes.Count);
-            Type myType= generator.SerializableTypes["HelloWorld.MyType"];
+            Assert.Equal(1, types.Count);
+            Type myType = types["HelloWorld.MyType"];
             Assert.Equal("HelloWorld.MyType", myType.FullName);
 
             // Check for received fields, properties and methods in created type.
             string[] expectedPropertyNames = { "PublicPropertyInt", "PublicPropertyString",};
             string[] expectedFieldNames = { "PublicChar", "PublicDouble" };
             string[] expectedMethodNames = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
-            CheckFieldsPropertiesMethods("HelloWorld.MyType", ref generator, expectedFieldNames, expectedPropertyNames, expectedMethodNames);
+            CheckFieldsPropertiesMethods(myType, expectedFieldNames, expectedPropertyNames, expectedMethodNames);
         }
 
         [Fact]
@@ -122,10 +124,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(generatorDiags);
             CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
 
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
             // Check base functionality of found types.
-            Assert.Equal(2, generator.SerializableTypes.Count);
-            Type myType = generator.SerializableTypes["HelloWorld.MyType"];
-            Type notMyType = generator.SerializableTypes["ReferencedAssembly.Location"];
+            Assert.Equal(2, types.Count);
+            Type myType = types["HelloWorld.MyType"];
+            Type notMyType = types["ReferencedAssembly.Location"];
 
             // Check for MyType.
             Assert.Equal("HelloWorld.MyType", myType.FullName);
@@ -134,7 +138,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string[] expectedFieldNamesMyType = { "PublicChar", "PublicDouble" };
             string[] expectedPropertyNamesMyType = { "PublicPropertyInt", "PublicPropertyString" };
             string[] expectedMethodNamesMyType = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
-            CheckFieldsPropertiesMethods("HelloWorld.MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
+            CheckFieldsPropertiesMethods(myType, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
 
             // Check for NotMyType.
             Assert.Equal("ReferencedAssembly.Location", notMyType.FullName);
@@ -144,7 +148,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string[] expectedPropertyNamesNotMyType = { "Address1", "Address2", "City", "Country", "Id", "Name", "PhoneNumber", "PostalCode", "State" };
             string[] expectedMethodNamesNotMyType = { "get_Address1", "get_Address2", "get_City", "get_Country", "get_Id", "get_Name", "get_PhoneNumber", "get_PostalCode", "get_State",
                                                       "set_Address1", "set_Address2", "set_City", "set_Country", "set_Id", "set_Name", "set_PhoneNumber", "set_PostalCode", "set_State" };
-            CheckFieldsPropertiesMethods("ReferencedAssembly.Location", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType);
+            CheckFieldsPropertiesMethods(notMyType, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType);
         }
 
         [Fact]
@@ -204,27 +208,31 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(generatorDiags);
             CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
 
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
             // Check base functionality of found types.
-            Assert.Equal(2, generator.SerializableTypes.Count);
+            Assert.Equal(2, types.Count);
 
             // Check for MyType.
-            Assert.Equal("HelloWorld.MyType", generator.SerializableTypes["HelloWorld.MyType"].FullName);
+            Type myType = types["HelloWorld.MyType"];
+            Assert.Equal("HelloWorld.MyType", myType.FullName);
 
             // Check for received fields, properties and methods for MyType.
             string[] expectedFieldNamesMyType = { "PublicChar", "PublicDouble" };
             string[] expectedPropertyNamesMyType = { "PublicPropertyInt", "PublicPropertyString" };
             string[] expectedMethodNamesMyType = { "get_PrivatePropertyInt", "get_PrivatePropertyString", "get_PublicPropertyInt", "get_PublicPropertyString", "MyMethod", "MySecondMethod", "set_PrivatePropertyInt", "set_PrivatePropertyString", "set_PublicPropertyInt", "set_PublicPropertyString", "UsePrivates" };
-            CheckFieldsPropertiesMethods("HelloWorld.MyType", ref generator, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
+            CheckFieldsPropertiesMethods(myType, expectedFieldNamesMyType, expectedPropertyNamesMyType, expectedMethodNamesMyType);
 
             // Check for NotMyType.
-            Assert.Equal("ReferencedAssembly.Location", generator.SerializableTypes["ReferencedAssembly.Location"].FullName);
+            Type notMyType = types["ReferencedAssembly.Location"];
+            Assert.Equal("ReferencedAssembly.Location", notMyType.FullName);
 
             // Check for received fields, properties and methods for NotMyType.
             string[] expectedFieldNamesNotMyType = { };
             string[] expectedPropertyNamesNotMyType = { "Address1", "Address2", "City", "Country", "Id", "Name", "PhoneNumber", "PostalCode", "State" };
             string[] expectedMethodNamesNotMyType = { "get_Address1", "get_Address2", "get_City", "get_Country", "get_Id", "get_Name", "get_PhoneNumber", "get_PostalCode", "get_State",
                                                       "set_Address1", "set_Address2", "set_City", "set_Country", "set_Id", "set_Name", "set_PhoneNumber", "set_PostalCode", "set_State" };
-            CheckFieldsPropertiesMethods("ReferencedAssembly.Location", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType );
+            CheckFieldsPropertiesMethods(notMyType, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType );
         }
 
         [Theory]
@@ -256,7 +264,7 @@ namespace System.Text.Json.Serialization
 
             CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
-            Dictionary<string, Type> types = generator.SerializableTypes;
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
             if (includeSTJ)
             {
                 Assert.Equal("System.Int32", types["System.Int32"].FullName);
@@ -297,7 +305,7 @@ namespace System.Text.Json.Serialization
             JsonSourceGenerator generator = new JsonSourceGenerator();
 
             CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
-            Assert.Null(generator.SerializableTypes);
+            Assert.Null(generator.GetSerializableTypes());
 
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
@@ -369,9 +377,8 @@ namespace System.Text.Json.Serialization
             Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         }
 
-        private void CheckFieldsPropertiesMethods(string typeName, ref JsonSourceGenerator generator, string[] expectedFields, string[] expectedProperties, string[] expectedMethods)
+        private void CheckFieldsPropertiesMethods(Type type, string[] expectedFields, string[] expectedProperties, string[] expectedMethods)
         {
-            Type type = generator.SerializableTypes[typeName];
             string[] receivedFields = type.GetFields().Select(field => field.Name).OrderBy(s => s).ToArray();
             string[] receivedProperties = type.GetProperties().Select(property => property.Name).OrderBy(s => s).ToArray();
             string[] receivedMethods = type.GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();

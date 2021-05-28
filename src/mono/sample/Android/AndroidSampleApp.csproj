@@ -59,14 +59,14 @@
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)\mono-aot-cross"
+        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.c"
         UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)">
+        LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 

@@ -734,6 +734,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Substring_InvalidOffsetAndLength()
         {
             // Arrange
@@ -745,6 +746,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Substring_OffsetAndLengthOverflows()
         {
             // Arrange
@@ -816,6 +818,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Subsegment_InvalidOffsetAndLength()
         {
             // Arrange
@@ -827,6 +830,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50878", TestPlatforms.Android)]
         public void StringSegment_Subsegment_OffsetAndLengthOverflows()
         {
             // Arrange

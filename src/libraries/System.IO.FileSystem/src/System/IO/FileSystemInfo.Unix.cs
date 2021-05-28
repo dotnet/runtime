@@ -11,10 +11,11 @@ namespace System.IO
 
         protected FileSystemInfo()
         {
-            FileStatus.Initialize(ref _fileStatus, this is DirectoryInfo);
+            _fileStatus.InitiallyDirectory = this is DirectoryInfo;
+            _fileStatus.InvalidateCaches();
         }
 
-        internal static unsafe FileSystemInfo Create(string fullPath, string fileName, ref FileStatus fileStatus)
+        internal static FileSystemInfo Create(string fullPath, string fileName, ref FileStatus fileStatus)
         {
             FileSystemInfo info = fileStatus.InitiallyDirectory
                 ? (FileSystemInfo)new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
@@ -26,12 +27,12 @@ namespace System.IO
             return info;
         }
 
-        internal void Invalidate() => _fileStatus.Invalidate();
+        internal void Invalidate() => _fileStatus.InvalidateCaches();
 
         internal unsafe void Init(ref FileStatus fileStatus)
         {
             _fileStatus = fileStatus;
-            _fileStatus.EnsureStatInitialized(FullPath);
+            _fileStatus.EnsureCachesInitialized(FullPath);
         }
 
         public FileAttributes Attributes
@@ -62,7 +63,7 @@ namespace System.IO
 
         internal long LengthCore => _fileStatus.GetLength(FullPath);
 
-        public void Refresh() => _fileStatus.Refresh(FullPath);
+        public void Refresh() => _fileStatus.RefreshCaches(FullPath);
 
         internal static void ThrowNotFound(string path)
         {

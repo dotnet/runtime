@@ -28,7 +28,6 @@ static void* mono_code_manager_heap;
 
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-tls.h>
-#include <mono/utils/write-protect.h>
 
 static uintptr_t code_memory_used = 0;
 static size_t dynamic_code_alloc_count;
@@ -48,7 +47,7 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
 
 #define MIN_PAGES 16
 
-#if _WIN32 // These are the same.
+#if defined(_WIN32) && (defined(_M_IX86) || defined(_M_X64)) // These are the same.
 #define MIN_ALIGN MEMORY_ALLOCATION_ALIGNMENT
 #elif defined(__x86_64__)
 /*
@@ -363,7 +362,7 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 {
 	CodeChunk *chunk;
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 	int fill_value = 0xcc; /* x86 break */
 #else
 	int fill_value = 0x2a;
@@ -670,10 +669,8 @@ mono_codeman_enable_write (void)
 		pthread_jit_write_protect_np (0);
 	}
 #elif defined(HOST_MACCAT) && defined(__aarch64__)
-        int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
-        level ++;
-        mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
-        mono_jit_write_protect (0);
+	/* JITing in Catalyst apps is not allowed on Apple Silicon. */
+	g_assert_not_reached ();
 #endif
 }
 
@@ -696,11 +693,7 @@ mono_codeman_disable_write (void)
 			pthread_jit_write_protect_np (1);
 	}
 #elif defined(HOST_MACCAT) && defined(__aarch64__)
-		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
-		g_assert (level);
-		level --;
-		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
-		if (level == 0)
-                        mono_jit_write_protect (1);
+	/* JITing in Catalyst apps is not allowed on Apple Silicon. */
+	g_assert_not_reached ();
 #endif
 }

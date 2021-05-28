@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
 
             private static bool Supports2048KeySize()
             {
-                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+                Debug.Assert(OperatingSystem.IsWindows());
                 Version version = Environment.OSVersion.Version;
                 bool isAtLeastWindows8 = version.Major > 6 || (version.Major == 6 && version.Minor >= 2);
                 return isAtLeastWindows8;

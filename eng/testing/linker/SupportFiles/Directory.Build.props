@@ -15,6 +15,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <!-- Suppress analyzer and linker warnings as these are tests -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <ItemGroup>

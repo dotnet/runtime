@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(propertyName);
+                throw new ArgumentNullException(nameof(propertyName));
             }
 
             if (converter == null)

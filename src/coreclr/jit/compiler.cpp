@@ -24,6 +24,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
 
+extern ICorJitHost* g_jitHost;
+
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
 #define COLUMN_OPCODE 30
@@ -1852,6 +1854,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
+
+    info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
@@ -5652,11 +5656,37 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // This call to getClassModule/getModuleAssembly/getAssemblyName fails in crossgen2 due to these
         // APIs being unimplemented. So disable this extra info for pre-jit mode. See
         // https://github.com/dotnet/runtime/issues/48888.
+        //
+        // Ditto for some of the class name queries for generic params.
+        //
         if (!compileFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
             // Get the assembly name, to aid finding any particular SuperPMI method context function
             (void)info.compCompHnd->getAssemblyName(
                 info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
+            {
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
+            }
+
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
+            {
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
+            }
         }
     }
 #endif // DEBUG
@@ -7440,9 +7470,6 @@ void Compiler::compJitStats()
 
 void Compiler::compCallArgStats()
 {
-    GenTree* args;
-    GenTree* argx;
-
     unsigned argNum;
 
     unsigned argDWordNum;
@@ -7501,7 +7528,7 @@ void Compiler::compCallArgStats()
                     regArgDeferred++;
                     argTotalObjPtr++;
 
-                    if (call->IsVirtual())
+                    if (call->AsCall()->IsVirtual())
                     {
                         /* virtual function */
                         argVirtualCalls++;
@@ -8266,8 +8293,6 @@ void JitTimer::PrintCsvHeader()
     }
 }
 
-extern ICorJitHost* g_jitHost;
-
 void JitTimer::PrintCsvMethodStats(Compiler* comp)
 {
     LPCWSTR jitTimeLogCsv = Compiler::JitTimeLogCsv();
@@ -8292,7 +8317,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     //
     // Query the jit host directly here instead of going via the
     // config cache, since value will change for each method.
-    int index = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), 0);
+    int index = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 
     CritSecHolder csvLock(s_csvLock);
 

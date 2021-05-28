@@ -14,8 +14,6 @@ namespace System
     {
         partial void RestoreRemoteStackTrace(SerializationInfo info, StreamingContext context)
         {
-            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
-
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
             //
@@ -106,14 +104,14 @@ namespace System
                     return remoteStackTraceString;
                 }
 
-                return remoteStackTraceString + GetStackTrace(this);
+                return remoteStackTraceString + GetStackTrace();
             }
         }
 
-        private static string GetStackTrace(Exception e)
+        private string GetStackTrace()
         {
             // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(e, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            return new StackTrace(this, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         private string? CreateSourceName()
@@ -245,8 +243,6 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
-        private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
-
         private object? SerializationWatsonBuckets => _watsonBuckets;
 
         private string? SerializationStackTraceString
@@ -257,7 +253,7 @@ namespace System
 
                 if (stackTraceString == null && _stackTrace != null)
                 {
-                    stackTraceString = GetStackTrace(this);
+                    stackTraceString = GetStackTrace();
                 }
 
                 return stackTraceString;

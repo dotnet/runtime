@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
         /// </summary>
-        public static readonly Type ObjectType = typeof(object);
+        internal static readonly Type ObjectType = typeof(object);
 
         // The length of the property name embedded in the key (in bytes).
         // The key is a ulong (8 bytes) containing the first 7 bytes of the property name

@@ -720,8 +720,18 @@ namespace System.Net.Http.Tests
             Assert.False(headers.Contains("From"),
                 "Header store should not contain a header 'From' after setting it to null.");
 
-            Assert.Throws<FormatException>(() => { headers.From = " "; });
-            Assert.Throws<FormatException>(() => { headers.From = "invalid email address"; });
+            // values are not validated, so invalid values are accepted
+            headers.From = " ";
+            Assert.Equal(" ", headers.From);
+
+            headers.From = "invalid email address";
+            Assert.Equal("invalid email address", headers.From);
+
+            // Null and empty string are equivalent. Setting to empty means remove the From header value (if any).
+            headers.From = string.Empty;
+            Assert.Null(headers.From);
+            Assert.False(headers.Contains("From"),
+                "Header store should not contain a header 'From' after setting it to string.Empty.");
         }
 
         [Fact]
@@ -739,14 +749,15 @@ namespace System.Net.Http.Tests
         [Fact]
         public void From_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
+            // values are not validated, so invalid values are accepted
             headers.TryAddWithoutValidation("From", " info@example.com ,");
-            Assert.Null(headers.GetParsedValues(KnownHeaders.From.Descriptor));
+            Assert.Equal("info@example.com ,", headers.GetParsedValues(KnownHeaders.From.Descriptor));
             Assert.Equal(1, headers.GetValues("From").Count());
-            Assert.Equal(" info@example.com ,", headers.GetValues("From").First());
+            Assert.Equal("info@example.com ,", headers.GetValues("From").First());
 
             headers.Clear();
             headers.TryAddWithoutValidation("From", "info@");
-            Assert.Null(headers.GetParsedValues(KnownHeaders.From.Descriptor));
+            Assert.Equal("info@", headers.GetParsedValues(KnownHeaders.From.Descriptor));
             Assert.Equal(1, headers.GetValues("From").Count());
             Assert.Equal("info@", headers.GetValues("From").First());
         }

@@ -13,11 +13,6 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-    Target = "M:System.Text.Json.JsonSerializer.<<DeserializeAsyncEnumerable>g__CreateAsyncEnumerableDeserializer|27_0>d`1.MoveNext()",
-    Scope = "member",
-    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
@@ -229,7 +224,7 @@ namespace System.Text.Json
                 var bufferState = new ReadAsyncBufferState(options.DefaultBufferSize);
                 // Hardcode the queue converter to avoid accidental use of custom converters
                 JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
-                JsonTypeInfo jsonTypeInfo = CreateQueueJsonTypeInfo(converter, options);
+                JsonTypeInfo jsonTypeInfo = CreateQueueJsonTypeInfo<TValue>(converter, options);
                 ReadStack readStack = default;
                 readStack.Initialize(jsonTypeInfo, supportContinuation: true);
                 var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
@@ -255,12 +250,14 @@ namespace System.Text.Json
                     bufferState.Dispose();
                 }
             }
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
-            static JsonTypeInfo CreateQueueJsonTypeInfo(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
-                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, typeof(Queue<TValue>), queueOptions);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:RequiresUnreferencedCode",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
+        private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
+            new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, typeof(Queue<TValue>), queueOptions);
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,

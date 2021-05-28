@@ -51,10 +51,10 @@ namespace System
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsThreadingSupported => !IsBrowser;
-        public static bool IsBinaryFormatterSupported => !IsBrowser;
+        public static bool IsBinaryFormatterSupported => IsNotMobile;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS;
+        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
@@ -136,6 +136,9 @@ namespace System
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+
+        public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;

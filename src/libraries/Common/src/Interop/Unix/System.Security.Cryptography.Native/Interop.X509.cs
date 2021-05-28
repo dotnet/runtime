@@ -195,8 +195,13 @@ internal static partial class Interop
             return result != 0;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetError")]
-        internal static extern X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int CryptoNative_X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+
+        internal static X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx)
+        {
+            return (X509VerifyStatusCode)CryptoNative_X509StoreCtxGetError(ctx);
+        }
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_X509StoreCtxReset(SafeX509StoreCtxHandle ctx);

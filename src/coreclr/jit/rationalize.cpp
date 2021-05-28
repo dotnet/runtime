@@ -37,7 +37,7 @@ genTreeOps addrForm(genTreeOps loadForm)
 }
 
 // copy the flags determined by mask from src to dst
-void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
+void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);
@@ -398,23 +398,25 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
         {
-            if (location->OperGet() == GT_LCL_VAR)
+            if (location->OperIs(GT_LCL_VAR))
             {
                 var_types   simdType        = location->TypeGet();
                 GenTree*    initVal         = assignment->AsOp()->gtOp2;
                 CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
-                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
                 {
-                    GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                    assignment->AsOp()->gtOp2 = simdTree;
-                    value                     = simdTree;
-                    initVal->gtNext           = simdTree;
-                    simdTree->gtPrev          = initVal;
-
-                    simdTree->gtNext = location;
-                    location->gtPrev = simdTree;
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
                 }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
+                assignment->AsOp()->gtOp2 = simdTree;
+                value                     = simdTree;
+                initVal->gtNext           = simdTree;
+                simdTree->gtPrev          = initVal;
+
+                simdTree->gtNext = location;
+                location->gtPrev = simdTree;
             }
         }
 #endif // FEATURE_SIMD

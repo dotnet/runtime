@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-
     <!-- Set IsStableBuild to mimic https://github.com/dotnet/arcade/blob/694d59f090b743f894779d04a7ffe11cbaf352e7/src/Microsoft.DotNet.Arcade.Sdk/tools/Publish.proj#L30-L31 -->
     <IsStableBuild>false</IsStableBuild>
     <IsStableBuild Condition="'$(DotNetFinalVersionKind)' == 'release'">true</IsStableBuild>
@@ -218,6 +216,7 @@
       -->
       <RidAgnosticNupkgToPublishFile
         Include="
+          $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.Manifest-*.nupkg;
           $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
           $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />

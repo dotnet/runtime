@@ -373,7 +373,7 @@ namespace System.Net.Sockets.Tests
             sender.Send(new byte[] { 42 });
 
             (_, byte[] recvBuffer) = await acceptTask;
-            Assert.Equal(new byte[] { 42 }, recvBuffer);
+            AssertExtensions.SequenceEqual(new byte[] { 42 }, recvBuffer);
         }
     }
 

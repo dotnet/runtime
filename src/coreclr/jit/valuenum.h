@@ -285,7 +285,7 @@ public:
 
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
-    ValueNum VNForHandle(ssize_t cnsVal, unsigned iconFlags);
+    ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -710,7 +710,7 @@ public:
     void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
-    unsigned GetHandleFlags(ValueNum vn);
+    GenTreeFlags GetHandleFlags(ValueNum vn);
 
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
@@ -981,10 +981,10 @@ private:
 
     struct VNHandle : public JitKeyFuncsDefEquals<VNHandle>
     {
-        ssize_t  m_cnsVal;
-        unsigned m_flags;
+        ssize_t      m_cnsVal;
+        GenTreeFlags m_flags;
         // Don't use a constructor to use the default copy constructor for hashtable rehash.
-        static void Initialize(VNHandle* handle, ssize_t m_cnsVal, unsigned m_flags)
+        static void Initialize(VNHandle* handle, ssize_t m_cnsVal, GenTreeFlags m_flags)
         {
             handle->m_cnsVal = m_cnsVal;
             handle->m_flags  = m_flags;

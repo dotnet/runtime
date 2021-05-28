@@ -233,11 +233,13 @@ namespace System.Runtime.CompilerServices.Tests
             new StringFreezingAttribute();
         }
 
+#pragma warning disable SYSLIB0025 // Obsolete: SuppressIldasmAttribute
         [Fact]
         public static void SuppressIldasmAttributeTests()
         {
             new SuppressIldasmAttribute();
         }
+#pragma warning restore SYSLIB0025 // Obsolete: SuppressIldasmAttribute
 
         [Fact]
         public static void TypeForwardedFromAttributeTests()

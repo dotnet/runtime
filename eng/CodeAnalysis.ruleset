@@ -254,8 +254,6 @@
     <Rule Id="CA5401" Action="None" />          <!-- Do not use CreateEncryptor with non-default IV -->
     <Rule Id="CA5402" Action="None" />          <!-- Use CreateEncryptor with the default IV  -->
     <Rule Id="CA5403" Action="None" />          <!-- Do not hard-code certificate -->
-    <Rule Id="IL3000" Action="None" />          <!-- Avoid using accessing Assembly file path when publishing as a single-file -->
-    <Rule Id="IL3001" Action="None" />          <!-- Avoid using accessing Assembly file path when publishing as a single-file -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" />          <!-- Analyzer threw an exception -->

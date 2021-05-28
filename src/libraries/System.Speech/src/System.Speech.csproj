@@ -7,6 +7,7 @@
     <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.1 where this doesn't exist.-->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
+    <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>

@@ -47,6 +47,7 @@ namespace System.IO.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51393", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void File_Move_Multiple_From_Watched_To_Unwatched(int filesCount)
         {
             FileMove_Multiple_FromWatchedToUnwatched(filesCount, skipOldEvents: false);
