@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void StructureToPtr_NonGenericType_ReturnsExpected()
         {
-            var structure = new SomeTestStruct
+            var structure = new SequentialClass
             {
                 i = 10,
                 s = "hello"
@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.Tests
             {
                 Marshal.StructureToPtr(structure, ptr, false);
 
-                SomeTestStruct result = Assert.IsType<SomeTestStruct>(Marshal.PtrToStructure(ptr, typeof(SomeTestStruct)));
+                SequentialClass result = Assert.IsType<SequentialClass>(Marshal.PtrToStructure(ptr, typeof(SequentialClass)));
                 Assert.Equal(10, result.i);
                 Assert.Equal("hello", result.s);
             }
@@ -125,7 +125,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15101", TestRuntimes.Mono)]
         public void PtrToStructure_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStructure(IntPtr.Zero, (object)new SomeTestStruct()));
@@ -256,6 +255,10 @@ namespace System.Runtime.InteropServices.Tests
         [StructLayout(LayoutKind.Sequential)]
         public class SequentialClass
         {
+            internal SequentialClass()
+            {
+            }
+
             public int i;
             public string s;
         }

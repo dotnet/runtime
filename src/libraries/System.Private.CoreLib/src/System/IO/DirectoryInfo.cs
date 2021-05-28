@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 #if MS_IO_REDIST
 using Microsoft.IO.Enumeration;
@@ -107,7 +106,7 @@ namespace System.IO
             => GetFiles(searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public FileInfo[] GetFiles(string searchPattern, EnumerationOptions enumerationOptions)
-            => ((IEnumerable<FileInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Files, enumerationOptions)).ToArray();
+            => new List<FileInfo>((IEnumerable<FileInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Files, enumerationOptions)).ToArray();
 
         // Returns an array of strongly typed FileSystemInfo entries which will contain a listing
         // of all the files and directories.
@@ -122,7 +121,7 @@ namespace System.IO
             => GetFileSystemInfos(searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public FileSystemInfo[] GetFileSystemInfos(string searchPattern, EnumerationOptions enumerationOptions)
-            => InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Both, enumerationOptions).ToArray();
+            => new List<FileSystemInfo>(InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
 
         // Returns an array of Directories in the current directory.
         public DirectoryInfo[] GetDirectories() => GetDirectories("*", enumerationOptions: EnumerationOptions.Compatible);
@@ -135,7 +134,7 @@ namespace System.IO
             => GetDirectories(searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public DirectoryInfo[] GetDirectories(string searchPattern, EnumerationOptions enumerationOptions)
-            => ((IEnumerable<DirectoryInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Directories, enumerationOptions)).ToArray();
+            => new List<DirectoryInfo>((IEnumerable<DirectoryInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Directories, enumerationOptions)).ToArray();
 
         public IEnumerable<DirectoryInfo> EnumerateDirectories()
             => EnumerateDirectories("*", enumerationOptions: EnumerationOptions.Compatible);

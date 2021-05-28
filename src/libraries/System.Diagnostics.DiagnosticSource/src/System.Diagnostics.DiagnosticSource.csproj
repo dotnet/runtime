@@ -38,7 +38,7 @@
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
-    <Compile Include="System\Diagnostics\LinkedList.cs" />
+    <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Counter.cs" />
     <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />

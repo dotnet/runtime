@@ -15,7 +15,7 @@ namespace System.Diagnostics.Metrics
 #endif
     public class Meter : IDisposable
     {
-        private static List<Meter> s_allMeters = new List<Meter>();
+        private static readonly List<Meter> s_allMeters = new List<Meter>();
         private List<Instrument> _instruments = new List<Instrument>();
         internal bool Disposed { get; private set; }
 

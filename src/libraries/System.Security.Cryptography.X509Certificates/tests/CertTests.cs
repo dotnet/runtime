@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 byte[] issuerBytes = cert.IssuerName.RawData;
-                Array.Clear(issuerBytes, 0, issuerBytes.Length);
+                Array.Clear(issuerBytes);
                 Assert.Equal("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Issuer);
             }
         }
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 byte[] subjectBytes = cert.SubjectName.RawData;
-                Array.Clear(subjectBytes, 0, subjectBytes.Length);
+                Array.Clear(subjectBytes);
                 Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
             }
         }

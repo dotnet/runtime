@@ -860,7 +860,7 @@ namespace System.Collections.Concurrent
                     {
                         _headIndex = _tailIndex = StartIndex;
                         _addTakeCount = _stealCount = 0;
-                        Array.Clear(_array, 0, _array.Length);
+                        Array.Clear(_array);
                     }
                 }
             }

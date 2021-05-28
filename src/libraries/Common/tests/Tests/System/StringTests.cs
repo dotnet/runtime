@@ -510,7 +510,7 @@ namespace System.Tests
                 Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
                 Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
 
-                Array.Clear(destination, 0, destination.Length);
+                Array.Clear(destination);
 
                 Assert.True(s.TryCopyTo(destination));
                 Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
