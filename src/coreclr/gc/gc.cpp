@@ -28546,7 +28546,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
             set_brick (last_marked_obj_start_b, 
                     (last_marked_obj_start - brick_address (last_marked_obj_start_b)));
         }
-        else
+        else if (last_marked_obj_end_b != brick_of(end)) 
         {
             set_brick (last_marked_obj_end_b, 
                     (last_marked_obj_start_b - last_marked_obj_end_b));
