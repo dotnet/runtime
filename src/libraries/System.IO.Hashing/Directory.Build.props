@@ -1,0 +1,11 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+    <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
+
+Commonly Used Types:
+System.IO.Hashing.Crc32
+System.IO.Hashing.Crc64</PackageDescription>
+  </PropertyGroup>
+</Project>

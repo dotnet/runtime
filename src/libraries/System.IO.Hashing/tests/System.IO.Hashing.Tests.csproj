@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Crc32Tests.cs" />
+    <Compile Include="NonCryptoHashBaseTests.cs" />
+    <Compile Include="NonCryptoHashTestDriver.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs">
+      <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.Hashing.csproj" />
+  </ItemGroup>
+</Project>
