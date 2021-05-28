@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         /// <param name="filterOption">The filter option to use.</param>
         /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
-        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions> options = null) : this(providers, filterOption, options, null)
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions> options) : this(providers, filterOption, options, null)
         {
         }
 
