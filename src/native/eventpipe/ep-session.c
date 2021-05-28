@@ -309,9 +309,6 @@ ep_session_execute_rundown (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	// Lock must be held by ep_disable.
-	ep_requires_lock_held ();
-
 	ep_return_void_if_nok (session->file != NULL);
 
 	ep_rt_execute_rundown ();

@@ -571,11 +571,84 @@ disable_helper (EventPipeSessionID id)
 		EventPipeProviderCallbackDataQueue callback_data_queue;
 		EventPipeProviderCallbackData provider_callback_data;
 		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+		EventPipeSession *session = NULL;
+		EventPipeThread * thread = NULL;
 
-		EP_LOCK_ENTER (section1)
-			if (ep_volatile_load_number_of_sessions () > 0)
-				disable_holding_lock (id, provider_callback_data_queue);
-		EP_LOCK_EXIT (section1)
+		if (ep_volatile_load_number_of_sessions () > 0) {
+			// Do setup of disable under lock
+			EP_LOCK_ENTER (section0)
+				EP_ASSERT (id != 0);
+				EP_ASSERT (ep_volatile_load_number_of_sessions () > 0);
+
+				if (is_session_id_in_collection (id)) { // requires lock
+					session = (EventPipeSession *)id;
+
+					if (session_requested_sampling (session)) {
+						// Disable the profiler.
+						ep_sample_profiler_disable (); // requires lock
+					}
+
+					// Log the process information event.
+					log_process_info_event (ep_event_source_get ());
+
+					// Disable session tracing.
+					config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false); // Requires lock
+
+					ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
+
+					if (ep_session_get_rundown_requested (session) && _ep_can_start_threads) {
+						ep_session_enable_rundown (session); // Set Rundown provider.
+						thread = ep_thread_get_or_create ();
+						if (thread != NULL) {
+							ep_thread_set_as_rundown_thread (thread, session);
+							config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
+						} else {
+							EP_ASSERT (!"Failed to get or create the EventPipeThread for rundown events.");
+						}
+					}
+				}
+			EP_LOCK_EXIT (section0)
+
+			// Do rundown
+			if (session != NULL) {
+				if (thread != NULL && ep_session_get_rundown_requested (session) && _ep_can_start_threads) {
+					ep_session_execute_rundown (session);
+					ep_thread_set_as_rundown_thread (thread, NULL);
+				}
+
+				// do cleanup
+				ep_volatile_store_allow_write (ep_volatile_load_allow_write () & ~(ep_session_get_mask (session)));
+
+				// Remove the session from the array before calling ep_session_suspend_write_event. This way
+				// we can guarantee that either the event write got the pointer and will complete
+				// the write successfully, or it gets NULL and will bail.
+				EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
+				ep_volatile_store_session (ep_session_get_index (session), NULL);
+
+				EP_LOCK_ENTER (section1)
+					ep_session_suspend_write_event (session);
+					if (ep_session_get_rundown_requested (session) && thread != NULL)
+						config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
+				EP_LOCK_EXIT (section1)
+
+				bool ignored;
+				ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
+
+				ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
+
+				// Write a final sequence point to the file now that all events have
+				// been emitted.
+				ep_session_write_sequence_point_unbuffered (session);
+
+				ep_session_free (session);
+			}
+
+			// clean up session
+			EP_LOCK_ENTER (section2)
+				// Providers can't be deleted during tracing because they may be needed when serializing the file.
+				config_delete_deferred_providers(ep_config_get ());
+			EP_LOCK_EXIT (section2)
+		}
 
 		while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
 			ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
