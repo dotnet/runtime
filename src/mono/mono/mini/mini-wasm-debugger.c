@@ -26,45 +26,28 @@
 
 static int log_level = 1;
 
-enum {
-	EXCEPTION_MODE_NONE,
-	EXCEPTION_MODE_UNCAUGHT,
-	EXCEPTION_MODE_ALL
-};
-
 //functions exported to be used by JS
 G_BEGIN_DECLS
 
-EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue);
 
 
 //JS functions imported that we use
-extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_fire_debugger_agent_message (void);
-extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
 
-static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags);
 static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 static gboolean receive_debugger_agent_message (void *data, int len);
 static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
-static MonoObject* mono_runtime_try_invoke_internal (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError* error);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
 
 static gboolean has_pending_lazy_loaded_assemblies;
-
-static GHashTable *objrefs;
-static GHashTable *obj_to_objref;
-static int objref_id = 0;
-static int pause_on_exc = EXCEPTION_MODE_NONE;
-static MonoObject* exception_on_runtime_invoke = NULL;
 
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
@@ -91,14 +74,6 @@ void wasm_debugger_log (int level, const gchar *format, ...)
 		console.debug("%s: %s", namespace, message);
 	}, level, mesg);
 	g_free (mesg);
-}
-
-static void
-inplace_tolower (char *c)
-{
-	int i;
-	for (i = strlen (c) - 1; i >= 0; --i)
-		c [i] = tolower (c [i]);
 }
 
 static void
@@ -145,7 +120,7 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
 		PRINT_DEBUG_MSG (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
- 
+
 	StackFrame *frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
 	frame->de.domain = mono_get_root_domain ();
@@ -155,7 +130,7 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	frame->il_offset = info->il_offset;
 	frame->interp_frame = info->interp_frame;
 	frame->frame_addr = info->frame_addr;
-	
+
 	g_ptr_array_add (frames, frame);
 
 	return FALSE;
@@ -169,7 +144,7 @@ free_frame_state (void)
 		for (i = 0; i < frames->len; ++i)
 			free_frame ((DbgEngineStackFrame*)g_ptr_array_index (frames, i));
 		g_ptr_array_set_size (frames, 0);
-	}	
+	}
 }
 
 static void
@@ -183,7 +158,7 @@ compute_frames (void) {
 		frames = g_ptr_array_new ();
 	}
 
-	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);	
+	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);
 }
 static MonoContext*
 tls_get_restore_state (void *tls)
@@ -236,59 +211,6 @@ ensure_runtime_is_suspended (void)
 	return DE_ERR_NONE;
 }
 
-static int 
-get_object_id (MonoObject *obj) 
-{
-	ObjRef *ref;
-	if (!obj)
-		return 0;
-
-	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
-	if (ref)
-		return ref->id;
-	ref = g_new0 (ObjRef, 1);
-	ref->id = mono_atomic_inc_i32 (&objref_id);
-	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
-	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
-	return ref->id;
-}
-
-
-static int
-get_this_async_id (DbgEngineStackFrame *frame)
-{
-	MonoClassField *builder_field;
-	gpointer builder;
-	MonoMethod *method;
-	MonoObject *ex;
-	ERROR_DECL (error);
-	MonoObject *obj;
-	
-	/*
-	 * FRAME points to a method in a state machine class/struct.
-	 * Call the ObjectIdForDebugger method of the associated method builder type.
-	 */
-	builder = get_async_method_builder (frame);
-	if (!builder)
-		return 0;
-
-	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
-	if (!builder_field)
-		return 0;
-
-	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
-	if (!method) {
-		return 0;
-	}
-
-	obj = mono_runtime_try_invoke_internal (method, builder, NULL, &ex, error);
-	mono_error_assert_ok (error);
-
-	return get_object_id (obj);
-}
-
-
 #define DBG_NOT_SUSPENDED 1
 
 static int
@@ -312,7 +234,7 @@ mono_wasm_debugger_init (void)
 		.ss_calculate_framecount = ss_calculate_framecount,
 		.ensure_jit = ensure_jit,
 		.ensure_runtime_is_suspended = ensure_runtime_is_suspended,
-		.get_this_async_id = get_this_async_id,
+		.get_this_async_id = mono_get_this_async_id,
 		.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag,
 		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
 		.create_breakpoint_events = mono_dbg_create_breakpoint_events,
@@ -337,9 +259,6 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
-	obj_to_objref = g_hash_table_new (NULL, NULL);
-	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
-
 	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
 	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
 
@@ -358,14 +277,6 @@ mono_wasm_enable_debugging (int debug_level)
 	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
 	log_level = debug_level;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_pause_on_exceptions (int state)
-{
-	pause_on_exc = state;
-	PRINT_DEBUG_MSG (1, "setting pause on exception: %d\n", pause_on_exc);
-	return 1;
 }
 
 static void
@@ -417,7 +328,6 @@ mono_wasm_breakpoint_hit (void)
 {
 	mono_wasm_save_thread_context();
 	mono_de_process_breakpoint (NULL, FALSE);
-	// mono_wasm_fire_bp ();
 }
 
 void
@@ -425,18 +335,8 @@ mono_wasm_user_break (void)
 {
 	mono_wasm_save_thread_context();
 	mono_dbg_debugger_agent_user_break ();
-	// mono_wasm_fire_bp ();
 }
 
-static MonoObject* mono_runtime_try_invoke_internal (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError* error)
-{
-	exception_on_runtime_invoke = NULL;
-	MonoObject* res = mono_runtime_try_invoke (method, obj, params, exc, error);
-	if (exception_on_runtime_invoke != NULL)
-		*exc = exception_on_runtime_invoke;
-	exception_on_runtime_invoke = NULL;
-	return res;
-}
 static gboolean
 write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* variableValue)
 {
@@ -601,7 +501,6 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	}
 	else
 		error = mono_process_dbg_packet(id, command_set, command, &no_reply, data, data + size, &buf);
-
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
 	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);

@@ -196,9 +196,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands Resume() => new MonoCommands($"MONO.mono_wasm_debugger_resume ()");
 
-        public static MonoCommands SetPauseOnExceptions(string state) => new MonoCommands($"MONO.mono_wasm_set_pause_on_exceptions(\"{state}\")");
-
         public static MonoCommands DetachDebugger() => new MonoCommands($"MONO.mono_wasm_detach_debugger()");
+
+        public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"MONO.mono_wasm_release_object('{objectId}')");
     }
 
     internal enum MonoErrorCodes

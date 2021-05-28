@@ -461,11 +461,8 @@ static MonoContext* tls_get_restore_state (void *the_tls);
 static gboolean try_process_suspend (void *tls, MonoContext *ctx, gboolean from_breakpoint);
 static gboolean begin_breakpoint_processing (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
 static void begin_single_step_processing (MonoContext *ctx, gboolean from_signal);
-static void ss_discard_frame_context (void *the_tls);
-static void ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
 static gboolean ensure_jit (DbgEngineStackFrame* the_frame);
 static int ensure_runtime_is_suspended (void);
-static int get_this_async_id (DbgEngineStackFrame *frame);
 static int handle_multiple_ss_requests (void);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
@@ -690,11 +687,11 @@ debugger_agent_init (void)
 	cbs.try_process_suspend = try_process_suspend;
 	cbs.begin_breakpoint_processing = begin_breakpoint_processing;
 	cbs.begin_single_step_processing = begin_single_step_processing;
-	cbs.ss_discard_frame_context = ss_discard_frame_context;
-	cbs.ss_calculate_framecount = ss_calculate_framecount;
+	cbs.ss_discard_frame_context = mono_ss_discard_frame_context;
+	cbs.ss_calculate_framecount = mono_ss_calculate_framecount;
 	cbs.ensure_jit = ensure_jit;
 	cbs.ensure_runtime_is_suspended = ensure_runtime_is_suspended;
-	cbs.get_this_async_id = get_this_async_id;
+	cbs.get_this_async_id = mono_get_this_async_id;
 	cbs.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag;
 	cbs.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
 	cbs.create_breakpoint_events = mono_dbg_create_breakpoint_events;
@@ -4060,14 +4057,15 @@ event_requests_cleanup (void)
  *
  * Ensure DebuggerTlsData fields are filled out.
  */
-static void
-ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
+void
+mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
 {
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
-
+#ifndef TARGET_WASM	
 	if (force_use_ctx || !tls->context.valid)
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
 	compute_frame_info (tls->thread, tls, FALSE);
+#endif	
 	if (frames)
 		*frames = (DbgEngineStackFrame**)tls->frames;
 	if (nframes)
@@ -4079,8 +4077,8 @@ ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx
  *
  * Discard frame data and invalidate any context
  */
-static void
-ss_discard_frame_context (void *the_tls)
+void
+mono_ss_discard_frame_context (void *the_tls)
 {
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 	tls->context.valid = FALSE;
@@ -4125,8 +4123,8 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 
 //This ID is used to figure out if breakpoint hit on resumeOffset belongs to us or not
 //since thread probably changed...
-static int
-get_this_async_id (DbgEngineStackFrame *frame)
+int
+mono_get_this_async_id (DbgEngineStackFrame *frame)
 {
 	MonoClassField *builder_field;
 	gpointer builder;

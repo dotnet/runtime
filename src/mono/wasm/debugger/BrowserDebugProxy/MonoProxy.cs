@@ -386,7 +386,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!(DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId) && objectId.Scheme == "cfo_res"))
                             break;
 
-                        //await SendMonoCommand(id, MonoCommands.ReleaseObject(objectId), token);
+                        await SendMonoCommand(id, MonoCommands.ReleaseObject(objectId), token);
                         SendResponse(id, Result.OkFromObject(new { }), token);
                         return true;
                     }
@@ -395,7 +395,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         string state = args["state"].Value<string>();
                         await sdbHelper.EnableExceptions(id, state, token);
-                        //await SendMonoCommand(id, MonoCommands.SetPauseOnExceptions(state), token);
                         // Pass this on to JS too
                         return false;
                     }
@@ -664,6 +663,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(-1);
             var ret_debugger_cmd_reader = await sdbHelper.SendDebuggerAgentCommand(sessionId, (int) CommandSet.THREAD, (int) CmdThread.GET_FRAME_INFO, command_params, token);
             var frame_count = ret_debugger_cmd_reader.ReadInt32();
+            //Console.WriteLine("frame_count - " + frame_count);
             for (int j = 0; j < frame_count; j++) {
                 var frame_id = ret_debugger_cmd_reader.ReadInt32();
                 var method_id = ret_debugger_cmd_reader.ReadInt32();

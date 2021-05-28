@@ -109,4 +109,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *in
 void
 mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 
+void 
+mono_ss_discard_frame_context (void *the_tls);
+
 #endif

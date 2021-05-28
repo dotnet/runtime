@@ -571,91 +571,6 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		// Keep in sync with the flags in mini-wasm-debugger.c
-		_get_properties_args_to_gpflags: function (args) {
-			let gpflags =0;
-			/*
-				Disabled for now. Instead, we ask debugger.c to return
-				~all~ the members, and then handle the filtering in mono.js .
-
-			if (args.ownProperties)
-				gpflags |= 1;
-			if (args.accessorPropertiesOnly)
-				gpflags |= 2;
-			*/
-			if (args.expandValueTypes)
-				gpflags |= 4;
-
-			return gpflags;
-		},
-
-		_post_process_details: function (details) {
-			if (details == undefined)
-				return {};
-
-			if (details.length > 0)
-				this._extract_and_cache_value_types(details);
-
-			// remove __args added by add_properties_var
-			details.forEach(d => delete d.__args);
-			return details;
-		},
-
-		/**
-		 * Gets the next id number to use for generating ids
-		 *
-		 * @returns {number}
-		 */
-		_next_id: function () {
-			return ++this._next_id_var;
-		},
-
-		_extract_and_cache_value_types: function (var_list) {
-			if (var_list == undefined || !Array.isArray (var_list) || var_list.length == 0)
-				return var_list;
-
-			for (let i in var_list) {
-				let value = var_list [i].value;
-				if (value === undefined)
-					continue;
-
-				if (value.objectId !== undefined && value.objectId.startsWith ("dotnet:pointer:")) {
-					let ptr_args = this._get_id_props (value.objectId);
-					if (ptr_args === undefined)
-						throw new Error (`Bug: Expected to find an entry for pointer id: ${value.objectId}`);
-
-					// It might have been already set in some cases, like arrays
-					// where the name would be `0`, but we want `[0]` for pointers,
-					// so the deref would look like `*[0]`
-					ptr_args.varName = ptr_args.varName || var_list [i].name;
-				}
-
-				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
-					continue;
-
-				if (value.members === undefined) {
-					// this could happen for valuetypes that maybe
-					// we were not able to describe, like `ref` parameters
-					// So, skip that
-					continue;
-				}
-
-				// Generate objectId for expanded valuetypes
-				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
-
-				this._extract_and_cache_value_types (value.members);
-
-				const accessors = value.members.filter(m => m.get !== undefined);
-				const new_props = Object.assign ({ members: value.members, accessors }, value.__extra_vt_props);
-
-				this._new_or_add_id_props ({ objectId: value.objectId, props: new_props });
-				delete value.members;
-				delete value.__extra_vt_props;
-			}
-
-			return var_list;
-		},
-
 		_get_cfo_res_details: function (objectId, args) {
 			if (!(objectId in this._call_function_res_cache))
 				throw new Error(`Could not find any object with id ${objectId}`);
@@ -712,64 +627,6 @@ var MonoSupportLib = {
 			});
 
 			return { __value_as_json_string__: JSON.stringify (res_details) };
-		},
-
-		/**
-		 * Generates a new id, and a corresponding entry for associated properties
-		 *    like `dotnet:pointer:{ a: 4 }`
-		 * The third segment of that `{a:4}` is the idArgs parameter
-		 *
-		 * Only `scheme` or `objectId` can be set.
-		 * if `scheme`, then a new id is generated, and it's properties set
-		 * if `objectId`, then it's properties are updated
-		 *
-		 * @param {object} args
-		 * @param  {string} [args.scheme=undefined] scheme second part of `dotnet:pointer:..`
-		 * @param  {string} [args.objectId=undefined] objectId
-		 * @param  {object} [args.idArgs={}] The third segment of the objectId
-		 * @param  {object} [args.props={}] Properties for the generated id
-		 *
-		 * @returns {string} generated/updated id string
-		 */
-		_new_or_add_id_props: function ({ scheme = undefined, objectId = undefined, idArgs = {}, props = {} }) {
-			if (scheme === undefined && objectId === undefined)
-				throw new Error (`Either scheme or objectId must be given`);
-
-			if (scheme !== undefined && objectId !== undefined)
-				throw new Error (`Both scheme, and objectId cannot be given`);
-
-			if (objectId !== undefined && Object.entries (idArgs).length > 0)
-				throw new Error (`Both objectId, and idArgs cannot be given`);
-
-			if (Object.entries (idArgs).length == 0) {
-				// We want to generate a new id, only if it doesn't have other
-				// attributes that it can use to uniquely identify.
-				// Eg, we don't do this for `dotnet:valuetype:{containerId:4, fieldOffset: 24}`
-				idArgs.num = this._next_id ();
-			}
-
-			let idStr;
-			if (objectId !== undefined) {
-				idStr = objectId;
-				const old_props = this._id_table [idStr];
-				if (old_props === undefined)
-					throw new Error (`ObjectId not found in the id table: ${idStr}`);
-
-				this._id_table [idStr] = Object.assign (old_props, props);
-			} else {
-				idStr = `dotnet:${scheme}:${JSON.stringify (idArgs)}`;
-				this._id_table [idStr] = props;
-			}
-
-			return idStr;
-		},
-
-		/**
-		 * @param  {string} objectId
-		 * @returns {object}
-		 */
-		_get_id_props: function (objectId) {
-			return this._id_table [objectId];
 		},
 
 		mono_wasm_get_details: function (objectId, args={}) {
@@ -880,29 +737,10 @@ var MonoSupportLib = {
 			this._clear_per_step_state ();
 		},
 
-		mono_wasm_set_pause_on_exceptions: function (state) {
-			if (!this.mono_wasm_pause_on_exceptions)
-				this.mono_wasm_pause_on_exceptions = Module.cwrap ("mono_wasm_pause_on_exceptions", 'number', [ 'number']);
-			var state_enum = 0;
-			switch (state) {
-				case 'uncaught':
-					state_enum = 1; //EXCEPTION_MODE_UNCAUGHT
-					break;
-				case 'all':
-					state_enum = 2; //EXCEPTION_MODE_ALL
-					break;
-			}
-			return this.mono_wasm_pause_on_exceptions (state_enum);
-		},
-
 		mono_wasm_detach_debugger: function () {
 			if (!this.mono_wasm_set_is_debugger_attached)
 				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
 			this.mono_wasm_set_is_debugger_attached(false);
-		},
-
-		mono_wasm_set_return_value: function (ret) {
-			MONO.return_value = ret;
 		},
 
 		_register_c_fn: function (name, ...args) {
@@ -1486,74 +1324,6 @@ var MonoSupportLib = {
 			return new Uint8Array (byteNumbers);
 		},
 
-		_begin_value_type_var: function(className, args) {
-			if (args === undefined || (typeof args !== 'object')) {
-				console.debug (`_begin_value_type_var: Expected an args object`);
-				return;
-			}
-
-			const fixed_class_name = MONO._mono_csharp_fixup_class_name(className);
-			const toString = args.toString;
-			const base64String = btoa (String.fromCharCode (...new Uint8Array (Module.HEAPU8.buffer, args.value_addr, args.value_size)));
-			const vt_obj = {
-				value: {
-					type            : "object",
-					className       : fixed_class_name,
-					description     : (toString === 0 ? fixed_class_name: Module.UTF8ToString (toString)),
-					expanded        : true,
-					isValueType     : true,
-					__extra_vt_props: { klass: args.klass, value64: base64String },
-					members         : []
-				}
-			};
-			if (MONO._vt_stack.length == 0)
-				MONO._old_var_info = MONO.var_info;
-
-			MONO.var_info = vt_obj.value.members;
-			MONO._vt_stack.push (vt_obj);
-		},
-
-		_end_value_type_var: function() {
-			let top_vt_obj_popped = MONO._vt_stack.pop ();
-			top_vt_obj_popped.value.members = MONO._filter_automatic_properties (
-								MONO._fixup_name_value_objects (top_vt_obj_popped.value.members));
-
-			if (MONO._vt_stack.length == 0) {
-				MONO.var_info = MONO._old_var_info;
-				MONO.var_info.push(top_vt_obj_popped);
-			} else {
-				var top_obj = MONO._vt_stack [MONO._vt_stack.length - 1];
-				top_obj.value.members.push (top_vt_obj_popped);
-				MONO.var_info = top_obj.value.members;
-			}
-		},
-
-		_add_valuetype_unexpanded_var: function(className, args) {
-			if (args === undefined || (typeof args !== 'object')) {
-				console.debug (`_add_valuetype_unexpanded_var: Expected an args object`);
-				return;
-			}
-
-			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
-			const toString = args.toString;
-
-			MONO.var_info.push ({
-				value: {
-					type: "object",
-					className: fixed_class_name,
-					description: (toString === 0 ? fixed_class_name : Module.UTF8ToString (toString)),
-					isValueType: true
-				}
-			});
-		},
-
-		_mono_csharp_fixup_class_name: function(className)
-		{
-			// Fix up generic names like Foo`2<int, string> to Foo<int, string>
-			// and nested class names like Foo/Bar to Foo.Bar
-			return className.replace(/\//g, '.').replace(/`\d+/g, '');
-		},
-
 		mono_wasm_load_data_archive: function (data, prefix) {
 			if (data.length < 8)
 				return false;
@@ -1626,120 +1396,6 @@ var MonoSupportLib = {
 			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
 	},
-
-	mono_wasm_add_typed_value: function (type, str_value, value) {
-		MONO.mono_wasm_add_typed_value (type, str_value, value);
-	},
-
-	mono_wasm_add_properties_var: function(name, args) {
-		MONO.mono_wasm_add_properties_var (name, args);
-	},
-
-	mono_wasm_set_is_async_method: function(objectId) {
-		MONO._async_method_objectId = objectId;
-	},
-
-	mono_wasm_add_enum_var: function(className, members, value) {
-		// FIXME: flags
-		//
-
-		// group0: Monday:0
-		// group1: Monday
-		// group2: 0
-		const re = new RegExp (`[,]?([^,:]+):(${value}(?=,)|${value}$)`, 'g')
-		const members_str = Module.UTF8ToString (members);
-
-		const match = re.exec(members_str);
-		const member_name = match == null ? ('' + value) : match [1];
-
-		const fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
-		MONO.var_info.push({
-			value: {
-				type: "object",
-				className: fixed_class_name,
-				description: member_name,
-				isEnum: true
-			}
-		});
-	},
-
-	mono_wasm_add_array_item: function(position) {
-		MONO.var_info.push({
-			name: `${position}`
-		});
-	},
-
-	mono_wasm_add_obj_var: function(className, toString, objectId) {
-		if (objectId == 0) {
-			MONO.mono_wasm_add_null_var (className);
-			return;
-		}
-
-		const fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
-		MONO.var_info.push({
-			value: {
-				type: "object",
-				className: fixed_class_name,
-				description: (toString === 0 ? fixed_class_name : Module.UTF8ToString (toString)),
-				objectId: "dotnet:object:"+ objectId,
-			}
-		});
-	},
-
-	/*
-	 * @className, and @targetName are in the following format:
-	 *
-	 *  <ret_type>:[<comma separated list of arg types>]:<method name>
-	 */
-	mono_wasm_add_func_var: function (className, targetName, objectId) {
-		if (objectId == 0) {
-			MONO.mono_wasm_add_null_var (
-				MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className)));
-			return;
-		}
-
-		function args_to_sig (args_str) {
-			var parts = args_str.split (":");
-			// TODO: min length = 3?
-			parts = parts.map (a => MONO._mono_csharp_fixup_class_name (a));
-
-			// method name at the end
-			var method_name = parts.pop ();
-
-			// ret type at the beginning
-			var ret_sig = parts [0];
-			var args_sig = parts.splice (1).join (', ');
-			return `${ret_sig} ${method_name} (${args_sig})`;
-		}
-		let tgt_sig;
-		if (targetName != 0)
-			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
-
-		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
-		if (tgt_sig === undefined)
-			tgt_sig = type_name;
-
-		if (objectId == -1 || targetName === 0) {
-			// Target property
-			MONO.var_info.push ({
-				value: {
-					type: "symbol",
-					value: tgt_sig,
-					description: tgt_sig,
-				}
-			});
-		} else {
-			MONO.var_info.push ({
-				value: {
-					type: "object",
-					className: type_name,
-					description: tgt_sig,
-					objectId: "dotnet:object:" + objectId,
-				}
-			});
-		}
-	},
-
 	schedule_background_exec: function () {
 		++MONO.pump_count;
 		if (typeof globalThis.setTimeout === 'function') {
@@ -1761,21 +1417,6 @@ var MonoSupportLib = {
 				this.mono_set_timeout_exec (id);
 			})
 		}
-	},
-
-	mono_wasm_fire_bp: function () {
-		// eslint-disable-next-line no-debugger
-		debugger;
-	},
-
-	mono_wasm_fire_exception: function (exception_id, message, class_name, uncaught) {
-		MONO.active_exception = {
-			exception_id: exception_id,
-			message     : Module.UTF8ToString (message),
-			class_name  : Module.UTF8ToString (class_name),
-			uncaught    : uncaught
-		};
-		debugger;
 	},
 
 	mono_wasm_fire_debugger_agent_message: function () {

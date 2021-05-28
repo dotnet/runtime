@@ -550,3 +550,9 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
 
 void
 mono_ss_args_destroy (SingleStepArgs *ss_args);
+
+int 
+mono_get_this_async_id (DbgEngineStackFrame *frame);
+
+void 
+mono_ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);

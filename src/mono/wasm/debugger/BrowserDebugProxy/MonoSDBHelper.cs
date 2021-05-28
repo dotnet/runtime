@@ -754,7 +754,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(thread_id);
             command_params_writer.Write((int)0);
             command_params_writer.Write((int)kind);
-            command_params_writer.Write((int)StepFilter.StaticCtor); //filter
+            command_params_writer.Write((int)(StepFilter.StaticCtor & StepFilter.DebuggerHidden)); //filter
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
             if (ret_debugger_cmd_reader != null)
                 return true;
