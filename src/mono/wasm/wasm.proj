@@ -13,6 +13,9 @@
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasmEnableMetadataUpdate Condition="'$(MonoMetadataUpdate)' == 'true'">true</WasmEnableMetadataUpdate>
+    <EmccCmd>emcc</EmccCmd>
+    <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
+    <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -67,21 +70,99 @@
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>
 
+  <Target Name="GenerateEmccPropsAndRspFiles">
+    <ItemGroup>
+      <_EmccCommonFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccCommonFlags Include="-s NO_EXIT_RUNTIME=1" />
+      <_EmccCommonFlags Include="-s FORCE_FILESYSTEM=1" />
+      <_EmccCommonFlags Include="-s &quot;EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
+      <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
+      <_EmccCommonFlags Include="--source-map-base http://example.com" />
+      <_EmccCommonFlags Include="-emit-llvm" />
+
+      <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(WasmEnableES6)' != 'false'" />
+      <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+      <_EmccFlags Include="--profiling-funcs" />
+      <_EmccFlags Include="@(_EmccCommonFlags)" />
+
+      <_EmccFlags Include="-DENABLE_METADATA_UPDATE=1" Condition="'$(WasmEnableMetadataUpdate)' == 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <_EmccFlags Include="@(_EmccCommonFlags)" />
+
+      <_EmccFlags Include="-s WASM=1" />
+      <_EmccFlags Include="-s BINARYEN=1" />
+      <_EmccFlags Include="-s ALIASING_FUNCTION_POINTERS=0" />
+      <_EmccFlags Include="-s USE_ZLIB=1" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_EmccDefaultsRspPath)"
+                      Lines="@(_EmccFlags)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
+
+    <!-- Generate Emcc.props -->
+
+    <RunWithEmSdkEnv Command="$(EmccCmd) --version"
+          ConsoleToMsBuild="true"
+          EmSdkPath="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+    </RunWithEmSdkEnv>
+
+    <!-- we want to get the first line from the output, which has the version.
+         Rest of the lines are the license -->
+    <ItemGroup>
+      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmccVersionRaw>%(_ReversedVersionLines.Identity)</_EmccVersionRaw>
+
+      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([^ \(]+) *\(([^\)]+)\)$</_EmccVersionRegexPattern>
+      <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
+      <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
+
+      <_EmccPropsContent>
+<![CDATA[
+<Project>
+  <PropertyGroup>
+    <RuntimeEmccVersionRaw>$(_EmccVersionRaw)</RuntimeEmccVersionRaw>
+    <RuntimeEmccVersion>$(_EmccVersion)</RuntimeEmccVersion>
+    <RuntimeEmccVersionHash>$(_EmccVersionHash)</RuntimeEmccVersionHash>
+  </PropertyGroup>
+</Project>
+]]>
+      </_EmccPropsContent>
+    </PropertyGroup>
+
+    <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
+           Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
+
+    <WriteLinesToFile File="$(NativeBinDir)src\Emcc.props"
+                      Lines="$(_EmccPropsContent)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           Condition="'$(OS)' != 'Windows_NT'"
           AfterTargets="Build"
-          DependsOnTargets="BuildPInvokeTable;BundleTimeZones">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones">
 
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(ICULibDir) ENABLE_ES6=$(WasmEnableES6) ENABLE_METADATA_UPDATE=$(WasmEnableMetadataUpdate)"
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(ICULibDir)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
                              $(NativeBinDir)src\*.js;
-                             $(NativeBinDir)src\emcc-flags.txt;
-                             $(NativeBinDir)src\emcc-version.txt" />
+                             $(_EmccDefaultsRspPath);
+                             $(NativeBinDir)src\Emcc.props" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
@@ -109,12 +190,9 @@
   <Target Name="BuildWinWasmRuntimes"
           Condition="'$(OS)' == 'Windows_NT'"
           AfterTargets="Build"
-          DependsOnTargets="BuildPInvokeTable;BundleTimezones">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimezones">
 
     <PropertyGroup>
-      <EmccCmd>emcc</EmccCmd>
-      <EmccFlags>--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1</EmccFlags>
-      <EmccFlags Condition="'$(WasmEnableES6)' == 'true'">$(EmccFlags) -s MODULARIZE=1 -s EXPORT_ES6=1</EmccFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz --llvm-opts 2 -DENABLE_NETCORE=1</EmccConfigurationFlags>
       <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)dotnet.wasm&quot; -o &quot;$(NativeBinDir)dotnet.wasm&quot;</StripCmd>
@@ -137,11 +215,11 @@
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -I&quot;$(MonoIncludeDir)&quot; runtime/corebindings.c -c -o &quot;$(MonoObjDir)corebindings.o&quot;"
+    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) -Oz -I&quot;$(MonoIncludeDir)&quot; runtime/corebindings.c -c -o &quot;$(MonoObjDir)corebindings.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DCORE_BINDINGS -I&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -I&quot;$(MonoIncludeDir)&quot; runtime/driver.c -c -o &quot;$(MonoObjDir)driver.o&quot;"
+    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) -Oz -DCORE_BINDINGS -I&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -I&quot;$(MonoIncludeDir)&quot; runtime/driver.c -c -o &quot;$(MonoObjDir)driver.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
@@ -149,11 +227,11 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DGEN_PINVOKE=1 -I&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -I&quot;$(MonoIncludeDir)&quot; runtime/pinvoke.c -c -o &quot;$(MonoObjDir)pinvoke.o&quot;"
+    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) -Oz -DGEN_PINVOKE=1 -I&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -I&quot;$(MonoIncludeDir)&quot; runtime/pinvoke.c -c -o &quot;$(MonoObjDir)pinvoke.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
@@ -164,41 +242,23 @@
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
     </RunWithEmSdkEnv>
 
-    <!-- we want to get the first line from the output, which has the version.
-         Rest of the lines are the license -->
-    <ItemGroup>
-      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
-    </ItemGroup>
-    <PropertyGroup>
-      <ActualEmccVersion>%(_ReversedVersionLines.Identity)</ActualEmccVersion>
-    </PropertyGroup>
-
-    <WriteLinesToFile File="$(WasmVersionFile)"
-          Lines="$(ActualEmccVersion)"
-          Overwrite="true" />
-
     <Copy SourceFiles="runtime\pinvoke.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
-    
+
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
                        runtime/binding_support.js; 
                        runtime/dotnet_support.js;
                        runtime/library_mono.js;
-                       $(SystemNativeDir)\pal_random.js;
-                       $(WasmVersionFile);"
+                       $(SystemNativeDir)\pal_random.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(ICULibFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
-
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-flags.txt"
-                      Lines="$(EmccFlags)"
-                      WriteOnlyWhenDifferent="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
@@ -210,11 +270,11 @@
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
                              $(NativeBinDir)src\*.js;
-                             $(NativeBinDir)src\emcc-flags.txt;
-                             $(NativeBinDir)src\emcc-version.txt" />
+                             $(_EmccDefaultsRspPath);
+                             $(NativeBinDir)src\Emcc.props" />
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
     </ItemGroup>
-    
+
     <Copy SourceFiles="@(WasmHeaderFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\wasm"
           SkipUnchangedFiles="true" />
