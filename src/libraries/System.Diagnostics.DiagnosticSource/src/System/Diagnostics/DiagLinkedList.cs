@@ -7,36 +7,36 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
-    internal sealed partial class LinkedListNode<T>
+    internal sealed partial class DiagNode<T>
     {
-        public LinkedListNode(T value) => Value = value;
+        public DiagNode(T value) => Value = value;
         public T Value;
-        public LinkedListNode<T>? Next;
+        public DiagNode<T>? Next;
     }
 
     // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-    internal sealed class LinkedList<T> : IEnumerable<T>
+    internal sealed class DiagLinkedList<T> : IEnumerable<T>
     {
-        private LinkedListNode<T>? _first;
-        private LinkedListNode<T>? _last;
+        private DiagNode<T>? _first;
+        private DiagNode<T>? _last;
 
-        public LinkedList() {}
+        public DiagLinkedList() {}
 
-        public LinkedList(T firstValue) => _last = _first = new LinkedListNode<T>(firstValue);
+        public DiagLinkedList(T firstValue) => _last = _first = new DiagNode<T>(firstValue);
 
-        public LinkedList(IEnumerator<T> e)
+        public DiagLinkedList(IEnumerator<T> e)
         {
             Debug.Assert(e is not null);
-            _last = _first = new LinkedListNode<T>(e.Current);
+            _last = _first = new DiagNode<T>(e.Current);
 
             while (e.MoveNext())
             {
-                _last.Next = new LinkedListNode<T>(e.Current);
+                _last.Next = new DiagNode<T>(e.Current);
                 _last = _last.Next;
             }
         }
 
-        public LinkedListNode<T>? First => _first;
+        public DiagNode<T>? First => _first;
 
         public void Clear()
         {
@@ -46,7 +46,7 @@ namespace System.Diagnostics
             }
         }
 
-        private void UnsafeAdd(LinkedListNode<T> newNode)
+        private void UnsafeAdd(DiagNode<T> newNode)
         {
             if (_first is null)
             {
@@ -63,7 +63,7 @@ namespace System.Diagnostics
 
         public void Add(T value)
         {
-            LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+            DiagNode<T> newNode = new DiagNode<T>(value);
 
             lock (this)
             {
@@ -75,7 +75,7 @@ namespace System.Diagnostics
         {
             lock (this)
             {
-                LinkedListNode<T>? current = _first;
+                DiagNode<T>? current = _first;
                 while (current is not null)
                 {
                     if (compare(value, current.Value))
@@ -86,7 +86,7 @@ namespace System.Diagnostics
                     current = current.Next;
                 }
 
-                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+                DiagNode<T> newNode = new DiagNode<T>(value);
                 UnsafeAdd(newNode);
 
                 return true;
@@ -97,7 +97,7 @@ namespace System.Diagnostics
         {
             lock (this)
             {
-                LinkedListNode<T>? previous = _first;
+                DiagNode<T>? previous = _first;
                 if (previous is null)
                 {
                     return default;
@@ -113,7 +113,7 @@ namespace System.Diagnostics
                     return previous.Value;
                 }
 
-                LinkedListNode<T>? current = previous.Next;
+                DiagNode<T>? current = previous.Next;
 
                 while (current is not null)
                 {
@@ -138,7 +138,7 @@ namespace System.Diagnostics
 
         public void AddFront(T value)
         {
-            LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+            DiagNode<T> newNode = new DiagNode<T>(value);
 
             lock (this)
             {
@@ -156,10 +156,10 @@ namespace System.Diagnostics
     // Note: Some consumers use this Enumerator dynamically to avoid allocations.
     internal struct Enumerator<T> : IEnumerator<T>
     {
-        private LinkedListNode<T>? _nextNode;
+        private DiagNode<T>? _nextNode;
         [AllowNull, MaybeNull] private T _currentItem;
 
-        public Enumerator(LinkedListNode<T>? head)
+        public Enumerator(DiagNode<T>? head)
         {
             _nextNode = head;
             _currentItem = default;
