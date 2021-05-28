@@ -246,10 +246,6 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(DotnetBuildFromSource)' == 'true' and '$(IsPackable)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetFrameworkIdentifier)' != '.NETStandard' and '$(TargetFrameworkVersion)' != 'v2.0'">
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
