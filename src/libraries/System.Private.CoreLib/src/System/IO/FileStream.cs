@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.IO.Strategies;
-using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,21 +21,21 @@ namespace System.IO
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
-            : this(handle, access, true, DefaultBufferSize, false)
+            : this(handle, access, true, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
-            : this(handle, access, ownsHandle, DefaultBufferSize, false)
+            : this(handle, access, ownsHandle, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
-            : this(handle, access, ownsHandle, bufferSize, false)
+            : this(handle, access, ownsHandle, bufferSize, DefaultIsAsync)
         {
         }
 
@@ -65,7 +64,7 @@ namespace System.IO
             }
         }
 
-        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize)
         {
             if (handle.IsInvalid)
             {
@@ -83,9 +82,19 @@ namespace System.IO
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
-            else if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
+        }
+
+        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            ValidateHandle(handle, access, bufferSize);
+
+            if (isAsync && !handle.IsAsync)
             {
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
+            }
+            else if (!isAsync && handle.IsAsync)
+            {
+                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
             }
         }
 
@@ -95,8 +104,10 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, FileStreamHelpers.GetDefaultIsAsync(handle, DefaultIsAsync))
         {
+            ValidateHandle(handle, access, bufferSize);
+
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, handle.IsAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)

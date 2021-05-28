@@ -21,7 +21,7 @@ namespace System.IO.Tests
         [Fact]
         public void NegativeBufferSize_Throws()
         {
-            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(handle, FileAccess.Read, -1));
             }
@@ -30,7 +30,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidBufferSize_DoesNotCloseHandle()
         {
-            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => CreateFileStream(handle, FileAccess.Read, -1));
                 GC.Collect();

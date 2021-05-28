@@ -60,63 +60,6 @@ namespace System.IO.Strategies
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
             => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
-        internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync)
-        {
-            return handle.IsAsync ?? !IsHandleSynchronous(handle, ignoreInvalid: true) ?? defaultIsAsync;
-        }
-
-        internal static unsafe bool? IsHandleSynchronous(SafeFileHandle fileHandle, bool ignoreInvalid)
-        {
-            if (fileHandle.IsInvalid)
-                return null;
-
-            uint fileMode;
-
-            int status = Interop.NtDll.NtQueryInformationFile(
-                FileHandle: fileHandle,
-                IoStatusBlock: out _,
-                FileInformation: &fileMode,
-                Length: sizeof(uint),
-                FileInformationClass: Interop.NtDll.FileModeInformation);
-
-            switch (status)
-            {
-                case 0:
-                    // We were successful
-                    break;
-                case Interop.NtDll.STATUS_INVALID_HANDLE:
-                    if (!ignoreInvalid)
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                default:
-                    // Something else is preventing access
-                    Debug.Fail("Unable to get the file mode information, status was" + status.ToString());
-                    return null;
-            }
-
-            // If either of these two flags are set, the file handle is synchronous (not overlapped)
-            return (fileMode & (uint)(Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
-        }
-
-        internal static void VerifyHandleIsSync(SafeFileHandle handle)
-        {
-            // As we can accurately check the handle type when we have access to NtQueryInformationFile we don't need to skip for
-            // any particular file handle type.
-
-            // If the handle was passed in without an explicit async setting, we already looked it up in GetDefaultIsAsync
-            if (!handle.IsAsync.HasValue)
-                return;
-
-            // If we can't check the handle, just assume it is ok.
-            if (!(IsHandleSynchronous(handle, ignoreInvalid: false) ?? true))
-                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
-        }
-
         internal static unsafe long GetFileLength(SafeFileHandle handle, string? path)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;

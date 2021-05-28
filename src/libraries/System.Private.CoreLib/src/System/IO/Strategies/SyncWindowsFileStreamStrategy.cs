@@ -22,20 +22,6 @@ namespace System.IO.Strategies
 
         internal override bool IsAsync => false;
 
-        protected override void OnInitFromHandle(SafeFileHandle handle)
-        {
-            // As we can accurately check the handle type when we have access to NtQueryInformationFile we don't need to skip for
-            // any particular file handle type.
-
-            // If the handle was passed in without an explicit async setting, we already looked it up in GetDefaultIsAsync
-            if (!handle.IsAsync.HasValue)
-                return;
-
-            // If we can't check the handle, just assume it is ok.
-            if (!(FileStreamHelpers.IsHandleSynchronous(handle, ignoreInvalid: false) ?? true))
-                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
-        }
-
         public override int Read(byte[] buffer, int offset, int count) => ReadSpan(new Span<byte>(buffer, offset, count));
 
         public override int Read(Span<byte> buffer) => ReadSpan(buffer);

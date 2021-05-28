@@ -11,23 +11,44 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private bool? _isAsync;
+
         public SafeFileHandle() : base(true)
         {
+            _isAsync = null;
         }
 
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
+
+            _isAsync = null;
         }
 
         private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, bool isAsync) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
 
-            IsAsync = isAsync;
+            _isAsync = isAsync;
         }
 
-        internal bool? IsAsync { get; set; }
+        public bool IsAsync
+        {
+            get
+            {
+                if (IsInvalid)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
+                }
+
+                if (_isAsync == null)
+                {
+                    _isAsync = !IsHandleSynchronous();
+                }
+
+                return _isAsync.Value;
+            }
+        }
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -144,6 +165,25 @@ namespace Microsoft.Win32.SafeHandles
                     }
                 }
             }
+        }
+
+        private unsafe bool IsHandleSynchronous()
+        {
+            uint fileMode;
+            int status = Interop.NtDll.NtQueryInformationFile(
+                FileHandle: this,
+                IoStatusBlock: out _,
+                FileInformation: &fileMode,
+                Length: sizeof(uint),
+                FileInformationClass: Interop.NtDll.FileModeInformation);
+
+            if (status != 0)
+            {
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
+            }
+
+            // If either of these two flags are set, the file handle is synchronous (not overlapped)
+            return (fileMode & (uint)(Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
         }
     }
 }
