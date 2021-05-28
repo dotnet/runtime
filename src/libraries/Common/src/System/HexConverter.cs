@@ -169,7 +169,7 @@ namespace System
 #endif
         public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
-#if NETFRAMEWORK || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
+#if NETFRAMEWORK || NETSTANDARD2_0
             Span<char> result = stackalloc char[0];
             if (bytes.Length > 16)
             {

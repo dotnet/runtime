@@ -1602,6 +1602,21 @@ struct CORINFO_CALL_INFO
     bool                    wrapperDelegateInvoke;
 };
 
+enum CORINFO_DEVIRTUALIZATION_DETAIL
+{
+    CORINFO_DEVIRTUALIZATION_UNKNOWN,         // no details available
+    CORINFO_DEVIRTUALIZATION_SUCCESS,         // devirtualization was successful
+    CORINFO_DEVIRTUALIZATION_FAILED_CANON,    // object class was canonical
+    CORINFO_DEVIRTUALIZATION_FAILED_COM,      // object class was com
+    CORINFO_DEVIRTUALIZATION_FAILED_CAST,     // object class could not be cast to interface class
+    CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,   // interface method could not be found
+    CORINFO_DEVIRTUALIZATION_FAILED_DIM,      // interface method was default interface method
+    CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS, // object not subclass of base class
+    CORINFO_DEVIRTUALIZATION_FAILED_SLOT,     // virtual method installed via explicit override
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,   // devirtualization crossed version bubble
+    CORINFO_DEVIRTUALIZATION_COUNT,           // sentinel for maximum value
+};
+
 struct CORINFO_DEVIRTUALIZATION_INFO
 {
     //
@@ -1617,10 +1632,12 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
     // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    // - details on the computation done by the jit host
     //
-    CORINFO_METHOD_HANDLE       devirtualizedMethod;
-    bool                        requiresInstMethodTableArg;
-    CORINFO_CONTEXT_HANDLE      exactContext;
+    CORINFO_METHOD_HANDLE           devirtualizedMethod;
+    bool                            requiresInstMethodTableArg;
+    CORINFO_CONTEXT_HANDLE          exactContext;
+    CORINFO_DEVIRTUALIZATION_DETAIL detail;
 };
 
 //----------------------------------------------------------------------------

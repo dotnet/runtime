@@ -183,20 +183,15 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         // do we need to do it in two steps R -> I, '-> smallType
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
         if (dstSize < genTypeSize(TYP_INT))
         {
-            oper = gtNewCastNodeL(TYP_INT, oper, tree->IsUnsigned(), TYP_INT);
+            oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            // We must not mistreat the original cast, which was from a floating point type,
+            // as from an unsigned type, since we now have a TYP_INT node for the source and
+            // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
+            assert(!tree->IsUnsigned());
         }
-#else
-        if (dstSize < TARGET_POINTER_SIZE)
-        {
-            oper = gtNewCastNodeL(TYP_I_IMPL, oper, false, TYP_I_IMPL);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-        }
-#endif
         else
         {
             /* Note that if we need to use a helper call then we can not morph oper */
@@ -307,7 +302,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // U8 -> R4   = U8 -> R8 -> R4
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -337,7 +332,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -588,7 +583,7 @@ OPTIMIZECAST:
                     srcType = genActualType(srcType);
                 }
 
-                srcType = genUnsignedType(srcType);
+                srcType = varTypeToUnsigned(srcType);
             }
 
             if (srcType == dstType)
@@ -3964,6 +3959,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                     {
                                         // Can't use the existing field's type, so use GT_LCL_FLD to swizzle
                                         // to a new type
+                                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                                         argObj->ChangeOper(GT_LCL_FLD);
                                         argObj->gtType = structBaseType;
                                     }
@@ -3988,6 +3984,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
                         {
                             // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                             argObj->ChangeOper(GT_LCL_FLD);
                             argObj->gtType = structBaseType;
                         }
@@ -6014,11 +6011,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
-        GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
-        if (newTree != tree)
+        if (IsBaselineSimdIsaSupported())
         {
-            newTree = fgMorphSmpOp(newTree);
-            return newTree;
+            GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
+            if (newTree != tree)
+            {
+                newTree = fgMorphSmpOp(newTree);
+                return newTree;
+            }
         }
     }
     else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
@@ -12243,6 +12243,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             op2 = tree->AsOp()->gtOp2;
 
 #ifdef FEATURE_SIMD
+            if (IsBaselineSimdIsaSupported())
             {
                 // We should check whether op2 should be assigned to a SIMD field or not.
                 // If it is, we should tranlate the tree to simd intrinsic.

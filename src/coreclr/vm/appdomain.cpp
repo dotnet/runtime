@@ -3528,10 +3528,6 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
     return NULL;
 }
 
-static const AssemblyIterationFlags STANDARD_IJW_ITERATOR_FLAGS =
-    (AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution | kExcludeCollectible);
-
-
 void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=TRUE*/)
 {
     CONTRACTL

@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+    <ILLinkSubstitutionsXmls Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Substitutions.Windows.xml" />
   </ItemGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->

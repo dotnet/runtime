@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.SDK">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
+    <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
     <!-- The only output of this project is the package as the tasks aren't packaged. -->
-    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'">true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</GeneratePackageOnBuild>
 
     <IsSourceProject>false</IsSourceProject>
     <IsPackable>true</IsPackable>
@@ -38,7 +40,7 @@
   <ItemGroup>
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
-    <Content Include="_._" PackagePath="lib/netstandard1.0" />
+    <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
 
   <ItemGroup>

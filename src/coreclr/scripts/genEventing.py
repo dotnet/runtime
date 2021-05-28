@@ -714,6 +714,10 @@ typedef struct _DOTNET_TRACE_CONTEXT
             else:
                 Clrallevents.write("\n")
 
+        if not is_windows and not write_xplatheader:
+            Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
+            Clrallevents.write("\n")
+
         for providerNode in tree.getElementsByTagName('provider'):
             templateNodes = providerNode.getElementsByTagName('template')
             allTemplates  = parseTemplateNodes(templateNodes)
@@ -725,9 +729,12 @@ typedef struct _DOTNET_TRACE_CONTEXT
             providerName = providerNode.getAttribute('name')
             providerSymbol = providerNode.getAttribute('symbol')
 
+            eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
             if is_windows:
-                eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
-                Clrallevents.write(('constexpr ' if target_cpp else 'const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                Clrallevents.write(('constexpr ' if target_cpp else '') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+
+            if not is_windows and not write_xplatheader:
+                Clrallevents.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
