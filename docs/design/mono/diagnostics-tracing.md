@@ -37,7 +37,17 @@ Android is build using dynamic component support, meaning that components are in
 
 If `AndroidAppBuilderTask` is used, there is a msbuild property, `RuntimeComponents` that can be used to include specific components in the generated application. By default its empty, meaning all components will be disabled, using a `*` will enabled all components and by specify individual components, only those will be enabled. Enabling tracing would look like this, `RuntimeComponents="diagnostics_tracing"`, more components can be enabled by separting them with `;`.
 
-** TODO ** List component libraries
+Android runtime pack have the following component libraries included. For default scenarios, the dynamic versions should be used togtether with `libmonosgen-2.0.so`, but runtime pack also includes static versions of the components that can be used if runtime is build statically using `libmonosgen-2.0.a`. In case of static linking, using `libmono-component-*-stub-static.a` library will disable the component, using `libmono-component-*-static.a` will enable it.
+
+```
+libmono-component-diagnostics_tracing.so
+libmono-component-diagnostics_tracing-static.a
+libmono-component-diagnostics_tracing-stub-static.a
+
+libmono-component-hot_reload.so
+libmono-component-hot_reload-static.a
+libmono-component-hot_reload-stub-static.a
+```
 
 ### iOS
 
@@ -45,7 +55,15 @@ iOS is build using static component support, meaning that components are include
 
 If `AppleAppBuilderTask` is used, there is a msbuild property, `RuntimeComponents` that can be used to include specific components in the build application. By default its empty, meaning all components will be disabled, using a `*` will enabled all components and by specify individual components, only those will be enabled. Enabling tracing would look like this, `RuntimeComponents="diagnostics_tracing"`, more components can be enabled by separting them with `;`.
 
-** TODO ** List component libraries
+iOS runtime pack have the following component libraries included. Using `libmono-component-*-stub-static.a` library will disable the component, using `libmono-component-*-static.a` will enable it.
+
+```
+libmono-component-diagnostics_tracing-static.a
+libmono-component-diagnostics_tracing-stub-static.a
+
+libmono-component-hot_reload-static.a
+libmono-component-hot_reload-stub-static.a
+```
 
 ## Run an application including diagnostic tracing support
 
@@ -62,7 +80,101 @@ For more information on Android emulator networking and port forwarding:
 https://developer.android.com/studio/run/emulator-networking
 https://developer.android.com/studio/command-line/adb#forwardports
 
-** TODO ** Using AppBuilder arguments.
+#### Example using dotnet-counters using sample app on iOS simulator
+
+Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
+
+RUNTIME_COMPONENTS=diagnostics_tracing
+DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
+
+```
+cd src/mono/sample/iOS/
+dotnet-dsrouter server-server -tcps 127.0.0.1:9000 &
+make run-sim
+
+# In separate terminal.
+dotnet-counters monitor --process-id [dotnet-dsrouter pid]
+```
+
+```
+cd src/mono/sample/iOS/
+dotnet-dsrouter server-server -tcps 127.0.0.1:9000 -- make run-sim
+
+# In separate terminal.
+dotnet-counters monitor --process-id [dotnet-dsrouter pid]
+```
+
+#### Example using dotnet-counters using sample app on Android emulator
+
+Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
+
+RUNTIME_COMPONENTS=diagnostics_tracing
+DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
+
+```
+cd src/mono/sample/Android/
+dotnet-dsrouter server-server -tcps 127.0.0.1:9000 &
+make run
+
+# In separate terminal.
+dotnet-counters monitor --process-id [dotnet-dsrouter pid]
+```
+
+```
+cd src/mono/sample/Android/
+dotnet-dsrouter server-server -tcps 127.0.0.1:9000 -- make run
+
+# In separate terminal.
+dotnet-counters monitor --process-id [dotnet-dsrouter pid]
+```
+
+#### Example using dotnet-trace startup tracing using sample app on iOS simulator
+
+Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
+
+RUNTIME_COMPONENTS=diagnostics_tracing
+DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
+
+```
+dotnet-trace collect --diagnostic-port myport
+
+# In separate terminal.
+cd src/mono/sample/iOS/
+dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 &
+make run-sim
+```
+
+```
+dotnet-trace collect --diagnostic-port myport
+
+# In separate terminal.
+cd src/mono/sample/iOS/
+dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 & -- make run-sim
+```
+
+#### Example using dotnet-trace startup tracing using sample app on Android simulator
+
+Make sure following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
+
+RUNTIME_COMPONENTS=diagnostics_tracing
+DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
+
+```
+dotnet-trace collect --diagnostic-port myport
+
+# In separate terminal.
+cd src/mono/sample/Android/
+dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 &
+make run
+```
+
+```
+dotnet-trace collect --diagnostic-port myport
+
+# In separate terminal.
+cd src/mono/sample/Android/
+dotnet-dsrouter client-server -tcpc [dotnet-trace path]-tcps 127.0.0.1:9000 & -- make run
+```
 
 ### Application running on device
 
@@ -70,21 +182,26 @@ The same envrionment variable is used when running on device, and if device is c
 
 If loopback interface won't work, it is possible to use any interface reachable between development machine and device in `DOTNET_DiagnosticPorts` variable, just keep in mind that the the connection is unauthenticated and unencrypted.
 
+** TODO **: Describe changes to above examples when running on device.
+
 ### Application running single file based EventPipe session
 
 If application shutdown runtime on close, it is possible to run a single file based EventPipe session using environment variables as described in https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables. In .net6 an additional variable has been added, `COMPlus_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
 
 If application doesn't shutdown runtime on close, this mode won't work, since it requires rundown events, only emitted when closing session and flushing memory manager. If runtime doesn't shutdown, generated nettrace file will be corrupt.
 
-### Examples running application enabling diagnostic tracing
+Running using single file based EventPipe session will produce a file in device working directory. Use platform sepecific tooling in order to extract file once application has closed. Since file based EventPipe session doesn't use diagnostic server, there is no need to use `DOTNET_DiagnosticPorts` or running dotnet-dsrouter.
 
+** TODO **: Add example running single file based EventPipe session.
+
+### Examples running dotnet-* tooling against MonoVM
+
+https://github.com/dotnet/diagnostics/blob/main/documentation/dotnet-counters-instructions.md
 https://github.com/dotnet/diagnostics/blob/main/documentation/dotnet-trace-instructions.md
 
-** TODO **: Example of commands run to launch a dotnet-counters viewing RuntimeEventSource counters.
-** TODO **: Example of commands run to launch a dotnet-trace session collecting SampleProfiler and NativeEventSource events.
-** TODO **: Example of commands run to launch a dotnet-trace session capturing startup events.
-** TODO **: Example of commands run to launch a dotnet-trace session capturing JIT statistics.
-** TODO **: Example of reverse/connect using loopback and port forwarding on Android/iOS using adb and mlaunch.
+** TODO **: Example of commands run to launch a dotnet-trace session collecting SampleProfiler.
+** TODO **: Example of commands run to launch a dotnet-trace session tracing startup events.
+** TODO **: Example of commands run to launch a dotnet-trace session tracing JIT statistics.
 
 ## Analyze a nettrace file
 
@@ -100,8 +217,10 @@ https://github.com/dotnet/diagnostics/blob/main/documentation/diagnostics-client
 
 Using the diagnostic client library gives full flexibilty to use data in nettrace to extract any information contained in file. Using the library it is also possible to implement custom tooling, that will connect and do live analyzing of event stream retrieved directly from running application.
 
+** TODO **: Add example running with the sartup events and retrieve time to method X (replaceing MonoVM --stat=method).
+
 ## Developing EventPipe/DiagnosticServer on MonoVM
 
 ** TODO **: EventPipe/DiagnosticServer library design.
-** TODO **: Adding a new NativeRuntimeEvent.
-** TODO **: Adding a new component API.
+** TODO **: How to add a new NativeRuntimeEvent.
+** TODO **: How to add a new component API.
