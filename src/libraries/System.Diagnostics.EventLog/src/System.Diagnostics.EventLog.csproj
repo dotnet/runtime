@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.0-windows;net461;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.1-windows;net461;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <NoWarn>$(NoWarn);CA1838</NoWarn>
   </PropertyGroup>
@@ -99,7 +99,17 @@
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Specialized" />
@@ -121,22 +131,12 @@
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp2.0')) or $(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
-  </ItemGroup>
   <!-- Ensure we run ResolveProjectReferences to add the message DLL to the package.
        We do this here rather than in the pkgproj to ensure the package paths are in sync -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj" ReferenceOutputAssembly="false" OutputItemType="AdditionalFileToPackage"  />
+    <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="AdditionalFileToPackage"  />
   </ItemGroup>
   <Target Name="AddMessagesToPackage"
           Condition="'$(TargetsWindows)' == 'true'"

@@ -1,20 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.1-windows;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.1-windows;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- CS0649: uninitialized interop type fields -->
-    <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.1 where this doesn't exist.-->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
-    <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
+    <NoWarn>$(NoWarn);CS0649;SA1129</NoWarn>
     <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
-    <!-- On newer TFM's we needed to disable obsoletion warning about WebRequest -->
-    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.1-windows'">$(NoWarn);IDE0079</NoWarn>
   </PropertyGroup>
   <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -230,9 +227,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Net.WebClient" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
@@ -243,10 +238,12 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
+    <Reference Include="System.Net.WebClient" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Threading" />

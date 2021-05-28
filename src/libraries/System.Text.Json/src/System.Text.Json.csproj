@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
@@ -14,10 +14,8 @@
   <PropertyGroup>
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
     <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
-    <NoWarn Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">$(NoWarn);nullable</NoWarn>
-    <!-- Use the contract reference path for ApiCompat. -->
-    <ContractTargetFramework Condition="'$(TargetFramework)' == 'netcoreapp3.0'">netstandard2.0</ContractTargetFramework>
+    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
@@ -276,16 +274,23 @@
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
+  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
+    <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
@@ -294,18 +299,13 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.Loader" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <Reference Include="System.Diagnostics.Tools" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Reference Include="System.Linq.Expressions" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Linq.Expressions" Version="$(SystemLinqExpressionsVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
@@ -317,21 +317,4 @@
   <ItemGroup>
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.csproj" />
   </ItemGroup>
-
-  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
-  <Choose>
-    <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-      <ItemGroup>
-        <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-        <Reference Include="System.Text.Encodings.Web" />
-        <Reference Include="System.Runtime.Loader" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-        <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
 </Project>
