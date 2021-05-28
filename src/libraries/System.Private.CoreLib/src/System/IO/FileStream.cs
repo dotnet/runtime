@@ -75,7 +75,7 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
             }
-            else if (bufferSize <= 0)
+            else if (bufferSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }

@@ -18,14 +18,12 @@ namespace System.IO.Tests
             return new FileStream(handle, access, bufferSize);
         }
 
-        [Theory,
-            InlineData(0),
-            InlineData(-1)]
-        public void InvalidBufferSize_Throws(int size)
+        [Fact]
+        public void NegativeBufferSize_Throws()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(handle, FileAccess.Read, size));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(handle, FileAccess.Read, -1));
             }
         }
 
