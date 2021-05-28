@@ -1592,7 +1592,17 @@ void RequirePublicMethodOnAType(
 }
 ```
 
-#### `IL2106`: Invalid assembly action '{action}' specified for assembly '{assembly}'. C++/CLI assemblies can only be copied or skipped. 
+#### `IL2106`: Trim analysis: Return type of method 'method' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'
+
+- `DynamicallyAccessedMembersAttribute` is only applicable to items of type `System.Type` or `System.String` (or derived), on all other types the attribute will be ignored. Using the attribute on any other type is likely incorrect and unintentional.
+
+  ```C#
+  // IL2106: Return type of method 'TestMethod' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'
+  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] object TestMethod()
+  {
+      return typeof(TestType);
+  }
+  ```
 
 
 ## Single-File Warning Codes
