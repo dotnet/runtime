@@ -827,7 +827,7 @@ namespace ILCompiler
             }
         }
 
-        protected override bool IsBlittableOrManagedSequential(TypeDesc type)
+        protected override bool AlignUpInstanceByteSizeForExplicitFieldLayoutCompatQuirk(TypeDesc type)
         {
             return MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type);
         }
