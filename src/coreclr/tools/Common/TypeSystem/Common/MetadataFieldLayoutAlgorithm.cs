@@ -305,7 +305,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected virtual bool IsBlittableOrManagedSequential(TypeDesc type) => throw new NotImplementedException();
+        protected virtual bool AlignUpInstanceByteSizeForExplicitFieldLayoutCompatQuirk(TypeDesc type) => true;
 
         protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
         {
@@ -373,7 +373,7 @@ namespace Internal.TypeSystem
                 instanceSize,
                 largestAlignmentRequired,
                 layoutMetadata.Size,
-                alignUpInstanceByteSize: IsBlittableOrManagedSequential(type),
+                alignUpInstanceByteSize: AlignUpInstanceByteSizeForExplicitFieldLayoutCompatQuirk(type),
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
