@@ -7,8 +7,6 @@ namespace System.Globalization
     {
         private static partial class Settings
         {
-            internal static bool Invariant { get; } = GetInvariantSwitchValue();
-
             /// <summary>
             /// Load ICU (when not in Invariant mode) in a static cctor to ensure it is loaded early in the process.
             /// Other places, e.g. CompareInfo.GetSortKey, rely on ICU already being loaded before they are called.
@@ -37,8 +35,6 @@ namespace System.Globalization
                 }
             }
         }
-
-        internal static bool Invariant => Settings.Invariant;
 
         internal static bool UseNls => false;
 

@@ -11,7 +11,10 @@ namespace System.Globalization
         private static partial class Settings
         {
             internal static readonly bool PredefinedCulturesOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
+            internal static bool Invariant { get; } = GetInvariantSwitchValue();
         }
+
+        internal static bool Invariant => Settings.Invariant;
 
         internal static bool PredefinedCulturesOnly => !Invariant && Settings.PredefinedCulturesOnly;
 
