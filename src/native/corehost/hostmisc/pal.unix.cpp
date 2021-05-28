@@ -57,6 +57,13 @@ pal::string_t pal::to_lower(const pal::char_t* in)
     return ret;
 }
 
+pal::string_t pal::to_upper(const pal::string_t& in)
+{
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
+    return ret;
+}
+
 pal::string_t pal::get_timestamp()
 {
     std::time_t t = std::time(nullptr);
@@ -424,31 +431,63 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     FILE* install_location_file = pal::file_open(install_location_file_path, "r");
     if (install_location_file == nullptr)
     {
-        trace::verbose(_X("The install_location file failed to open."));
+        trace::error(_X("The install_location file failed to open."));
         return false;
     }
 
-    bool result = false;
-
-    char buf[PATH_MAX];
-    char* install_location = fgets(buf, sizeof(buf), install_location_file);
-    if (install_location != nullptr)
+    char buffer[PATH_MAX];
+    pal::string_t install_location, arch_install_location;
+    bool is_first_line = true;
+    while (fgets(buffer, sizeof(buffer), install_location_file))
     {
-        size_t len = pal::strlen(install_location);
-
+        size_t len = strlen(buffer);
         // fgets includes the newline character in the string - so remove it.
-        if (len > 0 && len < PATH_MAX && install_location[len - 1] == '\n')
+        if (len > 0 && len < PATH_MAX && buffer[len - 1] == '\n')
         {
-            install_location[len - 1] = '\0';
+            buffer[len - 1] = '\0';
         }
 
-        trace::verbose(_X("Using install location '%s'."), install_location);
+        char* pDelimiter = strchr(buffer, '=');
+        if (pDelimiter == nullptr)
+        {
+            if (is_first_line)
+            {
+                install_location = pal::string_t(buffer);
+                trace::verbose(_X("Found install location path '%s'.", install_location.c_str()))
+            }
+            else
+            {
+                trace::error(_X("Only the first line in '%s' may not have an architecture prefix.", install_location_file_path.c_str()));
+            }
+
+            is_first_line = false;
+            continue;
+        }
+
+        auto delimiter_index = (int)(strlen(buffer) - strlen(pDelimiter));
+        pal::string_t arch_prefix = pal::string_t(buffer).substr(0, delimiter_index);
+        pal::string_t path_to_location = pal::string_t(buffer).substr(delimiter_index + 1);
+
+        trace::verbose(_X("Found architecture-specific install logcation path: '%s' ('%s').", path_to_location.c_str(), arch_prefix.c_str()));
+        if (arch_prefix == get_arch())
+        {
+            arch_install_location = path_to_location;
+            trace::verbose(_X("Found architecture-specific install location path matching the current OS architecture ('%s'): '%s'.", arch_prefix.c_str(), arch_install_location.c_str()));
+        }
+    }
+
+    if (architecture_prefixed_install_location != nullptr)
+    {
+        *recv = architecture_prefixed_install_location;
+    }
+    else if (install_location != nullptr)
+    {
         *recv = install_location;
-        result = true;
     }
     else
     {
-        trace::verbose(_X("The install_location file first line could not be read."));
+        trace::error(_X("Did not find any install location in '%s'", install_location_file_path.c_str()));
+        return false;
     }
 
     fclose(install_location_file);

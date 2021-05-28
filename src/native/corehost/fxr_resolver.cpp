@@ -65,7 +65,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         return true;
     }
 
-    // For framework-dependent apps, use DOTNET_ROOT
+    // For framework-dependent apps, use DOTNET_ROOT_<ARCH>
     pal::string_t default_install_location;
     pal::string_t dotnet_root_env_var_name = get_dotnet_root_env_var_name();
     if (get_file_path_from_env(dotnet_root_env_var_name.c_str(), out_dotnet_root))

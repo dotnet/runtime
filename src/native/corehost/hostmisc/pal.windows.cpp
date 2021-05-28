@@ -47,6 +47,13 @@ pal::string_t pal::to_lower(const pal::char_t* in)
     return ret;
 }
 
+pal::string_t pal::to_upper(const pal::string_t& in)
+{
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
+    return ret;
+}
+
 pal::string_t pal::get_timestamp()
 {
     std::time_t t = std::time(nullptr);

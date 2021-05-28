@@ -252,6 +252,7 @@ namespace pal
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
+    string_t to_lower(const string_t& in);
     string_t to_lower(const char_t* in);
 
 
