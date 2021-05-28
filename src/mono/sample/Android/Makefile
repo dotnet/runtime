@@ -4,6 +4,11 @@ DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
 DEPLOY_AND_RUN?=true
+RUNTIME_COMPONENTS=diagnostics_tracing
+
+#If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
+#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
+#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is disabled, use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
 #RUNTIME_COMPONENTS=diagnostics_tracing
 #DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
 #DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend

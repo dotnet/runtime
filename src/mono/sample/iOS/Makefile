@@ -3,6 +3,10 @@ MONO_ARCH=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
+
+#If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
+#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
+#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is disabled, use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
 #RUNTIME_COMPONENTS=diagnostics_tracing
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
