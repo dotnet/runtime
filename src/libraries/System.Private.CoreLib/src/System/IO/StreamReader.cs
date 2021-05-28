@@ -178,11 +178,6 @@ namespace System.IO
         {
         }
 
-        public StreamReader(string path, FileStreamOptions options)
-            : this(path, Encoding.UTF8, true, options)
-        {
-        }
-
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks)
             : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize)
         {
@@ -198,25 +193,31 @@ namespace System.IO
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
-        {
-        }
-
         public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
             : this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
         {
         }
 
-        private static void ValidateArgs(string path, Encoding encoding)
+#if NET6_0_OR_GREATER
+        public StreamReader(string path, FileStreamOptions options)
+            : this(path, Encoding.UTF8, true, options)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
         }
+
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        {
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        {
+            ValidateArgs(path, encoding);
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return new FileStream(path, options);
+        }
+#endif
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {
@@ -227,13 +228,14 @@ namespace System.IO
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static void ValidateArgs(string path, Encoding encoding)
         {
-            ValidateArgs(path, encoding);
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
-
-            return new FileStream(path, options);
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath);
         }
 
         public override void Close()

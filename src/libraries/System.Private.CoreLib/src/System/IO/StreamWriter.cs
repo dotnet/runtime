@@ -139,11 +139,6 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, FileStreamOptions options)
-            : this(path, UTF8NoBOM, options)
-        {
-        }
-
         public StreamWriter(string path, bool append)
             : this(path, append, UTF8NoBOM, DefaultBufferSize)
         {
@@ -154,25 +149,31 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
-        {
-        }
-
         public StreamWriter(string path, bool append, Encoding encoding, int bufferSize) :
             this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize), encoding, bufferSize, leaveOpen: false)
         {
         }
 
-        private static void ValidateArgs(string path, Encoding encoding)
+#if NET6_0_OR_GREATER
+        public StreamWriter(string path, FileStreamOptions options)
+            : this(path, UTF8NoBOM, options)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
         }
+
+        public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
+        {
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        {
+            ValidateArgs(path, encoding);
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return new FileStream(path, options);
+        }
+#endif
 
         private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
         {
@@ -183,13 +184,14 @@ namespace System.IO
             return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static void ValidateArgs(string path, Encoding encoding)
         {
-            ValidateArgs(path, encoding);
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
-
-            return new FileStream(path, options);
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath);
         }
 
         public override void Close()

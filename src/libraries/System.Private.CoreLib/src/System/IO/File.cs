@@ -52,6 +52,7 @@ namespace System.IO
             return new StreamWriter(path, append: true);
         }
 
+#if NET6_0_OR_GREATER
         public static StreamReader OpenText(string path, FileStreamOptions options)
         {
             if (path == null)
@@ -94,6 +95,7 @@ namespace System.IO
                 PreallocationSize = options.PreallocationSize
             };
         }
+#endif
 
         /// <summary>
         /// Copies an existing file to a new file.
@@ -140,8 +142,10 @@ namespace System.IO
         public static FileStream Create(string path, int bufferSize, FileOptions options)
             => new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, options);
 
+#if NET6_0_OR_GREATER
         public static FileStream Create(string path, FileStreamOptions options)
             => new FileStream(path, Override(options, FileMode.Create));
+#endif
 
         // Deletes a file. The file specified by the designated path is deleted.
         // If the file does not exist, Delete succeeds without throwing
@@ -205,10 +209,12 @@ namespace System.IO
             return new FileStream(path, mode, access, share);
         }
 
+#if NET6_0_OR_GREATER
         public static FileStream Open(string path, FileMode mode, FileStreamOptions options)
         {
             return new FileStream(path, Override(options, mode));
         }
+#endif
 
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
         {
@@ -316,6 +322,7 @@ namespace System.IO
             return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
         }
 
+#if NET6_0_OR_GREATER
         public static FileStream OpenRead(string path, FileStreamOptions options)
         {
             return new FileStream(path, Override(options, FileMode.Open, FileAccess.Read));
@@ -325,6 +332,7 @@ namespace System.IO
         {
             return new FileStream(path, Override(options, FileMode.OpenOrCreate, FileAccess.Write));
         }
+#endif
 
         public static string ReadAllText(string path)
         {

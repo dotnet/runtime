@@ -85,6 +85,7 @@ namespace System.IO
         public StreamWriter AppendText()
             => new StreamWriter(NormalizedPath, append: true);
 
+#if NET6_0_OR_GREATER
         public StreamReader OpenText(FileStreamOptions options)
             => File.OpenText(NormalizedPath, options);
 
@@ -93,6 +94,7 @@ namespace System.IO
 
         public StreamWriter AppendText(FileStreamOptions options)
             => File.AppendText(NormalizedPath, options);
+#endif
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
@@ -115,12 +117,14 @@ namespace System.IO
             return fileStream;
         }
 
+#if NET6_0_OR_GREATER
         public FileStream Create(FileStreamOptions options)
         {
             FileStream fileStream = File.Create(NormalizedPath, options);
             Invalidate();
             return fileStream;
         }
+#endif
 
         public override void Delete()
         {
@@ -143,6 +147,7 @@ namespace System.IO
         public FileStream OpenWrite()
             => new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
 
+#if NET6_0_OR_GREATER
         public FileStream Open(FileMode mode, FileStreamOptions options)
             => File.Open(NormalizedPath, mode, options);
 
@@ -151,6 +156,7 @@ namespace System.IO
 
         public FileStream OpenWrite(FileStreamOptions options)
             => File.OpenRead(NormalizedPath, options);
+#endif
 
         // Moves a given file to a new location and potentially a new file name.
         // This method does work across volumes.
