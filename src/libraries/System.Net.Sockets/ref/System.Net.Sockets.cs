@@ -757,6 +757,7 @@ namespace System.Net.Sockets
         public byte[] Receive([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref System.Net.IPEndPoint? remoteEP) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.UdpReceiveResult> ReceiveAsync() { throw null; }
         public int Send(byte[] dgram, int bytes) { throw null; }
+        public int Send(ReadOnlySpan<byte> dgram) {throw null; }
         public int Send(byte[] dgram, int bytes, System.Net.IPEndPoint? endPoint) { throw null; }
         public int Send(byte[] dgram, int bytes, string? hostname, int port) { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes) { throw null; }

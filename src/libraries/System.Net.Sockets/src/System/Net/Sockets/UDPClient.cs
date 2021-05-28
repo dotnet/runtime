@@ -950,6 +950,20 @@ namespace System.Net.Sockets
             return Client.Send(dgram, 0, bytes, SocketFlags.None);
         }
 
+        // Sends a UDP datagram to a remote host.
+        public int Send(ReadOnlySpan<byte> dgram)
+        {
+            ThrowIfDisposed();
+
+            if (!_active)
+            {
+                // only allowed on connected socket
+                throw new InvalidOperationException(SR.net_notconnected);
+            }
+
+            return Client.Send(dgram, SocketFlags.None);
+        }
+
         private void ThrowIfDisposed()
         {
             if (_disposed)
