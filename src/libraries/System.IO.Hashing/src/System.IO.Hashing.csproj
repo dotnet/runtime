@@ -7,10 +7,13 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\IO\Hashing\BitOperations.cs" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\XxHash32.cs" />
+    <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
   </ItemGroup>
   <Choose>
