@@ -3826,6 +3826,48 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
+static MonoMethod*
+get_constrained_method (MonoCompile *cfg, MonoImage *image, guint32 token,
+						MonoMethod *cil_method, MonoClass *constrained_class,
+						MonoGenericContext *generic_context)
+{
+	MonoMethod *cmethod = cil_method;
+	gboolean constrained_is_generic_param =
+		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
+		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+
+	if (cfg->current_method->wrapper_type != MONO_WRAPPER_NONE) {
+		if (cfg->verbose_level > 2)
+			printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+		if (!(constrained_is_generic_param &&
+			  cfg->gshared)) {
+			cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, cfg->error);
+			CHECK_CFG_ERROR;
+		}
+	} else {
+		if (cfg->verbose_level > 2)
+			printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+
+		if (constrained_is_generic_param && cfg->gshared) {
+			/*
+			 * This is needed since get_method_constrained can't find
+			 * the method in klass representing a type var.
+			 * The type var is guaranteed to be a reference type in this
+			 * case.
+			 */
+			if (!mini_is_gsharedvt_klass (constrained_class))
+				g_assert (!m_class_is_valuetype (cmethod->klass));
+		} else {
+			cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, cfg->error);
+			CHECK_CFG_ERROR;
+		}
+	}
+	return cmethod;
+
+ mono_error_exit:
+	return NULL;
+}
+
 static gboolean
 method_does_not_return (MonoMethod *method)
 {
@@ -5641,7 +5683,10 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		}
 	}
 
-	if (constrained_partial_call) {
+	if (m_method_is_static (cmethod)) {
+		/* Call to an abstract static method */
+		return NULL;
+	} if (constrained_partial_call) {
 		gboolean need_box = TRUE;
 
 		/*
@@ -7128,36 +7173,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoMethod *cil_method; cil_method = cmethod;
 				
 			if (constrained_class) {
-				gboolean constrained_is_generic_param =
-					m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
-					m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class))
+					// FIXME:
+					GENERIC_SHARING_FAILURE (CEE_CALL);
 
-				if (method->wrapper_type != MONO_WRAPPER_NONE) {
-					if (cfg->verbose_level > 2)
-						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
-					if (!(constrained_is_generic_param &&
-						  cfg->gshared)) {
-						cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, cfg->error);
-						CHECK_CFG_ERROR;
-					}
-				} else {
-					if (cfg->verbose_level > 2)
-						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
-
-					if (constrained_is_generic_param && cfg->gshared) {
-						/* 
-						 * This is needed since get_method_constrained can't find 
-						 * the method in klass representing a type var.
-						 * The type var is guaranteed to be a reference type in this
-						 * case.
-						 */
-						if (!mini_is_gsharedvt_klass (constrained_class))
-							g_assert (!m_class_is_valuetype (cmethod->klass));
-					} else {
-						cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, cfg->error);
-						CHECK_CFG_ERROR;
-					}
-				}
+				cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
+				CHECK_CFG_ERROR;
 
 				if (m_class_is_enumtype (constrained_class) && !strcmp (cmethod->name, "GetHashCode")) {
 					/* Use the corresponding method from the base type to avoid boxing */
@@ -7405,7 +7426,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
 
-				if (context_used && mono_class_is_interface (cmethod->klass)) {
+				if (context_used && mono_class_is_interface (cmethod->klass) && !m_method_is_static (cmethod)) {
 					/* Generic method interface
 					   calls are resolved via a
 					   helper function and don't
@@ -10959,6 +10980,15 @@ mono_ldptr:
 
 			cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
+
+			if (constrained_class) {
+				if (m_method_is_static (cmethod) && mini_class_check_context_used (cfg, constrained_class))
+					// FIXME:
+					GENERIC_SHARING_FAILURE (CEE_LDFTN);
+				cmethod = get_constrained_method (cfg, image, n, cmethod, constrained_class, generic_context);
+				constrained_class = NULL;
+				CHECK_CFG_ERROR;
+			}
 
 			mono_class_init_internal (cmethod->klass);
 
