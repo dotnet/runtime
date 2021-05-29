@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.Primitives
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
         /// </exception>
-        public ReadOnlySpan<char> AsSpan(int start) => throw new NotImplementedException();
+        public ReadOnlySpan<char> AsSpan(int start) => AsSpan(start, Length - start);
 
         /// <summary>
         /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
@@ -150,7 +150,15 @@ namespace Microsoft.Extensions.Primitives
         /// <paramref name="start"/> or <paramref name="length"/> is less than zero, or <paramref name="start"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.
         /// </exception>
-        public ReadOnlySpan<char> AsSpan(int start, int length) => throw new NotImplementedException();
+        public ReadOnlySpan<char> AsSpan(int start, int length)
+        {
+            if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
+            {
+                ThrowInvalidArguments(start, length, offsetIsStart: true);
+            }
+
+            return Buffer.AsSpan(Offset + start, length);
+        }
 
         /// <summary>
         /// Gets a <see cref="ReadOnlyMemory{T}"/> from the current <see cref="StringSegment"/>.
@@ -695,7 +703,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        private void ThrowInvalidArguments(int offset, int length)
+        private void ThrowInvalidArguments(int offset, int length, bool offsetIsStart = false)
         {
             throw GetInvalidArgumentsException(HasValue);
 
@@ -708,7 +716,7 @@ namespace Microsoft.Extensions.Primitives
 
                 if (offset < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetIsStart ? ExceptionArgument.start : ExceptionArgument.offset);
                 }
 
                 if (length < 0)
