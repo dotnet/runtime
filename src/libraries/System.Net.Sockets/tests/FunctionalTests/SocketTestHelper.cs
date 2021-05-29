@@ -263,11 +263,11 @@ namespace System.Net.Sockets.Tests
         public override bool ValidatesArrayArguments => false;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
-            s.AcceptAsync();
+            s.AcceptAsync(_cts.Token).AsTask();
         public override Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize)
             => throw new NotSupportedException();
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
-            s.AcceptAsync(acceptSocket);
+            s.AcceptAsync(acceptSocket, _cts.Token).AsTask();
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             s.ConnectAsync(endPoint, _cts.Token).AsTask();
         public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
