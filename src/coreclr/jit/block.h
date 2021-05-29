@@ -1575,9 +1575,19 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
         case BBJ_COND:
             m_succs[0] = block->bbNext;
-            m_succs[1] = block->bbJumpDest;
             m_begin    = &m_succs[0];
-            m_end      = &m_succs[2];
+
+            // If both fall-through and branch successors are identical, then only include
+            // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
+            if (block->bbJumpDest == block->bbNext)
+            {
+                m_end = &m_succs[1];
+            }
+            else
+            {
+                m_succs[1] = block->bbJumpDest;
+                m_end      = &m_succs[2];
+            }
             break;
 
         case BBJ_SWITCH:
