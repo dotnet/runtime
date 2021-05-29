@@ -18,6 +18,7 @@
 
     <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
     <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore45;netcore451;netcore50;uap10.0;wp8;wpa81;net45;net451;net46" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

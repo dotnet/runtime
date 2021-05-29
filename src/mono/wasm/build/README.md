@@ -1,4 +1,4 @@
-# `WasmApp.{props,targets}`, `WasmApp.InTree.{props,targets}`
+# `WasmApp.{props,targets}`, and `WasmApp.InTree.{props,targets}`
 
 - Any project that wants to use this, can import the props+targets, and set up the
 various properties before the target `WasmBuildApp` gets executed.
