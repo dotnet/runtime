@@ -2495,22 +2495,15 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-        {
-            unsigned jumpCnt = blockPred->bbJumpSwt->bbsCount;
-
-            for (unsigned i = 0; i < jumpCnt; ++i)
+            for (BasicBlock* const bTarget : blockPred->SwitchTargets())
             {
-                BasicBlock* jumpTab = blockPred->bbJumpSwt->bbsDstTab[i];
-                assert(jumpTab != nullptr);
-                if (block == jumpTab)
+                if (block == bTarget)
                 {
                     return true;
                 }
             }
-
             assert(!"SWITCH in the predecessor list with no jump label to BLOCK!");
-        }
-        break;
+            break;
 
         default:
             assert(!"Unexpected bbJumpKind");
@@ -3582,11 +3575,9 @@ void Compiler::fgDebugCheckBlockLinks()
                 // about the BlockSet epoch.
                 BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-                BasicBlock** jumpTable = block->bbJumpSwt->bbsDstTab;
-                unsigned     jumpCount = block->bbJumpSwt->bbsCount;
-                for (unsigned i = 0; i < jumpCount; i++)
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, jumpTable[i]->bbNum);
+                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
                 }
                 // Now we should have a set of unique successors that matches what's in the switchMap.
                 // First, check the number of entries, then make sure all the blocks in uniqueSuccSet

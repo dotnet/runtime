@@ -1827,14 +1827,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
                 break;
 
             case BBJ_SWITCH:
-            {
-                for (unsigned i = 0; i < newblk->bbJumpSwt->bbsCount; i++)
+                for (BasicBlock* const switchDest : newblk->SwitchTargets())
                 {
-                    BasicBlock* switchDest = newblk->bbJumpSwt->bbsDstTab[i];
                     fgAddRefPred(switchDest, newblk);
                 }
-            }
-            break;
+                break;
 
             default:
                 break;

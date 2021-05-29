@@ -382,15 +382,9 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     noway_assert(newSwitchBlock != nullptr);
     noway_assert(oldSwitchBlock->bbJumpKind == BBJ_SWITCH);
 
-    unsigned     jumpCnt = oldSwitchBlock->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTab = oldSwitchBlock->bbJumpSwt->bbsDstTab;
-
-    unsigned i;
-
     // Walk the switch's jump table, updating the predecessor for each branch.
-    for (i = 0; i < jumpCnt; i++)
+    for (BasicBlock* const bJump : oldSwitchBlock->SwitchTargets())
     {
-        BasicBlock* bJump = jumpTab[i];
         noway_assert(bJump != nullptr);
 
         // Note that if there are duplicate branch targets in the switch jump table,
@@ -3070,18 +3064,10 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_SWITCH: // block ends with a switch statement
-
-                BBswtDesc* swtDesc;
-                swtDesc = blk->bbJumpSwt;
-
-                assert(swtDesc);
-
-                unsigned i;
-                for (i = 0; i < swtDesc->bbsCount; i++)
+                for (BasicBlock* const bTarget : blk->SwitchTargets())
                 {
-                    fgControlFlowPermitted(blk, swtDesc->bbsDstTab[i]);
+                    fgControlFlowPermitted(blk, bTarget);
                 }
-
                 break;
 
             case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))

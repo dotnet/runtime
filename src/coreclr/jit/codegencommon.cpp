@@ -384,15 +384,11 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    JITDUMP("  " FMT_BB " : branch target\n", (*jumpTab)->bbNum);
-                    (*jumpTab)->bbFlags |= BBF_HAS_LABEL;
-                } while (++jumpTab, --jumpCnt);
+                    JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
+                    bTarget->bbFlags |= BBF_HAS_LABEL;
+                }
                 break;
 
             case BBJ_CALLFINALLY:

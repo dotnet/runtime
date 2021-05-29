@@ -444,9 +444,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
         switch (block->bbJumpKind)
         {
-            unsigned     jumpCnt;
-            BasicBlock** jumpTab;
-
             case BBJ_NONE:
             case BBJ_COND:
                 if (block->bbNext == loop.lpEntry)
@@ -470,17 +467,14 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                 break;
 
             case BBJ_SWITCH:
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    noway_assert(*jumpTab);
-                    if ((*jumpTab) == loop.lpEntry)
+                    if (bTarget == loop.lpEntry)
                     {
                         removeLoop = true;
+                        break;
                     }
-                } while (++jumpTab, --jumpCnt);
+                }
                 break;
 
             default:
@@ -503,9 +497,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
                 switch (auxBlock->bbJumpKind)
                 {
-                    unsigned     jumpCnt;
-                    BasicBlock** jumpTab;
-
                     case BBJ_NONE:
                     case BBJ_COND:
                         if (auxBlock->bbNext == loop.lpEntry)
@@ -529,17 +520,14 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                         break;
 
                     case BBJ_SWITCH:
-                        jumpCnt = auxBlock->bbJumpSwt->bbsCount;
-                        jumpTab = auxBlock->bbJumpSwt->bbsDstTab;
-
-                        do
+                        for (BasicBlock* const bTarget : auxBlock->SwitchTargets())
                         {
-                            noway_assert(*jumpTab);
-                            if ((*jumpTab) == loop.lpEntry)
+                            if (bTarget == loop.lpEntry)
                             {
                                 removeLoop = false;
+                                break;
                             }
-                        } while (++jumpTab, --jumpCnt);
+                        }
                         break;
 
                     default:
@@ -2316,23 +2304,14 @@ private:
                 break;
 
             case BBJ_SWITCH:
-
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const exitPoint : block->SwitchTargets())
                 {
-                    noway_assert(*jumpTab);
-                    exitPoint = *jumpTab;
-
                     if (!loopBlocks.IsMember(exitPoint->bbNum))
                     {
                         lastExit = block;
                         exitCount++;
                     }
-                } while (++jumpTab, --jumpCnt);
+                }
                 break;
 
             default:
@@ -2658,10 +2637,8 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
             break;
 
         case BBJ_SWITCH:
-        {
             to->bbJumpSwt = new (this, CMK_BasicBlock) BBswtDesc(this, from->bbJumpSwt);
-        }
-        break;
+            break;
 
         default:
             break;

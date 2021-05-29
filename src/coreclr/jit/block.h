@@ -413,6 +413,53 @@ public:
     }
 };
 
+// BBSwitchTargetIterator: forward iterator for the BBswtDesc target blocks.
+//
+class BBSwitchTargetIterator
+{
+    BasicBlock** m_bbsDstTabEntry;
+
+public:
+    BBSwitchTargetIterator(BasicBlock** bbsDescEntry) : m_bbsDstTabEntry(bbsDescEntry)
+    {
+    }
+
+    BasicBlock* operator*() const
+    {
+        BasicBlock* bTarget = *m_bbsDstTabEntry;
+        assert(bTarget != nullptr);
+        return bTarget;
+    }
+
+    BBSwitchTargetIterator& operator++()
+    {
+        ++m_bbsDstTabEntry;
+        return *this;
+    }
+
+    bool operator!=(const BBSwitchTargetIterator& i) const
+    {
+        return m_bbsDstTabEntry != i.m_bbsDstTabEntry;
+    }
+};
+
+// BBSwitchTargetList: adapter class for forward iteration of switch targets, using range-based `for`,
+// normally used via BasicBlocks::SwitchTargets(), e.g.:
+//    for (BasicBlock* const target : block->SwitchTargets()) ...
+//
+class BBSwitchTargetList
+{
+    BBswtDesc* m_bbsDesc;
+
+public:
+    BBSwitchTargetList(BBswtDesc* bbsDesc) : m_bbsDesc(bbsDesc)
+    {
+    }
+
+    BBSwitchTargetIterator begin() const;
+    BBSwitchTargetIterator end() const;
+};
+
 //------------------------------------------------------------------------
 // BasicBlockFlags: a bitmask of flags for BasicBlock
 //
@@ -792,6 +839,16 @@ struct BasicBlock : private LIR::Range
     // GetSucc: Returns the "i"th successor. Requires (0 <= i < NumSucc()).
     BasicBlock* GetSucc(unsigned i) const;
     BasicBlock* GetSucc(unsigned i, Compiler* comp);
+
+    // SwitchTargets: convenience methods for enabling range-based `for` iteration over a switch block's targets, e.g.:
+    //    for (BasicBlock* const bTarget : block->SwitchTargets()) ...
+    //
+    BBSwitchTargetList SwitchTargets() const
+    {
+        assert(bbJumpKind == BBJ_SWITCH);
+        assert(bbJumpSwt != nullptr);
+        return BBSwitchTargetList(bbJumpSwt);
+    }
 
     BasicBlock* GetUniquePred(Compiler* comp) const;
 
@@ -1372,6 +1429,34 @@ public:
     }
 };
 
+// BasicBlockRangeList: adapter class for forward iteration of a lexically contiguous range of
+// BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
+// and must be non-null. E.g.,
+//    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
+//
+class BasicBlockRangeList
+{
+    BasicBlock* m_begin;
+    BasicBlock* m_end;
+
+public:
+    BasicBlockRangeList(BasicBlock* begin, BasicBlock* end) : m_begin(begin), m_end(end)
+    {
+        assert(begin != nullptr);
+        assert(end != nullptr);
+    }
+
+    BasicBlockIterator begin() const
+    {
+        return BasicBlockIterator(m_begin);
+    }
+
+    BasicBlockIterator end() const
+    {
+        return BasicBlockIterator(m_end->bbNext); // walk until we see the block *following* the `m_end` block
+    }
+};
+
 // BBswtDesc -- descriptor for a switch block
 //
 //  Things to know:
@@ -1417,33 +1502,17 @@ struct BBswtDesc
     }
 };
 
-// BasicBlockRangeList: adapter class for forward iteration of a lexically contiguous range of
-// BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
-// and must be non-null. E.g.,
-//    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
+// BBSwitchTargetList non-inline implementations (here due to C++ ordering requirements).
 //
-class BasicBlockRangeList
+inline BBSwitchTargetIterator BBSwitchTargetList::begin() const
 {
-    BasicBlock* m_begin;
-    BasicBlock* m_end;
+    return BBSwitchTargetIterator(m_bbsDesc->bbsDstTab);
+}
 
-public:
-    BasicBlockRangeList(BasicBlock* begin, BasicBlock* end) : m_begin(begin), m_end(end)
-    {
-        assert(begin != nullptr);
-        assert(end != nullptr);
-    }
-
-    BasicBlockIterator begin() const
-    {
-        return BasicBlockIterator(m_begin);
-    }
-
-    BasicBlockIterator end() const
-    {
-        return BasicBlockIterator(m_end->bbNext); // walk until we see the block *following* the `m_end` block
-    }
-};
+inline BBSwitchTargetIterator BBSwitchTargetList::end() const
+{
+    return BBSwitchTargetIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
+}
 
 // In compiler terminology the control flow between two BasicBlocks
 // is typically referred to as an "edge".  Most well known are the

@@ -947,19 +947,11 @@ void Compiler::fgExtendDbgLifetimes()
                 break;
 
             case BBJ_SWITCH:
-            {
-                BasicBlock** jmpTab;
-                unsigned     jmpCnt;
-
-                jmpCnt = block->bbJumpSwt->bbsCount;
-                jmpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    VarSetOps::UnionD(this, initVars, (*jmpTab)->bbScope);
-                } while (++jmpTab, --jmpCnt);
-            }
-            break;
+                    VarSetOps::UnionD(this, initVars, bTarget->bbScope);
+                }
+                break;
 
             case BBJ_EHFINALLYRET:
             case BBJ_RETURN:

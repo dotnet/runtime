@@ -1418,18 +1418,10 @@ void Compiler::fgLoopCallMark()
                 break;
 
             case BBJ_SWITCH:
-
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpPtr;
-                jumpPtr = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    fgLoopCallTest(block, *jumpPtr);
-                } while (++jumpPtr, --jumpCnt);
-
-                break;
+                    fgLoopCallTest(block, bTarget);
+                }
 
             default:
                 break;
@@ -4320,17 +4312,10 @@ void Compiler::fgSetBlockOrder()
                     break;
 
                 case BBJ_SWITCH:
-
-                    unsigned jumpCnt;
-                    jumpCnt = block->bbJumpSwt->bbsCount;
-                    BasicBlock** jumpPtr;
-                    jumpPtr = block->bbJumpSwt->bbsDstTab;
-
-                    do
+                    for (BasicBlock* const bTarget : block->SwitchTargets())
                     {
-                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, *jumpPtr);
-                    } while (++jumpPtr, --jumpCnt);
-
+                        partiallyInterruptible &= EDGE_IS_GC_SAFE(block, bTarget);
+                    }
                     break;
 
                 default:

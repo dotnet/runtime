@@ -17722,20 +17722,11 @@ SPILLSTACK:
                 break;
 
             case BBJ_SWITCH:
-
-                BasicBlock** jmpTab;
-                unsigned     jmpCnt;
-
                 addStmt = impExtractLastStmt();
                 assert(addStmt->GetRootNode()->gtOper == GT_SWITCH);
 
-                jmpCnt = block->bbJumpSwt->bbsCount;
-                jmpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const tgtBlock : block->SwitchTargets())
                 {
-                    tgtBlock = (*jmpTab);
-
                     multRef |= tgtBlock->bbRefs;
 
                     // Thanks to spill cliques, we should have assigned all or none
@@ -17745,8 +17736,7 @@ SPILLSTACK:
                     {
                         break;
                     }
-                } while (++jmpTab, --jmpCnt);
-
+                }
                 break;
 
             case BBJ_CALLFINALLY:
