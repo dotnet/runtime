@@ -49,6 +49,7 @@
     <Compile Include="CultureInfo\CultureInfoGetFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoGetHashCode.cs" />
     <Compile Include="CultureInfo\CultureInfoIsNeutralCulture.cs" />
+    <Compile Include="CultureInfo\CultureInfoNames.cs" />
     <Compile Include="CultureInfo\CultureInfoNativeName.cs" />
     <Compile Include="CultureInfo\CultureInfoNumberFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoParent.cs" />
