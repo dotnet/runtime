@@ -1422,6 +1422,7 @@ void Compiler::fgLoopCallMark()
                 {
                     fgLoopCallTest(block, bTarget);
                 }
+                break;
 
             default:
                 break;
