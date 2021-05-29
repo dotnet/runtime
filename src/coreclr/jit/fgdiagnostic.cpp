@@ -1112,11 +1112,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
             // Emit successor edges
             //
-            const unsigned numSuccs = bSource->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const bTarget : bSource->Succs())
             {
-                BasicBlock* const bTarget = bSource->GetSucc(i);
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
                 if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                 {

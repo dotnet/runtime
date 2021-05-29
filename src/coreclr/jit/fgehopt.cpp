@@ -1355,12 +1355,8 @@ void Compiler::fgDebugCheckTryFinallyExits()
             }
 
             // Look at each of the normal control flow possibilities.
-            const unsigned numSuccs = block->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const succBlock : block->Succs())
             {
-                BasicBlock* const succBlock = block->GetSucc(i);
-
                 if (succBlock->hasTryIndex() && succBlock->getTryIndex() <= XTnum)
                 {
                     // Successor does not exit this try region.

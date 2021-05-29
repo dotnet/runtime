@@ -413,38 +413,39 @@ public:
     }
 };
 
-// BBSwitchTargetIterator: forward iterator for the BBswtDesc target blocks.
+// BBArrayIterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
 //
-class BBSwitchTargetIterator
+class BBArrayIterator
 {
-    BasicBlock** m_bbsDstTabEntry;
+    BasicBlock* const* m_bbEntry;
 
 public:
-    BBSwitchTargetIterator(BasicBlock** bbsDescEntry) : m_bbsDstTabEntry(bbsDescEntry)
+    BBArrayIterator(BasicBlock* const* bbEntry) : m_bbEntry(bbEntry)
     {
     }
 
     BasicBlock* operator*() const
     {
-        BasicBlock* bTarget = *m_bbsDstTabEntry;
+        assert(m_bbEntry != nullptr);
+        BasicBlock* bTarget = *m_bbEntry;
         assert(bTarget != nullptr);
         return bTarget;
     }
 
-    BBSwitchTargetIterator& operator++()
+    BBArrayIterator& operator++()
     {
-        ++m_bbsDstTabEntry;
+        ++m_bbEntry;
         return *this;
     }
 
-    bool operator!=(const BBSwitchTargetIterator& i) const
+    bool operator!=(const BBArrayIterator& i) const
     {
-        return m_bbsDstTabEntry != i.m_bbsDstTabEntry;
+        return m_bbEntry != i.m_bbEntry;
     }
 };
 
 // BBSwitchTargetList: adapter class for forward iteration of switch targets, using range-based `for`,
-// normally used via BasicBlocks::SwitchTargets(), e.g.:
+// normally used via BasicBlock::SwitchTargets(), e.g.:
 //    for (BasicBlock* const target : block->SwitchTargets()) ...
 //
 class BBSwitchTargetList
@@ -456,8 +457,8 @@ public:
     {
     }
 
-    BBSwitchTargetIterator begin() const;
-    BBSwitchTargetIterator end() const;
+    BBArrayIterator begin() const;
+    BBArrayIterator end() const;
 };
 
 //------------------------------------------------------------------------
@@ -831,7 +832,7 @@ struct BasicBlock : private LIR::Range
     // Note that for BBJ_COND, which has two successors (fall through and condition true branch target),
     // only the unique targets are returned. Thus, if both targets are the same, NumSucc() will only return 1
     // instead of 2.
-
+    //
     // NumSucc: Returns the number of successors of "this".
     unsigned NumSucc() const;
     unsigned NumSucc(Compiler* comp);
@@ -1318,6 +1319,34 @@ struct BasicBlock : private LIR::Range
         return Successors<AllSuccessorIterPosition>(comp, this);
     }
 
+    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs()) ...
+    //
+    class BBSuccList
+    {
+        // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
+        // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
+        // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
+        // `m_succs` or at the switch table successor array.
+        BasicBlock*        m_succs[2];
+        BasicBlock* const* m_begin;
+        BasicBlock* const* m_end;
+
+    public:
+        BBSuccList(const BasicBlock* block);
+        BBArrayIterator begin() const;
+        BBArrayIterator end() const;
+    };
+
+    // Succs: convenience methods for enabling range-based `for` iteration over a block's successors, e.g.:
+    //    for (BasicBlock* const succ : block->Succs()) ...
+    //
+    BBSuccList Succs() const
+    {
+        return BBSuccList(this);
+    }
+
     // Try to clone block state and statements from `from` block to `to` block (which must be new/empty),
     // optionally replacing uses of local `varNum` with IntCns `varVal`.  Return true if all statements
     // in the block are cloned successfully, false (with partially-populated `to` block) if one fails.
@@ -1502,16 +1531,74 @@ struct BBswtDesc
     }
 };
 
-// BBSwitchTargetList non-inline implementations (here due to C++ ordering requirements).
+// BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //
-inline BBSwitchTargetIterator BBSwitchTargetList::begin() const
+inline BBArrayIterator BBSwitchTargetList::begin() const
 {
-    return BBSwitchTargetIterator(m_bbsDesc->bbsDstTab);
+    return BBArrayIterator(m_bbsDesc->bbsDstTab);
 }
 
-inline BBSwitchTargetIterator BBSwitchTargetList::end() const
+inline BBArrayIterator BBSwitchTargetList::end() const
 {
-    return BBSwitchTargetIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
+    return BBArrayIterator(m_bbsDesc->bbsDstTab + m_bbsDesc->bbsCount);
+}
+
+// BBSuccList out-of-class-declaration implementations
+//
+inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
+{
+    switch (block->bbJumpKind)
+    {
+        case BBJ_THROW:
+        case BBJ_RETURN:
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHFILTERRET:
+            // We don't need m_succs.
+            m_begin = nullptr;
+            m_end   = nullptr;
+            break;
+
+        case BBJ_CALLFINALLY:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+            m_succs[0] = block->bbJumpDest;
+            m_begin    = &m_succs[0];
+            m_end      = &m_succs[1];
+            break;
+
+        case BBJ_NONE:
+            m_succs[0] = block->bbNext;
+            m_begin    = &m_succs[0];
+            m_end      = &m_succs[1];
+            break;
+
+        case BBJ_COND:
+            m_succs[0] = block->bbNext;
+            m_succs[1] = block->bbJumpDest;
+            m_begin    = &m_succs[0];
+            m_end      = &m_succs[2];
+            break;
+
+        case BBJ_SWITCH:
+            // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
+            m_begin = block->bbJumpSwt->bbsDstTab;
+            m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
+            break;
+
+        default:
+            unreached();
+    }
+}
+
+inline BBArrayIterator BasicBlock::BBSuccList::begin() const
+{
+    return BBArrayIterator(m_begin);
+}
+
+inline BBArrayIterator BasicBlock::BBSuccList::end() const
+{
+    return BBArrayIterator(m_end);
 }
 
 // In compiler terminology the control flow between two BasicBlocks
