@@ -389,8 +389,6 @@ MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderCon
     m_pFileBuffer        = NULL;
     m_nFileSize          = 0;
 
-    m_busyWith           = EmptyToken;
-
     m_nStartTime         = GetTickCount();
 }
 
@@ -601,89 +599,6 @@ bool MulticoreJitProfilePlayer::CompileMethodDesc(Module * pModule, MethodDesc *
     return false;
 }
 
-
-// Conditional JIT of a method
-void MulticoreJitProfilePlayer::JITMethod(Module * pModule, unsigned methodIndex)
-{
-    STANDARD_VM_CONTRACT;
-
-	// Ensure non-null module
-	if (pModule == NULL)
-	{
-		if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
-		{
-			_FireEtwMulticoreJitA(W("NULLMODULEPOINTER"), NULL, methodIndex, 0, 0);
-		}
-		return;
-	}
-
-    methodIndex &= METHODINDEX_MASK; // 20-bit
-
-    unsigned token = TokenFromRid(methodIndex, mdtMethodDef);
-
-    // Similar to Module::FindMethod + Module::FindMethodThrowing,
-    // except it calls GetMethodDescFromMemberDefOrRefOrSpec with strictMetadataChecks=FALSE to allow generic instantiation
-    MethodDesc * pMethod = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(pModule, token, NULL, FALSE, FALSE);
-    if (pMethod != NULL && !pMethod->IsDynamicMethod())
-    {
-        if (pMethod->HasILHeader())
-        {
-            // MethodDesc::FindOrCreateTypicalSharedInstantiation is expensive, avoid calling it unless the method or class has generic arguments
-            if (pMethod->HasClassOrMethodInstantiation())
-            {
-                pMethod = pMethod->FindOrCreateTypicalSharedInstantiation();
-
-                if (pMethod == NULL)
-                {
-                    goto BadMethod;
-                }
-
-                pModule = pMethod->GetModule_NoLogging();
-            }
-
-            if (pMethod->GetNativeCode() != NULL) // last check before
-            {
-                m_stats.m_nHasNativeCode ++;
-
-                return;
-            }
-            else
-            {
-                m_busyWith = methodIndex;
-
-                bool rslt = CompileMethodDesc(pModule, pMethod);
-
-                m_busyWith = EmptyToken;
-
-                if (rslt)
-                {
-                    return;
-                }
-            }
-        }
-        else if (pMethod->IsNDirect())
-        {
-            // NDirect Stub
-            if (GetStubForInteropMethod(pMethod))
-            {
-                return;
-            }
-        }
-    }
-
-BadMethod:
-
-    m_stats.m_nFilteredMethods ++;
-
-    MulticoreJitTrace(("Filtered out methods: pModule:[%s] token:[%x]", pModule->GetSimpleName(), token));
-
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
-    {
-        _FireEtwMulticoreJitA(W("FILTERMETHOD-GENERIC"), pModule->GetSimpleName(), token, 0, 0);
-    }
-}
-
-
 class MulticoreJitPlayerModuleEnumerator : public MulticoreJitModuleEnumerator
 {
     MulticoreJitProfilePlayer * m_pPlayer;
@@ -847,94 +762,26 @@ bool MulticoreJitProfilePlayer::ShouldAbort(bool fast) const
     return false;
 }
 
-
-// Basic delay unit
-const int DelayUnit          = 1;     //  1 ms delay
-const int MissingModuleDelay = 10;    // 10 ms for each missing module
-
-
-// Wait for all the module loading and level requests to be fullfilled
-// This allows for longer delay based on number of mismatches, to reduce CPU usage
-
-// Return true blocking count is 0, false if aborted
-bool MulticoreJitProfilePlayer::GroupWaitForModuleLoad(int pos)
+HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, unsigned level)
 {
     STANDARD_VM_CONTRACT;
+    
+    HRESULT hr = S_OK;
 
-    MulticoreJitTrace(("Enter GroupWaitForModuleLoad(pos=%4d): %d modules loaded, blocking count=%d", pos, m_nLoadedModuleCount, m_nBlockingCount));
+    MulticoreJitTrace(("ModuleDependency(%u) start module load",
+        moduleTo));
 
-    _FireEtwMulticoreJit(W("GROUPWAIT"), W("Enter"), m_nLoadedModuleCount, m_nBlockingCount, pos);
-
-    bool rslt = false;
-
-    // Ensure that we don't block in this particular case for longer than the block limit.
-    // This limit is smaller than the overall MULTICOREJITLIFE and ensures that we don't sit for the
-    // full player lifetime waiting for a module when the app behavior has changed.
-    DWORD currentModuleBlockStart = GetTickCount();
-
-    // Only allow module blocking to occur a certain number of times.
-
-    while (! ShouldAbort(false))
+    if (moduleTo >= m_moduleCount)
     {
-        if (FAILED(UpdateModuleInfo()))
-        {
-            break;
-        }
-
-        if (m_nBlockingCount == 0)
-        {
-            rslt = true;
-            break;
-        }
-
-        if(GetTickCount() - currentModuleBlockStart > MULTICOREJITBLOCKLIMIT)
-        {
-            MulticoreJitTrace(("MulticoreJitProfilePlayer::GroupWaitForModuleLoad timeout exceeded."));
-            _FireEtwMulticoreJit(W("ABORTPLAYER"), W("GroupWaitForModuleLoad timeout exceeded."), 0, 0, 0);
-
-            break;
-        }
-
-        // Heuristic for reducing CPU usage: delay longer when there are more blocking modules
-        unsigned delay = min((m_nMissingModule * MissingModuleDelay + m_nBlockingCount) * DelayUnit, 50);
-
-        MulticoreJitTrace(("Delay: %d ms", delay));
-
-        if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
-        {
-            _FireEtwMulticoreJit(W("GROUPWAIT"), W("Delay"), delay, 0, 0);
-        }
-
-        ClrSleepEx(delay, FALSE);
-
-        m_stats.m_nTotalDelay += (unsigned short) delay;
-        m_stats.m_nDelayCount ++;
+        m_stats.m_nMissingModuleSkip++;
+        hr = COR_E_BADIMAGEFORMAT;
     }
-
-    MulticoreJitTrace(("Leave GroupWaitForModuleLoad(pos=%4d): blocking count=%d (rslt=%d)", pos, m_nBlockingCount, rslt));
-
-    _FireEtwMulticoreJit(W("GROUPWAIT"), W("Leave"), m_nLoadedModuleCount, m_nBlockingCount, rslt);
-
-    return rslt;
-}
-
-
-bool MulticoreJitProfilePlayer::HandleModuleDependency(unsigned jitInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    // depends on moduleTo, which may not loaded yet
-
-    unsigned moduleTo = jitInfo & MODULE_MASK;
-
-    if (moduleTo < m_moduleCount)
+    else
     {
-        unsigned level = (jitInfo >> LEVEL_SHIFT) & LEVEL_MASK;
-
         PlayerModuleInfo & mod = m_pModules[moduleTo];
 
         // Load the module if necessary.
-        if (!mod.m_pModule)
+        if (!mod.IsModuleLoaded())
         {
             // Update loaded module status.
             AppDomain * pAppDomain = GetAppDomain();
@@ -961,24 +808,32 @@ bool MulticoreJitProfilePlayer::HandleModuleDependency(unsigned jitInfo)
                     if (mod.m_pModule == NULL)
                     {
                         // Unable to load the assembly, so abort.
-                        return false;
+                        m_stats.m_nMissingModuleSkip++;
+                        hr = E_ABORT;
                     }
                 }
                 else
                 {
                     // Unable to load the assembly, so abort.
-                    return false;
+                    m_stats.m_nMissingModuleSkip++;
+                    hr = E_ABORT;
                 }
             }
         }
 
-        if (mod.UpdateNeedLevel((FileLoadLevel) level))
+        if ((SUCCEEDED(hr)) && mod.UpdateNeedLevel((FileLoadLevel) level))
         {
-            m_nBlockingCount ++;
+            m_nBlockingCount++;
         }
     }
 
-    return true;
+    MulticoreJitTrace(("ModuleDependency(%d) end module load, hr=%x",
+        moduleTo,
+        hr));
+
+    TraceSummary();
+
+    return hr;
 }
 
 DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
@@ -1010,157 +865,72 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
         FALSE); // Don't throw on FileNotFound.
 }
 
-
-inline bool MethodJifInfo(unsigned inst)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return ((inst & MODULE_DEPENDENCY) == 0);
-}
-
-
-// Process a block of methodDef, call JIT if not blocked
-HRESULT MulticoreJitProfilePlayer::HandleMethodRecord(unsigned * buffer, int count)
+HRESULT MulticoreJitProfilePlayer::HandleNonGenericMethodInfoRecord(unsigned moduleIndex, unsigned token)
 {
     STANDARD_VM_CONTRACT;
 
     HRESULT hr = E_ABORT;
 
-    MulticoreJitTrace(("MethodRecord(%d) start %d methods, %d mod loaded", m_stats.m_nTotalMethod, count, m_nLoadedModuleCount));
+    MulticoreJitTrace(("NonGeneric MethodRecord(%d) start method compilation, %d mod loaded", m_stats.m_nTotalMethod, m_nLoadedModuleCount));
 
-    MulticoreJitManager & manager = GetAppDomain()->GetMulticoreJitManager();
-
-#ifdef MULTICOREJIT_LOGGING
-
-    MulticoreJitCodeStorage & curStorage = manager.GetMulticoreJitCodeStorage();
-
-    int lastCompiled = curStorage.GetStored();
-
-#endif
-
-    int pos = 0;
-
-    while (! ShouldAbort(true) && (pos < count))
+    if (moduleIndex >= m_moduleCount)
     {
-        unsigned jitInfo = buffer[pos]; // moduleIndex + methodIndex
+        m_stats.m_nMissingModuleSkip++;
+        hr = COR_E_BADIMAGEFORMAT;
+    }
+    else
+    {
+        PlayerModuleInfo & mod = m_pModules[moduleIndex];
+        m_stats.m_nTotalMethod++;
 
-        unsigned moduleIndex = jitInfo >> 24;
-
-        if (moduleIndex < m_moduleCount)
+        if (mod.IsModuleLoaded() && mod.m_enableJit)
         {
-            if (jitInfo & MODULE_DEPENDENCY) // Module depedency information
-            {
-                if (! HandleModuleDependency(jitInfo))
-                {
-                    goto Abort;
-                }
-            }
-            else
-            {
-                PlayerModuleInfo & info = m_pModules[moduleIndex];
+            Module * pModule = mod.m_pModule;
 
-                m_stats.m_nTotalMethod ++;
+            // Similar to Module::FindMethod + Module::FindMethodThrowing,
+            // except it calls GetMethodDescFromMemberDefOrRefOrSpec with strictMetadataChecks=FALSE to allow generic instantiation
+            MethodDesc * pMethod = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(pModule, token, NULL, FALSE, FALSE);
 
-                // If module is disabled for Jitting, just skip method without even waiting
-                if (! info.m_enableJit)
-                {
-                    m_stats.m_nFilteredMethods ++;
-                }
-                else
-                {
-
-                    //  To reduce contention with foreground thread, walk backward within the group of methods Jittable methods, not broken apart by dependency
-                    {
-                        int run = 1; // size of the group
-
-                        while (((pos + run) < count) && MethodJifInfo(buffer[pos + run]))
-                        {
-                            run ++;
-
-                            // If walk-back run is too long, lots of methods in the front will be missed by background thread
-                            if (run > MAX_WALKBACK)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (run > 1)
-                        {
-                            MulticoreJitTrace(("Jit backwards %d methods",  run));
-                        }
-
-                        // Walk backwards within the same group, may be from different modules
-                        for (int p = pos + run - 1; p >= pos; p --)
-                        {
-                            unsigned inst = buffer[p];
-
-                            _ASSERTE(MethodJifInfo(inst));
-
-                            PlayerModuleInfo & mod = m_pModules[inst >> 24];
-
-                            if (mod.IsModuleLoaded() && mod.m_enableJit)
-                            {
-                                JITMethod(mod.m_pModule, inst);
-                            }
-                            else
-                            {
-                                m_stats.m_nFilteredMethods ++;
-                            }
-                        }
-
-                        m_stats.m_nWalkBack    += (short) (run - 1);
-                        m_stats.m_nTotalMethod += (short) (run - 1);
-
-                        pos += run - 1; // Skip the group
-                    }
-                }
-            }
+            CompileMethodInfoRecord(pModule, pMethod, false);
         }
         else
         {
-            hr = COR_E_BADIMAGEFORMAT;
-            goto Abort;
+            m_stats.m_nFilteredMethods++;
         }
 
-        pos ++;
+        hr = S_OK;
     }
 
-    // Mark success
-    hr = S_OK;
-
-Abort:
-
-    m_stats.m_nMissingModuleSkip += (short) (count - pos);
-
-    MulticoreJitTrace(("MethodRecord(%d) end %d compiled, %d aborted / %d methods, hr=%x",
+    MulticoreJitTrace(("NonGeneric MethodRecord(%d) end method compilation, filtered %d methods, hr=%x",
         m_stats.m_nTotalMethod,
-        curStorage.GetStored() - lastCompiled,
-        count - pos, count, hr));
+        m_stats.m_nFilteredMethods,
+        hr));
 
     TraceSummary();
 
     return hr;
 }
 
-HRESULT MulticoreJitProfilePlayer::HandleGenericMethodRecord(unsigned moduleIndex, BYTE * signature, unsigned length)
+HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length)
 {
     STANDARD_VM_CONTRACT;
 
     HRESULT hr = E_ABORT;
 
-    MulticoreJitTrace(("MethodRecord(%d) start a generic method, %d mod loaded", m_stats.m_nTotalMethod, m_nLoadedModuleCount));
+    MulticoreJitTrace(("Generic MethodRecord(%d) start method compilation, %d mod loaded", m_stats.m_nTotalMethod, m_nLoadedModuleCount));
 
     if (moduleIndex >= m_moduleCount)
     {
-        m_stats.m_nMissingModuleSkip += 1;
+        m_stats.m_nMissingModuleSkip++;
+        hr = COR_E_BADIMAGEFORMAT;
     }
     else
     {
         PlayerModuleInfo & mod = m_pModules[moduleIndex];
+        m_stats.m_nTotalMethod++;
+
         if (mod.IsModuleLoaded() && mod.m_enableJit)
         {
-            m_stats.m_nTotalMethod ++;
-
             Module * pModule = mod.m_pModule;
 
             SigTypeContext typeContext;   // empty type context
@@ -1175,25 +945,64 @@ HRESULT MulticoreJitProfilePlayer::HandleGenericMethodRecord(unsigned moduleInde
             }
             EX_END_CATCH(SwallowAllExceptions);
 
-            if (pMethod && !pMethod->IsDynamicMethod() && pMethod->HasILHeader() && pMethod->GetNativeCode() == NULL)
-            {
-                CompileMethodDesc(pModule, pMethod);
-            }
-            else
-            {
-                m_stats.m_nFilteredMethods ++;
-            }
+            CompileMethodInfoRecord(pModule, pMethod, true);
+        }
+        else
+        {
+            m_stats.m_nFilteredMethods++;
         }
 
         hr = S_OK;
     }
 
-    MulticoreJitTrace(("MethodRecord(%d) end a generic method compiled, hr=%x",
+    MulticoreJitTrace(("Generic MethodRecord(%d) end method compilation, filtered %d methods, hr=%x",
         m_stats.m_nTotalMethod,
+        m_stats.m_nFilteredMethods,
         hr));
 
     TraceSummary();
+
     return hr;
+}
+
+void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodDesc *pMethod, bool isGeneric)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (pMethod != NULL && MulticoreJitManager::IsMethodSupported(pMethod))
+    {
+        if (!isGeneric)
+        {
+            // MethodDesc::FindOrCreateTypicalSharedInstantiation is expensive, avoid calling it unless the method or class has generic arguments
+            if (pMethod->HasClassOrMethodInstantiation())
+            {
+                pMethod = pMethod->FindOrCreateTypicalSharedInstantiation();
+
+                if (pMethod == NULL)
+                {
+                    m_stats.m_nFilteredMethods++;
+                    return;
+                }
+
+                pModule = pMethod->GetModule_NoLogging();
+            }
+        }
+
+        if (pMethod->GetNativeCode() == NULL)
+        {
+            if (CompileMethodDesc(pModule, pMethod))
+            {
+                return;
+            }
+        }
+        else
+        {
+            m_stats.m_nHasNativeCode++;
+            return;
+        }
+    }
+
+    m_stats.m_nFilteredMethods++;
 }
 
 void MulticoreJitProfilePlayer::TraceSummary()
@@ -1266,7 +1075,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
             MulticoreJitTrace(("HeaderRecord(version=%d, module=%d, method=%d)", header.version, m_headerModuleCount, header.methodCount));
 
-            if ((header.version != MULTICOREJIT_PROFILE_VERSION) || (header.moduleCount > MAX_MODULES) || (header.methodCount > MAX_METHOD_ARRAY) ||
+            if ((header.version != MULTICOREJIT_PROFILE_VERSION) || (header.moduleCount > MAX_MODULES) || (header.methodCount > MAX_METHODS) ||
                 (header.recordID != Pack8_24(MULTICOREJIT_HEADER_RECORD_ID, sizeof(HeaderRecord))))
             {
                 hr = COR_E_BADIMAGEFORMAT;
@@ -1349,53 +1158,175 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {
-        unsigned data   = * (const unsigned *) pBuffer;
-        unsigned rcdLen = data & 0xFFFFFF;
-        unsigned rcdTyp = data >> 24;
+        unsigned data1 = * (const unsigned *) pBuffer;
+        unsigned rcdTyp = data1 >> RECORD_TYPE_OFFSET;
+        unsigned rcdLen = 0;
+
+        if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
+        {
+            rcdLen = data1 & 0xFFFFFF;    
+        }
+        else if (rcdTyp == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
+        {
+            rcdLen = sizeof(unsigned);
+        }
+        else if (rcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
+        {
+            rcdLen = 2 * sizeof(unsigned);
+        }
+        else if (rcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID)
+        {
+            if (nSize < sizeof(unsigned) + sizeof(unsigned short))
+            {
+                hr = COR_E_BADIMAGEFORMAT;
+                break;
+            }
+
+            unsigned signatureLength = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
+            DWORD dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
+            dataSize = AlignUp(dataSize, sizeof(DWORD));
+            rcdLen = dataSize;
+        }
+        else
+        {
+            hr = COR_E_BADIMAGEFORMAT;
+            break;
+        }
 
         if ((rcdLen > nSize) || (rcdLen & 3)) // Better DWORD align
         {
             hr = COR_E_BADIMAGEFORMAT;
+            break;
         }
-        else
+
+        if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
         {
-            if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
-            {
-                const ModuleRecord * pRec = (const ModuleRecord * ) pBuffer;
+            const ModuleRecord * pRec = (const ModuleRecord * ) pBuffer;
 
-                if (((unsigned)(pRec->lenModuleName
-                    + pRec->lenAssemblyName
-                    ) > (rcdLen - sizeof(ModuleRecord))) ||
-                    (m_moduleCount >= m_headerModuleCount))
-                {
-                    hr = COR_E_BADIMAGEFORMAT;
-                }
-                else
-                {
-                    hr = HandleModuleRecord(pRec);
-                }
-            }
-            else if (rcdTyp == MULTICOREJIT_JITINF_RECORD_ID)
-            {
-                int mCount = (rcdLen - sizeof(unsigned)) / sizeof(unsigned);
-
-                hr = HandleMethodRecord((unsigned *) (pBuffer + sizeof(unsigned)), mCount);
-            }
-            else if (rcdTyp == MULTICOREJIT_GENERICINF_RECORD_ID)
-            {
-                unsigned info = *(unsigned *)(pBuffer + sizeof(unsigned));
-                unsigned moduleIndex = info >> 24;
-                unsigned signatureLength = info & SIGNATURELENGTH_MASK;
-                hr = HandleGenericMethodRecord(moduleIndex, (BYTE *) (pBuffer + sizeof(unsigned) * 2), signatureLength);
-            }
-            else
+            if (((unsigned)(pRec->lenModuleName
+                + pRec->lenAssemblyName
+                ) > (rcdLen - sizeof(ModuleRecord))) ||
+                (m_moduleCount >= m_headerModuleCount))
             {
                 hr = COR_E_BADIMAGEFORMAT;
             }
-
-            pBuffer += rcdLen;
-            nSize -= rcdLen;
+            else
+            {
+                hr = HandleModuleRecord(pRec);
+            }
         }
+        else if (rcdTyp == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
+        {
+            unsigned moduleIndex = data1 & MODULE_MASK;
+            unsigned level = (data1 >> MODULE_LEVEL_OFFSET) & (MAX_MODULE_LEVELS - 1);
+
+            hr = HandleModuleInfoRecord(moduleIndex, level);
+        }
+        else if (rcdTyp == MULTICOREJIT_METHOD_RECORD_ID || rcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID)
+        {
+            // Find all subsequent methods and jit/load them reversed
+            bool isMethod = true;
+            bool isGenericMethod = rcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID;
+            const BYTE * pCurBuf = pBuffer;
+            unsigned curSize = nSize;
+
+            unsigned sizes[MAX_WALKBACK] = {0};
+            int count = 0;
+
+            do
+            {
+                unsigned currcdLen = 0;
+
+                if (isGenericMethod)
+                {
+                    unsigned cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
+                    DWORD dataSize = cursignatureLength + sizeof(DWORD) + sizeof(unsigned short);
+                    dataSize = AlignUp(dataSize, sizeof(DWORD));
+                    currcdLen = dataSize;
+                }
+                else
+                {
+                    currcdLen = 2 * sizeof(unsigned);
+                }
+
+                _ASSERTE(currcdLen > 0);
+
+                if (currcdLen > curSize)
+                {
+                    hr = COR_E_BADIMAGEFORMAT;
+                    break;
+                }
+
+                sizes[count] = currcdLen;
+                count++;
+
+                pCurBuf += currcdLen;
+                curSize -= currcdLen;
+
+                if (curSize == 0)
+                {
+                    break;
+                }
+
+                unsigned curdata1 = * (const unsigned *) pCurBuf;
+                unsigned currcdTyp = curdata1 >> RECORD_TYPE_OFFSET;
+                isGenericMethod = currcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID;
+                isMethod = currcdTyp == MULTICOREJIT_METHOD_RECORD_ID || isGenericMethod;
+            }
+            while (isMethod && count < MAX_WALKBACK);
+
+            if (SUCCEEDED(hr))
+            {
+                _ASSERTE(count > 0);
+                if (count > 1)
+                {
+                    MulticoreJitTrace(("Jit backwards %d methods",  count));
+                }
+            }
+
+            int i = count - 1;
+            for (; (SUCCEEDED(hr)) && i >= 0; --i)
+            {
+                pCurBuf -= sizes[i];
+
+                unsigned curdata1 = * (const unsigned *) pCurBuf;
+                unsigned currcdTyp = curdata1 >> RECORD_TYPE_OFFSET;
+                unsigned curmoduleIndex = curdata1 & MODULE_MASK;
+                unsigned curflags = curdata1 & METHOD_FLAGS_MASK;
+
+                if (currcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
+                {
+                    unsigned token = * (((const unsigned *) pCurBuf) + 1);
+
+                    hr = HandleNonGenericMethodInfoRecord(curmoduleIndex, token);
+                }
+                else
+                {
+                    _ASSERTE(currcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID);
+
+                    unsigned cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
+
+                    hr = HandleGenericMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) + sizeof(unsigned short)), cursignatureLength);
+                }
+
+                if (SUCCEEDED(hr) && ShouldAbort(false))
+                {
+                    hr = E_ABORT;
+                }
+            }
+
+            m_stats.m_nWalkBack += (short) count;
+            m_stats.m_nFilteredMethods += (short) (i + 1);
+
+            rcdLen = nSize - curSize;
+        }
+        else
+        {
+            hr = COR_E_BADIMAGEFORMAT;
+        }
+        
+        pBuffer += rcdLen;
+        nSize -= rcdLen;
 
         if (SUCCEEDED(hr) && ShouldAbort(false))
         {
@@ -1553,4 +1484,3 @@ Module * MulticoreJitProfilePlayer::GetModuleFromIndex(DWORD ix) const
     }
     return NULL;
 }
-

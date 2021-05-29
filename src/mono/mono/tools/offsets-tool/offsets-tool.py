@@ -155,6 +155,19 @@ class OffsetsTool:
 			self.target_args += ["-arch", "x86_64"]
 			self.target_args += ["-isysroot", args.sysroot]
 
+		# MacCatalyst
+		elif "x86_64-apple-maccatalyst" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_AMD64", "TARGET_MACCAT", IOS_DEFINES)
+			self.target_args += ["-target", "x86_64-apple-ios13.5-macabi"]
+			self.target_args += ["-isysroot", args.sysroot]
+
+		elif "aarch64-apple-maccatalyst" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_ARM64", "TARGET_MACCAT", IOS_DEFINES)
+			self.target_args += ["-target", "arm64-apple-ios14.2-macabi"]
+			self.target_args += ["-isysroot", args.sysroot]
+
 		# watchOS
 		elif "armv7k-apple-darwin" == args.abi:
 			require_sysroot (args)

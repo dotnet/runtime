@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.Loader;
 using System.IO;
+using System.Linq;
+using My;
 
 namespace My
 {
@@ -200,6 +203,32 @@ public class Program
         }
     }
 
+    public static void GetLoadContextForDynamicAssembly(bool isCollectible)
+    {
+        try
+        {
+            Console.WriteLine($"{nameof(GetLoadContextForDynamicAssembly)}; isCollectible={isCollectible}");
+
+            AssemblyLoadContext alc = new AssemblyLoadContext($"ALC - {isCollectible}", isCollectible);
+            AssemblyBuilder assemblyBuilder;
+            AssemblyName assemblyName = new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}");
+
+            using (alc.EnterContextualReflection())
+            {
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+            }
+
+            AssemblyLoadContext? context = AssemblyLoadContext.GetLoadContext(assemblyBuilder);
+
+            Assert(context != null);
+            Assert(alc == context);
+        }
+        catch (Exception e)
+        {
+            Assert(false, e.ToString());
+        }
+    }
+
     public static int Main()
     {
         foreach (AssemblyLoadContext alc in AssemblyLoadContext.All)
@@ -216,6 +245,8 @@ public class Program
         AssemblyLoadByteArrayName();
         CustomWOName();
         CustomName();
+        GetLoadContextForDynamicAssembly(true);
+        GetLoadContextForDynamicAssembly(false);
 
         foreach (AssemblyLoadContext alc in AssemblyLoadContext.All)
         {

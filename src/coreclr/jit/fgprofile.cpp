@@ -1218,25 +1218,27 @@ public:
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count = 1;
-        schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+        schemaElem.Other = ICorJitInfo::ClassProfile32::CLASS_FLAG;
         if (call->IsVirtualStub())
         {
-            schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+            schemaElem.Other |= ICorJitInfo::ClassProfile32::INTERFACE_FLAG;
         }
         else
         {
             assert(call->IsVirtualVtable());
         }
 
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
-        schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-        schemaElem.Offset              = 0;
+        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
         schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-        schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+        schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -1283,8 +1285,11 @@ public:
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
-        assert(m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-               ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+        bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
+        assert(is32 || is64);
 
         // Figure out where the table is located.
         //
@@ -1301,10 +1306,12 @@ public:
         GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
         GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const helperCallNode = compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const          helperCallNode =
+            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
+                                          args);
+        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
         GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
@@ -1638,8 +1645,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
                                                                     (UINT32)schema.size(), &profileMemory);
 
-    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
-
     // Deal with allocation failures.
     //
     if (!SUCCEEDED(res))
@@ -1660,6 +1665,8 @@ PhaseStatus Compiler::fgInstrumentMethod()
         fgClassInstrumentor->SuppressProbes();
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
 
     // Add the instrumentation code
     //
@@ -1733,8 +1740,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have profile data: %d schema records (schema at %p, data at %p)\n", fgPgoSchemaCount, dspPtr(fgPgoSchema),
-            dspPtr(fgPgoData));
+    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
+            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -1757,7 +1764,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
@@ -2030,6 +2038,9 @@ private:
         assert(block->bbSparseCountInfo == nullptr);
         block->bbSparseCountInfo = info;
     }
+
+    void MarkInterestingBlocks(BasicBlock* block, BlockInfo* info);
+    void MarkInterestingSwitches(BasicBlock* block, BlockInfo* info);
 
     // Flags for noting and handling various error cases.
     //
@@ -2531,7 +2542,171 @@ void EfficientEdgeCountReconstructor::Propagate()
         assert(info->m_weightKnown);
 
         m_comp->fgSetProfileWeight(block, info->m_weight);
+
+        // Mark blocks that might be worth optimizing further, given
+        // what we know about the PGO data.
+        //
+        MarkInterestingBlocks(block, info);
     }
+}
+
+//------------------------------------------------------------------------
+// EfficientEdgeCountReconstructor::MarkInterestingBlocks: look for blocks
+//   that are worth specially optimizing, given the block and edge profile data
+//
+// Arguments:
+//    block - block of interest
+//    info - associated block info
+//
+// Notes:
+//    We do this during reconstruction because we have a clean look at the edge
+//    weights. If we defer until we recompute edge weights later we may fail to solve
+//    for them.
+//
+//    Someday we'll keep the edge profile info viable all throughout compilation and
+//    we can defer this screening until later. Doing so will catch more cases as
+//    optimizations can sharpen the profile data.
+//
+void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
+{
+    switch (block->bbJumpKind)
+    {
+        case BBJ_SWITCH:
+            MarkInterestingSwitches(block, info);
+            break;
+
+        default:
+            break;
+    }
+}
+
+//------------------------------------------------------------------------
+// EfficientEdgeCountReconstructor::MarkInterestingSwitches: look for switch blocks
+//   that are worth specially optimizing, given the block and edge profile data
+//
+// Arguments:
+//    block - block of interest
+//    info - associated block info
+//
+// Notes:
+//    See if one of the non-default switch cases dominates and should be peeled
+//    from the switch during flow opts.
+//
+//    If so, information is added to the bbJmpSwt for the block for use later.
+//
+void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block, BlockInfo* info)
+{
+    assert(block->bbJumpKind == BBJ_SWITCH);
+
+    // Thresholds for detecting a dominant switch case.
+    //
+    // We need to see enough hits on the switch to have a plausible sense of the distribution of cases.
+    // We also want to enable peeling for switches that are executed at least once per call.
+    // By default, we're guaranteed to see at least 30 calls to instrumented method, for dynamic PGO.
+    // Hence we require at least 30 observed switch executions.
+    //
+    // The profitabilty of peeling is related to the dominant fraction. The cost has a constant portion
+    // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
+    // So we don't want to peel in cases where the dominant fraction is too small.
+    //
+    const BasicBlock::weight_t sufficientSamples  = 30.0f;
+    const BasicBlock::weight_t sufficientFraction = 0.55f;
+
+    if (info->m_weight < sufficientSamples)
+    {
+        JITDUMP("Switch in " FMT_BB " was hit " FMT_WT " < " FMT_WT " times, NOT checking for dominant edge\n",
+                block->bbNum, info->m_weight, sufficientSamples);
+        return;
+    }
+
+    JITDUMP("Switch in " FMT_BB " was hit " FMT_WT " >= " FMT_WT " times, checking for dominant edge\n", block->bbNum,
+            info->m_weight, sufficientSamples);
+    Edge* dominantEdge = nullptr;
+
+    // We don't expect to see any unknown edge weights; if we do, just bail out.
+    //
+    for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
+    {
+        if (!edge->m_weightKnown)
+        {
+            JITDUMP("Found edge with unknown weight.\n");
+            return;
+        }
+
+        if ((dominantEdge == nullptr) || (edge->m_weight > dominantEdge->m_weight))
+        {
+            dominantEdge = edge;
+        }
+    }
+
+    assert(dominantEdge != nullptr);
+    BasicBlock::weight_t fraction = dominantEdge->m_weight / info->m_weight;
+
+    // Because of count inconsistency we can see nonsensical ratios. Cap these.
+    //
+    if (fraction > 1.0)
+    {
+        fraction = 1.0;
+    }
+
+    if (fraction < sufficientFraction)
+    {
+        JITDUMP("Maximum edge likelihood is " FMT_WT " < " FMT_WT "; not sufficient to trigger peeling)\n", fraction,
+                sufficientFraction);
+        return;
+    }
+
+    // Despite doing "edge" instrumentation, we only use a single edge probe for a given successor block.
+    // Multiple switch cases may lead to this block. So we also need to show that there's just one switch
+    // case that can lead to the dominant edge's target block.
+    //
+    // If it turns out often we fail at this stage, we might consider building a histogram of switch case
+    // values at runtime, similar to what we do for classes at virtual call sites.
+    //
+    const unsigned     caseCount    = block->bbJumpSwt->bbsCount;
+    BasicBlock** const jumpTab      = block->bbJumpSwt->bbsDstTab;
+    unsigned           dominantCase = caseCount;
+
+    for (unsigned i = 0; i < caseCount; i++)
+    {
+        if (jumpTab[i] == dominantEdge->m_targetBlock)
+        {
+            if (dominantCase != caseCount)
+            {
+                JITDUMP("Both case %u and %u lead to " FMT_BB "-- can't optimize\n", i, dominantCase,
+                        jumpTab[i]->bbNum);
+                dominantCase = caseCount;
+                break;
+            }
+
+            dominantCase = i;
+        }
+    }
+
+    if (dominantCase == caseCount)
+    {
+        // Multiple (or no) cases lead to the dominant case target.
+        //
+        return;
+    }
+
+    if (block->bbJumpSwt->bbsHasDefault && (dominantCase == caseCount - 1))
+    {
+        // Dominant case is the default case.
+        // This effectively gets peeled already, so defer.
+        //
+        JITDUMP("Default case %u uniquely leads to target " FMT_BB " of dominant edge, so will be peeled already\n",
+                dominantCase, dominantEdge->m_targetBlock->bbNum);
+        return;
+    }
+
+    JITDUMP("Non-default case %u uniquely leads to target " FMT_BB " of dominant edge with likelihood " FMT_WT
+            "; marking for peeling\n",
+            dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
+
+    block->bbJumpSwt->bbsHasDominantCase  = true;
+    block->bbJumpSwt->bbsDominantCase     = dominantCase;
+    block->bbJumpSwt->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -2577,7 +2752,26 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
                                        BasicBlock::weight_t slop,
                                        bool*                wbUsedSlop)
 {
+    // Negative weights are nonsensical.
+    //
+    // If we can't cover the deficit with slop, fail.
+    // If we can, set the new weight to zero.
+    //
+    bool usedSlop = false;
+
+    if (newWeight < BB_ZERO_WEIGHT)
+    {
+        if ((newWeight + slop) < BB_ZERO_WEIGHT)
+        {
+            return false;
+        }
+
+        newWeight = BB_ZERO_WEIGHT;
+        usedSlop  = true;
+    }
+
     bool result = false;
+
     if ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin))
     {
         flEdgeWeightMin = newWeight;
@@ -2592,18 +2786,14 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             // is less than newWeight, so we just allow for the slop
             if (newWeight <= (flEdgeWeightMax + slop))
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will raise flEdgeWeightMin and Max towards newWeight
                     flEdgeWeightMin = flEdgeWeightMax;
                     flEdgeWeightMax = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
                 }
             }
         }
@@ -2613,31 +2803,32 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             // is more than newWeight, so we just allow for the slop
             if ((newWeight + slop) >= flEdgeWeightMin)
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will lower flEdgeWeightMin towards newWeight
-                    flEdgeWeightMin = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
+                    // But not below zero.
+                    //
+                    flEdgeWeightMin = max(BB_ZERO_WEIGHT, newWeight);
                 }
             }
         }
 
         // If we are returning true then we should have adjusted the range so that
         // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero.
-        // Also we should have set wbUsedSlop to true.
+        //
         if (result)
         {
             assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
                    ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
-
-            assert((wbUsedSlop == nullptr) || (*wbUsedSlop));
         }
+    }
+
+    if (result && usedSlop && (wbUsedSlop != nullptr))
+    {
+        *wbUsedSlop = true;
     }
 
 #if DEBUG
@@ -2677,7 +2868,26 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
                                        BasicBlock::weight_t slop,
                                        bool*                wbUsedSlop)
 {
+    // Negative weights are nonsensical.
+    //
+    // If we can't cover the deficit with slop, fail.
+    // If we can, set the new weight to zero.
+    //
+    bool usedSlop = false;
+
+    if (newWeight < BB_ZERO_WEIGHT)
+    {
+        if ((newWeight + slop) < BB_ZERO_WEIGHT)
+        {
+            return false;
+        }
+
+        newWeight = BB_ZERO_WEIGHT;
+        usedSlop  = true;
+    }
+
     bool result = false;
+
     if ((newWeight >= flEdgeWeightMin) && (newWeight <= flEdgeWeightMax))
     {
         flEdgeWeightMax = newWeight;
@@ -2692,17 +2902,13 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             // is less than newWeight, so we just allow for the slop
             if (newWeight <= (flEdgeWeightMax + slop))
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will allow this to raise flEdgeWeightMax towards newWeight
                     flEdgeWeightMax = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
                 }
             }
         }
@@ -2712,7 +2918,8 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             // is more than newWeight, so we just allow for the slop
             if ((newWeight + slop) >= flEdgeWeightMin)
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
@@ -2720,24 +2927,21 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
                     flEdgeWeightMax = flEdgeWeightMin;
                     flEdgeWeightMin = newWeight;
                 }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
-                }
             }
         }
 
         // If we are returning true then we should have adjusted the range so that
         // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero
-        // Also we should have set wbUsedSlop to true, unless it is NULL
         if (result)
         {
             assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
                    ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
-
-            assert((wbUsedSlop == nullptr) || (*wbUsedSlop));
         }
+    }
+
+    if (result && usedSlop && (wbUsedSlop != nullptr))
+    {
+        *wbUsedSlop = true;
     }
 
 #if DEBUG
@@ -3728,6 +3932,45 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     }
 
     return missingEdges == 0;
+}
+
+//------------------------------------------------------------------------------
+// pgoSourceToString: describe source of pgo data
+//
+// Arguments:
+//    r - source enum to describe
+//
+// Returns:
+//    descriptive string
+//
+const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
+{
+    const char* pgoSource = "unknown";
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+            pgoSource = "dynamic";
+            break;
+        case ICorJitInfo::PgoSource::Static:
+            pgoSource = "static";
+            break;
+        case ICorJitInfo::PgoSource::Text:
+            pgoSource = "text";
+            break;
+        case ICorJitInfo::PgoSource::Blend:
+            pgoSource = "static+dynamic";
+            break;
+        case ICorJitInfo::PgoSource::IBC:
+            pgoSource = "IBC";
+            break;
+        case ICorJitInfo::PgoSource::Sampling:
+            pgoSource = "Sampling";
+            break;
+        default:
+            break;
+    }
+
+    return pgoSource;
 }
 
 #endif // DEBUG

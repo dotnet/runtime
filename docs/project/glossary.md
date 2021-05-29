@@ -163,7 +163,7 @@ with unique characteristics were developed for .NET runtimes over the years.
 
 **Also referred to as**: R2R
 
-[ReadyToRun](.../design/coreclr/botr/readytorun-overview.md)
+[ReadyToRun](../design/coreclr/botr/readytorun-overview.md)
 is a file format used by the CoreCLR runtime to store AOT compiled code. `crossgen` is the AOT compiler that
 produces binaries in the ReadyToRun file format.
 

@@ -787,6 +787,32 @@ namespace System.Net
             return InternalGetCookies(uri) ?? new CookieCollection();
         }
 
+        /// <summary>Gets a <see cref="CookieCollection"/> that contains all of the <see cref="Cookie"/> instances in the container.</summary>
+        /// <returns>A <see cref="CookieCollection"/> that contains all of the <see cref="Cookie"/> instances in the container.</returns>
+        public CookieCollection GetAllCookies()
+        {
+            var result = new CookieCollection();
+
+            lock (m_domainTable.SyncRoot)
+            {
+                IDictionaryEnumerator lists = m_domainTable.GetEnumerator();
+                while (lists.MoveNext())
+                {
+                    PathList list = (PathList)lists.Value!;
+                    lock (list.SyncRoot)
+                    {
+                        IDictionaryEnumerator collections = list.List.GetEnumerator();
+                        while (collections.MoveNext())
+                        {
+                            result.Add((CookieCollection)collections.Value!);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         internal CookieCollection? InternalGetCookies(Uri uri)
         {
             if (m_count == 0)

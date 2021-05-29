@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
+#pragma warning disable CA1844 // lack of WriteAsync(ReadOnlyMemory) override in .NET Standard 2.1 build
+
 namespace System.Net.Http
 {
     internal sealed class WinHttpRequestStream : Stream
@@ -19,14 +21,19 @@ namespace System.Net.Http
 
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
-        private readonly bool _chunkedMode;
+        private readonly SafeWinHttpHandle _requestHandle;
+        private readonly WinHttpChunkMode _chunkedMode;
 
         private GCHandle _cachedSendPinnedBuffer;
 
-        internal WinHttpRequestStream(WinHttpRequestState state, bool chunkedMode)
+        internal WinHttpRequestStream(WinHttpRequestState state, WinHttpChunkMode chunkedMode)
         {
             _state = state;
             _chunkedMode = chunkedMode;
+
+            // Take copy of handle from state.
+            // The state's request handle will be set to null once the response stream starts.
+            _requestHandle = _state.RequestHandle;
         }
 
         public override bool CanRead
@@ -160,9 +167,15 @@ namespace System.Net.Http
 
         internal async Task EndUploadAsync(CancellationToken token)
         {
-            if (_chunkedMode)
+            switch (_chunkedMode)
             {
-                await InternalWriteDataAsync(s_endChunk, 0, s_endChunk.Length, token).ConfigureAwait(false);
+                case WinHttpChunkMode.Manual:
+                    await InternalWriteDataAsync(s_endChunk, 0, s_endChunk.Length, token).ConfigureAwait(false);
+                    break;
+                case WinHttpChunkMode.Automatic:
+                    // Send empty DATA frame with END_STREAM flag.
+                    await InternalWriteEndDataAsync(token).ConfigureAwait(false);
+                    break;
             }
         }
 
@@ -195,7 +208,7 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            return _chunkedMode ?
+            return _chunkedMode == WinHttpChunkMode.Manual ?
                 InternalWriteChunkedModeAsync(buffer, offset, count, token) :
                 InternalWriteDataAsync(buffer, offset, count, token);
         }
@@ -205,7 +218,7 @@ namespace System.Net.Http
             // WinHTTP does not fully support chunked uploads. It simply allows one to omit the 'Content-Length' header
             // and instead use the 'Transfer-Encoding: chunked' header. The caller is still required to encode the
             // request body according to chunking rules.
-            Debug.Assert(_chunkedMode);
+            Debug.Assert(_chunkedMode == WinHttpChunkMode.Manual);
             Debug.Assert(count > 0);
 
             byte[] chunkSize = Encoding.UTF8.GetBytes($"{count:x}\r\n");
@@ -236,9 +249,30 @@ namespace System.Net.Http
             lock (_state.Lock)
             {
                 if (!Interop.WinHttp.WinHttpWriteData(
-                    _state.RequestHandle,
+                    _requestHandle,
                     Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
                     (uint)count,
+                    IntPtr.Zero))
+                {
+                    _state.TcsInternalWriteDataToRequestStream.TrySetException(
+                        new IOException(SR.net_http_io_write, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpWriteData))));
+                }
+            }
+
+            return _state.TcsInternalWriteDataToRequestStream.Task;
+        }
+
+        private Task<bool> InternalWriteEndDataAsync(CancellationToken token)
+        {
+            _state.TcsInternalWriteDataToRequestStream =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            lock (_state.Lock)
+            {
+                if (!Interop.WinHttp.WinHttpWriteData(
+                    _requestHandle,
+                    IntPtr.Zero,
+                    0,
                     IntPtr.Zero))
                 {
                     _state.TcsInternalWriteDataToRequestStream.TrySetException(

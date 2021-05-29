@@ -72,13 +72,12 @@ namespace Microsoft.NET.HostModel.Bundle
 
             switch (type)
             {
-                case FileType.Symbols:
-                case FileType.NativeBinary:
-                case FileType.Assembly:
-                    return true;
+                case FileType.DepsJson:
+                case FileType.RuntimeConfigJson:
+                    return false;
 
                 default:
-                    return false;
+                    return true;
             }
         }
 
@@ -323,7 +322,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     {
                         FileType targetType = Target.TargetSpecificFileType(type);
                         (long startOffset, long compressedSize) = AddToBundle(bundle, file, targetType);
-                        FileEntry entry = BundleManifest.AddEntry(targetType, relativePath, startOffset, file.Length, compressedSize, Target.BundleMajorVersion);
+                        FileEntry entry = BundleManifest.AddEntry(targetType, file, relativePath, startOffset, compressedSize, Target.BundleMajorVersion);
                         Tracer.Log($"Embed: {entry}");
                     }
                 }

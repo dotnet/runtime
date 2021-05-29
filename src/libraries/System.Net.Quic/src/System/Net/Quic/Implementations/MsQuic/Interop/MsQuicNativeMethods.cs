@@ -544,6 +544,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal byte Graceful;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct StreamEventDataShutdownComplete
+        {
+            internal byte ConnectionShutdown;
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataUnion
         {
@@ -562,6 +568,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             [FieldOffset(0)]
             internal StreamEventDataSendShutdownComplete SendShutdownComplete;
+
+            [FieldOffset(0)]
+            internal StreamEventDataShutdownComplete ShutdownComplete;
 
             // TODO: missing IDEAL_SEND_BUFFER_SIZE
         }

@@ -103,6 +103,7 @@ namespace System.Net.NameResolution.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
             IPHostEntry entry = Dns.GetHostByName("");
@@ -113,6 +114,7 @@ namespace System.Net.NameResolution.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));

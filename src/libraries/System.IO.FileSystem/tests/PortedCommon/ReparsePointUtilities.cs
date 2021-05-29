@@ -72,13 +72,13 @@ public static class MountHelper
         StringBuilder sb = new StringBuilder(1024);
         r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
 
         string uniqueName = sb.ToString();
         Console.WriteLine(string.Format("uniqueName: <{0}>", uniqueName));
         r = SetVolumeMountPoint(mountPoint, uniqueName);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
         Task.Delay(100).Wait(); // adding sleep for the file system to settle down so that reparse point mounting works
     }
 
@@ -90,7 +90,7 @@ public static class MountHelper
 
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
     }
 
     /// For standalone debugging help. Change Main0 to Main

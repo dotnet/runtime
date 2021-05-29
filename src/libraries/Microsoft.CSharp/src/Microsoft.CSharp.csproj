@@ -10,6 +10,10 @@
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
+    <ILLinkDescriptorsXmls Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderEquivalence.cs" />

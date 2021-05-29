@@ -2160,7 +2160,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     /* Start computing the total size of the table */
 
-    BOOL emitArgTabOffset = (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX);
+    bool emitArgTabOffset = (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX);
     if (mask != 0 && emitArgTabOffset)
     {
         assert(*pArgTabOffset <= MAX_UNSIGNED_SIZE_T);
@@ -4670,7 +4670,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         }
         else
         {
-            BOOL b = m_regSlotMap->Lookup(rskey, &regSlotId);
+            bool b = m_regSlotMap->Lookup(rskey, &regSlotId);
             assert(b); // Should have been added in the first pass.
             gcInfoEncoderWithLog->SetSlotState(instrOffset, regSlotId, newState);
         }
@@ -4770,7 +4770,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
         }
         else
         {
-            BOOL b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+            bool b = m_stackSlotMap->Lookup(sskey, &varSlotId);
             assert(b); // Should have been added in the first pass.
             // Live from the beginning to the end.
             gcInfoEncoderWithLog->SetSlotState(begOffs, varSlotId, GC_SLOT_LIVE);
@@ -4792,7 +4792,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    StackSlotIdKey sskey(genStackPtr->rpdPtrArg, FALSE,
+    StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
     GcSlotId varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
@@ -4805,7 +4805,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
     }
     else
     {
-        BOOL b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        bool b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(genStackPtr->rpdOffs, varSlotId, GC_SLOT_LIVE);
@@ -4840,10 +4840,10 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
         assert(genRegPtrTemp->rpdGCtypeGet() != GCT_NONE);
         assert(genRegPtrTemp->rpdArgTypeGet() == rpdARG_PUSH);
 
-        StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, FALSE,
+        StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
         GcSlotId varSlotId;
-        BOOL     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);

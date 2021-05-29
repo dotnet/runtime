@@ -173,7 +173,6 @@ namespace System.Net.Quic.Tests
             await clientConnection.CloseAsync(0);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Fact]
         public async Task LargeDataSentAndReceived()
         {
@@ -348,7 +347,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, bytesRead);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52047")]
         [Theory]
         [MemberData(nameof(ReadWrite_Random_Success_Data))]
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
@@ -434,37 +432,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).WaitAsync(TimeSpan.FromSeconds(5));
-        }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32050")]
-        [Fact]
-        public async Task Read_ConnectionAborted_Throws()
-        {
-            const int ExpectedErrorCode = 1234;
-
-            await Task.Run(async () =>
-            {
-                using QuicListener listener = CreateQuicListener();
-                ValueTask<QuicConnection> serverConnectionTask = listener.AcceptConnectionAsync();
-
-                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
-                await clientConnection.ConnectAsync();
-
-                using QuicConnection serverConnection = await serverConnectionTask;
-
-                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
-                await clientStream.WriteAsync(new byte[1]);
-
-                await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
-                await serverStream.ReadAsync(new byte[1]);
-
-                await clientConnection.CloseAsync(ExpectedErrorCode);
-
-                byte[] buffer = new byte[100];
-                QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
-                Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).WaitAsync(TimeSpan.FromSeconds(5));
+            }).WaitAsync(TimeSpan.FromSeconds(15));
         }
     }
 

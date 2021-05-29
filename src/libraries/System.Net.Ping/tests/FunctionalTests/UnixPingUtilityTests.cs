@@ -47,6 +47,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(50)]
         [InlineData(1000)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             var stdOutLines = new List<string>();

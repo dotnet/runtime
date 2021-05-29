@@ -55,7 +55,7 @@ namespace System.IO.Pipes
 
             if (handle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (errorCode != Interop.Errors.ERROR_PIPE_BUSY &&
                     errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
@@ -65,7 +65,7 @@ namespace System.IO.Pipes
 
                 if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath, timeout))
                 {
-                    errorCode = Marshal.GetLastWin32Error();
+                    errorCode = Marshal.GetLastPInvokeError();
 
                     // Server is not yet created or a timeout occurred before a pipe instance was available.
                     if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
@@ -88,7 +88,7 @@ namespace System.IO.Pipes
 
                 if (handle.IsInvalid)
                 {
-                    errorCode = Marshal.GetLastWin32Error();
+                    errorCode = Marshal.GetLastPInvokeError();
 
                     // Handle the possible race condition of someone else connecting to the server
                     // between our calls to WaitNamedPipe & CreateFile.
@@ -123,7 +123,7 @@ namespace System.IO.Pipes
                 uint numInstances;
                 if (!Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle!, null, &numInstances, null, null, null, 0))
                 {
-                    throw WinIOError(Marshal.GetLastWin32Error());
+                    throw WinIOError(Marshal.GetLastPInvokeError());
                 }
 
                 return (int)numInstances;

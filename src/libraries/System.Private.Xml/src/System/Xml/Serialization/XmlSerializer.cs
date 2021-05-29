@@ -629,6 +629,8 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateSerializerToStream")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code is used on diagnostics so we fallback to print assembly.FullName if assembly.Location is empty")]
         internal static bool GenerateSerializer(Type[]? types, XmlMapping[] mappings, Stream stream)
         {
             if (types == null || types.Length == 0)
@@ -660,7 +662,10 @@ namespace System.Xml.Serialization
                 }
                 else if (type.Assembly != assembly)
                 {
-                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName, assembly.Location), nameof(types));
+                    string? nameOrLocation = assembly.Location;
+                    if (nameOrLocation == string.Empty)
+                        nameOrLocation = assembly.FullName;
+                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName, nameOrLocation), nameof(types));
                 }
             }
 
