@@ -67,7 +67,6 @@ namespace Microsoft.Win32.SystemEventsTests
                     SystemEvents.DisplaySettingsChanged += (o, e) => changed = true;
                 });
                 thread.SetApartmentState(ApartmentState.STA);
-                thread.IsBackground = true;
                 thread.Start();
                 thread.Join();
 
