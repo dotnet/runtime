@@ -90,6 +90,14 @@ namespace System.Threading
             return true;
         }
 
+        internal static void NotifyThreadBlocked()
+        {
+        }
+
+        internal static void NotifyThreadUnblocked()
+        {
+        }
+
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
