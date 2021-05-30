@@ -2056,9 +2056,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.OtherUnix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libc.cs">
       <Link>Common\Interop\OSX\Interop.libc.cs</Link>
     </Compile>
