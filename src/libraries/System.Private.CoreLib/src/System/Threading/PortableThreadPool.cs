@@ -340,8 +340,8 @@ namespace System.Threading
             // this also prevents the initial elapsed interval from being negative due to the prior and next times being
             // initialized to zero.
             int priorTime = Volatile.Read(ref _separated.priorCompletedWorkRequestsTime);
-            int requiredInterval = _separated.nextCompletedWorkRequestsTime - priorTime;
-            int elapsedInterval = currentTimeMs - priorTime;
+            uint requiredInterval = (uint)(_separated.nextCompletedWorkRequestsTime - priorTime);
+            uint elapsedInterval = (uint)(currentTimeMs - priorTime);
             if (elapsedInterval < requiredInterval)
             {
                 return false;
