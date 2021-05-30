@@ -144,6 +144,18 @@ int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
     assert(key != NULL || keySize == 0);
     assert(source != NULL || sourceSize == 0);
 
+    uint8_t empty = 0;
+
+    if (key == NULL)
+    {
+        if (keySize != 0)
+        {
+            return -1;
+        }
+
+        key = &empty;
+    }
+
     unsigned int unsignedSource = Int32ToUint32(sourceSize);
     unsigned int unsignedSize = Int32ToUint32(*mdSize);
     unsigned char* result = HMAC(type, key, keySize, source, unsignedSource, md, &unsignedSize);
