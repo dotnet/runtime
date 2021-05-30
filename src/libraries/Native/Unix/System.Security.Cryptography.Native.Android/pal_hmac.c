@@ -150,7 +150,7 @@ int32_t CryptoNative_HmacOneShot(intptr_t type,
     if (hmacCtx == FAIL)
         return FAIL;
 
-    int32_t ret = CryptoNative_HmacUpdate(hmacCtx, source, sourceLen);
+    int32_t ret = sourceLen == 0 ? SUCCESS : CryptoNative_HmacUpdate(hmacCtx, source, sourceLen);
 
     if (ret != SUCCESS)
     {
