@@ -6174,6 +6174,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->spvars = g_hash_table_new (NULL, NULL);
 			cfg->exvars = g_hash_table_new (NULL, NULL);
 		}
+		cfg->clause_is_dead = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
+
 		/* handle exception clauses */
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoBasicBlock *try_bb;
@@ -6430,9 +6432,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (is_virtual_call) {
 		MonoInst *arg_ins;
 
-		NEW_ARGLOAD (cfg, arg_ins, 0);
-		MONO_ADD_INS (cfg->cbb, arg_ins);
-		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
+		//
+		// This is just a hack to avoid checks in empty methods which could get inlined
+		// into finally clauses preventing the removal of empty finally clauses, since all
+		// variables in finally clauses are marked volatile so the check can't be removed
+		//
+		if (!(cfg->llvm_only && m_class_is_valuetype (method->klass) && header->code_size == 1 && header->code [0] == CEE_RET)) {
+			NEW_ARGLOAD (cfg, arg_ins, 0);
+			MONO_ADD_INS (cfg->cbb, arg_ins);
+			MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
+		}
 	}
 
 	if (cfg->llvm_only && cfg->interp)
