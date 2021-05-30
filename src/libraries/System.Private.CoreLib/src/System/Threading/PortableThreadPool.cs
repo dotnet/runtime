@@ -142,16 +142,12 @@ namespace System.Threading
                         wakeGateThread = true;
                     }
                 }
-                else
+                else if (_separated.numThreadsGoal < newMinThreads)
                 {
-                    Debug.Assert(newMinThreads == MinThreadsGoal);
-                    if (_separated.numThreadsGoal < newMinThreads)
+                    _separated.numThreadsGoal = newMinThreads;
+                    if (_separated.numRequestedWorkers > 0)
                     {
-                        _separated.numThreadsGoal = newMinThreads;
-                        if (_separated.numRequestedWorkers > 0)
-                        {
-                            addWorker = true;
-                        }
+                        addWorker = true;
                     }
                 }
             }
