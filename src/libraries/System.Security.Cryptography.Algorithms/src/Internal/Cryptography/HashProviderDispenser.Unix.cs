@@ -23,7 +23,7 @@ namespace Internal.Cryptography
             return new HmacHashProvider(evpType, key);
         }
 
-        internal static class OneShotHmacProvider
+        internal static class OneShotHashProvider
         {
             public static unsafe int MacData(
                 string hashAlgorithmId,
@@ -61,10 +61,7 @@ namespace Internal.Cryptography
 
                 return length;
             }
-        }
 
-        internal static class OneShotHashProvider
-        {
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
