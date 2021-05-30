@@ -717,6 +717,16 @@ namespace Internal.TypeSystem
                     minAlign = new LayoutInt(minAlign.AsInt * 2);
             }
 
+            if (minAlign != LayoutInt.Indeterminate &&
+                context.Target.Architecture == TargetArchitecture.ARM &&
+                minAlign.AsInt > 4 &&
+                type.HasLayout() &&
+                type.GetClassLayout().PackingSize < 8)
+            {
+                // https://github.com/dotnet/runtime/blob/b5c91e4c29359f160edcf7caf16530e48d9a4fb0/src/coreclr/vm/methodtablebuilder.cpp#L4450
+                minAlign = context.Target.LayoutPointerSize;
+            }
+
             SizeAndAlignment instanceByteSizeAndAlignment;
             var instanceSizeAndAlignment = ComputeInstanceSize(type,
                 cumulativeInstanceFieldPos + offsetBias,
