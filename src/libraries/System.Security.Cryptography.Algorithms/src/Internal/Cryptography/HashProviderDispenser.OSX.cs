@@ -39,7 +39,32 @@ namespace Internal.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                throw new NotImplementedException();
+                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+
+                fixed (byte* pKey = key)
+                fixed (byte* pSource = source)
+                fixed (byte* pDestination = destination)
+                {
+                    int ret = Interop.AppleCrypto.HmacOneShot(
+                        algorithm,
+                        pKey,
+                        key.Length,
+                        pSource,
+                        source.Length,
+                        pDestination,
+                        destination.Length,
+                        out int digestSize);
+
+                    if (ret != 1)
+                    {
+                        Debug.Fail($"MacData return value {ret} was not 1");
+                        throw new CryptographicException();
+                    }
+
+                    Debug.Assert(digestSize <= destination.Length);
+
+                    return digestSize;
+                }
             }
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
