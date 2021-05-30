@@ -22,17 +22,22 @@ namespace System.IO
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
             // Try to set the attribute on the file system entry using setattrlist,
-            // otherwise fall back to the method used on other unix platforms as the
-            // path may either be on an unsupported volume type (for setattrlist) or it
-            // could be another error (eg. no file) which the fallback implementation can throw.
-            bool succeeded = Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW)) == 0;
-            if (!succeeded)
+            // if we get ENOTSUP then it means that "The volume does not support
+            // setattrlist()", so we fall back to the method used on other unix
+            // platforms, otherwise we throw an error if we get one, or invalidate
+            // the cache if successful because otherwise it has invalid information.
+            Interop.Error result = (Interop.Error)Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
+            if (result == Interop.Error.ENOTSUP)
             {
                 SetCreationTime_StandardUnixImpl(path, time);
             }
-            else
+            else if (result == Interop.Error.SUCCESS)
             {
                 InvalidateCaches();
+            }
+            else
+            {
+                Interop.CheckIo(result, path, InitiallyDirectory);
             }
         }
 
