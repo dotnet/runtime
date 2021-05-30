@@ -876,7 +876,7 @@ namespace System.Net.Sockets
                     {
                         // Because the other end close, we expect the operation to complete when we retry it.
                         // If it doesn't, we fall through and throw an Exception.
-                        if (operation.TryComplete(context) == OperationResult.Pending)
+                        if (operation.TryComplete(context) != OperationResult.Pending)
                         {
                             return;
                         }
