@@ -358,7 +358,11 @@ namespace System.Threading
                 // If all of this caused an actual change in thread count, log that as well.
                 //
                 if (newThreadCount != currentThreadCount)
+                {
                     ChangeThreadCount(newThreadCount, state);
+                    _secondsElapsedSinceLastChange = 0;
+                    _completionsSinceLastChange = 0;
+                }
 
                 //
                 // Return the new thread count and sample interval.  This is randomized to prevent correlations with other periodic
@@ -377,7 +381,7 @@ namespace System.Threading
                 return (newThreadCount, newSampleInterval);
             }
 
-            private void ChangeThreadCount(int newThreadCount, StateOrTransition state, bool logTransition = true)
+            private void ChangeThreadCount(int newThreadCount, StateOrTransition state)
             {
                 _lastThreadCount = newThreadCount;
 
@@ -386,15 +390,8 @@ namespace System.Threading
                     _currentSampleMs = _randomIntervalGenerator.Next(_sampleIntervalMsLow, _sampleIntervalMsHigh + 1);
                 }
 
-                if (!logTransition)
-                {
-                    return;
-                }
-
                 double throughput = _secondsElapsedSinceLastChange > 0 ? _completionsSinceLastChange / _secondsElapsedSinceLastChange : 0;
                 LogTransition(newThreadCount, throughput, state);
-                _secondsElapsedSinceLastChange = 0;
-                _completionsSinceLastChange = 0;
             }
 
             private void LogTransition(int newThreadCount, double throughput, StateOrTransition stateOrTransition)
@@ -427,12 +424,12 @@ namespace System.Threading
                 }
             }
 
-            public void ForceChange(int newThreadCount, StateOrTransition state, bool logTransition = true)
+            public void ForceChange(int newThreadCount, StateOrTransition state)
             {
                 if (_lastThreadCount != newThreadCount)
                 {
                     _currentControlSetting += newThreadCount - _lastThreadCount;
-                    ChangeThreadCount(newThreadCount, state, logTransition);
+                    ChangeThreadCount(newThreadCount, state);
                 }
             }
 

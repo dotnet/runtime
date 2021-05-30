@@ -168,8 +168,7 @@ namespace System.Threading
                 _separated.numThreadsGoal = numThreadsGoal -= toSubtract;
                 HillClimbing.ThreadPoolHillClimber.ForceChange(
                     numThreadsGoal,
-                    HillClimbing.StateOrTransition.CooperativeBlocking,
-                    logTransition: false); // reduce noise
+                    HillClimbing.StateOrTransition.CooperativeBlocking);
                 return 0;
             }
 
@@ -254,8 +253,7 @@ namespace System.Threading
                 _separated.numThreadsGoal = newNumThreadsGoal;
                 HillClimbing.ThreadPoolHillClimber.ForceChange(
                     newNumThreadsGoal,
-                    HillClimbing.StateOrTransition.CooperativeBlocking,
-                    logTransition: newNumThreadsGoal == maxThreadsGoalWithoutDelay || previousDelayElapsed); // reduce noise
+                    HillClimbing.StateOrTransition.CooperativeBlocking);
                 if (counts.NumProcessingWork >= numThreadsGoal && _separated.numRequestedWorkers > 0)
                 {
                     addWorker = true;
