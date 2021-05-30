@@ -20,7 +20,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             else
             {
-                return new IPEndPoint(new IPAddress(MemoryMarshal.CreateReadOnlySpan<byte>(ref inetAddress.Ipv6.sin6_addr[0], 16)), (ushort)IPAddress.NetworkToHostOrder((short)inetAddress.Ipv6._port));
+                return new IPEndPoint(new IPAddress(MemoryMarshal.CreateReadOnlySpan<byte>(ref inetAddress.Ipv6.sin6_addr[0], 16)), (ushort)IPAddress.NetworkToHostOrder((short)inetAddress.Ipv6.sin6_port));
             }
         }
 
@@ -33,12 +33,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 switch (endpoint.Address.AddressFamily)
                 {
                     case AddressFamily.InterNetwork:
-                        endpoint.Address.TryWriteBytes(MemoryMarshal.CreateSpan<byte>(ref socketAddress.Ipv4.sin_addr[0], 4));
+                        endpoint.Address.TryWriteBytes(MemoryMarshal.CreateSpan<byte>(ref socketAddress.Ipv4.sin_addr[0], 4), out _);
                         socketAddress.Ipv4.sin_family = IPv4;
                         break;
                     case AddressFamily.InterNetworkV6:
-                        endpoint.Address.TryWriteBytes(MemoryMarshal.CreateSpan<byte>(ref socketAddress.Ipv6.sin6_addr[0], 16));
-                        socketAddress.Ipv6._family = IPv6;
+                        endpoint.Address.TryWriteBytes(MemoryMarshal.CreateSpan<byte>(ref socketAddress.Ipv6.sin6_addr[0], 16), out _);
+                        socketAddress.Ipv6.sin6_family = IPv6;
                         break;
                     default:
                         throw new ArgumentException(SR.net_quic_addressfamily_notsupported);
@@ -59,7 +59,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     break;
                 case AddressFamily.InterNetworkV6:
                 default:
-                    socketAddrInet.Ipv6._port = convertedPort;
+                    socketAddrInet.Ipv6.sin6_port = convertedPort;
                     break;
             }
         }

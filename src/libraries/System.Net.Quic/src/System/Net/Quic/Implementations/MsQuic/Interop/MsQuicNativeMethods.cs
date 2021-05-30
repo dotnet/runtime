@@ -595,11 +595,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN6
         {
-            internal ushort _family;
-            internal ushort _port;
-            internal uint _flowinfo;
+            internal ushort sin6_family;
+            internal ushort sin6_port;
+            internal uint sin6_flowinfo;
             internal fixed byte sin6_addr[16];
-            internal uint _scope_id;
+            internal uint sin6_scope_id;
         }
 
         // TODO: rename to C#-like
