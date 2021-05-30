@@ -152,7 +152,7 @@ namespace System.Numerics
             }
         }
 
-        internal static bool IsSupported
+        internal static bool IsTypeSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -193,7 +193,7 @@ namespace System.Numerics
         {
             get
             {
-                if (IsSupported)
+                if (IsTypeSupported)
                 {
                     return ToString();
                 }

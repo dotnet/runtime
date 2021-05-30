@@ -63,7 +63,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal static bool IsSupported
+        internal static bool IsTypeSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -94,7 +94,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                if (IsSupported)
+                if (IsTypeSupported)
                 {
                     return ToString();
                 }
