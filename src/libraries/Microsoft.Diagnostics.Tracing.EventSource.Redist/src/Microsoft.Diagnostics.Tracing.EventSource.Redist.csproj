@@ -25,6 +25,10 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteString.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs" />
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
+             Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\CounterGroup.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\CounterPayload.cs" />
