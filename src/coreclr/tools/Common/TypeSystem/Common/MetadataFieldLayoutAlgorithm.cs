@@ -312,13 +312,10 @@ namespace Internal.TypeSystem
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
-            LayoutInt cumulativeInstanceFieldPos =
-                type.HasBaseType && !type.IsValueType ? type.BaseType.InstanceByteCount : LayoutInt.Zero;
-            cumulativeInstanceFieldPos -= offsetBias;
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
-            LayoutInt instanceSize = cumulativeInstanceFieldPos + new LayoutInt(layoutMetadata.Size) + offsetBias;
-
             int packingSize = ComputePackingSize(type, layoutMetadata);
             LayoutInt largestAlignmentRequired = LayoutInt.One;
 
@@ -352,7 +349,7 @@ namespace Internal.TypeSystem
                     );
                 if (needsToBeAligned)
                 {
-                    largestAlignmentRequired = LayoutInt.Max(largestAlignmentRequired, type.Context.Target.LayoutPointerSize);
+                    Debug.Assert(largestAlignmentRequired.AsInt >= type.Context.Target.PointerSize);
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
                     {
