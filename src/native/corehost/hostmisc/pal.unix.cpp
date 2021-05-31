@@ -343,29 +343,12 @@ bool is_read_write_able_directory(pal::string_t& dir)
            (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
 }
 
-bool pal::get_temp_directory(pal::string_t& tmp_dir)
+bool get_extraction_base_parent_directory(pal::string_t& directory)
 {
-    // First, check for the POSIX standard environment variable
-    if (getenv(_X("TMPDIR"), &tmp_dir))
+    // check for the POSIX standard environment variable
+    if (pal::getenv(_X("HOME"), &directory))
     {
-        return is_read_write_able_directory(tmp_dir);
-    }
-
-    // On non-compliant systems (ex: Ubuntu) try /var/tmp or /tmp directories.
-    // /var/tmp is prefered since its contents are expected to survive across
-    // machine reboot.
-    pal::string_t _var_tmp = _X("/var/tmp/");
-    if (is_read_write_able_directory(_var_tmp))
-    {
-        tmp_dir.assign(_var_tmp);
-        return true;
-    }
-
-    pal::string_t _tmp = _X("/tmp/");
-    if (is_read_write_able_directory(_tmp))
-    {
-        tmp_dir.assign(_tmp);
-        return true;
+        return is_read_write_able_directory(directory);
     }
 
     return false;
@@ -373,46 +356,23 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
 {
-    if (!get_temp_directory(extraction_dir))
+    if (!get_extraction_base_parent_directory(extraction_dir))
     {
         return false;
     }
 
     append_path(&extraction_dir, _X(".net"));
-    pal::string_t dotnetdir(extraction_dir);
-
-    // getuid() is the real user ID, and the call has no defined errors.
-    struct passwd* passwd = getpwuid(getuid());
-    if (passwd == nullptr || passwd->pw_name == nullptr)
-    {
-        return false;
-    }
-
-    append_path(&extraction_dir, passwd->pw_name);
-
     if (is_read_write_able_directory(extraction_dir))
     {
         return true;
     }
 
-    // Create $TMPDIR/.net accessible to everyone
-    if (::mkdir(dotnetdir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0)
+    // Create $HOME/.net with rwx access to the owner
+    if (::mkdir(extraction_dir.c_str(), S_IRWXU) == 0)
     {
-        // In the above mkdir() system call, some permissions are strangely dropped!
-        // Linux drops S_IWO and Mac drops S_IWG | S_IWO.
-        // So these are again explicitly set by calling chmod()
-        if (chmod(dotnetdir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) != 0)
-        {
-            return false;
-        }
+        return true;
     }
     else if (errno != EEXIST)
-    {
-        return false;
-    }
-
-    // Create $TMPDIR/.net/username accessible only to the user
-    if (::mkdir(extraction_dir.c_str(), S_IRWXU | S_ISVTX) != 0 && errno != EEXIST)
     {
         return false;
     }
