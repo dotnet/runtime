@@ -12,6 +12,8 @@ namespace System.IO.Tests
 {
     public class BufferedStream_StreamAsync
     {
+        public static bool IsX64 { get; } = IntPtr.Size >= 8;
+		
         [Fact]
         public static void NullConstructor_Throws_ArgumentNullException()
         {
@@ -51,6 +53,54 @@ namespace System.IO.Tests
         {
             var bufferedStream = new BufferedStream(new MemoryStream(), 1234);
             Assert.Equal(1234, bufferedStream.BufferSize);
+        }
+
+        [ConditionalTheory(nameof(IsX64))]
+        [OuterLoop]
+        [InlineData(int.MaxValue / 2 + 1)]
+        public void WriteFromByte_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess(int inputSize)
+        {
+            byte[] bytes;
+
+            try
+            {
+				bytes = new byte[inputSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+			var writableStream = new WriteOnlyStream();
+            using (var bs = new BufferedStream(writableStream))
+            {
+                bs.Write(bytes, 0, inputSize);
+                Assert.Equal(inputSize, writableStream.GetPosition());
+            }
+        }
+
+        [ConditionalTheory(nameof(IsX64))]
+        [OuterLoop]
+        [InlineData(int.MaxValue / 2 + 1)]
+        public void WriteFromSpan_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess(int inputSize)
+        {
+            byte[] bytes;
+
+            try
+            {
+				bytes = new byte[inputSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+			var writableStream = new WriteOnlyStream();
+            using (var bs = new BufferedStream(writableStream))
+            {
+                bs.Write(new ReadOnlySpan<byte>(bytes));
+                Assert.Equal(inputSize, writableStream.GetPosition());
+            }
         }
 
         [Theory]
@@ -368,5 +418,55 @@ namespace System.IO.Tests
 
         public override Task FlushAsync(CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Exception from FlushAsync");
+    }
+
+    internal sealed class WriteOnlyStream : Stream
+    {
+        private long _pos;
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _pos += (count - offset);
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            _pos += buffer.Length;
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => _pos;
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public long GetPosition()
+        {
+            return _pos;
+        }
     }
 }
