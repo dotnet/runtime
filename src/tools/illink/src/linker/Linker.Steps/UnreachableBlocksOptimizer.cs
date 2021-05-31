@@ -581,6 +581,11 @@ namespace Mono.Linker.Steps
 						break;
 					}
 
+					if (instruction.OpCode == OpCodes.Ret) {
+						unknown = true;
+						return 0;
+					}
+
 					Debug.Fail (instruction.Operand?.ToString ());
 					unknown = true;
 					return 0;

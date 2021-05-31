@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			TestMethodWithComplexParams_2 ();
 			TestMethodWithComplexParams_3 (3);
 			TestMethodWithComplexParams_4 ();
+			TestMethodWithComplexParams_5 ();
 			instance.TestMethodWithMultipleInParamsInstance ();
 			// TestMethodWithOutParam ();
 			TestMethodWithRefParam ();
@@ -153,6 +154,27 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept] static void TestMethodWithComplexParams_4_Used () { }
 		[Kept] static void TestMethodWithComplexParams_4_Unused () { }
+
+		[Kept]
+		static void TestMethodWithComplexParams_5 ()
+		{
+			MethodWithParametersSubstitutions instance = new MethodWithParametersSubstitutions ();
+			instance._TestMethodWithComplexParameters_5_field = instance;
+			instance.TestMethodWithComplexParams_5_Propagate ();
+		}
+
+		[Kept]
+		MethodWithParametersSubstitutions _TestMethodWithComplexParameters_5_field;
+
+		[Kept]
+		// Special crafted body which has a sequence of "ret; call <substituted instance method>;"
+		// This causes the method param "unroll" logic to hit the "ret" instruction which is problematic.
+		bool TestMethodWithComplexParams_5_Propagate ()
+			=> _TestMethodWithComplexParameters_5_field?.TestMethodWithComplexParams_5_Substituted () ?? false;
+
+		[Kept]
+		[ExpectBodyModified]
+		bool TestMethodWithComplexParams_5_Substituted () => true;
 
 		[Kept]
 		[ExpectBodyModified]
