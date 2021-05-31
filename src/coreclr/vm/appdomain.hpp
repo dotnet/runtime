@@ -46,10 +46,10 @@ class DomainAssembly;
 class LoadLevelLimiter;
 class TypeEquivalenceHashTable;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 class RCWCache;
 class RCWRefCache;
-#endif // FEATURE_COMINTEROP
+#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -1975,6 +1975,11 @@ public:
     RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMINTEROP
 
+#if defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+public:
+    RCWRefCache *GetRCWRefCache();
+#endif // defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+
     TPIndex GetTPIndex()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2237,13 +2242,13 @@ private:
     CrstExplicitInit m_nativeImageLoadCrst;
     MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // this cache stores the RCWs in this domain
     RCWCache *m_pRCWCache;
 
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
-#endif // FEATURE_COMINTEROP
+#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
     // The thread-pool index of this app domain among existing app domains (starting from 1)
     TPIndex m_tpIndex;

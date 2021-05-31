@@ -51,6 +51,10 @@
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
 
+#if defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+#include "rcwrefcache.h"
+#endif // defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+
 #include "typeequivalencehash.hpp"
 
 #include "appdomain.inl"
@@ -2111,10 +2115,10 @@ AppDomain::AppDomain()
     m_pRootAssembly = NULL;
 
     m_dwFlags = 0;
-#ifdef FEATURE_COMINTEROP
+#if  defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     m_pRCWCache = NULL;
     m_pRCWRefCache = NULL;
-#endif // FEATURE_COMINTEROP
+#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
     m_handleStore = NULL;
 
@@ -4418,7 +4422,7 @@ void AppDomain::NotifyDebuggerUnload()
 
 #ifndef CROSSGEN_COMPILE
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 RCWRefCache *AppDomain::GetRCWRefCache()
 {
@@ -4440,6 +4444,9 @@ RCWRefCache *AppDomain::GetRCWRefCache()
     }
     RETURN m_pRCWRefCache;
 }
+#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+
+#ifdef FEATURE_COMINTEROP
 
 RCWCache *AppDomain::CreateRCWCache()
 {

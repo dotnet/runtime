@@ -660,6 +660,19 @@ if(CLR_CMAKE_TARGET_WIN32)
 
 endif(CLR_CMAKE_TARGET_WIN32)
 
+if(CLR_CMAKE_HOST_UNIX)
+    # COM wrappers scenarios
+    if (FEATURE_COMWRAPPERS)
+        list(APPEND VM_SOURCES_WKS
+            rcwrefcache.cpp
+            )
+    endif (FEATURE_COMWRAPPERS)      
+          
+    list(APPEND VM_HEADERS_WKS
+        rcwrefcache.h
+        )
+endif(CLR_CMAKE_HOST_UNIX)
+
 if(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
