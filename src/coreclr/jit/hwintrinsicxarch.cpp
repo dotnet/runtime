@@ -1222,10 +1222,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            op2 = impSIMDPopStack(retType);
-            op1 = impSIMDPopStack(retType);
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack(retType);
+                op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode =
+                    gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            }
             break;
         }
 
@@ -1234,10 +1238,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            op2 = impSIMDPopStack(retType);
-            op1 = impSIMDPopStack(retType);
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack(retType);
+                op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode =
+                    gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            }
             break;
         }
 
