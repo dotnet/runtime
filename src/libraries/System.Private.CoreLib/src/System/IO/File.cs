@@ -21,7 +21,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public static class File
+    public static partial class File
     {
         private const int MaxByteArrayLength = 0x7FFFFFC7;
         private static Encoding? s_UTF8NoBOM;
@@ -51,51 +51,6 @@ namespace System.IO
 
             return new StreamWriter(path, append: true);
         }
-
-#if NET6_0_OR_GREATER
-        public static StreamReader OpenText(string path, FileStreamOptions options)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamReader(path, Override(options, FileMode.Open));
-        }
-
-        public static StreamWriter CreateText(string path, FileStreamOptions options)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamWriter(path, Override(options, FileMode.Create));
-        }
-
-        public static StreamWriter AppendText(string path, FileStreamOptions options)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            return new StreamWriter(path, Override(options, FileMode.Append));
-        }
-
-        private static FileStreamOptions Override(FileStreamOptions options, FileMode? fileMode = default, FileAccess? fileAccess = default)
-        {
-            FileMode overriddenMode = fileMode ?? options.Mode;
-            FileAccess overriddenAccess = fileAccess ?? options.Access;
-
-            if ( overriddenMode == options.Mode && overriddenAccess == options.Access)
-                return options;
-
-            return new FileStreamOptions
-            {
-                Mode = overriddenMode,
-                Access = overriddenAccess,
-                Share = options.Share,
-                BufferSize = options.BufferSize,
-                Options = options.Options,
-                PreallocationSize = options.PreallocationSize
-            };
-        }
-#endif
 
         /// <summary>
         /// Copies an existing file to a new file.
@@ -141,11 +96,6 @@ namespace System.IO
 
         public static FileStream Create(string path, int bufferSize, FileOptions options)
             => new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, options);
-
-#if NET6_0_OR_GREATER
-        public static FileStream Create(string path, FileStreamOptions options)
-            => new FileStream(path, Override(options, FileMode.Create));
-#endif
 
         // Deletes a file. The file specified by the designated path is deleted.
         // If the file does not exist, Delete succeeds without throwing
@@ -208,13 +158,6 @@ namespace System.IO
         {
             return new FileStream(path, mode, access, share);
         }
-
-#if NET6_0_OR_GREATER
-        public static FileStream Open(string path, FileMode mode, FileStreamOptions options)
-        {
-            return new FileStream(path, Override(options, mode));
-        }
-#endif
 
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
         {
@@ -321,18 +264,6 @@ namespace System.IO
         {
             return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
         }
-
-#if NET6_0_OR_GREATER
-        public static FileStream OpenRead(string path, FileStreamOptions options)
-        {
-            return new FileStream(path, Override(options, FileMode.Open, FileAccess.Read));
-        }
-
-        public static FileStream OpenWrite(string path, FileStreamOptions options)
-        {
-            return new FileStream(path, Override(options, FileMode.OpenOrCreate, FileAccess.Write));
-        }
-#endif
 
         public static string ReadAllText(string path)
         {

@@ -46,17 +46,17 @@ namespace System.IO.Tests
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
-            return File.Open(path, mode, new FileStreamOptions { Mode = mode, Access = (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite) });
+            return File.Open(path, new FileStreamOptions { Mode = mode, Access = (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite) });
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
         {
-            return File.Open(path, mode, new FileStreamOptions { Mode = mode, Access = access });
+            return File.Open(path, new FileStreamOptions { Mode = mode, Access = access });
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            return File.Open(path, mode, new FileStreamOptions { Mode = mode, Access = access, Share = share, Options = options, BufferSize = bufferSize });
+            return File.Open(path, new FileStreamOptions { Mode = mode, Access = access, Share = share, Options = options, BufferSize = bufferSize });
         }
     }
 

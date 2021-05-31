@@ -7567,7 +7567,7 @@ namespace System.IO
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileStreamOptions options) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
         public static System.IO.FileStream OpenRead(string path, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
@@ -7635,7 +7635,7 @@ namespace System.IO
         public System.IO.FileStream Open(System.IO.FileMode mode) { throw null; }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileStreamOptions options) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.FileStream OpenRead() { throw null; }
         public System.IO.FileStream OpenRead(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.StreamReader OpenText() { throw null; }
