@@ -130,15 +130,15 @@ namespace System.Reflection.Emit
             if (!field.DeclaringType!.IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
-            if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
+            if (type.GetGenericTypeDefinition() != field.DeclaringType)
+                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (type.GetGenericTypeDefinition() != field.DeclaringType)
-                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
+            if (!(type is TypeBuilderInstantiation))
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
 
             return FieldOnTypeBuilderInstantiation.GetField(field, (type as TypeBuilderInstantiation)!);
         }
