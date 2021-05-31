@@ -128,6 +128,68 @@ typedef bool
 typedef bool
 (*event_pipe_component_write_event_ee_startup_start_func)(void);
 
+typedef bool
+(*event_pipe_component_write_event_threadpool_worker_thread_start_func)(
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_worker_thread_stop_func)(
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_worker_thread_wait_func)(
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_worker_thread_adjustment_sample_func)(
+	double throughput,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_worker_thread_adjustment_adjustment_func)(
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_worker_thread_adjustment_stats_func)(
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_io_enqueue_func)(
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	bool multi_dequeues,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_io_dequeue_func)(
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_threadpool_working_thread_count_func)(
+	uint16_t count,
+	uint16_t clr_instance_id);
+
 /*
  * MonoComponentEventPipe function table.
  */
@@ -150,6 +212,15 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_get_session_info_func get_session_info;
 	event_pipe_component_thread_ctrl_activity_id_func thread_ctrl_activity_id;
 	event_pipe_component_write_event_ee_startup_start_func write_event_ee_startup_start;
+	event_pipe_component_write_event_threadpool_worker_thread_start_func write_event_threadpool_worker_thread_start;
+	event_pipe_component_write_event_threadpool_worker_thread_stop_func write_event_threadpool_worker_thread_stop;
+	event_pipe_component_write_event_threadpool_worker_thread_wait_func write_event_threadpool_worker_thread_wait;
+	event_pipe_component_write_event_threadpool_worker_thread_adjustment_sample_func write_event_threadpool_worker_thread_adjustment_sample;
+	event_pipe_component_write_event_threadpool_worker_thread_adjustment_adjustment_func write_event_threadpool_worker_thread_adjustment_adjustment;
+	event_pipe_component_write_event_threadpool_worker_thread_adjustment_stats_func write_event_threadpool_worker_thread_adjustment_stats;
+	event_pipe_component_write_event_threadpool_io_enqueue_func write_event_threadpool_io_enqueue;
+	event_pipe_component_write_event_threadpool_io_dequeue_func write_event_threadpool_io_dequeue;
+	event_pipe_component_write_event_threadpool_working_thread_count_func write_event_threadpool_working_thread_count;
 } MonoComponentEventPipe;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

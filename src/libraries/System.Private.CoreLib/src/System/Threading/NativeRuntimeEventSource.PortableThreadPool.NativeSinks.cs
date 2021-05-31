@@ -16,8 +16,8 @@ namespace System.Diagnostics.Tracing
     // from the mechanism in NativeRuntimeEventSource.ProcessEvents that forwards native runtime events to EventListeners.
     // To prevent this, these events call directly into QCalls provided by the runtime (refer to NativeRuntimeEventSource.cs) which call
     // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
-    // for the native platform. Refer to src/coreclr/vm/nativeruntimesource.cpp.
-    // For Mono|CoreRT implementation of these events, refer to NativeRuntimeEventSource.PortableThreadPool.cs.
+    // for the native platform.
+    // For implementation of these events not supporting native sinks, refer to NativeRuntimeEventSource.PortableThreadPool.cs.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
@@ -204,62 +204,5 @@ namespace System.Diagnostics.Tracing
             }
             LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
         }
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadAdjustmentStats(
-            double Duration,
-            double Throughput,
-            double ThreadPoolWorkerThreadWait,
-            double ThroughputWave,
-            double ThroughputErrorEstimate,
-            double AverageThroughputErrorEstimate,
-            double ThroughputRatio,
-            double Confidence,
-            double NewControlSetting,
-            ushort NewThreadWaveMagnitude,
-            ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolIOEnqueue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
-            bool MultiDequeues,
-            ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolIODequeue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
-            ushort ClrInstanceID);
-
-        [NonEvent]
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkingThreadCount(
-            uint Count,
-            ushort ClrInstanceID
-        );
     }
 }
