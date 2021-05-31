@@ -242,6 +242,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_iOSSupportVersion)
     DllImportEntry(SystemNative_GetErrNo)
     DllImportEntry(SystemNative_SetErrNo)
+    DllImportEntry(SystemNative_PRead)
+    DllImportEntry(SystemNative_PWrite)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

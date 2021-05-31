@@ -1969,11 +1969,11 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAllocate.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PosixFAllocate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pread.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Pread.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PRead.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PRead.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pwrite.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Pwrite.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PWrite.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PWrite.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
