@@ -10,6 +10,7 @@
       <method signature="System.Boolean IsEnabledWithMultipleRefParams(System.Int32,System.Int32&amp;,Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestStruct&amp;,System.String)" body="stub" value="true" />
       <method signature="System.Boolean IsEnabledWithVarArgs()" body="stub" value="true" />
       <method signature="System.Boolean IsEnabledWithParamAndVarArgs(System.Int32)" body="stub" value="true" />
+      <method signature="System.Boolean TestMethodWithComplexParams_5_Substituted()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>
