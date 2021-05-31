@@ -77,7 +77,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
-        public void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
+        public virtual void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
         {
             string path = GetTestFilePath();
             Assert.False(File.Exists(path));
