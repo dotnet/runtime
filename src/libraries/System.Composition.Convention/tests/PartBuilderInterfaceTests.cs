@@ -59,7 +59,7 @@ namespace System.Composition.Convention.Tests
             public BareClass BareClass { get; set; }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void StandardExportInterfacesShouldWork()
         {
             // Export all interfaces except IDisposable, Export contracts on types without interfaces. except for disposable types

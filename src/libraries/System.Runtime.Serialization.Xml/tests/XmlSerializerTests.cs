@@ -12,7 +12,7 @@ public static class XmlSerializerTests
 
     public const string FakeNS = "http://example.com/XmlSerializerTests";
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static void FlagEnums_With_Different_Namespaces()
     {
         StringWriter sw = new StringWriter();

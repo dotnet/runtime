@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class PtrToStructureTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void StructureToPtr_NonGenericType_ReturnsExpected()
         {
             var structure = new SequentialClass

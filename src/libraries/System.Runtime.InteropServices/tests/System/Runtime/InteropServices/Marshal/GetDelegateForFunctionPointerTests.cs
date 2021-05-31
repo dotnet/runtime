@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
