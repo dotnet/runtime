@@ -191,11 +191,6 @@ static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* p
     return rv;
 }
 
-typedef union {
-    void (*handler)(int);
-    void (*action)(int, siginfo_t *, void *);
-} pal_sighandler;
-
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -376,16 +371,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
             if (!sigaction(sig, NULL, &sa_old))
             {
-                pal_sighandler oldhandler;
-                if (((unsigned int)sa_old.sa_flags) & SA_SIGINFO)
-                {
-                    oldhandler.action = sa_old.sa_sigaction;
-                }
-                else
-                {
-                    oldhandler.handler = sa_old.sa_handler;
-                }
-                if (oldhandler.handler != SIG_IGN && oldhandler.handler != SIG_DFL)
+                void (*oldhandler)(int) = (((unsigned int)sa_old.sa_flags) & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
+                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
                 {
                     // It has a custom handler, put the default handler back.
                     // We check first to preserve flags on default handlers.
