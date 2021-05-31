@@ -124,8 +124,7 @@ namespace Microsoft.Win32.SafeHandles
 
             // Make sure it's not a directory; we do this after opening it once we have a file descriptor
             // to avoid race conditions.
-            Interop.Sys.FileStatus status;
-            if (Interop.Sys.FStat(handle, out status) != 0)
+            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status) != 0)
             {
                 handle.Dispose();
                 throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), fullPath);
@@ -134,6 +133,15 @@ namespace Microsoft.Win32.SafeHandles
             {
                 handle.Dispose();
                 throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), fullPath, isDirectory: true);
+            }
+
+            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
+            {
+                // we take advantage of the information provided by the fstat syscall
+                // and for regular files (most common case)
+                // avoid one extra sys call for determining whether file can be seeked
+                handle._canSeek = true;
+                Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
             }
 
             return handle;
