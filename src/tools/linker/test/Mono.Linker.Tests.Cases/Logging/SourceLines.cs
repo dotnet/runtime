@@ -7,11 +7,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Logging
 {
 	[SkipKeptItemsValidation]
-	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "../PreserveDependencies/Dependencies/PreserveDependencyAttribute.cs" })]
 	[SetupCompileArgument ("/debug:full")]
-	[LogContains ("(33,4): Trim analysis warning IL2074")]
-	[LogContains ("(34,4): Trim analysis warning IL2074")]
-	[LogContains ("(38,3): Trim analysis warning IL2091")]
+	[ExpectedNoWarnings]
+	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 34, SourceColumn = 4)]
+	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 35, SourceColumn = 4)]
+	[ExpectedWarning ("IL2091", FileName = "", SourceLine = 44, SourceColumn = 4)]
+	[ExpectedWarning ("IL2089", FileName = "", SourceLine = 48, SourceColumn = 36)]
 	public class SourceLines
 	{
 		public static void Main ()
@@ -30,8 +31,8 @@ namespace Mono.Linker.Tests.Cases.Logging
 
 		static void UnrecognizedReflectionPattern ()
 		{
-			type = GetUnknownType ();
-			type = GetUnknownType ();
+			type = GetUnknownType (); // IL2074
+			type = GetUnknownType (); // IL2074
 		}
 
 		static IEnumerable<int> GenericMethodIteratorWithRequirement<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TOuterMethod> ()
@@ -40,11 +41,11 @@ namespace Mono.Linker.Tests.Cases.Logging
 			// but this T doesn't inherit the DAM annotation.
 			// So calling the LocationFunction which requires the DAM on T will generate a warning
 			// but that warning comes from compiler generated code - there's no user code doing that.
-			LocalFunction ();
+			LocalFunction (); // IL2091 - The issue with attributes not propagating to the iterator generics
 			yield return 1;
 
 			// The generator code for LocalFunction inherits the DAM on the T
-			static void LocalFunction () => type = typeof (TOuterMethod);
+			static void LocalFunction () => type = typeof (TOuterMethod); // IL2089 - TOuterMethod is PublicMethods, but type is PublicConstructors
 		}
 	}
 }

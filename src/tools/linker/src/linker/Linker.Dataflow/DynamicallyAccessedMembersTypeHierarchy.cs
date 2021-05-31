@@ -14,6 +14,7 @@ namespace Mono.Linker.Dataflow
 	{
 		readonly LinkContext _context;
 		readonly MarkStep _markStep;
+		readonly MarkScopeStack _scopeStack;
 
 		// Cache of DynamicallyAccessedMembers annotations applied to types and their hierarchies
 		// Values
@@ -38,10 +39,11 @@ namespace Mono.Linker.Dataflow
 		// of a type which is currently being marked - at which point the interfaces are not yet marked.
 		readonly Dictionary<TypeDefinition, (DynamicallyAccessedMemberTypes annotation, bool applied)> _typesInDynamicallyAccessedMembersHierarchy;
 
-		public DynamicallyAccessedMembersTypeHierarchy (LinkContext context, MarkStep markStep)
+		public DynamicallyAccessedMembersTypeHierarchy (LinkContext context, MarkStep markStep, MarkScopeStack scopeStack)
 		{
 			_context = context;
 			_markStep = markStep;
+			_scopeStack = scopeStack;
 			_typesInDynamicallyAccessedMembersHierarchy = new Dictionary<TypeDefinition, (DynamicallyAccessedMemberTypes, bool)> ();
 		}
 
@@ -106,8 +108,9 @@ namespace Mono.Linker.Dataflow
 			if (apply) {
 				// One of the base/interface types is already marked as having the annotation applied
 				// so we need to apply the annotation to this type as well
-				var reflectionMethodBodyScanner = new ReflectionMethodBodyScanner (_context, _markStep);
-				var reflectionPatternContext = new ReflectionPatternContext (_context, true, type, type);
+				using var _ = _scopeStack.PushScope (new MessageOrigin (type));
+				var reflectionMethodBodyScanner = new ReflectionMethodBodyScanner (_context, _markStep, _scopeStack);
+				var reflectionPatternContext = new ReflectionPatternContext (_context, true, _scopeStack.CurrentScope.Origin, type);
 				reflectionMethodBodyScanner.ApplyDynamicallyAccessedMembersToType (ref reflectionPatternContext, type, annotation);
 				reflectionPatternContext.Dispose ();
 			}

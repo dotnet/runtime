@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -709,6 +710,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 								int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 								var actualMethod = attrProvider as MethodDefinition;
+								string expectedOrigin = null;
 
 								var matchedMessages = loggedMessages.Where (mc => {
 									if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
@@ -719,15 +721,36 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											return false;
 
 									if (fileName != null) {
-										// Note: string.Compare(string, StringComparison) doesn't exist in .NET Framework API set
-										if (mc.Origin?.FileName?.IndexOf (fileName, StringComparison.OrdinalIgnoreCase) < 0)
+										if (mc.Origin == null)
 											return false;
 
-										if (sourceLine != null && mc.Origin?.SourceLine != sourceLine.Value)
-											return false;
+										var actualOrigin = mc.Origin.Value;
+										if (actualOrigin.FileName != null) {
+											// Note: string.Compare(string, StringComparison) doesn't exist in .NET Framework API set
+											if (actualOrigin.FileName.IndexOf (fileName, StringComparison.OrdinalIgnoreCase) < 0)
+												return false;
 
-										if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
-											return false;
+											if (sourceLine != null && mc.Origin?.SourceLine != sourceLine.Value)
+												return false;
+
+											if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
+												return false;
+										} else {
+											// The warning was logged with member/ILoffset, so it didn't have line/column info filled
+											// but it will be computed from PDBs, so instead compare it in a string representation
+											if (expectedOrigin == null) {
+												expectedOrigin = fileName;
+												if (sourceLine.HasValue) {
+													expectedOrigin += "(" + sourceLine.Value;
+													if (sourceColumn.HasValue)
+														expectedOrigin += "," + sourceColumn.Value;
+													expectedOrigin += ")";
+												}
+											}
+
+											if (!actualOrigin.ToString ().EndsWith (expectedOrigin, StringComparison.OrdinalIgnoreCase))
+												return false;
+										}
 									} else {
 										if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
 											return true;
