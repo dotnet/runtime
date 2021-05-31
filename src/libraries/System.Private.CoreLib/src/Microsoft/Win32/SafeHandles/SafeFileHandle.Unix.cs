@@ -4,15 +4,14 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
+using System.IO.Strategies;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private bool? _canSeek;
+
         public SafeFileHandle() : this(ownsHandle: true)
         {
         }
@@ -28,9 +27,45 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        internal bool? IsAsync { get; set; }
+        public bool IsAsync { get; private set; }
 
-        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal bool CanSeek => !IsClosed && (_canSeek ??= Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+
+        // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
+        [ThreadStatic]
+        internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
+
+        protected override bool ReleaseHandle()
+        {
+            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add
+            // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
+            // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
+            // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
+            // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
+            // problem trying to unlock it.)
+            Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+
+            // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
+            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
+            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
+            int result = Interop.Sys.Close(handle);
+            if (result != 0)
+            {
+                t_lastCloseErrorInfo = Interop.Sys.GetLastErrorInfo();
+            }
+            return result == 0;
+        }
+
+        public override bool IsInvalid
+        {
+            get
+            {
+                long h = (long)handle;
+                return h < 0 || h > int.MaxValue;
+            }
+        }
+
+        internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             // Translate the arguments into arguments for an open call.
             Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
@@ -45,8 +80,18 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
 
             SafeFileHandle safeFileHandle = Open(fullPath, openFlags, (int)OpenPermissions);
-            Init(safeFileHandle, fullPath, mode, access, share, options, preallocationSize);
-            return safeFileHandle;
+            try
+            {
+                safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize);
+
+                return safeFileHandle;
+            }
+            catch (Exception)
+            {
+                safeFileHandle.Dispose();
+
+                throw;
+            }
         }
 
         private static SafeFileHandle Open(string fullPath, Interop.Sys.OpenFlags flags, int mode)
@@ -108,40 +153,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
-        }
-
-        // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
-        [ThreadStatic]
-        internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
-
-        protected override bool ReleaseHandle()
-        {
-            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add
-            // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
-            // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
-            // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
-            // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
-            // problem trying to unlock it.)
-            Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
-
-            // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
-            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
-            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
-            int result = Interop.Sys.Close(handle);
-            if (result != 0)
-            {
-                t_lastCloseErrorInfo = Interop.Sys.GetLastErrorInfo();
-            }
-            return result == 0;
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                long h = (long)handle;
-                return h < 0 || h > int.MaxValue;
-            }
         }
 
         /// <summary>Translates the FileMode, FileAccess, and FileOptions values into flags to be passed when opening the file.</summary>
@@ -209,15 +220,15 @@ namespace Microsoft.Win32.SafeHandles
             return flags;
         }
 
-        private static void Init(SafeFileHandle handle, string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        private void Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
-            handle.IsAsync = (options & FileOptions.Asynchronous) != 0;
+            IsAsync = (options & FileOptions.Asynchronous) != 0;
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
             // and not atomic with file opening, it's better than nothing.
             Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
+            if (Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
             {
                 // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
                 // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
@@ -239,20 +250,15 @@ namespace Microsoft.Win32.SafeHandles
                 0;
             if (fadv != 0)
             {
-                CheckFileCall(Interop.Sys.PosixFAdvise(_fileHandle, 0, 0, fadv),
+                FileStreamHelpers.CheckFileCall(Interop.Sys.PosixFAdvise(this, 0, 0, fadv), path,
                     ignoreNotSupported: true); // just a hint.
             }
 
-            if (mode == FileMode.Append)
-            {
-                // Jump to the end of the file if opened as Append.
-                _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
-            }
-            else if (mode == FileMode.Create || mode == FileMode.Truncate)
+            if (mode == FileMode.Create || mode == FileMode.Truncate)
             {
                 // Truncate the file now if the file mode requires it. This ensures that the file only will be truncated
                 // if opened successfully.
-                if (Interop.Sys.FTruncate(_fileHandle, 0) < 0)
+                if (Interop.Sys.FTruncate(this, 0) < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     if (errorInfo.Error != Interop.Error.EBADF && errorInfo.Error != Interop.Error.EINVAL)
@@ -268,10 +274,10 @@ namespace Microsoft.Win32.SafeHandles
             // If preallocationSize has been provided for a creatable and writeable file
             if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
             {
-                int fallocateResult = Interop.Sys.PosixFAllocate(_fileHandle, 0, preallocationSize);
+                int fallocateResult = Interop.Sys.PosixFAllocate(this, 0, preallocationSize);
                 if (fallocateResult != 0)
                 {
-                    _fileHandle.Dispose();
+                    Dispose();
                     Interop.Sys.Unlink(path!); // remove the file to mimic Windows behaviour (atomic operation)
 
                     if (fallocateResult == -1)

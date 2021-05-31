@@ -12,9 +12,8 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private const FileOptions Unknown = (FileOptions)(-1);
         private const FileOptions NoBuffering = (FileOptions)(0x20000000);
-        private FileOptions _fileOptions = Unknown;
+        private FileOptions _fileOptions = (FileOptions)(-1);
         private int _fileType = -1;
 
         public SafeFileHandle() : base(true)

@@ -13,9 +13,6 @@ namespace System.IO.Strategies
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
     internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
-        /// <summary>File mode.</summary>
-        private FileMode _mode;
-
         /// <summary>Advanced options requested when opening the file.</summary>
         private FileOptions _options;
 
@@ -31,19 +28,23 @@ namespace System.IO.Strategies
         /// </summary>
         private AsyncState? _asyncState;
 
-        /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
-        private bool? _canSeek;
-
         private void Init(FileMode mode, string originalPath, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
             // Store the arguments
-            _mode = mode;
             _options = options;
 
             if (_useAsyncIO)
+            {
                 _asyncState = new AsyncState();
+            }
+
+            if (mode == FileMode.Append)
+            {
+                // Jump to the end of the file if opened as Append.
+                _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
+            }
 
             Debug.Assert(_fileHandle.IsAsync == _useAsyncIO);
         }
@@ -54,33 +55,11 @@ namespace System.IO.Strategies
             if (useAsyncIO)
                 _asyncState = new AsyncState();
 
-            if (CanSeekCore(handle)) // use non-virtual CanSeekCore rather than CanSeek to avoid making virtual call during ctor
+            if (handle.CanSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);
         }
 
-        /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        public override bool CanSeek => CanSeekCore(_fileHandle);
-
-        /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        /// <remarks>
-        /// Separated out of CanSeek to enable making non-virtual call to this logic.
-        /// We also pass in the file handle to allow the constructor to use this before it stashes the handle.
-        /// </remarks>
-        private bool CanSeekCore(SafeFileHandle fileHandle)
-        {
-            if (fileHandle.IsClosed)
-            {
-                return false;
-            }
-
-            if (!_canSeek.HasValue)
-            {
-                // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
-                _canSeek = Interop.Sys.LSeek(fileHandle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
-            }
-
-            return _canSeek.GetValueOrDefault();
-        }
+        public override bool CanSeek => _fileHandle.CanSeek;
 
         public override long Length
         {
@@ -633,31 +612,17 @@ namespace System.IO.Strategies
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
-            Debug.Assert(!fileHandle.IsClosed && CanSeekCore(fileHandle));
+            Debug.Assert(!fileHandle.IsClosed && fileHandle.CanSeek);
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
-            long pos = CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin)); // SeekOrigin values are the same as Interop.libc.SeekWhence values
+            long pos = FileStreamHelpers.CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin), _path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
             _filePosition = pos;
             return pos;
         }
 
-        private long CheckFileCall(long result, bool ignoreNotSupported = false)
-        {
-            if (result < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                }
-            }
-
-            return result;
-        }
-
         private int CheckFileCall(int result, bool ignoreNotSupported = false)
         {
-            CheckFileCall((long)result, ignoreNotSupported);
+            FileStreamHelpers.CheckFileCall(result, _path, ignoreNotSupported);
 
             return result;
         }

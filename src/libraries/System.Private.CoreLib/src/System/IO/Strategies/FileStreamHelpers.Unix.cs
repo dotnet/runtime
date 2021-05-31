@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.IO.Strategies
 {
@@ -20,6 +15,18 @@ namespace System.IO.Strategies
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
             => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize);
 
-        internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync) => handle.IsAsync ?? defaultIsAsync;
+        internal static long CheckFileCall(long result, string? path, bool ignoreNotSupported = false)
+        {
+            if (result < 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
+                {
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                }
+            }
+
+            return result;
+        }
     }
 }
