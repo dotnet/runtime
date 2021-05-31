@@ -846,7 +846,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     twoWithoutKey,
                 };
 
-                Assert.Equal(1, col.Cast<X509Certificate2>().Count(x => x.HasPrivateKey));
+                Assert.Equal(1, col.Count(x => x.HasPrivateKey));
                 Assert.Equal(2, col.Count);
 
                 byte[] buffer = col.Export(X509ContentType.Pfx);
@@ -1616,15 +1616,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
-
-        private static X509Certificate2[] ToArray(this X509Certificate2Collection col)
-        {
-            X509Certificate2[] array = new X509Certificate2[col.Count];
-            for (int i = 0; i < col.Count; i++)
-            {
-                array[i] = col[i];
-            }
-            return array;
-        }
     }
 }
