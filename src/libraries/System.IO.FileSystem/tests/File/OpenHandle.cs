@@ -62,7 +62,7 @@ namespace System.IO.Tests
             // Unix doesn't directly support DeleteOnClose
             // For FileStream created out of path, we mimic it by closing the handle first
             // and then unlinking the path
-            // Since SafeFileHandle does not always have the path and we can't find path for given file handle on Unix
+            // Since SafeFileHandle does not always have the path and we can't find path for given file descriptor on Unix
             // this test runs only on Windows
             if (OperatingSystem.IsWindows()) // async file handles are a Windows concept
             {

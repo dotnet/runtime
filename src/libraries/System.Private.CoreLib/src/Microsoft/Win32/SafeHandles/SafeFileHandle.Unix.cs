@@ -31,6 +31,81 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool CanSeek => !IsClosed && (_canSeek ??= Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
 
+        /// <summary>Opens the specified file with the requested flags and mode.</summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="flags">The flags with which to open the file.</param>
+        /// <param name="mode">The mode for opening the file.</param>
+        /// <returns>A SafeFileHandle for the opened file.</returns>
+        private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
+        {
+            Debug.Assert(path != null);
+            SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
+
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+
+                // If we fail to open the file due to a path not existing, we need to know whether to blame
+                // the file itself or its directory.  If we're creating the file, then we blame the directory,
+                // otherwise we blame the file.
+                //
+                // When opening, we need to align with Windows, which considers a missing path to be
+                // FileNotFound only if the containing directory exists.
+
+                bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
+                    ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
+                    || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path!))!));
+
+                Interop.CheckIo(
+                    error.Error,
+                    path,
+                    isDirectory,
+                    errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
+            }
+
+            // Make sure it's not a directory; we do this after opening it once we have a file descriptor
+            // to avoid race conditions.
+            Interop.Sys.FileStatus status;
+            if (Interop.Sys.FStat(handle, out status) != 0)
+            {
+                handle.Dispose();
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path);
+            }
+            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                handle.Dispose();
+                throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
+            }
+
+            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
+            {
+                // we take advantage of the information provided by the fstat syscall
+                // and for regular files (most common case)
+                // avoid one extra sys call for determining whether file can be seeked
+                handle._canSeek = true;
+                Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+            }
+
+            return handle;
+        }
+
+        private static bool DirectoryExists(string fullPath)
+        {
+            Interop.Sys.FileStatus fileinfo;
+
+            // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
+            // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
+            // based on the symlink itself.
+            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
+                Interop.Sys.LStat(fullPath, out fileinfo) < 0)
+            {
+                return false;
+            }
+
+            return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+        }
+
         // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
         [ThreadStatic]
         internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
@@ -92,75 +167,6 @@ namespace Microsoft.Win32.SafeHandles
 
                 throw;
             }
-        }
-
-        private static SafeFileHandle Open(string fullPath, Interop.Sys.OpenFlags flags, int mode)
-        {
-            Debug.Assert(fullPath != null);
-            SafeFileHandle handle = Interop.Sys.Open(fullPath, flags, mode);
-
-            if (handle.IsInvalid)
-            {
-                handle.Dispose();
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-
-                // If we fail to open the file due to a path not existing, we need to know whether to blame
-                // the file itself or its directory.  If we're creating the file, then we blame the directory,
-                // otherwise we blame the file.
-                //
-                // When opening, we need to align with Windows, which considers a missing path to be
-                // FileNotFound only if the containing directory exists.
-
-                bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
-                    ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(fullPath!))!));
-
-                Interop.CheckIo(
-                    error.Error,
-                    fullPath,
-                    isDirectory,
-                    errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
-            }
-
-            // Make sure it's not a directory; we do this after opening it once we have a file descriptor
-            // to avoid race conditions.
-            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status) != 0)
-            {
-                handle.Dispose();
-                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), fullPath);
-            }
-            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
-            {
-                handle.Dispose();
-                throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), fullPath, isDirectory: true);
-            }
-
-            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
-            {
-                // we take advantage of the information provided by the fstat syscall
-                // and for regular files (most common case)
-                // avoid one extra sys call for determining whether file can be seeked
-                handle._canSeek = true;
-                Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
-            }
-
-            return handle;
-        }
-
-        private static bool DirectoryExists(string fullPath)
-        {
-            Interop.Sys.FileStatus fileinfo;
-
-            // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
-            // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
-            // based on the symlink itself.
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
-                Interop.Sys.LStat(fullPath, out fileinfo) < 0)
-            {
-                return false;
-            }
-
-            return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
         /// <summary>Translates the FileMode, FileAccess, and FileOptions values into flags to be passed when opening the file.</summary>
