@@ -294,7 +294,7 @@ namespace Microsoft.Win32.SafeHandles
                     Dispose();
                     Interop.Sys.Unlink(path!); // remove the file to mimic Windows behaviour (atomic operation)
 
-                    Debug.Assert(fallocateResult == -1 || fallocateResult == -2)
+                    Debug.Assert(fallocateResult == -1 || fallocateResult == -2);
                     throw new IOException(SR.Format(
                         fallocateResult == -1 ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize,
                         path,
