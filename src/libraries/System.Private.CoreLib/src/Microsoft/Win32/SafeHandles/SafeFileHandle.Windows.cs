@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -35,7 +34,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
-        internal bool CanSeek => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+        internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal bool IsPipe => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
 
@@ -52,8 +51,6 @@ namespace Microsoft.Win32.SafeHandles
                     ownsHandle: true,
                     options,
                     Interop.Kernel32.FileTypes.FILE_TYPE_DISK); // similarly to FileStream, we assume that only disk files can be referenced by path on Windows
-
-                fileHandle.Validate(fullPath);
 
                 fileHandle.InitThreadPoolBindingIfNeeded();
 
@@ -91,38 +88,18 @@ namespace Microsoft.Win32.SafeHandles
 
             switch (ntStatus)
             {
-                case 0:
+                case Interop.StatusOptions.STATUS_SUCCESS:
                     return fileHandle;
-                case Interop.NtDll.NT_ERROR_STATUS_DISK_FULL:
+                case Interop.StatusOptions.STATUS_DISK_FULL:
                     throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
                 // NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
                 // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
-                case Interop.NtDll.NT_STATUS_INVALID_PARAMETER when preallocationSize > 0:
-                case Interop.NtDll.NT_ERROR_STATUS_FILE_TOO_LARGE:
+                case Interop.StatusOptions.STATUS_INVALID_PARAMETER when preallocationSize > 0:
+                case Interop.StatusOptions.STATUS_FILE_TOO_LARGE:
                     throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
                 default:
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
                     throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
-            }
-        }
-
-        private void Validate(string path)
-        {
-            if (IsInvalid)
-            {
-                // Return a meaningful exception with the full path.
-
-                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
-                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
-                // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastPInvokeError();
-
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && path.Length == PathInternal.GetRootLength(path))
-                {
-                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
-                }
-
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
             }
         }
 
@@ -165,16 +142,17 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             Interop.NtDll.CreateOptions options;
-            int status = Interop.NtDll.NtQueryInformationFile(
+            int ntStatus = Interop.NtDll.NtQueryInformationFile(
                 FileHandle: this,
                 IoStatusBlock: out _,
                 FileInformation: &options,
                 Length: sizeof(uint),
                 FileInformationClass: Interop.NtDll.FileModeInformation);
 
-            if (status != 0)
+            if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS)
             {
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_HANDLE);
+                int error = (int)Interop.NtDll.RtlNtStatusToDosError(ntStatus);
+                throw Win32Marshal.GetExceptionForWin32Error(error);
             }
 
             FileOptions result = FileOptions.None;

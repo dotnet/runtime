@@ -14,8 +14,6 @@ namespace System.IO.Strategies
         protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
         private readonly FileShare _share;
-        private readonly bool _canSeek; // Whether can seek (file) or not (pipe).
-        private readonly bool _isPipe; // Whether to disable async buffering code.
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
@@ -28,12 +26,9 @@ namespace System.IO.Strategies
             _share = share;
             _exposedHandle = true;
 
-            _canSeek = handle.CanSeek;
-            _isPipe = handle.IsPipe;
-
             handle.InitThreadPoolBindingIfNeeded();
 
-            if (_canSeek)
+            if (handle.CanSeek)
             {
                 // given strategy was created out of existing handle, so we have to perform
                 // a syscall to get the current handle offset
@@ -59,8 +54,6 @@ namespace System.IO.Strategies
 
             try
             {
-                _canSeek = true;
-
                 Init(mode, path);
             }
             catch
@@ -73,7 +66,7 @@ namespace System.IO.Strategies
             }
         }
 
-        public sealed override bool CanSeek => _canSeek;
+        public sealed override bool CanSeek => _fileHandle.CanSeek;
 
         public sealed override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
 
@@ -126,7 +119,8 @@ namespace System.IO.Strategies
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
-        internal sealed override bool IsPipe => _isPipe;
+        internal sealed override bool IsPipe => _fileHandle.IsPipe;
+
         // Flushing is the responsibility of BufferedFileStreamStrategy
         internal sealed override SafeFileHandle SafeFileHandle
         {

@@ -10,10 +10,6 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        internal const uint NT_ERROR_STATUS_DISK_FULL = 0xC000007F;
-        internal const uint NT_ERROR_STATUS_FILE_TOO_LARGE = 0xC0000904;
-        internal const uint NT_STATUS_INVALID_PARAMETER = 0xC000000D;
-
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
