@@ -40,7 +40,7 @@ namespace Tracing.Tests
         }
     }
 
-    class EventPipeSmoke
+    class EventListenerThreadPool
     {
         static int Main(string[] args)
         {
