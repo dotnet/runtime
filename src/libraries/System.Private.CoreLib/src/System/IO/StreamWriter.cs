@@ -154,7 +154,6 @@ namespace System.IO
         {
         }
 
-#if NET6_0_OR_GREATER
         public StreamWriter(string path, FileStreamOptions options)
             : this(path, UTF8NoBOM, options)
         {
@@ -173,7 +172,6 @@ namespace System.IO
 
             return new FileStream(path, options);
         }
-#endif
 
         private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
         {

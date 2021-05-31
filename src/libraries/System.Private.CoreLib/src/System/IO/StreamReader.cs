@@ -198,7 +198,6 @@ namespace System.IO
         {
         }
 
-#if NET6_0_OR_GREATER
         public StreamReader(string path, FileStreamOptions options)
             : this(path, Encoding.UTF8, true, options)
         {
@@ -217,7 +216,6 @@ namespace System.IO
 
             return new FileStream(path, options);
         }
-#endif
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {

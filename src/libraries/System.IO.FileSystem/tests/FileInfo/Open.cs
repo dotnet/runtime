@@ -78,12 +78,12 @@ namespace System.IO.Tests
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
-            return new FileInfo(path).Open(mode, new FileStreamOptions { Mode = mode, Access = (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), Share = FileShare.ReadWrite | FileShare.Delete, Options = FileOptions.SequentialScan });
+            return new FileInfo(path).Open(mode, new FileStreamOptions { Mode = mode, Access = (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite) });
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
         {
-            return new FileInfo(path).Open(mode, new FileStreamOptions { Mode = mode, Access = access, Share = FileShare.ReadWrite | FileShare.Delete, Options = FileOptions.SequentialScan });
+            return new FileInfo(path).Open(mode, new FileStreamOptions { Mode = mode, Access = access });
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
