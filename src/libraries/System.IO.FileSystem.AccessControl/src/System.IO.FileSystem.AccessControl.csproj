@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -89,9 +89,6 @@
              Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs"
              Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
-             Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
-             Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Compile Include="System\IO\FileSystemAclExtensions.net46.cs" />

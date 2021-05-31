@@ -6,9 +6,7 @@
 
 namespace System.Collections.Immutable
 {
-#pragma warning disable CS8714 // The type 'TKey' cannot be used as type parameter 'TKey' in the generic type or method 'IReadOnlyDictionary<TKey, TValue>'. Nullability of type argument 'TKey' doesn't match 'notnull' constraint.
     public partial interface IImmutableDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable
-#pragma warning restore CS8714
     {
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> Add(TKey key, TValue value);
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> pairs);
