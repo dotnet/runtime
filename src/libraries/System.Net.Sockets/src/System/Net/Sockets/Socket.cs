@@ -25,8 +25,11 @@ namespace System.Net.Sockets
 
         private SafeSocketHandle _handle;
 
-        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
-        // correct type (IPEndPoint, etc).
+        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is an EndPoint of the
+        // correct type (IPEndPoint, etc). The Bind operation sets _rightEndPoint. Other operations must only set
+        // it when the value is still null.
+        // This enables tracking the file created by UnixDomainSocketEndPoint when the Socket is bound,
+        // and to delete that file when the Socket gets disposed.
         internal EndPoint? _rightEndPoint;
         internal EndPoint? _remoteEndPoint;
 
@@ -284,7 +287,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
                     UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
@@ -331,7 +334,7 @@ namespace System.Net.Sockets
                     {
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
-                        _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                        _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
                         UpdateLocalEndPointOnConnect();
                         _nonBlockingConnectInProgress = false;
                     }
@@ -438,7 +441,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
                     UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
@@ -799,11 +802,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            // For UnixDomainSocketEndPoint, track the file to delete on Dispose.
+            _rightEndPoint = endPointSnapshot is UnixDomainSocketEndPoint unixEndPoint ?
+                                unixEndPoint.CreateBoundEndPoint() :
+                                endPointSnapshot;
         }
 
         // Establishes a connection to a remote system.
@@ -1357,11 +1360,8 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = remoteEP;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= remoteEP;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, size);
             return bytesTransferred;
@@ -1639,11 +1639,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
@@ -1733,11 +1730,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
@@ -1796,11 +1790,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (socketException != null)
@@ -2656,7 +2647,9 @@ namespace System.Net.Sockets
         // Async methods
         //
 
-        public bool AcceptAsync(SocketAsyncEventArgs e)
+        public bool AcceptAsync(SocketAsyncEventArgs e) => AcceptAsync(e, CancellationToken.None);
+
+        private bool AcceptAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -2689,7 +2682,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationAccept(this, _handle, acceptHandle);
+                socketError = e.DoOperationAccept(this, _handle, acceptHandle, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -3119,10 +3112,7 @@ namespace System.Net.Sockets
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
             EndPoint? oldEndPoint = _rightEndPoint;
-            if (_rightEndPoint == null)
-            {
-                _rightEndPoint = endPointSnapshot;
-            }
+            _rightEndPoint ??= endPointSnapshot;
 
             SocketError socketError;
             try
@@ -3131,7 +3121,7 @@ namespace System.Net.Sockets
             }
             catch
             {
-                _rightEndPoint = null;
+                _rightEndPoint = oldEndPoint;
                 _localEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
@@ -3227,11 +3217,8 @@ namespace System.Net.Sockets
 
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(SocketError.Success);
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= endPointSnapshot;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 
@@ -3358,6 +3345,18 @@ namespace System.Net.Sockets
                     catch (ObjectDisposedException)
                     {
                     }
+                }
+
+                // Delete file of bound UnixDomainSocketEndPoint.
+                if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                    unixEndPoint.BoundFileName is not null)
+                {
+                    try
+                    {
+                        File.Delete(unixEndPoint.BoundFileName);
+                    }
+                    catch
+                    { }
                 }
             }
 
@@ -3613,8 +3612,19 @@ namespace System.Net.Sockets
             socket._addressFamily = _addressFamily;
             socket._socketType = _socketType;
             socket._protocolType = _protocolType;
-            socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
+
+            // If the _rightEndpoint tracks a UnixDomainSocketEndPoint to delete
+            // then create a new EndPoint.
+            if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                     unixEndPoint.BoundFileName is not null)
+            {
+                socket._rightEndPoint = unixEndPoint.CreateUnboundEndPoint();
+            }
+            else
+            {
+                socket._rightEndPoint = _rightEndPoint;
+            }
 
             // If the listener socket was bound to a wildcard address, then the `accept` system call
             // will assign a specific address to the accept socket's local endpoint instead of a
