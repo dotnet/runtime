@@ -294,13 +294,11 @@ namespace Microsoft.Win32.SafeHandles
                     Dispose();
                     Interop.Sys.Unlink(path!); // remove the file to mimic Windows behaviour (atomic operation)
 
-                    if (fallocateResult == -1)
-                    {
-                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, path, preallocationSize));
-                    }
-
-                    Debug.Assert(fallocateResult == -2);
-                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, preallocationSize));
+                    Debug.Assert(fallocateResult == -1 || fallocateResult == -2)
+                    throw new IOException(SR.Format(
+                        fallocateResult == -1 ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize,
+                        path,
+                        preallocationSize));
                 }
             }
         }

@@ -1089,7 +1089,7 @@ namespace System.IO
         public static SafeFileHandle OpenHandle(string path, FileMode mode = FileMode.Open, FileAccess access = FileAccess.Read,
             FileShare share = FileShare.Read, FileOptions options = FileOptions.None, long preallocationSize = 0)
         {
-            Strategies.FileStreamHelpers.ValidateArguments(path, mode, access, share, 0 /* bufferSize */, options, preallocationSize);
+            Strategies.FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize: 0, options, preallocationSize);
 
             return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
         }
