@@ -1378,7 +1378,6 @@ namespace MonoTests.System.Runtime.Caching
     {
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53022", TestPlatforms.Browser)]
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
         public async Task TestCacheShrink()
         {
