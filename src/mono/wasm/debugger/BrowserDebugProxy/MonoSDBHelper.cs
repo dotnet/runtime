@@ -754,7 +754,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(thread_id);
             command_params_writer.Write((int)0);
             command_params_writer.Write((int)kind);
-            command_params_writer.Write((int)(StepFilter.StaticCtor & StepFilter.DebuggerHidden)); //filter
+            command_params_writer.Write((int)(StepFilter.StaticCtor | StepFilter.DebuggerHidden)); //filter
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
             if (ret_debugger_cmd_reader != null)
                 return true;
@@ -931,7 +931,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var command_params = new MemoryStream();
             var command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(methodId);
-            Console.WriteLine("methodId - " + methodId);
+            //Console.WriteLine("methodId - " + methodId);
             if (methodId == 0)
                 return "";
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.METHOD, (int) CmdMethod.GET_NAME, command_params, token);
@@ -1777,7 +1777,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var getMethodId = ret_debugger_cmd_reader.ReadInt32();
                     var setMethodId = ret_debugger_cmd_reader.ReadInt32(); //setmethod
                     var attrValue = ret_debugger_cmd_reader.ReadInt32(); //attrs
-                    Console.WriteLine($"{propertyNameStr} - {attrValue}");
+                    //Console.WriteLine($"{propertyNameStr} - {attrValue}");
                     if (ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any())
                     {
                         var attr = ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).First();

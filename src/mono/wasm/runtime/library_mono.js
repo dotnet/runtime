@@ -704,7 +704,7 @@ var MonoSupportLib = {
 				return { type: typeof(fn_res), description: `${fn_res}`, value: `${fn_res}`};
 			}
 
-			if (request.returnByValue)
+			if (request.returnByValue && fn_res.subtype == undefined)
 				return {type: "object", value: fn_res};
 			if (Object.getPrototypeOf (fn_res) == Array.prototype) {
 
