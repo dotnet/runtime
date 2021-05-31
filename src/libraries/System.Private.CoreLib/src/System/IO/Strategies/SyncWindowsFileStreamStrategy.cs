@@ -90,25 +90,8 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            NativeOverlapped nativeOverlapped = GetNativeOverlappedForCurrentPosition();
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination, true, &nativeOverlapped, out int errorCode);
-
-            if (r == -1)
-            {
-                // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
-                {
-                    r = 0;
-                }
-                else
-                {
-                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                        ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
-
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-                }
-            }
-            Debug.Assert(r >= 0, "FileStream's ReadNative is likely broken.");
+            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition, _path);
+            Debug.Assert(r >= 0, "RandomAccess.ReadAtOffsete is likely broken.");
             _filePosition += r;
 
             return r;
@@ -123,39 +106,11 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            NativeOverlapped nativeOverlapped = GetNativeOverlappedForCurrentPosition();
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source, true, &nativeOverlapped, out int errorCode);
-
-            if (r == -1)
-            {
-                // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
-                if (errorCode == Interop.Errors.ERROR_NO_DATA)
-                {
-                    r = 0;
-                }
-                else
-                {
-                    // ERROR_INVALID_PARAMETER may be returned for writes
-                    // where the position is too large or for synchronous writes
-                    // to a handle opened asynchronously.
-                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                        throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-                }
-            }
-            Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
+            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition, _path);
+            Debug.Assert(r >= 0, "RandomAccess.WriteAtOffset is likely broken.");
             _filePosition += r;
+
             UpdateLengthOnChangePosition();
-        }
-
-        private NativeOverlapped GetNativeOverlappedForCurrentPosition()
-        {
-            NativeOverlapped nativeOverlapped = default;
-            // For pipes the offsets are ignored by the OS
-            nativeOverlapped.OffsetLow = unchecked((int)_filePosition);
-            nativeOverlapped.OffsetHigh = (int)(_filePosition >> 32);
-
-            return nativeOverlapped;
         }
     }
 }

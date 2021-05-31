@@ -8073,6 +8073,12 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
+    public static partial class RandomAccess
+    {
+        public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
+        public static int Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Span<byte> buffer, long fileOffset) { throw null; }
+        public static int Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlySpan<byte> buffer, long fileOffset) { throw null; }
+    }
 }
 namespace System.IO.Enumeration
 {

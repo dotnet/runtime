@@ -80,12 +80,12 @@ namespace System.IO.Strategies
             {
                 if (_share > FileShare.Read || _exposedHandle)
                 {
-                    return FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                    return RandomAccess.GetFileLength(_fileHandle, _path);
                 }
 
                 if (_length < 0)
                 {
-                    _length = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                    _length = RandomAccess.GetFileLength(_fileHandle, _path);
                 }
 
                 return _length;

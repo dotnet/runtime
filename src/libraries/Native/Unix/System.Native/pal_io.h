@@ -730,3 +730,17 @@ PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
  * Returns 1 if the process status was read; otherwise, 0.
  */
 PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus);
+
+/**
+ * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor at specified offset.
+ *
+ * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ */
+PALEXPORT int32_t SystemNative_Pread(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset);
+
+/**
+ * Writes the number of bytes specified in the buffer into the specified, opened file descriptor at specified offset.
+ *
+ * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
+ */
+PALEXPORT int32_t SystemNative_Pwrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset);

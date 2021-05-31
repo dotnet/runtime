@@ -430,6 +430,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathTooLongException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PinnedBufferMemoryStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\RandomAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\ReadLinesIterator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\SearchOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\SearchTarget.cs" />
@@ -1775,6 +1776,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\RandomAccess.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEntry.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
@@ -1967,6 +1969,12 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAllocate.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PosixFAllocate.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pread.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Pread.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pwrite.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Pwrite.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
     </Compile>
@@ -2034,6 +2042,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Names.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\RandomAccess.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.Unix.cs" />

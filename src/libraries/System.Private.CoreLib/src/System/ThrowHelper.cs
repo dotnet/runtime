@@ -397,6 +397,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidHandle(string? paramName)
+        {
+            throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
@@ -472,6 +478,12 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -733,6 +745,8 @@ namespace System
                     return "destinationArray";
                 case ExceptionArgument.pHandle:
                     return "pHandle";
+                case ExceptionArgument.handle:
+                    return "handle";
                 case ExceptionArgument.other:
                     return "other";
                 case ExceptionArgument.newSize:
@@ -1022,6 +1036,7 @@ namespace System
         destinationIndex,
         destinationArray,
         pHandle,
+        handle,
         other,
         newSize,
         lowerBounds,

@@ -60,18 +60,6 @@ namespace System.IO.Strategies
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
             => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
-        internal static unsafe long GetFileLength(SafeFileHandle handle, string? path)
-        {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
-
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(path);
-            }
-
-            return info.EndOfFile;
-        }
-
         internal static void FlushToDisk(SafeFileHandle handle, string? path)
         {
             if (!Interop.Kernel32.FlushFileBuffers(handle))
@@ -200,70 +188,7 @@ namespace System.IO.Strategies
             }
         }
 
-        internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
-        {
-            Debug.Assert(handle != null, "handle != null");
 
-            int r;
-            int numBytesRead = 0;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
-            {
-                r = overlapped != null ?
-                    (syncUsingOverlapped
-                        ? Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped)
-                        : Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped))
-                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-
-                if (syncUsingOverlapped && errorCode == Interop.Errors.ERROR_HANDLE_EOF)
-                {
-                    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position :
-                    // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
-                    // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
-                    return numBytesRead;
-                }
-
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesRead;
-            }
-        }
-
-        internal static unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
-        {
-            Debug.Assert(handle != null, "handle != null");
-
-            int numBytesWritten = 0;
-            int r;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-            {
-                r = overlapped != null ?
-                    (syncUsingOverlapped
-                        ? Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, overlapped)
-                        : Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped))
-                    : Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesWritten;
-            }
-        }
 
         internal static async Task AsyncModeCopyToAsync(SafeFileHandle handle, string? path, bool canSeek, long filePosition, Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
@@ -340,7 +265,7 @@ namespace System.IO.Strategies
                             }
 
                             // Kick off the read.
-                            synchronousSuccess = ReadFileNative(handle, copyBuffer, false, readAwaitable._nativeOverlapped, out errorCode) >= 0;
+                            synchronousSuccess = RandomAccess.ReadFileNative(handle, copyBuffer, false, readAwaitable._nativeOverlapped, out errorCode) >= 0;
                         }
 
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.

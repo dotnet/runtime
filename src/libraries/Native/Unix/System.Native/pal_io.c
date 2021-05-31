@@ -1454,3 +1454,27 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
     return -1;
 #endif // __sun
 }
+
+int32_t SystemNative_Pread(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+    
+    ssize_t count;
+    while ((count = pread(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int32_t SystemNative_Pwrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+    
+    ssize_t count;
+    while ((count = pwrite(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}

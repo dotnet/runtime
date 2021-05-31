@@ -86,11 +86,11 @@ namespace System.IO.Strategies
             }
             else if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedPosNum(nameof(bufferSize));
             }
             else if (preallocationSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(preallocationSize), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedPosNum(nameof(preallocationSize));
             }
 
             // Write access validation

@@ -16,6 +16,7 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.MatchCasing))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.MatchType))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.SearchOption))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.RandomAccess))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Enumeration.FileSystemEntry))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Enumeration.FileSystemEnumerable<>))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Enumeration.FileSystemEnumerator<>))]
