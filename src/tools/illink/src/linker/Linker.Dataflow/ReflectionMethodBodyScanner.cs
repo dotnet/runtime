@@ -18,6 +18,7 @@ namespace Mono.Linker.Dataflow
 	class ReflectionMethodBodyScanner : MethodBodyScanner
 	{
 		readonly MarkStep _markStep;
+		readonly MarkScopeStack _scopeStack;
 		static readonly DynamicallyAccessedMemberTypes[] AllDynamicallyAccessedMemberTypes = GetAllDynamicallyAccessedMemberTypes ();
 
 		static DynamicallyAccessedMemberTypes[] GetAllDynamicallyAccessedMemberTypes ()
@@ -63,10 +64,11 @@ namespace Mono.Linker.Dataflow
 			return !_context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method);
 		}
 
-		public ReflectionMethodBodyScanner (LinkContext context, MarkStep parent)
+		public ReflectionMethodBodyScanner (LinkContext context, MarkStep parent, MarkScopeStack scopeStack)
 			: base (context)
 		{
 			_markStep = parent;
+			_scopeStack = scopeStack;
 		}
 
 		public void ScanAndProcessReturnValue (MethodBody methodBody)
@@ -77,7 +79,7 @@ namespace Mono.Linker.Dataflow
 				var method = methodBody.Method;
 				var requiredMemberTypes = _context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (method);
 				if (requiredMemberTypes != 0) {
-					var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), method, method.MethodReturnType);
+					var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), _scopeStack.CurrentScope.Origin, method.MethodReturnType);
 					reflectionContext.AnalyzingPattern ();
 					RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, MethodReturnValue, method.MethodReturnType);
 					reflectionContext.Dispose ();
@@ -85,7 +87,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public void ProcessAttributeDataflow (IMemberDefinition source, MethodDefinition method, IList<CustomAttributeArgument> arguments)
+		public void ProcessAttributeDataflow (MethodDefinition method, IList<CustomAttributeArgument> arguments)
 		{
 			int paramOffset = method.HasImplicitThis () ? 1 : 0;
 
@@ -94,7 +96,7 @@ namespace Mono.Linker.Dataflow
 				if (annotation != DynamicallyAccessedMemberTypes.None) {
 					ValueNode valueNode = GetValueNodeForCustomAttributeArgument (arguments[i]);
 					var methodParameter = method.Parameters[i];
-					var reflectionContext = new ReflectionPatternContext (_context, true, source, methodParameter);
+					var reflectionContext = new ReflectionPatternContext (_context, true, _scopeStack.CurrentScope.Origin, methodParameter);
 					reflectionContext.AnalyzingPattern ();
 					RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, methodParameter);
 					reflectionContext.Dispose ();
@@ -102,13 +104,13 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public void ProcessAttributeDataflow (IMemberDefinition source, FieldDefinition field, CustomAttributeArgument value)
+		public void ProcessAttributeDataflow (FieldDefinition field, CustomAttributeArgument value)
 		{
 			var annotation = _context.Annotations.FlowAnnotations.GetFieldAnnotation (field);
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
 			ValueNode valueNode = GetValueNodeForCustomAttributeArgument (value);
-			var reflectionContext = new ReflectionPatternContext (_context, true, source, field);
+			var reflectionContext = new ReflectionPatternContext (_context, true, _scopeStack.CurrentScope.Origin, field);
 			reflectionContext.AnalyzingPattern ();
 			RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
 			reflectionContext.Dispose ();
@@ -142,15 +144,16 @@ namespace Mono.Linker.Dataflow
 			return valueNode;
 		}
 
-		public void ProcessGenericArgumentDataFlow (GenericParameter genericParameter, TypeReference genericArgument, IMemberDefinition source)
+		public void ProcessGenericArgumentDataFlow (GenericParameter genericParameter, TypeReference genericArgument)
 		{
 			var annotation = _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter);
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
 			ValueNode valueNode = GetTypeValueNodeFromGenericArgument (genericArgument);
-			bool enableReflectionPatternReporting = !(source is MethodDefinition sourceMethod) || ShouldEnableReflectionPatternReporting (sourceMethod);
+			var currentScopeOrigin = _scopeStack.CurrentScope.Origin;
+			bool enableReflectionPatternReporting = !(currentScopeOrigin.MemberDefinition is MethodDefinition sourceMethod) || ShouldEnableReflectionPatternReporting (sourceMethod);
 
-			var reflectionContext = new ReflectionPatternContext (_context, enableReflectionPatternReporting, source, genericParameter);
+			var reflectionContext = new ReflectionPatternContext (_context, enableReflectionPatternReporting, currentScopeOrigin, genericParameter);
 			reflectionContext.AnalyzingPattern ();
 			RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, genericParameter);
 			reflectionContext.Dispose ();
@@ -224,7 +227,8 @@ namespace Mono.Linker.Dataflow
 		{
 			var requiredMemberTypes = _context.Annotations.FlowAnnotations.GetFieldAnnotation (field);
 			if (requiredMemberTypes != 0) {
-				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), method, field, operation);
+				_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
+				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), _scopeStack.CurrentScope.Origin, field, operation);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, valueToStore, field);
 				reflectionContext.Dispose ();
@@ -236,7 +240,8 @@ namespace Mono.Linker.Dataflow
 			var requiredMemberTypes = _context.Annotations.FlowAnnotations.GetParameterAnnotation (method, index);
 			if (requiredMemberTypes != 0) {
 				ParameterDefinition parameter = method.Parameters[index - (method.HasImplicitThis () ? 1 : 0)];
-				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), method, parameter, operation);
+				_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
+				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), _scopeStack.CurrentScope.Origin, parameter, operation);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, valueToStore, parameter);
 				reflectionContext.Dispose ();
@@ -641,10 +646,11 @@ namespace Mono.Linker.Dataflow
 			if (calledMethodDefinition == null)
 				return false;
 
+			_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
 			var reflectionContext = new ReflectionPatternContext (
 				_context,
 				ShouldEnableReflectionPatternReporting (callingMethodDefinition),
-				callingMethodDefinition,
+				_scopeStack.CurrentScope.Origin,
 				calledMethodDefinition,
 				operation);
 
@@ -2210,8 +2216,7 @@ namespace Mono.Linker.Dataflow
 					break;
 				case null:
 					DependencyInfo dependencyInfo = new DependencyInfo (DependencyKind.DynamicallyAccessedMember, reflectionContext.Source);
-					var origin = new MessageOrigin (reflectionContext.Source, reflectionContext.Instruction?.Offset);
-					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseAndInterfaceTypes: true, dependencyInfo, origin));
+					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseAndInterfaceTypes: true, dependencyInfo));
 					break;
 				}
 			}

@@ -204,7 +204,7 @@ namespace Mono.Linker.Steps
 			_context = context;
 			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
 			_markContext = new MarkStepContext ();
-			_dynamicallyAccessedMembersTypeHierarchy = new DynamicallyAccessedMembersTypeHierarchy (_context, this);
+			_dynamicallyAccessedMembersTypeHierarchy = new DynamicallyAccessedMembersTypeHierarchy (_context, this, _scopeStack);
 
 			Initialize ();
 			Process ();
@@ -306,10 +306,9 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		internal void MarkEntireType (TypeDefinition type, bool includeBaseAndInterfaceTypes, in DependencyInfo reason, MessageOrigin? origin = null)
+		internal void MarkEntireType (TypeDefinition type, bool includeBaseAndInterfaceTypes, in DependencyInfo reason)
 		{
-			using (_scopeStack.PushScope (origin.HasValue ? origin.Value : new MessageOrigin (type)))
-				MarkEntireTypeInternal (type, includeBaseAndInterfaceTypes, reason);
+			MarkEntireTypeInternal (type, includeBaseAndInterfaceTypes, reason);
 		}
 
 		void MarkEntireTypeInternal (TypeDefinition type, bool includeBaseAndInterfaceTypes, in DependencyInfo reason)
@@ -1233,8 +1232,8 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
 
 			if (property != null && _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this);
-				scanner.ProcessAttributeDataflow (_scopeStack.CurrentScope.Origin.MemberDefinition, property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
+				scanner.ProcessAttributeDataflow (property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
 			}
 		}
 
@@ -1269,8 +1268,8 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
 
 			if (field != null && _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (field)) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this);
-				scanner.ProcessAttributeDataflow (_scopeStack.CurrentScope.Origin.MemberDefinition, field, namedArgument.Argument);
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
+				scanner.ProcessAttributeDataflow (field, namedArgument.Argument);
 			}
 		}
 
@@ -1310,8 +1309,8 @@ namespace Mono.Linker.Steps
 
 			var resolvedConstructor = _context.TryResolve (ca.Constructor);
 			if (resolvedConstructor != null && _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this);
-				scanner.ProcessAttributeDataflow (_scopeStack.CurrentScope.Origin.MemberDefinition, resolvedConstructor, ca.ConstructorArguments);
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
+				scanner.ProcessAttributeDataflow (resolvedConstructor, ca.ConstructorArguments);
 			}
 		}
 
@@ -2441,8 +2440,9 @@ namespace Mono.Linker.Steps
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
-					var scanner = new ReflectionMethodBodyScanner (_context, this);
-					scanner.ProcessGenericArgumentDataFlow (parameter, argument, _scopeStack.CurrentScope.Origin.MemberDefinition ?? (instance as MemberReference).Resolve ());
+					using var _ = _scopeStack.CurrentScope.Origin.MemberDefinition == null ? _scopeStack.PushScope (new MessageOrigin ((instance as MemberReference).Resolve ())) : null;
+					var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
+					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
 
 				if (argumentTypeDef == null)
@@ -3397,7 +3397,7 @@ namespace Mono.Linker.Steps
 		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
 		{
 			if (requiresReflectionMethodBodyScanner) {
-				var scanner = new ReflectionMethodBodyScanner (_context, this);
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
 				scanner.ScanAndProcessReturnValue (body);
 			}
 		}

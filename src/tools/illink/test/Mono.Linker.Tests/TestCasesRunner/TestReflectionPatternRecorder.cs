@@ -30,9 +30,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			});
 		}
 
-		public void UnrecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode)
+		public void UnrecognizedReflectionAccessPattern (in MessageOrigin origin, IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode)
 		{
-			PreviousRecorder?.UnrecognizedReflectionAccessPattern (source, sourceInstruction, accessedItem, message, messageCode);
+			PreviousRecorder?.UnrecognizedReflectionAccessPattern (origin, source, sourceInstruction, accessedItem, message, messageCode);
 			UnrecognizedPatterns.Add (new ReflectionAccessPattern {
 				Source = source,
 				SourceInstruction = sourceInstruction,
