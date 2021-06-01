@@ -3112,6 +3112,8 @@ protected:
     PER_HEAP_ISOLATED
     size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED
+    size_t get_total_gen_size (int gen_number);
+    PER_HEAP_ISOLATED
     void get_memory_info (uint32_t* memory_load,
                           uint64_t* available_physical=NULL,
                           uint64_t* available_page_file=NULL);
