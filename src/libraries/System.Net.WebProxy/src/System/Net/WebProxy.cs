@@ -66,7 +66,15 @@ namespace System.Net
         [AllowNull]
         public string[] BypassList
         {
-            get => _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>();
+            get
+            {
+                if (_bypassList == null)
+                    return Array.Empty<string>();
+
+                var bypassList = new string[_bypassList.Count];
+                _bypassList.CopyTo(bypassList);
+                return bypassList;
+            }
             set
             {
                 _bypassList = value != null ? new ArrayList(value) : null;
