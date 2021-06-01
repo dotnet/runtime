@@ -54,7 +54,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public bool Connected;
             public long AbortErrorCode = -1;
             public int StreamCount;
-            public bool Closing;
+            private IntPtr _closingGCHandle;
 
             // Queue for accepted streams.
             // Backlog limit is managed by MsQuic so it can be unbounded here.
@@ -66,15 +66,26 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void RemoveStream(MsQuicStream stream)
             {
+                bool closing;
                 lock (this)
                 {
                     StreamCount--;
+                    closing = _closingGCHandle != IntPtr.Zero && StreamCount == 0;
                 }
 
-                if (Closing && StreamCount == 0)
+                if (closing)
                 {
                     Handle?.Dispose();
-                    //if (_stateHandle.IsAllocated) _stateHandle.Free();
+                    try
+                    {
+                        GCHandle gcHandle = GCHandle.FromIntPtr(_closingGCHandle);
+                        Debug.Assert(gcHandle.IsAllocated);
+                        if (gcHandle.IsAllocated) gcHandle.Free();
+                    }
+                    catch (Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to restore GCHandle from ptr: {ex.Message}");
+                    }
                 }
             }
 
@@ -82,7 +93,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 lock (this)
                 {
-                    if (Closing)
+                    if (_closingGCHandle != IntPtr.Zero)
                     {
                         return false;
                     }
@@ -100,6 +111,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return false;
                     }
                 }
+            }
+
+            // This is called under lock from connection dispose
+            public void SetClosing(GCHandle handle)
+            {
+                _closingGCHandle = GCHandle.ToIntPtr(handle);
             }
         }
 
@@ -568,15 +585,23 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (_state)
             {
                 _state.Connection = null;
-                _state.Closing = true;
                 if (_state.StreamCount == 0)
                 {
-                    _state?.Handle?.Dispose();
+                    _state!.Handle?.Dispose();
+                    if (_stateHandle.IsAllocated) _stateHandle.Free();
+                }
+                else
+                {
+                    // normally, _state would be rooted by 'this' and we would hold _stateHandle to prevent
+                    // GC from moving _state as we handed pointer to it by msquic. It was handed to msquic and
+                    // we may try to get _state from it in NativeCallbackHandler()
+                    // At this point we are being disposed either explicitly or by finalizer but we still have active streams.
+                    // To prevent issue, the handle will be transferred to state and it will be released when last stream is gone
+                    _state.SetClosing(_stateHandle);
                 }
             }
 
             FlushAcceptQueue().GetAwaiter().GetResult();
-            if (_stateHandle.IsAllocated) _stateHandle.Free();
         }
 
         // TODO: this appears abortive and will cause prior successfully shutdown and closed streams to drop data.

@@ -554,6 +554,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
+            Debug.Assert(_state.ConnectionState != null);
             _state.ConnectionState?.RemoveStream(this);
 
             if (NetEventSource.Log.IsEnabled())
