@@ -951,7 +951,7 @@ bool BasicBlock::isEmpty()
     }
     else
     {
-        for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
+        for (GenTree* node : LIR::AsRange(this))
         {
             if (node->OperGet() != GT_IL_OFFSET)
             {

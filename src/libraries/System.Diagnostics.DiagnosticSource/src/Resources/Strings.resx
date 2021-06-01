@@ -166,6 +166,6 @@
     <value>Unable to initialize all required reflection objects</value>
   </data>
   <data name="UnsupportedType" xml:space="preserve">
-    <value>{0} is unsupported type for this operation. The only supported types are byte, short, int, long, float, double and decimal.</value>
+    <value>{0} is unsupported type for this operation. The only supported types are byte, short, int, long, float, double, and decimal.  </value>
   </data>
 </root>

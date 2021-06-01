@@ -28,7 +28,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static Task SerializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+        public static Task SerializeAsync<TValue>(
             Stream utf8Json,
             TValue value,
             JsonSerializerOptions? options = null,
@@ -70,7 +70,7 @@ namespace System.Text.Json
         public static Task SerializeAsync(
             Stream utf8Json,
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -139,7 +139,7 @@ namespace System.Text.Json
         public static Task SerializeAsync(
             Stream utf8Json,
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {

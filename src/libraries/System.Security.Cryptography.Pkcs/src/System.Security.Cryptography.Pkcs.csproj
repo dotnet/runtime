@@ -4,7 +4,7 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.0;netstandard2.0-windows;netstandard2.1;netstandard2.1-windows;netcoreapp3.0-windows;netcoreapp3.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.1-windows;netstandard2.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -549,7 +549,7 @@
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoCollection.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoEnumerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp3.0')) or '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
@@ -645,8 +645,7 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
-                        $(TargetFramework.StartsWith('netcoreapp3.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

@@ -501,7 +501,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         compCurBB = block;
         if (block->IsLIR())
         {
-            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            for (GenTree* node : LIR::AsRange(block))
             {
                 fgPerNodeLocalVarLiveness(node);
             }
@@ -1873,14 +1873,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
 
-    LIR::Range& blockRange      = LIR::AsRange(block);
-    GenTree*    firstNonPhiNode = blockRange.FirstNonPhiNode();
-    if (firstNonPhiNode == nullptr)
+    LIR::Range& blockRange = LIR::AsRange(block);
+    GenTree*    firstNode  = blockRange.FirstNode();
+    if (firstNode == nullptr)
     {
         return;
     }
-    for (GenTree *node = blockRange.LastNode(), *next = nullptr, *end = firstNonPhiNode->gtPrev; node != end;
-         node = next)
+    for (GenTree *node = blockRange.LastNode(), *next = nullptr, *end = firstNode->gtPrev; node != end; node = next)
     {
         next = node->gtPrev;
 

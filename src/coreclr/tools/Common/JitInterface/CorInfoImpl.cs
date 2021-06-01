@@ -646,7 +646,7 @@ namespace Internal.JitInterface
 
             bool found = false;
             bool memberFunctionVariant = false;
-            foreach (DefType defType in CallConvHelper.EnumerateCallConvsFromAttribute(attributeWithCallConvsArray))
+            foreach (DefType defType in attributeWithCallConvsArray.EnumerateCallConvsFromAttribute())
             {
                 if (defType.Name == "CallConvMemberFunction")
                 {
@@ -1371,7 +1371,7 @@ namespace Internal.JitInterface
 
                 if (typeOrMethodContext is TypeDesc typeContext)
                 {
-                    Debug.Assert(typeContext.HasSameTypeDefinition(owningMethod.OwningType));
+                    Debug.Assert(typeContext.HasSameTypeDefinition(owningMethod.OwningType) || typeContext.IsArray);
                     typeInst = typeContext.Instantiation;
                 }
                 else
@@ -3484,7 +3484,7 @@ namespace Internal.JitInterface
             return _compilation.ProfileData[method]?.SchemaData;
         }
 
-        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData)
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData, Func<TypeDesc, bool> typeFilter = null)
         {
             nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
             MemoryStream msInstrumentationData = new MemoryStream();
@@ -3524,9 +3524,12 @@ namespace Internal.JitInterface
                     {
                         foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
                         {
-                            IntPtr ptrVal = IntPtr.Zero;
-                            if (typeVal.AsType != null)
+                            IntPtr ptrVal;
+
+                            if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
+                            {
                                 ptrVal = (IntPtr)objectToHandle(typeVal.AsType);
+                            }
                             else
                             {
                                 // The "Unknown types are the values from 1-33
@@ -3547,7 +3550,8 @@ namespace Internal.JitInterface
             instrumentationData = msInstrumentationData.ToArray();
         }
 
-        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData)
+        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData, 
+            ref PgoSource pPgoSource)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);
 
@@ -3574,6 +3578,7 @@ namespace Internal.JitInterface
             pSchema = pgoResults.pSchema;
             countSchemaItems = pgoResults.countSchemaItems;
             *pInstrumentationData = pgoResults.pInstrumentationData;
+            pPgoSource = PgoSource.Static;
             return pgoResults.hr;
         }
 

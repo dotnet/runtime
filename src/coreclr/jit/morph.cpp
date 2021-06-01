@@ -3959,6 +3959,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                     {
                                         // Can't use the existing field's type, so use GT_LCL_FLD to swizzle
                                         // to a new type
+                                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                                         argObj->ChangeOper(GT_LCL_FLD);
                                         argObj->gtType = structBaseType;
                                     }
@@ -3983,6 +3984,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
                         {
                             // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                             argObj->ChangeOper(GT_LCL_FLD);
                             argObj->gtType = structBaseType;
                         }
@@ -6009,11 +6011,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
-        GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
-        if (newTree != tree)
+        if (IsBaselineSimdIsaSupported())
         {
-            newTree = fgMorphSmpOp(newTree);
-            return newTree;
+            GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
+            if (newTree != tree)
+            {
+                newTree = fgMorphSmpOp(newTree);
+                return newTree;
+            }
         }
     }
     else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
@@ -12238,6 +12243,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             op2 = tree->AsOp()->gtOp2;
 
 #ifdef FEATURE_SIMD
+            if (IsBaselineSimdIsaSupported())
             {
                 // We should check whether op2 should be assigned to a SIMD field or not.
                 // If it is, we should tranlate the tree to simd intrinsic.
