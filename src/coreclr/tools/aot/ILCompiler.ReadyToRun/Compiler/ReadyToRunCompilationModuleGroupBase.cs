@@ -407,7 +407,7 @@ namespace ILCompiler
 
                 if (!ComputeInstantiationTypeVersionsWithCode(this, instType))
                 {
-                    if (instType.IsPrimitive)
+                    if (instType.IsPrimitive || instType.IsObject || instType.IsString)
                     {
                         // Primitive type instantiations are only instantiated in the module of the generic defining type
                         // if the generic does not apply interface constraints to that type parameter, or if System.Private.CoreLib is part of the version bubble
@@ -423,8 +423,20 @@ namespace ILCompiler
                         }
 
                         GenericParameterDesc genericParam = (GenericParameterDesc)entityDefinitionInstantiation[iInstantiation];
-                        if (genericParam.HasReferenceTypeConstraint)
-                            return false;
+                        if (instType.IsPrimitive)
+                        {
+                            if (genericParam.HasReferenceTypeConstraint)
+                                return false;
+                        }
+                        else
+                        {
+                            Debug.Assert(instType.IsString || instType.IsObject);
+                            if (genericParam.HasNotNullableValueTypeConstraint)
+                                return false;
+
+                            if (instType.IsString && genericParam.HasDefaultConstructorConstraint)
+                                return false;
+                        }
 
                         // This checks to see if the type constraints list is empty
                         if (genericParam.TypeConstraints.GetEnumerator().MoveNext())

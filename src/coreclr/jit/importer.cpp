@@ -21104,14 +21104,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             JITDUMP("Have a direct explicit tail call to boxed entry point; can't optimize further\n");
         }
-        else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-        {
-            // Per https://github.com/dotnet/runtime/issues/52483, crossgen2 seemingly gets
-            // confused about whether the unboxed entry requires an extra arg.
-            // So defer further optimization for now.
-            //
-            JITDUMP("Have a direct boxed entry point, prejitting. Can't optimize further yet.\n");
-        }
         else
         {
             JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");

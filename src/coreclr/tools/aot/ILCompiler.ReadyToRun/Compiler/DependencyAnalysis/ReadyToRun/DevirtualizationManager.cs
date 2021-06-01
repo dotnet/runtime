@@ -26,8 +26,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
-            if (_compilationModuleGroup.VersionsWithMethodBody(declMethod) &&
-                _compilationModuleGroup.VersionsWithType(implType))
+            if (_compilationModuleGroup.VersionsWithMethodBody(declMethod.GetTypicalMethodDefinition()) &&
+                _compilationModuleGroup.VersionsWithType(implType.GetTypeDefinition()))
             {
                 /**
                  * It is possible for us to hit a scenario where a type implements
