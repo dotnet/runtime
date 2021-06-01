@@ -485,29 +485,56 @@ namespace System.Linq
 
             comparer ??= Comparer<TKey>.Default;
 
-            TKey? key = default;
-            TSource? value = default;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+
+            if (!e.MoveNext())
             {
-                if (key == null)
+                if (default(TSource) is null)
                 {
-                    do
+                    return default;
+                }
+                else
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+            }
+
+            TSource value = e.Current;
+            TKey key = keySelector(value);
+
+            if (default(TKey) is null)
+            {
+                while (key == null)
+                {
+                    if (!e.MoveNext())
                     {
-                        if (!e.MoveNext())
-                        {
-                            return value;
-                        }
-
-                        value = e.Current;
-                        key = keySelector(value);
+                        return value;
                     }
-                    while (key == null);
 
+                    value = e.Current;
+                    key = keySelector(value);
+                }
+
+                while (e.MoveNext())
+                {
+                    TSource nextValue = e.Current;
+                    TKey nextKey = keySelector(nextValue);
+                    if (nextKey != null && comparer.Compare(nextKey, key) < 0)
+                    {
+                        key = nextKey;
+                        value = nextValue;
+                    }
+                }
+            }
+            else
+            {
+                if (comparer == Comparer<TKey>.Default)
+                {
                     while (e.MoveNext())
                     {
                         TSource nextValue = e.Current;
                         TKey nextKey = keySelector(nextValue);
-                        if (nextKey != null && comparer.Compare(nextKey, key) < 0)
+                        if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
                         {
                             key = nextKey;
                             value = nextValue;
@@ -516,37 +543,14 @@ namespace System.Linq
                 }
                 else
                 {
-                    if (!e.MoveNext())
+                    while (e.MoveNext())
                     {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
-
-                    value = e.Current;
-                    key = keySelector(value);
-                    if (comparer == Comparer<TKey>.Default)
-                    {
-                        while (e.MoveNext())
+                        TSource nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (comparer.Compare(nextKey, key) < 0)
                         {
-                            TSource nextValue = e.Current;
-                            TKey nextKey = keySelector(nextValue);
-                            if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
-                            {
-                                key = nextKey;
-                                value = nextValue;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        while (e.MoveNext())
-                        {
-                            TSource nextValue = e.Current;
-                            TKey nextKey = keySelector(nextValue);
-                            if (comparer.Compare(nextKey, key) < 0)
-                            {
-                                key = nextKey;
-                                value = nextValue;
-                            }
+                            key = nextKey;
+                            value = nextValue;
                         }
                     }
                 }
