@@ -46,9 +46,9 @@ namespace System.IO.Tests
         public void ThrowsNotSupportedExceptionForUnseekableFile()
         {
             using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
-            using (SafeFileHandle pipeHandle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), true))
+            using (SafeFileHandle handle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), true))
             {
-                Assert.Throws<NotSupportedException>(() => MethodUnderTest(pipeHandle, Array.Empty<byte>(), 0));
+                Assert.Throws<NotSupportedException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
             }
         }
 
@@ -58,9 +58,9 @@ namespace System.IO.Tests
             if (UsesOffsets)
             {
                 FileOptions options = ShouldThrowForAsyncHandle ? FileOptions.None : FileOptions.Asynchronous;
-                using (SafeFileHandle validHandle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
+                using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
                 {
-                    ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => MethodUnderTest(validHandle, Array.Empty<byte>(), -1));
+                    ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => MethodUnderTest(handle, Array.Empty<byte>(), -1));
                     Assert.Equal("fileOffset", ex.ParamName);
                 }
             }
@@ -71,9 +71,9 @@ namespace System.IO.Tests
         {
             if (ShouldThrowForAsyncHandle)
             {
-                using (SafeFileHandle validHandle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.Asynchronous))
+                using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.Asynchronous))
                 {
-                    ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(validHandle, new byte[100], 0));
+                    ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(handle, new byte[100], 0));
                     Assert.Equal("handle", ex.ParamName);
                 }
             }
@@ -84,9 +84,9 @@ namespace System.IO.Tests
         {
             if (ShouldThrowForSyncHandle)
             {
-                using (SafeFileHandle validHandle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.None))
+                using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.None))
                 {
-                    ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(validHandle, new byte[100], 0));
+                    ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(handle, new byte[100], 0));
                     Assert.Equal("handle", ex.ParamName);
                 }
             }

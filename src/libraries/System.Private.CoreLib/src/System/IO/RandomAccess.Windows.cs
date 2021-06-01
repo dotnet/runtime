@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Strategies;
 using System.Runtime.InteropServices;
@@ -229,6 +230,44 @@ namespace System.IO
             // Completion handled by callback.
             vts.FinishedScheduling();
             return new ValueTask<int>(vts, vts.Version);
+        }
+
+        private static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
+        {
+            long total = 0;
+
+            for (int i = 0; i < buffers.Count; i++)
+            {
+                Span<byte> span = buffers[i].Span;
+                int read = ReadAtOffset(handle, span, fileOffset + total);
+                total += read;
+
+                if (read != span.Length)
+                {
+                    break;
+                }
+            }
+
+            return total;
+        }
+
+        private static long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        {
+            long total = 0;
+
+            for (int i = 0; i < buffers.Count; i++)
+            {
+                ReadOnlySpan<byte> span = buffers[i].Span;
+                int written = WriteAtOffset(handle, span, fileOffset + total);
+                total += written;
+
+                if (written != span.Length)
+                {
+                    break;
+                }
+            }
+
+            return total;
         }
 
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)

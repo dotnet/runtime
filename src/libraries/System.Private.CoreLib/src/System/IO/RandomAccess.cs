@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -48,6 +49,29 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Reads a sequence of bytes from given file at given offset.
+        /// </summary>
+        /// <param name="handle">The file handle.</param>
+        /// <param name="buffers">A list of memory buffers. When this method returns, the contents of the buffers are replaced by the bytes read from the file.</param>
+        /// <param name="fileOffset">The file position to read from.</param>
+        /// <returns>The total number of bytes read into the buffers. This can be less than the number of bytes allocated in the buffers if that many bytes are not currently available, or zero (0) if the end of the file has been reached.</returns>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was opened for async IO.</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
+        /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
+        /// <remarks>Position of the file is not advanced.</remarks>
+        public static long Read(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
+        {
+            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
+            ValidateBuffers(buffers);
+
+            return ReadScatterAtOffset(handle, buffers, fileOffset);
+        }
+
+        /// <summary>
         /// Writes a sequence of bytes from given buffer to given file at given offset.
         /// </summary>
         /// <param name="handle">The file handle.</param>
@@ -67,6 +91,29 @@ namespace System.IO
             ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
 
             return WriteAtOffset(handle, buffer, fileOffset);
+        }
+
+        /// <summary>
+        /// Writes a sequence of bytes from given buffers to given file at given offset.
+        /// </summary>
+        /// <param name="handle">The file handle.</param>
+        /// <param name="buffers">A list of memory buffers. This method copies the contents of these buffers to the file.</param>
+        /// <param name="fileOffset">The file position to write to.</param>
+        /// <returns>The total number of bytes written into the file. This can be less than the number of bytes provided in the buffers and it's not an error.</returns>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was opened for async IO.</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
+        /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
+        /// <remarks>Position of the file is not advanced.</remarks>
+        public static long Write(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        {
+            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
+            ValidateBuffers(buffers);
+
+            return WriteGatherAtOffset(handle, buffers, fileOffset);
         }
 
         /// <summary>
@@ -146,6 +193,14 @@ namespace System.IO
             else if (fileOffset < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException_NeedPosNum(nameof(fileOffset));
+            }
+        }
+
+        private static void ValidateBuffers<T>(IReadOnlyList<T> buffers)
+        {
+            if (buffers is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffers);
             }
         }
     }

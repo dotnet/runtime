@@ -799,6 +799,8 @@ namespace System
                     return "suffix";
                 case ExceptionArgument.buffer:
                     return "buffer";
+                case ExceptionArgument.buffers:
+                    return "buffers";
                 case ExceptionArgument.offset:
                     return "offset";
                 case ExceptionArgument.stream:
@@ -1066,6 +1068,7 @@ namespace System
         prefix,
         suffix,
         buffer,
+        buffers,
         offset,
         stream
     }
