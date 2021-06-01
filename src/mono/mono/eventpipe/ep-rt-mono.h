@@ -599,6 +599,9 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 
+EP_RT_DEFINE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+
 static
 inline
 void
@@ -1173,13 +1176,13 @@ ep_rt_is_running (void)
 static
 inline
 void
-ep_rt_execute_rundown (void)
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
 		if (/*is_running &&*/ !ep_rt_process_shutdown ()) {
-			extern void ep_rt_mono_execute_rundown (void);
-			ep_rt_mono_execute_rundown ();
+			extern void ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+			ep_rt_mono_execute_rundown (execution_checkpoints);
 		}
 	}
 }
@@ -2144,7 +2147,7 @@ ep_rt_volatile_store_ptr_without_barrier (
  */
 
 bool
-ep_rt_mono_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks);
+ep_rt_mono_write_event_ee_startup_start (void);
 
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);

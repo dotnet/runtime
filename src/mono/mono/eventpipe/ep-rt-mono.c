@@ -347,7 +347,7 @@ ep_rt_mono_method_get_full_name (
 	size_t name_len);
 
 void
-ep_rt_mono_execute_rundown (void);
+ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
 
 static
 inline
@@ -1405,7 +1405,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_mono_execute_rundown (void)
+ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
@@ -1436,6 +1436,20 @@ ep_rt_mono_execute_rundown (void)
 		NULL,
 		NULL);
 
+	if (execution_checkpoints) {
+		ep_rt_execution_checkpoint_array_iterator_t execution_checkpoints_iterator = ep_rt_execution_checkpoint_array_iterator_begin (execution_checkpoints);
+		while (!ep_rt_execution_checkpoint_array_iterator_end (execution_checkpoints, &execution_checkpoints_iterator)) {
+			EventPipeExecutionCheckpoint *checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&execution_checkpoints_iterator);
+			FireEtwExecutionCheckpointDCEnd (
+				clr_instance_get_id (),
+				checkpoint->name,
+				checkpoint->timestamp,
+				NULL,
+				NULL);
+			ep_rt_execution_checkpoint_array_iterator_next (&execution_checkpoints_iterator);
+		}
+	}
+
 	FireEtwDCEndInit_V1 (
 		clr_instance_get_id (),
 		NULL,
@@ -1453,11 +1467,10 @@ ep_rt_mono_execute_rundown (void)
 }
 
 bool
-ep_rt_mono_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks)
+ep_rt_mono_write_event_ee_startup_start (void)
 {
-	return FireEtwEEStartupStart_V2 (
+	return FireEtwEEStartupStart_V1 (
 		clr_instance_get_id (),
-		clr_init_to_start_100ns_ticks,
 		NULL,
 		NULL);
 }

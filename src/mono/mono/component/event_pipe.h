@@ -74,6 +74,17 @@ typedef void
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id);
 
+typedef bool
+(*event_pipe_component_add_rundown_execution_checkpoint_func) (const ep_char8_t *name);
+
+typedef bool
+(*event_pipe_component_add_rundown_execution_checkpoint_2_func) (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
+typedef ep_timestamp_t
+(*event_pipe_component_convert_100ns_ticks_to_timestamp_t_func) (int64_t ticks_100ns);
+
 /*
  * EventPipeProvider.
  */
@@ -126,7 +137,7 @@ typedef bool
  */
 
 typedef bool
-(*event_pipe_component_write_event_ee_startup_start_func)(int64_t clr_init_to_start_100ns_ticks);
+(*event_pipe_component_write_event_ee_startup_start_func)(void);
 
 typedef bool
 (*event_pipe_component_write_event_threadpool_worker_thread_start_func)(
@@ -205,6 +216,9 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_get_wait_handle_func get_wait_handle;
 	event_pipe_component_start_streaming_func start_streaming;
 	event_pipe_component_write_event_2_func write_event_2;
+	event_pipe_component_add_rundown_execution_checkpoint_func add_rundown_execution_checkpoint;
+	event_pipe_component_add_rundown_execution_checkpoint_2_func add_rundown_execution_checkpoint_2;
+	event_pipe_component_convert_100ns_ticks_to_timestamp_t_func convert_100ns_ticks_to_timestamp_t;
 	event_pipe_component_create_provider_func create_provider;
 	event_pipe_component_delete_provider_func delete_provider;
 	event_pipe_component_get_provider_func get_provider;

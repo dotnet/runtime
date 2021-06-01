@@ -280,11 +280,13 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	mono_component_diagnostics_server ()->init ();
 
-	gint64 init_to_start_100ns_ticks = mono_component_event_pipe_100ns_ticks_stop ();
+	mono_component_event_pipe ()->add_rundown_execution_checkpoint ("RuntimeSuspend");
 
 	mono_component_diagnostics_server ()->pause_for_diagnostics_monitor ();
 
-	mono_component_event_pipe ()->write_event_ee_startup_start (init_to_start_100ns_ticks);
+	mono_component_event_pipe ()->add_rundown_execution_checkpoint ("RuntimeResumed");
+
+	mono_component_event_pipe ()->write_event_ee_startup_start ();
 
 	mono_type_initialization_init ();
 

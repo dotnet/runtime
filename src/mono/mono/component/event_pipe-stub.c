@@ -60,6 +60,17 @@ event_pipe_stub_write_event_2 (
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id);
 
+static bool
+event_pipe_stub_add_rundown_execution_checkpoint (const ep_char8_t *name);
+
+static bool
+event_pipe_stub_add_rundown_execution_checkpoint_2 (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
+static ep_timestamp_t
+event_pipe_stub_convert_100ns_ticks_to_timestamp_t (int64_t ticks_100ns);
+
 static EventPipeProvider *
 event_pipe_stub_create_provider (
 	const ep_char8_t *provider_name,
@@ -96,7 +107,7 @@ event_pipe_stub_thread_ctrl_activity_id (
 	uint32_t activity_id_len);
 
 static bool
-event_pipe_stub_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks);
+event_pipe_stub_write_event_ee_startup_start (void);
 
 static bool
 event_pipe_stub_write_event_threadpool_worker_thread_start (
@@ -174,6 +185,9 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_get_wait_handle,
 	&event_pipe_stub_start_streaming,
 	&event_pipe_stub_write_event_2,
+	&event_pipe_stub_add_rundown_execution_checkpoint,
+	&event_pipe_stub_add_rundown_execution_checkpoint_2,
+	&event_pipe_stub_convert_100ns_ticks_to_timestamp_t,
 	&event_pipe_stub_create_provider,
 	&event_pipe_stub_delete_provider,
 	&event_pipe_stub_get_provider,
@@ -262,6 +276,26 @@ event_pipe_stub_write_event_2 (
 {
 }
 
+static bool
+event_pipe_stub_add_rundown_execution_checkpoint (const ep_char8_t *name)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_add_rundown_execution_checkpoint_2 (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	return true;
+}
+
+static ep_timestamp_t
+event_pipe_stub_convert_100ns_ticks_to_timestamp_t (int64_t ticks_100ns)
+{
+	return 0;
+}
+
 static EventPipeProvider *
 event_pipe_stub_create_provider (
 	const ep_char8_t *provider_name,
@@ -315,7 +349,7 @@ event_pipe_stub_thread_ctrl_activity_id (
 }
 
 static bool
-event_pipe_stub_write_event_ee_startup_start (int64_t clr_init_to_start_100ns_ticks)
+event_pipe_stub_write_event_ee_startup_start (void)
 {
 	return true;
 }
