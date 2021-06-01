@@ -16,6 +16,17 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for a property or field.
         /// </summary>
         /// <typeparam name="T">The type that the converter for the property returns or accepts when converting JSON data.</typeparam>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="isProperty">Whether the CLR member is a property or field.</param>
+        /// <param name="declaringType">The declaring type of the property or field.</param>
+        /// <param name="propertyTypeInfo">The <see cref="JsonTypeInfo"/> info for the property or field's type.</param>
+        /// <param name="converter">A <see cref="JsonConverter"/> for the property or field, specified by <see cref="JsonConverterAttribute"/>.</param>
+        /// <param name="getter">Provides a mechanism to get the property or field's value.</param>
+        /// <param name="setter">Provides a mechanism to set the property or field's value.</param>
+        /// <param name="ignoreCondition">Specifies a condition for the property to be ignored.</param>
+        /// <param name="numberHandling">If the property or field is a number, specifies how it should processed when serializing and deserializing.</param>
+        /// <param name="propertyName">The CLR name of the property or field.</param>
+        /// <param name="jsonPropertyName">The name to be used when processing the property or field, specified by <see cref="JsonPropertyNameAttribute"/>.</param>
         /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
         public static JsonPropertyInfo CreatePropertyInfo<T>(
             JsonSerializerOptions options,
@@ -47,7 +58,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(propertyName);
+                throw new ArgumentNullException(nameof(propertyName));
             }
 
             if (converter == null)
@@ -79,53 +90,21 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates metadata for a complex class or struct.
         /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="createObjectFunc">Provides a mechanism to create an instance of the class or struct when deserializing.</param>
+        /// <param name="propInitFunc">Provides a mechanism to initialize metadata for properties and fields of the class or struct.</param>
+        /// <param name="serializeFunc">Provides a serialization implementation for instances of the class or struct which assumes options specified by <see cref="JsonSerializerOptionsAttribute"/>.</param>
+        /// <param name="numberHandling">Specifies how number properties and fields should be processed when serializing and deserializing.</param>
         /// <typeparam name="T">The type of the class or struct.</typeparam>
+        /// <exception cref="InvalidOperationException">Thrown when <paramref name="options"/> and <paramref name="propInitFunc"/> are both null.</exception>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
-        public static JsonTypeInfo<T> CreateObjectInfo<T>() where T : notnull => new JsonTypeInfoInternal<T>();
-
-        /// <summary>
-        /// Initializes metadata for a class or struct.
-        /// </summary>
-        /// <typeparam name="T">The type of the class or struct</typeparam>
-        /// <param name="info"></param>
-        /// <param name="options"></param>
-        /// <param name="createObjectFunc"></param>
-        /// <param name="propInitFunc"></param>
-        /// <param name="numberHandling"></param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/>, <paramref name="info"/>, or <paramref name="propInitFunc"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="info"/>, does not represent a complex class or struct type.</exception>
-        public static void InitializeObjectInfo<T>(
-            JsonTypeInfo<T> info,
+        public static JsonTypeInfo<T> CreateObjectInfo<T>(
             JsonSerializerOptions options,
             Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]> propInitFunc,
-            JsonNumberHandling numberHandling)
-            where T : notnull
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            if (info.PropertyInfoForTypeInfo != null)
-            {
-                // ConverterStrategy.Object is the only info type we won't have set PropertyInfoForTypeInfo for at this point.
-                throw new ArgumentException(SR.InitializeTypeInfoAsObjectInvalid, nameof(info));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            if (propInitFunc == null)
-            {
-                throw new ArgumentNullException(nameof(propInitFunc));
-            }
-
-            ((JsonTypeInfoInternal<T>)info).InitializeAsObject(options, createObjectFunc, propInitFunc, numberHandling);
-            Debug.Assert(info.PropertyInfoForTypeInfo!.ConverterStrategy == ConverterStrategy.Object);
-        }
+            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc) where T : notnull
+            => new JsonTypeInfoInternal<T>(options, createObjectFunc, propInitFunc, numberHandling, serializeFunc);
 
         /// <summary>
         /// Creates metadata for a primitive or a type with a custom converter.
@@ -134,7 +113,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the type.</returns>
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
-            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options);
+            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options, ConverterStrategy.Value);
             info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
             return info;
         }

@@ -128,7 +128,7 @@ public sealed class WindowsTestAccount : IDisposable
     private void CreateUser()
     {
         string testAccountPassword;
-        using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
         {
             byte[] randomBytes = new byte[33];
             rng.GetBytes(randomBytes);

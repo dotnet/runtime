@@ -2,11 +2,19 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- PKV006 is due to intentional removal of .NETFramework,Version=v4.5.1, .NETStandard,Version=v1.3 and NETStandard,Version=v1.6 target frameworks from the package as they are no longer supported. -->
+    <NoWarn>$(NoWarn);PKV006</NoWarn>
+    <PackageDescription>Abstractions for reading `.deps` files.
+
+Commonly Used Types:
+Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,4 +33,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
+
 </Project>

@@ -211,7 +211,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // This test uses reflection to:
             // - Access JsonSerializerOptions._classes
-            // - Access JsonSerializerOptionsUpdateHandler.BeforeUpdate
+            // - Access JsonSerializerOptionsUpdateHandler.ClearCache
             //
             // If either of them changes, this test will need to be kept in sync.
 
@@ -228,8 +228,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotEqual(0, classes.Count);
 
             Type updateHandler = typeof(JsonSerializerOptions).Assembly.GetType("System.Text.Json.JsonSerializerOptionsUpdateHandler", throwOnError: true, ignoreCase: false);
-            MethodInfo beforeUpdate = updateHandler.GetMethod("BeforeUpdate");
-            beforeUpdate.Invoke(null, new object[] { null });
+            MethodInfo clearCache = updateHandler.GetMethod("ClearCache");
+            Assert.NotNull(clearCache);
+            clearCache.Invoke(null, new object[] { null });
             Assert.Equal(0, classes.Count);
 
             await JsonSerializer.SerializeAsync<SimpleTestClass>(new MemoryStream(), testObj, options);

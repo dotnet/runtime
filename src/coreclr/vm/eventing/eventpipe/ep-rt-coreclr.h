@@ -1601,6 +1601,15 @@ ep_rt_config_value_get_circular_mb (void)
 static
 inline
 bool
+ep_rt_config_value_get_output_streaming (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
+}
+
+static
+inline
+bool
 ep_rt_config_value_get_use_portable_thread_pool (void)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -2745,12 +2754,8 @@ ep_rt_thread_setup (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	EX_TRY
-	{
-		SetupThread ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	Thread* thread_handle = SetupThreadNoThrow ();
+	EP_ASSERT (thread_handle != NULL);
 }
 
 static

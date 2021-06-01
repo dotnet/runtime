@@ -577,18 +577,13 @@ namespace System.Net.Sockets.Tests
                     client.Shutdown(SocketShutdown.Both);
                 }
 
-                Assert.True(
-                    accepted.WaitOne(TestSettings.PassingTestTimeout), "Test completed in allotted time");
+                Assert.True(accepted.WaitOne(TestSettings.PassingTestTimeout), "Test completed in allotted time");
 
-                Assert.Equal(
-                    SocketError.Success, acceptArgs.SocketError);
+                Assert.Equal(SocketError.Success, acceptArgs.SocketError);
 
-                Assert.Equal(
-                    acceptBufferDataSize, acceptArgs.BytesTransferred);
+                Assert.Equal(acceptBufferDataSize, acceptArgs.BytesTransferred);
 
-                Assert.Equal(
-                    new ArraySegment<byte>(sendBuffer),
-                    new ArraySegment<byte>(acceptArgs.Buffer, 0, acceptArgs.BytesTransferred));
+                AssertExtensions.SequenceEqual(sendBuffer, acceptArgs.Buffer.AsSpan().Slice(0, acceptArgs.BytesTransferred));
             }
         }
 

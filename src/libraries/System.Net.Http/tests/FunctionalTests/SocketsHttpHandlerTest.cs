@@ -1774,7 +1774,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(TimeSpan.FromMinutes(1), handler.PooledConnectionIdleTimeout);
 
                 handler.PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan;
                 Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionIdleTimeout);
@@ -1957,7 +1957,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
                 Assert.Equal(64, handler.MaxResponseHeadersLength);
                 Assert.False(handler.PreAuthenticate);
-                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(TimeSpan.FromMinutes(1), handler.PooledConnectionIdleTimeout);
                 Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionLifetime);
                 Assert.NotNull(handler.Properties);
                 Assert.Null(handler.Proxy);
@@ -2189,6 +2189,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43877")]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
             const int MaxConcurrentStreams = 2;
@@ -3098,7 +3099,8 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-#if false // TODO: Many Cookie tests are failing for HTTP3.
+    // TODO: Many Cookie tests are failing for HTTP3.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_MsQuic : HttpClientHandlerTest_Cookies
     {
@@ -3107,13 +3109,13 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_Mock : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
-#endif
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_MsQuic : HttpClientHandlerTest_Headers
@@ -3130,7 +3132,8 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-#if false   // TODO: Many cancellation tests are failing for HTTP3.
+    // TODO: Many cancellation tests are failing for HTTP3.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : HttpClientHandler_Cancellation_Test
     {
@@ -3139,15 +3142,16 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : HttpClientHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
-#endif
 
-#if false   // TODO: Many AltSvc tests are failing for HTTP3.
+    // TODO: Many AltSvc tests are failing for HTTP3.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_MsQuic : HttpClientHandler_AltSvc_Test
     {
@@ -3156,13 +3160,13 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_Mock : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
-#endif
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_MsQuic : HttpClientHandler_Finalization_Test

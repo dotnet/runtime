@@ -35,6 +35,7 @@ namespace Internal.Runtime.InteropServices
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IClassFactory2 : IClassFactory
     {
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         new void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
@@ -62,7 +63,7 @@ namespace Internal.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -92,7 +93,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static object GetClassFactoryForType(ComActivationContext cxt)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -126,7 +127,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static void ClassRegistrationScenarioForType(ComActivationContext cxt, bool register)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -222,7 +223,7 @@ namespace Internal.Runtime.InteropServices
         [UnmanagedCallersOnly]
         public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -265,7 +266,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         [UnmanagedCallersOnly]
         public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -311,7 +312,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         [UnmanagedCallersOnly]
         public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -364,6 +365,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             Debug.WriteLine(fmt, args);
         }
 
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         private static Type FindClassType(Guid clsid, string assemblyPath, string assemblyName, string typeName)
         {
             try
@@ -389,6 +391,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             throw new COMException(string.Empty, CLASS_E_CLASSNOTAVAILABLE);
         }
 
+        [RequiresUnreferencedCode("The trimmer might remove types which are needed by the assemblies loaded in this method.")]
         private static AssemblyLoadContext GetALC(string assemblyPath)
         {
             AssemblyLoadContext? alc;
@@ -409,15 +412,17 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         private sealed class BasicClassFactory : IClassFactory
         {
             private readonly Guid _classId;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             private readonly Type _classType;
 
-            public BasicClassFactory(Guid clsid, Type classType)
+            public BasicClassFactory(Guid clsid, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType)
             {
                 _classId = clsid;
                 _classType = classType;
             }
 
-            public static Type GetValidatedInterfaceType(Type classType, ref Guid riid, object? outer)
+            public static Type GetValidatedInterfaceType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType, ref Guid riid, object? outer)
             {
                 Debug.Assert(classType != null);
                 if (riid == Marshal.IID_IUnknown)
@@ -489,6 +494,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 }
             }
 
+            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
@@ -516,14 +522,17 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         {
             private readonly LicenseInteropProxy _licenseProxy = new LicenseInteropProxy();
             private readonly Guid _classId;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             private readonly Type _classType;
 
-            public LicenseClassFactory(Guid clsid, Type classType)
+            public LicenseClassFactory(Guid clsid, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType)
             {
                 _classId = clsid;
                 _classType = classType;
             }
 
+            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,

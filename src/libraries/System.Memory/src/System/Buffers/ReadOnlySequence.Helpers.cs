@@ -25,7 +25,7 @@ namespace System.Buffers
 
             SequenceType type = GetSequenceType();
             object? endObject = _endObject;
-            int startIndex = GetIndex(position);
+            int startIndex = position.GetInteger();
             int endIndex = GetIndex(_endInteger);
 
             if (type == SequenceType.MultiSegment)
@@ -273,7 +273,7 @@ namespace System.Buffers
         {
             object? startObject = start.GetObject();
             object? endObject = _endObject;
-            int startIndex = GetIndex(start);
+            int startIndex = start.GetInteger();
             int endIndex = GetIndex(_endInteger);
 
             if (startObject != endObject)
@@ -333,7 +333,7 @@ namespace System.Buffers
 
         private void BoundsCheck(in SequencePosition position, bool positionIsNotNull)
         {
-            uint sliceStartIndex = (uint)GetIndex(position);
+            uint sliceStartIndex = (uint)position.GetInteger();
 
             object? startObject = _startObject;
             object? endObject = _endObject;
@@ -462,9 +462,6 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetIndex(in SequencePosition position) => position.GetInteger() & ReadOnlySequence.IndexBitMask;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetIndex(int Integer) => Integer & ReadOnlySequence.IndexBitMask;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -476,9 +473,9 @@ namespace System.Buffers
 
             return new ReadOnlySequence<T>(
                 start.GetObject(),
-                GetIndex(start) | (_startInteger & ReadOnlySequence.FlagBitMask),
+                start.GetInteger() | (_startInteger & ReadOnlySequence.FlagBitMask),
                 end.GetObject(),
-                GetIndex(end) | (_endInteger & ReadOnlySequence.FlagBitMask)
+                end.GetInteger() | (_endInteger & ReadOnlySequence.FlagBitMask)
             );
         }
 
@@ -491,7 +488,7 @@ namespace System.Buffers
 
             return new ReadOnlySequence<T>(
                 start.GetObject(),
-                GetIndex(start) | (_startInteger & ReadOnlySequence.FlagBitMask),
+                start.GetInteger() | (_startInteger & ReadOnlySequence.FlagBitMask),
                 _endObject,
                 _endInteger
             );

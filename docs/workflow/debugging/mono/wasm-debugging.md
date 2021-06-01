@@ -82,6 +82,16 @@ and change the
 `FS.seed2 = <seed value>`.
 This will hopefully cause the failure to happen reliably.
 
+There is another random number generator in `upstream/emscripten/src/deterministic.js`
+which needs the same treatment:
+```
+var randomBuffer3 = new Uint8Array(2);
+crypto.getRandomValues(randomBuffer3);
+
+var MAGIC = (randomBuffer3 [0] << 8) | randomBuffer3 [1];
+console.log ("SEED2: " + MAGIC);
+```
+
 # Debugging signature mismatch errors
 
 When v8 fails with `RuntimeError: function signature mismatch`, it means a function call was

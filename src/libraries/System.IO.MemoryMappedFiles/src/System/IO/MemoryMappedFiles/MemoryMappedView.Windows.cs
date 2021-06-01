@@ -62,7 +62,7 @@ namespace System.IO.MemoryMappedFiles
                 IntPtr tempHandle = Interop.VirtualAlloc(
                     viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize),
                     Interop.Kernel32.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (viewHandle.IsInvalid)
                 {
                     viewHandle.Dispose();
@@ -110,7 +110,7 @@ namespace System.IO.MemoryMappedFiles
                 // increasing intervals. Eventually, however, we need to give up. In ad-hoc tests
                 // this strategy successfully flushed the view after no more than 3 retries.
 
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
                     throw Win32Marshal.GetExceptionForWin32Error(error);
 
@@ -125,7 +125,7 @@ namespace System.IO.MemoryMappedFiles
                         if (Interop.Kernel32.FlushViewOfFile((IntPtr)firstPagePtr, capacity))
                             return;
 
-                        error = Marshal.GetLastWin32Error();
+                        error = Marshal.GetLastPInvokeError();
                         if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
                             throw Win32Marshal.GetExceptionForWin32Error(error);
 

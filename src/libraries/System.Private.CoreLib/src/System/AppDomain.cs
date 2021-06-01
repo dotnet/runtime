@@ -92,6 +92,7 @@ namespace System
             return assemblyName;
         }
 
+        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static AppDomain CreateDomain(string friendlyName)
         {
             if (friendlyName == null) throw new ArgumentNullException(nameof(friendlyName));
@@ -114,6 +115,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public int ExecuteAssembly(string assemblyFile, string?[]? args, byte[]? hashValue, Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // This api is only meaningful for very specific partial trust/CAS scenarios
@@ -162,6 +164,7 @@ namespace System
         public override string ToString() =>
             SR.AppDomain_Name + FriendlyName + Environment.NewLineConst + SR.AppDomain_NoContextPolicies;
 
+        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void Unload(AppDomain domain)
         {
             if (domain == null)

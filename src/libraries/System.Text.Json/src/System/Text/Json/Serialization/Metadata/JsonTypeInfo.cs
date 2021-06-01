@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
     [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
     public partial class JsonTypeInfo
     {
-        internal const string JsonObjectTypeName = "System.Text.Json.Node.JsonObject";
+        internal const string JsonObjectTypeName = "System.Text.Json.Nodes.JsonObject";
 
         internal delegate object? ConstructorDelegate();
 
@@ -149,15 +149,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy)
         {
-            // Options setting for object class types is deferred till initialization.
-            if (converterStrategy != ConverterStrategy.Object && options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            Options = options!;
             Type = type;
-
+            Options = options ?? throw new ArgumentNullException(nameof(options));
             // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
         }

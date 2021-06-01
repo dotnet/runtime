@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -24,8 +25,11 @@ namespace System.Net.Sockets
 
         private SafeSocketHandle _handle;
 
-        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
-        // correct type (IPEndPoint, etc).
+        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is an EndPoint of the
+        // correct type (IPEndPoint, etc). The Bind operation sets _rightEndPoint. Other operations must only set
+        // it when the value is still null.
+        // This enables tracking the file created by UnixDomainSocketEndPoint when the Socket is bound,
+        // and to delete that file when the Socket gets disposed.
         internal EndPoint? _rightEndPoint;
         internal EndPoint? _remoteEndPoint;
 
@@ -283,7 +287,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
                     UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
@@ -330,7 +334,7 @@ namespace System.Net.Sockets
                     {
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
-                        _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                        _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
                         UpdateLocalEndPointOnConnect();
                         _nonBlockingConnectInProgress = false;
                     }
@@ -415,6 +419,8 @@ namespace System.Net.Sockets
         // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
         // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
         // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
+        [Obsolete("This property has no effect in .NET 5+ and .NET Core.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO
         {
             get { return false; }
@@ -435,7 +441,7 @@ namespace System.Net.Sockets
                 {
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
                     UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
@@ -725,7 +731,7 @@ namespace System.Net.Sockets
             {
                 if (AddressFamily != AddressFamily.InterNetworkV6)
                 {
-                    throw new NotSupportedException(SR.net_invalidversion);
+                    return false;
                 }
                 return ((int)GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only)! == 0);
             }
@@ -796,11 +802,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            // For UnixDomainSocketEndPoint, track the file to delete on Dispose.
+            _rightEndPoint = endPointSnapshot is UnixDomainSocketEndPoint unixEndPoint ?
+                                unixEndPoint.CreateBoundEndPoint() :
+                                endPointSnapshot;
         }
 
         // Establishes a connection to a remote system.
@@ -1354,11 +1360,8 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = remoteEP;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= remoteEP;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, size);
             return bytesTransferred;
@@ -1378,6 +1381,67 @@ namespace System.Net.Sockets
         public int SendTo(byte[] buffer, EndPoint remoteEP)
         {
             return SendTo(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, remoteEP);
+        }
+
+        /// <summary>
+        /// Sends data to the specified endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
+        /// <param name="remoteEP">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int SendTo(ReadOnlySpan<byte> buffer, EndPoint remoteEP)
+        {
+            return SendTo(buffer, SocketFlags.None, remoteEP);
+        }
+
+        /// <summary>
+        /// Sends data to a specific endpoint using the specified <see cref="SocketFlags"/>.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="remoteEP">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
+        {
+            ThrowIfDisposed();
+            if (remoteEP == null)
+            {
+                throw new ArgumentNullException(nameof(remoteEP));
+            }
+
+            ValidateBlockingMode();
+
+            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+
+            // Throw an appropriate SocketException if the native call fails.
+            if (errorCode != SocketError.Success)
+            {
+                UpdateSendSocketErrorForDisposed(ref errorCode);
+
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
+
+            if (_rightEndPoint == null)
+            {
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint = remoteEP;
+            }
+
+            return bytesTransferred;
         }
 
         // Receives data from a connected socket.
@@ -1575,11 +1639,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
@@ -1669,11 +1730,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
@@ -1732,11 +1790,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (socketException != null)
@@ -1762,6 +1817,93 @@ namespace System.Net.Sockets
         public int ReceiveFrom(byte[] buffer, ref EndPoint remoteEP)
         {
             return ReceiveFrom(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, ref remoteEP);
+        }
+
+        /// <summary>
+        /// Receives a datagram into the data buffer and stores the endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
+        /// <param name="remoteEP">An <see cref="EndPoint"/>, passed by reference, that represents the remote server.</param>
+        /// <returns>The number of bytes received.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int ReceiveFrom(Span<byte> buffer, ref EndPoint remoteEP)
+        {
+            return ReceiveFrom(buffer, SocketFlags.None, ref remoteEP);
+        }
+
+        /// <summary>
+        /// Receives a datagram into the data buffer, using the specified <see cref="SocketFlags"/>, and stores the endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="remoteEP">An <see cref="EndPoint"/>, passed by reference, that represents the remote server.</param>
+        /// <returns>The number of bytes received.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
+        {
+            ThrowIfDisposed();
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
+
+            SocketPal.CheckDualModeReceiveSupport(this);
+
+            ValidateBlockingMode();
+
+            // We don't do a CAS demand here because the contents of remoteEP aren't used by
+            // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
+            // with the right address family.
+            EndPoint endPointSnapshot = remoteEP;
+            Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+            Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
+            // If the native call fails we'll throw a SocketException.
+            SocketException? socketException = null;
+            if (errorCode != SocketError.Success)
+            {
+                socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
+
+                if (socketException.SocketErrorCode != SocketError.MessageSize)
+                {
+                    throw socketException;
+                }
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
+
+            if (!socketAddressOriginal.Equals(socketAddress))
+            {
+                try
+                {
+                    remoteEP = endPointSnapshot.Create(socketAddress);
+                }
+                catch
+                {
+                }
+                if (_rightEndPoint == null)
+                {
+                    // Save a copy of the EndPoint so we can use it for Create().
+                    _rightEndPoint = endPointSnapshot;
+                }
+            }
+
+            if (socketException != null)
+            {
+                throw socketException;
+            }
+
+            return bytesTransferred;
         }
 
         public int IOControl(int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue)
@@ -2216,7 +2358,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::DoBeginSendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
-            return BeginSendFileInternal(fileName, preBuffer, postBuffer, flags, callback, state);
+            return TaskToApm.Begin(SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask(), callback, state);
         }
 
         public void EndSendFile(IAsyncResult asyncResult)
@@ -2228,7 +2370,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            EndSendFileInternal(asyncResult);
+            TaskToApm.End(asyncResult);
         }
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
@@ -2505,7 +2647,9 @@ namespace System.Net.Sockets
         // Async methods
         //
 
-        public bool AcceptAsync(SocketAsyncEventArgs e)
+        public bool AcceptAsync(SocketAsyncEventArgs e) => AcceptAsync(e, CancellationToken.None);
+
+        private bool AcceptAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -2538,7 +2682,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationAccept(this, _handle, acceptHandle);
+                socketError = e.DoOperationAccept(this, _handle, acceptHandle, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -2909,7 +3053,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool SendPacketsAsync(SocketAsyncEventArgs e)
+        public bool SendPacketsAsync(SocketAsyncEventArgs e) => SendPacketsAsync(e, default(CancellationToken));
+
+        private bool SendPacketsAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -2931,7 +3077,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendPackets(this, _handle);
+                socketError = e.DoOperationSendPackets(this, _handle, cancellationToken);
             }
             catch (Exception)
             {
@@ -2966,10 +3112,7 @@ namespace System.Net.Sockets
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
             EndPoint? oldEndPoint = _rightEndPoint;
-            if (_rightEndPoint == null)
-            {
-                _rightEndPoint = endPointSnapshot;
-            }
+            _rightEndPoint ??= endPointSnapshot;
 
             SocketError socketError;
             try
@@ -2978,7 +3121,7 @@ namespace System.Net.Sockets
             }
             catch
             {
-                _rightEndPoint = null;
+                _rightEndPoint = oldEndPoint;
                 _localEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
@@ -3074,11 +3217,8 @@ namespace System.Net.Sockets
 
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(SocketError.Success);
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= endPointSnapshot;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 
@@ -3205,6 +3345,18 @@ namespace System.Net.Sockets
                     catch (ObjectDisposedException)
                     {
                     }
+                }
+
+                // Delete file of bound UnixDomainSocketEndPoint.
+                if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                    unixEndPoint.BoundFileName is not null)
+                {
+                    try
+                    {
+                        File.Delete(unixEndPoint.BoundFileName);
+                    }
+                    catch
+                    { }
                 }
             }
 
@@ -3460,8 +3612,19 @@ namespace System.Net.Sockets
             socket._addressFamily = _addressFamily;
             socket._socketType = _socketType;
             socket._protocolType = _protocolType;
-            socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
+
+            // If the _rightEndpoint tracks a UnixDomainSocketEndPoint to delete
+            // then create a new EndPoint.
+            if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                     unixEndPoint.BoundFileName is not null)
+            {
+                socket._rightEndPoint = unixEndPoint.CreateUnboundEndPoint();
+            }
+            else
+            {
+                socket._rightEndPoint = _rightEndPoint;
+            }
 
             // If the listener socket was bound to a wildcard address, then the `accept` system call
             // will assign a specific address to the accept socket's local endpoint instead of a

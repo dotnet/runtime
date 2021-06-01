@@ -64,6 +64,7 @@
     <Compile Include="Span\EndsWith.char.cs" />
     <Compile Include="Span\EndsWith.long.cs" />
     <Compile Include="Span\EndsWith.T.cs" />
+    <Compile Include="Span\EnumerateRunes.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\GcReporting.cs" />
     <Compile Include="Span\GetEnumerator.cs" />

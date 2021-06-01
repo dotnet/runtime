@@ -34,6 +34,9 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest() { throw null; }
         public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public static partial class DSACertificateExtensions
     {
         public static System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.DSA privateKey) { throw null; }
@@ -65,6 +68,13 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
         public static System.Security.Cryptography.X509Certificates.PublicKey CreateFromSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public System.Security.Cryptography.DSA? GetDSAPublicKey() { throw null; }
+        public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPublicKey() { throw null; }
+        public System.Security.Cryptography.ECDsa? GetECDsaPublicKey() { throw null; }
+        public System.Security.Cryptography.RSA? GetRSAPublicKey() { throw null; }
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public static partial class RSACertificateExtensions

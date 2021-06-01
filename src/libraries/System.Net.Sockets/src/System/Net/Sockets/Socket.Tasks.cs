@@ -15,12 +15,9 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        /// <summary>Cached instance for accept operations.</summary>
-        private TaskSocketAsyncEventArgs<Socket>? _acceptEventArgs;
-
         /// <summary>Cached instance for receive operations that return <see cref="ValueTask{Int32}"/>. Also used for ConnectAsync operations.</summary>
         private AwaitableSocketAsyncEventArgs? _singleBufferReceiveEventArgs;
-        /// <summary>Cached instance for send operations that return <see cref="ValueTask{Int32}"/>.</summary>
+        /// <summary>Cached instance for send operations that return <see cref="ValueTask{Int32}"/>. Also used for AcceptAsync operations.</summary>
         private AwaitableSocketAsyncEventArgs? _singleBufferSendEventArgs;
 
         /// <summary>Cached instance for receive operations that return <see cref="Task{Int32}"/>.</summary>
@@ -32,54 +29,44 @@ namespace System.Net.Sockets
         /// Accepts an incoming connection.
         /// </summary>
         /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
-        public Task<Socket> AcceptAsync() => AcceptAsync((Socket?)null);
+        public Task<Socket> AcceptAsync() => AcceptAsync((Socket?)null, CancellationToken.None).AsTask();
+
+        /// <summary>
+        /// Accepts an incoming connection.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
+        public ValueTask<Socket> AcceptAsync(CancellationToken cancellationToken) => AcceptAsync((Socket?)null, cancellationToken);
 
         /// <summary>
         /// Accepts an incoming connection.
         /// </summary>
         /// <param name="acceptSocket">The socket to use for accepting the connection.</param>
         /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
-        public Task<Socket> AcceptAsync(Socket? acceptSocket)
+        public Task<Socket> AcceptAsync(Socket? acceptSocket) => AcceptAsync(acceptSocket, CancellationToken.None).AsTask();
+
+        /// <summary>
+        /// Accepts an incoming connection.
+        /// </summary>
+        /// <param name="acceptSocket">The socket to use for accepting the connection.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
+        public ValueTask<Socket> AcceptAsync(Socket? acceptSocket, CancellationToken cancellationToken)
         {
-            // Get any cached SocketAsyncEventArg we may have.
-            TaskSocketAsyncEventArgs<Socket>? saea = Interlocked.Exchange(ref _acceptEventArgs, null);
-            if (saea is null)
+            if (cancellationToken.IsCancellationRequested)
             {
-                saea = new TaskSocketAsyncEventArgs<Socket>();
-                saea.Completed += (s, e) => CompleteAccept((Socket)s!, (TaskSocketAsyncEventArgs<Socket>)e);
+                return ValueTask.FromCanceled<Socket>(cancellationToken);
             }
 
-            // Configure the SAEA.
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(null, 0, 0);
             saea.AcceptSocket = acceptSocket;
-
-            // Initiate the accept operation.
-            Task<Socket> t;
-            if (AcceptAsync(saea))
-            {
-                // The operation is completing asynchronously (it may have already completed).
-                // Get the task for the operation, with appropriate synchronization to coordinate
-                // with the async callback that'll be completing the task.
-                bool responsibleForReturningToPool;
-                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
-                if (responsibleForReturningToPool)
-                {
-                    // We're responsible for returning it only if the callback has already been invoked
-                    // and gotten what it needs from the SAEA; otherwise, the callback will return it.
-                    ReturnSocketAsyncEventArgs(saea);
-                }
-            }
-            else
-            {
-                // The operation completed synchronously.  Get a task for it.
-                t = saea.SocketError == SocketError.Success ?
-                    Task.FromResult(saea.AcceptSocket!) :
-                    Task.FromException<Socket>(GetException(saea.SocketError));
-
-                // There won't be a callback, and we're done with the SAEA, so return it to the pool.
-                ReturnSocketAsyncEventArgs(saea);
-            }
-
-            return t;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.AcceptAsync(this, cancellationToken);
         }
 
         /// <summary>
@@ -555,6 +542,95 @@ namespace System.Net.Sockets
             return saea.SendToAsync(this, cancellationToken);
         }
 
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> to a connected <see cref="Socket"/> object.
+        /// </summary>
+        /// <param name="fileName">A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        public ValueTask SendFileAsync(string? fileName, CancellationToken cancellationToken = default)
+        {
+            return SendFileAsync(fileName, default, default, TransmitFileOptions.UseDefaultWorkerThread, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> and buffers of data to a connected <see cref="Socket"/> object
+        /// using the specified <see cref="TransmitFileOptions"/> value.
+        /// </summary>
+        /// <param name="fileName">A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="preBuffer">A <see cref="byte"/> array that contains data to be sent before the file is sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="postBuffer">A <see cref="byte"/> array that contains data to be sent after the file is sent. This parameter can be <see langword="null"/>.</param>
+        /// <param name="flags">One or more of <see cref="TransmitFileOptions"/> values.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        public ValueTask SendFileAsync(string? fileName, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            if (!IsConnectionOriented)
+            {
+                var soex = new SocketException((int)SocketError.NotConnected);
+                return ValueTask.FromException(soex);
+            }
+
+            int packetsCount = 0;
+
+            if (fileName is not null)
+            {
+                packetsCount++;
+            }
+
+            if (!preBuffer.IsEmpty)
+            {
+                packetsCount++;
+            }
+
+            if (!postBuffer.IsEmpty)
+            {
+                packetsCount++;
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            SendPacketsElement[] sendPacketsElements = saea.SendPacketsElements?.Length == packetsCount
+                ? saea.SendPacketsElements
+                : new SendPacketsElement[packetsCount];
+
+            int index = 0;
+            if (!preBuffer.IsEmpty)
+            {
+                sendPacketsElements[index++] = new SendPacketsElement(preBuffer, endOfPacket: index == packetsCount);
+            }
+
+            if (fileName is not null)
+            {
+                sendPacketsElements[index++] = new SendPacketsElement(fileName, 0, 0, endOfPacket: index == packetsCount);
+            }
+
+            if (!postBuffer.IsEmpty)
+            {
+                sendPacketsElements[index++] = new SendPacketsElement(postBuffer, endOfPacket: index == packetsCount);
+            }
+
+            Debug.Assert(index == packetsCount);
+
+            saea.SendPacketsFlags = flags;
+            saea.SendPacketsElements = sendPacketsElements;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.SendPacketsAsync(this, cancellationToken);
+        }
+
         private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
             if (buffer == null)
@@ -650,34 +726,6 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
-        private static void CompleteAccept(Socket s, TaskSocketAsyncEventArgs<Socket> saea)
-        {
-            // Pull the relevant state off of the SAEA
-            SocketError error = saea.SocketError;
-            Socket? acceptSocket = saea.AcceptSocket;
-
-            // Synchronize with the initiating thread. If the synchronous caller already got what
-            // it needs from the SAEA, then we can return it to the pool now. Otherwise, it'll be
-            // responsible for returning it once it's gotten what it needs from it.
-            bool responsibleForReturningToPool;
-            AsyncTaskMethodBuilder<Socket> builder = saea.GetCompletionResponsibility(out responsibleForReturningToPool);
-            if (responsibleForReturningToPool)
-            {
-                s.ReturnSocketAsyncEventArgs(saea);
-            }
-
-            // Complete the builder/task with the results.
-            if (error == SocketError.Success)
-            {
-                builder.SetResult(acceptSocket!);
-            }
-            else
-            {
-                builder.SetException(GetException(error));
-            }
-        }
-
-        /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
         private static void CompleteSendReceive(Socket s, TaskSocketAsyncEventArgs<int> saea, bool isReceive)
         {
             // Pull the relevant state off of the SAEA
@@ -735,29 +783,9 @@ namespace System.Net.Sockets
             }
         }
 
-        /// <summary>Returns a <see cref="TaskSocketAsyncEventArgs{TResult}"/> instance for reuse.</summary>
-        /// <param name="saea">The instance to return.</param>
-        private void ReturnSocketAsyncEventArgs(TaskSocketAsyncEventArgs<Socket> saea)
-        {
-            // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
-            // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
-            // and the costs associated with changing them.
-            saea.AcceptSocket = null;
-            saea._accessed = false;
-            saea._builder = default;
-
-            // Write this instance back as a cached instance, only if there isn't currently one cached.
-            if (Interlocked.CompareExchange(ref _acceptEventArgs, saea, null) != null)
-            {
-                // Couldn't return it, so dispose it.
-                saea.Dispose();
-            }
-        }
-
         /// <summary>Dispose of any cached <see cref="TaskSocketAsyncEventArgs{TResult}"/> instances.</summary>
         private void DisposeCachedTaskSocketAsyncEventArgs()
         {
-            Interlocked.Exchange(ref _acceptEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _multiBufferReceiveEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _multiBufferSendEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null)?.Dispose();
@@ -818,7 +846,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>A SocketAsyncEventArgs that can be awaited to get the result of an operation.</summary>
-        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>, IValueTaskSource<SocketReceiveFromResult>, IValueTaskSource<SocketReceiveMessageFromResult>
+        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>, IValueTaskSource<Socket>, IValueTaskSource<SocketReceiveFromResult>, IValueTaskSource<SocketReceiveMessageFromResult>
         {
             private static readonly Action<object?> s_completedSentinel = new Action<object?>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_completedSentinel))));
             /// <summary>The owning socket.</summary>
@@ -896,6 +924,28 @@ namespace System.Net.Sockets
                         }, (this, c, continuationState));
                     }
                 }
+            }
+
+            /// <summary>Initiates an accept operation on the associated socket.</summary>
+            /// <returns>This instance.</returns>
+            public ValueTask<Socket> AcceptAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+
+                if (socket.AcceptAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask<Socket>(this, _token);
+                }
+
+                Socket acceptSocket = AcceptSocket!;
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    new ValueTask<Socket>(acceptSocket) :
+                    ValueTask.FromException<Socket>(CreateException(error));
             }
 
             /// <summary>Initiates a receive operation on the associated socket.</summary>
@@ -991,6 +1041,25 @@ namespace System.Net.Sockets
                 Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask(this, _token);
+                }
+
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    default :
+                    ValueTask.FromException(CreateException(error));
+            }
+
+            public ValueTask SendPacketsAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+
+                if (socket.SendPacketsAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
                     return new ValueTask(this, _token);
@@ -1180,7 +1249,7 @@ namespace System.Net.Sockets
             /// Unlike TaskAwaiter's GetResult, this does not block until the operation completes: it must only
             /// be used once the operation has completed.  This is handled implicitly by await.
             /// </remarks>
-            public int GetResult(short token)
+            int IValueTaskSource<int>.GetResult(short token)
             {
                 if (token != _token)
                 {
@@ -1216,6 +1285,26 @@ namespace System.Net.Sockets
                 {
                     ThrowException(error, cancellationToken);
                 }
+            }
+
+            Socket IValueTaskSource<Socket>.GetResult(short token)
+            {
+                if (token != _token)
+                {
+                    ThrowIncorrectTokenException();
+                }
+
+                SocketError error = SocketError;
+                Socket acceptSocket = AcceptSocket!;
+                CancellationToken cancellationToken = _cancellationToken;
+
+                Release();
+
+                if (error != SocketError.Success)
+                {
+                    ThrowException(error, cancellationToken);
+                }
+                return acceptSocket;
             }
 
             SocketReceiveFromResult IValueTaskSource<SocketReceiveFromResult>.GetResult(short token)
@@ -1270,7 +1359,10 @@ namespace System.Net.Sockets
 
             private void ThrowException(SocketError error, CancellationToken cancellationToken)
             {
-                if (error == SocketError.OperationAborted)
+                // Most operations will report OperationAborted when canceled.
+                // On Windows, SendFileAsync will report ConnectionAborted.
+                // There's a race here anyway, so there's no harm in also checking for ConnectionAborted in all cases.
+                if (error == SocketError.OperationAborted || error == SocketError.ConnectionAborted)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                 }

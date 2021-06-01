@@ -35,19 +35,21 @@ namespace Internal.Cryptography
 
             _hAlgorithm = Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgId, dwFlags, out _hashSize);
 
-            // Win7 won't set hHash, Win8+ will; and both will set _hHash.
+            // Win7 won't set hHash to a valid handle, Win8+ will; and both will set _hHash.
             // So keep hHash trapped in this scope to prevent (mis-)use of it.
             {
-                SafeBCryptHashHandle? hHash = null;
+                SafeBCryptHashHandle hHash;
                 NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
                 if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
                 {
+                    hHash.Dispose();
                     // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a
                     // new HASH object each time.
-                    ResetHashObject();
+                    Reset();
                 }
                 else if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 {
+                    hHash.Dispose();
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
                 }
                 else
@@ -66,6 +68,8 @@ namespace Internal.Cryptography
             {
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
+
+            _running = true;
         }
 
         public override int FinalizeHashAndReset(Span<byte> destination)
@@ -79,7 +83,8 @@ namespace Internal.Cryptography
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
-            ResetHashObject();
+            _running = false;
+            Reset();
             return _hashSize;
         }
 
@@ -111,16 +116,16 @@ namespace Internal.Cryptography
                 {
                     byte[] key = _key;
                     _key = null;
-                    Array.Clear(key, 0, key.Length);
+                    Array.Clear(key);
                 }
             }
         }
 
         public sealed override int HashSizeInBytes => _hashSize;
 
-        private void ResetHashObject()
+        public override void Reset()
         {
-            if (_reusable)
+            if (_reusable && !_running)
                 return;
             DestroyHash();
 
@@ -150,5 +155,6 @@ namespace Internal.Cryptography
         private readonly bool _reusable;
 
         private readonly int _hashSize;
+        private bool _running;
     }
 }

@@ -14,6 +14,7 @@
 #include <cordb-stepper.h>
 #include <cordb-thread.h>
 #include <cordb-stackwalk.h>
+#include <cordb-function.h>
 #include <cordb.h>
 
 
@@ -67,10 +68,10 @@ HRESULT STDMETHODCALLTYPE CordbStackWalk::GetContext(ULONG32 contextFlags, ULONG
         MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
         int contextSizeReceived = 0;
-        uint8_t* contextMemoryReceived = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &contextSizeReceived);
+        int64_t stack_pointer = m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
         *contextSize = contextSizeReceived;
-        memcpy(contextBuf+POS_RAX, contextMemoryReceived, contextSizeReceived);
-        free(contextMemoryReceived);
+        memcpy(contextBuf+POS_RSP, &stack_pointer, sizeof(int64_t));
+        LOG((LF_CORDB, LL_INFO100000, "CordbStackWalk - GetContext - IMPLEMENTED - %d - %lld\n", m_nCurrentFrame, stack_pointer));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -84,7 +85,11 @@ HRESULT STDMETHODCALLTYPE CordbStackWalk::SetContext(CorDebugSetContextFlag flag
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
         m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
-        m_dbgprot_buffer_add_byte_array(&localbuf, context, contextSize);
+        int64_t stack_pointer;
+        memcpy(&stack_pointer, context+POS_RSP, sizeof(int64_t));
+        m_dbgprot_buffer_add_long(&localbuf, stack_pointer);
+
+        LOG((LF_CORDB, LL_INFO100000, "CordbStackWalk - SetContext - IMPLEMENTED - %d - %lld\n", m_nCurrentFrame, stack_pointer));
 
         int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_SET_CONTEXT, &localbuf);
         m_dbgprot_buffer_free(&localbuf);
@@ -137,7 +142,7 @@ HRESULT CordbStackWalk::PopulateStackWalk() {
             int il_offset = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
             int flags = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
 
-            CordbNativeFrame* frame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, m_pThread);
+            CordbNativeFrame* frame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, m_pThread, i);
             frame->InternalAddRef();
             m_ppFrames[i] = frame;
         }

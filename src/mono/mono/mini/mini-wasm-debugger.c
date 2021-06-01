@@ -223,7 +223,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
 			MonoPPDBFile *ppdb = handle->ppdb;
-			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
+			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
 				pdb_image = mono_ppdb_get_image (ppdb);
 				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
@@ -428,7 +428,6 @@ receive_debugger_agent_message (void *data, int len)
 	mono_wasm_fire_debugger_agent_message ();	
 	return FALSE;
 }
-
 
 #else // HOST_WASM
 

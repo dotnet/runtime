@@ -611,7 +611,7 @@ write_event (
 	EP_ASSERT (payload != NULL);
 
 	// We can't proceed if tracing is not initialized.
-	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
+	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () >= EP_STATE_INITIALIZED);
 
 	// Exit early if the event is not enabled.
 	ep_return_void_if_nok (ep_event_is_enabled (ep_event));
@@ -649,7 +649,7 @@ write_event_2 (
 	EP_ASSERT (payload != NULL);
 
 	// We can't proceed if tracing is not initialized.
-	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
+	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () >= EP_STATE_INITIALIZED);
 
 	EventPipeThread *const current_thread = ep_thread_get_or_create ();
 	if (!current_thread) {
@@ -817,7 +817,7 @@ enable_default_session_via_env_variables (void)
 			output_path,
 			ep_circular_mb,
 			ep_config,
-			EP_SESSION_TYPE_FILE,
+			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 			true,
 			NULL,
@@ -880,7 +880,7 @@ ep_enable (
 	ep_requires_lock_not_held ();
 
 	// If the state or arguments are invalid, bail here.
-	if (session_type == EP_SESSION_TYPE_FILE && output_path == NULL)
+	if ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL)
 		return 0;
 	if (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL)
 		return 0;

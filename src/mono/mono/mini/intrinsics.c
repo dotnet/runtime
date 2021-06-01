@@ -766,6 +766,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
 		else if (!strcmp (cmethod->name, "GetRawSzArrayData") || !strcmp (cmethod->name, "GetRawArrayData")) {
 			int dreg = alloc_preg (cfg);
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}
@@ -1945,8 +1946,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib &&
 		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
 		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
-		if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") || !strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
+		if (!strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
 			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			ins->type = STACK_I4;
+			return ins;
+		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported")) {
+			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? (cfg->interp ? 1 : 0) : 1);
 			ins->type = STACK_I4;
 			return ins;
 		}
