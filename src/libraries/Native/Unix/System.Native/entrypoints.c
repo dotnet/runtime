@@ -81,6 +81,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Access)
     DllImportEntry(SystemNative_LSeek)
     DllImportEntry(SystemNative_Link)
+    DllImportEntry(SystemNative_SymLink)
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)

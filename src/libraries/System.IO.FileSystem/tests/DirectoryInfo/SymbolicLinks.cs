@@ -1,15 +1,48 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public class DirectoryInfo_SymbolicLinks : BaseSymbolicLinks
+    public class DirectoryInfo_SymbolicLinks : BaseSymbolicLinks_FileSystemInfo
     {
-        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        protected override FileSystemInfo GetFileSystemInfo(string path) =>
+            new DirectoryInfo(path);
+
+        protected override void CreateFileOrDirectory(string path, bool createOpposite = false)
+        {
+            if (!createOpposite)
+            {
+                Directory.CreateDirectory(path);
+            }
+            else
+            {
+                File.Create(path).Dispose();
+            }
+        }
+
+        protected override void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo fsi)
+        {
+            if (fsi.Exists)
+            {
+                Assert.True(fsi.Attributes.HasFlag(FileAttributes.Directory));
+            }
+            Assert.True(fsi is DirectoryInfo);
+        }
+
+        protected override void AssertLinkExists(FileSystemInfo link) =>
+            Assert.False(link.Exists); // For directory symlinks, we return the exists info from the target
+
+        // When the directory target does not exist FileStatus.GetExists returns false because:
+        // - We check _exists (which whould be true because the link itself exists).
+        // - We check InitiallyDirectory, which is the initial expected object type (which would be true).
+        // - We check _directory (false because the target directory does not exist)
+        protected override void AssertExistsWhenNoTarget(FileSystemInfo link) =>
+            Assert.False(link.Exists);
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void EnumerateDirectories_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
@@ -31,7 +64,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void EnumerateFiles_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
@@ -53,7 +86,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void EnumerateFileSystemInfos_LinksWithCycles_ThrowsTooManyLevelsOfSymbolicLinks(bool recurse)
@@ -74,5 +107,9 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => testDirectory.GetFileSystemInfos("*", options).Count());
             }
         }
+
+        [Fact]
+        public void ResolveLinkTarget_LinkDoesNotExist() =>
+            ResolveLinkTarget_LinkDoesNotExist_Internal<DirectoryNotFoundException>();
     }
 }

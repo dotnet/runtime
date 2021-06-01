@@ -42,10 +42,7 @@ namespace System.IO
             return info;
         }
 
-        internal void Invalidate()
-        {
-            _dataInitialized = -1;
-        }
+        internal void InvalidateCore() => _dataInitialized = -1;
 
         internal unsafe void Init(Interop.NtDll.FILE_FULL_DIR_INFORMATION* info)
         {

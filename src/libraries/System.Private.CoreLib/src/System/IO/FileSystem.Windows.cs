@@ -407,5 +407,19 @@ namespace System.IO
 
         public static string[] GetLogicalDrives()
             => DriveInfoInternal.GetLogicalDrives();
+
+        internal static string? GetLinkTarget(string linkPath)
+        {
+            return null;
+        }
+
+        internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
+        {
+        }
+
+        internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
+        {
+            return null;
+        }
     }
 }

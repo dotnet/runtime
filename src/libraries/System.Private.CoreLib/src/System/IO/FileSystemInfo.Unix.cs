@@ -27,7 +27,7 @@ namespace System.IO
             return info;
         }
 
-        internal void Invalidate() => _fileStatus.InvalidateCaches();
+        internal void InvalidateCore() => _fileStatus.InvalidateCaches();
 
         internal unsafe void Init(ref FileStatus fileStatus)
         {

@@ -715,6 +715,13 @@ int32_t SystemNative_Link(const char* source, const char* linkTarget)
     return result;
 }
 
+int32_t SystemNative_SymLink(const char* target, const char* linkPath)
+{
+    int32_t result;
+    while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
+    return result;
+}
+
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;

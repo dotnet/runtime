@@ -99,17 +99,6 @@ namespace System.IO
         public static FileStream Create(string path, int bufferSize, FileOptions options)
             => new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, options);
 
-        /// <summary>
-        /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
-        /// </summary>
-        /// <param name="path">The location of the file symbolic link.</param>
-        /// <param name="pathToTarget">The target of the file symbolic link.</param>
-        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file symbolic link.</returns>
-        public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
-        {
-            return new FileInfo("");
-        }
-
         // Deletes a file. The file specified by the designated path is deleted.
         // If the file does not exist, Delete succeeds without throwing
         // an exception.
@@ -1020,14 +1009,33 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Gets the target of the specified file symbolic link.
+        /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
         /// </summary>
-        /// <param name="linkPath">The path of the file symbolic link.</param>
-        /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
-        /// <returns>A <see cref="FileInfo"/> instance if the symbolic link exists, independently if the target exists or not. <see langword="null"/> if the symbolic link does not exist.</returns>
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+        /// <param name="path">The path where the symbolic link should be created.</param>
+        /// <param name="pathToTarget">The path of the target to which the symbolic link points.</param>
+        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file symbolic link.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> is not an absolute path.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains invalid path characters.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
         {
-            return null;
+            FileSystem.CreateSymbolicLink(path, pathToTarget, isDirectory: false);
+            return new FileInfo(path);
         }
+
+        /// <summary>
+        /// Gets the target of the specified file link.
+        /// </summary>
+        /// <param name="linkPath">The path of the file link.</param>
+        /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
+        /// <returns>A <see cref="FileInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> does not exist.</returns>
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) =>
+            FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: false);
     }
 }

@@ -527,11 +527,18 @@ PALEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
 PALEXPORT int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence);
 
 /**
- * Creates a hard-link at link pointing to source.
+ * Creates a hard-link at linkTarget pointing to source.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 PALEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
+
+/**
+ * Creates a symbolic link at linkPath pointing to target.
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath);
 
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with
