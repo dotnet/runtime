@@ -33,12 +33,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static DiagnosticResult Diagnostic (DiagnosticDescriptor descriptor)
 			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (descriptor);
 
-		public static Task<CompilationWithAnalyzers> CreateCompilation (
+		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
 			string src,
 			(string, string)[]? globalAnalyzerOptions = null)
 			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), globalAnalyzerOptions);
 
-		public static async Task<CompilationWithAnalyzers> CreateCompilation (
+		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
 			SyntaxTree src,
 			(string, string)[]? globalAnalyzerOptions = null)
 		{
@@ -61,16 +61,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 				logAnalyzerExecutionTime: false);
 
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
-			return new CompilationWithAnalyzers (
-				comp,
-				analyzers,
-				compWithAnalyzerOptions);
+			return (new CompilationWithAnalyzers (comp, analyzers, compWithAnalyzerOptions), comp.GetSemanticModel (src));
 		}
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
 		public static async Task VerifyAnalyzerAsync (string src, (string, string)[]? analyzerOptions = null, params DiagnosticResult[] expected)
 		{
-			var diags = await (await CreateCompilation (src, analyzerOptions)).GetAllDiagnosticsAsync ();
+			var diags = await (await CreateCompilation (src, analyzerOptions)).Compilation.GetAllDiagnosticsAsync ();
 
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);

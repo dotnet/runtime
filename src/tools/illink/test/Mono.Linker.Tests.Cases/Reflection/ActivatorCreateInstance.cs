@@ -307,7 +307,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string) },
-			messageCode: "IL2032", message: "assemblyName")]
+			messageCode: "IL2032", message: new string[] { "assemblyName" })]
 		private static void WithNullAssemblyName ()
 		{
 			Activator.CreateInstance (null, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
@@ -315,7 +315,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string) },
-			messageCode: "IL2061", message: "NonExistingAssembly")]
+			messageCode: "IL2061", message: new string[] { "NonExistingAssembly" })]
 		private static void WithNonExistingAssemblyName ()
 		{
 			Activator.CreateInstance ("NonExistingAssembly", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
@@ -326,7 +326,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string), typeof (object[]) },
-			messageCode: "IL2032", message: "typeName")]
+			messageCode: "IL2032", message: new string[] { "typeName" })]
 		private static void WithAssemblyAndUnknownTypeName ()
 		{
 			Activator.CreateInstance ("test", _typeNameField, new object[] { });

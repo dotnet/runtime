@@ -14,7 +14,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	public class LinkerTestCases : TestCaseUtils
 	{
 		[Theory]
-		[MemberData (nameof (GetTestData), parameters: nameof (RequiresCapability))]
+		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (RequiresCapability))]
 		public void RequiresCapability (MethodDeclarationSyntax m, List<AttributeSyntax> attrs)
 		{
 			switch (m.Identifier.ValueText) {
@@ -30,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return;
 			}
 
-			RunTest (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+			RunTest<RequiresUnreferencedCodeAnalyzer> (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
 		}
 	}
 }

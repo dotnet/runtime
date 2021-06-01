@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -19,11 +21,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static IEnumerable<object[]> GetTestData (string testSuiteName)
 		{
 			foreach (var testFile in s_testFiles[testSuiteName]) {
-
 				var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
 
 				foreach (var node in root.DescendantNodes ()) {
-					if (node is MethodDeclarationSyntax m) {
+					if (node is MemberDeclarationSyntax m) {
 						var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
 						if (attrs.Count > 0) {
 							yield return new object[] { m, attrs };
@@ -34,140 +35,34 @@ namespace ILLink.RoslynAnalyzer.Tests
 				static bool IsWellKnown (AttributeSyntax attr)
 				{
 					switch (attr.Name.ToString ()) {
+					// Currently, the analyzer's test infra only understands these attributes when placed on methods.
 					case "ExpectedWarning":
 					case "LogContains":
 					case "LogDoesNotContain":
+						return attr.Ancestors ().OfType<MemberDeclarationSyntax> ().First ().IsKind (SyntaxKind.MethodDeclaration);
+
+					case "UnrecognizedReflectionAccessPattern":
 						return true;
 					}
+
 					return false;
 				}
 			}
 		}
 
-		internal static void RunTest (MethodDeclarationSyntax m, List<AttributeSyntax> attrs, params (string, string)[] MSBuildProperties)
+		public static void RunTest<TAnalyzer> (MemberDeclarationSyntax m, List<AttributeSyntax> attrs, params (string, string)[] MSBuildProperties)
+			where TAnalyzer : DiagnosticAnalyzer, new()
 		{
-			var comp = CSharpAnalyzerVerifier<RequiresUnreferencedCodeAnalyzer>.CreateCompilation (m.SyntaxTree, MSBuildProperties).Result;
-			var diags = comp.GetAnalyzerDiagnosticsAsync ().Result;
-
-			var filtered = diags.Where (d => d.Location.SourceSpan.IntersectsWith (m.Span))
-								.Select (d => new { Id = d.Id, Message = d.GetMessage () });
-			foreach (var attr in attrs) {
-				switch (attr.Name.ToString ()) {
-				case "ExpectedWarning": {
-						var args = GetAttributeArguments (attr);
-						string expectedWarningCode = GetStringFromExpr (args["#0"]);
-
-						if (!expectedWarningCode.StartsWith ("IL"))
-							break;
-
-						if (args.TryGetValue ("GlobalAnalysisOnly", out var globalAnalysisOnly) &&
-							globalAnalysisOnly is LiteralExpressionSyntax { Token: { Value: true } })
-							break;
-
-						List<string> expectedMessages = args
-							.Where (arg => arg.Key.StartsWith ("#") && arg.Key != "#0")
-							.Select (arg => GetStringFromExpr (arg.Value))
-							.ToList ();
-
-						Assert.True (
-							filtered.Any (mc => {
-								if (mc.Id != expectedWarningCode)
-									return false;
-
-								foreach (var expectedMessage in expectedMessages)
-									if (!mc.Message.Contains (expectedMessage))
-										return false;
-
-								return true;
-							}),
-						$"Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
-						$", but no such message was found.{ Environment.NewLine}In diagnostics: {string.Join (Environment.NewLine, filtered)}");
-					}
-					break;
-				case "LogContains": {
-						var arg = Assert.Single (attr.ArgumentList!.Arguments);
-						var text = GetStringFromExpr (arg.Expression);
-						// If the text starts with `warning IL...` then it probably follows the pattern
-						//	'warning <diagId>: <location>:'
-						// We don't want to repeat the location in the error message for the analyzer, so
-						// it's better to just trim here. We've already filtered by diagnostic location so
-						// the text location shouldn't matter
-						if (text.StartsWith ("warning IL")) {
-							var firstColon = text.IndexOf (": ");
-							if (firstColon > 0) {
-								var secondColon = text.IndexOf (": ", firstColon + 1);
-								if (secondColon > 0) {
-									text = text.Substring (secondColon + 2);
-								}
-							}
-						}
-						bool found = false;
-						foreach (var d in filtered) {
-							if (d.Message.Contains (text)) {
-								found = true;
-								break;
-							}
-						}
-						if (!found) {
-							var diagStrings = string.Join (Environment.NewLine, filtered);
-							Assert.True (false, $@"Could not find text:
-{text}
-In diagnostics:
-{diagStrings}");
-						}
-					}
-					break;
-				case "LogDoesNotContain": {
-						var arg = Assert.Single (attr.ArgumentList!.Arguments);
-						var text = GetStringFromExpr (arg.Expression);
-						foreach (var d in filtered) {
-							Assert.DoesNotContain (text, d.Message);
-						}
-					}
-					break;
-				}
-			}
-
-			// Accepts string literal expressions or binary expressions concatenating strings
-			static string GetStringFromExpr (ExpressionSyntax expr)
-			{
-				switch (expr.Kind ()) {
-				case SyntaxKind.StringLiteralExpression:
-					var strLiteral = (LiteralExpressionSyntax) expr;
-					var token = strLiteral.Token;
-					Assert.Equal (SyntaxKind.StringLiteralToken, token.Kind ());
-					return token.ValueText;
-				case SyntaxKind.AddExpression:
-					var addExpr = (BinaryExpressionSyntax) expr;
-					return GetStringFromExpr (addExpr.Left) + GetStringFromExpr (addExpr.Right);
-				default:
-					Assert.True (false, "Unsupported expr kind " + expr.Kind ());
-					return null!;
-				}
-			}
-
-			static Dictionary<string, ExpressionSyntax> GetAttributeArguments (AttributeSyntax attribute)
-			{
-				Dictionary<string, ExpressionSyntax> arguments = new Dictionary<string, ExpressionSyntax> ();
-				int ordinal = 0;
-				foreach (var argument in attribute.ArgumentList!.Arguments) {
-					string argName;
-					if (argument.NameEquals != null) {
-						argName = argument.NameEquals.ChildNodes ().OfType<IdentifierNameSyntax> ().First ().Identifier.ValueText;
-					} else {
-						argName = "#" + ordinal.ToString ();
-						ordinal++;
-					}
-					arguments.Add (argName, argument.Expression);
-				}
-
-				return arguments;
-			}
+			var test = new TestChecker (m, CSharpAnalyzerVerifier<TAnalyzer>
+				.CreateCompilation (m.SyntaxTree.GetRoot ().SyntaxTree, MSBuildProperties).Result);
+			test.ValidateAttributes (attrs);
 		}
 
-		private static readonly ImmutableDictionary<string, List<string>> s_testFiles = GetTestFilesByDirName ();
 
-		private static ImmutableDictionary<string, List<string>> GetTestFilesByDirName ()
+
+		public static readonly ImmutableDictionary<string, List<string>> s_testFiles = GetTestFilesByDirName ();
+
+		public static ImmutableDictionary<string, List<string>> GetTestFilesByDirName ()
 		{
 			var builder = ImmutableDictionary.CreateBuilder<string, List<string>> ();
 
@@ -184,7 +79,80 @@ In diagnostics:
 			return builder.ToImmutable ();
 		}
 
-		private static IEnumerable<string> GetTestFiles ()
+		public static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
+		{
+#if DEBUG
+			var configDirectoryName = "Debug";
+#else
+			var configDirectoryName = "Release";
+#endif
+
+#if NET6_0
+			const string tfm = "net6.0";
+#else
+			const string tfm = "net5.0";
+#endif
+
+			// Working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
+			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");
+			rootSourceDirectory = Path.GetFullPath (Path.Combine (artifactsBinDir, "..", "..", "test", "Mono.Linker.Tests.Cases"));
+			testAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "ILLink.RoslynAnalyzer.Tests", configDirectoryName, tfm));
+		}
+
+		// Accepts string literal expressions or binary expressions concatenating strings
+		public static string GetStringFromExpression (ExpressionSyntax expr, SemanticModel? semanticModel = null)
+		{
+			if (expr == null)
+				return null!;
+
+			switch (expr.Kind ()) {
+			case SyntaxKind.AddExpression:
+				var addExpr = (BinaryExpressionSyntax) expr;
+				return GetStringFromExpression (addExpr.Left) + GetStringFromExpression (addExpr.Right);
+
+			case SyntaxKind.InvocationExpression:
+				var nameofValue = semanticModel!.GetConstantValue (expr);
+				if (nameofValue.HasValue)
+					return (nameofValue.Value as string)!;
+
+				return string.Empty;
+
+			case SyntaxKind.StringLiteralExpression:
+				var strLiteral = (LiteralExpressionSyntax) expr;
+				var token = strLiteral.Token;
+				Assert.Equal (SyntaxKind.StringLiteralToken, token.Kind ());
+				return token.ValueText;
+
+			case SyntaxKind.TypeOfExpression:
+				return semanticModel.GetTypeInfo (expr).Type!.GetDisplayName ();
+
+			default:
+				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
+				return null!;
+			}
+		}
+
+		public static Dictionary<string, ExpressionSyntax> GetAttributeArguments (AttributeSyntax attribute)
+		{
+			Dictionary<string, ExpressionSyntax> arguments = new Dictionary<string, ExpressionSyntax> ();
+			int ordinal = 0;
+			foreach (var argument in attribute.ArgumentList!.Arguments) {
+				string argName;
+				if (argument.NameEquals != null) {
+					argName = argument.NameEquals.ChildNodes ().OfType<IdentifierNameSyntax> ().First ().Identifier.ValueText;
+				} else if (argument.NameColon is NameColonSyntax nameColon) {
+					argName = nameColon.Name.Identifier.ValueText;
+				} else {
+					argName = "#" + ordinal.ToString ();
+					ordinal++;
+				}
+				arguments.Add (argName, argument.Expression);
+			}
+
+			return arguments;
+		}
+
+		public static IEnumerable<string> GetTestFiles ()
 		{
 			GetDirectoryPaths (out var rootSourceDir, out _);
 
@@ -205,30 +173,9 @@ In diagnostics:
 			}
 		}
 
-		internal static (string, string)[] UseMSBuildProperties (params string[] MSBuildProperties)
+		public static (string, string)[] UseMSBuildProperties (params string[] MSBuildProperties)
 		{
 			return MSBuildProperties.Select (msbp => ($"build_property.{msbp}", "true")).ToArray ();
-		}
-
-		internal static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
-		{
-
-#if DEBUG
-			var configDirectoryName = "Debug";
-#else
-			var configDirectoryName = "Release";
-#endif
-
-#if NET6_0
-			const string tfm = "net6.0";
-#else
-			const string tfm = "net5.0";
-#endif
-
-			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
-			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");
-			rootSourceDirectory = Path.GetFullPath (Path.Combine (artifactsBinDir, "..", "..", "test", "Mono.Linker.Tests.Cases"));
-			testAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "ILLink.RoslynAnalyzer.Tests", configDirectoryName, tfm));
 		}
 	}
 }
