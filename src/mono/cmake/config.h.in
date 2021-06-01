@@ -911,6 +911,9 @@
 /* size of target machine integer registers */
 #define SIZEOF_REGISTER @SIZEOF_REGISTER@
 
+/* host or target doesn't allow unaligned memory access */
+#cmakedefine NO_UNALIGNED_ACCESS 1
+
 /* Support for the visibility ("hidden") attribute */
 #cmakedefine HAVE_VISIBILITY_HIDDEN 1
 
