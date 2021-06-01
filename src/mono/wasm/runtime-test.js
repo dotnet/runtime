@@ -204,7 +204,7 @@ function loadScript (url)
 }
 
 loadScript ("mono-config.js");
-
+loadScript ("icu_dictionary.js");
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
@@ -278,10 +278,8 @@ var Module = {
 				})
 			}
 		};
-
+		config.icu_dictionary = dictionary;
 		if (config.enable_sharding) {
-			loadScript ("icu_dictionary.js");
-			config.icu_dictionary = dictionary;
 			if (config.default_culture != null) {
 				config.application_culture = config.default_culture;
 			} else {

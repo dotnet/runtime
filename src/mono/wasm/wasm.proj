@@ -197,7 +197,7 @@
       <MonoIncludeDir>$(MonoArtifactsPath)include/mono-2.0</MonoIncludeDir>
       <SystemNativeDir>$(RepoRoot)src\libraries\Native\Unix\System.Native</SystemNativeDir>
     </PropertyGroup>
-    <Import Project="$(IcuLibDir)ICU.DataFiles.props" Condition="'$(EnableSharding)' == 'true'" />
+    <Import Project="$(IcuLibDir)ICU.DataFiles.props" Condition="'$(InvariantGlobalization)' != 'true'" />
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a" />

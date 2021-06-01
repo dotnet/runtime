@@ -1156,8 +1156,8 @@ var MonoSupportLib = {
 			var icu_files = []
 			if (dictionary === undefined)
 				return null;
-			if (culture == null || culture.length < 2) {
-				icu_files = [dictionary.full];
+			if (culture === undefined || culture.length < 2 ) {
+				icu_files = [dictionary.packs.full];
 			} else {
 				var shard_name = this._get_shard_name(dictionary.shards, culture)
 				var packs = dictionary.packs;
@@ -1193,7 +1193,6 @@ var MonoSupportLib = {
 									"data_type": type
 								})
 				});
-				console.log(JSON.stringify(icu_assets))
 			return icu_assets;
 		},
 
