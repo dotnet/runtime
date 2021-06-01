@@ -10,8 +10,6 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private ValueTaskSource? _reusableValueTaskSource; // reusable ValueTaskSource that is currently NOT being used
-
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
         {
@@ -23,37 +21,6 @@ namespace System.IO.Strategies
         }
 
         internal override bool IsAsync => true;
-
-        public override ValueTask DisposeAsync()
-        {
-            // the base class must dispose ThreadPoolBinding and FileHandle
-            // before _preallocatedOverlapped is disposed
-            ValueTask result = base.DisposeAsync();
-            Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
-
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
-
-            return result;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            // the base class must dispose ThreadPoolBinding and FileHandle
-            // before _preallocatedOverlapped is disposed
-            base.Dispose(disposing);
-
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
-        }
-
-        private void TryToReuse(ValueTaskSource source)
-        {
-            source._source.Reset();
-
-            if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
-            {
-                source._preallocatedOverlapped.Dispose();
-            }
-        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -76,16 +43,14 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            // Rent the reusable ValueTaskSource, or create a new one to use if we couldn't get one (which
-            // should only happen on first use or if the FileStream is being used concurrently).
-            ValueTaskSource vts = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            SafeFileHandle.ValueTaskSource vts = _fileHandle.GetValueTaskSource();
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(destination);
+                long positionBefore = _filePosition;
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(destination, positionBefore);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Calculate position in the file we should be at after the read is done
-                long positionBefore = _filePosition;
                 if (CanSeek)
                 {
                     long len = Length;
@@ -96,11 +61,6 @@ namespace System.IO.Strategies
                             destination.Slice(0, (int)(len - positionBefore)) :
                             default;
                     }
-
-                    // Now set the position to read from in the NativeOverlapped struct
-                    // For pipes, we should leave the offset fields set to 0.
-                    nativeOverlapped->OffsetLow = unchecked((int)positionBefore);
-                    nativeOverlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                     // When using overlapped IO, the OS is not supposed to
                     // touch the file pointer location at all.  We will adjust it
@@ -163,22 +123,15 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            // Rent the reusable ValueTaskSource, or create a new one to use if we couldn't get one (which
-            // should only happen on first use or if the FileStream is being used concurrently).
-            ValueTaskSource vts = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            SafeFileHandle.ValueTaskSource vts = _fileHandle.GetValueTaskSource();
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(source);
+                long positionBefore = _filePosition;
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(source, positionBefore);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
-                long positionBefore = _filePosition;
                 if (CanSeek)
                 {
-                    // Now set the position to read from in the NativeOverlapped struct
-                    // For pipes, we should leave the offset fields set to 0.
-                    nativeOverlapped->OffsetLow = (int)positionBefore;
-                    nativeOverlapped->OffsetHigh = (int)(positionBefore >> 32);
-
                     // When using overlapped IO, the OS is not supposed to
                     // touch the file pointer location at all.  We will adjust it
                     // ourselves, but only in memory.  This isn't threadsafe.
@@ -226,9 +179,7 @@ namespace System.IO.Strategies
                 _filePosition = positionBefore;
             }
 
-            return errorCode == Interop.Errors.ERROR_HANDLE_EOF ?
-                ThrowHelper.CreateEndOfFileException() :
-                Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+            return SafeFileHandle.ValueTaskSource.GetIOError(errorCode, _path);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush

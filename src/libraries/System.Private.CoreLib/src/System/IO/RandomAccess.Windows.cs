@@ -144,14 +144,91 @@ namespace System.IO
             }
         }
 
-        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static unsafe ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
+            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            try
+            {
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
 
+                // Queue an async ReadFile operation.
+                if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
+                {
+                    // The operation failed, or it's pending.
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            vts.RegisterForCancellation(cancellationToken);
+                            break;
+
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                            // EOF on a pipe. Callback will not be called.
+                            // We clear the overlapped status bit for this special case (failure
+                            // to do so looks like we are freeing a pending overlapped later).
+                            nativeOverlapped->InternalLow = IntPtr.Zero;
+                            vts.Dispose();
+                            return ValueTask.FromResult(0);
+
+                        default:
+                            // Error. Callback will not be called.
+                            vts.Dispose();
+                            return ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                    }
+                }
+            }
+            catch
+            {
+                vts.Dispose();
+                throw;
+            }
+
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask<int>(vts, vts.Version);
         }
 
-        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static unsafe ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
+            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            try
+            {
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
 
+                // Queue an async WriteFile operation.
+                if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
+                {
+                    // The operation failed, or it's pending.
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                    {
+                        // Common case: IO was initiated, completion will be handled by callback.
+                        // Register for cancellation now that the operation has been initiated.
+                        vts.RegisterForCancellation(cancellationToken);
+                    }
+                    else
+                    {
+                        // Error. Callback will not be invoked.
+                        vts.Dispose();
+                        return errorCode == Interop.Errors.ERROR_NO_DATA // EOF on a pipe. IO callback will not be called.
+                            ? ValueTask.FromResult<int>(0)
+                            : ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                    }
+                }
+            }
+            catch
+            {
+                vts.Dispose();
+                throw;
+            }
+
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask<int>(vts, vts.Version);
         }
 
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)

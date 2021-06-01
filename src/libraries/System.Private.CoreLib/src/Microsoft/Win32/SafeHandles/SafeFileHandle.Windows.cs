@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private const FileOptions NoBuffering = (FileOptions)(0x20000000);
         private FileOptions _fileOptions = (FileOptions)(-1);
@@ -39,8 +39,6 @@ namespace Microsoft.Win32.SafeHandles
         internal bool IsPipe => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
-
-        protected override bool ReleaseHandle() => Interop.Kernel32.CloseHandle(handle);
 
         internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
