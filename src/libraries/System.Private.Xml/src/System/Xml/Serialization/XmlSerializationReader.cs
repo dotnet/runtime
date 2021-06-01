@@ -5,6 +5,7 @@ namespace System.Xml.Serialization
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -1872,7 +1873,7 @@ namespace System.Xml.Serialization
 
         private object ReadXmlNodes(bool elementCanBeType)
         {
-            ArrayList xmlNodeList = new ArrayList();
+            var xmlNodeList = new List<XmlNode>();
             string elemLocalName = Reader.LocalName;
             string elemNs = Reader.NamespaceURI;
             string elemName = Reader.Name;
@@ -1956,7 +1957,7 @@ namespace System.Xml.Serialization
             if (xmlNodeList.Count <= skippableNodeCount)
                 return new object();
 
-            XmlNode[] childNodes = (XmlNode[])xmlNodeList.ToArray(typeof(XmlNode));
+            XmlNode[] childNodes = xmlNodeList.ToArray();
 
             UnknownNode(unknownNode, null, null);
             return childNodes;
@@ -2512,9 +2513,9 @@ namespace System.Xml.Serialization
             Member? anyElement = null;
             Member? anyAttribute = null;
 
-            ArrayList membersList = new ArrayList();
-            ArrayList textOrArrayMembersList = new ArrayList();
-            ArrayList attributeMembersList = new ArrayList();
+            var membersList = new List<Member>();
+            var textOrArrayMembersList = new List<Member>();
+            var attributeMembersList = new List<Member>();
 
             for (int i = 0; i < mappings.Length; i++)
             {
@@ -2579,8 +2580,8 @@ namespace System.Xml.Serialization
                     membersList.Add(member);
                 }
             }
-            Member[] members = (Member[])membersList.ToArray(typeof(Member));
-            Member[] textOrArrayMembers = (Member[])textOrArrayMembersList.ToArray(typeof(Member));
+            Member[] members = membersList.ToArray();
+            Member[] textOrArrayMembers = textOrArrayMembersList.ToArray();
 
             if (members.Length > 0 && members[0].Mapping.IsReturnValue) Writer.WriteLine("IsReturnValue = true;");
 
@@ -2588,7 +2589,7 @@ namespace System.Xml.Serialization
 
             if (attributeMembersList.Count > 0)
             {
-                Member[] attributeMembers = (Member[])attributeMembersList.ToArray(typeof(Member));
+                Member[] attributeMembers = attributeMembersList.ToArray();
                 WriteMemberBegin(attributeMembers);
                 WriteAttributes(attributeMembers, anyAttribute, "UnknownNode", "(object)p");
                 WriteMemberEnd(attributeMembers);
@@ -3324,9 +3325,9 @@ namespace System.Xml.Serialization
                 Member? anyAttribute = null;
                 bool isSequence = structMapping.HasExplicitSequence();
 
-                ArrayList arraysToDeclareList = new ArrayList(mappings.Length);
-                ArrayList arraysToSetList = new ArrayList(mappings.Length);
-                ArrayList allMembersList = new ArrayList(mappings.Length);
+                var arraysToDeclareList = new List<Member>(mappings.Length);
+                var arraysToSetList = new List<Member>(mappings.Length);
+                var allMembersList = new List<Member>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -3392,9 +3393,9 @@ namespace System.Xml.Serialization
                 if (anyElement != null) arraysToSetList.Add(anyElement);
                 if (anyText != null && anyText != anyElement) arraysToSetList.Add(anyText);
 
-                Member[] arraysToDeclare = (Member[])arraysToDeclareList.ToArray(typeof(Member));
-                Member[] arraysToSet = (Member[])arraysToSetList.ToArray(typeof(Member));
-                Member[] allMembers = (Member[])allMembersList.ToArray(typeof(Member));
+                Member[] arraysToDeclare = arraysToDeclareList.ToArray();
+                Member[] arraysToSet = arraysToSetList.ToArray();
+                Member[] allMembers = allMembersList.ToArray();
 
                 WriteMemberBegin(arraysToDeclare);
                 WriteParamsRead(mappings.Length);
