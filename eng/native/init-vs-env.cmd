@@ -28,7 +28,7 @@ set "__VSCOMNTOOLS="
 
 if exist "%__VSWhere%" (
     for /f "tokens=*" %%p in (
-        '"%__VSWhere%" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath'
+        '"%__VSWhere%" -prerelease -version 16 -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath'
     ) do set __VSCOMNTOOLS=%%p\Common7\Tools
 )
 
