@@ -311,9 +311,11 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 
 	HRESULT hr = S_OK;
 	EX_TRY {
-		memcpy(&(g_profControlBlock.clsStoredProfilerGuid), reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)), sizeof(CLSID));
-		g_profControlBlock.sStoredProfilerPath.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
-		g_profControlBlock.fIsStoredProfilerRegistered = TRUE;
+		Pair<CLSID, SString> profilerData;
+		memcpy(&(profilerData.First()), reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)), sizeof(CLSID));
+		profilerData.Second().Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
+
+		g_profControlBlock.storedProfilers.Append(profilerData);
 	}
 	EX_CATCH_HRESULT (hr);
 

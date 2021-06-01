@@ -108,6 +108,7 @@ private:
         DWORD dwConcurrentGCWaitTimeoutInMs = INFINITE);
     static HRESULT ProfilerCLSIDFromString(__inout_z LPWSTR wszClsid, CLSID * pClsid);
     static HRESULT AttemptLoadProfilerForStartup();
+    static HRESULT AttemptLoadDelayedStartupProfilers();
     static HRESULT AttemptLoadProfilerList();
 
     static void AppendSupplementaryInformation(int iStringResource, SString * pString);

@@ -654,108 +654,85 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
     fProfEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_PROFILING);
 
     NewArrayHolder<WCHAR> wszClsid(NULL);
-    NewArrayHolder<const WCHAR> cwszProfilerDLL(NULL);
+    NewArrayHolder<WCHAR> wszProfilerDLL(NULL);
     CLSID *pClsid;
     CLSID clsid;
 
-    if (fProfEnabled != 0)
-    {
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: Initializing Profiling Services.\n"));
-
-        NewArrayHolder<WCHAR> wszProfilerDLL(NULL);
-
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER, &wszClsid));
-
-    #if defined(TARGET_ARM64)
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM64, &wszProfilerDLL));
-    #elif defined(TARGET_ARM)
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM32, &wszProfilerDLL));
-    #endif
-        if(wszProfilerDLL == NULL)
-        {
-    #ifdef TARGET_64BIT
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_64, &wszProfilerDLL));
-    #else
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_32, &wszProfilerDLL));
-    #endif
-            if(wszProfilerDLL == NULL)
-            {
-                IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
-            }
-        }
-
-        // If the environment variable doesn't exist, profiling is not enabled.
-        if (wszClsid == NULL)
-        {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but required "
-                 "environment variable does not exist.\n"));
-
-            LogProfError(IDS_E_PROF_NO_CLSID);
-
-            return S_FALSE;
-        }
-
-        if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
-        {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but COR_PROFILER_PATH was not set properly.\n"));
-
-            LogProfError(IDS_E_PROF_BAD_PATH);
-
-            return S_FALSE;
-        }
-
-    #ifdef TARGET_UNIX
-        // If the environment variable doesn't exist, profiling is not enabled.
-        if (wszProfilerDLL == NULL)
-        {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but required "
-                 "environment variable does not exist.\n"));
-
-            LogProfError(IDS_E_PROF_BAD_PATH);
-
-            return S_FALSE;
-        }
-    #endif // TARGET_UNIX
-
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(wszClsid, &clsid);
-        if (FAILED(hr))
-        {
-            // ProfilerCLSIDFromString already logged an event if there was a failure
-            return hr;
-        }
-
-        pClsid = &clsid;
-        cwszProfilerDLL.Assign(wszProfilerDLL.GetValue());
-        wszProfilerDLL.SuppressRelease();
-    }
-    else if (g_profControlBlock.fIsStoredProfilerRegistered)
-    {
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
-        pClsid = &(g_profControlBlock.clsStoredProfilerGuid);
-        
-        // Convert to string for logging
-        constexpr size_t guidStringSize = 128;
-        wszClsid.Assign(new (nothrow) WCHAR[guidStringSize]);
-        if (wszClsid != NULL)
-        {
-            StringFromGUID2(*pClsid, wszClsid, guidStringSize);
-        }
-        
-        // Assign, but don't take ownership of, the stored profiler path. This relies on 
-        // g_profControlBlock.sStoredProfilerPath not mutating, which would invalidate the pointer.
-        cwszProfilerDLL.Assign(g_profControlBlock.sStoredProfilerPath.GetUnicode(), FALSE);
-    }
-    else
+    if (fProfEnabled == 0)
     {
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling not enabled.\n"));
         return S_FALSE;
     }
 
+    LOG((LF_CORPROF, LL_INFO10, "**PROF: Initializing Profiling Services.\n"));
+
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER, &wszClsid));
+
+#if defined(TARGET_ARM64)
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM64, &wszProfilerDLL));
+#elif defined(TARGET_ARM)
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM32, &wszProfilerDLL));
+#endif
+    if(wszProfilerDLL == NULL)
+    {
+#ifdef TARGET_64BIT
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_64, &wszProfilerDLL));
+#else
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_32, &wszProfilerDLL));
+#endif
+        if(wszProfilerDLL == NULL)
+        {
+            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
+        }
+    }
+
+    // If the environment variable doesn't exist, profiling is not enabled.
+    if (wszClsid == NULL)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but required "
+             "environment variable does not exist.\n"));
+
+        LogProfError(IDS_E_PROF_NO_CLSID);
+
+        return S_FALSE;
+    }
+
+    if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but COR_PROFILER_PATH was not set properly.\n"));
+
+        LogProfError(IDS_E_PROF_BAD_PATH);
+
+        return S_FALSE;
+    }
+
+#ifdef TARGET_UNIX
+    // If the environment variable doesn't exist, profiling is not enabled.
+    if (wszProfilerDLL == NULL)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but required "
+             "environment variable does not exist.\n"));
+
+        LogProfError(IDS_E_PROF_BAD_PATH);
+
+        return S_FALSE;
+    }
+#endif // TARGET_UNIX
+
+    hr = ProfilingAPIUtility::ProfilerCLSIDFromString(wszClsid, &clsid);
+    if (FAILED(hr))
+    {
+        // ProfilerCLSIDFromString already logged an event if there was a failure
+        return hr;
+    }
+
+    pClsid = &clsid;
+
     hr = LoadProfiler(
         kStartupLoad,
         pClsid,
         wszClsid,
-        cwszProfilerDLL,
+        wszProfilerDLL,
         NULL,               // No client data for startup load
         0);                 // No client data for startup load
     if (FAILED(hr))
@@ -766,6 +743,48 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
     }
 
     return S_OK;
+}
+
+//static
+HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
+{
+    if (g_profControlBlock.storedProfilers.GetCount() == 0)
+    {
+        return S_OK;
+    }
+
+    HRESULT storedHr = S_OK;
+    SArray<Pair<CLSID, SString>> &profilers = g_profControlBlock.storedProfilers;
+    for (auto it = profilers.Begin(); it != profilers.End(); ++it)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
+        CLSID *pClsid = &(it->First());
+
+        // Convert to string for logging
+        constexpr size_t guidStringSize = 39;
+        NewArrayHolder<WCHAR> wszClsid(new (nothrow) WCHAR[guidStringSize]);
+        // GUIDs should always be the same number of characters...
+        _ASSERTE(wszClsid != NULL);
+        if (wszClsid != NULL)
+        {
+            StringFromGUID2(*pClsid, wszClsid, guidStringSize);
+        }
+
+        HRESULT hr = LoadProfiler(
+            kStartupLoad,
+            pClsid,
+            wszClsid,
+            it->Second().GetUnicode(),
+            NULL,               // No client data for startup load
+            0);                 // No client data for startup load
+        if (FAILED(hr))
+        {
+            // LoadProfiler logs if there is an error
+            storedHr = hr;
+        }
+    }
+
+    return storedHr;
 }
 
 // static
@@ -783,6 +802,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
     if (dwEnabled == 0)
     {
+        // Profiler list explicitly disabled, bail
         LogProfInfo(IDS_E_PROF_NOTIFICATION_DISABLED);
         return S_OK;
     }
@@ -798,6 +818,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     WCHAR buffer[maxSize];
     wcscpy_s(buffer, maxSize, wszProfilerList);
 
+    HRESULT storedHr = S_OK;
     // Get each semicolon delimited config
     currentSection = wcstok_s(buffer, W(";"), &pOuter);
     while (currentSection != NULL)
@@ -811,7 +832,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         if (FAILED(hr))
         {
             // ProfilerCLSIDFromString already logged an event if there was a failure
-            return hr;
+            storedHr = hr;
+            goto NextSection;
         }
 
         hr = LoadProfiler(
@@ -823,16 +845,17 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             0);                 // No client data for startup load
         if (FAILED(hr))
         {
-            // A failure in either the CLR or the profiler prevented it from
-            // loading.  Event has been logged.  Propagate hr
-            return hr;
+            // LoadProfiler already logged if there was an error
+            storedHr = hr;
+            goto NextSection;
         }
 
+NextSection:
         // Get next config
         currentSection = wcstok_s(NULL, W(";"), &pOuter);
     }
 
-    return hr;
+    return storedHr;
 }
 
 //---------------------------------------------------------------------------------------

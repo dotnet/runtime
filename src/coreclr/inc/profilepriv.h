@@ -160,9 +160,7 @@ public:
     BOOL fGCInProgress;
     BOOL fBaseSystemClassesLoaded;
 
-    BOOL fIsStoredProfilerRegistered;
-    CLSID clsStoredProfilerGuid;
-    SString sStoredProfilerPath;
+    SArray<Pair<CLSID, SString>> storedProfilers;
 
     ProfilerInfo mainProfilerInfo;
 
