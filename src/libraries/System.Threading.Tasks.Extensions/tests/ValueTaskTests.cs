@@ -1168,6 +1168,7 @@ namespace System.Threading.Tasks.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50722", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50722", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAndroid))]
         [InlineData(typeof(ValueTask))]
         public void NonGeneric_AsyncMethodBuilderAttribute_ValueTaskAttributed(Type valueTaskType)
         {
@@ -1181,6 +1182,7 @@ namespace System.Threading.Tasks.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50722", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50722", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAndroid))]
         [InlineData(typeof(ValueTask<>))]
         [InlineData(typeof(ValueTask<int>))]
         [InlineData(typeof(ValueTask<string>))]

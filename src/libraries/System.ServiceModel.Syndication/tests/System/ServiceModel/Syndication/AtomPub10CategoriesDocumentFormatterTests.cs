@@ -168,7 +168,7 @@ namespace System.ServiceModel.Syndication.Tests
             };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(WriteTo_TestData))]
         public void WriteTo_HasDocument_SerializesExpected(CategoriesDocument document, string expected)
         {
@@ -245,7 +245,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("reader", () => formatter.CanRead(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadFrom_InlineCategoriesDocument_ReturnsExpected()
         {
             string xmlString =
@@ -341,7 +341,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadFrom_ReferencedCategoriesDocument_ReturnsExpected()
         {
             string xmlString =

@@ -565,7 +565,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("writer", () => item.WriteAttributeExtensionsEntryPoint(null, "version"));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]

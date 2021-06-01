@@ -383,7 +383,7 @@ namespace System.ServiceModel.Syndication.Tests
         };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(WriteTo_TestData))]
         public void Write_HasFeed_SerializesExpected(SyndicationFeed feed, string expected)
         {
@@ -619,7 +619,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("reader", () => formatter.CanRead(null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData(true, true)]
         [InlineData(false, false)]
         public void Read_FullItem_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)

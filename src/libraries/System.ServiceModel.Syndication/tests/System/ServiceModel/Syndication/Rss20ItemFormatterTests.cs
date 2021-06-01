@@ -537,7 +537,7 @@ namespace System.ServiceModel.Syndication.Tests
             };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(WriteTo_TestData))]
         public void WriteTo_Invoke_SerializesExpected(SyndicationItem item, bool serializeExtensionsAsAtom, string expected)
         {
@@ -631,7 +631,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("reader", () => formatter.CanRead(null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData(true, true)]
         [InlineData(false, false)]
         public void ReadFrom_FullItem_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)

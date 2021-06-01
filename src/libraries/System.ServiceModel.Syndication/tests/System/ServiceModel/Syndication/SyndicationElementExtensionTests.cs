@@ -14,7 +14,7 @@ namespace System.ServiceModel.Syndication.Tests
 {
     public class ServiceElementExtensionTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Ctor_Reader()
         {
             var extension = new SyndicationElementExtension(new XElement("ExtensionObject", new XElement("Value", 10)).CreateReader());
@@ -25,7 +25,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(10, extension.GetObject<ExtensionObject>(new XmlSerializer(typeof(ExtensionObject))).Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Ctor_ReaderNotAtStart_ReturnsExpected()
         {
             using (XmlReader reader = new XElement("parent", new XElement("ExtensionObject", new XElement("Value", 10))).CreateReader())
@@ -219,7 +219,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(@"<ExtensionObject><Value>10</Value></ExtensionObject>", reader.ReadOuterXml());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetReader_ObjectWithXmlObjectSerializer_ReturnsExpected()
         {
             var extensionObject = new ExtensionObject() { Value = 10 };
@@ -228,7 +228,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(@"<ServiceElementExtensionTests.ExtensionObject xmlns=""http://schemas.datacontract.org/2004/07/System.ServiceModel.Syndication.Tests"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Value>10</Value></ServiceElementExtensionTests.ExtensionObject>", reader.ReadOuterXml());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void GetReader_ObjectWithXmlSerializer_ReturnsExpected()
         {
@@ -268,7 +268,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WriteTo_ObjectWithXmlObjectSerializer_ReturnsExpected()
         {
             var extensionObject = new ExtensionObject { Value = 10 };
@@ -285,7 +285,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WriteTo_ObjectWithXmlSerializer_ReturnsExpected()
         {
@@ -320,7 +320,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.NotNull(extension.GetObject<XmlSerializabWithIsAnyNull>(new DataContractSerializer(typeof(XmlSerializabWithIsAnyNull))));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ISerializableIsAny_XmlSerializer_OuterNameReturnsExpected()
         {
             var extensionObject = new XmlSerializabWithIsAny();
