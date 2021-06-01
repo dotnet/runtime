@@ -11,9 +11,9 @@ namespace Tracing.Tests
 {
     internal sealed class RuntimeEventListener : EventListener
     {
-        public int TPWorkerThreadStartCount = 0;
-        public int TPWorkerThreadStopCount = 0;
-        public int TPWorkerThreadWaitCount = 0;
+        public volatile int TPWorkerThreadStartCount = 0;
+        public volatile int TPWorkerThreadStopCount = 0;
+        public volatile int TPWorkerThreadWaitCount = 0;
         
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -37,6 +37,8 @@ namespace Tracing.Tests
             {
                 TPWorkerThreadWaitCount += 1;
             }
+
+            Thread.MemoryBarrier();
         }
     }
 
@@ -55,6 +57,7 @@ namespace Tracing.Tests
 
                 Task.WaitAll(tasks);
 
+                Thread.MemoryBarrier();
                 if (listener.TPWorkerThreadStartCount > 0 ||
                     listener.TPWorkerThreadStopCount > 0 ||
                     listener.TPWorkerThreadWaitCount > 0)
