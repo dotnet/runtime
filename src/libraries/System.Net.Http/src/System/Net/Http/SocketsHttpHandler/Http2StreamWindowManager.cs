@@ -130,8 +130,8 @@ namespace System.Net.Http
                 PingSent
             }
 
-            private const long PingIntervalInSeconds = 5;
-            private static readonly long PingIntervalInTicks = PingIntervalInSeconds * Stopwatch.Frequency;
+            private const double PingIntervalInSeconds = .5;
+            private static readonly long PingIntervalInTicks =(long)(PingIntervalInSeconds * Stopwatch.Frequency);
 
             private Http2Connection _connection;
 
