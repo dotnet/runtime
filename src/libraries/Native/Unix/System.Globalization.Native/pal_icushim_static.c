@@ -154,7 +154,7 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
 
     fclose(fp);
 
-    if (load_icu_data(icu_data, strcasecmp("icudt.dat", path)) == 0) {
+    if (load_icu_data(icu_data, strstr(path, "app") == NULL) == 0) {
         log_shim_error("ICU BAD EXIT %d.", ret);
         return ret;
     }
