@@ -29186,6 +29186,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
             }
         }
 
+        dprintf (2, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, new_address));
         *pold_address = new_address;
         return;
     }
@@ -29215,7 +29216,9 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 #endif
                 )
             {
-                *pold_address = old_address + loh_node_relocation_distance (old_address);
+                new_address = old_address + loh_node_relocation_distance (old_address);
+                dprintf (2, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, new_address));
+                *pold_address = new_address;
             }
         }
     }

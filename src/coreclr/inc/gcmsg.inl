@@ -1,3 +1,4 @@
+
     static const char* gcStartMsg()
     {
         STATIC_CONTRACT_LEAF;
@@ -122,4 +123,10 @@
     {
         STATIC_CONTRACT_LEAF;
         return "beginning of bgc on heap %d: gen2 FL: %d, FO: %d, frag: %d";
+    }
+
+    static const char* gcRelocateReferenceMsg()
+    {
+        STATIC_CONTRACT_LEAF;
+        return "Relocating reference *(%p) = %p";
     }

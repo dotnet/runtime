@@ -139,6 +139,7 @@ d(IS_PLAN_PINNED_PLUG,          ThreadStressLog::gcPlanPinnedPlugMsg())         
 d(IS_DESIRED_NEW_ALLOCATION,    ThreadStressLog::gcDesiredNewAllocationMsg())                                               \
 d(IS_MAKE_UNUSED_ARRAY,         ThreadStressLog::gcMakeUnusedArrayMsg())                                                    \
 d(IS_START_BGC_THREAD,          ThreadStressLog::gcStartBgcThread())                                                        \
+d(IS_RELOCATE_REFERENCE,        ThreadStressLog::gcRelocateReferenceMsg())                                                  \
 d(IS_UNINTERESTING,             "")
 
 enum InterestingStringId : unsigned char
@@ -468,6 +469,24 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
 
     case    IS_START_BGC_THREAD:
         RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_BG);
+        break;
+    case    IS_RELOCATE_REFERENCE:
+        if (s_valueFilterCount > 0)
+        {
+            size_t src = (size_t)args[0];
+            size_t dst = (size_t)args[1];
+            // print this message if the source or destination contain (part of) the range we're looking for
+            for (int i = 0; i < s_valueFilterCount; i++)
+            {
+                if ((s_valueFilter[i].end < src || src < s_valueFilter[i].start) &&
+                    (s_valueFilter[i].end < dst || dst < s_valueFilter[i].start))
+                {
+                    // empty intersection with both the source and the destination
+                    continue;
+                }
+                return true;
+            }
+        }
         break;
     }
     return fLevelFilter || s_interestingStringFilter[isd];
