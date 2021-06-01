@@ -61,18 +61,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        public void SetInstallLocation(string installLocation, string architecture)
+        public void SetInstallLocation(string[] installLocation, string architecture = "")
         {
             if (OperatingSystem.IsWindows())
             {
+                Debug.Assert(installLocation.Length == 1 && !string.IsNullOrEmpty(architecture));
                 using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{architecture}"))
                 {
-                    dotnetLocationKey.SetValue("InstallLocation", installLocation);
+                    dotnetLocationKey.SetValue("InstallLocation", installLocation[0]);
                 }
             }
             else
             {
-                File.WriteAllText(PathValueOverride, installLocation);
+                File.WriteAllText(PathValueOverride, string.Join (Environment.NewLine, installLocation));
             }
         }
 
