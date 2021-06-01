@@ -1436,7 +1436,7 @@ mono_class_get_dim_conflicts (MonoClass *klass);
 MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_method_has_no_body (MonoMethod *method);
 
 // FIXME Replace all internal callers of mono_method_get_header_checked with
@@ -1445,7 +1445,7 @@ mono_method_has_no_body (MonoMethod *method);
 // And then mark mono_method_get_header_checked as MONO_RT_EXTERNAL_ONLY MONO_API.
 //
 // Internal callers expected to use ERROR_DECL. External callers are not.
-MonoMethodHeader*
+MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
 
 MonoType*

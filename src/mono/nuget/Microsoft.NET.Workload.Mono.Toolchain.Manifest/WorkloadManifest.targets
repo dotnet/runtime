@@ -20,12 +20,10 @@
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-x86" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos' and '$(RunAOTCompilation)' == 'true'">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-x64" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'iossimulator' and '$(RunAOTCompilation)' == 'true'">

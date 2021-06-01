@@ -596,4 +596,13 @@
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
   </data>
+  <data name="PropInitAndSerializeFuncsNull" xml:space="preserve">
+    <value>'propInitFunc' and 'serializeFunc' cannot both be 'null'. </value>
+  </data>
+  <data name="NoMetadataForTypeProperties" xml:space="preserve">
+    <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
+  </data>
+  <data name="NoDefaultOptionsForContext" xml:space="preserve">
+    <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
+  </data>
 </root>

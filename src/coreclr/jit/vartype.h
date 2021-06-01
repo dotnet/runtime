@@ -19,13 +19,7 @@ enum var_types_classification
     VTF_S   = 0x0040, // is a struct type
 };
 
-enum var_types : BYTE
-{
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) TYP_##tn,
-#include "typelist.h"
-#undef DEF_TP
-    TYP_COUNT
-};
+#include "vartypesdef.h"
 
 /*****************************************************************************
  * C-style pointers are implemented as TYP_INT or TYP_LONG depending on the
@@ -35,11 +29,9 @@ enum var_types : BYTE
 #ifdef TARGET_64BIT
 #define TYP_I_IMPL TYP_LONG
 #define TYP_U_IMPL TYP_ULONG
-#define TYPE_REF_IIM TYPE_REF_LNG
 #else
 #define TYP_I_IMPL TYP_INT
 #define TYP_U_IMPL TYP_UINT
-#define TYPE_REF_IIM TYPE_REF_INT
 #ifdef _PREFAST_
 // We silence this in the 32-bit build because for portability, we like to have asserts like this:
 // assert(op2->gtType == TYP_INT || op2->gtType == TYP_I_IMPL);

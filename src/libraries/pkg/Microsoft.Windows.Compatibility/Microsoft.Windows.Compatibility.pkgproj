@@ -86,17 +86,8 @@
     </ExternalLibraryPackage>
   </ItemGroup>
   <ItemGroup>
-    <!-- The shims included in the shims package are only needed for netcoreapp2.0 since in newer frameworks they are included inbox.
-    In order to condition the shims package to an specific framework other dependencies need to specify their target framework. So
-    we need to include the dependencies with the supported frameworks and then we include the compatibility shims package only for 2.0 -->
-    <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage)">
-      <TargetFramework>netcoreapp2.0</TargetFramework>
-    </IndexedDependency>
-    <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage)">
-      <TargetFramework>netcoreapp2.1</TargetFramework>
-    </IndexedDependency>
     <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage);@(NS21PrereleaseLibraryPackage)">
-      <TargetFramework>netcoreapp3.0</TargetFramework>
+      <TargetFramework>netcoreapp3.1</TargetFramework>
     </IndexedDependency>
     <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage)">
       <TargetFramework>netstandard2.0</TargetFramework>
@@ -104,22 +95,11 @@
     <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage);@(NS21PrereleaseLibraryPackage)">
       <TargetFramework>netstandard2.1</TargetFramework>
     </IndexedDependency>
-    <!-- Include dependency to shims package -->
-    <IndexedDependency Include="Microsoft.Windows.Compatibility.Shims">
-      <Version>2.0.1</Version>
-      <TargetFramework>netcoreapp2.0</TargetFramework>
-    </IndexedDependency>
   </ItemGroup>
 
   <ItemGroup>
     <Dependency Include="@(ExternalLibraryPackage)">
-      <TargetFramework>netcoreapp2.0</TargetFramework>
-    </Dependency>
-    <Dependency Include="@(ExternalLibraryPackage)">
-      <TargetFramework>netcoreapp2.1</TargetFramework>
-    </Dependency>
-    <Dependency Include="@(ExternalLibraryPackage)">
-      <TargetFramework>netcoreapp3.0</TargetFramework>
+      <TargetFramework>netcoreapp3.1</TargetFramework>
     </Dependency>
     <Dependency Include="@(ExternalLibraryPackage)">
       <TargetFramework>netstandard2.0</TargetFramework>

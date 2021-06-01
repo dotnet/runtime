@@ -53,7 +53,7 @@ jobs:
        - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-     - ${{ if eq(parameters.collectionName, 'tests') }}:
+     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
         - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
     variables: ${{ parameters.variables }}
@@ -91,7 +91,7 @@ jobs:
           displayName: 'Coreclr product build (x64)'
 
     # Download and unzip managed test artifacts
-    - ${{ if eq(parameters.collectionName, 'tests') }}:
+    - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
@@ -100,7 +100,7 @@ jobs:
           displayName: 'generic managed test artifacts'
 
     # Download and unzip libraries test artifacts
-    - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
+    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)'
@@ -109,7 +109,7 @@ jobs:
           displayName: 'generic libraries test artifacts'
 
     # Unzip individual test projects
-    - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
+    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - task: ExtractFiles@1
         displayName: 'Unzip Tests.zip'
         inputs:

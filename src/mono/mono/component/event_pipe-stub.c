@@ -98,6 +98,8 @@ event_pipe_stub_thread_ctrl_activity_id (
 static bool
 event_pipe_stub_write_event_ee_startup_start (void);
 
+MonoComponentEventPipe *
+component_event_pipe_stub_init (void);
 
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_stub_available },
@@ -247,17 +249,15 @@ event_pipe_stub_write_event_ee_startup_start (void)
 	return true;
 }
 
-#ifdef STATIC_COMPONENTS
+MonoComponentEventPipe *
+component_event_pipe_stub_init (void)
+{
+	return &fn_table;
+}
+
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
-	return mono_component_event_pipe_stub_init ();
-}
-#endif
-
-MonoComponentEventPipe *
-mono_component_event_pipe_stub_init (void)
-{
-	return &fn_table;
+	return component_event_pipe_stub_init ();
 }

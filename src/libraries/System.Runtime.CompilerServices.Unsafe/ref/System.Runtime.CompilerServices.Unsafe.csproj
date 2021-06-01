@@ -3,8 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard2.1;net45;net461</TargetFrameworks>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net45'">true</ExcludeFromPackage>
+    <TargetFrameworks>netstandard2.1;netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.cs" />

@@ -213,7 +213,7 @@ namespace System.Diagnostics
         public System.Diagnostics.ActivityTraceFlags TraceFlags  { get { throw null; } }
         public string? TraceState  { get { throw null; } }
         public bool IsRemote { get { throw null; } }
-        public static bool TryParse(string traceParent, string? traceState, out System.Diagnostics.ActivityContext context) { throw null; }
+        public static bool TryParse(string? traceParent, string? traceState, out System.Diagnostics.ActivityContext context) { throw null; }
         public static System.Diagnostics.ActivityContext Parse(string traceParent, string? traceState) { throw null; }
         public static bool operator ==(System.Diagnostics.ActivityContext left, System.Diagnostics.ActivityContext right) { throw null; }
         public static bool operator !=(System.Diagnostics.ActivityContext left, System.Diagnostics.ActivityContext right) { throw null; }

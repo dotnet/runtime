@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.0;netstandard1.3;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
@@ -89,10 +85,6 @@
              Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <None Include="Interfaces.cd" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
-    <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs"
-             Link="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Contracts" />
@@ -107,13 +99,7 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Diagnostics.Contracts" Condition="$(TargetFramework.StartsWith('netstandard1.'))" Version="$(SystemDiagnosticsContractsVersion)" />
-    <PackageReference Include="System.Runtime.InteropServices" Condition="'$(TargetFramework)' == 'netstandard1.3'" Version="$(SystemRuntimeInteropServicesVersion)" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or
-                        '$(TargetFramework)' == 'netstandard2.0' or
-                        $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory"  Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">

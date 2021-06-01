@@ -1659,25 +1659,12 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         LIR::Range& nextRange  = LIR::AsRange(bNext);
 
         // Does the next block have any phis?
-        GenTree*           nextFirstNonPhi = nullptr;
-        LIR::ReadOnlyRange nextPhis        = nextRange.PhiNodes();
-        if (!nextPhis.IsEmpty())
-        {
-            GenTree* blockLastPhi = blockRange.LastPhiNode();
-            nextFirstNonPhi       = nextPhis.LastNode()->gtNext;
+        GenTree* nextNode = nextRange.FirstNode();
 
-            LIR::Range phisToMove = nextRange.Remove(std::move(nextPhis));
-            blockRange.InsertAfter(blockLastPhi, std::move(phisToMove));
-        }
-        else
+        // Does the block have any code?
+        if (nextNode != nullptr)
         {
-            nextFirstNonPhi = nextRange.FirstNode();
-        }
-
-        // Does the block have any other code?
-        if (nextFirstNonPhi != nullptr)
-        {
-            LIR::Range nextNodes = nextRange.Remove(nextFirstNonPhi, nextRange.LastNode());
+            LIR::Range nextNodes = nextRange.Remove(nextNode, nextRange.LastNode());
             blockRange.InsertAtEnd(std::move(nextNodes));
         }
     }
