@@ -186,7 +186,7 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>fd2a4a5bb1f3e81f909cd8999eb43a1e8ff4848e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21276.5">
+    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21281.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>c2a8af3f309fc27402fa9c18bac6df757a9c41ed</Sha>
     </Dependency>
