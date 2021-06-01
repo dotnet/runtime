@@ -1606,6 +1606,8 @@ typedef struct {
 	/* pointer to context datastructure used for graph dumping */
 	MonoGraphDumper *gdump_ctx;
 
+	gboolean *clause_is_dead;
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;
