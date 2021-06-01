@@ -444,6 +444,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53522", TargetFrameworkMonikers.Netcoreapp)]
         public void Arrays_SingleDimensional_PrimitiveTypes()
         {
             var arrayMethod = new CodeMemberMethod();
@@ -539,6 +540,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53522", TargetFrameworkMonikers.Netcoreapp)]
         public void Arrays_WithinArrays_Empty_NonPrimitiveTypes()
         {
             var arrayMethod = new CodeMemberMethod();
@@ -2082,6 +2084,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53522", TargetFrameworkMonikers.Netcoreapp)]
         public void Indexers()
         {
             CodeNamespace nspace = new CodeNamespace("NSPC");
@@ -2362,6 +2365,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53522", TargetFrameworkMonikers.Netcoreapp)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50879", TestPlatforms.Android)]
         public void ProviderSupports()
         {
@@ -3187,6 +3191,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53522", TargetFrameworkMonikers.Netcoreapp)]
         public void GenericTypesAndConstraints()
         {
             CodeNamespace ns = new CodeNamespace("NS");
