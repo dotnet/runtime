@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
-using Tracing.Tests.Common;
 
 namespace Tracing.Tests
 {
@@ -14,6 +13,8 @@ namespace Tracing.Tests
         public volatile int TPWorkerThreadStartCount = 0;
         public volatile int TPWorkerThreadStopCount = 0;
         public volatile int TPWorkerThreadWaitCount = 0;
+
+    public ManualResetEvent TPWaitEvent = new ManualResetEvent(false);
         
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -28,14 +29,17 @@ namespace Tracing.Tests
             if (eventData.EventName.Equals("ThreadPoolWorkerThreadStart"))
             {
                 Interlocked.Increment(ref TPWorkerThreadStartCount);
+                TPWaitEvent.Set();
             }
             else if (eventData.EventName.Equals("ThreadPoolWorkerThreadStop"))
             {
                 Interlocked.Increment(ref TPWorkerThreadStopCount);
+                TPWaitEvent.Set();
             }
             else if (eventData.EventName.Equals("ThreadPoolWorkerThreadWait"))
             {
                 Interlocked.Increment(ref TPWorkerThreadWaitCount);
+                TPWaitEvent.Set();
             }
         }
     }
@@ -53,9 +57,8 @@ namespace Tracing.Tests
                     tasks[i] = Task.Run(() => { someNumber += 1; });
                 }
 
-                Task.WaitAll(tasks);
+                listener.TPWaitEvent.WaitOne(TimeSpan.FromMinutes(3));
 
-                Interlocked.MemoryBarrierProcessWide();
                 if (listener.TPWorkerThreadStartCount > 0 ||
                     listener.TPWorkerThreadStopCount > 0 ||
                     listener.TPWorkerThreadWaitCount > 0)
