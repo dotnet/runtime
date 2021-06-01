@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
@@ -141,6 +142,16 @@ namespace System.IO
                 errorCode = 0;
                 return numBytesWritten;
             }
+        }
+
+        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        {
+
+        }
+
+        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        {
+
         }
 
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)

@@ -232,6 +232,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
+        {
+            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
             throw new ArgumentNullException(GetArgumentName(argument));

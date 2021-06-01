@@ -54,7 +54,9 @@
     <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
     <Compile Include="RandomAccess\Read.cs" />
+    <Compile Include="RandomAccess\ReadAsync.cs" />
     <Compile Include="RandomAccess\Write.cs" />
+    <Compile Include="RandomAccess\WriteAsync.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />

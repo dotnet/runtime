@@ -57,7 +57,8 @@ namespace System.IO.Tests
         {
             if (UsesOffsets)
             {
-                using (SafeFileHandle validHandle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write))
+                FileOptions options = ShouldThrowForAsyncHandle ? FileOptions.None : FileOptions.Asynchronous;
+                using (SafeFileHandle validHandle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
                 {
                     ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => MethodUnderTest(validHandle, Array.Empty<byte>(), -1));
                     Assert.Equal("fileOffset", ex.ParamName);

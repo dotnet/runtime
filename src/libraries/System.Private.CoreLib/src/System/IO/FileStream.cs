@@ -90,7 +90,7 @@ namespace System.IO
 
             if (isAsync && !handle.IsAsync)
             {
-                throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
+                ThrowHelper.ThrowArgumentException_HandleNotAsync(nameof(handle));
             }
             else if (!isAsync && handle.IsAsync)
             {
