@@ -64,7 +64,7 @@ var MonoSupportLib = {
 				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
-				MONO.timeout_queue.shift()();
+				Promise.resolve().then(MONO.timeout_queue.shift()());
 			}
 			while (MONO.pump_count > 0) {
 				--MONO.pump_count;
@@ -1759,9 +1759,9 @@ var MonoSupportLib = {
 				try {
 					load_runtime ("unused", args.debug_level);
 				} catch (ex) {
-					print ("MONO_WASM: load_runtime () failed: " + ex);
-					print ("MONO_WASM: Stacktrace: \n");
-					print (ex.stack);
+					Module.print ("MONO_WASM: load_runtime () failed: " + ex);
+					Module.print ("MONO_WASM: Stacktrace: \n");
+					Module.print (ex.stack);
 
 					var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
 					wasm_exit (1);
@@ -2452,24 +2452,19 @@ var MonoSupportLib = {
 
 	schedule_background_exec: function () {
 		++MONO.pump_count;
-		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (MONO.pump_message, 0);
-		}
+		Promise.resolve().then (MONO.pump_message);
 	},
 
 	mono_set_timeout: function (timeout, id) {
 		if (!this.mono_set_timeout_exec)
 			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
+		var timer = function () { this.mono_set_timeout_exec (id) }.bind (this);
 		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
-			}, timeout);
+			globalThis.setTimeout (timer, timeout);
 		} else {
 			++MONO.pump_count;
-			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
-			})
+			MONO.timeout_queue.push(timer);
 		}
 	},
 
