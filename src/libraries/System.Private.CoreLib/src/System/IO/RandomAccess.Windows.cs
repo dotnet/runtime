@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Strategies;
@@ -236,12 +237,15 @@ namespace System.IO
         {
             long total = 0;
 
+            // ReadFileScatter does not support sync handles, so we just call ReadFile in a loop
             for (int i = 0; i < buffers.Count; i++)
             {
                 Span<byte> span = buffers[i].Span;
                 int read = ReadAtOffset(handle, span, fileOffset + total);
                 total += read;
 
+                // We stop on the first incomplete read.
+                // Most probably there is no more data available and the next read is going to return 0 (EOF).
                 if (read != span.Length)
                 {
                     break;
@@ -255,12 +259,15 @@ namespace System.IO
         {
             long total = 0;
 
+            // WriteFileGather does not support sync handles, so we just call WriteFile in a loop
             for (int i = 0; i < buffers.Count; i++)
             {
                 ReadOnlySpan<byte> span = buffers[i].Span;
                 int written = WriteAtOffset(handle, span, fileOffset + total);
                 total += written;
 
+                // We stop on the first incomplete write.
+                // Most probably the disk became full and the next write is going to throw.
                 if (written != span.Length)
                 {
                     break;
@@ -270,7 +277,107 @@ namespace System.IO
             return total;
         }
 
-        private static async ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
+        private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            if (CanUseScatterGatherWindowsAPIs(handle))
+            {
+                long totalBytes = 0;
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    totalBytes += buffers[i].Length;
+                }
+
+                if (totalBytes < int.MaxValue) // the ReadFileScatter API uses int, not long
+                {
+                    return ReadScatterAtOffsetSingleSyscallAsync(handle, buffers, fileOffset, cancellationToken);
+                }
+            }
+
+            return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
+        }
+
+        // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
+        // "The file handle must be created with the GENERIC_READ right, and the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
+        // "This function is not supported for 32-bit applications by WOW64 on Itanium-based systems."
+        private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
+            => IntPtr.Size != sizeof(int)
+                && handle.IsAsync
+                && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
+
+        private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle,
+            IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
+        {
+            if (buffers.Count == 1)
+            {
+                // we have to await it because we can't cast a VT<int> to VT<long>
+                return await ReadAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken).ConfigureAwait(false);
+            }
+
+            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) = PrepareMemorySegments(buffers);
+
+            try
+            {
+                return await ReadFileScatterAsync(handle, pinnedSegments, totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                foreach (MemoryHandle memoryHandle in memoryHandles)
+                {
+                    memoryHandle.Dispose();
+                }
+                pinnedSegments.Dispose();
+            }
+        }
+
+        private static unsafe ValueTask<int> ReadFileScatterAsync(SafeFileHandle handle, MemoryHandle pinnedSegments,
+            int bytesToRead, long fileOffset, CancellationToken cancellationToken)
+        {
+            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            try
+            {
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset);
+                Debug.Assert(pinnedSegments.Pointer != null);
+
+                if (Interop.Kernel32.ReadFileScatter(handle, (Interop.Kernel32.FILE_SEGMENT_ELEMENT*)pinnedSegments.Pointer, bytesToRead, IntPtr.Zero, nativeOverlapped) == 0)
+                {
+                    // The operation failed, or it's pending.
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            vts.RegisterForCancellation(cancellationToken);
+                            break;
+
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                            // EOF on a pipe. Callback will not be called.
+                            // We clear the overlapped status bit for this special case (failure
+                            // to do so looks like we are freeing a pending overlapped later).
+                            nativeOverlapped->InternalLow = IntPtr.Zero;
+                            vts.Dispose();
+                            return ValueTask.FromResult(0);
+
+                        default:
+                            // Error. Callback will not be called.
+                            vts.Dispose();
+                            return ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                    }
+                }
+            }
+            catch
+            {
+                vts.Dispose();
+                throw;
+            }
+
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask<int>(vts, vts.Version);
+        }
+
+        private static async ValueTask<long> ReadScatterAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
             long total = 0;
@@ -290,7 +397,27 @@ namespace System.IO
             return total;
         }
 
-        private static async ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+        private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            if (CanUseScatterGatherWindowsAPIs(handle))
+            {
+                long totalBytes = 0;
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    totalBytes += buffers[i].Length;
+                }
+
+                if (totalBytes < int.MaxValue) // the ReadFileScatter API uses int, not long
+                {
+                    return WriteGatherAtOffsetSingleSyscallAsync(handle, buffers, fileOffset, cancellationToken);
+                }
+            }
+
+            return WriteGatherAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
+        }
+
+        private static async ValueTask<long> WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
             long total = 0;
@@ -308,6 +435,120 @@ namespace System.IO
             }
 
             return total;
+        }
+
+        private static async ValueTask<long> WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            if (buffers.Count == 1)
+            {
+                return await WriteAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken).ConfigureAwait(false);
+            }
+
+            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) = PrepareMemorySegments(buffers);
+
+            try
+            {
+                return await WriteFileGatherAsync(handle, pinnedSegments, totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                foreach (MemoryHandle memoryHandle in memoryHandles)
+                {
+                    memoryHandle.Dispose();
+                }
+                pinnedSegments.Dispose();
+            }
+        }
+
+        private static unsafe ValueTask<int> WriteFileGatherAsync(SafeFileHandle handle, MemoryHandle pinnedSegments,
+            int bytesToWrite, long fileOffset, CancellationToken cancellationToken)
+        {
+            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            try
+            {
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
+
+                // Queue an async WriteFile operation.
+                if (Interop.Kernel32.WriteFileGather(handle, (Interop.Kernel32.FILE_SEGMENT_ELEMENT*)pinnedSegments.Pointer, bytesToWrite, IntPtr.Zero, nativeOverlapped) == 0)
+                {
+                    // The operation failed, or it's pending.
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                    {
+                        // Common case: IO was initiated, completion will be handled by callback.
+                        // Register for cancellation now that the operation has been initiated.
+                        vts.RegisterForCancellation(cancellationToken);
+                    }
+                    else
+                    {
+                        // Error. Callback will not be invoked.
+                        vts.Dispose();
+                        return errorCode == Interop.Errors.ERROR_NO_DATA // EOF on a pipe. IO callback will not be called.
+                            ? ValueTask.FromResult<int>(0)
+                            : ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                    }
+                }
+            }
+            catch
+            {
+                vts.Dispose();
+                throw;
+            }
+
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask<int>(vts, vts.Version);
+        }
+
+        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) PrepareMemorySegments(IReadOnlyList<Memory<byte>> buffers)
+        {
+            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
+            Interop.Kernel32.FILE_SEGMENT_ELEMENT[] fileSegments = new Interop.Kernel32.FILE_SEGMENT_ELEMENT[buffers.Count + 1];
+            fileSegments[buffers.Count].Buffer = IntPtr.Zero;
+
+            MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
+            int totalBytes = 0;
+            for (int i = 0; i < buffers.Count; i++)
+            {
+                Memory<byte> buffer = buffers[i];
+                MemoryHandle memoryHandle = buffer.Pin();
+                memoryHandles[i] = memoryHandle;
+                fileSegments[i] = new Interop.Kernel32.FILE_SEGMENT_ELEMENT { Buffer = new IntPtr(memoryHandle.Pointer) };
+
+                checked
+                {
+                    totalBytes += buffer.Length;
+                }
+            }
+
+            return (fileSegments.AsMemory().Pin(), memoryHandles, totalBytes);
+        }
+
+        // any ideas on geting rid of the code duplication are more than welcomed
+        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) PrepareMemorySegments(IReadOnlyList<ReadOnlyMemory<byte>> buffers)
+        {
+            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
+            Interop.Kernel32.FILE_SEGMENT_ELEMENT[] fileSegments = new Interop.Kernel32.FILE_SEGMENT_ELEMENT[buffers.Count + 1];
+            fileSegments[buffers.Count].Buffer = IntPtr.Zero;
+
+            MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
+            int totalBytes = 0;
+            for (int i = 0; i < buffers.Count; i++)
+            {
+                ReadOnlyMemory<byte> buffer = buffers[i];
+                MemoryHandle memoryHandle = buffer.Pin();
+                memoryHandles[i] = memoryHandle;
+                fileSegments[i] = new Interop.Kernel32.FILE_SEGMENT_ELEMENT { Buffer = new IntPtr(memoryHandle.Pointer) };
+
+                checked
+                {
+                    totalBytes += buffer.Length;
+                }
+            }
+
+            return (fileSegments.AsMemory().Pin(), memoryHandles, totalBytes);
         }
 
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)
