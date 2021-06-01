@@ -358,8 +358,6 @@ namespace Internal.TypeSystem
                     );
                 if (needsToBeAligned)
                 {
-                    // ByRefLike types aren't guaranteed to have pointer alignment by themselves
-                    largestAlignmentRequired = LayoutInt.Max(largestAlignmentRequired, type.Context.Target.LayoutPointerSize);
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
                     {
