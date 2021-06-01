@@ -159,6 +159,69 @@ bool emitter::IsWriteZFFlags(instruction ins)
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
 }
 
+
+//------------------------------------------------------------------------
+// IsFlagsModified: check if the instruction modifies the flags.
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if instruction modified any flag, false otherwise.
+//
+bool emitter::IsFlagsModified(instrDesc* id)
+{
+    instruction ins = id->idIns();
+    insFormat   fmt = id->idInsFmt();
+
+    if (fmt == IF_RRW_SHF)
+    {
+        if (id->idIsLargeCns())
+        {
+            return true;
+        }
+        else if (id->idSmallCns() == 0)
+        {
+            switch (ins)
+            {
+                // If shift-amount for below instructions is 0, then flags are unaffected.
+                case INS_rcl_N:
+                case INS_rcr_N:
+                case INS_rol_N:
+                case INS_ror_N:
+                case INS_shl_N:
+                case INS_shr_N:
+                case INS_sar_N:
+                    return false;
+                default:
+                    return true;
+
+            }
+        }
+    }
+    else if (fmt == IF_RRW)
+    {
+        switch (ins)
+        {
+            // If shift-amount for below instructions is 0, then flags are unaffected.
+            // So, to be conservative, do not optimize if the instruction has register
+            // as the shift-amount operand.
+            case INS_rcl:
+            case INS_rcr:
+            case INS_rol:
+            case INS_ror:
+            case INS_shl:
+            case INS_shr:
+            case INS_sar:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    return true;
+}
+
 //------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
@@ -276,7 +339,6 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         case IF_RRD:
         case IF_RRW:
             break;
-
         default:
             return false;
     }
@@ -294,7 +356,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
-        if (IsWriteZFFlags(lastIns))
+        if (IsWriteZFFlags(lastIns) && IsFlagsModified(id))
         {
             return id->idOpSize() == opSize;
         }
