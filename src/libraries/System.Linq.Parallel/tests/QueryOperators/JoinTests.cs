@@ -203,7 +203,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(JoinMultipleData), new[] { 2, KeyFactor - 1, KeyFactor, KeyFactor + 1, KeyFactor * 2 - 1, KeyFactor * 2, KeyFactor * 2 + 1 })]
         public static void Join_Multiple_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {

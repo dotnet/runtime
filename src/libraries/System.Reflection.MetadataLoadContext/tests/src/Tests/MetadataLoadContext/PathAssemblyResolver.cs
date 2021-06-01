@@ -324,6 +324,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("System.IO.FileNotFoundException", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         public static void RelocatableAssembly()
         {
             string coreAssemblyPath = TestUtils.GetPathToCoreAssembly();

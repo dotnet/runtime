@@ -223,6 +223,13 @@
     <!-- Can't link -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
   
+    <!-- Lots of NRE and CryptographicException -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
+
+    <!-- Crash -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory.Data/tests/System.Memory.Data.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
+
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\Interpreter\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InvariantCultureOnlyMode\*.Test.csproj" />
