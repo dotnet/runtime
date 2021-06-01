@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -334,6 +335,17 @@ namespace System.Net.Sockets
             }
         }
 
+        private void ValidateDatagram(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint)
+        {
+            ThrowIfDisposed();
+
+            if (_active && endPoint != null)
+            {
+                // Do not allow sending packets to arbitrary host when connected.
+                throw new InvalidOperationException(SR.net_udpconnected);
+            }
+        }
+
         private IPEndPoint? GetEndpoint(string? hostname, int port)
         {
             if (_active && ((hostname != null) || (port != 0)))
@@ -600,6 +612,9 @@ namespace System.Net.Sockets
         public Task<int> SendAsync(byte[] datagram, int bytes) =>
             SendAsync(datagram, bytes, null);
 
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, CancellationToken cancellationToken = default) =>
+            SendAsync(datagram, null, cancellationToken);
+
         public Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) =>
             SendAsync(datagram, bytes, GetEndpoint(hostname, port));
 
@@ -615,6 +630,21 @@ namespace System.Net.Sockets
             {
                 CheckForBroadcast(endPoint.Address);
                 return _clientSocket.SendToAsync(new ArraySegment<byte>(datagram, 0, bytes), SocketFlags.None, endPoint);
+            }
+        }
+
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint, CancellationToken cancellationToken = default)
+        {
+            ValidateDatagram(datagram, endPoint);
+
+            if (endPoint is null)
+            {
+                return _clientSocket.SendAsync(datagram, SocketFlags.None, cancellationToken);
+            }
+            else
+            {
+                CheckForBroadcast(endPoint.Address);
+                return _clientSocket.SendToAsync(datagram, SocketFlags.None, endPoint, cancellationToken);
             }
         }
 
@@ -892,45 +922,32 @@ namespace System.Net.Sockets
             return Client.SendTo(dgram, 0, bytes, SocketFlags.None, endPoint);
         }
 
-
-        // Sends a UDP datagram to the specified port on the specified remote host.
-        public int Send(byte[] dgram, int bytes, string? hostname, int port)
+        // Sends a UDP datagram to the host at the remote end point.
+        public int Send(ReadOnlySpan<byte> datagram, IPEndPoint? endPoint)
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
-            {
-                throw new ArgumentNullException(nameof(dgram));
-            }
-            if (_active && ((hostname != null) || (port != 0)))
+            if (_active && endPoint != null)
             {
                 // Do not allow sending packets to arbitrary host when connected
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
 
-            if (hostname == null || port == 0)
+            if (endPoint == null)
             {
-                return Client.Send(dgram, 0, bytes, SocketFlags.None);
+                return Client.Send(datagram, SocketFlags.None);
             }
 
-            IPAddress[] addresses = Dns.GetHostAddresses(hostname);
+            CheckForBroadcast(endPoint.Address);
 
-            int i = 0;
-            for (; i < addresses.Length && !IsAddressFamilyCompatible(addresses[i].AddressFamily); i++)
-            {
-                ; // just count the addresses
-            }
-
-            if (addresses.Length == 0 || i == addresses.Length)
-            {
-                throw new ArgumentException(SR.net_invalidAddressList, nameof(hostname));
-            }
-
-            CheckForBroadcast(addresses[i]);
-            IPEndPoint ipEndPoint = new IPEndPoint(addresses[i], port);
-            return Client.SendTo(dgram, 0, bytes, SocketFlags.None, ipEndPoint);
+            return Client.SendTo(datagram, SocketFlags.None, endPoint);
         }
 
+        // Sends a UDP datagram to the specified port on the specified remote host.
+        public int Send(byte[] dgram, int bytes, string? hostname, int port) => Send(dgram, bytes, GetEndpoint(hostname, port));
+
+        // Sends a UDP datagram to the specified port on the specified remote host.
+        public int Send(ReadOnlySpan<byte> datagram, string? hostname, int port) => Send(datagram, GetEndpoint(hostname, port));
 
         // Sends a UDP datagram to a remote host.
         public int Send(byte[] dgram, int bytes)
@@ -951,7 +968,7 @@ namespace System.Net.Sockets
         }
 
         // Sends a UDP datagram to a remote host.
-        public int Send(ReadOnlySpan<byte> dgram)
+        public int Send(ReadOnlySpan<byte> datagram)
         {
             ThrowIfDisposed();
 
@@ -961,7 +978,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_notconnected);
             }
 
-            return Client.Send(dgram, SocketFlags.None);
+            return Client.Send(datagram, SocketFlags.None);
         }
 
         private void ThrowIfDisposed()
