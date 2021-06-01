@@ -3293,6 +3293,11 @@ public:
                                       unsigned    simdSize,
                                       bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdZeroNode(var_types   type,
+                               CorInfoType simdBaseJitType,
+                               unsigned    simdSize,
+                               bool        isSimdAsHWIntrinsic);
+
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
                                                    GenTree*       op1,

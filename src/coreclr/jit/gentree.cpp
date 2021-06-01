@@ -17504,39 +17504,19 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
     unsigned size = genTypeSize(simdType);
     if (isHWSIMD)
     {
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-        switch (simdType)
-        {
-            case TYP_SIMD16:
-                if (compExactlyDependsOn(InstructionSet_SSE))
-                {
-                    // We only return the HWIntrinsicNode if SSE is supported, since it is possible for
-                    // the user to disable the SSE HWIntrinsic support via the COMPlus configuration knobs
-                    // even though the hardware vector types are still available.
-                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_get_Zero, simdBaseJitType, size);
-                }
-                return nullptr;
-            case TYP_SIMD32:
-                if (compExactlyDependsOn(InstructionSet_AVX))
-                {
-                    // We only return the HWIntrinsicNode if AVX is supported, since it is possible for
-                    // the user to disable the AVX HWIntrinsic support via the COMPlus configuration knobs
-                    // even though the hardware vector types are still available.
-                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector256_get_Zero, simdBaseJitType, size);
-                }
-                return nullptr;
-            default:
-                break;
-        }
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
+        return gtNewSimdZeroNode(simdType, simdBaseJitType, size, /* isSimdAsHWIntrinsic */ false);
+#else
         JITDUMP("Coudn't find the matching SIMD type for %s<%s> in gtGetSIMDZero\n", varTypeName(simdType),
                 varTypeName(JitType2PreciseVarType(simdBaseJitType)));
+
+        return nullptr;
+#endif // FEATURE_HW_INTRINSICS
     }
     else
     {
         return gtNewSIMDVectorZero(simdType, simdBaseJitType, size);
     }
-    return nullptr;
 }
 #endif // FEATURE_SIMD
 
@@ -19087,11 +19067,11 @@ GenTree* Compiler::gtNewSimdAbsNode(
                                nullptr DEBUGARG("Clone op1 for vector abs"));
 
         // op1 = op1 < Zero
-        tmp = gtNewSIMDVectorZero(type, simdBaseJitType, simdSize);
+        tmp = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         op1 = gtNewSimdCmpOpNode(GT_LT, type, op1, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         // tmp = Zero - op1Dup1
-        tmp = gtNewSIMDVectorZero(type, simdBaseJitType, simdSize);
+        tmp = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         tmp = gtNewSimdBinOpNode(GT_SUB, type, tmp, op1Dup1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         // result = ConditionalSelect(op1, tmp, op1Dup2)
@@ -21130,7 +21110,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
             }
-            op2 = gtNewSIMDVectorZero(type, simdBaseJitType, simdSize);
+            op2 = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
             // Zero - op1
             return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
@@ -21169,7 +21149,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
             else
             {
                 // Zero - op1
-                op2 = gtNewSIMDVectorZero(type, simdBaseJitType, simdSize);
+                op2 = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
                 return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             }
         }
@@ -21271,6 +21251,32 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTree* Compiler::gtNewSimdZeroNode(var_types   type,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize,
+                                     bool        isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    intrinsic = (simdSize == 32) ? NI_Vector256_get_Zero : NI_Vector128_get_Zero;
+#elif defined(TARGET_ARM64)
+    intrinsic = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
