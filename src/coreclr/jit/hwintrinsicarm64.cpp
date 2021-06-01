@@ -615,7 +615,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewSIMDVectorZero(retType, simdBaseJitType, simdSize);
+            retNode = gtNewSimdZeroNode(retType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
