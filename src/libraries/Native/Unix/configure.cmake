@@ -544,7 +544,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
 elseif (CLR_CMAKE_TARGET_BROWSER)
-    unset(HAVE_FORK)
+    set(HAVE_FORK 0)
 else()
     check_c_source_runs(
         "
