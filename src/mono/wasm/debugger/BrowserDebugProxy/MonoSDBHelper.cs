@@ -809,6 +809,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             className = className.Replace("System.Int32", "int");
             className = className.Replace("System.Object", "object");
             className = className.Replace("System.Void", "void");
+            className = className.Replace("System.Byte", "byte");
             return className;
         }
         public async Task<string> GetTypeName(SessionId sessionId, int type_id, CancellationToken token)
@@ -1241,13 +1242,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                     // FIXME: The client and the debuggee might have different word sizes
                     ret = new JObject{{"Type", "void"}};
                     break;
+                case ElementType.FnPtr:
                 case ElementType.Ptr:
                 {
                     string type;
                     string value;
                     long valueAddress = ret_debugger_cmd_reader.ReadLong();
                     var typeId = ret_debugger_cmd_reader.ReadInt32();
-                    var className = "(" + await GetTypeName(sessionId, typeId, token) + ")";
+                    var className = "";
+                    if (etype == ElementType.FnPtr)
+                        className = "(*())"; //to keep the old behavior
+                    else
+                        className = "(" + await GetTypeName(sessionId, typeId, token) + ")";
+
                     int pointerId = 0;
                     if (valueAddress != 0 && className != "(void*)")
                     {
