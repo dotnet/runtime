@@ -88,78 +88,6 @@ appdomain_load (MonoProfiler *prof, MonoDomain *domain)
 	mono_de_domain_add (domain);
 }
 
-/* Frame state handling */
-static GPtrArray *frames;
-
-static void
-free_frame (DbgEngineStackFrame *frame)
-{
-	g_free (frame);
-}
-
-static gboolean
-collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
-{
-	SeqPoint sp;
-	MonoMethod *method;
-
-	//skip wrappers
-	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP)
-		return FALSE;
-
-	if (info->ji)
-		method = jinfo_get_method (info->ji);
-	else
-		method = info->method;
-
-	if (!method)
-		return FALSE;
-
-	PRINT_DEBUG_MSG (2, "collect_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
-
-	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
-		PRINT_DEBUG_MSG (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
-
-
-	StackFrame *frame = g_new0 (StackFrame, 1);
-	frame->de.ji = info->ji;
-	frame->de.domain = mono_get_root_domain ();
-	frame->de.method = method;
-	frame->de.native_offset = info->native_offset;
-
-	frame->il_offset = info->il_offset;
-	frame->interp_frame = info->interp_frame;
-	frame->frame_addr = info->frame_addr;
-
-	g_ptr_array_add (frames, frame);
-
-	return FALSE;
-}
-
-static void
-free_frame_state (void)
-{
-	if (frames) {
-		int i;
-		for (i = 0; i < frames->len; ++i)
-			free_frame ((DbgEngineStackFrame*)g_ptr_array_index (frames, i));
-		g_ptr_array_set_size (frames, 0);
-	}
-}
-
-static void
-compute_frames (void) {
-	if (frames) {
-		int i;
-		for (i = 0; i < frames->len; ++i)
-			free_frame ((DbgEngineStackFrame*)g_ptr_array_index (frames, i));
-		g_ptr_array_set_size (frames, 0);
-	} else {
-		frames = g_ptr_array_new ();
-	}
-
-	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);
-}
 static MonoContext*
 tls_get_restore_state (void *tls)
 {
@@ -186,17 +114,14 @@ begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
 static void
 ss_discard_frame_context (void *the_tls)
 {
-	free_frame_state ();
+	mono_ss_discard_frame_context (mono_wasm_get_tls());
 }
 
 static void
 ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***out_frames, int *nframes)
 {
-	compute_frames ();
-	if (out_frames)
-		*out_frames = (DbgEngineStackFrame **)frames->pdata;
-	if (nframes)
-		*nframes = frames->len;
+	mono_wasm_save_thread_context();
+	mono_ss_calculate_framecount(mono_wasm_get_tls(), NULL, force_use_ctx, out_frames, nframes);
 }
 
 static gboolean
@@ -259,8 +184,8 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
-	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
-	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
+	mini_get_dbg_callbacks ()->handle_exception = mono_debugger_agent_handle_exception;
+	mini_get_dbg_callbacks ()->user_break = mono_dbg_debugger_agent_user_break;
 
 //debugger-agent initialization	
 	DebuggerTransport trans;
@@ -308,33 +233,17 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	}
 }
 
-static void
-handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame)
-{
-	mono_wasm_save_thread_context();
-	mono_debugger_agent_handle_exception (exc, throw_ctx, catch_ctx, catch_frame);
-}
-
 
 void
 mono_wasm_single_step_hit (void)
 {
-	mono_wasm_save_thread_context();
-	mono_de_process_single_step (NULL, FALSE);
+	mono_de_process_single_step (mono_wasm_get_tls(), FALSE);
 }
 
 void
 mono_wasm_breakpoint_hit (void)
 {
-	mono_wasm_save_thread_context();
-	mono_de_process_breakpoint (NULL, FALSE);
-}
-
-void
-mono_wasm_user_break (void)
-{
-	mono_wasm_save_thread_context();
-	mono_dbg_debugger_agent_user_break ();
+	mono_de_process_breakpoint (mono_wasm_get_tls(), FALSE);
 }
 
 static gboolean
@@ -479,7 +388,7 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 		}, 0, id, 0, 0);
 		return TRUE;
 	}
-	gboolean ret = mono_wasm_send_dbg_command(id, command_set, command, bufWithParms.buf, m_dbgprot_buffer_len(&bufWithParms));
+	mono_wasm_send_dbg_command(id, command_set, command, bufWithParms.buf, m_dbgprot_buffer_len(&bufWithParms));
 	buffer_free (&bufWithParms);
 	return TRUE;
 }
@@ -515,6 +424,7 @@ receive_debugger_agent_message (void *data, int len)
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
 	}, data, len);
+	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message ();	
 	return FALSE;
 }

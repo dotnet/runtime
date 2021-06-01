@@ -3055,7 +3055,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 	tls->frames = new_frames;
 	tls->frame_count = new_frame_count;
 	tls->frames_up_to_date = TRUE;
-
+#ifndef TARGET_WASM
 	if (CHECK_PROTOCOL_VERSION (2, 52)) {
 		MonoJitTlsData *jit_data = thread->thread_info->jit_data;
 		gboolean has_interp_resume_state = FALSE;
@@ -3070,6 +3070,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 			}
 		}
 	}
+#endif	
 }
 
 /*
@@ -4065,7 +4066,10 @@ mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_us
 	if (force_use_ctx || !tls->context.valid)
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
 	compute_frame_info (tls->thread, tls, FALSE);
-#endif	
+#else
+	compute_frame_info (tls->thread, tls, TRUE);
+#endif
+
 	if (frames)
 		*frames = (DbgEngineStackFrame**)tls->frames;
 	if (nframes)
