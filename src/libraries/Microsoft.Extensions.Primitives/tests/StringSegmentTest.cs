@@ -73,7 +73,33 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
-        public void StringSegment_AsSpan_InvalidOffset()
+        public void StringSegment_AsSpanStart_NoValue()
+        {
+            StringSegment segment = default;
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(0));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_StartBehindLength()
+        {
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(4));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_AsSpanStartLength_NoValue()
+        {
+            StringSegment segment = default;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => segment.AsSpan(0, 0));
+        }
+
+        [Fact]
+        public void StringSegment_AsSpan_InvalidStart()
         {
             var segment = new StringSegment("Hello, World!", 1, 3);
 
@@ -768,6 +794,15 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void StringSegment_Substring_NoValue()
+        {
+            StringSegment segment = default;
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(0, 0));
+            Assert.Equal("offset", exception.ParamName);
+        }
+
+        [Fact]
         public void StringSegment_Substring_Invalid()
         {
             // Arrange
@@ -849,6 +884,15 @@ namespace Microsoft.Extensions.Primitives
             // Assert
             Assert.Equal(new StringSegment("Hello, World!", 2, 2), result);
             Assert.Equal("ll", result.Value);
+        }
+
+        [Fact]
+        public void StringSegment_Subsegment_NoValue()
+        {
+            StringSegment segment = default;
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(0, 0));
+            Assert.Equal("offset", exception.ParamName);
         }
 
         [Fact]

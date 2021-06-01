@@ -120,7 +120,15 @@ namespace Microsoft.Extensions.Primitives
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
         /// </exception>
-        public ReadOnlySpan<char> AsSpan(int start) => AsSpan(start, Length - start);
+        public ReadOnlySpan<char> AsSpan(int start)
+        {
+            if (!HasValue || start < 0)
+            {
+                ThrowInvalidArguments(start, Length - start, ExceptionArgument.start);
+            }
+
+            return Buffer.AsSpan(Offset + start, Length - start);
+        }
 
         /// <summary>
         /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
@@ -138,7 +146,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || (start | length) < 0 || (uint)(start + length) > (uint)Length)
             {
-                ThrowInvalidArguments(start, length, offsetIsStart: true);
+                ThrowInvalidArguments(start, length, ExceptionArgument.start);
             }
 
             return Buffer.AsSpan(Offset + start, length);
@@ -687,7 +695,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        private void ThrowInvalidArguments(int offset, int length, bool offsetIsStart = false)
+        private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart = ExceptionArgument.offset)
         {
             throw GetInvalidArgumentsException(HasValue);
 
@@ -695,12 +703,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (!hasValue)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (offset < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(offsetIsStart ? ExceptionArgument.start : ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (length < 0)
