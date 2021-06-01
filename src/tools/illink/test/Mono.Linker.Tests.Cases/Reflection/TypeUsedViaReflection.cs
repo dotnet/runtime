@@ -41,6 +41,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestInvalidTypeName ();
 			TestUnkownIgnoreCase3Params (1);
 			TestUnkownIgnoreCase5Params (1);
+			TestGenericTypeWithAnnotations ();
 		}
 
 		[Kept]
@@ -381,6 +382,32 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			bool unknownValue = num + 1 == 1;
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false, unknownValue);
+		}
+
+		[Kept]
+		public class GenericTypeWithAnnotations_OuterType<
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
+		{
+		}
+
+		[Kept]
+		public class GenericTypeWithAnnotations_InnerType
+		{
+			[Kept]
+			[KeptBackingField]
+			private static bool PrivateProperty { [Kept] get; [Kept] set; }
+
+			private static void PrivateMethod () { }
+		}
+
+		[Kept]
+		static void TestGenericTypeWithAnnotations ()
+		{
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_OuterType`1" +
+				"[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_InnerType, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]," +
+				" test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			Type.GetType (reflectionTypeKeptString);
 		}
 	}
 }
