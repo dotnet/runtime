@@ -325,8 +325,6 @@ namespace Internal.TypeSystem
             LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
-            LayoutInt instanceSize = cumulativeInstanceFieldPos + new LayoutInt(layoutMetadata.Size) + offsetBias;
-
             int packingSize = ComputePackingSize(type, layoutMetadata);
             LayoutInt largestAlignmentRequired = LayoutInt.One;
 
