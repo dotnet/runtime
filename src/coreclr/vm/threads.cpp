@@ -5372,7 +5372,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     return found;
 }
 
-
 // When a thread is created as unstarted.  Later it may get started, in which case
 // someone calls Thread::HasStarted() on that physical thread.  This completes
 // the Setup and calls here.
@@ -5397,6 +5396,7 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     _ASSERTE(!lockHeld
         || (lockHeld
             && !s_pThreadStore->m_holderthreadid.IsUnknown()
+            && ((s_pThreadStore->m_HoldingThread != NULL) || IsGCSpecialThread())
             && !ThreadStore::HoldingThreadStore()));
 
     LOG((LF_SYNC, INFO3, "TransferStartedThread obtain lock\n"));
