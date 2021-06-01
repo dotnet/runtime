@@ -12,13 +12,13 @@
     "python3": "3.7.1"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "6.0.0-beta.21276.5",
+    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "6.0.0-beta.21281.1",
     "Microsoft.DotNet.PackageValidation": "1.0.0-preview.6.21274.7",
-    "Microsoft.DotNet.Arcade.Sdk": "6.0.0-beta.21276.5",
-    "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.21276.5",
-    "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.21276.5",
+    "Microsoft.DotNet.Arcade.Sdk": "6.0.0-beta.21281.1",
+    "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.21281.1",
+    "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.21281.1",
     "Microsoft.Build.NoTargets": "3.0.4",
     "Microsoft.Build.Traversal": "3.0.23",
-    "Microsoft.NET.Sdk.IL": "6.0.0-preview.6.21274.1"
+    "Microsoft.NET.Sdk.IL": "6.0.0-preview.6.21281.1"
   }
 }
