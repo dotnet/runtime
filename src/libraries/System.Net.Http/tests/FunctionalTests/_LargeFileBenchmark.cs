@@ -28,11 +28,12 @@ namespace System.Net.Http.Functional.Tests
         {
             _output = output;
             _listener = new LogHttpEventListener(output);
+            _listener.Filter = m => m.Contains("[FlowControl]");
         }
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 50;
+        private const double LengthMb = 100;
         private const string BenchmarkServer = "10.194.114.94";
 
         [Theory]
@@ -93,17 +94,21 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Theory]
-        [InlineData(BenchmarkServer)]
-        public async Task Download20_Dynamic_Default(string hostName)
+        [InlineData("10.194.114.94:5001")]
+        [InlineData("10.194.114.94:5002")]
+        public async Task Download20_Dynamic_Default_Run1(string hostName)
         {
             _listener.Enabled = true;
-            _listener.Filter = m => m.Contains("[FlowControl]");
+            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic default", hostName, true, LengthMb);
+        }
 
-            SocketsHttpHandler handler = new SocketsHttpHandler()
-            {
-                FakeRtt = await EstimateRttAsync(hostName)
-            };
-            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic default", hostName, true, LengthMb, handler);
+        [Theory]
+        [InlineData("10.194.114.94:5001")]
+        [InlineData("10.194.114.94:5002")]
+        public async Task Download20_Dynamic_Default_Run2(string hostName)
+        {
+            _listener.Enabled = true;
+            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic default", hostName, true, LengthMb);
         }
 
         [Theory]
