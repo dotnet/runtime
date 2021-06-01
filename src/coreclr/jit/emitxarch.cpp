@@ -159,6 +159,20 @@ bool emitter::IsWriteZFFlags(instruction ins)
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
 }
 
+//------------------------------------------------------------------------
+// IsResetsOCFlags: check if the instruction resets the
+//     OF and CF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction resets the OF and CF flag, false otherwise.
+//
+bool emitter::IsResetsOCFlags(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & INS_FLAGS_Resets_CF_OF_Flags) != 0;
+}
 
 //------------------------------------------------------------------------
 // IsFlagsModified: check if the instruction modifies the flags.
@@ -195,7 +209,6 @@ bool emitter::IsFlagsModified(instrDesc* id)
                     return false;
                 default:
                     return true;
-
             }
         }
     }
@@ -348,8 +361,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    // these always set OF and CF to 0
-    if ((lastIns == INS_and) || (lastIns == INS_or) || (lastIns == INS_xor))
+    if (IsResetsOCFlags(lastIns))
     {
         return id->idOpSize() == opSize;
     }
