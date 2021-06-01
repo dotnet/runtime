@@ -1377,10 +1377,13 @@ ep_shutdown (void)
 			ep_disable ((EventPipeSessionID)session);
 	}
 
-	ep_rt_execution_checkpoint_array_iterator_t checkpoint_iterator = ep_rt_execution_checkpoint_array_iterator_begin (&_ep_rundown_execution_checkpoints);
+	ep_rt_execution_checkpoint_array_iterator_t checkpoint_iterator;
+	EventPipeExecutionCheckpoint *checkpoint;
+	checkpoint_iterator = ep_rt_execution_checkpoint_array_iterator_begin (&_ep_rundown_execution_checkpoints);
 	while (!ep_rt_execution_checkpoint_array_iterator_end (&_ep_rundown_execution_checkpoints, &checkpoint_iterator)) {
-		EventPipeExecutionCheckpoint *checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&checkpoint_iterator);
-		ep_rt_utf8_string_free (checkpoint->name);
+		checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&checkpoint_iterator);
+		if (checkpoint)
+			ep_rt_utf8_string_free (checkpoint->name);
 		ep_rt_execution_checkpoint_array_iterator_next (&checkpoint_iterator);
 	}
 	ep_rt_execution_checkpoint_array_free (&_ep_rundown_execution_checkpoints);
