@@ -130,7 +130,7 @@ namespace System.Net.Http.Functional.Tests
             using var client = new HttpClient(handler, true);
             client.Timeout = TimeSpan.FromMinutes(2);
             var message = GenerateRequestMessage(hostName, http2, lengthMb);
-            _output.WriteLine($"{info} / {lengthMb} MB from {hostName}");
+            _output.WriteLine($"{info} / {lengthMb} MB from {message.RequestUri}");
             Stopwatch sw = Stopwatch.StartNew();
             var response = await client.SendAsync(message);
             long elapsedMs = sw.ElapsedMilliseconds;
@@ -161,7 +161,16 @@ namespace System.Net.Http.Functional.Tests
 
         static HttpRequestMessage GenerateRequestMessage(string hostName, bool http2, double lengthMb = 5)
         {
-            string url = $"http://{hostName}:{(http2 ? "5001" : "5000")}?lengthMb={lengthMb}";
+            int port = http2 ? 5001 : 5000;
+            int sep = hostName.IndexOf(':');
+            if (sep > 0)
+            {
+                string portStr = hostName.Substring(sep + 1, hostName.Length - sep - 1);
+                int.TryParse(portStr, out port);
+                hostName = hostName.Substring(0, sep);
+            }
+
+            string url = $"http://{hostName}:{port}?lengthMb={lengthMb}";
             var msg = new HttpRequestMessage(HttpMethod.Get, url)
             {
                 Version = new Version(1, 1)
