@@ -27,18 +27,16 @@ namespace Tracing.Tests
         {
             if (eventData.EventName.Equals("ThreadPoolWorkerThreadStart"))
             {
-                TPWorkerThreadStartCount += 1;
+                Interlocked.Increment(ref TPWorkerThreadStartCount);
             }
             else if (eventData.EventName.Equals("ThreadPoolWorkerThreadStop"))
             {
-                TPWorkerThreadStopCount += 1;
+                Interlocked.Increment(ref TPWorkerThreadStopCount);
             }
             else if (eventData.EventName.Equals("ThreadPoolWorkerThreadWait"))
             {
-                TPWorkerThreadWaitCount += 1;
+                Interlocked.Increment(ref TPWorkerThreadWaitCount);
             }
-
-            Thread.MemoryBarrier();
         }
     }
 
@@ -57,7 +55,7 @@ namespace Tracing.Tests
 
                 Task.WaitAll(tasks);
 
-                Thread.MemoryBarrier();
+                Interlocked.MemoryBarrierProcessWide();
                 if (listener.TPWorkerThreadStartCount > 0 ||
                     listener.TPWorkerThreadStopCount > 0 ||
                     listener.TPWorkerThreadWaitCount > 0)
