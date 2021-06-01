@@ -719,6 +719,64 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     }
                     break;
                 }
+                case NI_VectorT128_Sum:
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                    {
+                        GenTree* tmp;
+                        unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                        int      haddCount    = genLog2(vectorLength);
+
+                        for (int i = 0; i < haddCount; i++)
+                        {
+                            op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                               nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                            op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_SSSE3_HorizontalAdd,
+                                                             simdBaseJitType, simdSize);
+                        }
+
+                        return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
+                                                          simdSize);
+                    }
+
+                    return nullptr;
+                }
+                case NI_VectorT256_Sum:
+                {
+                    // HorizontalAdd combines pairs so we need log2(vectorLength) passes to sum all elements together.
+                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                    int haddCount = genLog2(vectorLength) - 1; // Minus 1 because for the last pass we split the vector
+                                                               // to low / high and add them together.
+                    GenTree*       tmp;
+                    NamedIntrinsic horizontalAdd = NI_AVX2_HorizontalAdd;
+                    NamedIntrinsic add           = NI_SSE2_Add;
+
+                    if (simdBaseType == TYP_DOUBLE)
+                    {
+                        horizontalAdd = NI_AVX_HorizontalAdd;
+                    }
+                    else if (simdBaseType == TYP_FLOAT)
+                    {
+                        horizontalAdd = NI_AVX_HorizontalAdd;
+                        add           = NI_SSE_Add;
+                    }
+
+                    for (int i = 0; i < haddCount; i++)
+                    {
+                        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType, simdSize);
+                    }
+
+                    op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                    op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0x01, TYP_INT),
+                                                     NI_AVX_ExtractVector128, simdBaseJitType, simdSize);
+
+                    op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD16, op1, tmp, add, simdBaseJitType, 16);
+
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
+                }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT128_Abs:
                 {
