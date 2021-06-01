@@ -108,6 +108,25 @@ namespace System.IO
         }
 
         /// <summary>
+        /// If this <see cref="FileSystemInfo"/> instance represents a link, returns the link target's path.
+        /// If the link does not exist, returns <see langword="null"/>.
+        /// </summary>
+        public string? LinkTarget { get { return null; } }
+
+        /// <summary>
+        /// Creates a symbolic link located in <see cref="FullName"/> that points to the specified <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="pathToTarget">The path of the symbolic link target.</param>
+        public void CreateAsSymbolicLink(string pathToTarget) { }
+
+        /// <summary>
+        /// Gets the target of the specified symbolic link.
+        /// </summary>
+        /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
+        /// <returns>A <see cref="FileInfo"/> instance if the symbolic link exists, independently if the target exists or not. <see langword="null"/> if the symbolic link does not exist.</returns>
+        public System.IO.FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget = false) { return null; }
+
+        /// <summary>
         /// Returns the original path. Use FullName or Name properties for the full path or file/directory name.
         /// </summary>
         public override string ToString() => OriginalPath ?? string.Empty;

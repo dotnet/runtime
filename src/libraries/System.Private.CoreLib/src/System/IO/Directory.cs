@@ -48,6 +48,17 @@ namespace System.IO
             return new DirectoryInfo(path, fullPath, isNormalized: true);
         }
 
+        /// <summary>
+        /// Creates a directory symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="path">The location of the directory symbolic link.</param>
+        /// <param name="pathToTarget">The target of the directory symbolic link.</param>
+        /// <returns>A <see cref="DirectoryInfo"/> instance that wraps the newly created directory symbolic link.</returns>
+        public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
+        {
+            return new DirectoryInfo("");
+        }
+
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         public static bool Exists([NotNullWhen(true)] string? path)
         {
@@ -314,6 +325,17 @@ namespace System.IO
         public static string[] GetLogicalDrives()
         {
             return FileSystem.GetLogicalDrives();
+        }
+
+        /// <summary>
+        /// Gets the target of the specified directory symbolic link.
+        /// </summary>
+        /// <param name="linkPath">The path of the directory symbolic link.</param>
+        /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
+        /// <returns>A <see cref="DirectoryInfo"/> instance if the symbolic link exists, independently if the target exists or not. <see langword="null"/> if the symbolic link does not exist.</returns>
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+        {
+            return null;
         }
     }
 }
