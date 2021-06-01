@@ -22,15 +22,21 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
     <Compile Include="..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
+    <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
+    <Compile Include="..\Common\JsonSerializerOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializerOptionsAttribute.cs" />
+    <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="ClassType.cs" />
     <Compile Include="CollectionType.cs" />
     <Compile Include="JsonSourceGenerator.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
     <Compile Include="ObjectConstructionStrategy.cs" />
-    <Compile Include="PropertyMetadata.cs" />
+    <Compile Include="PropertyGenerationSpec.cs" />
     <Compile Include="Reflection\AssemblyWrapper.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />
     <Compile Include="Reflection\FieldInfoWrapper.cs" />
@@ -44,6 +50,8 @@
     <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Reflection\RoslynExtensions.cs" />
     <Compile Include="Reflection\TypeWrapper.cs" />
-    <Compile Include="TypeMetadata.cs" />
+    <Compile Include="ContextGenerationSpec.cs" />
+    <Compile Include="SourceGenerationSpec.cs" />
+    <Compile Include="TypeGenerationSpec.cs" />
   </ItemGroup>
 </Project>

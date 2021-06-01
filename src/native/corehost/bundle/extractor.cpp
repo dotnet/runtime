@@ -35,7 +35,7 @@ pal::string_t& extractor_t::extraction_dir()
             {
                 trace::error(_X("Failure processing application bundle."));
                 trace::error(_X("Failed to determine location for extracting embedded files."));
-                trace::error(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and a read-write temp-directory couldn't be created."));
+                trace::error(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and a read-write cache directory couldn't be created."));
                 throw StatusCode::BundleExtractionFailure;
             }
         }

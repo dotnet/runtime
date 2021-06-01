@@ -157,7 +157,7 @@ namespace Internal.Cryptography
                 if (disposing)
                 {
                     _ctx?.Dispose();
-                    Array.Clear(_key, 0, _key.Length);
+                    Array.Clear(_key);
                 }
             }
 

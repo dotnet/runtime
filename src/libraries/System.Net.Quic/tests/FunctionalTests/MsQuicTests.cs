@@ -5,6 +5,8 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -51,6 +53,46 @@ namespace System.Net.Quic.Tests
             Assert.Equal(100, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
             Assert.Equal(10, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
             Assert.Equal(20, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+        }
+
+        [Fact]
+        public async Task ConnectWithCertificateChain()
+        {
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
+            X509Certificate2 rootCA = chain[chain.Count - 1];
+
+            var quicOptions = new QuicListenerOptions();
+            quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+            quicOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, chain);
+            quicOptions.ServerAuthenticationOptions.ServerCertificate = null;
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+
+            options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                Assert.Equal(certificate.Subject, cert.Subject);
+                Assert.Equal(certificate.Issuer, cert.Issuer);
+                // We should get full chain without root CA.
+                // With trusted root, we should be able to build chain.
+                chain.ChainPolicy.CustomTrustStore.Add(rootCA);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                Assert.True(chain.Build(certificate));
+
+                return true;
+            };
+
+            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+            ValueTask clientTask = clientConnection.ConnectAsync();
+
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
         }
 
         [Fact]

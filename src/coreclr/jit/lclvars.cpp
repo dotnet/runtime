@@ -2635,6 +2635,9 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DNER_LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
             break;
+        case DNER_LongParamVar:
+            JITDUMP("it is a long parameter\n");
+            break;
 #endif
         default:
             unreached();
@@ -4518,7 +4521,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             assert(isRecompute);
 
             const BasicBlock::weight_t weight = block->getBBWeight(this);
-            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            for (GenTree* node : LIR::AsRange(block))
             {
                 switch (node->OperGet())
                 {

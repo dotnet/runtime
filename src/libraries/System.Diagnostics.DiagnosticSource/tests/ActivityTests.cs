@@ -1765,7 +1765,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+            // Note: This test verifies the presence of the struct Enumerator on DiagLinkedList<T> used by customers dynamically to avoid allocations.
 
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());

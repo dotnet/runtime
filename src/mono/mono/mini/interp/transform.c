@@ -3172,7 +3172,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		mono_class_setup_vtable (target_method->klass);
 
 		// Follow the rules for constrained calls from ECMA spec
-		if (!m_class_is_valuetype (constrained_class)) {
+		if (m_method_is_static (target_method)) {
+			is_virtual = FALSE;
+		} else if (!m_class_is_valuetype (constrained_class)) {
 			StackInfo *sp = td->sp - 1 - csignature->param_count;
 			/* managed pointer on the stack, we need to deref that puppy */
 			interp_add_ins (td, MINT_LDIND_I);
@@ -3197,7 +3199,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (target_method)
 		mono_class_init_internal (target_method->klass);
 
-	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT) && !m_method_is_static (target_method)) {
 		if (!mono_class_is_interface (method->klass))
 			interp_generate_bie_throw (td);
 		else
@@ -7118,6 +7120,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (method->wrapper_type == MONO_WRAPPER_NONE && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 					m = mono_marshal_get_synchronized_wrapper (m);
+
+				if (constrained_class) {
+					m = mono_get_method_constrained_with_method (image, m, constrained_class, generic_context, error);
+					goto_if_nok (error, exit);
+					constrained_class = NULL;
+				}
 
 				if (G_UNLIKELY (*td->ip == CEE_LDFTN &&
 						m->wrapper_type == MONO_WRAPPER_NONE &&

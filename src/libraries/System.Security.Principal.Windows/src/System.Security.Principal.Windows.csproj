@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;netstandard2.0;netstandard2.0-windows;netstandard2.0-Unix;netcoreapp2.1-windows;netcoreapp2.1-Unix;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;netcoreapp3.1-windows;netcoreapp3.1-Unix;netstandard2.0-windows;netstandard2.0-Unix;netstandard2.0;net461-windows</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -12,13 +12,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Work around 'notsupported.cs' source generation of explicit interface implementations issue -->
     <!-- https://github.com/dotnet/arcade/issues/4722 -->
-    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
 
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
     <Compile Include="System\Security\Principal\IdentityReference.cs" />
@@ -136,8 +136,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CheckTokenMembership.cs"
              Link="Common\Interop\Interop.CheckTokenMembership.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
-                        $(TargetFramework.StartsWith('netcoreapp2'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
