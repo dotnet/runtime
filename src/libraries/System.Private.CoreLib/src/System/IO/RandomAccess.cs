@@ -40,7 +40,7 @@ namespace System.IO
         /// <remarks>Position of the file is not advanced.</remarks>
         public static int Read(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
-            ValidateInput(handle, fileOffset, mustBeSync: true);
+            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
 
             return ReadAtOffset(handle, buffer, fileOffset);
         }
@@ -62,7 +62,7 @@ namespace System.IO
         /// <remarks>Position of the file is not advanced.</remarks>
         public static int Write(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
-            ValidateInput(handle, fileOffset, mustBeSync: true);
+            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
 
             return WriteAtOffset(handle, buffer, fileOffset);
         }

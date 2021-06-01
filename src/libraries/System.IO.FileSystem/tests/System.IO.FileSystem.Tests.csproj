@@ -51,6 +51,7 @@
     <Compile Include="Enumeration\ExampleTests.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
     <Compile Include="Enumeration\SymbolicLinksTests.cs" />
+    <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
     <Compile Include="RandomAccess\Read.cs" />
     <Compile Include="RandomAccess\Write.cs" />
