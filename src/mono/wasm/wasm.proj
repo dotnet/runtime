@@ -93,10 +93,6 @@
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_EmccFlags Include="@(_EmccCommonFlags)" />
-
-      <_EmccFlags Include="-s WASM=1" />
-      <_EmccFlags Include="-s BINARYEN=1" />
-      <_EmccFlags Include="-s ALIASING_FUNCTION_POINTERS=0" />
       <_EmccFlags Include="-s USE_ZLIB=1" />
     </ItemGroup>
 
