@@ -57,7 +57,8 @@ namespace Microsoft.Interop
         private static bool IsSpecialTypeBlittable(SpecialType specialType)
          => specialType switch
          {
-            SpecialType.System_SByte
+            SpecialType.System_Void
+            or SpecialType.System_SByte
             or SpecialType.System_Byte
             or SpecialType.System_Int16
             or SpecialType.System_UInt16

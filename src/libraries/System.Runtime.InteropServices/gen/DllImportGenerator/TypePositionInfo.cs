@@ -314,6 +314,7 @@ namespace Microsoft.Interop
 
             static bool TryCreateTypeBasedMarshallingInfo(ITypeSymbol type, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics, INamedTypeSymbol scopeSymbol, out MarshallingInfo marshallingInfo)
             {
+                // Check for an implicit SafeHandle conversion.
                 var conversion = compilation.ClassifyCommonConversion(type, compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
                 if (conversion.Exists 
                     && conversion.IsImplicit 

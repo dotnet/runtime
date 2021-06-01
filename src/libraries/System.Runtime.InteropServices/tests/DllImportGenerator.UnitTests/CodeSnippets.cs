@@ -503,14 +503,24 @@ delegate int MyDelegate(int a);";
         public static string DelegateMarshalAsParametersAndModifiers = MarshalAsParametersAndModifiers("MyDelegate", UnmanagedType.FunctionPtr) + @"
 delegate int MyDelegate(int a);";
 
-        public static string BlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct") + @"
-#pragma warning disable CS0169
-[BlittableType]
-struct MyStruct
-{
+        private static string BlittableMyStruct(string modifier = "") => $@"#pragma warning disable CS0169
+{modifier} unsafe struct MyStruct
+{{
     private int i;
     private short s;
-}";
+    private long l;
+    private double d;
+    private int* iptr;
+    private short* sptr;
+    private long* lptr;
+    private double* dptr;
+    private void* vptr;
+}}";
+
+        public static string BlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct") + $@"
+[BlittableType]
+{BlittableMyStruct()}
+";
 
         public static string ArrayParametersAndModifiers(string elementType) => $@"
 using System.Runtime.InteropServices;
@@ -1045,13 +1055,10 @@ struct Generic<T>
         public static string MaybeBlittableGenericTypeParametersAndModifiers<T>() =>
             MaybeBlittableGenericTypeParametersAndModifiers(typeof(T).ToString());
 
-        public static string ImplicitlyBlittableStructParametersAndModifiers(string visibility = "") => BasicParametersAndModifiers("ImplicitBlittable") + $@"
-#pragma warning disable CS0649
-#pragma warning disable CS0169
-{visibility} struct ImplicitBlittable
-{{
-    int i;
-}}";
+        public static string ImplicitlyBlittableStructParametersAndModifiers(string visibility = "") => BasicParametersAndModifiers("MyStruct") + $@"
+// Implicitly blittable
+{BlittableMyStruct(visibility)}
+";
 
         public static string ImplicitlyBlittableGenericTypeParametersAndModifiers(string typeArgument, string visibility = "") => BasicParametersAndModifiers($"Generic<{typeArgument}>") + $@"
 {visibility} struct Generic<T>

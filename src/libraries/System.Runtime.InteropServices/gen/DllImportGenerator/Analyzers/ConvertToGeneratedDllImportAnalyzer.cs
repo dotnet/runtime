@@ -73,7 +73,7 @@ namespace Microsoft.Interop.Analyzers
                 return true;
 
             // Check if return value requires marshalling
-            if (!method.ReturnsVoid && RequiresMarshalling(method.ReturnType))
+            if (!method.ReturnsVoid && !method.ReturnType.IsConsideredBlittable())
                 return true;
 
             // Check if parameters require marshalling
@@ -82,7 +82,7 @@ namespace Microsoft.Interop.Analyzers
                 if (paramType.RefKind != RefKind.None)
                     return true;
 
-                if (RequiresMarshalling(paramType.Type))
+                if (!paramType.Type.IsConsideredBlittable())
                     return true;
             }
 
@@ -109,17 +109,6 @@ namespace Microsoft.Interop.Analyzers
             }
 
             return false;
-        }
-
-        private static bool RequiresMarshalling(ITypeSymbol typeSymbol)
-        {
-            if (typeSymbol.TypeKind == TypeKind.Enum)
-                return false;
-
-            if (typeSymbol.TypeKind == TypeKind.Pointer)
-                return false;
-
-            return !typeSymbol.IsConsideredBlittable();
         }
     }
 }
