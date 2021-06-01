@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging
     [UnsupportedOSPlatform("browser")]
     public static class ConsoleLoggerExtensions
     {
-        internal const string TrimmingRequiresUnreferencedCodeMessage = "The type of TOptions cannot be statically analyzed so it's members may be trimmed.";
+        internal const string TrimmingRequiresUnreferencedCodeMessage = "The type of TOptions cannot be statically analyzed so its members may be trimmed.";
 
         /// <summary>
         /// Adds a console logger named 'Console' to the factory.

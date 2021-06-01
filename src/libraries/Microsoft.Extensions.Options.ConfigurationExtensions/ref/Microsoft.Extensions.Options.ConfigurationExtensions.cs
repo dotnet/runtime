@@ -8,22 +8,22 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static partial class OptionsBuilderConfigurationExtensions
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> BindConfiguration<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, string configSectionPath, System.Action<Microsoft.Extensions.Configuration.BinderOptions> configureBinder = null) where TOptions : class { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> Bind<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, Microsoft.Extensions.Configuration.IConfiguration config) where TOptions : class { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> Bind<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, Microsoft.Extensions.Configuration.IConfiguration config, System.Action<Microsoft.Extensions.Configuration.BinderOptions> configureBinder) where TOptions : class { throw null; }
     }
     public static partial class OptionsConfigurationServiceCollectionExtensions
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection Configure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration config) where TOptions : class { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection Configure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration config, System.Action<Microsoft.Extensions.Configuration.BinderOptions> configureBinder) where TOptions : class { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection Configure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, Microsoft.Extensions.Configuration.IConfiguration config) where TOptions : class { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection Configure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, Microsoft.Extensions.Configuration.IConfiguration config, System.Action<Microsoft.Extensions.Configuration.BinderOptions> configureBinder) where TOptions : class { throw null; }
     }
 }
@@ -38,14 +38,14 @@ namespace Microsoft.Extensions.Options
     }
     public partial class ConfigureFromConfigurationOptions<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions> : Microsoft.Extensions.Options.ConfigureOptions<TOptions> where TOptions : class
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public ConfigureFromConfigurationOptions(Microsoft.Extensions.Configuration.IConfiguration config) : base (default(System.Action<TOptions>)) { }
     }
     public partial class NamedConfigureFromConfigurationOptions<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions> : Microsoft.Extensions.Options.ConfigureNamedOptions<TOptions> where TOptions : class
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public NamedConfigureFromConfigurationOptions(string name, Microsoft.Extensions.Configuration.IConfiguration config) : base (default(string), default(System.Action<TOptions>)) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so it's members may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of TOptions cannot be statically analyzed so its members may be trimmed.")]
         public NamedConfigureFromConfigurationOptions(string name, Microsoft.Extensions.Configuration.IConfiguration config, System.Action<Microsoft.Extensions.Configuration.BinderOptions> configureBinder) : base (default(string), default(System.Action<TOptions>)) { }
     }
 }

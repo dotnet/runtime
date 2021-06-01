@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class OptionsBuilderConfigurationExtensions
     {
-        internal const string TrimmingRequiredUnreferencedCodeMessage = "The type of TOptions cannot be statically analyzed so it's members may be trimmed.";
+        internal const string TrimmingRequiredUnreferencedCodeMessage = "The type of TOptions cannot be statically analyzed so its members may be trimmed.";
 
         /// <summary>
         /// Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.
