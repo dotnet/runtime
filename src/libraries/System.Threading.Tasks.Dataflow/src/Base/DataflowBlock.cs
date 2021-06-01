@@ -16,10 +16,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Dataflow.Internal;
 
-#if USE_INTERNAL_THREADING
-using System.Threading.Tasks.Dataflow.Internal.Threading;
-#endif
-
 namespace System.Threading.Tasks.Dataflow
 {
     /// <summary>

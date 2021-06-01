@@ -349,7 +349,6 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52645", TestPlatforms.Android)]
         public async Task WebSocketWithoutDeflateShouldThrowOnCompressedMessage()
         {
             WebSocketTestStream stream = new();
@@ -364,7 +363,6 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52645", TestPlatforms.Android)]
         public async Task ReceiveUncompressedMessageWhenCompressionEnabled()
         {
             // We should be able to handle the situation where even if we have
@@ -401,7 +399,6 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52645", TestPlatforms.Android)]
         public async Task ReceiveInvalidCompressedData()
         {
             WebSocketTestStream stream = new();
