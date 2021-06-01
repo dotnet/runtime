@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection
 {
@@ -439,15 +440,33 @@ namespace System.Reflection
         #region Object Override
         public override string ToString()
         {
-            string ctorArgs = "";
-            for (int i = 0; i < ConstructorArguments.Count; i++)
-                ctorArgs += string.Format(i == 0 ? "{0}" : ", {0}", ConstructorArguments[i]);
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
 
-            string namedArgs = "";
-            for (int i = 0; i < NamedArguments.Count; i++)
-                namedArgs += string.Format(i == 0 && ctorArgs.Length == 0 ? "{0}" : ", {0}", NamedArguments[i]);
+            vsb.Append('[');
+            vsb.Append(Constructor.DeclaringType!.FullName);
+            vsb.Append('(');
 
-            return string.Format("[{0}({1}{2})]", Constructor.DeclaringType!.FullName, ctorArgs, namedArgs);
+            bool first = true;
+
+            int count = ConstructorArguments.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (!first) vsb.Append(", ");
+                vsb.Append(ConstructorArguments[i].ToString());
+                first = false;
+            }
+
+            count = NamedArguments.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (!first) vsb.Append(", ");
+                vsb.Append(NamedArguments[i].ToString());
+                first = false;
+            }
+
+            vsb.Append(")]");
+
+            return vsb.ToString();
         }
         public override int GetHashCode() => base.GetHashCode();
         public override bool Equals(object? obj) => obj == (object)this;

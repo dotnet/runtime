@@ -22,18 +22,18 @@ namespace System.Threading
             /// Only <see cref="Mutex"/> has a thread ownership requirement, and it's a less common type to be used, so
             /// ownership info is separated to reduce the size. For other types, this is null.
             /// </summary>
-            private readonly OwnershipInfo _ownershipInfo;
+            private readonly OwnershipInfo? _ownershipInfo;
 
             /// <summary>
             /// Linked list of information about waiting threads
             /// </summary>
-            private ThreadWaitInfo.WaitedListNode _waitersHead, _waitersTail;
+            private ThreadWaitInfo.WaitedListNode? _waitersHead, _waitersTail;
 
             private WaitableObject(
                 WaitableObjectType type,
                 int initialSignalCount,
                 int maximumSignalCount,
-                OwnershipInfo ownershipInfo)
+                OwnershipInfo? ownershipInfo)
             {
                 Debug.Assert(initialSignalCount >= 0);
                 Debug.Assert(maximumSignalCount > 0);
@@ -157,11 +157,11 @@ namespace System.Threading
                 get
                 {
                     s_lock.VerifyIsLocked();
-                    return IsMutex && _ownershipInfo.IsAbandoned;
+                    return IsMutex && _ownershipInfo != null && _ownershipInfo.IsAbandoned;
                 }
             }
 
-            public ThreadWaitInfo.WaitedListNode WaitersHead
+            public ThreadWaitInfo.WaitedListNode? WaitersHead
             {
                 get
                 {
@@ -175,7 +175,7 @@ namespace System.Threading
                 }
             }
 
-            public ThreadWaitInfo.WaitedListNode WaitersTail
+            public ThreadWaitInfo.WaitedListNode? WaitersTail
             {
                 get
                 {
@@ -196,7 +196,7 @@ namespace System.Threading
                     s_lock.VerifyIsLocked();
 
                     bool isSignaled = _signalCount != 0;
-                    Debug.Assert(isSignaled || !IsMutex || _ownershipInfo.Thread != null);
+                    Debug.Assert(isSignaled || !IsMutex || (_ownershipInfo != null && _ownershipInfo.Thread != null));
                     return isSignaled;
                 }
             }
@@ -220,7 +220,7 @@ namespace System.Threading
                         Debug.Assert(_type == WaitableObjectType.Mutex);
                         --_signalCount;
 
-                        Debug.Assert(_ownershipInfo.Thread == null);
+                        Debug.Assert(_ownershipInfo!.Thread == null);
                         _ownershipInfo.AssignOwnership(this, waitInfo);
                         return;
                 }
@@ -267,7 +267,7 @@ namespace System.Threading
                         return isAbandoned ? WaitHandle.WaitAbandoned : WaitHandle.WaitSuccess;
                     }
 
-                    if (IsMutex && _ownershipInfo.Thread == waitInfo.Thread)
+                    if (IsMutex && _ownershipInfo != null && _ownershipInfo.Thread == waitInfo.Thread)
                     {
                         if (!_ownershipInfo.CanIncrementReacquireCount)
                         {
@@ -282,7 +282,7 @@ namespace System.Threading
                         return WaitHandle.WaitTimeout;
                     }
 
-                    WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
+                    WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
                     waitableObjects[0] = this;
                     waitInfo.RegisterWait(1, prioritize, isWaitForAll: false);
                     needToWait = true;
@@ -304,7 +304,7 @@ namespace System.Threading
             }
 
             public static int Wait(
-                WaitableObject[] waitableObjects,
+                WaitableObject?[]? waitableObjects,
                 int count,
                 bool waitForAll,
                 ThreadWaitInfo waitInfo,
@@ -335,7 +335,7 @@ namespace System.Threading
                         // Check if any is already signaled
                         for (int i = 0; i < count; ++i)
                         {
-                            WaitableObject waitableObject = waitableObjects[i];
+                            WaitableObject waitableObject = waitableObjects[i]!;
                             Debug.Assert(waitableObject != null);
 
                             if (waitableObject.IsSignaled)
@@ -351,7 +351,7 @@ namespace System.Threading
 
                             if (waitableObject.IsMutex)
                             {
-                                OwnershipInfo ownershipInfo = waitableObject._ownershipInfo;
+                                OwnershipInfo ownershipInfo = waitableObject._ownershipInfo!;
                                 if (ownershipInfo.Thread == waitInfo.Thread)
                                 {
                                     if (!ownershipInfo.CanIncrementReacquireCount)
@@ -371,7 +371,7 @@ namespace System.Threading
                         bool isAnyAbandonedMutex = false;
                         for (int i = 0; i < count; ++i)
                         {
-                            WaitableObject waitableObject = waitableObjects[i];
+                            WaitableObject waitableObject = waitableObjects[i]!;
                             Debug.Assert(waitableObject != null);
 
                             if (waitableObject.IsSignaled)
@@ -385,7 +385,7 @@ namespace System.Threading
 
                             if (waitableObject.IsMutex)
                             {
-                                OwnershipInfo ownershipInfo = waitableObject._ownershipInfo;
+                                OwnershipInfo ownershipInfo = waitableObject._ownershipInfo!;
                                 if (ownershipInfo.Thread == waitInfo.Thread)
                                 {
                                     if (!ownershipInfo.CanIncrementReacquireCount)
@@ -404,7 +404,7 @@ namespace System.Threading
                         {
                             for (int i = 0; i < count; ++i)
                             {
-                                WaitableObject waitableObject = waitableObjects[i];
+                                WaitableObject waitableObject = waitableObjects[i]!;
                                 if (waitableObject.IsSignaled)
                                 {
                                     waitableObject.AcceptSignal(waitInfo);
@@ -412,7 +412,7 @@ namespace System.Threading
                                 }
 
                                 Debug.Assert(waitableObject.IsMutex);
-                                OwnershipInfo ownershipInfo = waitableObject._ownershipInfo;
+                                OwnershipInfo ownershipInfo = waitableObject._ownershipInfo!;
                                 Debug.Assert(ownershipInfo.Thread == waitInfo.Thread);
                                 ownershipInfo.IncrementReacquireCount();
                             }
@@ -456,7 +456,7 @@ namespace System.Threading
 
             public static bool WouldWaitForAllBeSatisfiedOrAborted(
                 Thread waitingThread,
-                WaitableObject[] waitedObjects,
+                WaitableObject?[] waitedObjects,
                 int waitedCount,
                 int signaledWaitedObjectIndex,
                 ref bool wouldAnyMutexReacquireCountOverflow,
@@ -480,7 +480,7 @@ namespace System.Threading
                         continue;
                     }
 
-                    WaitableObject waitedObject = waitedObjects[i];
+                    WaitableObject waitedObject = waitedObjects[i]!;
                     if (waitedObject.IsSignaled)
                     {
                         if (!isAnyAbandonedMutex && waitedObject.IsAbandonedMutex)
@@ -492,7 +492,7 @@ namespace System.Threading
 
                     if (waitedObject.IsMutex)
                     {
-                        OwnershipInfo ownershipInfo = waitedObject._ownershipInfo;
+                        OwnershipInfo ownershipInfo = waitedObject._ownershipInfo!;
                         if (ownershipInfo.Thread == waitingThread)
                         {
                             if (!ownershipInfo.CanIncrementReacquireCount)
@@ -513,7 +513,7 @@ namespace System.Threading
 
             public static void SatisfyWaitForAll(
                 ThreadWaitInfo waitInfo,
-                WaitableObject[] waitedObjects,
+                WaitableObject?[] waitedObjects,
                 int waitedCount,
                 int signaledWaitedObjectIndex)
             {
@@ -534,7 +534,7 @@ namespace System.Threading
                         continue;
                     }
 
-                    WaitableObject waitedObject = waitedObjects[i];
+                    WaitableObject waitedObject = waitedObjects[i]!;
                     if (waitedObject.IsSignaled)
                     {
                         waitedObject.AcceptSignal(waitInfo);
@@ -542,7 +542,7 @@ namespace System.Threading
                     }
 
                     Debug.Assert(waitedObject.IsMutex);
-                    OwnershipInfo ownershipInfo = waitedObject._ownershipInfo;
+                    OwnershipInfo ownershipInfo = waitedObject._ownershipInfo!;
                     Debug.Assert(ownershipInfo.Thread == waitInfo.Thread);
                     ownershipInfo.IncrementReacquireCount();
                 }
@@ -606,7 +606,7 @@ namespace System.Threading
                     return;
                 }
 
-                for (ThreadWaitInfo.WaitedListNode waiterNode = _waitersHead, nextWaiterNode;
+                for (ThreadWaitInfo.WaitedListNode? waiterNode = _waitersHead, nextWaiterNode;
                     waiterNode != null;
                     waiterNode = nextWaiterNode)
                 {
@@ -629,7 +629,7 @@ namespace System.Threading
                     return;
                 }
 
-                for (ThreadWaitInfo.WaitedListNode waiterNode = _waitersHead, nextWaiterNode;
+                for (ThreadWaitInfo.WaitedListNode? waiterNode = _waitersHead, nextWaiterNode;
                     waiterNode != null;
                     waiterNode = nextWaiterNode)
                 {
@@ -684,7 +684,7 @@ namespace System.Threading
                     return oldSignalCount;
                 }
 
-                for (ThreadWaitInfo.WaitedListNode waiterNode = _waitersHead, nextWaiterNode;
+                for (ThreadWaitInfo.WaitedListNode? waiterNode = _waitersHead, nextWaiterNode;
                     waiterNode != null;
                     waiterNode = nextWaiterNode)
                 {
@@ -710,12 +710,12 @@ namespace System.Threading
                     WaitHandle.ThrowInvalidHandleException();
                 }
 
-                if (IsSignaled || _ownershipInfo.Thread != Thread.CurrentThread)
+                if (IsSignaled || _ownershipInfo!.Thread != Thread.CurrentThread)
                 {
                     throw new ApplicationException(SR.Arg_SynchronizationLockException);
                 }
 
-                if (!_ownershipInfo.TryDecrementReacquireCount())
+                if (!_ownershipInfo!.TryDecrementReacquireCount())
                 {
                     SignalMutex(isAbandoned: false);
                 }
@@ -743,10 +743,11 @@ namespace System.Threading
 
                 Debug.Assert(IsMutex);
                 Debug.Assert(!IsSignaled);
+                Debug.Assert(_ownershipInfo != null);
 
                 _ownershipInfo.RelinquishOwnership(this, isAbandoned);
 
-                for (ThreadWaitInfo.WaitedListNode waiterNode = _waitersHead, nextWaiterNode;
+                for (ThreadWaitInfo.WaitedListNode? waiterNode = _waitersHead, nextWaiterNode;
                     waiterNode != null;
                     waiterNode = nextWaiterNode)
                 {
@@ -767,21 +768,21 @@ namespace System.Threading
 
             private sealed class OwnershipInfo
             {
-                private Thread _thread;
+                private Thread? _thread;
                 private int _reacquireCount;
                 private bool _isAbandoned;
 
                 /// <summary>
                 /// Link in the <see cref="ThreadWaitInfo.LockedMutexesHead"/> linked list
                 /// </summary>
-                private WaitableObject _previous;
+                private WaitableObject? _previous;
 
                 /// <summary>
                 /// Link in the <see cref="ThreadWaitInfo.LockedMutexesHead"/> linked list
                 /// </summary>
-                private WaitableObject _next;
+                private WaitableObject? _next;
 
-                public Thread Thread
+                public Thread? Thread
                 {
                     get
                     {
@@ -815,11 +816,11 @@ namespace System.Threading
                     _thread = waitInfo.Thread;
                     _isAbandoned = false;
 
-                    WaitableObject head = waitInfo.LockedMutexesHead;
+                    WaitableObject? head = waitInfo.LockedMutexesHead;
                     if (head != null)
                     {
                         _next = head;
-                        head._ownershipInfo._previous = waitableObject;
+                        head._ownershipInfo!._previous = waitableObject;
                     }
                     waitInfo.LockedMutexesHead = waitableObject;
                 }
@@ -844,12 +845,12 @@ namespace System.Threading
                         _isAbandoned = isAbandoned;
                     }
 
-                    WaitableObject previous = _previous;
-                    WaitableObject next = _next;
+                    WaitableObject? previous = _previous;
+                    WaitableObject? next = _next;
 
                     if (previous != null)
                     {
-                        previous._ownershipInfo._next = next;
+                        previous._ownershipInfo!._next = next;
                         _previous = null;
                     }
                     else
@@ -860,7 +861,7 @@ namespace System.Threading
 
                     if (next != null)
                     {
-                        next._ownershipInfo._previous = previous;
+                        next._ownershipInfo!._previous = previous;
                         _next = null;
                     }
                 }

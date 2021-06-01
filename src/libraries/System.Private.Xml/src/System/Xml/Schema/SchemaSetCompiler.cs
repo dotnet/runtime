@@ -1954,7 +1954,7 @@ namespace System.Xml.Schema
             {
                 maxOccurs = derivedSequence.MaxOccurs * derivedSequence.Items.Count;
             }
-            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs) || derivedSequence.Items.Count > baseChoice.Items.Count)
+            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs))
             {
                 return false;
             }

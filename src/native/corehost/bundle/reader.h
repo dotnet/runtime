@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include "pal.h"
+#include "utils.h"
 
 namespace bundle
 {
@@ -40,7 +41,7 @@ namespace bundle
         void read(void* dest, int64_t len)
         {
             bounds_check(len);
-            memcpy(dest, m_ptr, len);
+            memcpy(dest, m_ptr, to_size_t_dbgchecked(len));
             m_ptr += len;
         }
 

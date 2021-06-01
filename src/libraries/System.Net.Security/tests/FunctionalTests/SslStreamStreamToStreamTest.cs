@@ -242,7 +242,7 @@ namespace System.Net.Security.Tests
                 var serverBuffer = new byte[1];
                 Task serverReadTask = ReadAsync(serverSslStream, serverBuffer, 0, serverBuffer.Length);
                 await WriteAsync(serverSslStream, new byte[] { 1 }, 0, 1)
-                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    .WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // Shouldn't throw, the context is disposed now.
                 // Since the server read task is in progress, the read buffer is not returned to ArrayPool.

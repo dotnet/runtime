@@ -760,36 +760,6 @@ inline const char* varTypeGCstring(var_types type)
 
 const char* varTypeName(var_types);
 
-/*****************************************************************************
- *
- *  Helpers to pull big-endian values out of a byte stream.
- */
-
-inline unsigned genGetU1(const BYTE* addr)
-{
-    return addr[0];
-}
-
-inline signed genGetI1(const BYTE* addr)
-{
-    return (signed char)addr[0];
-}
-
-inline unsigned genGetU2(const BYTE* addr)
-{
-    return (addr[0] << 8) | addr[1];
-}
-
-inline signed genGetI2(const BYTE* addr)
-{
-    return (signed short)((addr[0] << 8) | addr[1]);
-}
-
-inline unsigned genGetU4(const BYTE* addr)
-{
-    return (addr[0] << 24) | (addr[1] << 16) | (addr[2] << 8) | addr[3];
-}
-
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
 
@@ -902,9 +872,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 #ifdef DEBUG
     gtDebugFlags = 0;
 #endif // DEBUG
-#if FEATURE_ANYCSE
     gtCSEnum = NO_CSE;
-#endif // FEATURE_ANYCSE
 #if ASSERTION_PROP
     ClearAssertion();
 #endif
@@ -3388,7 +3356,7 @@ inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS
     lpArrayElemTypesModified->Set(structHnd, true, ClassHandleSet::Overwrite);
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpIterTree()
+inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 {
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
@@ -3397,8 +3365,8 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 
     assert(lpIterTree->OperIs(GT_ASG));
 
-    GenTree* lhs = lpIterTree->AsOp()->gtOp1;
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
+    const GenTree* lhs = lpIterTree->AsOp()->gtOp1;
+    const GenTree* rhs = lpIterTree->AsOp()->gtOp2;
     assert(lhs->OperGet() == GT_LCL_VAR);
 
     switch (rhs->gtOper)
@@ -3420,7 +3388,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 
 //-----------------------------------------------------------------------------
 
-inline unsigned Compiler::LoopDsc::lpIterVar()
+inline unsigned Compiler::LoopDsc::lpIterVar() const
 {
     VERIFY_lpIterTree();
     return lpIterTree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
@@ -3428,7 +3396,7 @@ inline unsigned Compiler::LoopDsc::lpIterVar()
 
 //-----------------------------------------------------------------------------
 
-inline int Compiler::LoopDsc::lpIterConst()
+inline int Compiler::LoopDsc::lpIterConst() const
 {
     VERIFY_lpIterTree();
     GenTree* rhs = lpIterTree->AsOp()->gtOp2;
@@ -3437,14 +3405,14 @@ inline int Compiler::LoopDsc::lpIterConst()
 
 //-----------------------------------------------------------------------------
 
-inline genTreeOps Compiler::LoopDsc::lpIterOper()
+inline genTreeOps Compiler::LoopDsc::lpIterOper() const
 {
     VERIFY_lpIterTree();
     GenTree* rhs = lpIterTree->AsOp()->gtOp2;
     return rhs->OperGet();
 }
 
-inline var_types Compiler::LoopDsc::lpIterOperType()
+inline var_types Compiler::LoopDsc::lpIterOperType() const
 {
     VERIFY_lpIterTree();
 
@@ -3459,7 +3427,7 @@ inline var_types Compiler::LoopDsc::lpIterOperType()
     return type;
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpTestTree()
+inline void Compiler::LoopDsc::VERIFY_lpTestTree() const
 {
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
@@ -3505,7 +3473,7 @@ inline void Compiler::LoopDsc::VERIFY_lpTestTree()
 
 //-----------------------------------------------------------------------------
 
-inline bool Compiler::LoopDsc::lpIsReversed()
+inline bool Compiler::LoopDsc::lpIsReversed() const
 {
     VERIFY_lpTestTree();
     return ((lpTestTree->AsOp()->gtOp2->gtOper == GT_LCL_VAR) &&
@@ -3514,7 +3482,7 @@ inline bool Compiler::LoopDsc::lpIsReversed()
 
 //-----------------------------------------------------------------------------
 
-inline genTreeOps Compiler::LoopDsc::lpTestOper()
+inline genTreeOps Compiler::LoopDsc::lpTestOper() const
 {
     VERIFY_lpTestTree();
     genTreeOps op = lpTestTree->OperGet();
@@ -3523,7 +3491,7 @@ inline genTreeOps Compiler::LoopDsc::lpTestOper()
 
 //-----------------------------------------------------------------------------
 
-inline GenTree* Compiler::LoopDsc::lpIterator()
+inline GenTree* Compiler::LoopDsc::lpIterator() const
 {
     VERIFY_lpTestTree();
 
@@ -3532,7 +3500,7 @@ inline GenTree* Compiler::LoopDsc::lpIterator()
 
 //-----------------------------------------------------------------------------
 
-inline GenTree* Compiler::LoopDsc::lpLimit()
+inline GenTree* Compiler::LoopDsc::lpLimit() const
 {
     VERIFY_lpTestTree();
 
@@ -3541,7 +3509,7 @@ inline GenTree* Compiler::LoopDsc::lpLimit()
 
 //-----------------------------------------------------------------------------
 
-inline int Compiler::LoopDsc::lpConstLimit()
+inline int Compiler::LoopDsc::lpConstLimit() const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_CONST_LIMIT);
@@ -3553,7 +3521,7 @@ inline int Compiler::LoopDsc::lpConstLimit()
 
 //-----------------------------------------------------------------------------
 
-inline unsigned Compiler::LoopDsc::lpVarLimit()
+inline unsigned Compiler::LoopDsc::lpVarLimit() const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_VAR_LIMIT);
@@ -3565,7 +3533,7 @@ inline unsigned Compiler::LoopDsc::lpVarLimit()
 
 //-----------------------------------------------------------------------------
 
-inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
+inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index) const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_ARRLEN_LIMIT);
@@ -3588,24 +3556,6 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
     return false;
 }
 
-/*****************************************************************************
- *  Is "var" assigned in the loop "lnum" ?
- */
-
-inline bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
-{
-    assert(lnum < optLoopCount);
-    if (var < lclMAX_ALLSET_TRACKED)
-    {
-        ALLVARSET_TP vs(AllVarSetOps::MakeSingleton(this, var));
-        return optIsSetAssgLoop(lnum, vs) != 0;
-    }
-    else
-    {
-        return optIsVarAssigned(optLoopTable[lnum].lpHead->bbNext, optLoopTable[lnum].lpBottom, nullptr, var);
-    }
-}
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3615,27 +3565,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-// are we compiling for fast code, or are we compiling for blended code and
-// inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
-inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
-{
-    return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
-}
-
-// are we running on a Intel Pentium 4?
-inline bool Compiler::optPentium4(void)
-{
-    return (info.genCPU == CPU_X86_PENTIUM_4);
-}
-
-// should we use add/sub instead of inc/dec? (faster on P4, but increases size)
-inline bool Compiler::optAvoidIncDec(BasicBlock::weight_t bbWeight)
-{
-    return optPentium4() && optFastCodeOrBlendedLoop(bbWeight);
-}
 
 // should we try to replace integer multiplication with lea/add/shift sequences?
 inline bool Compiler::optAvoidIntMult(void)
@@ -4181,7 +4110,7 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (opts.IsOSR() && (varNum == lvaGSSecurityCookie)) ||
+    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #if FEATURE_FIXED_OUT_ARGS

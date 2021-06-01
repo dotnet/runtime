@@ -171,7 +171,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc  << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -373,7 +373,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -416,7 +416,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -459,7 +459,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -501,7 +501,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -654,7 +654,7 @@ bool host_context_test::mixed(
         argv_local.push_back(argv[i]);
 
     hostfxr_handle handle;
-    int rc = hostfxr.init_command_line(argv_local.size(), argv_local.data(), nullptr, &handle);
+    int rc = hostfxr.init_command_line(static_cast<int32_t>(argv_local.size()), argv_local.data(), nullptr, &handle);
     if (rc != StatusCode::Success)
     {
         test_output << _X("hostfxr_initialize_for_command_line failed: ") << std::hex << std::showbase << rc << std::endl;
@@ -719,7 +719,7 @@ bool host_context_test::non_context_mixed(
     auto run_app = [&]{
         // Imitate running as dotnet by passing empty as app_path to hostfxr_main_startupinfo
         const pal::char_t *app_path_local = launch_as_if_dotnet ? _X("") : app_path;
-        int rc = hostfxr.main_startupinfo(argv_local.size(), argv_local.data(), host_path.c_str(), get_dotnet_root_from_fxr_path(hostfxr_path).c_str(), app_path_local);
+        int rc = hostfxr.main_startupinfo(static_cast<int32_t>(argv_local.size()), argv_local.data(), host_path.c_str(), get_dotnet_root_from_fxr_path(hostfxr_path).c_str(), app_path_local);
         if (rc != StatusCode::Success)
             run_app_output << _X("hostfxr_main_startupinfo failed: ") << std::hex << std::showbase << rc << std::endl;
     };

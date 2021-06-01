@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Win32Resource>EventLogMessages.res</Win32Resource>
-    <IncludePlatformAttributes>false</IncludePlatformAttributes>
+    <!-- Override the parent Directory.Build.props -->
+    <SupportedOSPlatforms />
   </PropertyGroup>
 </Project>

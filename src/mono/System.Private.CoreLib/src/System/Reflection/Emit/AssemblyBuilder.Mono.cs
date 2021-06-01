@@ -43,7 +43,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    internal class GenericInstanceKey
+    internal sealed class GenericInstanceKey
     {
         private Type gtd;
         internal Type[] args;

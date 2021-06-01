@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Globalization
 Imports System.Runtime.Versioning
 Imports System.Text
@@ -599,6 +600,7 @@ EmptyMatchString:
             Return Expression.Length
         End Function
 
+        <RequiresUnreferencedCode("The object's type cannot be statically analyzed and its members may be trimmed")>
         Public Function Len(ByVal Expression As Object) As Integer
             If Expression Is Nothing Then
                 Return 0

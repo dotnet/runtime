@@ -541,12 +541,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (!isLocalProp)
     {
-        optValueNumToAsserts = new (getAllocator()) ValueNumToAssertsMap(getAllocator());
+        optValueNumToAsserts =
+            new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
     }
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep =
+            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);
@@ -2666,12 +2668,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 {
     const unsigned lclNum = tree->GetLclNum();
 
-#if FEATURE_ANYCSE
     if (lclNumIsCSE(lclNum))
     {
         return nullptr;
     }
-#endif
 
     GenTree* newTree = tree;
 
@@ -2733,8 +2733,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     LclVarDsc* varDsc   = lvaGetDesc(lclNum);
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
-                    var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
+                    CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+                    newTree                     = gtGetSIMDZero(simdType, simdBaseJitType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;
@@ -3679,7 +3679,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
     if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK) &&
         ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
-        optRemoveRangeCheck(tree, stmt);
+        optRemoveCommaBasedRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
@@ -4005,10 +4005,9 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
 /*****************************************************************************
  *
- *  Given a tree consisting of a comma node with a bounds check, remove any
- *  redundant bounds check that has already been checked in the program flow.
+ *  Given a tree with a bounds check, remove it if it has already been checked in the program flow.
  */
-GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree)
+GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     if (optLocalAssertionProp)
     {
@@ -4126,12 +4125,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
+        if (arrBndsChk == stmt->GetRootNode())
+        {
+            // We have a top-level bounds check node.
+            // This can happen when trees are broken up due to inlining.
+            // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).
+            GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
+
+            return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+        }
 
         // Defer actually removing the tree until processing reaches its parent comma, since
-        // optRemoveRangeCheck needs to rewrite the whole comma tree.
+        // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
         arrBndsChk->gtFlags |= GTF_ARR_BOUND_INBND;
+
         return nullptr;
     }
+
     return nullptr;
 }
 
@@ -4224,7 +4234,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_ARR_BOUNDS_CHECK:
-            return optAssertionProp_BndsChk(assertions, tree);
+            return optAssertionProp_BndsChk(assertions, tree, stmt);
 
         case GT_COMMA:
             return optAssertionProp_Comma(assertions, tree, stmt);
@@ -5157,13 +5167,11 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
             {
                 return WALK_CONTINUE;
             }
-#if FEATURE_ANYCSE
             // Let's not conflict with CSE (to save the movw/movt).
             if (lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
             {
                 return WALK_CONTINUE;
             }
-#endif
             break;
 
         default:

@@ -10,6 +10,7 @@ namespace System.Xml.Schema
     using System.Threading;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
@@ -88,11 +89,13 @@ namespace System.Xml.Schema
             return parser.XmlSchema;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -100,11 +103,13 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer)
         {
             Write(writer, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
@@ -112,11 +117,17 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer)
         {
             Write(writer, null);
         }
 
+        [DynamicDependency(TrimmerConstants.PublicMembers, typeof(XmlSchema))]
+        // This method may be safe given the above Dynamic Dependency but it is not yet fully understood if just preserving
+        // all of XmlSchema public members is enough in order to be safe in all cases, so we have opted to keep the RequiresUnreferencedCode
+        // attribute for now. This can be removed in the future if it is determined that the above is enough for all scenarios to be trim-safe.
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));

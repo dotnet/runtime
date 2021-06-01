@@ -59,7 +59,7 @@ namespace System.Reflection
         // Proxy instances are not cached.  Their lifetime is entirely owned by the caller of DispatchProxy.Create.
         private static readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> s_baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
         private static readonly ProxyAssembly s_proxyAssembly = new ProxyAssembly();
-        private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetTypeInfo().GetDeclaredMethod("Invoke")!;
+        private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
@@ -145,7 +145,7 @@ namespace System.Reflection
             return generatedProxyType;
         }
 
-        private class GeneratedTypeInfo
+        private sealed class GeneratedTypeInfo
         {
             public GeneratedTypeInfo(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type generatedType,
@@ -160,7 +160,7 @@ namespace System.Reflection
             public MethodInfo[] MethodInfos { get; }
         }
 
-        private class ProxyAssembly
+        private sealed class ProxyAssembly
         {
             private readonly AssemblyBuilder _ab;
             private readonly ModuleBuilder _mb;
@@ -232,7 +232,7 @@ namespace System.Reflection
             }
         }
 
-        private class ProxyBuilder
+        private sealed class ProxyBuilder
         {
             private readonly ProxyAssembly _assembly;
             private readonly TypeBuilder _tb;
@@ -394,9 +394,19 @@ namespace System.Reflection
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
-                Type[] paramTypes = ParamTypes(parameters, false);
+                Type[] paramTypes = new Type[parameters.Length];
+                Type[][] paramReqMods = new Type[paramTypes.Length][];
 
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, mi.ReturnType, paramTypes);
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    paramTypes[i] = parameters[i].ParameterType;
+                    paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                }
+
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard,
+                    mi.ReturnType, null, null,
+                    paramTypes, paramReqMods, null);
+
                 if (mi.ContainsGenericParameters)
                 {
                     Type[] ts = mi.GetGenericArguments();
@@ -417,7 +427,7 @@ namespace System.Reflection
 
                 // object[] args = new object[paramCount];
                 il.Emit(OpCodes.Nop);
-                GenericArray<object> argsArr = new GenericArray<object>(il, ParamTypes(parameters, true).Length);
+                GenericArray<object> argsArr = new GenericArray<object>(il, parameters.Length);
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -500,18 +510,6 @@ namespace System.Reflection
 
                 _tb.DefineMethodOverride(mdb, mi);
                 return mdb;
-            }
-
-            private static Type[] ParamTypes(ParameterInfo[] parms, bool noByRef)
-            {
-                Type[] types = new Type[parms.Length];
-                for (int i = 0; i < parms.Length; i++)
-                {
-                    types[i] = parms[i].ParameterType;
-                    if (noByRef && types[i].IsByRef)
-                        types[i] = types[i].GetElementType()!;
-                }
-                return types;
             }
 
             // TypeCode does not exist in ProjectK or ProjectN.
@@ -718,7 +716,7 @@ namespace System.Reflection
                 }
             }
 
-            private class ParametersArray
+            private sealed class ParametersArray
             {
                 private readonly ILGenerator _il;
                 private readonly Type[] _paramTypes;
@@ -747,7 +745,7 @@ namespace System.Reflection
                 }
             }
 
-            private class GenericArray<T>
+            private sealed class GenericArray<T>
             {
                 private readonly ILGenerator _il;
                 private readonly LocalBuilder _lb;

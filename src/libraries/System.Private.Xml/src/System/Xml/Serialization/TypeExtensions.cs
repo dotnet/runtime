@@ -4,13 +4,17 @@
 namespace System.Xml.Serialization
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
 
     internal static class TypeExtensions
     {
         private const string ImplicitCastOperatorName = "op_Implicit";
 
-        public static bool TryConvertTo(this Type targetType, object? data, out object? returnValue)
+        public static bool TryConvertTo(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            this Type targetType,
+            object? data, out object? returnValue)
         {
             if (targetType == null)
             {

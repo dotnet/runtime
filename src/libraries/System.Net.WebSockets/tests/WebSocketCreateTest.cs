@@ -40,7 +40,7 @@ namespace System.Net.WebSockets.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CanSendReceiveData(Uri echoUri)
         {
             if (PlatformDetection.IsWindows7)
@@ -102,7 +102,7 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
         [InlineData(0b_1100_0001, 0b_0_000_0001, true)] // fin + rsv1 + text, no mask + length == 1
@@ -149,7 +149,7 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ReceiveAsync_ServerSplitHeader_ValidDataReceived()
         {
@@ -204,7 +204,7 @@ namespace System.Net.WebSockets.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
         {
             if (PlatformDetection.IsWindows7)
@@ -246,7 +246,7 @@ namespace System.Net.WebSockets.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncAfterCloseReceivedClosesStream(Uri echoUri, bool useCloseOutputAsync)
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

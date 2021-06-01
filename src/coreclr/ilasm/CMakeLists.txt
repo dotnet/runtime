@@ -65,7 +65,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CL
     set(END_LIBRARY_GROUP -Wl,--end-group)
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
-_add_executable(ilasm
+add_executable_clr(ilasm
   ${ILASM_SOURCES}
   ${ILASM_RESOURCES}
 )
@@ -126,4 +126,4 @@ else()
   )
 endif(CLR_CMAKE_HOST_UNIX)
 
-install_clr(TARGETS ilasm)
+install_clr(TARGETS ilasm DESTINATIONS . COMPONENT iltools)

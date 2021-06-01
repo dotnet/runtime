@@ -40,7 +40,7 @@ namespace System.Reflection.Emit
      * This class represents an event of an instantiation of a generic type builder.
      */
     [StructLayout(LayoutKind.Sequential)]
-    internal class EventOnTypeBuilderInst : EventInfo
+    internal sealed class EventOnTypeBuilderInst : EventInfo
     {
         private TypeBuilderInstantiation instantiation;
         private EventBuilder? event_builder;

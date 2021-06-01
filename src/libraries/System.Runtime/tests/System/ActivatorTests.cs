@@ -560,7 +560,7 @@ namespace System.Tests
             Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, new object[] { });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateInstance_NonPublicValueTypeWithPrivateDefaultConstructor_Success()
         {
             AssemblyName assemblyName = new AssemblyName("Assembly");
@@ -589,7 +589,7 @@ namespace System.Tests
             Assert.Equal(-1, field.GetValue(v2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException()
         {
             AssemblyName assemblyName = new AssemblyName("Assembly");
@@ -661,6 +661,7 @@ namespace System.Tests
         };
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(TestingCreateInstanceObjectHandleData))]
         public static void TestingCreateInstanceObjectHandle(string assemblyName, string type, string returnedFullNameType, Type exceptionType, bool returnNull)
         {
@@ -741,6 +742,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(TestingCreateInstanceObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceObjectHandleFullSignature(string assemblyName, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType, bool returnNull)
         {
@@ -796,7 +798,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateInstance_TypeBuilder_ThrowsNotSupportedException()
         {
             AssemblyName assemblyName = new AssemblyName("Assembly");

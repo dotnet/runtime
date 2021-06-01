@@ -8,7 +8,6 @@ enum class WellKnownAttribute : DWORD
 {
     ParamArray,
     DefaultMember,
-    DisablePrivateReflectionType,
     FixedAddressValueType,
     UnsafeValueType,
     BestFitMapping,
@@ -48,8 +47,6 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.ParamArrayAttribute";
         case WellKnownAttribute::DefaultMember:
             return "System.Reflection.DefaultMemberAttribute";
-        case WellKnownAttribute::DisablePrivateReflectionType:
-            return "System.Runtime.CompilerServices.DisablePrivateReflectionAttribute";
         case WellKnownAttribute::FixedAddressValueType:
             return "System.Runtime.CompilerServices.FixedAddressValueTypeAttribute";
         case WellKnownAttribute::UnsafeValueType:

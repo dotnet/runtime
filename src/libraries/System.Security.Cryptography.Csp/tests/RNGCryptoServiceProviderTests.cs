@@ -4,6 +4,8 @@
 using System.Linq;
 using Xunit;
 
+#pragma warning disable SYSLIB0023 // RNGCryptoServiceProvider is obsolete
+
 namespace System.Security.Cryptography.RNG.Tests
 {
     /// <summary>
@@ -120,3 +122,5 @@ namespace System.Security.Cryptography.RNG.Tests
         }
     }
 }
+
+#pragma warning restore SYSLIB0023

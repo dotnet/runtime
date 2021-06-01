@@ -49,6 +49,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
+#include "mono/metadata/jit-info.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
@@ -266,17 +267,6 @@ mono_marshal_init (void)
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
 	}
-}
-
-void
-mono_marshal_cleanup (void)
-{
-	mono_cominterop_cleanup ();
-
-	mono_native_tls_free (load_type_info_tls_id);
-	mono_native_tls_free (last_error_tls_id);
-	mono_coop_mutex_destroy (&marshal_mutex);
-	marshal_mutex_initialized = FALSE;
 }
 
 void
@@ -551,7 +541,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		void **method_data;
 		MonoMethod *method;
 
-		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
+		ji = mono_jit_info_table_find_internal (mono_get_addr_from_ftnptr (ptr), TRUE, FALSE);
 		/* FIXME we leak wrapper with the interpreter */
 		if (!ji)
 			return;
@@ -1991,6 +1981,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	MonoMethod *orig_method = method;
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
+	MonoMemoryManager *mem_manager = NULL;
 	gboolean found;
 
 	g_assert (method && m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class &&
@@ -2101,8 +2092,12 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		cache_key = sig;
 	}
 
+	if (subtype == WRAPPER_SUBTYPE_NONE)
+		/* FIXME: Other subtypes */
+		mem_manager = m_method_get_mem_manager (method);
+
 	if (!static_method_with_first_arg_bound) {
-		invoke_sig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		invoke_sig = mono_metadata_signature_dup_mem_manager (mem_manager, sig);
 		invoke_sig->hasthis = 0;
 	}
 
@@ -2119,6 +2114,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	else
 		mb = mono_mb_new (get_wrapper_target_class (get_method_image (method)), name, MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
+	mb->mem_manager = mem_manager;
+
+	if (subtype == WRAPPER_SUBTYPE_NONE)
+		/* FIXME: Other subtypes */
+		mb->mem_manager = m_method_get_mem_manager (method);
 
 	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
 
@@ -2394,6 +2394,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	char *name;
 	const char *param_names [16];
 	WrapperInfo *info;
+	MonoMemoryManager *mem_manager = NULL;
 	MonoWrapperMethodCacheKey *method_key;
 	MonoWrapperMethodCacheKey method_key_lookup_only;
 	memset (&method_key_lookup_only, 0, sizeof (method_key_lookup_only));
@@ -2420,7 +2421,9 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	res = mono_marshal_find_in_cache (method_cache, method_key);
 	if (res)
 		return res;
-		
+
+	mem_manager = m_method_get_mem_manager (method);
+
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature_internal (method));
 		if (!callsig)
@@ -2470,9 +2473,9 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 			return res;
 		}
 
-		/* Make a copy of the signature from the image mempool */
+		/* Make a copy of the signature */
 		tmp_sig = callsig;
-		callsig = mono_metadata_signature_dup_full (m_class_get_image (target_klass), callsig);
+		callsig = mono_metadata_signature_dup_mem_manager (mem_manager, callsig);
 		g_free (tmp_sig);
 	}
 
@@ -2498,6 +2501,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	name = mono_signature_to_name (callsig, virtual_ ? "runtime_invoke_virtual" : (need_direct_wrapper ? "runtime_invoke_direct" : "runtime_invoke"));
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
+	mb->mem_manager = mem_manager;
 
 	param_names [0] = "this";
 	param_names [1] = "params";
@@ -3486,7 +3490,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	MonoImage *image = m_class_get_image (caller_class);
 	g_assert (sig->pinvoke);
 	g_assert (!sig->hasthis && ! sig->explicit_this);
-	g_assert (!sig->is_inflated && !sig->has_type_parameters);
+	g_assert (!sig->has_type_parameters);
 
 #if 0
 	/*
@@ -4795,19 +4799,19 @@ mono_marshal_clear_last_error (void)
 #endif
 }
 
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void)
 {
 	return GPOINTER_TO_INT (mono_native_tls_get_value (last_error_tls_id));
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err)
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err)
 {
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (err));
 }
 
-guint32 
+guint32
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (rtype)) {
@@ -5770,12 +5774,13 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 
 	mb = mono_mb_new_no_dup_name (klass, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
+	mb->mem_manager = m_method_get_mem_manager (method);
 
 	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |
 		METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_HIDE_BY_SIG | METHOD_ATTRIBUTE_FINAL;
 
 	sig = mono_method_signature_internal (method);
-	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+	csig = mono_metadata_signature_dup_mem_manager (mb->mem_manager, sig);
 	csig->generic_param_count = 0;
 
 	get_marshal_cb ()->emit_generic_array_helper (mb, method, csig);

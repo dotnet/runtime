@@ -1,8 +1,15 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <!-- These are wrapper project files for packaging.-->
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <!-- Avoid trying to binplace non existent documentation file.-->
     <EnableBinPlacing>false</EnableBinPlacing>
+    <IsShipping>false</IsShipping>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IsSourcePackage>true</IsSourcePackage>
+    <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="*.cs" PackagePath="contentFiles/cs/netstandard1.0/%(FileName)%(Extension)" />
+  </ItemGroup>
 </Project>

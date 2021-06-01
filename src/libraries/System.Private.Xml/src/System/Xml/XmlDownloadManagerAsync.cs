@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XmlDownloadManager
+    internal sealed partial class XmlDownloadManager
     {
         internal Task<Stream> GetStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
         {

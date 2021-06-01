@@ -6,12 +6,12 @@ using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
         /// </summary>
-        private partial class HillClimbing
+        private sealed partial class HillClimbing
         {
             private const int LogCapacity = 200;
             private const int DefaultSampleIntervalMsLow = 10;

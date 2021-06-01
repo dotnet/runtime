@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Composition.Hosting.Core
 {
-    internal class CycleBreakingExportDescriptor : ExportDescriptor
+    internal sealed class CycleBreakingExportDescriptor : ExportDescriptor
     {
         private readonly Lazy<ExportDescriptor> _exportDescriptor;
 

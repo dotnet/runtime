@@ -3,8 +3,11 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+
     <OptimizationDataSupported Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">True</OptimizationDataSupported>
     <OptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">True</OptimizationDataSupported>
+
+    <!-- At the moment, we are only generating data for Windows X64 in the most recent optimization data publishing platform. Use the old data for now -->
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
     <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
     <_TargetOSArchLowercase>$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())</_TargetOSArchLowercase>
@@ -12,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="optimization.PGO.CoreCLR"
+    <PackageReference Include="optimization.$(_TargetOSArchLowercase).PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
       Condition="'$(optimizationPGOCoreCLRVersion)'!='' And '$(OptimizationDataSupported)'!=''"
       GeneratePathProperty="true" />
@@ -34,10 +37,25 @@
     <Error Condition="'$(PgoDataPackagePathOutputFile)'==''" Text="PgoDataPackagePathOutputFile must be passed as a property." />
 
     <PropertyGroup>
-      <PgoPackagePath>$([MSBuild]::NormalizePath($(Pkgoptimization_PGO_CoreCLR),../../,optimization.$(_TargetOSArchLowercase).pgo.coreclr,$(optimizationPGOCoreCLRVersion)))</PgoPackagePath>
+      <PgoPackagePathProperty>Pkgoptimization_$(_TargetOSArchLowercase)_PGO_CoreCLR</PgoPackagePathProperty>
     </PropertyGroup>
 
-    <Error Condition="!Exists('$(PgoPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored PGO package. Maybe the platform-specific package naming changed?" />
+    <!--
+      Use an item group for expansion of $($(PgoPackagePathProperty)) (an illegal MSBuild expression)
+      i.e. the prop value's value.
+    -->
+    <ItemGroup>
+      <PgoPackagePathPropertyItemList Include="$(PgoPackagePathProperty)" />
+      <PgoPackagePathPropertyItemList>
+        <PgoPackagePath>$(%(Identity))</PgoPackagePath>
+      </PgoPackagePathPropertyItemList>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <PgoPackagePath>@(PgoPackagePathPropertyItemList->'%(PgoPackagePath)')</PgoPackagePath>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(PgoPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored PGO package at $(PgoPackagePath). Maybe the platform-specific package naming changed?" />
 
     <!-- Cleanup old version file -->
 

@@ -12,6 +12,10 @@ namespace System.IO
 {
     public class EnumerationOptions
     {
+        private int _maxRecursionDepth;
+
+        internal const int DefaultMaxRecursionDepth = int.MaxValue;
+
         /// <summary>
         /// For internal use. These are the options we want to use if calling the existing Directory/File APIs where you don't
         /// explicitly specify EnumerationOptions.
@@ -34,6 +38,7 @@ namespace System.IO
         {
             IgnoreInaccessible = true;
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System;
+            MaxRecursionDepth = DefaultMaxRecursionDepth;
         }
 
         /// <summary>
@@ -95,6 +100,24 @@ namespace System.IO
         /// Default is to match platform defaults, which are gleaned from the case sensitivity of the temporary folder.
         /// </remarks>
         public MatchCasing MatchCasing { get; set; }
+
+        /// <summary>Gets or sets a value that indicates the maximum directory depth to recurse while enumerating, when <see cref="RecurseSubdirectories" /> is set to <see langword="true" />.</summary>
+        /// <value>A number that represents the maximum directory depth to recurse while enumerating. The default value is <see cref="int.MaxValue" />.</value>
+        /// <remarks>If <see cref="MaxRecursionDepth" /> is set to a negative number, the default value <see cref="int.MaxValue" /> is used.
+        /// If <see cref="MaxRecursionDepth" /> is set to zero, enumeration returns the contents of the initial directory.</remarks>
+        public int MaxRecursionDepth
+        {
+            get => _maxRecursionDepth;
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                _maxRecursionDepth = value;
+            }
+        }
 
         /// <summary>
         /// Set to true to return "." and ".." directory entries.

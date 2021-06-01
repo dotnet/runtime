@@ -1,59 +1,70 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0' ">
+    <!-- CS3011: Only CLS-compliant members can be abstract -->
     <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
-    <NoWarn>$(NoWarn);CS3019</NoWarn>
+    <NoWarn>$(NoWarn);CS3011;CS3019</NoWarn>
+    <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\IO\TextWriterExtensions.cs" />
+    <Compile Include="System\Text\Encodings\Web\AsciiByteMap.cs" />
+    <Compile Include="System\Text\Encodings\Web\AllowedBmpCodePointsBitmap.cs" />
+    <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ascii.cs" />
+    <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\DefaultUrlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
-    <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoderBasicLatin.cs" />
+    <Compile Include="System\Text\Encodings\Web\SpanUtility.cs" />
+    <Compile Include="System\Text\Encodings\Web\ScalarEscaperBase.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\DefaultHtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\JavaScriptEncoder.cs" />
-    <Compile Include="System\Text\Encodings\Web\JavaScriptEncoderHelper.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
-    <Compile Include="System\Text\Encodings\Web\UnsafeRelaxedJavaScriptEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\ThrowHelper.cs" />
     <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
-    <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRange.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
     <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="System\Text\Encodings\Web\AdvSimdHelper.cs" />
-    <Compile Include="System\Text\Encodings\Web\Sse2Helper.cs" />
-    <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IntrinsicAttribute.cs" Link="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" Link="System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
-                        '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Reference Include="System.Diagnostics.Debug" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or '$(TargetFramework)' == 'netcoreapp3.1'">
+    <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ssse3.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.AdvSimd64.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net461'">
+    <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
+    <Compile Include="Polyfills\System.Text.Rune.netstandard20.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or '$(TargetFramework)' == 'netcoreapp3.1'">
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
-                        $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 </Project>

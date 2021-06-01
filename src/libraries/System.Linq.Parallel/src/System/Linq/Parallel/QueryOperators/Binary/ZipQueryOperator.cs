@@ -159,7 +159,7 @@ namespace System.Linq.Parallel
         // QueryResults are indexable.
         //
 
-        internal class ZipQueryOperatorResults : QueryResults<TOutput>
+        internal sealed class ZipQueryOperatorResults : QueryResults<TOutput>
         {
             private readonly QueryResults<TLeftInput> _leftChildResults;
             private readonly QueryResults<TRightInput> _rightChildResults;

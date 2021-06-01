@@ -19,6 +19,7 @@ struct _MonoMethodBuilder {
 	MonoMethod *method;
 	gchar *name;
 	gboolean no_dup_name;
+	MonoMemoryManager *mem_manager;
 	GList *locals_list;
 	gint locals;
 	gboolean dynamic;

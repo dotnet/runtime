@@ -14,8 +14,6 @@
 
 #include "../binder/inc/assembly.hpp"
 
-#ifndef DACCESS_COMPILE
-
 STDMETHODIMP CoreBindResult::QueryInterface(REFIID   riid,
                                           void   **ppv)
 {
@@ -58,6 +56,3 @@ STDMETHODIMP_(ULONG) CoreBindResult::Release()
 
     return ulRef;
 }
-
-
-#endif  // DACCES_COMPILE

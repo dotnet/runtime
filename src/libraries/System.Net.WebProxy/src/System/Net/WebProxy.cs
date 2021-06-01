@@ -4,14 +4,12 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 
 namespace System.Net
 {
-    public class WebProxy : IWebProxy, ISerializable
+    public partial class WebProxy : IWebProxy, ISerializable
     {
         private ArrayList? _bypassList;
         private Regex[]? _regexBypassList;
@@ -68,7 +66,7 @@ namespace System.Net
         [AllowNull]
         public string[] BypassList
         {
-            get { return _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>(); }
+            get => _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>();
             set
             {
                 _bypassList = value != null ? new ArrayList(value) : null;
@@ -82,8 +80,8 @@ namespace System.Net
 
         public bool UseDefaultCredentials
         {
-            get { return Credentials == CredentialCache.DefaultCredentials; }
-            set { Credentials = value ? CredentialCache.DefaultCredentials : null; }
+            get => Credentials == CredentialCache.DefaultCredentials;
+            set => Credentials = value ? CredentialCache.DefaultCredentials : null;
         }
 
         public Uri? GetProxy(Uri destination)
@@ -132,13 +130,13 @@ namespace System.Net
 
         private bool IsMatchInBypassList(Uri input)
         {
-            UpdateRegexList(false);
+            UpdateRegexList(canThrow: false);
 
             if (_regexBypassList != null)
             {
                 string matchUriString = input.IsDefaultPort ?
-                    input.Scheme + "://" + input.Host :
-                    input.Scheme + "://" + input.Host + ":" + input.Port.ToString();
+                    $"{input.Scheme}://{input.Host}" :
+                    $"{input.Scheme}://{input.Host}:{(uint)input.Port}";
 
                 foreach (Regex r in _regexBypassList)
                 {
@@ -146,54 +144,6 @@ namespace System.Net
                     {
                         return true;
                     }
-                }
-            }
-
-            return false;
-        }
-
-        private bool IsLocal(Uri host)
-        {
-            if (host.IsLoopback)
-            {
-                return true;
-            }
-
-            string hostString = host.Host;
-
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43751
-            if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
-            {
-                return IPAddress.IsLoopback(hostAddress) || IsAddressLocal(hostAddress);
-            }
-
-            // No dot?  Local.
-            int dot = hostString.IndexOf('.');
-            if (dot == -1)
-            {
-                return true;
-            }
-
-            // If it matches the primary domain, it's local.  (Whether or not the hostname matches.)
-            string local = "." + IPGlobalProperties.GetIPGlobalProperties().DomainName;
-#pragma warning restore CA1416 // Validate platform compatibility
-            return
-                local.Length == (hostString.Length - dot) &&
-                string.Compare(local, 0, hostString, dot, local.Length, StringComparison.OrdinalIgnoreCase) == 0;
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        private static bool IsAddressLocal(IPAddress ipAddress)
-        {
-            // Perf note: The .NET Framework caches this and then uses network change notifications to track
-            // whether the set should be recomputed.  We could consider doing the same if this is observed as
-            // a bottleneck, but that tracking has its own costs.
-            IPAddress[] localAddresses = Dns.GetHostEntry(Dns.GetHostName()).AddressList;
-            for (int i = 0; i < localAddresses.Length; i++)
-            {
-                if (ipAddress.Equals(localAddresses[i]))
-                {
-                    return true;
                 }
             }
 
@@ -213,27 +163,19 @@ namespace System.Net
                 IsMatchInBypassList(host);
         }
 
-        protected WebProxy(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
+        protected WebProxy(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
-        }
 
-        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
-        }
 
-        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
+        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
-        }
 
         [Obsolete("This method has been deprecated. Please use the proxy selected for you by default. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static WebProxy GetDefaultProxy()
-        {
+        public static WebProxy GetDefaultProxy() =>
             // The .NET Framework here returns a proxy that fetches IE settings and
             // executes JavaScript to determine the correct proxy.
             throw new PlatformNotSupportedException();
-        }
     }
 }

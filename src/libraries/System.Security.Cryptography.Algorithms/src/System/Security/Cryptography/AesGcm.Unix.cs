@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpCipherSetGcmNonceLength(_ctxHandle, NonceSize);
         }
 
-        private void EncryptInternal(
+        private void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpCipherGetGcmTag(_ctxHandle, tag);
         }
 
-        private void DecryptInternal(
+        private void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,

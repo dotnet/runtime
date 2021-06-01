@@ -1398,7 +1398,7 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 {
 #ifdef TARGET_UNIX
 
-    ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThread);
+    ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThreadHelper);
 
     ThumbEmitCallRegister(ThumbReg(0));
 

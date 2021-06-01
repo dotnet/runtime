@@ -168,6 +168,7 @@ STDAPI DllRegisterServer(void)
     RETURN_IF_FAILED(RegisterClsid(__uuidof(AggregationTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ColorTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(InspectableTesting), L"Both"));
+    RETURN_IF_FAILED(RegisterClsid(__uuidof(TrackMyLifetimeTesting), L"Both"));
 
     return S_OK;
 }
@@ -185,6 +186,7 @@ STDAPI DllUnregisterServer(void)
     RETURN_IF_FAILED(RemoveClsid(__uuidof(AggregationTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ColorTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(InspectableTesting)));
+    RETURN_IF_FAILED(RemoveClsid(__uuidof(TrackMyLifetimeTesting)));
 
     return S_OK;
 }
@@ -220,6 +222,9 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FA
 
     if (rclsid == __uuidof(InspectableTesting))
         return ClassFactoryBasic<InspectableTesting>::Create(riid, ppv);
+
+    if (rclsid == __uuidof(TrackMyLifetimeTesting))
+        return ClassFactoryBasic<TrackMyLifetimeTesting>::Create(riid, ppv);
 
     return CLASS_E_CLASSNOTAVAILABLE;
 }

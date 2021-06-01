@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ExpressionsServiceProviderEngine : ServiceProviderEngine
+    internal sealed class ExpressionsServiceProviderEngine : ServiceProviderEngine
     {
         private readonly ExpressionResolverBuilder _expressionResolverBuilder;
         public ExpressionsServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors) : base(serviceDescriptors)

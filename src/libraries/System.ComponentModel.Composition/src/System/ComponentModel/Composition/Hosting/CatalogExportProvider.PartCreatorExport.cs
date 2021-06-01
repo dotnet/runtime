@@ -7,7 +7,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CatalogExportProvider
     {
-        internal class PartCreatorExport : FactoryExport
+        internal sealed class PartCreatorExport : FactoryExport
         {
             private readonly CatalogExportProvider _catalogExportProvider;
 

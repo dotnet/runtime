@@ -570,9 +570,11 @@ namespace System.Tests
         [Fact]
         public void ReflectionOnlyGetType()
         {
+#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType(null, true, false));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("", true, true));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
+#pragma warning restore SYSLIB0018
         }
 
         [Fact]

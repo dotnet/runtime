@@ -71,6 +71,34 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        public void TestWithExactDuplicateEntriesPasses()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+
+            // Generate a file specification with duplicate entries
+            var fileSpecs = new List<FileSpec>();
+            fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
+            string appPath = BundleHelper.GetAppPath(fixture);
+            fileSpecs.Add(new FileSpec(appPath, "rel/app.repeat.dll"));
+            fileSpecs.Add(new FileSpec(appPath, "rel/app.repeat.dll"));
+            string systemLibPath = Path.Join(BundleHelper.GetPublishPath(fixture), "System.dll");
+            fileSpecs.Add(new FileSpec(systemLibPath, "rel/system.repeat.dll"));
+            fileSpecs.Add(new FileSpec(systemLibPath, "rel/system.repeat.dll"));
+
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
+            bundler.GenerateBundle(fileSpecs);
+
+            // Exact duplicates are not duplicated in the bundle
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/system.repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
+        }
+
+        [Fact]
         public void TestWithDuplicateEntriesFails()
         {
             var fixture = sharedTestState.TestFixture.Copy();
@@ -91,6 +119,58 @@ namespace Microsoft.NET.HostModel.Tests
                 .Message
                     .Should().Contain("rel/app.repeat")
                     .And.Contain(BundleHelper.GetAppPath(fixture));
+        }
+
+        [Fact]
+        public void TestWithCaseSensitiveDuplicateEntriesPasses()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+
+            // Generate a file specification with duplicate entries
+            var fileSpecs = new List<FileSpec>();
+            fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
+            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat.dll"));
+            fileSpecs.Add(new FileSpec(Path.Join(BundleHelper.GetPublishPath(fixture), "System.dll"), "rel/app.Repeat.dll"));
+
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
+            bundler.GenerateBundle(fileSpecs);
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.Repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
+        }
+
+        [Fact]
+        public void TestWithMultipleDuplicateEntriesFails()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+
+            // Generate a file specification with duplicate entries
+            var fileSpecs = new List<FileSpec>();
+            fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
+            string appPath = BundleHelper.GetAppPath(fixture);
+            fileSpecs.Add(new FileSpec(appPath, "rel/app.repeat.dll"));
+            fileSpecs.Add(new FileSpec(appPath, "rel/app.repeat.dll"));
+            string systemLibPath = Path.Join(BundleHelper.GetPublishPath(fixture), "System.dll");
+            fileSpecs.Add(new FileSpec(appPath, "rel/system.repeat.dll"));
+            fileSpecs.Add(new FileSpec(systemLibPath, "rel/system.repeat.dll"));
+
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
+            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs))
+                .Message
+                    .Should().Contain("rel/system.repeat.dll")
+                    .And.NotContain("rel/app.repeat.dll")
+                    .And.Contain(appPath)
+                    .And.Contain(systemLibPath);
         }
 
         [Fact]

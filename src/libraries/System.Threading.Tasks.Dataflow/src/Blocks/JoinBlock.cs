@@ -187,15 +187,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, OutputCount={1}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -420,15 +414,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0} OutputCount={1}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)} OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -961,10 +949,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayJoin = _sharedResources._ownerJoin as IDebuggerDisplay;
-                return string.Format("{0} InputCount={1}, Join=\"{2}\"",
-                    Common.GetNameForDebugger(this),
-                    InputCountForDebugger,
-                    displayJoin != null ? displayJoin.Content : _sharedResources._ownerJoin);
+                return $"{Common.GetNameForDebugger(this)} InputCount={InputCountForDebugger}, Join=\"{(displayJoin != null ? displayJoin.Content : _sharedResources._ownerJoin)}\"";
             }
         }
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -1456,8 +1441,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayJoin = _ownerJoin as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displayJoin != null ? displayJoin.Content : _ownerJoin);
+                return $"Block=\"{(displayJoin != null ? displayJoin.Content : _ownerJoin)}\"";
             }
         }
     }

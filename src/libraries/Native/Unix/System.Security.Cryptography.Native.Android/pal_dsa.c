@@ -5,18 +5,7 @@
 #include "pal_utilities.h"
 #include "pal_signature.h"
 #include "pal_bignum.h"
-
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS_ENV(name, releaseFn) \
-do { \
-    for (int i = 0; i < count_##name; ++i) \
-    { \
-        releaseFn(env, name[i]); \
-    } \
-} while(0)
+#include "pal_misc.h"
 
 int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
 {
@@ -55,21 +44,22 @@ static jobject GetQParameter(JNIEnv* env, jobject dsa)
 {
     assert(dsa);
 
+    jobject ret = NULL;
+
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec);
     loc[algName] = JSTRING("DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
     loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
     loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jobject q = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = q;
 
-    return q;
-
-error:
+cleanup:
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    return FAIL;
+    return ret;
 }
 
 int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
@@ -225,7 +215,7 @@ int32_t AndroidCryptoNative_GetDsaParameters(
     assert(gLength);
     assert(yLength);
     assert(xLength);
-    
+
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, privateKey, privateKeySpec);
@@ -282,7 +272,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
         assert(false);
         return 0;
     }
-    
+
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(bn, P, Q, G, Y, X);
@@ -311,8 +301,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
-    jobject keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, loc[publicKey], loc[privateKey]);
-    *outDsa = ToGRef(env, keyPair);
+    *outDsa = AndroidCryptoNative_CreateKeyPair(env, loc[publicKey], loc[privateKey]);
     if (CheckJNIExceptions(env))
     {
         ON_EXCEPTION_PRINT_AND_GOTO(error);
@@ -324,7 +313,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
 error:
     returnValue = FAIL;
 cleanup:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
 
     return returnValue;

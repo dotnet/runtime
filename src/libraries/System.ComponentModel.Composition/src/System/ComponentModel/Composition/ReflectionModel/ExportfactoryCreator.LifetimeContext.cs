@@ -9,7 +9,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 {
     internal sealed partial class ExportFactoryCreator
     {
-        private class LifetimeContext
+        private sealed class LifetimeContext
         {
             public Tuple<T, Action> GetExportLifetimeContextFromExport<T>(Export export)
             {

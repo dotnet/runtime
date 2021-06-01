@@ -12,7 +12,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlJsonWriter : XmlDictionaryWriter, IXmlJsonWriterInitializer
+    internal sealed class XmlJsonWriter : XmlDictionaryWriter, IXmlJsonWriterInitializer
     {
         private const char BACK_SLASH = '\\';
         private const char FORWARD_SLASH = '/';
@@ -1576,7 +1576,7 @@ namespace System.Runtime.Serialization.Json
             _dataType = oldDataType;
         }
 
-        private class JsonNodeWriter : XmlUTF8NodeWriter
+        private sealed class JsonNodeWriter : XmlUTF8NodeWriter
         {
             internal unsafe void WriteChars(char* chars, int charCount)
             {

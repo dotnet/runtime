@@ -222,7 +222,7 @@ namespace System.Speech.Internal
 
         #region Private Types
 
-        private class PhoneMap
+        private sealed class PhoneMap
         {
             internal PhoneMap() { }
 
@@ -230,7 +230,7 @@ namespace System.Speech.Internal
             internal PhoneId[] _phoneIds;
         }
 
-        private class PhoneId : IComparer<PhoneId>
+        private sealed class PhoneId : IComparer<PhoneId>
         {
             internal PhoneId() { }
 
@@ -250,7 +250,7 @@ namespace System.Speech.Internal
         /// has a length of 1 character. If the length is greater than 1, then the 'pron' string is appended with -1 values, one per extra code
         /// point.
         /// </summary>
-        private class PhoneMapCompressed
+        private sealed class PhoneMapCompressed
         {
             internal PhoneMapCompressed() { }
 

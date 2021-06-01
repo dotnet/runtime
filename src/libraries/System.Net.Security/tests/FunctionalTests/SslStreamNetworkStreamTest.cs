@@ -242,8 +242,7 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
-            var rnd = new Random();
-            int split = rnd.Next(0, certificates.serverChain.Count - 1);
+            int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback =
@@ -407,7 +406,7 @@ namespace System.Net.Security.Tests
 
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                await Task.WhenAll(t1, t2).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(t1, t2).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // hold to the streams so they stay in credential cache
                 streams.Add(client);

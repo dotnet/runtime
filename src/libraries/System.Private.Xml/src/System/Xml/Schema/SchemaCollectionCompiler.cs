@@ -1560,7 +1560,7 @@ namespace System.Xml.Schema
         {
             decimal minOccurs, maxOccurs;
             CalculateSequenceRange(derivedSequence, out minOccurs, out maxOccurs);
-            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs) || derivedSequence.Items.Count > baseChoice.Items.Count)
+            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs))
             {
                 return false;
             }

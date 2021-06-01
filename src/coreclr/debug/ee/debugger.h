@@ -326,16 +326,6 @@ public:
 #define GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD_COND(cond)               \
     GCHolderEEInterface<FALSE, TRUE, TRUE> __gcCoop_onlyOneAllowedPerScope((cond))
 
-
-
-// There are still some APIs that call new that we call from the helper thread.
-// These are unsafe operations, so we wrap them here. Each of these is a potential hang.
-inline DWORD UnsafeGetConfigDWORD_DontUse_(LPCWSTR name, DWORD defValue)
-{
-    SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue);
-}
-
 inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 {
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -2351,7 +2341,6 @@ public:
         if (g_fProcessDetach)
             return true;
 
-        BEGIN_GETTHREAD_ALLOWED;
         if (g_pEEInterface->GetThread())
         {
             return (GetThreadIdHelper(g_pEEInterface->GetThread()) == m_mutexOwner);
@@ -2360,7 +2349,6 @@ public:
         {
             return (GetCurrentThreadId() == m_mutexOwner);
         }
-        END_GETTHREAD_ALLOWED;
     }
 #endif // _DEBUG_IMPL
 
@@ -2514,7 +2502,6 @@ public:
 
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
-    HRESULT SetFiberMode(bool isFiberMode);
 
     HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
     HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
@@ -3912,7 +3899,7 @@ HANDLE OpenWin32EventOrThrow(
       if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady()) { THROWS; } else { NOTHROW; }
 
 #define MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT \
-      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThread() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThreadNULLOk() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 
 #define GC_TRIGGERS_FROM_GETJITINFO if (GetThreadNULLOk() != NULL) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 

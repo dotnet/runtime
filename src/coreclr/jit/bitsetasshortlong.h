@@ -910,17 +910,18 @@ const char* BitSetOps</*BitSetType*/ BitSetShortLongRep,
     for (unsigned i = len; 0 < i; i--)
     {
         size_t bits = bs[i - 1];
-        for (unsigned bytesDone = 0; bytesDone < sizeof(size_t); bytesDone += sizeof(unsigned))
+        if (sizeof(size_t) == sizeof(int64_t))
         {
-            unsigned bits0 = (unsigned)bits;
-            sprintf_s(temp, remaining, "%08X", bits0);
+            sprintf_s(temp, remaining, "%016zX", bits);
+            temp += 16;
+            remaining -= 16;
+        }
+        else
+        {
+            assert(sizeof(size_t) == sizeof(unsigned));
+            sprintf_s(temp, remaining, "%08X", (unsigned)bits);
             temp += 8;
             remaining -= 8;
-            bytesDone += 4;
-            assert(sizeof(unsigned) == 4);
-            // Doing this twice by 16, rather than once by 32, avoids warnings when size_t == unsigned.
-            bits = bits >> 16;
-            bits = bits >> 16;
         }
     }
     return res;

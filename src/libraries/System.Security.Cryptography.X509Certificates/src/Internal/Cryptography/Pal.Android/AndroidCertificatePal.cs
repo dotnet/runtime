@@ -121,12 +121,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private AndroidCertificatePal(SafeX509Handle handle)
+        internal AndroidCertificatePal(SafeX509Handle handle)
         {
             _cert = handle;
         }
 
-        private AndroidCertificatePal(SafeX509Handle handle, SafeKeyHandle privateKey)
+        internal AndroidCertificatePal(SafeX509Handle handle, SafeKeyHandle privateKey)
         {
             _cert = handle;
             _privateKey = privateKey;
@@ -357,7 +357,14 @@ namespace Internal.Cryptography.Pal
 
         public DSA? GetDSAPrivateKey()
         {
-            throw new NotImplementedException(nameof(GetDSAPrivateKey));
+            if (_privateKey == null || _privateKey.IsInvalid)
+                return null;
+
+            SafeDsaHandle? dsaKey = _privateKey as SafeDsaHandle;
+            if (dsaKey == null)
+                throw new CryptographicException();
+
+            return new DSAImplementation.DSAAndroid(dsaKey);
         }
 
         public ECDsa? GetECDsaPrivateKey()
@@ -386,7 +393,19 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
-            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(DSA)");
+            DSAImplementation.DSAAndroid? typedKey = privateKey as DSAImplementation.DSAAndroid;
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
+
+            DSAParameters dsaParameters = privateKey.ExportParameters(true);
+            using (PinAndClear.Track(dsaParameters.X!))
+            using (typedKey = new DSAImplementation.DSAAndroid())
+            {
+                typedKey.ImportParameters(dsaParameters);
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            };
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)

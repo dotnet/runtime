@@ -206,12 +206,12 @@ namespace System.Net.Sockets.Tests
                 if (DisposeDuringOperationResultsInDisposedException)
                 {
                     await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask)
-                        .TimeoutAfter(CancellationTestTimeout);
+                        .WaitAsync(CancellationTestTimeout);
                 }
                 else
                 {
                     SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask)
-                        .TimeoutAfter(CancellationTestTimeout);
+                        .WaitAsync(CancellationTestTimeout);
                     SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
                     Assert.Equal(expectedError, ex.SocketErrorCode);
                 }
@@ -233,7 +233,7 @@ namespace System.Net.Sockets.Tests
             if (shutdown == SocketShutdown.Both) await Task.Delay(50);
 
             SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
-                .TimeoutAfter(CancellationTestTimeout);
+                .WaitAsync(CancellationTestTimeout);
 
             Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
         }
@@ -359,7 +359,7 @@ namespace System.Net.Sockets.Tests
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => socket.ReceiveFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
-                .TimeoutAfter(CancellationTestTimeout);
+                .WaitAsync(CancellationTestTimeout);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }

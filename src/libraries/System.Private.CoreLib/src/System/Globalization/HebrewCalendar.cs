@@ -892,7 +892,7 @@ namespace System.Globalization
             return year;
         }
 
-        internal class DateBuffer
+        internal sealed class DateBuffer
         {
             internal int year;
             internal int month;

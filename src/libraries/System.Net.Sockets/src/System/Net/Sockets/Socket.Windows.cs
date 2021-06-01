@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
@@ -94,7 +95,7 @@ namespace System.Net.Sockets
         }
 
         private unsafe void LoadSocketTypeFromHandle(
-            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
             // This can be called without winsock initialized. The handle is not going to be a valid socket handle in that case and the code will throw exception anyway.
             // Initializing winsock will ensure the error SocketError.NotSocket as opposed to SocketError.NotInitialized.
@@ -121,6 +122,7 @@ namespace System.Net.Sockets
             // This affects the result of querying Socket.Blocking, which will mostly only affect user code that happens to query
             // that property, though there are a few places we check it internally, e.g. as part of NetworkStream argument validation.
             blocking = true;
+            isSocket = true;
         }
 
         [SupportedOSPlatform("windows")]
@@ -142,30 +144,6 @@ namespace System.Net.Sockets
             Close(timeout: -1);
 
             return info;
-        }
-
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
-        {
-            return BeginAccept(acceptSocket: null, receiveSize, callback, state);
-        }
-
-        // This is the truly async version that uses AcceptEx.
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
-        {
-            return BeginAcceptCommon(acceptSocket, receiveSize, callback, state);
-        }
-
-        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
-        {
-            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
-            buffer = new byte[bytesTransferred];
-            Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
-            return socket;
-        }
-
-        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            return EndAcceptCommon(out buffer!, out bytesTransferred, asyncResult);
         }
 
         private DynamicWinsockMethods GetDynamicWinsockMethods()
@@ -419,59 +397,6 @@ namespace System.Net.Sockets
             {
                 SetToDisconnected();
                 _remoteEndPoint = null;
-            }
-        }
-
-        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
-        {
-            FileStream? fileStream = OpenFile(fileName);
-
-            TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-
-            SocketError errorCode = SocketPal.SendFileAsync(_handle, fileStream, preBuffer, postBuffer, flags, asyncResult);
-
-            // Check for synchronous exception
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                throw new SocketException((int)errorCode);
-            }
-
-            asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
-
-            return asyncResult;
-        }
-
-        private void EndSendFileInternal(IAsyncResult asyncResult)
-        {
-            TransmitFileAsyncResult? castedAsyncResult = asyncResult as TransmitFileAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendFile"));
-            }
-
-            castedAsyncResult.InternalWaitForCompletion();
-            castedAsyncResult.EndCalled = true;
-
-            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
-            // Update our state to reflect this.
-            if (castedAsyncResult.DoDisconnect)
-            {
-                SetToDisconnected();
-                _remoteEndPoint = null;
-            }
-
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
         }
 

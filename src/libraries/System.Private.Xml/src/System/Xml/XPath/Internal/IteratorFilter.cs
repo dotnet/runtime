@@ -6,7 +6,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class IteratorFilter : XPathNodeIterator
+    internal sealed class IteratorFilter : XPathNodeIterator
     {
         private readonly XPathNodeIterator _innerIterator;
         private readonly string _name;

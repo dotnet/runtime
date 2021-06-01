@@ -630,6 +630,7 @@ typedef struct _DacGlobals
 #endif
 #ifdef FEATURE_COMWRAPPERS
     ULONG fn__ManagedObjectWrapper_QueryInterface;
+    ULONG fn__TrackerTarget_QueryInterface;
 #endif
 
     // Vtable pointer values for all classes that must

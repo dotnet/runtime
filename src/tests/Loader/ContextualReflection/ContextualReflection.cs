@@ -751,8 +751,10 @@ namespace ContextualReflectionTest
             VerifyContextualReflectionProxy();
             VerifyUsingStatementContextualReflectionUsage();
             VerifyBadContextualReflectionUsage();
-            TestDynamicAssembly(true);
-            TestDynamicAssembly(false);
+
+            // TestDynamicAssembly() disabled due to https://github.com/dotnet/runtime/issues/48579
+            //TestDynamicAssembly(true);
+            //TestDynamicAssembly(false);
 
             RunTests(isolated : false);
             alcProgramInstance.RunTestsIsolated();

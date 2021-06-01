@@ -59,6 +59,12 @@ namespace Internal.TypeSystem
             throw new TypeSystemException.BadImageFormatException();
         }
 
+        [System.Diagnostics.DebuggerHidden]
+        public static void ThrowBadImageFormatException(string message)
+        {
+            throw new TypeSystemException.BadImageFormatException(message);
+        }
+
         private static partial class Format
         {
             public static string OwningModule(TypeDesc type)

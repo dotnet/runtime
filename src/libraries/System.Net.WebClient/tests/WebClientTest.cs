@@ -544,7 +544,7 @@ namespace System.Net.Tests
 
                 if (IsAsync)
                 {
-                    await downloadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                    await downloadProgressInvoked.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 }
             });
         }
@@ -572,7 +572,7 @@ namespace System.Net.Tests
 
                 if (IsAsync)
                 {
-                    await downloadProgressInvokedWithContentLength.Task.TimeoutAfter(TimeoutMilliseconds);
+                    await downloadProgressInvokedWithContentLength.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 }
             });
         }
@@ -643,7 +643,7 @@ namespace System.Net.Tests
             byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
             if (IsAsync)
             {
-                await uploadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                await uploadProgressInvoked.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
             }
         }
 
@@ -660,11 +660,8 @@ namespace System.Net.Tests
             byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(largeText));
         }
 
-        private static string GetRandomText(int length)
-        {
-            var rand = new Random();
-            return new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + rand.Next(0, 26))).ToArray());
-        }
+        private static string GetRandomText(int length) =>
+            new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + Random.Shared.Next(0, 26))).ToArray());
 
         [OuterLoop("Uses external servers")]
         [Theory]

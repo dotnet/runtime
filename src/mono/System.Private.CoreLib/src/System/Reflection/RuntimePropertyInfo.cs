@@ -62,7 +62,7 @@ namespace System.Reflection
     internal delegate R Getter<T, R>(T _this);
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimePropertyInfo : PropertyInfo
+    internal sealed class RuntimePropertyInfo : PropertyInfo
     {
 #pragma warning disable 649
         internal IntPtr klass;

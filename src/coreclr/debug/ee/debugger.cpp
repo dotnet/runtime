@@ -366,10 +366,10 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     Thread * pThread;
     bool fIsCooperative;
-    BEGIN_GETTHREAD_ALLOWED;
+    
     pThread = g_pEEInterface->GetThread();
     fIsCooperative = (pThread != NULL) && (pThread->PreemptiveGCDisabled());
-    END_GETTHREAD_ALLOWED;
+    
     if (m_fShutdownMode && !fIsCooperative)
     {
         // The big fear is that some other random thread will take the debugger-lock and then block on something else,
@@ -778,7 +778,7 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
     // We're in some Controller's Filter after hitting an exception.
     // We're not stopped.
     //_ASSERTE(!g_pDebugger->IsStopped()); <-- @todo - this fires, need to find out why.
-    _ASSERTE(GetThread() == pThread);
+    _ASSERTE(GetThreadNULLOk() == pThread);
 
     CONTEXT *pCtx = g_pEEInterface->GetThreadFilterContext(pThread);
 
@@ -1048,11 +1048,11 @@ void Debugger::InitDebugEventCounting()
     memset(&g_iDbgDebuggerCounter, 0, DBG_DEBUGGER_MAX*sizeof(int));
 
     // retrieve the possible counter for break point
-    LPWSTR      wstrValue = NULL;
+    CLRConfigStringHolder wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint);
     // The string value is of the following format
     // <Event Name>=Count;<Event Name>=Count;....;
     // The string must end with ;
-    if ((wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint)) != NULL)
+    if (wstrValue != NULL)
     {
         LPSTR   strValue;
         int     cbReq;
@@ -1108,73 +1108,8 @@ void Debugger::InitDebugEventCounting()
 
         // free the ansi buffer
         delete [] strValue;
-        REGUTIL::FreeConfigString(wstrValue);
     }
 #endif // _DEBUG
-}
-
-
-// This is a notification from the EE it's about to go to fiber mode.
-// This is given *before* it actually goes to fiber mode.
-HRESULT Debugger::SetFiberMode(bool isFiberMode)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-
-        // Notifications from EE never come on helper worker.
-        PRECONDITION(!ThisIsHelperThreadWorker());
-    }
-    CONTRACTL_END;
-
-
-    Thread * pThread = ::GetThread();
-
-    m_pRCThread->m_pDCB->m_bHostingInFiber = isFiberMode;
-
-    // If there is a debugger already attached, then we have a big problem. As of V2.0, the debugger
-    // does not support debugging processes with fibers in them. We set the unrecoverable state to
-    // indicate that we're in a bad state now. The debugger will notice this, and take appropiate action.
-    if (isFiberMode && CORDebuggerAttached())
-    {
-        LOG((LF_CORDB, LL_INFO10, "Thread has entered fiber mode while debugger attached.\n"));
-
-        EX_TRY
-        {
-            // We send up a MDA for two reasons: 1) we want to give the user some chance to see what went wrong,
-            // and 2) we want to get the Right Side to notice that we're in an unrecoverable error state now.
-
-            SString szName(W("DebuggerFiberModeNotSupported"));
-            SString szDescription;
-            szDescription.LoadResource(CCompRC::Debugging, MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED);
-            SString szXML(W(""));
-
-            // Sending any debug event will be a GC violation.
-            // However, if we're enabling fiber-mode while a debugger is attached, we're already doomed.
-            // Deadlocks and AVs are just around the corner. A Gc-violation is the least of our worries.
-            // We want to at least notify the debugger at all costs.
-            CONTRACT_VIOLATION(GCViolation);
-
-            // As soon as we set unrecoverable error in the LS,  the RS will pick it up and basically shut down.
-            // It won't dispatch any events. So we fire the MDA first, and then set unrecoverable error.
-            SendMDANotification(pThread, &szName, &szDescription, &szXML, (CorDebugMDAFlags) 0, FALSE);
-
-            CORDBDebuggerSetUnrecoverableError(this, CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS, false);
-
-            // Fire the MDA again just to force the RS to sniff the LS and pick up that we're in an unrecoverable error.
-            // No harm done from dispatching an MDA twice. And
-            SendMDANotification(pThread, &szName, &szDescription, &szXML, (CorDebugMDAFlags) 0, FALSE);
-
-        }
-        EX_CATCH
-        {
-            LOG((LF_CORDB, LL_INFO10, "Error sending MDA regarding fiber mode.\n"));
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-
-    return S_OK;
 }
 
 // Checks if the MethodInfos table has been allocated, and if not does so.
@@ -1777,7 +1712,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     // This ensures the debuggee is actually stopped at startup, and
     // this gives the debugger a chance to call SetDesiredNGENFlags before we
     // set s_fCanChangeNgenFlags to FALSE.
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
     SENDIPCEVENT_RAW_END;
 
     pDbgLockHolder->Acquire();
@@ -6154,7 +6089,7 @@ void Debugger::SendRawUserBreakpoint(Thread * pThread)
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
 
-        PRECONDITION(pThread == GetThread());
+        PRECONDITION(pThread == GetThreadNULLOk());
 
         PRECONDITION(ThreadHoldsLock());
 
@@ -7884,7 +7819,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         DebuggerEval *pDE = pfe->pDE;
 
         _ASSERTE(pDE->m_evalDuringException);
-        _ASSERTE(pDE->m_thread == GetThread());
+        _ASSERTE(pDE->m_thread == GetThreadNULLOk());
 
         // Remove the pending eval from the hash. This ensures that if we take a first chance exception during the eval
         // that we can do another nested eval properly.
@@ -7936,7 +7871,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
 
     LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
 #ifdef _DEBUG
     static ConfigDWORD d_fce;
@@ -7980,7 +7915,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     // @@@
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     // Quick check.
     if (!CORDebuggerAttached())
@@ -8048,7 +7983,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 {
     CONTRACTL
     {
-        if ((GetThread() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -8080,7 +8015,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // useful information for the debugger and, in fact, it may be a completely
     // internally handled runtime exception, so we should do nothing.
     //
-    if ((GetThread() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -8958,7 +8893,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
         MODE_ANY;
 
         PRECONDITION(thread != NULL);
-        PRECONDITION(thread == ::GetThread());
+        PRECONDITION(thread == ::GetThreadNULLOk());
     }
     CONTRACTL_END;
 
@@ -14815,7 +14750,7 @@ HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 

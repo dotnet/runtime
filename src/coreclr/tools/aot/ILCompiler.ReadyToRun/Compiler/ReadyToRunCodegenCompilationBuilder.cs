@@ -19,6 +19,8 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
+        private static bool _isJitInitialized = false;
+
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _ibcTuning;
@@ -80,6 +82,11 @@ namespace ILCompiler
                 string value = param.Substring(indexOfEquals + 1);
 
                 builder.Add(new KeyValuePair<string, string>(name, value));
+            }
+
+            if (_context.Target.Abi == TargetAbi.CoreRTArmel)
+            {
+                builder.Add(new KeyValuePair<string, string>("JitSoftFP", "1"));
             }
 
             _ryujitOptions = builder.ToArray();
@@ -272,7 +279,11 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);
+            if (!_isJitInitialized)
+            {
+                JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);
+                _isJitInitialized = true;
+            }
 
             return new ReadyToRunCodegenCompilation(
                 graph,

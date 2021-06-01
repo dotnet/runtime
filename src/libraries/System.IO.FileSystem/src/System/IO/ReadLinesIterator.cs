@@ -25,7 +25,7 @@ namespace System.IO
     //  - IEnumerator<T> instances from the same IEnumerable<T> party on the same underlying
     //    reader.
     //
-    internal class ReadLinesIterator : Iterator<string>
+    internal sealed class ReadLinesIterator : Iterator<string>
     {
         private readonly string _path;
         private readonly Encoding _encoding;

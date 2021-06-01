@@ -97,7 +97,7 @@ namespace System.Xml
             return true;
         }
 
-        private class EmptyDictionary : IXmlDictionary
+        private sealed class EmptyDictionary : IXmlDictionary
         {
             public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {

@@ -9,7 +9,7 @@ using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class EnumConverter<T> : JsonConverter<T>
+    internal sealed class EnumConverter<T> : JsonConverter<T>
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));

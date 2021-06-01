@@ -15,7 +15,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
-    internal class EventLogInternal : IDisposable, ISupportInitialize
+    internal sealed class EventLogInternal : IDisposable, ISupportInitialize
     {
         private EventLogEntryCollection entriesCollection;
         internal string logName;
@@ -1408,7 +1408,7 @@ namespace System.Diagnostics
             }
         }
 
-        private class LogListeningInfo
+        private sealed class LogListeningInfo
         {
             public EventLogInternal handleOwner;
             public RegisteredWaitHandle registeredWaitHandle;

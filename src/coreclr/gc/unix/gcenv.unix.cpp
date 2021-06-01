@@ -194,6 +194,24 @@ enum membarrier_cmd
     MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
 };
 
+bool CanFlushUsingMembarrier()
+{
+    // Starting with Linux kernel 4.14, process memory barriers can be generated
+    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
+
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+
+    if (mask >= 0 &&
+        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
+        // Register intent to use the private expedited command.
+        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 //
 // Tracks if the OS supports FlushProcessWriteBuffers using membarrier
 //
@@ -354,13 +372,7 @@ bool GCToOSInterface::Initialize()
 
     assert(s_flushUsingMemBarrier == 0);
 
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
-        // Register intent to use the private expedited command.
-        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+    if (CanFlushUsingMembarrier())
     {
         s_flushUsingMemBarrier = TRUE;
     }

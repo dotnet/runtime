@@ -128,6 +128,7 @@ test_get_or_create_thread (void)
 
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
+	extern void ep_rt_mono_thread_exited (void);
 	ep_rt_mono_thread_exited ();
 
 	thread = ep_thread_get ();
@@ -199,6 +200,7 @@ test_thread_activity_id (void)
 
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
+	extern void ep_rt_mono_thread_exited (void);
 	ep_rt_mono_thread_exited ();
 
 	thread = ep_thread_get ();

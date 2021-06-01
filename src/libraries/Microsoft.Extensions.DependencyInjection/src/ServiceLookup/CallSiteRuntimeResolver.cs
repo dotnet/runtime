@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -60,21 +59,31 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
-            var lockType = RuntimeResolverLock.Root;
-            bool lockTaken = false;
-
-            // using more granular locking (per singleton) for the root
-            Monitor.Enter(callSite, ref lockTaken);
-            try
+            if (callSite.Value is object value)
             {
-                return ResolveService(callSite, context, lockType, serviceProviderEngine: context.Scope.Engine.Root);
+                // Value already calculated, return it directly
+                return value;
             }
-            finally
+
+            var lockType = RuntimeResolverLock.Root;
+            ServiceProviderEngineScope serviceProviderEngine = context.Scope.Engine.Root;
+
+            lock (callSite)
             {
-                if (lockTaken)
+                // Lock the callsite and check if another thread already cached the value
+                if (callSite.Value is object resolved)
                 {
-                    Monitor.Exit(callSite);
+                    return resolved;
                 }
+
+                resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+                {
+                    Scope = serviceProviderEngine,
+                    AcquiredLocks = context.AcquiredLocks | lockType
+                });
+                serviceProviderEngine.CaptureDisposable(resolved);
+                callSite.Value = resolved;
+                return resolved;
             }
         }
 
@@ -90,54 +99,42 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
-            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
-
+            object sync = serviceProviderEngine.Sync;
+            Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
             // always know that we are going to wait the other thread to finish before
             // releasing the lock
             if ((context.AcquiredLocks & lockType) == 0)
             {
-                Monitor.Enter(resolvedServices, ref lockTaken);
+                Monitor.Enter(sync, ref lockTaken);
             }
 
             try
             {
-                return ResolveService(callSite, context, lockType, serviceProviderEngine);
+                // Note: This method has already taken lock by the caller for resolution and access synchronization.
+                // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
+                if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
+                {
+                    return resolved;
+                }
+
+                resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+                {
+                    Scope = serviceProviderEngine,
+                    AcquiredLocks = context.AcquiredLocks | lockType
+                });
+                serviceProviderEngine.CaptureDisposable(resolved);
+                resolvedServices.Add(callSite.Cache.Key, resolved);
+                return resolved;
             }
             finally
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(resolvedServices);
+                    Monitor.Exit(sync);
                 }
             }
-        }
-
-        private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
-        {
-            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
-
-            // Note: This method has already taken lock by the caller for resolution and access synchronization.
-            // For root: uses a concurrent dictionary and takes a per singleton lock for resolution.
-            // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
-            Debug.Assert(
-                (lockType == RuntimeResolverLock.Root && resolvedServices is ConcurrentDictionary<ServiceCacheKey, object>) ||
-                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(resolvedServices)));
-
-            if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
-            {
-                return resolved;
-            }
-
-            resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
-            {
-                Scope = serviceProviderEngine,
-                AcquiredLocks = context.AcquiredLocks | lockType
-            });
-            serviceProviderEngine.CaptureDisposable(resolved);
-            resolvedServices.Add(callSite.Cache.Key, resolved);
-            return resolved;
         }
 
         protected override object VisitConstant(ConstantCallSite constantCallSite, RuntimeResolverContext context)

@@ -240,7 +240,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
     }
 
-    internal class ExceptionHelper
+    internal static class ExceptionHelper
     {
         private const int ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
         private const int ERROR_OUTOFMEMORY = 14; // map to outofmemory exception

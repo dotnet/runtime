@@ -33,7 +33,6 @@ namespace System.Net.Http.Functional.Tests
         private async Task CreateAndValidateRequest(HttpClientHandler handler, Uri url, HttpStatusCode expectedStatusCode, ICredentials credentials)
         {
             handler.Credentials = credentials;
-
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(url))
             {
@@ -93,6 +92,13 @@ namespace System.Net.Http.Functional.Tests
                 // Unauthorized on WinHttpHandler
                 yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256, nonce=\"testnonce\"", true };
                 yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256-SESS, nonce=\"testnonce\", qop=\"auth\"", true };
+            }
+
+            // Add tests cases for empty values that are not mandatory
+            if (!IsWinHttpHandler)
+            {
+                yield return new object[] { "Digest realm=\"testrealm\",nonce=\"6afd170437eb5144258b308f7c491d96\",opaque=\"\",stale=FALSE,algorithm=MD5,qop=\"auth\"", true };
+                yield return new object[] { "Digest realm=\"testrealm\", domain=\"\", nonce=\"NA42+vpOFQd1GwCyVRZuhhy+jDn4BMRl\", algorithm=MD5, qop=\"auth\", stale=false", true };
             }
         }
 

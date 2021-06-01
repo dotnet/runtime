@@ -43,11 +43,17 @@ namespace TypeSystemTests
             return CreateModuleForSimpleName(simpleName);
         }
 
-        public ModuleDesc CreateModuleForSimpleName(string simpleName)
+        public ModuleDesc CreateModuleForSimpleName(string simpleName, Stream preLoadedFile = null)
         {
             string bindingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string filePath = Path.Combine(bindingDirectory, simpleName + ".dll");
-            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(File.OpenRead(filePath)), containingAssembly: null);
+            Stream peStream = preLoadedFile;
+            if (peStream == null)
+            {
+                peStream = File.OpenRead(filePath);
+            }
+
+            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(peStream), containingAssembly: null);
             _modules.Add(simpleName, module);
             return module;
         }

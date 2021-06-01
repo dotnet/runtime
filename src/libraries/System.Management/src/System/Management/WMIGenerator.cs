@@ -43,7 +43,7 @@ namespace System.Management
     /// <summary>
     ///    Used to generate a strongly-typed code class for a given WMI class.
     /// </summary>
-    internal class ManagementClassGenerator
+    internal sealed class ManagementClassGenerator
     {
         private readonly string VSVERSION = "8.0.0.0";
         private string OriginalServer = string.Empty;
@@ -316,7 +316,7 @@ namespace System.Management
 
             //public bool AutoCommit {
             //    get {
-            //            return AutoCommitProp;;
+            //            return AutoCommitProp;
             //        }
             //    set {
             //            AutoCommitProp; = value;
@@ -439,7 +439,7 @@ namespace System.Management
             //Now Enumerate all the methods
             GenerateMethods();
 
-            //Now declare the private class variables
+            //Now declare the private sealed class variables
             //private Wmi_SystemProps SystemProps
             GeneratePrivateMember(PrivateNamesUsed["SystemPropertiesObject"].ToString(), PublicNamesUsed["SystemPropertiesClass"].ToString(), null);
 

@@ -142,7 +142,7 @@ void StressLog::Leave(CRITSEC_COOKIE) {
 
 /*********************************************************************************/
 void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
-    ULONGLONG maxBytesTotal, void* moduleBase, LPWSTR logFilename)
+    unsigned maxBytesTotal, void* moduleBase, LPWSTR logFilename)
 {
     STATIC_CONTRACT_LEAF;
 

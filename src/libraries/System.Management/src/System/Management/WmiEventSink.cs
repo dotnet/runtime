@@ -235,7 +235,7 @@ namespace System.Management
 
     // Special sink implementation for ManagementObject.Get
     // Doesn't issue ObjectReady events
-    internal class WmiGetEventSink : WmiEventSink
+    internal sealed class WmiGetEventSink : WmiEventSink
     {
         private readonly ManagementObject managementObject;
 

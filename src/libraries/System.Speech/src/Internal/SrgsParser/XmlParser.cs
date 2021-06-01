@@ -1060,7 +1060,7 @@ namespace System.Speech.Internal.SrgsParser
 
             System.Diagnostics.Debug.Assert(_parser.Grammar.TagFormat == SrgsTagFormat.KeyValuePairs);
 
-            IPropertyTag propertyTag = _parser.CreatePropertyTag(parent); ;
+            IPropertyTag propertyTag = _parser.CreatePropertyTag(parent);
             string name;
             object value;
             ParsePropertyTag(content, out name, out value);

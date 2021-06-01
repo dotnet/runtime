@@ -126,8 +126,26 @@ int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx)
     //
     // But since we have a different object returned for CreateEncryptor
     // and CreateDecryptor we don't need to worry about that.
+    uint8_t* iv = NULL;
 
-    return EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, KEEP_CURRENT_DIRECTION);
+#ifdef NEED_OPENSSL_3_0
+    // OpenSSL 3.0 alpha 13 does not properly reset the IV. Work around that by
+    // asking for the original IV, and giving it back.
+    uint8_t tmpIV[EVP_MAX_IV_LENGTH];
+
+    // If we're direct against 3.0, or we're portable and found 3.0
+    if (API_EXISTS(EVP_CIPHER_CTX_get_original_iv))
+    {
+        if (EVP_CIPHER_CTX_get_original_iv(ctx, tmpIV, sizeof(tmpIV)) != 1)
+        {
+            return 0;
+        }
+
+        iv = tmpIV;
+    }
+#endif
+
+    return EVP_CipherInit_ex(ctx, NULL, NULL, NULL, iv, KEEP_CURRENT_DIRECTION);
 }
 
 int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)

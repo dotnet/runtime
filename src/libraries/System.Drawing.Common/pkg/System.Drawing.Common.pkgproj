@@ -2,13 +2,14 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Drawing.Common.csproj">
-      <SupportedFramework>netcoreapp3.0</SupportedFramework>
+      <SupportedFramework>net461;uap10.0.16299;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
-    <HarvestIncludePaths Include="runtimes/win/lib/netcoreapp2.0;runtimes/unix/lib/netcoreapp2.0" />
-    <HarvestIncludePaths Include="ref/netstandard2.0;lib/netstandard2.0" />
-    <HarvestIncludePaths Include="ref/net461;lib/net461" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
+    <PackageFile Include="buildTransitive\System.Drawing.Common.targets"
+                 TargetPath="buildTransitive\netcoreapp2.0" />
+    <File Include="$(PlaceHolderFile)"
+          TargetPath="buildTransitive\netcoreapp3.0" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

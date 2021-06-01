@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
 
         private static readonly byte[] s_digestInfoSha512 =
             {
-                0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
+                0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04,
                 0x40,
             };
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
         {
             return s_lookup.GetOrAdd(
                 hashAlgorithmName,
-                alg =>
+                static hashAlgorithmName =>
                 {
                     using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
                     {

@@ -11,7 +11,7 @@ namespace System.Collections.Generic
 {
     #region ArraySortHelper for single arrays
 
-    internal partial class ArraySortHelper<T>
+    internal sealed partial class ArraySortHelper<T>
     {
         #region IArraySortHelper<T> Members
 
@@ -269,7 +269,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal partial class GenericArraySortHelper<T>
+    internal sealed partial class GenericArraySortHelper<T>
         where T : IComparable<T>
     {
         // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
@@ -603,7 +603,7 @@ namespace System.Collections.Generic
 
     #region ArraySortHelper for paired key and value arrays
 
-    internal partial class ArraySortHelper<TKey, TValue>
+    internal sealed partial class ArraySortHelper<TKey, TValue>
     {
         public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)
         {
@@ -819,7 +819,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal partial class GenericArraySortHelper<TKey, TValue>
+    internal sealed partial class GenericArraySortHelper<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         public void Sort(Span<TKey> keys, Span<TValue> values, IComparer<TKey>? comparer)

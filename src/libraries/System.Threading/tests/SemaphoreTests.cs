@@ -139,6 +139,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public void AnonymousProducerConsumer()
         {
             using (Semaphore s = new Semaphore(0, int.MaxValue))

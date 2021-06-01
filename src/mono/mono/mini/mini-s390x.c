@@ -3471,7 +3471,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!cfg->r4fp)
 				s390_ledbr (code, ins->dreg, ins->sreg1);
 			break;
-        case OP_TLS_GET: {
+		case OP_TLS_GET: {
 			if (s390_is_imm16 (ins->inst_offset)) {
 				s390_lghi (code, s390_r13, ins->inst_offset);
 			} else if (s390_is_imm32 (ins->inst_offset)) {
@@ -5349,8 +5349,7 @@ mono_arch_register_lowlevel_calls (void)
  */
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg,
-						  guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
 	gint64 displace;
@@ -6182,6 +6181,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->uc_mcontext.gregs[reg];
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->uc_mcontext.gregs[reg];
+}
+
 /*========================= End of Function ========================*/
 
 /**
@@ -6479,6 +6484,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 	int i;
 	int size = 0;
 	guchar *code, *start;
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -6514,7 +6520,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 	if (fail_tramp) {
 		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size);
 	}
 
@@ -6601,7 +6606,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 
 	g_assert (code - start <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return (start);
 }
@@ -6950,13 +6955,13 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 			res = FALSE;
 			break;
 		case RegTypeStructByAddr :
-			if (ainfo[i].reg == STK_BASE) 
+			if (ainfo[i].reg == STK_BASE || ainfo[i].reg == S390_LAST_ARG_REG)
 				res = FALSE;
 			else
 				res = TRUE;
 			break;
 		case RegTypeStructByVal :
-			if (ainfo[i].reg == STK_BASE) 
+			if (ainfo[i].reg == STK_BASE || ainfo[i].reg == S390_LAST_ARG_REG)
 				res = FALSE;
 			else {
 				switch(ainfo[i].size) {

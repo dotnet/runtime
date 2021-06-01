@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
-    internal class BinHexDecoder : IncrementalReadDecoder
+    internal sealed class BinHexDecoder : IncrementalReadDecoder
     {
         //
         // Fields

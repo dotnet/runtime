@@ -100,9 +100,7 @@ extern VerboseLevel g_CorCompileVerboseLevel;
 #elif defined(HOST_ARM)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
 #elif defined(HOST_ARM64)
-// Use diasymreader until the package has an arm64 version - issue #7360
-//#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #endif
 
 typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
@@ -3210,7 +3208,7 @@ class ReflectionModule : public Module
     HCEESECTION m_sdataSection;
 
  protected:
-    ICeeGen * m_pCeeFileGen;
+    ICeeGenInternal * m_pCeeFileGen;
 private:
     Assembly             *m_pCreatingAssembly;
     ISymUnmanagedWriter  *m_pISymUnmanagedWriter;
@@ -3286,7 +3284,7 @@ public:
         m_pCreatingAssembly = assembly;
     }
 
-    ICeeGen *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 
     RefClassWriter *GetClassWriter()
     {

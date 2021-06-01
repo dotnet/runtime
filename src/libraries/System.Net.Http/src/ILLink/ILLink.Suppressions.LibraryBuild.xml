@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Net.Http">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClient.CreateDefaultHandler()</property>
+      <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
+    </attribute>
+  </assembly>
+</linker>

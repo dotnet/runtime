@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
     //
     // See: https://github.com/dotnet/extensions/issues/519
     // See: https://github.com/dotnet/extensions/issues/960
-    internal class HttpClientMappingRegistry
+    internal sealed class HttpClientMappingRegistry
     {
         public Dictionary<string, Type> NamedClientRegistrations { get; } = new Dictionary<string, Type>();
     }

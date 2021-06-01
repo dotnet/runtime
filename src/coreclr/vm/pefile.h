@@ -591,9 +591,6 @@ public:
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    bool CanUseWithBindingCache()
-    { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
-
     PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
     {
         LIMITED_METHOD_CONTRACT;
@@ -709,7 +706,6 @@ class PEAssembly : public PEFile
     // Loader access API
     // ------------------------------------------------------------
 
-    friend class DomainAssembly;
 #ifdef FEATURE_PREJIT
 
     void SetNativeImage(PEImage *image);
@@ -724,17 +720,6 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     PTR_PEFile               m_creator;
-
-  public:
-    PTR_PEFile GetCreator()
-    { LIMITED_METHOD_CONTRACT; return m_creator; }
-
-    // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
-    inline bool CanUseWithBindingCache()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        return true;
-    }
 };
 
 
@@ -745,10 +730,5 @@ typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
     const CORCOMPILE_VERSION_INFO *pActual,
     PEAssembly                    *pLogAsm);
-
-// ================================================================================
-// Inline definitions
-// ================================================================================
-
 
 #endif  // PEFILE_H_

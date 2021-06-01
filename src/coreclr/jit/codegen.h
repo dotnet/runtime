@@ -88,7 +88,7 @@ private:
 
     void genPrepForCompiler();
 
-    void genPrepForEHCodegen();
+    void genMarkLabelsForCodegen();
 
     inline RegState* regStateForType(var_types t)
     {

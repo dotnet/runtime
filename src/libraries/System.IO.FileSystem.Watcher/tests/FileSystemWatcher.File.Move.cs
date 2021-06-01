@@ -43,7 +43,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]

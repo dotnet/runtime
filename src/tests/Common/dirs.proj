@@ -14,7 +14,6 @@
       <DisabledProjects Include="$(TestRoot)GC\Performance\Framework\GCPerfTestFramework.csproj" />
       <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
-      <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
       <DisabledProjects Include="$(TestRoot)reflection\GenericAttribute\GenericAttributeTests.csproj" />
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
     </ItemGroup>

@@ -126,7 +126,7 @@ namespace DefaultNamespace {
                         break;
                         case 5:
                             G_Vart1[j] = ((long)j);
-                            G_Vart2[j] = ((double)j/0.33);;
+                            G_Vart2[j] = ((double)j/0.33);
                             lTmp = (long)G_Vart1[j]  ;
                             G_Vart3[j] = (lTmp);
                         break;

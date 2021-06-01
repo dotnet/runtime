@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-internal class Utils
+internal static class Utils
 {
     private static readonly object s_SyncObj = new object();
 
@@ -28,9 +28,10 @@ internal class Utils
         string? workingDir = null,
         bool ignoreErrors = false,
         bool silent = true,
-        MessageImportance outputMessageImportance=MessageImportance.High)
+        MessageImportance outputMessageImportance=MessageImportance.High,
+        MessageImportance debugMessageImportance=MessageImportance.High)
     {
-        LogInfo($"Running: {path} {args}");
+        LogInfo($"Running: {path} {args}", debugMessageImportance);
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
@@ -46,7 +47,7 @@ internal class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
-        LogInfo($"Using working directory: {workingDir ?? Environment.CurrentDirectory}", MessageImportance.Low);
+        LogInfo($"Using working directory: {workingDir ?? Environment.CurrentDirectory}", debugMessageImportance);
 
         if (envVars != null)
         {
@@ -93,14 +94,15 @@ internal class Utils
 
         if (process.ExitCode != 0)
         {
-            Logger?.LogMessage(MessageImportance.Low, $"Exit code: {process.ExitCode}");
+            Logger?.LogMessage(MessageImportance.High, $"Exit code: {process.ExitCode}");
             if (!ignoreErrors)
-                throw new Exception("Error: " + errorBuilder);
+                throw new Exception("Error: Process returned non-zero exit code: " + errorBuilder);
         }
 
         return outputBuilder.ToString().Trim('\r', '\n');
     }
 
+#if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
     {
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
@@ -117,6 +119,7 @@ internal class Utils
             File.Copy(file, Path.Combine(destDir, relativePath), true);
         }
     }
+#endif
 
     public static TaskLoggingHelper? Logger { get; set; }
 

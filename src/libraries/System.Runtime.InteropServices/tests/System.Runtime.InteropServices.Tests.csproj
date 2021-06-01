@@ -96,6 +96,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\InitHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\LastErrorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />

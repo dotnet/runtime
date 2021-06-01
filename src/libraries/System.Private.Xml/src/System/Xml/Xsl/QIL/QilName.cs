@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.Qil
     /// <remarks>
     /// Don't construct QIL nodes directly; instead, use the <see cref="QilFactory">QilFactory</see>.
     /// </remarks>
-    internal class QilName : QilLiteral
+    internal sealed class QilName : QilLiteral
     {
         private string _local;
         private string _uri;

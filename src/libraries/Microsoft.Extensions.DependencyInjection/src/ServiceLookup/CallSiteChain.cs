@@ -9,7 +9,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class CallSiteChain
+    internal sealed class CallSiteChain
     {
         private readonly Dictionary<Type, ChainItemInfo> _callSiteChain;
 

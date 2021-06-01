@@ -55,9 +55,12 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             if (!CanRead)
             {
-                throw CanWrite ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
-                    new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+                if (CanWrite)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+                }
+
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
@@ -86,9 +89,12 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             if (!CanRead)
             {
-                throw CanWrite ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
-                    new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+                if (CanWrite)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+                }
+
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
             }
 
             return Core(this, destination, bufferSize, cancellationToken);
@@ -202,7 +208,7 @@ namespace System.IO
             ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             // To avoid a race with a stream's position pointer & generating race conditions
@@ -359,7 +365,7 @@ namespace System.IO
             ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
             {
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             // To avoid a race condition with a stream's position pointer & generating conditions
@@ -759,9 +765,12 @@ namespace System.IO
 
             if (!destination.CanWrite)
             {
-                throw destination.CanRead ? (Exception)
-                    new NotSupportedException(SR.NotSupported_UnwritableStream) :
-                    new ObjectDisposedException(destination.GetType().Name, SR.ObjectDisposed_StreamClosed);
+                if (destination.CanRead)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+                }
+
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(destination.GetType().Name);
             }
         }
 

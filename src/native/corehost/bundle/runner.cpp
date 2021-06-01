@@ -61,7 +61,7 @@ const file_entry_t*  runner_t::probe(const pal::string_t &relative_path) const
     return nullptr;
 }
 
-bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size) const
+bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size, int64_t* compressedSize) const
 {
     const bundle::file_entry_t* entry = probe(relative_path);
 
@@ -76,6 +76,7 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
 
     *offset = entry->offset();
     *size = entry->size();
+    *compressedSize = entry->compressedSize();
 
     return true;
 }

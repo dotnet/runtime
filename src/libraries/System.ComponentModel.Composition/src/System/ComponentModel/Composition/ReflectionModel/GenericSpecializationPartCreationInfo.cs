@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class GenericSpecializationPartCreationInfo : IReflectionPartCreationInfo
+    internal sealed class GenericSpecializationPartCreationInfo : IReflectionPartCreationInfo
     {
         private readonly IReflectionPartCreationInfo _originalPartCreationInfo;
         private readonly ReflectionComposablePartDefinition _originalPart;

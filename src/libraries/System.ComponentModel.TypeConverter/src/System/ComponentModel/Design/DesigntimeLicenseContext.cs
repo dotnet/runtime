@@ -40,7 +40,7 @@ namespace System.ComponentModel.Design
         }
     }
 
-    internal class RuntimeLicenseContext : LicenseContext
+    internal sealed class RuntimeLicenseContext : LicenseContext
     {
         internal Hashtable _savedLicenseKeys;
 

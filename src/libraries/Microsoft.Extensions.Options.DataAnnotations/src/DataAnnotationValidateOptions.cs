@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -35,27 +36,32 @@ namespace Microsoft.Extensions.Options
         public ValidateOptionsResult Validate(string name, TOptions options)
         {
             // Null name is used to configure all named options.
-            if (Name == null || name == Name)
+            if (Name != null && Name != name)
             {
-                var validationResults = new List<ValidationResult>();
-                if (Validator.TryValidateObject(options,
-                    new ValidationContext(options, serviceProvider: null, items: null),
-                    validationResults,
-                    validateAllProperties: true))
-                {
-                    return ValidateOptionsResult.Success;
-                }
-
-                var errors = new List<string>();
-                foreach (ValidationResult r in validationResults)
-                {
-                    errors.Add($"DataAnnotation validation failed for members: '{string.Join(",", r.MemberNames)}' with the error: '{r.ErrorMessage}'.");
-                }
-                return ValidateOptionsResult.Fail(errors);
+                // Ignored if not validating this instance.
+                return ValidateOptionsResult.Skip;
             }
 
-            // Ignored if not validating this instance.
-            return ValidateOptionsResult.Skip;
+            // Ensure options are provided to validate against
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            var validationResults = new List<ValidationResult>();
+            if (Validator.TryValidateObject(options, new ValidationContext(options), validationResults, validateAllProperties: true))
+            {
+                return ValidateOptionsResult.Success;
+            }
+
+            string typeName = options.GetType().Name;
+            var errors = new List<string>();
+            foreach (ValidationResult result in validationResults)
+            {
+                errors.Add($"DataAnnotation validation failed for '{typeName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
+            }
+
+            return ValidateOptionsResult.Fail(errors);
         }
     }
 }

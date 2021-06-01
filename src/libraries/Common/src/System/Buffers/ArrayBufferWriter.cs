@@ -15,8 +15,8 @@ namespace System.Buffers
 #endif
     sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
-        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
-        private const int MaxArrayLength = 0X7FEFFFFF;
+        // Copy of Array.MaxLength.
+        private const int ArrayMaxLength = 0x7FFFFFC7;
 
         private const int DefaultInitialBufferSize = 256;
 
@@ -184,16 +184,16 @@ namespace System.Buffers
 
                 if ((uint)newSize > int.MaxValue)
                 {
-                    // Attempt to grow to MaxArrayLength.
+                    // Attempt to grow to ArrayMaxLength.
                     uint needed = (uint)(currentLength - FreeCapacity + sizeHint);
                     Debug.Assert(needed > currentLength);
 
-                    if (needed > MaxArrayLength)
+                    if (needed > ArrayMaxLength)
                     {
                         ThrowOutOfMemoryException(needed);
                     }
 
-                    newSize = MaxArrayLength;
+                    newSize = ArrayMaxLength;
                 }
 
                 Array.Resize(ref _buffer, newSize);

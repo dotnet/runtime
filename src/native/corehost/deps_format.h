@@ -92,7 +92,7 @@ private:
         const pal::string_t& deps_path,
         const json_parser_t::value_t& json,
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
-        const std::function<const vec_asset_t&(const pal::string_t&, int, bool*)>& get_assets_fn);
+        const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn);
 
     pal::string_t get_current_rid(const rid_fallback_graph_t& rid_fallback_graph);
     bool perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);

@@ -1,0 +1,6 @@
+<Project InitialTargets="_ErrorForSystemDrawingCommonOnNetCoreApp2x">
+  <Target Name="_ErrorForSystemDrawingCommonOnNetCoreApp2x"
+          Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
+    <Error Text="System.Drawing.Common doesn't support $(TargetFramework). Consider updating your TargetFramework to netcoreapp3.1 or later." />
+  </Target>
+</Project>

@@ -44,10 +44,28 @@ namespace AppHost.Bundle.Tests
         public static string BundleSelfContainedApp(
             TestProjectFixture testFixture,
             BundleOptions options = BundleOptions.None,
-            Version targetFrameworkVersion = null)
+            Version targetFrameworkVersion = null,
+            bool disableCompression = false)
+        {
+            string singleFile;
+            BundleSelfContainedApp(testFixture, out singleFile, options, targetFrameworkVersion);
+            return singleFile;
+        }
+
+        public static Bundler BundleSelfContainedApp(
+            TestProjectFixture testFixture,
+            out string singleFile,
+            BundleOptions options = BundleOptions.None,
+            Version targetFrameworkVersion = null,
+            bool disableCompression = false)
         {
             UseSingleFileSelfContainedHost(testFixture);
-            return BundleHelper.BundleApp(testFixture, options, targetFrameworkVersion);
+            if (targetFrameworkVersion == null || targetFrameworkVersion >= new Version(6, 0))
+            {
+                options |= BundleOptions.EnableCompression;
+            }
+
+            return BundleHelper.BundleApp(testFixture, out singleFile, options, targetFrameworkVersion);
         }
 
         public abstract class SharedTestStateBase

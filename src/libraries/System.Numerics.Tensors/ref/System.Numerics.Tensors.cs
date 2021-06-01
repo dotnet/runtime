@@ -119,6 +119,15 @@ namespace System.Numerics.Tensors
         protected virtual int IndexOf(T item) { throw null; }
         public abstract System.Numerics.Tensors.Tensor<T> Reshape(System.ReadOnlySpan<int> dimensions);
         public abstract void SetValue(int index, T value);
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>
+        {
+            public T Current { get; private set; }
+            object? System.Collections.IEnumerator.Current => throw null;
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public Enumerator GetEnumerator() => throw null;
         void System.Collections.Generic.ICollection<T>.Add(T item) { }
         void System.Collections.Generic.ICollection<T>.Clear() { }
         bool System.Collections.Generic.ICollection<T>.Contains(T item) { throw null; }

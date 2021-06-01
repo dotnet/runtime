@@ -445,7 +445,7 @@ namespace System.Speech.Internal.Synthesis
         /// so that the pinned buffer containing the data is not
         /// released before it is finished being played
         /// </summary>
-        private class InItem : IDisposable
+        private sealed class InItem : IDisposable
         {
             internal InItem(WaveHeader waveHeader)
             {

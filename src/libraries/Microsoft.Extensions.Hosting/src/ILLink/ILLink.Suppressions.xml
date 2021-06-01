@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="Microsoft.Extensions.Hosting, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">F:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.&lt;&gt;c__DisplayClass0_1`1.options</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.&lt;&gt;c__DisplayClass0_0`1.&lt;ValidateOnStart&gt;b__0(Microsoft.Extensions.DependencyInjection.ValidatorOptions,Microsoft.Extensions.Options.IOptionsMonitor{`0})</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.&lt;&gt;c__DisplayClass0_1`1.&lt;ValidateOnStart&gt;b__1</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})</property>
+    </attribute>
+  </assembly>
+</linker>

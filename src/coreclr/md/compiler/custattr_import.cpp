@@ -108,7 +108,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID             ridStart;
     RID             ridEnd;
-    HENUMInternal   *pEnum = *ppmdEnum;
+    HENUMInternal   *pEnum = NULL;
     CustomAttributeRec  *pRec;
     ULONG           index;
 
@@ -117,7 +117,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -220,13 +220,15 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
 
         // set the output parameter
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rCustomAttributes, pcCustomAttributes);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rCustomAttributes, pcCustomAttributes);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumCustomAttributes);
     END_ENTRYPOINT_NOTHROW;

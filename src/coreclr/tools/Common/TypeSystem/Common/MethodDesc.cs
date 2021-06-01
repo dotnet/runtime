@@ -27,7 +27,8 @@ namespace Internal.TypeSystem
     public enum EmbeddedSignatureDataKind
     {
         RequiredCustomModifier = 0,
-        OptionalCustomModifier = 1
+        OptionalCustomModifier = 1,
+        ArrayShape = 2
     }
 
     public struct EmbeddedSignatureData

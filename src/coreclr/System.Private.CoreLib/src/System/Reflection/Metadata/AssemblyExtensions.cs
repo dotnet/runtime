@@ -81,5 +81,10 @@ namespace System.Reflection.Metadata
                 }
             }
         }
+
+        internal static string GetApplyUpdateCapabilities()
+        {
+            return "Baseline AddMethodToExistingType AddStaticFieldToExistingType AddInstanceFieldToExistingType NewTypeDefinition";
+        }
     }
 }

@@ -471,7 +471,7 @@ private:
 
 public:
     //------------------------------------------------------------------------
-    // CheckGrowth: Replace the bucket table with a larger one and copy all nodes
+    // Reallocate: Replace the bucket table with a larger one and copy all nodes
     // from the existing bucket table.
     //
     // Notes:

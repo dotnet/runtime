@@ -6,6 +6,8 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -128,6 +130,31 @@ namespace System.Tests
             Assert.DoesNotContain(44, hs);
         }
 
+        public static IEnumerable<object[]> Next_IntInt_Next_IntInt_AllValuesAreWithinRange_MemberData() =>
+            from derived in new[] { false, true }
+            from seeded in new[] { false, true }
+            from (int min, int max) pair in new[]
+            {
+                (1, 2),
+                (-10, -3),
+                (0, int.MaxValue),
+                (-1, int.MaxValue),
+                (int.MinValue, 0),
+                (int.MinValue, int.MaxValue),
+            }
+            select new object[] { derived, seeded, pair.min, pair.max };
+
+        [Theory]
+        [MemberData(nameof(Next_IntInt_Next_IntInt_AllValuesAreWithinRange_MemberData))]
+        public void Next_IntInt_Next_IntInt_AllValuesAreWithinRange(bool derived, bool seeded, int min, int max)
+        {
+            Random r = Create(derived, seeded);
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.InRange(r.Next(min, max), min, max - 1);
+            }
+        }
+
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -174,6 +201,31 @@ namespace System.Tests
 
             Assert.DoesNotContain(41L, hs);
             Assert.DoesNotContain(44L, hs);
+        }
+
+        public static IEnumerable<object[]> Next_LongLong_Next_IntInt_AllValuesAreWithinRange_MemberData() =>
+            from derived in new[] { false, true }
+            from seeded in new[] { false, true }
+            from (long min, long max) pair in new[]
+            {
+                (1L, 2L),
+                (0L, long.MaxValue),
+                (2147483648, 2147483658),
+                (-1L, long.MaxValue),
+                (long.MinValue, 0L),
+                (long.MinValue, long.MaxValue),
+            }
+            select new object[] { derived, seeded, pair.min, pair.max };
+
+        [Theory]
+        [MemberData(nameof(Next_LongLong_Next_IntInt_AllValuesAreWithinRange_MemberData))]
+        public void Next_LongLong_Next_IntInt_AllValuesAreWithinRange(bool derived, bool seeded, long min, long max)
+        {
+            Random r = Create(derived, seeded);
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.InRange(r.NextInt64(min, max), min, max - 1);
+            }
         }
 
         [Theory]
@@ -388,7 +440,48 @@ namespace System.Tests
             r.NextBytes(Span<byte>.Empty);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Shared_IsSingleton()
+        {
+            Assert.NotNull(Random.Shared);
+            Assert.Same(Random.Shared, Random.Shared);
+            Assert.Same(Random.Shared, Task.Run(() => Random.Shared).Result);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Shared_ParallelUsage()
+        {
+            using var barrier = new Barrier(2);
+            Parallel.For(0, 2, _ =>
+            {
+                byte[] buffer = new byte[1000];
+
+                barrier.SignalAndWait();
+                for (int i = 0; i < 1_000; i++)
+                {
+                    Assert.InRange(Random.Shared.Next(), 0, int.MaxValue - 1);
+                    Assert.InRange(Random.Shared.Next(5), 0, 4);
+                    Assert.InRange(Random.Shared.Next(42, 50), 42, 49);
+
+                    Assert.InRange(Random.Shared.NextInt64(), 0, long.MaxValue - 1);
+                    Assert.InRange(Random.Shared.NextInt64(5), 0L, 5L);
+                    Assert.InRange(Random.Shared.NextInt64(42L, 50L), 42L, 49L);
+
+                    Assert.InRange(Random.Shared.NextSingle(), 0.0f, 1.0f);
+                    Assert.InRange(Random.Shared.NextDouble(), 0.0, 1.0);
+
+                    Array.Clear(buffer, 0, buffer.Length);
+                    Random.Shared.NextBytes(buffer);
+                    Assert.Contains(buffer, b => b != 0);
+
+                    Array.Clear(buffer, 0, buffer.Length);
+                    Random.Shared.NextBytes((Span<byte>)buffer);
+                    Assert.Contains(buffer, b => b != 0);
+                }
+            });
+        }
+
+        [ConditionalFact(typeof(BitConverter), nameof(BitConverter.IsLittleEndian))] // test makes little-endian assumptions
         public void Xoshiro_AlgorithmBehavesAsExpected()
         {
             // This test is validating implementation detail.  If the algorithm used by `new Random()` is ever
@@ -459,7 +552,7 @@ namespace System.Tests
                 Assert.Equal(12, randOuter.Next(0, 42));
                 Assert.Equal(7234, randOuter.Next(42, 12345));
                 Assert.Equal(2147483642, randOuter.Next(int.MaxValue - 5, int.MaxValue));
-                Assert.Equal(1981894504, randOuter.Next(int.MinValue, int.MaxValue));
+                Assert.Equal(-1236260882, randOuter.Next(int.MinValue, int.MaxValue));
 
                 Assert.Equal(3644728249650840822, randOuter.NextInt64());
                 Assert.Equal(2809750975933744783, randOuter.NextInt64());

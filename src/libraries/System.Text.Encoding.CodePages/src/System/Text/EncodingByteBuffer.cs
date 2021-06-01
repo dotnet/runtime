@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Text
 {
-    internal class EncodingByteBuffer
+    internal sealed class EncodingByteBuffer
     {
         private unsafe byte* _bytes;
         private readonly unsafe byte* _byteStart;

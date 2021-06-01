@@ -307,15 +307,9 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, InputCount={1}",
-                    Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget!.DataflowBlockOptions),
-                    InputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{(Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget!.DataflowBlockOptions))}, InputCount={InputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 

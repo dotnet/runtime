@@ -158,6 +158,8 @@ internal partial class VectorTest
             if (VectorArrayTest<sbyte>.VectorArray(1) != Pass) returnVal = Fail;
             if (VectorArrayTest<uint>.VectorArray(1) != Pass) returnVal = Fail;
             if (VectorArrayTest<ulong>.VectorArray(1ul) != Pass) returnVal = Fail;
+            if (VectorArrayTest<nint>.VectorArray(1) != Pass) returnVal = Fail;
+            if (VectorArrayTest<nuint>.VectorArray(1) != Pass) returnVal = Fail;
 
             JitLog jitLog = new JitLog();
             if (!jitLog.Check("get_Item", "Single")) returnVal = Fail;
@@ -191,6 +193,10 @@ internal partial class VectorTest
             if (!jitLog.Check("System.Numerics.Vector`1[UInt32][System.UInt32]:.ctor(int)")) returnVal = Fail;
             if (!jitLog.Check("get_Item", "UInt64")) returnVal = Fail;
             if (!jitLog.Check("System.Numerics.Vector`1[UInt64][System.UInt64]:.ctor(long)")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "IntPtr")) returnVal = Fail;
+            if (!jitLog.Check("System.Numerics.Vector`1[IntPtr][System.UIntPtr]:.ctor(nuint)")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "UIntPtr")) returnVal = Fail;
+            if (!jitLog.Check("System.Numerics.Vector`1[UIntPtr][System.IntPtr]:.ctor(nint)")) returnVal = Fail;
             jitLog.Dispose();
 
         }

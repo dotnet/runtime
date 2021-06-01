@@ -277,7 +277,7 @@ void SpinLock::dbg_PreEnterLock()
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread)
     {
         // SpinLock can not be nested.
@@ -300,7 +300,7 @@ void SpinLock::dbg_EnterLock()
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread)
     {
         INCONTRACT(pThread->BeginNoTriggerGC(__FILE__, __LINE__));
@@ -317,7 +317,7 @@ void SpinLock::dbg_LeaveLock()
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread)
     {
         _ASSERTE ((pThread->m_StateNC & Thread::TSNC_OwnsSpinLock) != 0);

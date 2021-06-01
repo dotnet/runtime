@@ -20,7 +20,6 @@ set(UTILCODE_COMMON_SOURCES
   stgpooli.cpp
   stgpoolreadonly.cpp
   utsem.cpp
-  peinformation.cpp
   check.cpp
   log.cpp
   arraylist.cpp
@@ -36,7 +35,6 @@ set(UTILCODE_COMMON_SOURCES
   corimage.cpp
   format1.cpp
   prettyprintsig.cpp
-  regutil.cpp
   sha1.cpp
   sigbuilder.cpp
   sigparser.cpp

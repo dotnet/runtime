@@ -38,6 +38,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool DetailedProgressMessages;
         public List<FileInfo> InputFilesToMerge;
         public List<AssemblyName> IncludedAssemblies = new List<AssemblyName>();
+        public bool DumpMibc = false;
+        public FileInfo InputFileToDump;
 
         public string[] HelpArgs = Array.Empty<string>();
 
@@ -259,6 +261,26 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 #endif
             }
 
+            var dumpCommand = syntax.DefineCommand(name: "dump", value: ref command, help: "Dump the contents of a Mibc file.");
+            if (dumpCommand.IsActive)
+            {
+                DumpMibc = true;
+                HelpArgs = new string[] { "dump", "--help", "input", "output" };
+
+                VerbosityOption();
+                HelpOption();
+
+                string inputFileToDump = null;
+                syntax.DefineParameter(name: "input", ref inputFileToDump, "Name of the input mibc file to dump.");
+                if (inputFileToDump != null)
+                    InputFileToDump = new FileInfo(inputFileToDump);
+
+                string outputFile = null;
+                syntax.DefineParameter(name: "output", ref outputFile, "Name of the output dump file.");
+                if (outputFile != null)
+                    OutputFileName = new FileInfo(outputFile);
+            }
+
 
             if (syntax.ActiveCommand == null)
             {
@@ -341,7 +363,7 @@ Example tracing commands used to generate the input to this tool:
         private void ParseCommmandLineHelper(string[] args)
         {
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, DefineArgumentSyntax);
-            if (Help || (!FileType.HasValue && (InputFilesToMerge == null)))
+            if (Help || (!FileType.HasValue && (InputFilesToMerge == null) && !DumpMibc))
             {
                 Help = true;
             }

@@ -298,7 +298,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(before, after);
         }
 
-        [SkipOnMono("Browser doesn't support Synchronous reads", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support Synchronous reads")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -471,7 +471,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Dispose_GetReadStreamThenDispose_ReadStreamGetsDisposed(bool readStreamAsync)
         {
             var content = new MockContent();
-            MockMemoryStream s = (MockMemoryStream)await content.ReadAsStreamAsync(readStreamAsync);;
+            MockMemoryStream s = (MockMemoryStream)await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(1, content.CreateContentReadStreamCount);
 
             Assert.Equal(0, s.DisposeCount);

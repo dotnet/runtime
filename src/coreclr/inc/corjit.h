@@ -357,12 +357,15 @@ public:
         DescriptorMin = 0x40,
 
         Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
+        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
+        BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
         TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
-        EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
+        EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
+        GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
     };
 
     struct PgoInstrumentationSchema
@@ -373,6 +376,15 @@ public:
         int32_t Count;
         int32_t Other;
     };
+
+#define DEFAULT_UNKNOWN_TYPEHANDLE 1
+#define UNKNOWN_TYPEHANDLE_MIN 1
+#define UNKNOWN_TYPEHANDLE_MAX 33
+
+    static inline bool IsUnknownTypeHandle(intptr_t typeHandle)
+    {
+        return ((typeHandle >= UNKNOWN_TYPEHANDLE_MIN) && (typeHandle <= UNKNOWN_TYPEHANDLE_MAX));
+    }
 
     // get profile information to be used for optimizing a current method.  The format
     // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
@@ -402,24 +414,6 @@ public:
                                                                    // is filled in by VM; other fields are set and passed in by caller.
             uint32_t                  countSchemaItems,            // IN: count of schema items in `pSchema` array.
             uint8_t **                pInstrumentationData         // OUT: `*pInstrumentationData` is set to the address of the instrumentation data.
-            ) = 0;
-
-    // Get the likely implementing class for a virtual call or interface call made by ftnHnd
-    // at the indicated IL offset. baseHnd is the interface class or base class for the method
-    // being called. May returns NULL.
-    // 
-    // pLikelihood is the estimated percent chance that the class at runtime is the class
-    // returned by this method. A well-estimated monomorphic call site will return a likelihood
-    // of 100.
-    // 
-    // pNumberOfClasses is the estimated number of different classes seen at the site.
-    // A well-estimated monomorphic call site will return 1.
-    virtual CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            uint32_t                ilOffset,
-            uint32_t *              pLikelihood,      // OUT, estimated likelihood of the class (0...100)
-            uint32_t *              pNumberOfClasses  // OUT, estimated number of possible classes
             ) = 0;
 
     // Associates a native call site, identified by its offset in the native code stream, with

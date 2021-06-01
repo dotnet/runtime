@@ -16,8 +16,7 @@
     <ValidatePackageSuppression Include="TreatAsOutOfBox">
       <Value>UAP</Value>
     </ValidatePackageSuppression>
-
-    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50;ref/portable-net45+win8;lib/portable-net45+win8" />
   </ItemGroup>
+  
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

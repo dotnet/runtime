@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Tracing.Tests.Common
@@ -40,21 +41,23 @@ namespace Tracing.Tests.Common
         /// <returns> (pid, clrInstanceId) </returns>
         public static IpcAdvertise Parse(Stream stream)
         {
-            var binaryReader = new BinaryReader(stream);
-            var advertise = new IpcAdvertise()
+            using (var binaryReader = new BinaryReader(stream, Encoding.UTF8, true))
             {
-                Magic = binaryReader.ReadBytes(Magic_V1.Length),
-                RuntimeInstanceCookie = new Guid(binaryReader.ReadBytes(16)),
-                ProcessId = binaryReader.ReadUInt64(),
-                Unused = binaryReader.ReadUInt16()
-            };
+                var advertise = new IpcAdvertise()
+                {
+                    Magic = binaryReader.ReadBytes(Magic_V1.Length),
+                    RuntimeInstanceCookie = new Guid(binaryReader.ReadBytes(16)),
+                    ProcessId = binaryReader.ReadUInt64(),
+                    Unused = binaryReader.ReadUInt16()
+                };
 
-            for (int i = 0; i < Magic_V1.Length; i++)
-                if (advertise.Magic[i] != Magic_V1[i])
-                    throw new Exception("Invalid advertise message from client connection");
+                for (int i = 0; i < Magic_V1.Length; i++)
+                    if (advertise.Magic[i] != Magic_V1[i])
+                        throw new Exception("Invalid advertise message from client connection");
 
-            // FUTURE: switch on incoming magic and change if version ever increments
-            return advertise;
+                // FUTURE: switch on incoming magic and change if version ever increments
+                return advertise;
+            }
         }
 
         override public string ToString()

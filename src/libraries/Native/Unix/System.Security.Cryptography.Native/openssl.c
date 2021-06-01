@@ -1121,6 +1121,16 @@ int64_t CryptoNative_OpenSslVersionNumber()
     return (int64_t)OpenSSL_version_num();
 }
 
+void CryptoNative_RegisterLegacyAlgorithms()
+{
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(OSSL_PROVIDER_try_load))
+    {
+        OSSL_PROVIDER_try_load(NULL, "legacy", 1);
+    }
+#endif
+}
+
 #ifdef NEED_OPENSSL_1_0
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
@@ -1260,7 +1270,7 @@ done:
 }
 #endif // NEED_OPENSSL_1_0 */
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
 // Only defined in OpenSSL 1.1.1+, has no effect on 1.1.0.
 #ifndef OPENSSL_INIT_NO_ATEXIT

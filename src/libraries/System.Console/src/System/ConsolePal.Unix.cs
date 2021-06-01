@@ -973,7 +973,7 @@ namespace System
         }
 
         /// <summary>Provides format strings and related information for use with the current terminal.</summary>
-        internal class TerminalFormatStrings
+        internal sealed class TerminalFormatStrings
         {
             /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
             public static TerminalFormatStrings Instance { get { return s_instance.Value; } }

@@ -66,8 +66,6 @@ UINT_PTR FindMostRecentUserCodeOnStack(void)
     CONTRACTL_END;
 
     Thread * pThread = GetThread();
-    _ASSERTE(pThread != NULL);
-
     UINT_PTR address = NULL;
 
     CONTEXT ctx;

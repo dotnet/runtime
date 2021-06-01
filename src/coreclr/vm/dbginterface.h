@@ -392,7 +392,6 @@ public:
 
     virtual BOOL ShouldAutoAttach() = 0;
     virtual BOOL FallbackJITAttachPrompt() = 0;
-    virtual HRESULT SetFiberMode(bool isFiberMode) = 0;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual LONG FirstChanceSuspendHijackWorker(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord) = 0;

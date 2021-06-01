@@ -498,7 +498,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
                         else
                         {
-                            destToState = SrcToDestHash[srcToState]; ;
+                            destToState = SrcToDestHash[srcToState];
                         }
                     }
 

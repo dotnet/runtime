@@ -335,20 +335,23 @@ inline bool varTypeUsesFloatArgReg(T vt)
 template <class T>
 inline bool varTypeIsValidHfaType(T vt)
 {
-#ifdef FEATURE_HFA
-    bool isValid = (TypeGet(vt) != TYP_UNDEF);
-    if (isValid)
+    if (GlobalJitOptions::compFeatureHfa)
     {
+        bool isValid = (TypeGet(vt) != TYP_UNDEF);
+        if (isValid)
+        {
 #ifdef TARGET_ARM64
-        assert(varTypeUsesFloatReg(vt));
+            assert(varTypeUsesFloatReg(vt));
 #else  // !TARGET_ARM64
-        assert(varTypeIsFloating(vt));
+            assert(varTypeIsFloating(vt));
 #endif // !TARGET_ARM64
+        }
+        return isValid;
     }
-    return isValid;
-#else  // !FEATURE_HFA
-    return false;
-#endif // !FEATURE_HFA
+    else
+    {
+        return false;
+    }
 }
 
 /*****************************************************************************/

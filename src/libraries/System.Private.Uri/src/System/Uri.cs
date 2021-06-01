@@ -144,7 +144,7 @@ namespace System
             Debug.Assert((_flags & Flags.Debug_LeftConstructor) == 0);
         }
 
-        private class UriInfo
+        private sealed class UriInfo
         {
             public Offset Offset;
             public string? String;
@@ -184,7 +184,7 @@ namespace System
             public ushort End;
         };
 
-        private class MoreInfo
+        private sealed class MoreInfo
         {
             public string? Path;
             public string? Query;
@@ -2667,7 +2667,7 @@ namespace System
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
                             {
-                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, '?', '#');;
+                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, '?', '#');
                             }
                             else
                             {

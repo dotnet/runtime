@@ -203,7 +203,7 @@ namespace Tracing.Tests.Common
             });
             sentinelTask.Start();
 
-            int processId = Process.GetCurrentProcess().Id;;
+            int processId = Process.GetCurrentProcess().Id;
             object threadSync = new object(); // for locking eventpipeSessionId access
             ulong eventpipeSessionId = 0;
             Func<int> optionalTraceValidationCallback = null;

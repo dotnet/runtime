@@ -26,7 +26,7 @@ namespace System
             if (dst == null)
                 throw new ArgumentNullException(nameof(dst));
 
-            nuint uSrcLen = (nuint)src.LongLength;
+            nuint uSrcLen = src.NativeLength;
             if (src.GetType() != typeof(byte[]))
             {
                 if (!src.GetCorElementTypeOfElementType().IsPrimitiveType())
@@ -37,7 +37,7 @@ namespace System
             nuint uDstLen = uSrcLen;
             if (src != dst)
             {
-                uDstLen = (nuint)dst.LongLength;
+                uDstLen = dst.NativeLength;
                 if (dst.GetType() != typeof(byte[]))
                 {
                     if (!dst.GetCorElementTypeOfElementType().IsPrimitiveType())
@@ -73,7 +73,7 @@ namespace System
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
-            nuint byteLength = (nuint)array.LongLength * (nuint)array.GetElementSize();
+            nuint byteLength = array.NativeLength * (nuint)array.GetElementSize();
 
             // This API is explosed both as Buffer.ByteLength and also used indirectly in argument
             // checks for Buffer.GetByte/SetByte.

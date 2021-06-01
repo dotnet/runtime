@@ -527,7 +527,7 @@ public:
                     assert(TopValue(0).Node() == node->gtGetOp1());
                     GenTreeUnOp* ret    = node->AsUnOp();
                     GenTree*     retVal = ret->gtGetOp1();
-                    if (!m_compiler->compDoOldStructRetyping() && retVal->OperIs(GT_LCL_VAR))
+                    if (retVal->OperIs(GT_LCL_VAR))
                     {
                         // TODO-1stClassStructs: this block is a temporary workaround to keep diffs small,
                         // having `doNotEnreg` affect block init and copy transformations that affect many methods.

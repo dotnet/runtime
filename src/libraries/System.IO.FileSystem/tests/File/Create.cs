@@ -150,7 +150,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Browser platform volume does not limit segments
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser platform volume does not limit segments")]
         public void LongPathSegment()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

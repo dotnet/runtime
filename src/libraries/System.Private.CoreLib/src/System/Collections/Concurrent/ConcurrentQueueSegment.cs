@@ -71,19 +71,6 @@ namespace System.Collections.Concurrent
             }
         }
 
-        /// <summary>Round the specified value up to the next power of 2, if it isn't one already.</summary>
-        internal static int RoundUpToPowerOf2(int i)
-        {
-            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-            --i;
-            i |= i >> 1;
-            i |= i >> 2;
-            i |= i >> 4;
-            i |= i >> 8;
-            i |= i >> 16;
-            return i + 1;
-        }
-
         /// <summary>Gets the number of elements this segment can store.</summary>
         internal int Capacity => _slots.Length;
 

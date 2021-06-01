@@ -504,6 +504,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
 #ifdef ENABLE_AOT
+	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
+
 	// Defined in driver-gen.c
 	register_aot_modules ();
 #ifdef EE_MODE_LLVMONLY_INTERP
@@ -513,12 +515,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-
-#ifdef ENABLE_METADATA_UPDATE
-	if (monoeg_g_hasenv ("MONO_METADATA_UPDATE")) {
-		interp_opts = "-inline";
-	}
-#endif
 
 	/*
 	 * debug_level > 0 enables debugging and sets the debug log level to debug_level

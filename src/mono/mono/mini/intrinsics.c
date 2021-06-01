@@ -766,6 +766,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
 		else if (!strcmp (cmethod->name, "GetRawSzArrayData") || !strcmp (cmethod->name, "GetRawArrayData")) {
 			int dreg = alloc_preg (cfg);
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}
@@ -1945,8 +1946,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib &&
 		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
 		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
-		if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") || !strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
+		if (!strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
 			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			ins->type = STACK_I4;
+			return ins;
+		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported")) {
+			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? (cfg->interp ? 1 : 0) : 1);
 			ins->type = STACK_I4;
 			return ins;
 		}
@@ -1954,30 +1959,59 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	if (in_corlib &&
 		!strcmp ("System", cmethod_klass_name_space) &&
-		!strcmp ("ThrowHelper", cmethod_klass_name) &&
-		!strcmp ("ThrowForUnsupportedVectorBaseType", cmethod->name)) {
-		/* The mono JIT can't optimize the body of this method away */
-		MonoGenericContext *ctx = mono_method_get_context (cmethod);
-		g_assert (ctx);
-		g_assert (ctx->method_inst);
+		!strcmp ("ThrowHelper", cmethod_klass_name)) {
 
-		MonoType *t = ctx->method_inst->type_argv [0];
-		switch (t->type) {
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			MONO_INST_NEW (cfg, ins, OP_NOP);
-			MONO_ADD_INS (cfg->cbb, ins);
-			return ins;
-		default:
-			break;
+		if (!strcmp ("ThrowForUnsupportedNumericsVectorBaseType", cmethod->name)) {
+			/* The mono JIT can't optimize the body of this method away */
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+
+			MonoType *t = ctx->method_inst->type_argv [0];
+			switch (t->type) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+				MONO_INST_NEW (cfg, ins, OP_NOP);
+				MONO_ADD_INS (cfg->cbb, ins);
+				return ins;
+			default:
+				break;
+			}
+		}
+		else if (!strcmp ("ThrowForUnsupportedIntrinsicsVectorBaseType", cmethod->name)) {
+			/* The mono JIT can't optimize the body of this method away */
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+
+			MonoType *t = ctx->method_inst->type_argv [0];
+			switch (t->type) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+				MONO_INST_NEW (cfg, ins, OP_NOP);
+				MONO_ADD_INS (cfg->cbb, ins);
+				return ins;
+			default:
+				break;
+			}
 		}
 	}
 

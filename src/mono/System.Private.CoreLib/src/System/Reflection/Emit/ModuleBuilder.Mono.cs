@@ -991,7 +991,7 @@ namespace System.Reflection.Emit
         }
     }
 
-    internal class ModuleBuilderTokenGenerator : ITokenGenerator
+    internal sealed class ModuleBuilderTokenGenerator : ITokenGenerator
     {
 
         private ModuleBuilder mb;

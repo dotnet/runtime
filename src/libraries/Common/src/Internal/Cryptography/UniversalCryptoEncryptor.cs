@@ -168,8 +168,8 @@ namespace Internal.Cryptography
                         throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
                     }
 
-                    destination.Slice(0, zeroSize).Clear();
                     block.CopyTo(destination);
+                    destination.Slice(count, padBytes).Clear();
                     return zeroSize;
 
                 default:

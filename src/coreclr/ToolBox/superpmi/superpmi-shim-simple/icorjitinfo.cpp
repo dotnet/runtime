@@ -12,6 +12,12 @@
 #include "spmiutil.h"
 
 
+bool interceptor_ICJI::isJitIntrinsic(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    return original_ICorJitInfo->isJitIntrinsic(ftn);
+}
+
 uint32_t interceptor_ICJI::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -1177,16 +1183,6 @@ JITINTERFACE_HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
           uint8_t** pInstrumentationData)
 {
     return original_ICorJitInfo->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
-}
-
-CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          CORINFO_CLASS_HANDLE baseHnd,
-          uint32_t ilOffset,
-          uint32_t* pLikelihood,
-          uint32_t* pNumberOfClasses)
-{
-    return original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
 }
 
 void interceptor_ICJI::recordCallSite(

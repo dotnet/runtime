@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.Serialization;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -20,9 +18,9 @@ namespace System.Collections.Generic
         // that was passed in to the ctor. The caller chooses one of these singletons so that the
         // GetUnderlyingEqualityComparer method can return the correct value.
 
-        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new OrdinalComparer(EqualityComparer<string?>.Default);
-        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new OrdinalComparer(StringComparer.Ordinal);
-        internal static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new OrdinalIgnoreCaseComparer(StringComparer.OrdinalIgnoreCase);
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new OrdinalComparer(EqualityComparer<string?>.Default);
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new OrdinalComparer(StringComparer.Ordinal);
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new OrdinalIgnoreCaseComparer(StringComparer.OrdinalIgnoreCase);
 
         private readonly IEqualityComparer<string?> _underlyingComparer;
 
@@ -108,6 +106,27 @@ namespace System.Collections.Generic
             {
                 return RandomizedStringEqualityComparer.Create(_underlyingComparer, ignoreCase: true);
             }
+        }
+
+        public static IEqualityComparer<string>? GetStringComparer(object? comparer)
+        {
+            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+            // hash buckets become unbalanced.
+            if (comparer is null)
+            {
+                return WrappedAroundDefaultComparer;
+            }
+            else if (ReferenceEquals(comparer, StringComparer.Ordinal))
+            {
+                return WrappedAroundStringComparerOrdinal;
+            }
+            else if (ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
+            {
+                return WrappedAroundStringComparerOrdinalIgnoreCase;
+            }
+
+            return null;
         }
     }
 }

@@ -20,5 +20,6 @@ namespace Server.Contract
         public const string DefaultInterfaceTesting = "FAEF42AE-C1A4-419F-A912-B768AC2679EA";
         public const string ConsumeNETServerTesting = "DE4ACF53-5957-4D31-8BE2-EA6C80683246";
         public const string InspectableTesting = "CE137261-6F19-44F5-A449-EF963B3F987E";
+        public const string TrackMyLifetimeTesting = "4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811";
     }
 }

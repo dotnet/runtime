@@ -933,7 +933,7 @@ class SyncBlock
     // A 0 in this variable means no hash code has been set yet - this saves having
     // another flag to express this state, and it enables us to use a 32-bit interlocked
     // operation to set the hash code, on the other hand it means that hash codes
-    // can never be 0. ObjectNative::GetHashCode in COMObject.cpp makes sure to enforce this.
+    // can never be 0. ObjectNative::GetHashCode in objectnative.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
     // In some early version of VB when there were no arrays developers used to use BSTR as arrays

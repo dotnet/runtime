@@ -1256,6 +1256,7 @@ test_eventpipe_mem_checkpoint (void)
 #ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
+	extern void ep_rt_mono_thread_exited (void);
 	ep_rt_mono_thread_exited ();
 
 	_CrtMemCheckpoint (&eventpipe_memory_end_snapshot);

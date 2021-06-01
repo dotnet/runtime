@@ -222,7 +222,7 @@ namespace System.Collections
             count--;
         }
 
-        private class NodeEnumerator : IDictionaryEnumerator
+        private sealed class NodeEnumerator : IDictionaryEnumerator
         {
             private readonly ListDictionaryInternal list;
             private DictionaryNode? current;
@@ -307,7 +307,7 @@ namespace System.Collections
             }
         }
 
-        private class NodeKeyValueCollection : ICollection
+        private sealed class NodeKeyValueCollection : ICollection
         {
             private readonly ListDictionaryInternal list;
             private readonly bool isKeys;
@@ -357,7 +357,7 @@ namespace System.Collections
                 return new NodeKeyValueEnumerator(list, isKeys);
             }
 
-            private class NodeKeyValueEnumerator : IEnumerator
+            private sealed class NodeKeyValueEnumerator : IEnumerator
             {
                 private readonly ListDictionaryInternal list;
                 private DictionaryNode? current;
@@ -420,7 +420,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private class DictionaryNode
+        private sealed class DictionaryNode
         {
             public object key = null!;
             public object? value;

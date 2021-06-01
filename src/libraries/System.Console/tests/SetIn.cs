@@ -11,7 +11,7 @@ using Xunit;
 public class SetIn
 {
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public static void SetInThrowsOnNull()
     {
         TextReader savedIn = Console.In;
@@ -26,7 +26,7 @@ public class SetIn
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public static void SetInReadLine()
     {
         const string TextStringFormat = "Test {0}";

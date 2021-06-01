@@ -5,7 +5,7 @@ using System.Text;
 
 namespace System.Net.Mail
 {
-    internal class MailAddress
+    internal sealed class MailAddress
     {
         public MailAddress(string address)
         {

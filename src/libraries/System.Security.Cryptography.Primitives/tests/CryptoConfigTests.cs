@@ -99,11 +99,13 @@ namespace System.Security.Cryptography.CryptoConfigTests
 
         [Theory]
         [InlineData("AES", typeof(Aes))]
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
         [InlineData("Rijndael", typeof(Rijndael))]
         [InlineData("System.Security.Cryptography.Rijndael", typeof(Rijndael))]
         [InlineData("http://www.w3.org/2001/04/xmlenc#aes128-cbc", typeof(Rijndael))]
         [InlineData("http://www.w3.org/2001/04/xmlenc#aes192-cbc", typeof(Rijndael))]
         [InlineData("http://www.w3.org/2001/04/xmlenc#aes256-cbc", typeof(Rijndael))]
+#pragma warning restore SYSLIB0022
         [InlineData("3DES", typeof(TripleDES))]
         [InlineData("TripleDES", typeof(TripleDES))]
         [InlineData("System.Security.Cryptography.TripleDES", typeof(TripleDES))]

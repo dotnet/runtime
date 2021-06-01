@@ -14,15 +14,11 @@
 #include "object.h"
 #include "dllimportcallback.h"
 #include "mlinfo.h"
-#include "comdelegate.h"
 #include "ceeload.h"
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "stubgen.h"
 #include "appdomain.inl"
-#include "callingconvention.h"
-#include "customattribute.h"
-#include "typeparse.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -531,10 +527,10 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
         DEBUG_ONLY;
         GC_NOTRIGGER;
         ENTRY_POINT;
-        if (GetThread()) MODE_PREEMPTIVE; else MODE_ANY;
+        if (GetThreadNULLOk()) MODE_PREEMPTIVE; else MODE_ANY;
         DEBUG_ONLY;
         PRECONDITION(CheckPointer(thunk));
-        PRECONDITION((GetThread() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
+        PRECONDITION((GetThreadNULLOk() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
     }
     CONTRACTL_END;
 
@@ -554,125 +550,6 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
     END_ENTRYPOINT_VOIDRET;
 
     }
-#endif
+#endif // _DEBUG
 
-namespace
-{
-    // Templated function to compute if a char string begins with a constant string.
-    template<size_t S2LEN>
-    bool BeginsWith(ULONG s1Len, const char* s1, const char (&s2)[S2LEN])
-    {
-        WRAPPER_NO_CONTRACT;
-
-        ULONG s2Len = (ULONG)S2LEN - 1; // Remove null
-        if (s1Len < s2Len)
-            return false;
-
-        return (0 == strncmp(s1, s2, s2Len));
-    }
-}
-
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
-
-    // Validate usage
-    COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
-
-    BYTE* pData = NULL;
-    LONG cData = 0;
-
-    bool nativeCallableInternalData = false;
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
-    if (hr == S_FALSE)
-    {
-        hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
-        nativeCallableInternalData = SUCCEEDED(hr);
-    }
-
-    IfFailThrow(hr);
-
-    _ASSERTE(cData > 0);
-
-    CustomAttributeParser ca(pData, cData);
-
-    // UnmanagedCallersOnly and NativeCallableInternal each
-    // have optional named arguments.
-    CaNamedArg namedArgs[2];
-
-    // For the UnmanagedCallersOnly scenario.
-    CaType caCallConvs;
-
-    // Define attribute specific optional named properties
-    if (nativeCallableInternalData)
-    {
-        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
-    }
-    else
-    {
-        caCallConvs.Init(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
-        namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
-    }
-
-    // Define common optional named properties
-    CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
-    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
-
-    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
-        pData,
-        cData,
-        &caValueArrayFactory,
-        NULL,
-        0,
-        namedArgs,
-        lengthof(namedArgs),
-        domainAssembly));
-
-    // If the value isn't defined, then return without setting anything.
-    if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
-        return false;
-
-    CorInfoCallConvExtension callConvLocal;
-    if (nativeCallableInternalData)
-    {
-        callConvLocal = (CorInfoCallConvExtension)(namedArgs[0].val.u4 << 8);
-    }
-    else
-    {
-        // Set WinAPI as the default
-        callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
-
-        CaValue* arrayOfTypes = &namedArgs[0].val;
-        for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
-        {
-            CaValue& typeNameValue = arrayOfTypes->arr[i];
-
-            // According to ECMA-335, type name strings are UTF-8. Since we are
-            // looking for type names that are equivalent in ASCII and UTF-8,
-            // using a const char constant is acceptable. Type name strings are
-            // in Fully Qualified form, so we include the ',' delimiter.
-            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
-            {
-                callConvLocal = CorInfoCallConvExtension::C;
-            }
-            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
-            {
-                callConvLocal = CorInfoCallConvExtension::Stdcall;
-            }
-            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
-            {
-                callConvLocal = CorInfoCallConvExtension::Fastcall;
-            }
-            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
-            {
-                callConvLocal = CorInfoCallConvExtension::Thiscall;
-            }
-        }
-    }
-    *pCallConv = callConvLocal;
-    return true;
-}
 #endif // CROSSGEN_COMPILE

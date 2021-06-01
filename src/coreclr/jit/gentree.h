@@ -414,8 +414,6 @@ struct GenTree
     genTreeOps gtOperSave; // Only used to save gtOper when we destroy a node, to aid debugging.
 #endif
 
-#if FEATURE_ANYCSE
-
 #define NO_CSE (0)
 
 #define IS_CSE_INDEX(x) ((x) != 0)
@@ -426,8 +424,6 @@ struct GenTree
 
     signed char gtCSEnum; // 0 or the CSE index (negated if def)
                           // valid only for CSE expressions
-
-#endif // FEATURE_ANYCSE
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
@@ -866,10 +862,11 @@ public:
                                                //             alignment of 1 byte)
 #define GTF_IND_INVARIANT           0x01000000 // GT_IND   -- the target is invariant (a prejit indirection)
 #define GTF_IND_ARR_INDEX           0x00800000 // GT_IND   -- the indirection represents an (SZ) array index
+#define GTF_IND_NONNULL             0x00400000 // GT_IND   -- the indirection never returns null (zero)
 
 #define GTF_IND_FLAGS \
     (GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
-     GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP)
+     GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP)
 
 #define GTF_CLS_VAR_VOLATILE        0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
 #define GTF_CLS_VAR_INITCLASS       0x20000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
@@ -937,9 +934,6 @@ public:
 
 #define GTF_ARRLEN_ARR_IDX          0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 #define GTF_ARRLEN_NONFAULTING      0x20000000 // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-#define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
-                                               //            even if they have been retyped as SIMD16.
 
 #define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                                //                   rarther than from gtGetStructHandleForHWSIMD.
@@ -1085,6 +1079,17 @@ public:
     bool TypeIs(var_types type, T... rest) const
     {
         return TypeIs(type) || TypeIs(rest...);
+    }
+
+    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
+    {
+        return operCompare == oper;
+    }
+
+    template <typename... T>
+    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper, T... rest)
+    {
+        return StaticOperIs(operCompare, oper) || StaticOperIs(operCompare, rest...);
     }
 
     bool OperIs(genTreeOps oper) const
@@ -1683,10 +1688,10 @@ public:
     bool IsValidCallArgument();
 #endif // DEBUG
 
-    inline bool IsFPZero();
-    inline bool IsIntegralConst(ssize_t constVal);
-    inline bool IsIntegralConstVector(ssize_t constVal);
-    inline bool IsSIMDZero();
+    inline bool IsFPZero() const;
+    inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsIntegralConstVector(ssize_t constVal) const;
+    inline bool IsSIMDZero() const;
 
     inline bool IsBoxedValue();
 
@@ -1836,7 +1841,7 @@ public:
 
 //---------------------------------------------------------------------
 
-#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
+#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
     static const char* OpName(genTreeOps op);
 #endif
 
@@ -2917,11 +2922,11 @@ struct GenTreeVal : public GenTree
 
 struct GenTreeIntConCommon : public GenTree
 {
-    inline INT64 LngValue();
+    inline INT64 LngValue() const;
     inline void SetLngValue(INT64 val);
-    inline ssize_t IconValue();
+    inline ssize_t IconValue() const;
     inline void SetIconValue(ssize_t val);
-    inline INT64 IntegralValue();
+    inline INT64 IntegralValue() const;
 
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
@@ -3085,7 +3090,7 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 #endif
 };
 
-inline INT64 GenTreeIntConCommon::LngValue()
+inline INT64 GenTreeIntConCommon::LngValue() const
 {
 #ifndef TARGET_64BIT
     assert(gtOper == GT_CNS_LNG);
@@ -3109,7 +3114,7 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 #endif
 }
 
-inline ssize_t GenTreeIntConCommon::IconValue()
+inline ssize_t GenTreeIntConCommon::IconValue() const
 {
     assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
     return AsIntCon()->gtIconVal;
@@ -3121,7 +3126,7 @@ inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
     AsIntCon()->gtIconVal = val;
 }
 
-inline INT64 GenTreeIntConCommon::IntegralValue()
+inline INT64 GenTreeIntConCommon::IntegralValue() const
 {
 #ifdef TARGET_64BIT
     return LngValue();
@@ -4221,12 +4226,13 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_DEVIRTUALIZED           0x00040000 // GT_CALL -- this call was devirtualized
 #define GTF_CALL_M_UNBOXED                 0x00080000 // GT_CALL -- this call was optimized to use the unboxed entry point
 #define GTF_CALL_M_GUARDED_DEVIRT          0x00100000 // GT_CALL -- this call is a candidate for guarded devirtualization
-#define GTF_CALL_M_GUARDED                 0x00200000 // GT_CALL -- this call was transformed by guarded devirtualization
-#define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
-#define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
-#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
-#define GTF_CALL_M_STRESS_TAILCALL         0x02000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
-#define GTF_CALL_M_EXPANDED_EARLY          0x04000000 // GT_CALL -- the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
+#define GTF_CALL_M_GUARDED_DEVIRT_CHAIN    0x00200000 // GT_CALL -- this call is a candidate for chained guarded devirtualization
+#define GTF_CALL_M_GUARDED                 0x00400000 // GT_CALL -- this call was transformed by guarded devirtualization
+#define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00800000 // GT_CALL -- this is a call to an allocator with side effects
+#define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x01000000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x02000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
+#define GTF_CALL_M_STRESS_TAILCALL         0x04000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
+#define GTF_CALL_M_EXPANDED_EARLY          0x08000000 // GT_CALL -- the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
 
     // clang-format on
 
@@ -4548,6 +4554,8 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
 
+    void ResetArgInfo();
+
     unsigned gtCallMoreFlags; // in addition to gtFlags
 
     unsigned char gtCallType : 3;   // value from the gtCallTypes enumeration
@@ -4837,17 +4845,15 @@ struct GenTreeIntrinsic : public GenTreeOp
 struct GenTreeJitIntrinsic : public GenTreeOp
 {
 private:
-    ClassLayout* m_layout;
+    ClassLayout* gtLayout;
 
-    union {
-        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
-    };
+    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
+
+    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
+    unsigned char gtSimdSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
 
 public:
-    var_types     gtSIMDBaseType; // SIMD vector base type
-    unsigned char gtSIMDSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
-
 #if defined(FEATURE_SIMD)
     union {
         SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
@@ -4859,47 +4865,80 @@ public:
 
     ClassLayout* GetLayout() const
     {
-        return m_layout;
+        return gtLayout;
     }
 
     void SetLayout(ClassLayout* layout)
     {
         assert(layout != nullptr);
-        m_layout = layout;
+        gtLayout = layout;
     }
 
     regNumber GetOtherReg() const
     {
         return (regNumber)gtOtherReg;
     }
+
     void SetOtherReg(regNumber reg)
     {
         gtOtherReg = (regNumberSmall)reg;
         assert(gtOtherReg == reg);
     }
 
-    var_types GetAuxiliaryType() const
+    CorInfoType GetAuxiliaryJitType() const
     {
-        return gtAuxiliaryType;
+        return (CorInfoType)gtAuxiliaryJitType;
     }
 
-    void SetAuxiliaryType(var_types type)
+    void SetAuxiliaryJitType(CorInfoType auxiliaryJitType)
     {
-        gtAuxiliaryType = type;
+        gtAuxiliaryJitType = (unsigned char)auxiliaryJitType;
+        assert(gtAuxiliaryJitType == auxiliaryJitType);
     }
 
-    GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)
+    var_types GetAuxiliaryType() const;
+
+    CorInfoType GetSimdBaseJitType() const
+    {
+        return (CorInfoType)gtSimdBaseJitType;
+    }
+
+    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
+    {
+        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
+        assert(gtSimdBaseJitType == simdBaseJitType);
+    }
+
+    var_types GetSimdBaseType() const;
+
+    unsigned char GetSimdSize() const
+    {
+        return gtSimdSize;
+    }
+
+    void SetSimdSize(unsigned simdSize)
+    {
+        gtSimdSize = (unsigned char)simdSize;
+        assert(gtSimdSize == simdSize);
+    }
+
+    GenTreeJitIntrinsic(
+        genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeOp(oper, type, op1, op2)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize((unsigned char)size)
+        , gtLayout(nullptr)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtOtherReg(REG_NA)
+        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
-        assert(gtSIMDSize == size);
+        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdSize == simdSize);
     }
 
     bool isSIMD() const
     {
-        return gtSIMDSize != 0;
+        return gtSimdSize != 0;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4915,15 +4954,20 @@ public:
 struct GenTreeSIMD : public GenTreeJitIntrinsic
 {
 
-    GenTreeSIMD(var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, baseType, size)
+    GenTreeSIMD(
+        var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
-    GenTreeSIMD(
-        var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, baseType, size)
+    GenTreeSIMD(var_types       type,
+                GenTree*        op1,
+                GenTree*        op2,
+                SIMDIntrinsicID simdIntrinsicID,
+                CorInfoType     simdBaseJitType,
+                unsigned        simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
@@ -4942,14 +4986,15 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
-    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, baseType, size)
+    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
     }
 
-    GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, baseType, size)
+    GenTreeHWIntrinsic(
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
         if (OperIsMemoryStore())
@@ -4958,9 +5003,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    GenTreeHWIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, baseType, size)
+    GenTreeHWIntrinsic(var_types      type,
+                       GenTree*       op1,
+                       GenTree*       op2,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
         if (OperIsMemoryStore())
@@ -6893,7 +6942,7 @@ inline bool GenTree::OperIsCopyBlkOp()
 // Return Value:
 //    Returns true iff the tree is an GT_CNS_DBL, with value of 0.0.
 
-inline bool GenTree::IsFPZero()
+inline bool GenTree::IsFPZero() const
 {
     if ((gtOper == GT_CNS_DBL) && (AsDblCon()->gtDconVal == 0.0))
     {
@@ -6916,7 +6965,7 @@ inline bool GenTree::IsFPZero()
 //    Like gtIconVal, the argument is of ssize_t, so cannot check for
 //    long constants in a target-independent way.
 
-inline bool GenTree::IsIntegralConst(ssize_t constVal)
+inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 
 {
     if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
@@ -6942,7 +6991,7 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal)
 // Returns:
 //     True if this represents an integral const SIMD vector.
 //
-inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
+inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 {
 #ifdef FEATURE_SIMD
     // SIMDIntrinsicInit intrinsic with a const value as initializer
@@ -6950,7 +6999,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
     if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit) &&
         gtGetOp1()->IsIntegralConst(constVal))
     {
-        assert(varTypeIsIntegral(AsSIMD()->gtSIMDBaseType));
+        assert(varTypeIsIntegral(AsSIMD()->GetSimdBaseType()));
         assert(gtGetOp2IfPresent() == nullptr);
         return true;
     }
@@ -6959,9 +7008,9 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        GenTreeHWIntrinsic* node = AsHWIntrinsic();
+        const GenTreeHWIntrinsic* node = AsHWIntrinsic();
 
-        if (!varTypeIsIntegral(node->gtSIMDBaseType))
+        if (!varTypeIsIntegral(node->GetSimdBaseType()))
         {
             // Can't be an integral constant
             return false;
@@ -7009,7 +7058,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
 // Returns:
 //     True if this represents an integral const SIMD vector.
 //
-inline bool GenTree::IsSIMDZero()
+inline bool GenTree::IsSIMDZero() const
 {
 #ifdef FEATURE_SIMD
     if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit))

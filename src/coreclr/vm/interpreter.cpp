@@ -3313,8 +3313,6 @@ bool Interpreter::MethodHandlesException(OBJECTREF orThrowable)
 
     if (orThrowable != NULL)
     {
-        PTR_Thread pCurThread = GetThread();
-
         // Don't catch ThreadAbort and other uncatchable exceptions
         if (!IsUncatchable(&orThrowable))
         {

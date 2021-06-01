@@ -99,10 +99,12 @@ namespace Internal.Cryptography
 
         public void Dispose(bool disposing)
         {
-            if (disposing && _hMacProvider != null)
+            if (disposing)
             {
-                _hMacProvider.Dispose(true);
+                _hMacProvider?.Dispose(true);
                 _hMacProvider = null!;
+                _lazyHashProvider?.Dispose(true);
+                _lazyHashProvider = null;
             }
         }
 

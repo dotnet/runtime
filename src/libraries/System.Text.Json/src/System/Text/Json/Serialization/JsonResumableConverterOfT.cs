@@ -36,7 +36,15 @@ namespace System.Text.Json.Serialization
 
             WriteStack state = default;
             state.Initialize(typeof(T), options, supportContinuation: false);
-            TryWrite(writer, value, options, ref state);
+            try
+            {
+                TryWrite(writer, value, options, ref state);
+            }
+            catch
+            {
+                state.DisposePendingDisposablesOnException();
+                throw;
+            }
         }
 
         public sealed override bool HandleNull => false;

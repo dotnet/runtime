@@ -603,7 +603,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         /// A segment contains an array, a pointer to the next segment, and _low, _high indices recording
         /// the first and last valid elements of the array.
         /// </summary>
-        private class Segment
+        private sealed class Segment
         {
             //we define two volatile arrays: _array and _state. Note that the accesses to the array items
             //do not get volatile treatment. But we don't need to worry about loading adjacent elements or

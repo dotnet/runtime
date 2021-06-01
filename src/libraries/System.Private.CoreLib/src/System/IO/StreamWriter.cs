@@ -95,7 +95,7 @@ namespace System.IO
         {
             if (stream == null)
             {
-                throw new ArgumentNullException(nameof(stream));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             }
             if (encoding == null)
             {

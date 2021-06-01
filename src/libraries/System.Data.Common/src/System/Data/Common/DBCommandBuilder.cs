@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     public abstract class DbCommandBuilder : Component
     {
-        private class ParameterNames
+        private sealed class ParameterNames
         {
             private const string DefaultOriginalPrefix = "Original_";
             private const string DefaultIsNullPrefix = "IsNull_";

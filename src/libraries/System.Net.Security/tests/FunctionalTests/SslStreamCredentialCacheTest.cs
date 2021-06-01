@@ -36,7 +36,7 @@ namespace System.Net.Security.Tests
                                             clientCertificateCollection, false);
 
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(tasks).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 if (!PlatformDetection.IsWindows7 ||
                     Capability.IsTrustedRootCertificateInstalled())

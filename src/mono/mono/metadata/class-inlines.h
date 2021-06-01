@@ -33,11 +33,16 @@ mono_get_object_type (void)
 	return m_class_get_byval_arg (mono_defaults.object_class);
 }
 
-
 static inline gboolean
 mono_class_is_def (MonoClass *klass)
 {
 	return m_class_get_class_kind (klass) == MONO_CLASS_DEF;
+}
+
+static inline gboolean
+m_class_is_array (MonoClass *klass)
+{
+	return m_class_get_rank (klass) != 0;
 }
 
 static inline gboolean

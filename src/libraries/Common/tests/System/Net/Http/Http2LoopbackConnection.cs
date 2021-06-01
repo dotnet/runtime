@@ -91,7 +91,15 @@ namespace System.Net.Test.Common
 
             if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
             {
-                throw new Exception("HTTP 1.1 request received.");
+                // Tests that use HttpAgnosticLoopbackServer will attempt to send an HTTP/1.1 request to an HTTP/2 server.
+                // This is invalid and we should terminate the connection.
+                // However, if we simply terminate the connection without sending anything, then this could be interpreted
+                // as a server disconnect that should be retried by SocketsHttpHandler.
+                // Since those tests are not set up to handle multiple retries, we instead just send back an invalid response here
+                // so that SocketsHttpHandler will not induce retry.
+                // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
+                await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
+                _connectionSocket.Shutdown(SocketShutdown.Send);
             }
         }
 
@@ -241,8 +249,7 @@ namespace System.Net.Test.Common
             Task currentTask = _ignoredSettingsAckPromise?.Task;
             if (currentTask != null)
             {
-                var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-                await currentTask.TimeoutAfter(timeout);
+                await currentTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
             }
 
             _ignoredSettingsAckPromise = new TaskCompletionSource<bool>();
@@ -909,7 +916,7 @@ namespace System.Net.Test.Common
             Frame frame;
             do
             {
-                frame = await ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
+                frame = await ReadFrameAsync(TestHelper.PassingTestTimeout);
                 Assert.NotNull(frame); // We should get Rst before closing connection.
                 Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
                 if (ignoreIncomingData)

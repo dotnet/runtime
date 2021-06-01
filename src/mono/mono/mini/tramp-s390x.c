@@ -117,7 +117,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", m->name);
 
-	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), mem_manager);
 
 	return start;
 }
@@ -510,7 +510,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	
 	g_assert (info);
 	tramp_name = mono_get_generic_trampoline_name (tramp_type);
-	*info = mono_tramp_info_create (tramp_name, buf, buf - code, ji, unwind_ops);
+	*info = mono_tramp_info_create (tramp_name, code, buf - code, ji, unwind_ops);
 
 	/* Sanity check */
 	g_assert ((buf - code) <= 512);
@@ -747,7 +747,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return(start);
 }	

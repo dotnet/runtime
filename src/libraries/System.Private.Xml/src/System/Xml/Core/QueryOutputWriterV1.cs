@@ -20,7 +20,7 @@ namespace System.Xml
     /// It also calls WriteStateDocument if standalone="yes" and/or a DocType declaration is written out in order to enforce document conformance
     /// checking.
     /// </summary>
-    internal class QueryOutputWriterV1 : XmlWriter
+    internal sealed class QueryOutputWriterV1 : XmlWriter
     {
         private readonly XmlWriter _wrapped;
         private bool _inCDataSection;

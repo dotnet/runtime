@@ -203,7 +203,6 @@ namespace System
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsMacOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
-/* Commented out for now, until we're ready to make changes to the public API
         /// <summary>
         /// Indicates whether the current application is running on Mac Catalyst.
         /// </summary>
@@ -215,11 +214,10 @@ namespace System
 #endif
 
         /// <summary>
-        /// Check for the Mac Catalyst version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given Mac Catalyst release.
+        /// Check for the Mac Catalyst version (iOS version as presented in Apple documentation) with a >= version comparison. Used to guard APIs that were added in the given Mac Catalyst release.
         /// </summary>
         public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsMacCatalyst() && IsOSVersionAtLeast(major, minor, build, 0);
-*/
 
         /// <summary>
         /// Indicates whether the current application is running on tvOS.

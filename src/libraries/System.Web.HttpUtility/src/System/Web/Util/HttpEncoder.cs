@@ -665,7 +665,7 @@ namespace System.Web.Util
         }
 
         // Internal class to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
-        private class UrlDecoder
+        private sealed class UrlDecoder
         {
             private readonly int _bufferSize;
 

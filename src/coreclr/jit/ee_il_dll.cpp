@@ -861,6 +861,8 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
+    // Estimate number of unique vars with debug info
+    //
     ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
     for (unsigned i = 0; i < cVars; i++)
     {
@@ -870,7 +872,8 @@ void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInf
             AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
         }
     }
-    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+
+    printf("; Variable debug info: %d live ranges, %d vars for method %s\n", cVars,
            AllVarSetOps::Count(this, uniqueVars), info.compFullName);
 
     for (unsigned i = 0; i < cVars; i++)

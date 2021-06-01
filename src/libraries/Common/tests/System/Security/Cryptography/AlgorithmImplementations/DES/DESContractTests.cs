@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class DesContractTests
     {
         // cfb not available on windows 7

@@ -492,7 +492,7 @@ namespace System.Reflection.Emit
         }
     }
 
-    internal class DynamicMethodTokenGenerator : ITokenGenerator
+    internal sealed class DynamicMethodTokenGenerator : ITokenGenerator
     {
 
         private DynamicMethod m;

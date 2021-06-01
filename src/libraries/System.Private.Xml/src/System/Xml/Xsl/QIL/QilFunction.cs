@@ -20,7 +20,7 @@ namespace System.Xml.Xsl.Qil
     /// override the types after setting the function's definition (for example, an XQuery
     /// might define a function's return type to be wider than its definition would imply.)</para>
     /// </remarks>
-    internal class QilFunction : QilReference
+    internal sealed class QilFunction : QilReference
     {
         private QilNode _arguments, _definition, _sideEffects;
 

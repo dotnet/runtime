@@ -27,9 +27,9 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
-void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
+void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
-    STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d, fAbort = %d\n", exitCode, fAbort);
+    STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
     CONTRACTL
     {
         DISABLED(GC_TRIGGERS);
@@ -87,20 +87,19 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
     g_fNoExceptions = true;
     LOG((LF_EH, LL_INFO10, "SafeExitProcess: turning off exceptions\n"));
 
-    if (sca == SCA_ExitProcessWhenShutdownComplete)
+    if (sca == SCA_TerminateProcessWhenShutdownComplete)
     {
-        // disabled because if we fault in this code path we will trigger our
-        // Watson code
+        // disabled because if we fault in this code path we will trigger our Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (fAbort)
-        {
-            CrashDumpAndTerminateProcess(exitCode);
-        }
-        else
-        {
-            ExitProcess(exitCode);
-        }
+        CrashDumpAndTerminateProcess(exitCode);
+    }
+    else if (sca == SCA_ExitProcessWhenShutdownComplete)
+    {
+        // disabled because if we fault in this code path we will trigger our Watson code
+        CONTRACT_VIOLATION(ThrowsViolation);
+
+        ExitProcess(exitCode);
     }
 }
 
@@ -133,8 +132,7 @@ void EEPolicy::HandleStackOverflow()
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleStackOverflow\n");
 
-    Thread *pThread = GetThread();
-
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // For security reason, it is not safe to continue execution if stack overflow happens
@@ -180,7 +178,7 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
     {
         EEShutDown(FALSE);
     }
-    SafeExitProcess(GetLatchedExitCode(), FALSE, sca);
+    SafeExitProcess(GetLatchedExitCode(), sca);
 }
 
 
@@ -353,7 +351,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
     static Thread *volatile s_pCrashingThread = FatalErrorNotSeenYet;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     Thread *pPreviousThread = InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, pThread, FatalErrorNotSeenYet);
 
     if (pPreviousThread == pThread)
@@ -541,7 +539,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     {
 #ifdef DEBUGGING_SUPPORTED
         //Give a managed debugger a chance if this fatal error is on a managed thread.
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
 
         if (pThread && !g_fFatalErrorOccuredOnGCThread)
         {
@@ -639,7 +637,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     {
         DisplayStackOverflowException();
 
-        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThread(), W(".NET Stack overflow trace logger"));
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
         if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
         {
             // Wait for the stack trace logging completion
@@ -670,7 +668,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     if (!fSkipDebugger)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         BOOL fTreatAsNativeUnhandledException = FALSE;
         if (pThread)
         {
@@ -789,7 +787,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         // because debugger is going to take CrstDebuggerMutex, whose lock level is higher than that of
         // CrstThreadStore.  It should be safe to release the lock since execution will not be resumed
         // after fatal errors.
-        if (ThreadStore::HoldingThreadStore(GetThread()))
+        if (ThreadStore::HoldingThreadStore(GetThreadNULLOk()))
         {
             ThreadSuspend::UnlockThreadStore();
         }
@@ -798,7 +796,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-        SafeExitProcess(exitCode, TRUE);
+        SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
     }
 
     UNREACHABLE();

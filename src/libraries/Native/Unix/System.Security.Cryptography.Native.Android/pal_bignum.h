@@ -5,8 +5,13 @@
 
 #include "pal_jni.h"
 
-PALEXPORT jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output);
 PALEXPORT int32_t AndroidCryptoNative_GetBigNumBytes(jobject bignum);
 
+/*
+Create a BigInteger from its binary representation.
+
+The returned jobject will be a local reference.
+*/
+jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len);
 int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bignum);

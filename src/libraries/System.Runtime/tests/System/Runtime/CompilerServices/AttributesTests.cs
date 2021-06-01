@@ -114,11 +114,13 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal((LoadHint)(-2), attr2.LoadHint);
         }
 
+#pragma warning disable SYSLIB0015 // Obsolete: DisablePrivateReflectionAttribute
         [Fact]
         public static void DisablePrivateReflectionAttributeTests()
         {
             new DisablePrivateReflectionAttribute();
         }
+#pragma warning restore SYSLIB0015 // Obsolete: DisablePrivateReflectionAttribute
 
         [Fact]
         public static void DiscardableAttributeTests()

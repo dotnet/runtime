@@ -27,7 +27,7 @@ namespace System.DirectoryServices.Protocols
     /// where we will have to resolve the result.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class SaslInteractiveChallenge
+    internal sealed class SaslInteractiveChallenge
     {
         public ulong saslChallengeType;
         public string challenge;

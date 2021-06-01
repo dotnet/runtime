@@ -76,6 +76,7 @@ namespace DebuggerTests
         public DateTime dateTime;
         public DateTime DTProp => dateTime.AddMinutes(10);
         public int IntProp => a + 5;
+        public string PropertyThrowException => throw new Exception("error");
         public string SetOnlyProp { set { a = value.Length; } }
         public EvaluateTestsClassWithProperties NullIfAIsNotZero => a != 1908712 ? null : new EvaluateTestsClassWithProperties(0);
         public EvaluateTestsClassWithProperties NewInstance => new EvaluateTestsClassWithProperties(3);

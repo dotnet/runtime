@@ -222,10 +222,9 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [Theory,
-            MemberData(nameof(PathsWithReservedDeviceNames))]
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device names
+        [MemberData(nameof(PathsWithReservedDeviceNames))]
         [OuterLoop]
-        [PlatformSpecific(TestPlatforms.Windows)] // device names
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse(string component)
         {
             Assert.False(Exists(component));

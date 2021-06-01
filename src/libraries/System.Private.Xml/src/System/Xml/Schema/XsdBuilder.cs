@@ -115,7 +115,7 @@ namespace System.Xml.Schema
         };
 
         //required for Parsing QName
-        private class BuilderNamespaceManager : XmlNamespaceManager
+        private sealed class BuilderNamespaceManager : XmlNamespaceManager
         {
             private readonly XmlNamespaceManager _nsMgr;
             private readonly XmlReader _reader;

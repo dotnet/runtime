@@ -740,10 +740,6 @@ private:
           _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
           m_NextDomainAssemblyInSameALC = domainAssembly;
       }
-
-    // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
-    inline bool CanUseWithBindingCache()
-    { STATIC_CONTRACT_WRAPPER; return GetFile()->CanUseWithBindingCache(); }
 };
 
 typedef DomainAssembly::ModuleIterator DomainModuleIterator;

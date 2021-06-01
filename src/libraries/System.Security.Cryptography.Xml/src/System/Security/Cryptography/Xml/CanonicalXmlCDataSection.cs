@@ -7,7 +7,7 @@ using System.Text;
 namespace System.Security.Cryptography.Xml
 {
     // the class that provides node subset state and canonicalization function to XmlCDataSection
-    internal class CanonicalXmlCDataSection : XmlCDataSection, ICanonicalizableNode
+    internal sealed class CanonicalXmlCDataSection : XmlCDataSection, ICanonicalizableNode
     {
         private bool _isInNodeSet;
         public CanonicalXmlCDataSection(string data, XmlDocument doc, bool defaultNodeSetInclusionState) : base(data, doc)

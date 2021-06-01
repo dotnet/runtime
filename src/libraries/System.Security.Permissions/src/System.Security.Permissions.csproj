@@ -4,10 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
-  <!-- We conditionally apply net5.0+ obsoletions -->
-  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
-    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
-  </PropertyGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />
@@ -135,8 +131,6 @@
     <Compile Include="System\Security\Policy\ApplicationVersionMatch.cs" />
     <Compile Include="System\Security\Policy\CodeConnectAccess.cs" />
     <Compile Include="System\Security\Policy\CodeGroup.cs" />
-    <Compile Include="System\Security\Policy\Evidence.cs" />
-    <Compile Include="System\Security\Policy\EvidenceBase.cs" />
     <Compile Include="System\Security\Policy\FileCodeGroup.cs" />
     <Compile Include="System\Security\Policy\FirstMatchCodeGroup.cs" />
     <Compile Include="System\Security\Policy\GacInstalled.cs" />

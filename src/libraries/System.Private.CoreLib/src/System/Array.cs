@@ -18,14 +18,6 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
-        // We impose limits on maximum array length in each dimension to allow efficient
-        // implementation of advanced range check elimination in future.
-        // Keep in sync with vm\gcscan.cpp and HashHelpers.MaxPrimeArrayLength.
-        // The constants are defined in this method: inline SIZE_T MaxArrayLength(SIZE_T componentSize) from gcscan
-        // We have different max sizes for arrays with elements of size 1 for backwards compatibility
-        internal const int MaxArrayLength = 0X7FEFFFFF;
-        internal const int MaxByteArrayLength = 0x7FFFFFC7;
-
         // This is the threshold where Introspective sort switches to Insertion sort.
         // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
         // Large value types may benefit from a smaller number.
@@ -122,6 +114,75 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
+        }
+
+        // The various Get values...
+        public object? GetValue(params int[] indices)
+        {
+            if (indices == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
+            if (Rank != indices.Length)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
+
+            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
+        }
+
+        public unsafe object? GetValue(int index)
+        {
+            if (Rank != 1)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
+
+            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(&index, 1)));
+        }
+
+        public object? GetValue(int index1, int index2)
+        {
+            if (Rank != 2)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
+
+            return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2 }));
+        }
+
+        public object? GetValue(int index1, int index2, int index3)
+        {
+            if (Rank != 3)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
+
+            return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
+        }
+
+        public unsafe void SetValue(object? value, int index)
+        {
+            if (Rank != 1)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
+
+            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(&index, 1)));
+        }
+
+        public void SetValue(object? value, int index1, int index2)
+        {
+            if (Rank != 2)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
+
+            InternalSetValue(value, GetFlattenedIndex(stackalloc int[] { index1, index2 }));
+        }
+
+        public void SetValue(object? value, int index1, int index2, int index3)
+        {
+            if (Rank != 3)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
+
+            InternalSetValue(value, GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
+        }
+
+        public void SetValue(object? value, params int[] indices)
+        {
+            if (indices == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
+            if (Rank != indices.Length)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
+
+            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
         }
 
         public object? GetValue(long index)
@@ -294,7 +355,7 @@ namespace System
 
         void IList.Clear()
         {
-            Array.Clear(this, this.GetLowerBound(0), this.Length);
+            Array.Clear(this);
         }
 
         int IList.IndexOf(object? value)
@@ -1872,6 +1933,17 @@ namespace System
             return true;
         }
 
+        /// <summary>Gets the maximum number of elements that may be contained in an array.</summary>
+        /// <returns>The maximum count of elements allowed in any array.</returns>
+        /// <remarks>
+        /// This property represents a runtime limitation, the maximum number of elements (not bytes)
+        /// the runtime will allow in an array. There is no guarantee that an allocation under this length
+        /// will succeed, but all attempts to allocate a larger array will fail.
+        /// </remarks>
+        public static int MaxLength =>
+            // Keep in sync with `inline SIZE_T MaxArrayLength()` from gchelpers and HashHelpers.MaxPrimeArrayLength.
+            0X7FFFFFC7;
+
         // Private value type used by the Sort methods.
         private readonly struct SorterObjectArray
         {
@@ -2304,15 +2376,9 @@ namespace System
         private static Span<T> UnsafeArrayAsSpan<T>(Array array, int adjustedIndex, int length) =>
             new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawArrayData()), array.Length).Slice(adjustedIndex, length);
 
-#if !CORERT
         public IEnumerator GetEnumerator()
         {
-            int lowerBound = GetLowerBound(0);
-            if (Rank == 1 && lowerBound == 0)
-                return new SZArrayEnumerator(this);
-            else
-                return new ArrayEnumerator(this, lowerBound, Length);
+            return new ArrayEnumerator(this);
         }
-#endif // !CORERT
     }
 }

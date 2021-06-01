@@ -66,32 +66,26 @@ namespace Microsoft.NET.HostModel.Bundle
         // with path-names so that the AppHost can use it in
         // extraction path.
         public readonly string BundleID;
-
-        public const uint CurrentMajorVersion = 2;
-        public readonly uint DesiredMajorVersion;
+        public readonly uint BundleMajorVersion;
         // The Minor version is currently unused, and is always zero
-        public const uint MinorVersion = 0;
-
-        public static string CurrentVersion => $"{CurrentMajorVersion}.{MinorVersion}";
-        public string DesiredVersion => $"{DesiredMajorVersion}.{MinorVersion}";
-
+        public const uint BundleMinorVersion = 0;
         private FileEntry DepsJsonEntry;
         private FileEntry RuntimeConfigJsonEntry;
         private HeaderFlags Flags;
-
         public List<FileEntry> Files;
+        public string BundleVersion => $"{BundleMajorVersion}.{BundleMinorVersion}";
 
-        public Manifest(uint desiredVersion, bool netcoreapp3CompatMode = false)
+        public Manifest(uint bundleMajorVersion, bool netcoreapp3CompatMode = false)
         {
-            DesiredMajorVersion = desiredVersion;
+            BundleMajorVersion = bundleMajorVersion;
             Files = new List<FileEntry>();
             BundleID = Path.GetRandomFileName();
-            Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode: HeaderFlags.None;
+            Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode : HeaderFlags.None;
         }
 
-        public FileEntry AddEntry(FileType type, string relativePath, long offset, long size)
+        public FileEntry AddEntry(FileType type, string relativePath, long offset, long size, long compressedSize, uint bundleMajorVersion)
         {
-            FileEntry entry = new FileEntry(type, relativePath, offset, size);
+            FileEntry entry = new FileEntry(type, relativePath, offset, size, compressedSize, bundleMajorVersion);
             Files.Add(entry);
 
             switch (entry.Type)
@@ -118,12 +112,12 @@ namespace Microsoft.NET.HostModel.Bundle
             long startOffset = writer.BaseStream.Position;
 
             // Write the bundle header
-            writer.Write(DesiredMajorVersion);
-            writer.Write(MinorVersion);
+            writer.Write(BundleMajorVersion);
+            writer.Write(BundleMinorVersion);
             writer.Write(Files.Count);
             writer.Write(BundleID);
 
-            if (DesiredMajorVersion == 2)
+            if (BundleMajorVersion >= 2)
             {
                 writer.Write((DepsJsonEntry != null) ? DepsJsonEntry.Offset : 0);
                 writer.Write((DepsJsonEntry != null) ? DepsJsonEntry.Size : 0);

@@ -170,15 +170,31 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography
 {
-    internal sealed class SafeDsaHandle : Interop.JObjectLifetime.SafeJObjectHandle
+    internal sealed class SafeDsaHandle : SafeKeyHandle
     {
         public SafeDsaHandle()
         {
         }
 
         internal SafeDsaHandle(IntPtr ptr)
-            : base(ptr)
         {
+            SetHandle(ptr);
         }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.JObjectLifetime.DeleteGlobalReference(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        internal static SafeDsaHandle DuplicateHandle(IntPtr handle)
+        {
+            Debug.Assert(handle != IntPtr.Zero);
+
+            return new SafeDsaHandle(Interop.JObjectLifetime.NewGlobalReference(handle));
+        }
+
+        internal override SafeDsaHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
     }
 }

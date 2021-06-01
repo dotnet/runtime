@@ -9,11 +9,11 @@ namespace System.Data
 {
     [System.ComponentModel.TypeConverter(typeof(ConstraintConverter))]
     public abstract partial class Constraint { }
-    internal class ConstraintConverter { }
+    internal sealed class ConstraintConverter { }
 
     [System.ComponentModel.TypeConverter(typeof(RelationshipConverter))]
     public partial class DataRelation { }
-    internal class RelationshipConverter { }
+    internal sealed class RelationshipConverter { }
 
     public partial class DataColumn
     {
@@ -27,8 +27,8 @@ namespace System.Data
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object DefaultValue { get { throw null; } set { } }
     }
-    internal class ColumnTypeConverter { }
-    internal class DefaultValueTypeConverter { }
+    internal sealed class ColumnTypeConverter { }
+    internal sealed class DefaultValueTypeConverter { }
 
     public partial class DataTable
     {
@@ -37,7 +37,7 @@ namespace System.Data
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Data.DataColumn[] PrimaryKey { get { throw null; } set { } }
     }
-    internal class PrimaryKeyTypeConverter { }
+    internal sealed class PrimaryKeyTypeConverter { }
 
     public partial class DataView
     {
@@ -46,18 +46,18 @@ namespace System.Data
         [System.ComponentModel.TypeConverter(typeof(DataTableTypeConverter))]
         public System.Data.DataTable? Table { get { throw null; } set { } }
     }
-    internal class DataTableTypeConverter { }
+    internal sealed class DataTableTypeConverter { }
 }
 namespace System.Data.Common
 {
     [System.ComponentModel.TypeConverterAttribute(typeof(DataColumnMapping.DataColumnMappingConverter))]
     public sealed partial class DataColumnMapping
     {
-        internal class DataColumnMappingConverter { }
+        internal sealed class DataColumnMappingConverter { }
     }
     [System.ComponentModel.TypeConverterAttribute(typeof(DataTableMapping.DataTableMappingConverter))]
     public sealed partial class DataTableMapping
     {
-        internal class DataTableMappingConverter { }
+        internal sealed class DataTableMappingConverter { }
     }
 }

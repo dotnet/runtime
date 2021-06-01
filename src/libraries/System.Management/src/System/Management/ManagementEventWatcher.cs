@@ -600,7 +600,7 @@ namespace System.Management
 
     }
 
-    internal class SinkForEventQuery : IWmiEventSource
+    internal sealed class SinkForEventQuery : IWmiEventSource
     {
         private readonly ManagementEventWatcher eventWatcher;
         private readonly object context;

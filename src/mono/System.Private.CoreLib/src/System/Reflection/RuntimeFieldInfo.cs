@@ -40,7 +40,7 @@ namespace System.Reflection
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeFieldInfo : RtFieldInfo
+    internal sealed class RuntimeFieldInfo : RtFieldInfo
     {
 #pragma warning disable 649
         internal IntPtr klass;

@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization
 #if !FEATURE_SERIALIZATION
     public class CodeTypeReferenceCollection : CollectionBase
 #else
-    internal class CodeTypeReferenceCollection : CollectionBase
+    internal sealed class CodeTypeReferenceCollection : CollectionBase
 #endif
     {
         public CodeTypeReferenceCollection() { }

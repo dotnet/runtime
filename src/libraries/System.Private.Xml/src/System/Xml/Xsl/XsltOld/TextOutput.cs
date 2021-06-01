@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Text;
 
-    internal class TextOutput : SequentialOutput
+    internal sealed class TextOutput : SequentialOutput
     {
         private TextWriter _writer;
 

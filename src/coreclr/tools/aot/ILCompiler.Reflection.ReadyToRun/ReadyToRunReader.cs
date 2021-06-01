@@ -925,7 +925,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             get
             {
                 EnsureMethods();
-                return _pgoInfos.Values;
+
+                if (_pgoInfos != null)
+                    return _pgoInfos.Values;
+                else
+                    return Array.Empty<PgoInfo>();
             }
         }
 

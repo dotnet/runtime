@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
+    internal sealed class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
     {
         internal static readonly MethodInfo InvokeFactoryMethodInfo = GetMethodInfo<Action<Func<IServiceProvider, object>, IServiceProvider>>((a, b) => a.Invoke(b));
         internal static readonly MethodInfo CaptureDisposableMethodInfo = GetMethodInfo<Func<ServiceProviderEngineScope, object, object>>((a, b) => a.CaptureDisposable(b));
@@ -26,9 +26,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));
 
         private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(IDictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
+        private static readonly ParameterExpression Sync = Expression.Variable(typeof(object), ScopeParameter.Name + "sync");
         private static readonly BinaryExpression ResolvedServicesVariableAssignment =
             Expression.Assign(ResolvedServices,
-                Expression.Property(ScopeParameter, nameof(ServiceProviderEngineScope.ResolvedServices)));
+                Expression.Property(
+                    ScopeParameter,
+                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)));
+
+        private static readonly BinaryExpression SyncVariableAssignment =
+            Expression.Assign(Sync,
+                Expression.Property(
+                    ScopeParameter,
+                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic)));
 
         private static readonly ParameterExpression CaptureDisposableParameter = Expression.Parameter(typeof(object));
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
@@ -94,8 +103,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
                     Expression.Block(
-                        new[] { ResolvedServices },
+                        new[] { ResolvedServices, Sync },
                         ResolvedServicesVariableAssignment,
+                        SyncVariableAssignment,
                         BuildScopedExpression(callSite)),
                     ScopeParameter);
             }
@@ -194,7 +204,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // Don't convert if the expression is already assignable
             if (type.IsAssignableFrom(expression.Type)
-                && (!expression.Type.GetTypeInfo().IsValueType || !forceValueTypeConversion))
+                && (!expression.Type.IsValueType || !forceValueTypeConversion))
             {
                 return expression;
             }
@@ -211,7 +221,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // Move off the main stack
         private Expression BuildScopedExpression(ServiceCallSite callSite)
         {
-
             ConstantExpression keyExpression = Expression.Constant(
                 callSite.Cache.Key,
                 typeof(ServiceCacheKey));
@@ -255,9 +264,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // The C# compiler would copy the lock object to guard against mutation.
             // We don't, since we know the lock object is readonly.
             ParameterExpression lockWasTaken = Expression.Variable(typeof(bool), "lockWasTaken");
+            ParameterExpression sync = Sync;
 
-            MethodCallExpression monitorEnter = Expression.Call(MonitorEnterMethodInfo, resolvedServices, lockWasTaken);
-            MethodCallExpression monitorExit = Expression.Call(MonitorExitMethodInfo, resolvedServices);
+            MethodCallExpression monitorEnter = Expression.Call(MonitorEnterMethodInfo, sync, lockWasTaken);
+            MethodCallExpression monitorExit = Expression.Call(MonitorExitMethodInfo, sync);
 
             BlockExpression tryBody = Expression.Block(monitorEnter, blockExpression);
             ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);

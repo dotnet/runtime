@@ -10,7 +10,7 @@ namespace System.Net.Http
 {
     // This class is only used on OS versions where WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY
     // is not supported (i.e. before Win8.1/Win2K12R2) in the WinHttpOpen() function.
-    internal class WinInetProxyHelper
+    internal sealed class WinInetProxyHelper
     {
         private const int RecentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
         private readonly string? _autoConfigUrl, _proxy, _proxyBypass;

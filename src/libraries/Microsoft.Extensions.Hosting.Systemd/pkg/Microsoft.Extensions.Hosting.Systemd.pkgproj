@@ -1,9 +1,0 @@
-<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
-  <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Extensions.Hosting.Systemd.csproj">
-      <SupportedFramework>netcoreapp3.0;net5.0;$(AllXamarinFrameworks)</SupportedFramework>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
-</Project> 
