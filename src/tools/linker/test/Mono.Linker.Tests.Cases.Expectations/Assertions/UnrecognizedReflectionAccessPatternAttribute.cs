@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			Type reflectionMethodType,
 			string reflectionMethodName,
 			Type[] reflectionMethodParameters,
-			object message = null,
+			string[] message = null,
 			string messageCode = null,
 			Type returnType = null)
 		{
@@ -30,7 +30,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			Type reflectionMethodType,
 			string reflectionMethodName,
 			string[] reflectionMethodParameters = null,
-			object message = null,
+			string[] message = null,
 			string messageCode = null,
 			Type returnType = null)
 		{

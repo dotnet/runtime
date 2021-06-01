@@ -95,7 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods), new Type[] { },
-			messageCode: "IL2065", message: nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods))]
+			messageCode: "IL2065", message: new string[] { nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods) })]
 		static void TestUnknownThis ()
 		{
 			var array = new object[1];

@@ -127,7 +127,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnUnknownValue),
 			new Type[] { }, returnType: typeof (Type),
-			messageCode: "IL2063", message: nameof (ReturnUnknownValue))]
+			messageCode: "IL2063", message: new string[] { nameof (ReturnUnknownValue) })]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		Type ReturnUnknownValue ()
 		{

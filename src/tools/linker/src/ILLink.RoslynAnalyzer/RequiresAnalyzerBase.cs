@@ -181,7 +181,7 @@ namespace ILLink.RoslynAnalyzer
 			operationContext.ReportDiagnostic (Diagnostic.Create (
 				RequiresDiagnosticRule,
 				operationContext.Operation.Syntax.GetLocation (),
-				member.ToString (),
+				member.GetDisplayName (),
 				message,
 				url));
 		}

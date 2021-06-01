@@ -143,7 +143,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TypeStore._staticTypeWithPublicParameterlessConstructor = GetUnkownType ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._staticTypeWithPublicParameterlessConstructor), messageCode: "IL2064", message: nameof (TypeStore._staticTypeWithPublicParameterlessConstructor))]
+		[UnrecognizedReflectionAccessPattern (typeof (TypeStore), nameof (TypeStore._staticTypeWithPublicParameterlessConstructor), messageCode: "IL2064", message: new string[] { nameof (TypeStore._staticTypeWithPublicParameterlessConstructor) })]
 		private void WriteUnknownValue ()
 		{
 			var array = new object[1];

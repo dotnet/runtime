@@ -121,9 +121,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (GetTypeDataFlow), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) },
-			messageCode: "IL2072", message: "GetType")]
+			messageCode: "IL2072", message: new string[] { "GetType" })]
 		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetType), new Type[] { typeof (string) },
-			messageCode: "IL2057", message: "System.Type.GetType(String)")]
+			messageCode: "IL2057", message: new string[] { "System.Type.GetType(String)" })]
 		static void TestMultipleMixedValues ()
 		{
 			string typeName = null;
