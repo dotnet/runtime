@@ -270,6 +270,46 @@ namespace System.IO
             return total;
         }
 
+        private static async ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            long total = 0;
+
+            for (int i = 0; i < buffers.Count; i++)
+            {
+                Memory<byte> buffer = buffers[i];
+                int read = await ReadAtOffsetAsync(handle, buffer, fileOffset + total, cancellationToken).ConfigureAwait(false);
+                total += read;
+
+                if (read != buffer.Length)
+                {
+                    break;
+                }
+            }
+
+            return total;
+        }
+
+        private static async ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            long total = 0;
+
+            for (int i = 0; i < buffers.Count; i++)
+            {
+                ReadOnlyMemory<byte> buffer = buffers[i];
+                int written = await WriteAtOffsetAsync(handle, buffer, fileOffset + total, cancellationToken).ConfigureAwait(false);
+                total += written;
+
+                if (written != buffer.Length)
+                {
+                    break;
+                }
+            }
+
+            return total;
+        }
+
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)
         {
             NativeOverlapped nativeOverlapped = default;
