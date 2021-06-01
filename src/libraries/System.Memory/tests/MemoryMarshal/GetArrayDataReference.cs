@@ -13,18 +13,31 @@ namespace System.SpanTests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36885", TestPlatforms.tvOS)]
         public static void GetArrayDataReference_NullInput_ThrowsNullRef()
         {
-            Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference((object[])null));
+            Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference<object>((object[])null));
+            Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference((Array)null));
         }
 
         [Fact]
         public static void GetArrayDataReference_NonEmptyInput_ReturnsRefToFirstElement()
         {
-            int[] theArray = new int[] { 10, 20, 30 };
-            Assert.True(Unsafe.AreSame(ref theArray[0], ref MemoryMarshal.GetArrayDataReference(theArray)));
+            // szarray
+            int[] szArray = new int[] { 10, 20, 30 };
+            Assert.True(Unsafe.AreSame(ref szArray[0], ref MemoryMarshal.GetArrayDataReference(szArray)));
+            Assert.True(Unsafe.AreSame(ref szArray[0], ref Unsafe.As<byte, int>(ref MemoryMarshal.GetArrayDataReference((Array)szArray))));
+
+            // mdarray, rank 2
+            int[,] mdArrayRank2 = new int[3, 2];
+            Assert.True(Unsafe.AreSame(ref mdArrayRank2[0, 0], ref Unsafe.As<byte, int>(ref MemoryMarshal.GetArrayDataReference(mdArrayRank2))));
+
+            // mdarray, custom bounds
+            // there's no baseline way to get a ref to element (10, 20, 30), so we'll deref the result of GetArrayDataReference and compare
+            Array mdArrayCustomBounds = Array.CreateInstance(typeof(int), new[] { 1, 2, 3 }, new int[] { 10, 20, 30 });
+            mdArrayCustomBounds.SetValue(0x12345678, new[] { 10, 20, 30 });
+            Assert.Equal(0x12345678, Unsafe.As<byte, int>(ref MemoryMarshal.GetArrayDataReference(mdArrayCustomBounds)));
         }
 
         [Fact]
-        public static unsafe void GetArrayDataReference_EmptyInput_ReturnsRefToWhereFirstElementWouldBe()
+        public static unsafe void GetArrayDataReference_EmptyInput_ReturnsRefToWhereFirstElementWouldBe_SzArray()
         {
             int[] theArray = new int[0];
 
@@ -32,6 +45,26 @@ namespace System.SpanTests
 
             Assert.True(Unsafe.AsPointer(ref theRef) != null);
             Assert.True(Unsafe.AreSame(ref theRef, ref MemoryMarshal.GetReference(theArray.AsSpan())));
+
+            ref int theMdArrayRef = ref Unsafe.As<byte, int>(ref MemoryMarshal.GetArrayDataReference((Array)theArray)); // szarray passed to generalized Array helper
+            Assert.True(Unsafe.AreSame(ref theRef, ref theMdArrayRef));
+        }
+
+        [Fact]
+        public static unsafe void GetArrayDataReference_EmptyInput_ReturnsRefToWhereFirstElementWouldBe_MdArray()
+        {
+            // First, compute how much distance there is between the start of the object data and the first element
+            // of a baseline (non-empty) array.
+
+            Array baselineArray = Array.CreateInstance(typeof(int), new int[] { 1, 2, 3 }, new int[] { 10, 20, 30 });
+            IntPtr baselineOffset = Unsafe.ByteOffset(ref Unsafe.As<RawObject>(baselineArray).Data, ref MemoryMarshal.GetArrayDataReference(baselineArray));
+
+            // Then, perform the same calculation with an empty array of equal rank, and ensure the offsets are identical.
+
+            Array emptyArray = Array.CreateInstance(typeof(int), new int[] { 0, 0, 0 }, new int[] { 10, 20, 30 });
+            IntPtr emptyArrayOffset = Unsafe.ByteOffset(ref Unsafe.As<RawObject>(emptyArray).Data, ref MemoryMarshal.GetArrayDataReference(emptyArray));
+
+            Assert.Equal(baselineOffset, emptyArrayOffset);
         }
 
         [Fact]
@@ -44,6 +77,11 @@ namespace System.SpanTests
             ref object refObj = ref MemoryMarshal.GetArrayDataReference<object>(strArr);
 
             Assert.True(Unsafe.AreSame(ref refObj, ref Unsafe.As<string, object>(ref strArr[0])));
+        }
+
+        private sealed class RawObject
+        {
+            internal byte Data;
         }
     }
 }

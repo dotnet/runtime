@@ -7228,7 +7228,7 @@ bool getILIntrinsicImplementationForMemoryMarshal(MethodDesc * ftn,
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_SZARRAY)->GetMemberDef())
     {
         mdToken tokRawSzArrayData = CoreLibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
 
