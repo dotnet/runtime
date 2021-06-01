@@ -956,6 +956,10 @@ bool ParseOptions(int argc, wchar_t* argv[])
                 return false;
             }
         }
+        else
+        {
+            return false;
+        }
         i++;
     }
     return true;
