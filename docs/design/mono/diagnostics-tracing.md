@@ -43,10 +43,6 @@ Android runtime pack have the following component libraries included. For defaul
 libmono-component-diagnostics_tracing.so
 libmono-component-diagnostics_tracing-static.a
 libmono-component-diagnostics_tracing-stub-static.a
-
-libmono-component-hot_reload.so
-libmono-component-hot_reload-static.a
-libmono-component-hot_reload-stub-static.a
 ```
 
 ### iOS
@@ -60,9 +56,6 @@ iOS runtime pack have the following component libraries included. Using `libmono
 ```
 libmono-component-diagnostics_tracing-static.a
 libmono-component-diagnostics_tracing-stub-static.a
-
-libmono-component-hot_reload-static.a
-libmono-component-hot_reload-stub-static.a
 ```
 
 ## Run an application including diagnostic tracing support
