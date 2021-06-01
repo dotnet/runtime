@@ -14,6 +14,8 @@
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
+    <Compile Include="System\IO\Hashing\XxHash64.cs" />
+    <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
   </ItemGroup>
   <Choose>
