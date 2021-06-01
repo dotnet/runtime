@@ -91,7 +91,7 @@
 
     <ItemGroup>
       <SupportedPackage>
-        <ProjectDir>$(TestProjectDir)%(Identity)/%(TargetFrameworkShort)/</ProjectDir>
+        <ProjectDir>$(TestProjectDir)%(Identity)/</ProjectDir>
       </SupportedPackage>
       <SupportedPackage>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
@@ -114,23 +114,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="UpdateRuntimeIdentifiers"
-          AfterTargets="GetSupportedPackages"
-          Inputs="%(SupportedPackage.Identity);%(SupportedPackage.TargetFrameworkShort)"
-          Outputs="unused">
-    <ItemGroup>
-      <_supportedPackageRuntimes Remove="@(_supportedPackageRuntimes)" />
-      <_supportedPackageRuntimes Include="%(SupportedPackage.RuntimeIdentifiers)" />
-
-      <_supportedPackageRuntimesToRemove Include="@(_supportedPackageRuntimes)" Exclude="@(RuntimesToInclude)" Condition="'@(RuntimesToInclude)' != ''" />
-      <_filteredSupportedPackageRuntimes Include="@(_supportedPackageRuntimes)" Exclude="@(RuntimesToExclude);@(_supportedPackageRuntimesToRemove)" />
-
-      <SupportedPackage>
-        <RuntimeIdentifiers>@(_filteredSupportedPackageRuntimes)</RuntimeIdentifiers>
-      </SupportedPackage>
-    </ItemGroup>
-  </Target>
-
   <Target Name="GenerateProjects"
           DependsOnTargets="GetSupportedPackages;CreateTestDir"
           Inputs="@(TestPackagesPath);$(ProjectTemplate)"
@@ -140,15 +123,14 @@
       <_projectFile>%(SupportedPackage.ProjectFile)</_projectFile>
       <_packageId>%(SupportedPackage.Identity)</_packageId>
       <_packageVersion>%(SupportedPackage.Version)</_packageVersion>
-      <_projectTFM>%(SupportedPackage.TargetFrameworkShort)</_projectTFM>
-      <_projectRIDs>%(SupportedPackage.RuntimeIdentifiers)</_projectRIDs>
+      <_projectTFMs>@(SupportedPackage->'%(TargetFrameworkShort)')</_projectTFMs>
     </PropertyGroup>
 
     <MakeDir Directories="$(_projectDir)" />
-    <!-- Update project.json template -->
+    <!-- Update project.csproj template -->
     <WriteLinesToFile
       File="$(_projectFile)"
-      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TFM}', $(_projectTFM)).Replace('{RIDs}', '$(_projectRIDs)'))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TFMs}', $(_projectTFMs)))"
       Overwrite="true" />
     <Message Text="Generated $(_projectFile)" />
   </Target>
