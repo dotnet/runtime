@@ -142,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(RemoteServersAndLargeContentSizes))]
         public async Task PostLargeContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer, int contentLength)

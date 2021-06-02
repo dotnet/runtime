@@ -332,7 +332,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -360,7 +360,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {

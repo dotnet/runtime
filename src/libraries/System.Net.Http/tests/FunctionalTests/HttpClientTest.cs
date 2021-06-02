@@ -212,6 +212,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Failing connection attempts take long on windows")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
         public async Task GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo()
         {
             using Socket portReserver = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -1196,7 +1197,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
