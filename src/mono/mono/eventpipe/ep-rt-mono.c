@@ -165,9 +165,15 @@ struct _AssemblyEventData {
 typedef struct _AssemblyEventData AssemblyEventData;
 
 // Event flags.
-#define THREAD_FLAG_GC_SPECIAL 0x00000001
-#define THREAD_FLAG_FINALIZER 0x00000002
-#define THREAD_FLAG_THREADPOOL_WORKER 0x00000004
+#define THREAD_FLAGS_GC_SPECIAL 0x00000001
+#define THREAD_FLAGS_FINALIZER 0x00000002
+#define THREAD_FLAGS_THREADPOOL_WORKER 0x00000004
+
+#define EXCEPTION_THROWN_FLAGS_HAS_INNER 0x1
+#define EXCEPTION_THROWN_FLAGS_IS_NESTED 0x2
+#define EXCEPTION_THROWN_FLAGS_IS_RETHROWN 0x4
+#define EXCEPTION_THROWN_FLAGS_IS_CSE 0x8
+#define EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT 0x10
 
 /*
  * Forward declares of all static functions.
@@ -286,6 +292,13 @@ uint32_t
 get_type_start_id (MonoType *type);
 
 static
+gboolean
+get_exception_ip_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	void *data);
+
+static
 void
 profiler_jit_begin (
 	MonoProfiler *prof,
@@ -357,6 +370,12 @@ void
 profiler_class_loaded (
 	MonoProfiler *prof,
 	MonoClass *klass);
+
+static
+void
+profiler_exception_throw (
+	MonoProfiler *prof,
+	MonoObject *exception);
 
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
@@ -1762,9 +1781,9 @@ ep_rt_mono_write_event_method_load (
 				method_code_size,
 				method_token,
 				method_flags | METHOD_FLAGS_EXTENT_HOT_SECTION,
-				method_namespace,
+				method_namespace ? method_namespace : "",
 				method_name,
-				method_signature,
+				method_signature ? method_signature : "",
 				clr_instance_get_id (),
 				NULL,
 				NULL);
@@ -2027,14 +2046,14 @@ ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
 		switch (mono_thread_info_get_flags (thread->thread_info)) {
 		case MONO_THREAD_INFO_FLAGS_NO_GC:
 		case MONO_THREAD_INFO_FLAGS_NO_SAMPLE:
-			flags |= THREAD_FLAG_GC_SPECIAL;
+			flags |= THREAD_FLAGS_GC_SPECIAL;
 		}
 
 		if (mono_gc_is_finalizer_thread (thread))
-			flags |= THREAD_FLAG_FINALIZER;
+			flags |= THREAD_FLAGS_FINALIZER;
 
 		if (thread->threadpool_thread)
-			flags |= THREAD_FLAG_THREADPOOL_WORKER;
+			flags |= THREAD_FLAGS_THREADPOOL_WORKER;
 	}
 
 	FireEtwThreadCreated (
@@ -2268,6 +2287,74 @@ ep_rt_mono_write_event_type_load_stop (MonoType *type)
 }
 
 static
+gboolean
+get_exception_ip_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	void *data)
+{
+	*(uintptr_t *)data = (uintptr_t)MONO_CONTEXT_GET_IP (ctx);
+	return TRUE;
+}
+
+bool
+ep_rt_mono_write_event_exception_thrown (MonoObject *object)
+{
+	if (!EventEnabledExceptionThrown_V1 ())
+		return true;
+
+	if (object) {
+		ERROR_DECL (error);
+
+		char *type_name = NULL;
+		char *exception_message = NULL;
+		uint16_t flags = 0;
+		uint32_t hresult = 0;
+		uintptr_t ip = 0;
+
+		if (mono_object_isinst_checked ((MonoObject *) object, mono_get_exception_class (), error)) {
+			MonoException *exception = (MonoException *)object;
+			flags |= EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT;
+			if (exception->inner_ex)
+				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
+			MonoStringHandle exception_message_handle = MONO_HANDLE_NEW (MonoString, exception->message);
+			exception_message = mono_string_handle_to_utf8 (exception_message_handle, error);
+			hresult = exception->hresult;
+
+			MonoArray *captured_traces = (MonoArray *)exception->captured_traces;
+			if (captured_traces && mono_array_length_internal (captured_traces) != 0) {
+				MonoStackTrace *trace = mono_array_get_fast (captured_traces, MonoStackTrace *, 0);
+				if (trace && trace->frames && mono_array_length_internal (trace->frames) != 0) {
+					MonoStackFrame *frame = mono_array_get_fast (trace->frames, MonoStackFrame *, 0);
+					if (frame)
+						ip = (uintptr_t)(frame->method_address + frame->native_offset);
+				}
+			}
+		}
+
+		if (ip == 0)
+			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
+
+		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_get_class (object)), MONO_TYPE_NAME_FORMAT_IL);
+
+		FireEtwExceptionThrown_V1 (
+			type_name,
+			exception_message,
+			(void *)&ip,
+			hresult,
+			flags,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		g_free (exception_message);
+		g_free (type_name);
+	}
+
+	return true;
+}
+
+static
 void
 profiler_jit_begin (
 	MonoProfiler *prof,
@@ -2379,18 +2466,19 @@ profiler_class_loaded (
 	ep_rt_mono_write_event_type_load_stop (m_class_get_byval_arg (klass));
 }
 
-//no domain load/unload only one.
-//
-//unload module,
-//unload assembly,
-//
-//jit_code_buffer -> EventEnabledMethodJitMemoryAllocatedForCode
-//class_loaded -> type load
-//vtable_loaded -> type load ?
-//
-//EventEnabledThreadCreated
-//FireEtwThreadTerminated
+static
+void
+profiler_exception_throw (
+	MonoProfiler *prof,
+	MonoObject *exception)
+{
+	ep_rt_mono_write_event_exception_thrown (exception);
+}
 
+// exception clauses.
+//
+// jit_code_buffer -> EventEnabledMethodJitMemoryAllocatedForCode
+//
 
 void
 EventPipeEtwCallbackDotNETRuntime (
@@ -2422,11 +2510,13 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, profiler_class_loading);
 			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
 			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
+			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, profiler_exception_throw);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
-			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
-			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
-			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, profiler_class_loading);
+			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, NULL);
