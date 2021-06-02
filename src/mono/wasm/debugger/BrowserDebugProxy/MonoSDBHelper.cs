@@ -536,6 +536,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.proxy = proxy;
         }
 
+        public void ClearCache()
+        {
+            valueTypes = new Dictionary<int, ValueTypeClass>();
+            pointerValues = new Dictionary<int, PointerValue>();
+        }
+
         public async Task<bool> SetProtocolVersion(SessionId sessionId, CancellationToken token)
         {
             var command_params = new MemoryStream();

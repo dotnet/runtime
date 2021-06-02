@@ -370,11 +370,13 @@ static gboolean buffer_replies;
 
 #ifndef TARGET_WASM
 #define GET_TLS_DATA(thread) \
+	DebuggerTlsData *tls; \
 	mono_loader_lock(); \
 	tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread); \
 	mono_loader_unlock();
 #else
 #define GET_TLS_DATA(thread) \
+	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
 #endif
 
@@ -4513,7 +4515,6 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	StackFrame **frames = NULL;
 	int nframes = 0;
 	
-	DebuggerTlsData *tls;
 	GET_TLS_DATA(ss_req->thread);
 	
 	g_assert (tls);
@@ -4771,7 +4772,6 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 	GSList *events;
 	MonoJitInfo *ji, *catch_ji;
 	EventInfo ei;
-	DebuggerTlsData *tls = NULL;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	GET_TLS_DATA(thread);
 	if (tls != NULL) {
@@ -7159,7 +7159,6 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			DebuggerTlsData* tls;
 			GET_TLS_DATA(THREAD_TO_INTERNAL(step_thread));
 			
 			g_assert (tls);
@@ -8879,7 +8878,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_THREAD_GET_CONTEXT: {
-		DebuggerTlsData *tls;
 		int start_frame;
 		while (!is_suspended ()) {
 			if (suspend_count)
@@ -8900,7 +8898,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_THREAD_GET_FRAME_INFO: {
-		DebuggerTlsData *tls;
 		int i, start_frame, length;
 
 		// Wait for suspending if it already started
@@ -9093,7 +9090,6 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoThread *thread_obj;
 	MonoInternalThread *thread;
 	int pos, i, len, frame_idx;
-	DebuggerTlsData *tls;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
 	MonoMethodSignature *sig;

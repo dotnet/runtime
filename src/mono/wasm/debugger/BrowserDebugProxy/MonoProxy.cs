@@ -922,6 +922,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             //discard managed frames
+            sdbHelper.ClearCache();
             GetContext(msg_id).ClearState();
         }
 
@@ -936,6 +937,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var step = await sdbHelper.Step(msg_id, context.ThreadId, kind, token);
             if (step == false) {
+                sdbHelper.ClearCache();
                 context.ClearState();
                 await SendCommand(msg_id, "Debugger.stepOut", new JObject(), token);
                 return false;
