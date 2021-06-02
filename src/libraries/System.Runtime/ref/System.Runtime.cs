@@ -9073,6 +9073,30 @@ namespace System.Reflection
         public virtual System.Type ResolveType(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
         public override string ToString() { throw null; }
     }
+    public sealed class NullabilityInfoContext
+    {
+        public System.Reflection.NullabilityInfo Create(System.Reflection.EventInfo eventInfo) { throw null; }
+        public System.Reflection.NullabilityInfo Create(System.Reflection.FieldInfo fieldInfo) { throw null; }
+        public System.Reflection.NullabilityInfo Create(System.Reflection.ParameterInfo parameterInfo) { throw null; }
+        public System.Reflection.NullabilityInfo Create(System.Reflection.PropertyInfo propertyInfo) { throw null; }
+    }
+    public sealed class NullabilityInfo
+    {
+        internal NullabilityInfo(System.Type type, System.Reflection.NullableState readState, System.Reflection.NullableState writeState, System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? arrayElements, System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? typeArguments) { }
+        public System.Type Type { get; }
+        public System.Reflection.NullableState ReadState { get; }
+        public System.Reflection.NullableState WriteState { get; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? ArrayElements { get; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? TypeArguments { get; }
+    }
+    public enum NullableState
+    {
+        Unknown,
+        NonNullable,
+        Nullable,
+        NotNullableWhen,
+        NullableWhen
+    }
     public delegate System.Reflection.Module ModuleResolveEventHandler(object sender, System.ResolveEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class ObfuscateAssemblyAttribute : System.Attribute
