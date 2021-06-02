@@ -398,7 +398,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length);
+                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
 
             return Buffer.Substring(Offset + offset, length);
@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length);
+                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
 
             return new StringSegment(Buffer, Offset + offset, length);
@@ -695,7 +695,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart = ExceptionArgument.offset)
+        private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart)
         {
             throw GetInvalidArgumentsException(HasValue);
 
