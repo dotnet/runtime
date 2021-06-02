@@ -122,7 +122,8 @@ var BindingSupportLib = {
 
 			var bind_runtime_method = function (method_name, signature) {
 				var method = get_method (method_name);
-				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
+				var result = BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
+				return result;
 			};
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
@@ -137,6 +138,8 @@ var BindingSupportLib = {
 
 			// HACK: This method needs to be the absolute first one we bind, because
 			//  the process of binding other methods relies on it.
+			if (this._has_bound_any_methods)
+				throw new Error("MakeMarshalSignatureInfo must be the first method bound");
 			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iiii");
 
 			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "is");
@@ -1900,6 +1903,7 @@ var BindingSupportLib = {
 
 		bind_method: function (method, this_arg, args_marshal, friendly_name) {
 			this.bindings_lazy_init ();
+			this._has_bound_any_methods = true;
 
 			this_arg = this_arg | 0;
 
