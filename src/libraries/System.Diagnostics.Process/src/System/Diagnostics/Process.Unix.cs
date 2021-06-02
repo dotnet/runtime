@@ -1059,7 +1059,7 @@ namespace System.Diagnostics
                 Debug.Assert(s_processStartLock.IsReadLockHeld);
 
                 // At least one child is using the terminal.
-                Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: true);
+                Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: 1);
             }
             else
             {
@@ -1068,7 +1068,7 @@ namespace System.Diagnostics
                 if (childrenUsingTerminalRemaining == 0)
                 {
                     // No more children are using the terminal.
-                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
+                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: 0);
                 }
             }
         }

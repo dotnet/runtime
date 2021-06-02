@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SchedSetAffinity", SetLastError = true)]
-        internal static extern int SchedSetAffinity(int pid, ref IntPtr mask);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SchedSetAffinity", SetLastError = true)]
+        internal static partial int SchedSetAffinity(int pid, ref IntPtr mask);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SchedGetAffinity", SetLastError = true)]
-        internal static extern int SchedGetAffinity(int pid, out IntPtr mask);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SchedGetAffinity", SetLastError = true)]
+        internal static partial int SchedGetAffinity(int pid, out IntPtr mask);
     }
 }
