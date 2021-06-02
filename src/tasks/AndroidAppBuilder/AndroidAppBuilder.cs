@@ -79,6 +79,8 @@ public class AndroidAppBuilderTask : Task
 
     public bool ForceInterpreter { get; set; }
 
+    public bool UseLLVM { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -108,6 +110,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
         apkBuilder.RuntimeComponents = RuntimeComponents;
         apkBuilder.DiagnosticPorts = DiagnosticPorts;
+        apkBuilder.UseLLVM = UseLLVM;
         apkBuilder.Assemblies = Assemblies;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
 

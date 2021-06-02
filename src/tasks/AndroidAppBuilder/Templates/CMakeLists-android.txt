@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 project(monodroid)
 
 enable_language(C ASM)
@@ -14,7 +16,9 @@ add_library(
     SHARED
     monodroid.c
     %AotModulesSource%
-    %AotSources%)
+)
+
+%AotSources%
 
 %Defines%
 
