@@ -242,6 +242,9 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm_win
+      container:
+        image: windowsservercore-2004-helix-webassembly-amd64-20210422161149-94a50b5
+        registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
