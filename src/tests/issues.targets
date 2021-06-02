@@ -1037,6 +1037,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
             <Issue>https://github.com/dotnet/runtime/issues/48190</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/AvxVnni/**">
+            <Issue>Mono crashes when new unsupported intrinsic groups are added, https://github.com/dotnet/runtime/issues/53078</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/AvxVnni_Vector128/**">
+            <Issue>Mono crashes when new unsupported intrinsic groups are added, https://github.com/dotnet/runtime/issues/53078</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/DynamicPgo/**">
             <Issue>Mono doesn't have a dynamic pgo or tiered compilation infrastructure</Issue>
         </ExcludeList>
