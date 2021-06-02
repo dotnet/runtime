@@ -216,6 +216,13 @@ set(arm_sources
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
+set(s390x_sources
+    mini-s390x.c
+    mini-s390x.h
+    exceptions-s390x.c
+    tramp-s390x.c
+    cpu-s390x.h)
+
 set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
@@ -233,6 +240,8 @@ elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
+elseif(TARGET_S390X)
+set(arch_sources ${s390x_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
 endif()
@@ -389,6 +398,7 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h CONTENT [=[cons
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h
   VERBATIM
 )
 
@@ -407,6 +417,12 @@ add_custom_command(
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.md
   VERBATIM
 )
 

@@ -152,10 +152,8 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_write_event_ee_startup_start_func write_event_ee_startup_start;
 } MonoComponentEventPipe;
 
-#ifdef STATIC_COMPONENTS
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void);
-#endif
 
 #endif /*_MONO_COMPONENT_EVENT_PIPE_H*/

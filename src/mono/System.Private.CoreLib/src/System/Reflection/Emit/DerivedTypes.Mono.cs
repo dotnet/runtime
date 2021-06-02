@@ -228,11 +228,16 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -287,7 +292,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }

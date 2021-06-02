@@ -77,6 +77,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
+            Assert.Contains("Argument 'foo' is not referenced from the logging message", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -395,6 +396,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.MissingLoggerArgument.Id, diagnostics[0].Id);
+            Assert.Contains("One of the arguments to the static logging method 'M1' must implement the Microsoft.Extensions.Logging.ILogger interface", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]

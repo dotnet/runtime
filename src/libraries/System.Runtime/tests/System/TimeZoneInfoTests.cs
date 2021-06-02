@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -124,6 +125,7 @@ namespace System.Tests
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalTheory(nameof(IsEnglishUILanguage))]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
         {
             // Edge case - Optionally allow some characters to be absent in the display name.
@@ -2621,6 +2623,7 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Argentina/Catamarca")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
             if (PlatformDetection.ICUVersion.Major >= 52)
@@ -2641,6 +2644,7 @@ namespace System.Tests
         public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
 
         [ConditionalFact(nameof(SupportIanaNamesConversion))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
@@ -2670,6 +2674,7 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Buenos_Aires")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IdsConversionsTest(string windowsId, string ianaId)
         {
             Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
@@ -2691,6 +2696,20 @@ namespace System.Tests
         [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
         [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
         [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
+        // lowercased region name cases:
+        [InlineData("Cen. Australia Standard Time", "Australia/Adelaide", "au")]
+        [InlineData("AUS Central Standard Time", "Australia/Darwin", "au")]
+        [InlineData("E. Australia Standard Time", "Australia/Brisbane", "au")]
+        [InlineData("AUS Eastern Standard Time", "Australia/Sydney", "au")]
+        [InlineData("Tasmania Standard Time", "Australia/Hobart", "au")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "Es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "eS")]
+        [InlineData("GMT Standard Time", "Europe/London", "gb")]
+        [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
+        [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
+        [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
         {
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
@@ -2715,7 +2734,31 @@ namespace System.Tests
                 Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expected display name for Pacific time zone");
 
             }).Dispose();
+        }
 
+        private static readonly CultureInfo[] s_CulturesForWindowsNlsDisplayNamesTest = WindowsUILanguageHelper.GetInstalledWin32CulturesWithUniqueLanguages();
+        private static bool CanTestWindowsNlsDisplayNames => RemoteExecutor.IsSupported && s_CulturesForWindowsNlsDisplayNamesTest.Length > 1;
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(nameof(CanTestWindowsNlsDisplayNames))]
+        public static void TestWindowsNlsDisplayNames()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                CultureInfo[] cultures = s_CulturesForWindowsNlsDisplayNamesTest;
+
+                CultureInfo.CurrentUICulture = cultures[0];
+                TimeZoneInfo.ClearCachedData();
+                TimeZoneInfo tz1 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
+
+                CultureInfo.CurrentUICulture = cultures[1];
+                TimeZoneInfo.ClearCachedData();
+                TimeZoneInfo tz2 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
+
+                Assert.True(tz1.DisplayName != tz2.DisplayName, $"The display name '{tz1.DisplayName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+                Assert.True(tz1.StandardName != tz2.StandardName, $"The standard name '{tz1.StandardName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+                Assert.True(tz1.DaylightName != tz2.DaylightName, $"The daylight name '{tz1.DaylightName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+            }).Dispose();
         }
 
         [Theory]
@@ -2977,6 +3020,66 @@ namespace System.Tests
                     TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardDisplayName, daylightDisplayName, adjustmentRules);
                 }
             });
+        }
+
+        //  This helper class is used to retrieve information about installed OS languages from Windows.
+        //  Its methods returns empty when run on non-Windows platforms.
+        private static class WindowsUILanguageHelper
+        {
+            public static CultureInfo[] GetInstalledWin32CulturesWithUniqueLanguages() =>
+                GetInstalledWin32Cultures()
+                    .GroupBy(c => c.TwoLetterISOLanguageName)
+                    .Select(g => g.First())
+                    .ToArray();
+
+            public static unsafe CultureInfo[] GetInstalledWin32Cultures()
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    return new CultureInfo[0];
+                }
+
+                var list = new List<CultureInfo>();
+                GCHandle handle = GCHandle.Alloc(list);
+                try
+                {
+                    EnumUILanguages(
+                        &EnumUiLanguagesCallback,
+                        MUI_ALL_INSTALLED_LANGUAGES | MUI_LANGUAGE_NAME,
+                        GCHandle.ToIntPtr(handle));
+                }
+                finally
+                {
+                    handle.Free();
+                }
+
+                return list.ToArray();
+            }
+
+            [UnmanagedCallersOnly]
+            private static unsafe int EnumUiLanguagesCallback(char* lpUiLanguageString, IntPtr lParam)
+            {
+                // native string is null terminated
+                var cultureName = new string(lpUiLanguageString);
+
+                try
+                {
+                    var handle = GCHandle.FromIntPtr(lParam);
+                    var list = (List<CultureInfo>) handle.Target;
+                    list!.Add(CultureInfo.GetCultureInfo(cultureName));
+                    return 1;
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+
+            private const uint MUI_LANGUAGE_NAME = 0x8;
+            private const uint MUI_ALL_INSTALLED_LANGUAGES = 0x20;
+
+            [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
+            private static extern unsafe bool EnumUILanguages(delegate* unmanaged<char*, IntPtr, int> lpUILanguageEnumProc, uint dwFlags, IntPtr lParam);
         }
     }
 }

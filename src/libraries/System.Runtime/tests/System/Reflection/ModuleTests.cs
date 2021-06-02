@@ -303,6 +303,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Fields))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ResolveField(FieldInfo t)
         {
             Assert.Equal(t, Module.ResolveField(t.MetadataToken));

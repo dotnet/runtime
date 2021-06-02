@@ -600,7 +600,7 @@ namespace System.Tests
             yield return new object[] { @"\\unchost/path1/path2", "/path1/path2", "", "" };
             yield return new object[] { @"\/unchost/path1/path2", "/path1/path2", "", "" };
 
-            // Implict UNC with backslash in path
+            // Implicit UNC with backslash in path
             if (s_isWindowsSystem) // Unix UNC paths must start with '\'
             {
                 yield return new object[] { @"//unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };

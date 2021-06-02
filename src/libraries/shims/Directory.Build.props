@@ -1,15 +1,18 @@
 <Project>
-  <Import Project="..\Directory.Build.props" />
 
+  <Import Project="..\Directory.Build.props" />
   <Import Project="netfxreference.props" />
 
   <PropertyGroup>
-    <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
-    <IsNETCoreAppRef>true</IsNETCoreAppRef>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
+    <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
+    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNetFrameworkReferenceAssembliesVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
+    <NETStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</NETStandard21RefPath>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
+    <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
+    <IsNETCoreAppRef>true</IsNETCoreAppRef>
+
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <!-- ensure the desktop compat shims reference the lowest possible version of dependencies
@@ -18,21 +21,21 @@
          netstandard.dll doesn't need to do this since it has no dangling dependencies -->
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <HasMatchingContract>true</HasMatchingContract>
-    <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
-    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNetFrameworkReferenceAssembliesVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
-    <NETStandard21RefPath>$(NuGetPackageRoot)netstandard.library.ref\$(NETStandardLibraryRefVersion)\ref\netstandard2.1\</NETStandard21RefPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or
+                        '$(MSBuildProjectName)' == 'mscorlib' or
+                        '$(MSBuildProjectName)' == 'netstandard'">
     <!-- Omit System.Void since C# doesn't permit the use of the `System.Void`
          typename and instead requires callers to use the `void` keyword. -->
     <GenFacadesOmitType Include="System.Void" />
     <Compile Include="$(MSBuildThisFileDirectory)System.Void.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
     <!-- include any forwards needed by both generated and manual projects -->
     <Compile Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')"
                  Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs" />
   </ItemGroup>
+
 </Project>

@@ -145,11 +145,13 @@ void Compiler::fgInit()
 #ifdef DEBUG
     if (!compIsForInlining())
     {
-        if ((JitConfig.JitNoStructPromotion() & 1) == 1)
+        const int noStructPromotionValue = JitConfig.JitNoStructPromotion();
+        assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
+        if (noStructPromotionValue == 1)
         {
             fgNoStructPromotion = true;
         }
-        if ((JitConfig.JitNoStructPromotion() & 2) == 2)
+        if (noStructPromotionValue == 2)
         {
             fgNoStructParamPromotion = true;
         }
@@ -395,11 +397,18 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-
-        //
-        // Remove the old edge [oldSwitchBlock => bJump]
-        //
-        fgRemoveRefPred(bJump, oldSwitchBlock);
+        if (bJump->countOfInEdges() > 0)
+        {
+            //
+            // Remove the old edge [oldSwitchBlock => bJump]
+            //
+            fgRemoveRefPred(bJump, oldSwitchBlock);
+        }
+        else
+        {
+            // bJump->countOfInEdges() must not be zero after preds are calculated.
+            assert(!fgComputePredsDone);
+        }
 
         //
         // Create the new edge [newSwitchBlock => bJump]
@@ -1143,9 +1152,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 
-                    if (actualOpcode != CEE_CALLVIRT)
+                    if (actualOpcode != CEE_CALLVIRT && actualOpcode != CEE_CALL && actualOpcode != CEE_LDFTN)
                     {
-                        BADCODE("constrained. has to be followed by callvirt");
+                        BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                     }
                 }
                 goto OBSERVE_OPCODE;
@@ -1912,11 +1921,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     do
     {
-        unsigned   jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
-        unsigned   bbFlags = 0;
-        BBswtDesc* swtDsc  = nullptr;
-        unsigned   nxtBBoffs;
-        OPCODE     opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        unsigned        jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
+        BasicBlockFlags bbFlags = BBF_EMPTY;
+        BBswtDesc*      swtDsc  = nullptr;
+        unsigned        nxtBBoffs;
+        OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
         BBjumpKinds jmpKind = BBJ_NONE;
 
@@ -3058,7 +3067,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_LEAVE: // block always jumps to the target, maybe out of guarded
                             // region. Used temporarily until importing
-                fgControlFlowPermitted(blk, blk->bbJumpDest, TRUE);
+                fgControlFlowPermitted(blk, blk->bbJumpDest, true);
 
                 break;
 
@@ -3091,7 +3100,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
  * Consider removing this check here if we  can do it cheaply during importing
  */
 
-void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, BOOL isLeave)
+void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, bool isLeave)
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 

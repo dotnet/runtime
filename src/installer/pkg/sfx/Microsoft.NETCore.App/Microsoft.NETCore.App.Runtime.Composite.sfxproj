@@ -1,0 +1,37 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <ArchiveName>dotnet-runtime-internal-composite</ArchiveName>
+    <OverridePackageId>$(SharedFrameworkName).Composite</OverridePackageId>
+    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).Composite.PGO</OverridePackageId>
+    <GenerateSymbolsArchive>true</GenerateSymbolsArchive>
+    <SymbolsArchiveName>dotnet-runtime-composite-symbols</SymbolsArchiveName>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(PgoInstrument)' != ''">true</SkipBuild>
+    <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
+    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion> <!-- The composite image does not have a FileVersion resource -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Composite.r2r.dll" IsNative="true" />
+    <PublishReadyToRunCompositeExclusions Include="System.Reflection.Metadata.dll" />
+    <PublishReadyToRunCompositeExclusions Include="System.Collections.Immutable.dll" />
+  </ItemGroup>
+
+ <ItemGroup>
+    <!-- Exclude the composite image from the closure check as it includes references to already excluded shim assemblies -->
+    <ExcludeFromClosure Include="Microsoft.NETCore.App.Composite.r2r" />
+ </ItemGroup>
+
+  <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <ItemGroup>
+    <PublishReadyToRunCrossgen2ExtraArgsList Include="--compositekeyfile:$(AssemblyOriginatorKeyFile)"/>
+  </ItemGroup>
+
+  <Import Project="ReadyToRun.targets" />
+</Project>

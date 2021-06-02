@@ -99,9 +99,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? AotModulesTableLanguage { get; set; } = nameof(MonoAotModulesTableLanguage.C);
 
     /// <summary>
-    /// Choose between 'Normal', 'Full', 'FullInterp', 'LLVMOnly', 'LLVMOnlyInterp'.
+    /// Choose between 'Normal', 'JustInterp', 'Full', 'FullInterp', 'LLVMOnly', 'LLVMOnlyInterp'.
     /// LLVMOnly means to use only LLVM for FullAOT, AOT result will be a LLVM Bitcode file (the cross-compiler must be built with LLVM support)
     /// The "interp" options ('LLVMOnlyInterp' and 'FullInterp') mean generate necessary support to fall back to interpreter if AOT code is not possible for some methods.
+    /// The difference between 'JustInterp' and 'FullInterp' is that 'FullInterp' will AOT all the methods in the given assemblies, while 'JustInterp' will only AOT the wrappers and trampolines necessary for the runtime to execute the managed methods using the interpreter and to interoperate with P/Invokes and unmanaged callbacks.
     /// </summary>
     public string Mode { get; set; } = nameof(MonoAotMode.Normal);
 
@@ -327,7 +328,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 aotArgs.Add("full");
             }
 
-            if (parsedAotMode == MonoAotMode.FullInterp)
+            if (parsedAotMode == MonoAotMode.FullInterp || parsedAotMode == MonoAotMode.JustInterp)
             {
                 aotArgs.Add("interp");
             }
@@ -509,6 +510,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 public enum MonoAotMode
 {
     Normal,
+    JustInterp,
     Full,
     FullInterp,
     LLVMOnly,

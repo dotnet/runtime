@@ -6,6 +6,7 @@
 
 namespace System.Security.Cryptography
 {
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class AesCryptoServiceProvider : System.Security.Cryptography.Aes
     {
@@ -73,6 +74,7 @@ namespace System.Security.Cryptography
         NoPrompt = 64,
         CreateEphemeralKey = 128,
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DESCryptoServiceProvider : System.Security.Cryptography.DES
     {
@@ -128,6 +130,7 @@ namespace System.Security.Cryptography
         Exchange = 1,
         Signature = 2,
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class MD5CryptoServiceProvider : System.Security.Cryptography.MD5
     {
@@ -164,6 +167,7 @@ namespace System.Security.Cryptography
         public override byte[] GetBytes(int cb) { throw null; }
         public override void Reset() { }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RC2CryptoServiceProvider : System.Security.Cryptography.RC2
     {
@@ -229,6 +233,7 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
@@ -240,6 +245,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA256CryptoServiceProvider : System.Security.Cryptography.SHA256
     {
@@ -251,6 +257,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA384CryptoServiceProvider : System.Security.Cryptography.SHA384
     {
@@ -262,6 +269,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512CryptoServiceProvider : System.Security.Cryptography.SHA512
     {
@@ -273,6 +281,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class TripleDESCryptoServiceProvider : System.Security.Cryptography.TripleDES
     {

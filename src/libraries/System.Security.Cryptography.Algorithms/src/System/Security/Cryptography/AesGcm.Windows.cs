@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
     {
         private SafeKeyHandle _keyHandle;
 
+        public static bool IsSupported => true;
+
         [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {

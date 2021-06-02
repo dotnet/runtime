@@ -302,9 +302,9 @@ X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx)
     return NULL;
 }
 
-X509VerifyStatusCode CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx)
+int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx)
 {
-    return (unsigned int)X509_STORE_CTX_get_error(ctx);
+    return (int32_t)X509_STORE_CTX_get_error(ctx);
 }
 
 int32_t CryptoNative_X509StoreCtxReset(X509_STORE_CTX* ctx)
@@ -337,7 +337,7 @@ int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx)
     return X509_STORE_CTX_get_error_depth(ctx);
 }
 
-const char* CryptoNative_X509VerifyCertErrorString(X509VerifyStatusCode n)
+const char* CryptoNative_X509VerifyCertErrorString(int32_t n)
 {
     return X509_verify_cert_error_string((long)n);
 }
@@ -949,11 +949,11 @@ static time_t GetIssuanceWindowStart()
     return t;
 }
 
-X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth)
+int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth)
 {
     if (storeCtx == NULL || cachePath == NULL)
     {
-        return (X509VerifyStatusCode)-1;
+        return -1;
     }
 
     X509* subject;
@@ -961,7 +961,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
 
     if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
-        return (X509VerifyStatusCode)-2;
+        return -2;
     }
 
     X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
@@ -969,7 +969,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
 
     if (fullPath == NULL)
     {
-        return ret;
+        return (int32_t)ret;
     }
 
     BIO* bio = BIO_new_file(fullPath, "rb");
@@ -1031,7 +1031,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
         OCSP_RESPONSE_free(resp);
     }
 
-    return ret;
+    return (int32_t)ret;
 }
 
 OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
@@ -1079,12 +1079,12 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, i
     return req;
 }
 
-X509VerifyStatusCode
+int32_t
 CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath, int chainDepth)
 {
     if (storeCtx == NULL || req == NULL || resp == NULL)
     {
-        return (X509VerifyStatusCode)-1;
+        return -1;
     }
 
     X509* subject;
@@ -1092,7 +1092,7 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
 
     if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
-        return (X509VerifyStatusCode)-2;
+        return -2;
     }
 
     X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
@@ -1100,7 +1100,7 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
 
     if (certId == NULL)
     {
-        return (X509VerifyStatusCode)-3;
+        return -3;
     }
 
     ASN1_GENERALIZEDTIME* thisUpdate = NULL;
@@ -1167,5 +1167,5 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
         ASN1_GENERALIZEDTIME_free(thisUpdate);
     }
 
-    return ret;
+    return (int32_t)ret;
 }

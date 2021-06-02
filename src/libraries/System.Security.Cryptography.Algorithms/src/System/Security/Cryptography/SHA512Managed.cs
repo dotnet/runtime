@@ -6,6 +6,7 @@ using System.ComponentModel;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     // SHA512Managed has a copy of the same implementation as SHA512
     public sealed class SHA512Managed : SHA512
@@ -30,11 +31,7 @@ namespace System.Security.Cryptography
         protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
             _hashProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
 
-        public sealed override void Initialize()
-        {
-            // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the
-            // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
-        }
+        public sealed override void Initialize() => _hashProvider.Reset();
 
         protected sealed override void Dispose(bool disposing)
         {

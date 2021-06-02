@@ -1433,7 +1433,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError AcceptAsync(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, Action<IntPtr, byte[], int, SocketError> callback)
+        public SocketError AcceptAsync(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, Action<IntPtr, byte[], int, SocketError> callback, CancellationToken cancellationToken)
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
@@ -1456,7 +1456,7 @@ namespace System.Net.Sockets
             operation.SocketAddress = socketAddress;
             operation.SocketAddressLen = socketAddressLen;
 
-            if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
+            if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 socketAddressLen = operation.SocketAddressLen;
                 acceptedFd = operation.AcceptedFileDescriptor;
@@ -2100,7 +2100,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback)
+        public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
@@ -2122,7 +2122,7 @@ namespace System.Net.Sockets
                 BytesTransferred = bytesSent
             };
 
-            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
+            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 bytesSent = operation.BytesTransferred;
                 return operation.ErrorCode;

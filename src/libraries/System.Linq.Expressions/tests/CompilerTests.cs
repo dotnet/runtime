@@ -27,30 +27,6 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(n, f());
         }
 
-        [ClassData(typeof(CompilationTypes))]
-        [OuterLoop("May fail with SO on Debug JIT")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
-        {
-            Expression e = Expression.Constant(0);
-
-            int n = 100;
-
-            for (int i = 0; i < n; i++)
-                e = Expression.Add(e, Expression.Constant(1));
-
-            Func<int> f = null;
-            // Request a stack size of 128KiB to get very small stack.
-            // This reduces the size of tree needed to risk a stack overflow.
-            // This though will only risk overflow once, so the outerloop test
-            // above is still needed.
-            Thread t = new Thread(() => f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter), 128 * 1024);
-            t.Start();
-            t.Join();
-
-            Assert.Equal(n, f());
-        }
-
 #if FEATURE_COMPILE
         [Fact]
         public static void EmitConstantsToIL_NonNullableValueTypes()

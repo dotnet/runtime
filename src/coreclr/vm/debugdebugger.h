@@ -50,6 +50,7 @@ public:
     PTRARRAYREF rgAssembly;
     BASEARRAYREF rgLoadedPeAddress;
     I4ARRAYREF rgiLoadedPeSize;
+    BOOLARRAYREF rgiIsFileLayout;
     BASEARRAYREF rgInMemoryPdbAddress;
     I4ARRAYREF rgiInMemoryPdbSize;
     // if rgiMethodToken[i] == 0, then don't attempt to get the portable PDB source/info

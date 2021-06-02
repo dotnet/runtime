@@ -89,6 +89,9 @@
 
     <!-- windows.winmd is not part of the framework -->
     <IgnoredReference Include="Windows" />
+
+    <!-- this assembly is part of the netstandard support libs and has built in conflicts and dangling references -->
+    <ExcludeFromClosure Include="netfx.force.conflicts" />
   </ItemGroup>
 
   <!-- this target must run before ResolveLockFileReferences so

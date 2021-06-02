@@ -1396,6 +1396,23 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        private static async Task ReadExactDataSizeFromStream(Http2LoopbackConnection connection, int size, int streamId)
+        {
+            int bytesReceived = 0;
+            while (bytesReceived < size)
+            {
+                Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(streamId, frame.StreamId);
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(FrameFlags.None, frame.Flags);
+                Assert.True(frame.Length > 0);
+
+                bytesReceived += frame.Length;
+            }
+
+            Assert.Equal(size, bytesReceived);
+        }
+
         private static async Task<int> ReadToEndOfStream(Http2LoopbackConnection connection, int streamId)
         {
             int bytesReceived = 0;
@@ -1420,11 +1437,12 @@ namespace System.Net.Http.Functional.Tests
             return bytesReceived;
         }
 
+        const int DefaultInitialWindowSize = 65535;
+
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
         {
-            const int InitialWindowSize = 65535;
             const int ContentSize = 100_000;
 
             var content = new ByteAtATimeContent(ContentSize);
@@ -1442,19 +1460,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
 
                 // Receive up to initial window size
-                int bytesReceived = 0;
-                while (bytesReceived < InitialWindowSize)
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                    Assert.Equal(streamId, frame.StreamId);
-                    Assert.Equal(FrameType.Data, frame.Type);
-                    Assert.Equal(FrameFlags.None, frame.Flags);
-                    Assert.True(frame.Length > 0);
-
-                    bytesReceived += frame.Length;
-                }
-
-                Assert.Equal(InitialWindowSize, bytesReceived);
+                int bytesReceived = DefaultInitialWindowSize;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
 
                 // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
                 Task<Frame> readFrameTask = connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
@@ -1528,7 +1535,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_InitialWindowSize_ClientDoesNotExceedWindows()
         {
-            const int DefaultInitialWindowSize = 65535;
             const int ContentSize = DefaultInitialWindowSize + 1000;
 
             var content = new ByteAtATimeContent(ContentSize);
@@ -1548,20 +1554,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameType.Headers, frame.Type);
                 Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
 
-                // Receive up to initial window size
-                int bytesReceived = 0;
-                while (bytesReceived < DefaultInitialWindowSize)
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                    Assert.Equal(streamId, frame.StreamId);
-                    Assert.Equal(FrameType.Data, frame.Type);
-                    Assert.Equal(FrameFlags.None, frame.Flags);
-                    Assert.True(frame.Length > 0);
-
-                    bytesReceived += frame.Length;
-                }
-
-                Assert.Equal(DefaultInitialWindowSize, bytesReceived);
+                int bytesReceived = DefaultInitialWindowSize;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
 
                 // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
                 Task<Frame> readFrameTask = connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
@@ -1640,6 +1634,115 @@ namespace System.Net.Http.Functional.Tests
                 bytesReceived += await ReadToEndOfStream(connection, streamId);
 
                 Assert.Equal(ContentSize, bytesReceived);
+
+                await connection.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        // Flush behavior is heuristic-based and may change in the future.
+        // Try various content sizes here to ensure we are not simply getting lucky with the flush heuristic.
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(DefaultInitialWindowSize + 1)]
+        [InlineData(DefaultInitialWindowSize + 4 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 8 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 16 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 32 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 64 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 96 * 1024)]
+        public async Task Http2_SendOverStreamWindowSizeWithoutExplicitFlush_ClientSendsUpToFullWindowSize(int contentSize)
+        {
+            var content = new ByteArrayContent(new byte[contentSize]);
+
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
+
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                // Bump connection window so it won't block the client.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(contentSize - DefaultInitialWindowSize, 0));
+
+                Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Bump stream window so the client should send the entire body minus one byte.
+                if ((contentSize - 1) > DefaultInitialWindowSize)
+                {
+                    await connection.WriteFrameAsync(new WindowUpdateFrame((contentSize - 1) - DefaultInitialWindowSize, streamId));
+                }
+
+                int bytesReceived = contentSize - 1;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
+
+                // Bump stream window so the client should send the final byte.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(1, streamId));
+
+                // Read to end of stream
+                bytesReceived += await ReadToEndOfStream(connection, streamId);
+
+                Assert.Equal(contentSize, bytesReceived);
+
+                await connection.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        // Flush behavior is heuristic-based and may change in the future.
+        // Try various content sizes here to ensure we are not simply getting lucky with the flush heuristic.
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(DefaultInitialWindowSize + 1)]
+        [InlineData(DefaultInitialWindowSize + 4 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 8 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 16 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 32 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 64 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 96 * 1024)]
+        public async Task Http2_SendOverConnectionWindowSizeWithoutExplicitFlush_ClientSendsUpToFullWindowSize(int contentSize)
+        {
+            var content = new ByteArrayContent(new byte[contentSize]);
+
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
+
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                // Bump connection window so the client should send the entire body minus one byte.
+                if ((contentSize - 1) > DefaultInitialWindowSize)
+                {
+                    await connection.WriteFrameAsync(new WindowUpdateFrame((contentSize - 1) - DefaultInitialWindowSize, 0));
+                }
+
+                Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Bump stream window so it won't block the client.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(contentSize - DefaultInitialWindowSize, streamId));
+
+                // Receive up to window size (i.e. contentSize - 1)
+                int bytesReceived = contentSize - 1;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
+
+                Assert.Equal((contentSize - 1), bytesReceived);
+
+                // Bump connection window so the client should send the final byte.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(1, 0));
+
+                // Read to end of stream
+                bytesReceived += await ReadToEndOfStream(connection, streamId);
+
+                Assert.Equal(contentSize, bytesReceived);
 
                 await connection.SendDefaultResponseAsync(streamId);
 
@@ -1901,8 +2004,7 @@ namespace System.Net.Http.Functional.Tests
             // The goal of this test is to get the client into the state where it has sent the headers,
             // but is waiting on window credit before it will send the body. We then issue a cancellation
             // to ensure the request is cancelled as expected.
-            const int InitialWindowSize = 65535;
-            const int ContentSize = InitialWindowSize + 1;
+            const int ContentSize = DefaultInitialWindowSize + 1;
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -1923,17 +2025,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
 
                 // Receive up to initial window size
-                int bytesReceived = 0;
-                while (bytesReceived < InitialWindowSize)
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                    Assert.Equal(streamId, frame.StreamId);
-                    Assert.Equal(FrameType.Data, frame.Type);
-                    Assert.Equal(FrameFlags.None, frame.Flags);
-                    Assert.True(frame.Length > 0);
-
-                    bytesReceived += frame.Length;
-                }
+                int bytesReceived = DefaultInitialWindowSize;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
 
                 // The client is waiting for more credit in order to send the last byte of the
                 // request body. Test cancellation at this point.
@@ -1957,8 +2050,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // The goal of this test is to get the client into the state where it is sending content,
             // but the send pends because the TCP window is full.
-            const int InitialWindowSize = 65535;
-            const int ContentSize = InitialWindowSize * 2; // Double the default TCP window size.
+            const int ContentSize = DefaultInitialWindowSize * 2; // Double the default TCP window size.
 
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
@@ -1978,7 +2070,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Increase the size of the HTTP/2 Window, so that it is large enough to fill the
                 // TCP window when we do not perform any reads on the server side.
-                await connection.WriteFrameAsync(new WindowUpdateFrame(InitialWindowSize, streamId));
+                await connection.WriteFrameAsync(new WindowUpdateFrame(DefaultInitialWindowSize, streamId));
 
                 // Give the client time to read the window update frame, and for the write to pend.
                 await Task.Delay(1000);
@@ -3444,6 +3536,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44352", TestPlatforms.OSX)]
         public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
         {
             TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

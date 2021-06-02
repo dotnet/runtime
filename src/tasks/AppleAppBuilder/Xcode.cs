@@ -41,6 +41,7 @@ internal class Xcode
     }
 
     public bool EnableRuntimeLogging { get; set; }
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     public string GenerateXCode(
         string projectName,
@@ -55,7 +56,7 @@ internal class Xcode
         bool forceInterpreter,
         bool invariantGlobalization,
         bool stripDebugSymbols,
-        string? staticLinkedComponentNames=null,
+        string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
@@ -110,12 +111,12 @@ internal class Xcode
         string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
         string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
         bool staticLinkAllComponents = false;
-        string[] componentNames = Array.Empty<string>();
+        string[] staticLinkedComponents = Array.Empty<string>();
 
-        if (!string.IsNullOrEmpty(staticLinkedComponentNames) && staticLinkedComponentNames.Equals("*", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(runtimeComponents) && runtimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
             staticLinkAllComponents = true;
-        else if (!string.IsNullOrEmpty(staticLinkedComponentNames))
-            componentNames = staticLinkedComponentNames.Split(";");
+        else if (!string.IsNullOrEmpty(runtimeComponents))
+            staticLinkedComponents = runtimeComponents.Split(";");
 
         // by default, component stubs will be linked and depending on how mono runtime has been build,
         // stubs can disable or dynamic load components.
@@ -129,9 +130,9 @@ internal class Xcode
             }
             else
             {
-                foreach (string componentName in componentNames)
+                foreach (string staticLinkedComponent in staticLinkedComponents)
                 {
-                    if (componentLibToLink.Contains(componentName, StringComparison.OrdinalIgnoreCase))
+                    if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
                     {
                         // static link component.
                         componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
@@ -170,12 +171,14 @@ internal class Xcode
         }
 
         string aotSources = "";
+        string aotList = "";
         foreach (string asm in asmFiles)
         {
             // these libraries are linked via modules.m
             var name = Path.GetFileNameWithoutExtension(asm);
             aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
             toLink += $"    {name}{Environment.NewLine}";
+            aotList += $" {name}";
         }
 
         string frameworks = "";
@@ -187,6 +190,7 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
+        cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
 
         var defines = new StringBuilder();
@@ -207,6 +211,11 @@ internal class Xcode
         if (EnableRuntimeLogging)
         {
             defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            defines.AppendLine("\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PInvokeDefs.cs" />
+    <Compile Include="VariantTest.cs" />
+    <Compile Include="VariantTest.ComWrappers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
+  </ItemGroup>
+</Project>

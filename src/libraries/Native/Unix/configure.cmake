@@ -210,6 +210,16 @@ check_symbol_exists(
     HAVE_POSIX_ADVISE)
 
 check_symbol_exists(
+    posix_fallocate
+    fcntl.h
+    HAVE_POSIX_FALLOCATE)
+
+check_symbol_exists(
+    posix_fallocate64
+    fcntl.h
+    HAVE_POSIX_FALLOCATE64)
+
+check_symbol_exists(
     ioctl
     sys/ioctl.h
     HAVE_IOCTL)
@@ -533,6 +543,8 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
+elseif (CLR_CMAKE_TARGET_BROWSER)
+    set(HAVE_FORK 0)
 else()
     check_c_source_runs(
         "

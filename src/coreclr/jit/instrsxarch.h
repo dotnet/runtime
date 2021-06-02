@@ -583,6 +583,13 @@ INST3(vfnmsub213ss,     "fnmsub213ss",      IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(vfnmsub231ss,     "fnmsub231ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
 INST3(LAST_FMA_INSTRUCTION, "LAST_FMA_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
+INST3(FIRST_AVXVNNI_INSTRUCTION, "FIRST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+INST3(vpdpbusd,          "pdpbusd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x50),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Unsigned and Signed Bytes
+INST3(vpdpwssd,          "pdpwssd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x52),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Signed Word Integers
+INST3(vpdpbusds,         "pdpbusds",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x51),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Unsigned and Signed Bytes with Saturation
+INST3(vpdpwssds,         "pdpwssds",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x53),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Signed Word Integers with Saturation
+INST3(LAST_AVXVNNI_INSTRUCTION, "LAST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+
 // BMI1
 INST3(FIRST_BMI_INSTRUCTION, "FIRST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 INST3(andn,             "andn",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF2),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Logical AND NOT

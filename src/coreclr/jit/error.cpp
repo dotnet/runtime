@@ -323,7 +323,7 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
 }
 
 /*********************************************************************/
-BOOL vlogf(unsigned level, const char* fmt, va_list args)
+bool vlogf(unsigned level, const char* fmt, va_list args)
 {
     return JitTls::GetLogEnv()->compHnd->logMsg(level, fmt, args);
 }

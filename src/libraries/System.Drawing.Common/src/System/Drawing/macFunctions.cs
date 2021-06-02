@@ -51,7 +51,6 @@ namespace System.Drawing
 
         private static Delegate? GetHwndDelegate()
         {
-#if !NETSTANDARD1_6
             foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (string.Equals(asm.GetName().Name, "System.Windows.Forms"))
@@ -63,7 +62,7 @@ namespace System.Drawing
                     }
                 }
             }
-#endif
+
             return null;
         }
 

@@ -724,6 +724,7 @@ Thread* SetupThread()
 
     SetupTLSForThread();
     pThread->InitThread();
+    pThread->PrepareApartmentAndContext();
 
     // reset any unstarted bits on the thread object
     FastInterlockAnd((ULONG *) &pThread->m_State, ~Thread::TS_Unstarted);
@@ -797,9 +798,6 @@ Thread* SetupThread()
     {
         FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
     }
-
-    // Initialize the thread for the platform as the final step.
-    pThread->FinishInitialization();
 
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);
@@ -1821,11 +1819,17 @@ BOOL Thread::HasStarted()
 
         InitThread();
 
+        fCanCleanupCOMState = TRUE;
+        // Preparing the COM apartment and context may attempt
+        // to transition to Preemptive mode. At this point in
+        // the thread's lifetime this can be a bad thing if a GC
+        // is triggered (e.g. GCStress). Do the preparation prior
+        // to the thread being set so the Preemptive mode transition
+        // is a no-op.
+        PrepareApartmentAndContext();
+
         SetThread(this);
         SetAppDomain(m_pDomain);
-
-        fCanCleanupCOMState = TRUE;
-        FinishInitialization();
 
         ThreadStore::TransferStartedThread(this);
 
@@ -4709,7 +4713,7 @@ public:
 };
 #endif // FEATURE_COMINTEROP
 
-void Thread::FinishInitialization()
+void Thread::PrepareApartmentAndContext()
 {
     CONTRACTL {
         THROWS;

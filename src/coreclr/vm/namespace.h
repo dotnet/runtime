@@ -32,7 +32,7 @@
 #define g_ReflectionEmitNS  g_ReflectionNS ".Emit"
 
 #define g_InteropNS         g_RuntimeNS ".InteropServices"
-#define g_InteropTCENS      g_InteropNS ".TCEAdapterGen"
+#define g_ObjectiveCNS      g_InteropNS ".ObjectiveC"
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
 #define g_NumericsNS   g_SystemNS  ".Numerics"

@@ -1,18 +1,11 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup>
-    <TraversalGlobalProperties Condition="'$(BuildAllConfigurations)' != 'true'">BuildTargetFramework=$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TraversalGlobalProperties>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Subsets are already imported by Directory.Build.props. -->
     <ProjectReference Include="@(ProjectToBuild)" />
     <!-- Only include tasks.proj during restore and build incrementally via a target. -->
     <ProjectReference Include="$(RepoTasksDir)tasks.proj" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
-
-  <!-- Custom arcade target which isn't available in Microsoft.Build.Traversal. -->
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
 
