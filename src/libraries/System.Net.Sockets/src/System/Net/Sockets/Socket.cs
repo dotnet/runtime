@@ -50,11 +50,11 @@ namespace System.Net.Sockets
         // Our internal state doesn't automatically get updated after a non-blocking connect
         // completes.  Keep track of whether we're doing a non-blocking connect, and make sure
         // to poll for the real state until we're done connecting.
-        private bool _nonBlockingConnectInProgress;
+        private bool _pollPendingConnect;
 
         // Keep track of the kind of endpoint used to do a non-blocking connect, so we can set
         // it to _rightEndPoint when we discover we're connected.
-        private EndPoint? _nonBlockingConnectRightEndPoint;
+        private EndPoint? _pendingConnectRightEndPoint;
 
         // These are constants initialized by constructor.
         private AddressFamily _addressFamily;
@@ -283,13 +283,9 @@ namespace System.Net.Sockets
             {
                 ThrowIfDisposed();
 
-                if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
+                if (_pollPendingConnect && Poll(0, SelectMode.SelectWrite))
                 {
-                    // Update the state if we've become connected after a non-blocking connect.
-                    _isConnected = true;
-                    _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
-                    UpdateLocalEndPointOnConnect();
-                    _nonBlockingConnectInProgress = false;
+                    SetToConnected();
                 }
 
                 if (_rightEndPoint == null)
@@ -330,13 +326,10 @@ namespace System.Net.Sockets
 
                 if (_remoteEndPoint == null)
                 {
-                    if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
+                    if (_pollPendingConnect && Poll(0, SelectMode.SelectWrite))
                     {
                         // Update the state if we've become connected after a non-blocking connect.
-                        _isConnected = true;
-                        _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
-                        UpdateLocalEndPointOnConnect();
-                        _nonBlockingConnectInProgress = false;
+                        SetToConnected();
                     }
 
                     if (_rightEndPoint == null || !_isConnected)
@@ -437,13 +430,10 @@ namespace System.Net.Sockets
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_isConnected:{_isConnected}");
 
-                if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
+                if (_pollPendingConnect && Poll(0, SelectMode.SelectWrite))
                 {
                     // Update the state if we've become connected after a non-blocking connect.
-                    _isConnected = true;
-                    _rightEndPoint ??= _nonBlockingConnectRightEndPoint;
-                    UpdateLocalEndPointOnConnect();
-                    _nonBlockingConnectInProgress = false;
+                    SetToConnected();
                 }
 
                 return _isConnected;
@@ -856,12 +846,8 @@ namespace System.Net.Sockets
             ValidateForMultiConnect(isMultiEndpoint: false);
 
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
-
-            if (!Blocking)
-            {
-                _nonBlockingConnectRightEndPoint = remoteEP;
-                _nonBlockingConnectInProgress = true;
-            }
+            _pendingConnectRightEndPoint = remoteEP;
+            _pollPendingConnect = !Blocking;
 
             DoConnect(remoteEP, socketAddress);
         }
@@ -2768,12 +2754,10 @@ namespace System.Net.Sockets
                 }
 
                 e._socketAddress = Serialize(ref endPointSnapshot);
+                _pendingConnectRightEndPoint = endPointSnapshot;
+                _pollPendingConnect = false;
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
-
-                // Save the old RightEndPoint and prep new RightEndPoint.
-                EndPoint? oldEndPoint = _rightEndPoint;
-                _rightEndPoint ??= endPointSnapshot;
 
                 if (SocketsTelemetry.Log.IsEnabled())
                 {
@@ -2801,7 +2785,6 @@ namespace System.Net.Sockets
                         SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
                     }
 
-                    _rightEndPoint = oldEndPoint;
                     _localEndPoint = null;
 
                     // Clear in-use flag on event args object.
@@ -3217,12 +3200,11 @@ namespace System.Net.Sockets
 
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(SocketError.Success);
 
-            // Save a copy of the EndPoint so we can use it for Create().
-            _rightEndPoint ??= endPointSnapshot;
-
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 
             // Update state and performance counters.
+            _pendingConnectRightEndPoint = endPointSnapshot;
+            _pollPendingConnect = false;
             SetToConnected();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
         }
@@ -3663,6 +3645,9 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
+            _pollPendingConnect = false;
+            _rightEndPoint ??= _pendingConnectRightEndPoint;
+            _pendingConnectRightEndPoint = null;
             UpdateLocalEndPointOnConnect();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
         }
