@@ -137,7 +137,7 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
             InitialStreamWindowSize = pool.Settings._initialStreamWindowSize;
-            _rttEstimator = new RttEstimator(this);
+            _rttEstimator = new RttEstimator(this, pool.Settings._fakeRtt);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 

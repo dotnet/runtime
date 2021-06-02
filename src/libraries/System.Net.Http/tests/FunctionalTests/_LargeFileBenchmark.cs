@@ -1,5 +1,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -96,38 +97,64 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("10.194.114.94:5001")]
         [InlineData("10.194.114.94:5002")]
-        public async Task Download20_Dynamic_Default_Run1(string hostName)
+        public async Task Download20_Dynamic_SingleStream_Run1(string hostName)
         {
             _listener.Enabled = true;
-            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic default", hostName, true, LengthMb);
+            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic single stream Run1", hostName, true, LengthMb);
         }
 
         [Theory]
         [InlineData("10.194.114.94:5001")]
         [InlineData("10.194.114.94:5002")]
-        public async Task Download20_Dynamic_Default_Run2(string hostName)
+        public async Task Download20_Dynamic_SingleStream_Run2(string hostName)
         {
             _listener.Enabled = true;
-            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic default", hostName, true, LengthMb);
+            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic single stream Run2", hostName, true, LengthMb);
         }
 
         [Theory]
-        [InlineData(BenchmarkServer, 8, 1)]
-        [InlineData(BenchmarkServer, 8, 50)]
-        [InlineData(BenchmarkServer, 32, 1)]
-        public async Task Download20_Dynamic_Custom(string hostName, int ratio, int magic)
+        [InlineData("10.194.114.94:5001")]
+        [InlineData("10.194.114.94:5002")]
+        public async Task Download20_StaticRtt(string hostName)
         {
             _listener.Enabled = true;
-            _listener.Filter = m => m.Contains("[FlowControl]");
-
-            SocketsHttpHandler handler = new SocketsHttpHandler()
+            var handler = new SocketsHttpHandler
             {
-                FakeRtt = await EstimateRttAsync(hostName),
-                StreamWindowUpdateRatio = ratio,
-                StreamWindowMagicMultiplier = magic
+                FakeRtt = await EstimateRttAsync(hostName)
             };
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic | ratio={ratio} | magic={magic}", hostName, true, LengthMb, handler);
+
+            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic single stream Run2", hostName, true, LengthMb, handler);
         }
+
+        [Theory]
+        [InlineData("10.194.114.94:5001")]
+        [InlineData("10.194.114.94:5002")]
+        public async Task Download20_Dynamic_MultiStream(string hostName)
+        {
+            _listener.Enabled = true;
+            var handler = new SocketsHttpHandler();
+            using var client = new HttpClient(handler, true);
+            client.Timeout = TimeSpan.FromMinutes(3);
+            const int NStreams = 4;
+            string info = $"SocketsHttpHandler HTTP 2.0 Dynamic {NStreams} concurrent streams";
+
+            var message = GenerateRequestMessage(hostName, true, LengthMb);
+            _output.WriteLine($"{info} / {LengthMb} MB from {message.RequestUri}");
+
+            Stopwatch sw = Stopwatch.StartNew();
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < NStreams; i++)
+            {
+                var task = client.SendAsync(message);
+                tasks.Add(task);
+            }
+
+            await Task.WhenAll(tasks);
+
+            long elapsedMs = sw.ElapsedMilliseconds;
+            _output.WriteLine($"{info}: completed in {elapsedMs} ms");
+        }
+
 
         private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, HttpMessageHandler handler = null)
         {

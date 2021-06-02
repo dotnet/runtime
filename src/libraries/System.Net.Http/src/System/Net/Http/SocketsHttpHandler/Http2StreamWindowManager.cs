@@ -141,13 +141,23 @@ namespace System.Net.Http
 
             public TimeSpan Rtt { get; private set; }
 
-            public RttEstimator(Http2Connection connection)
+            private readonly TimeSpan? _staticRtt;
+
+            public RttEstimator(Http2Connection connection, TimeSpan? staticRtt)
             {
                 _connection = connection;
+                _staticRtt = staticRtt;
+                if (_staticRtt.HasValue)
+                {
+                    Rtt = _staticRtt.Value;
+                    _connection.TraceFlowControl($"Using static RTT: {Rtt.TotalMilliseconds} ms");
+                }
             }
 
             internal void Update()
             {
+                if (_staticRtt.HasValue) return;
+
                 if (_status == Status.NotReady || _status == Status.Waiting)
                 {
                     long now = Stopwatch.GetTimestamp();
@@ -166,6 +176,7 @@ namespace System.Net.Http
             internal void OnPingAck(long payload)
             {
                 Debug.Assert(payload < 0);
+                if (_staticRtt.HasValue) return;
 
                 if (Interlocked.Read(ref _pingCounter) != payload)
                     ThrowProtocolError();
