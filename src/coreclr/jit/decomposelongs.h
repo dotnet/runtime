@@ -33,6 +33,8 @@ private:
         return *m_range;
     }
 
+    void PromoteLongVars();
+
     // Driver functions
     void     DecomposeRangeHelper();
     GenTree* DecomposeNode(GenTree* tree);
@@ -55,8 +57,11 @@ private:
     GenTree* DecomposeRotate(LIR::Use& use);
     GenTree* DecomposeMul(LIR::Use& use);
     GenTree* DecomposeUMod(LIR::Use& use);
-    GenTree* DecomposeSimd(LIR::Use& use);
-    GenTree* DecomposeSimdGetItem(LIR::Use& use);
+
+#ifdef FEATURE_HW_INTRINSICS
+    GenTree* DecomposeHWIntrinsic(LIR::Use& use);
+    GenTree* DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHWIntrinsic* node);
+#endif // FEATURE_HW_INTRINSICS
 
     // Helper functions
     GenTree* FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult, GenTree* insertResultAfter);

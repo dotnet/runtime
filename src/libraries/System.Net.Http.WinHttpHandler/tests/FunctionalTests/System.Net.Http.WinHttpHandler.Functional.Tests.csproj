@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48-windows</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -144,6 +144,7 @@
     <Compile Include="PlatformHandlerTest.cs" />
     <Compile Include="ClientCertificateTest.cs" />
     <Compile Include="TrailingHeadersTest.cs" />
+    <Compile Include="BidirectionStreamingTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />

@@ -1818,6 +1818,13 @@ namespace Internal.JitInterface
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != null)
+            {
+                // Defer constrained call / ldftn instructions used for static virtual methods
+                // to runtime resolution.
+                throw new RequiresRuntimeJitException("SVM");
+            }
+
             MethodDesc methodToCall;
             MethodDesc targetMethod;
             TypeDesc constrainedType;

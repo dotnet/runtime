@@ -16,35 +16,35 @@ hot_reload_stub_available (void);
 static void
 hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 
+static MonoComponentHotReload *
+component_hot_reload_stub_init (void);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_apply_changes,
 };
 
-#ifdef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentHotReload *
-mono_component_hot_reload_init (void)
-{
-	return mono_component_hot_reload_stub_init ();
-}
-#endif
-
-MonoComponentHotReload *
-mono_component_hot_reload_stub_init (void)
-{
-	return &fn_table;
-}
-
-bool
+static bool
 hot_reload_stub_available (void)
 {
 	return false;
 }
 
-void
+static void
 hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
 {
 	mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
 }
 
+static MonoComponentHotReload *
+component_hot_reload_stub_init (void)
+{
+	return &fn_table;
+}
+
+MONO_COMPONENT_EXPORT_ENTRYPOINT
+MonoComponentHotReload *
+mono_component_hot_reload_init (void)
+{
+	return component_hot_reload_stub_init ();
+}

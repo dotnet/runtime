@@ -3,9 +3,9 @@
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(TargetFrameworkForNETFramework)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
-
     <!-- Ignore nullable warnings on net4* -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

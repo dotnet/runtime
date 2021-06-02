@@ -6,9 +6,11 @@
 #include <dlfcn.h>
 #include <pthread.h>
 
+#if !defined(TARGET_MACCATALYST)
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static SecKeyRef (*secCertificateCopyKey)(SecCertificateRef);
 static OSStatus (*secCertificateCopyPublicKey)(SecCertificateRef, SecKeyRef*);
+#endif
 
 int32_t
 AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* pCertOut, SecIdentityRef* pIdentityOut)
@@ -40,11 +42,22 @@ AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* 
     return 1;
 }
 
+#if !defined(TARGET_MACCATALYST)
 static void InitCertificateCopy()
 {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+    // SecCertificateCopyPublicKey on iOS/tvOS has same function prototype as SecCertificateCopyKey
+    secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyKey");
+    if (secCertificateCopyKey == NULL)
+    {
+        secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyPublicKey");
+    }
+#else
     secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyKey");
     secCertificateCopyPublicKey = (OSStatus (*)(SecCertificateRef, SecKeyRef*))dlsym(RTLD_DEFAULT, "SecCertificateCopyPublicKey");
+#endif
 }
+#endif
 
 int32_t
 AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut)
@@ -57,7 +70,8 @@ AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKey
     if (cert == NULL || pPublicKeyOut == NULL || pOSStatusOut == NULL)
         return kErrorUnknownState;
 
-    pthread_once (&once, InitCertificateCopy);
+#if !defined(TARGET_MACCATALYST)
+    pthread_once(&once, InitCertificateCopy);
     // SecCertificateCopyPublicKey was deprecated in 10.14, so use SecCertificateCopyKey on the systems that have it (10.14+),
     // and SecCertificateCopyPublicKey on the systems that don’t.
     if (secCertificateCopyKey != NULL)
@@ -73,6 +87,10 @@ AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKey
         return kErrorBadInput;
     }
     return (*pOSStatusOut == noErr);
+#else
+    *pPublicKeyOut = SecCertificateCopyKey(cert);
+    return 1;
+#endif
 }
 
 PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_t cbData)

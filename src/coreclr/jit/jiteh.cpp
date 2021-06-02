@@ -3761,7 +3761,7 @@ void Compiler::verInsertEhNodeInTree(EHNodeDsc** ppRoot, EHNodeDsc* node)
     node->ehnChild      = nullptr;
     node->ehnEquivalent = nullptr;
 
-    while (TRUE)
+    while (true)
     {
         if (*ppRoot == nullptr)
         {

@@ -7,11 +7,11 @@ namespace System.Xml.Serialization
     using System;
     using System.Xml.Schema;
     using System.Collections;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Globalization;
     using System.Threading;
     using System.Diagnostics;
-    using System.Collections.Generic;
     using System.Xml.Extensions;
     using System.Xml;
     using System.Xml.Serialization;
@@ -840,7 +840,7 @@ namespace System.Xml.Serialization
                     return false;
                 }
             }
-            ArrayList members = new ArrayList();
+            var members = new List<MemberMapping>();
             TextAccessor? textAccessor = null;
             bool hasElements = false;
             bool isSequence = false;
@@ -902,7 +902,7 @@ namespace System.Xml.Serialization
                 Hashtable ids = new Hashtable();
                 for (int i = 0; i < members.Count; i++)
                 {
-                    MemberMapping member = (MemberMapping)members[i]!;
+                    MemberMapping member = members[i]!;
                     if (!member.IsParticle)
                         continue;
                     if (member.IsSequence)
@@ -920,7 +920,7 @@ namespace System.Xml.Serialization
                 }
                 members.Sort(new MemberMappingComparer());
             }
-            mapping.Members = (MemberMapping[])members.ToArray(typeof(MemberMapping));
+            mapping.Members = members.ToArray();
 
             if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
 
@@ -1211,7 +1211,7 @@ namespace System.Xml.Serialization
                     _types.Add(typeName, typeNs, mapping);
                 else
                     _anonymous[model.Type] = mapping;
-                ArrayList constants = new ArrayList();
+                var constants = new List<ConstantMapping>();
                 for (int i = 0; i < model.Constants.Length; i++)
                 {
                     ConstantMapping? constant = ImportConstantMapping(model.Constants[i]);
@@ -1221,7 +1221,7 @@ namespace System.Xml.Serialization
                 {
                     throw new InvalidOperationException(SR.Format(SR.XmlNoSerializableMembers, model.TypeDesc.FullName));
                 }
-                mapping.Constants = (ConstantMapping[])constants.ToArray(typeof(ConstantMapping));
+                mapping.Constants = constants.ToArray();
                 _typeScope.AddTypeMapping(mapping);
             }
             return mapping;

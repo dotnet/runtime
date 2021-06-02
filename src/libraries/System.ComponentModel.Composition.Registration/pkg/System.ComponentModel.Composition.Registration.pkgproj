@@ -4,9 +4,9 @@
     <ProjectReference Include="..\ref\System.ComponentModel.Composition.Registration.csproj">
       <SupportedFramework>netcoreapp3.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <SupportedFramework Include="net45" Version="4.0.0.0" />
+    <SupportedFramework Include="net461" Version="4.0.0.0" />
     <ProjectReference Include="..\src\System.ComponentModel.Composition.Registration.csproj" />
-    <InboxOnTargetFramework Include="net45">
+    <InboxOnTargetFramework Include="net461">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
   </ItemGroup>

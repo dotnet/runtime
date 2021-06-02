@@ -37,7 +37,7 @@ public static class MemCheck {
     }
 
     private static uint? TryGetPhysicalMemMB() =>
-        RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+        OperatingSystem.IsWindows()
             ? TryGetPhysicalMemMBWindows()
             : TryGetPhysicalMemMBNonWindows();
 

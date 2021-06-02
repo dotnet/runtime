@@ -491,6 +491,7 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD data_index;
     DWORD dataByteCount;
     DWORD result;
+    DWORD pgoSource;
 };
 
 struct Agnostic_GetProfilingHandle
@@ -567,6 +568,7 @@ struct Agnostic_ResolveVirtualMethodResult
     DWORDLONG devirtualizedMethod;
     bool      requiresInstMethodTableArg;
     DWORDLONG exactContext;
+    DWORD     detail;
 };
 
 struct ResolveTokenValue

@@ -62,7 +62,7 @@ namespace System
             get => Rank;
         }
 
-        internal static unsafe void Clear(Array array)
+        public static unsafe void Clear(Array array)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);

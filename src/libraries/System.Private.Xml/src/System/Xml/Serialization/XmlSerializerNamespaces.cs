@@ -73,9 +73,12 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlQualifiedName[] ToArray()
         {
-            if (NamespaceList == null)
+            ArrayList? namespaceList = NamespaceList;
+            if (namespaceList == null)
                 return Array.Empty<XmlQualifiedName>();
-            return (XmlQualifiedName[])NamespaceList.ToArray(typeof(XmlQualifiedName));
+            var array = new XmlQualifiedName[namespaceList.Count];
+            namespaceList.CopyTo(array);
+            return array;
         }
 
         /// <devdoc>

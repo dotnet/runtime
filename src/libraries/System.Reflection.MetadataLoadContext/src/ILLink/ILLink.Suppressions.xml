@@ -373,5 +373,53 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.Runtime.BindingFlagSupport.PropertyPolicies.GetDeclaredMembers(System.Reflection.TypeInfo)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2092</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterfaceMap(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.Assignability.CanCastArrayToInterface(System.Type,System.Type,System.Reflection.TypeLoading.CoreTypes)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.Assignability.CanCastTo(System.Type,System.Type,System.Reflection.TypeLoading.CoreTypes)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2085</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2094</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.get_ImplementedInterfaces</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2094</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2094</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterfaces</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.TypeLoading.RoType.GetInterface(System.String,System.Boolean)</property>
+    </attribute>
   </assembly>
 </linker>

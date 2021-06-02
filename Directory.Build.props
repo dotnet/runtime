@@ -75,6 +75,8 @@
 
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
+    <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
@@ -207,6 +209,8 @@
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <!-- Turn off workload support until we support them. -->
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <!-- Disable source link when building locally. -->
     <DisableSourceLink Condition="'$(DisableSourceLink)' == '' and
                                   '$(ContinuousIntegrationBuild)' != 'true' and
@@ -254,8 +258,8 @@
     <GeneratePackage Condition="(('$(PreReleaseVersionLabel)' == 'servicing' or
                                   '$(GitHubRepositoryName)' == 'runtimelab') and
                                  '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
+    <PlaceholderFile>$(RepositoryEngineeringDir)_._</PlaceholderFile>
   </PropertyGroup>
-
 
   <!-- Language configuration -->
   <PropertyGroup>
@@ -274,5 +278,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
+    <CustomAfterTraversalProps>$(RepositoryEngineeringDir)TraversalSdk.AfterProps.props</CustomAfterTraversalProps>
   </PropertyGroup>
 </Project>

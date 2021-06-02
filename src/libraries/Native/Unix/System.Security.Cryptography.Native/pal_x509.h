@@ -273,7 +273,7 @@ PALEXPORT X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx);
 /*
 Shims the X509_STORE_CTX_get_error method.
 */
-PALEXPORT X509VerifyStatusCode CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);
+PALEXPORT int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);
 
 /*
 Resets ctx to before the chain was built, preserving the target cert, trust store, extra cert context,
@@ -301,7 +301,7 @@ PALEXPORT void CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X
 /*
 Shims the X509_verify_cert_error_string method.
 */
-PALEXPORT const char* CryptoNative_X509VerifyCertErrorString(X509VerifyStatusCode n);
+PALEXPORT const char* CryptoNative_X509VerifyCertErrorString(int32_t n);
 
 /*
 Shims the X509_CRL_free method.
@@ -378,7 +378,7 @@ PALEXPORT int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX
 Look for a cached OCSP response appropriate to the end-entity certificate using the issuer as
 determined by the chain in storeCtx.
 */
-PALEXPORT X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth);
+PALEXPORT int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth);
 
 /*
 Build an OCSP request appropriate for the end-entity certificate using the issuer (and trust) as
@@ -390,8 +390,8 @@ PALEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* s
 Determine if the OCSP response is acceptable, and if acceptable report the status and
 cache the result (if appropriate)
 */
-PALEXPORT X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
-                                                                OCSP_REQUEST* req,
-                                                                OCSP_RESPONSE* resp,
-                                                                char* cachePath,
-                                                                int chainDepth);
+PALEXPORT int32_t CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
+                                                   OCSP_REQUEST* req,
+                                                   OCSP_RESPONSE* resp,
+                                                   char* cachePath,
+                                                   int chainDepth);

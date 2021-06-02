@@ -1233,7 +1233,7 @@ Namespace Microsoft.VisualBasic.FileIO
                         If Token <> "" Then
                             If m_HasFieldsEnclosedInQuotes And m_TextFieldType = FieldType.Delimited Then
 
-                                If String.Compare(Token.Trim(), """", StringComparison.Ordinal) = 0 Then
+                                If String.Equals(Token.Trim(), """", StringComparison.Ordinal) Then
                                     Throw GetInvalidOperationException(SR.TextFieldParser_InvalidComment)
                                 End If
                             End If
