@@ -90,9 +90,7 @@ namespace System.Threading
             return true;
         }
 
-        internal static void NotifyThreadBlocked()
-        {
-        }
+        internal static bool NotifyThreadBlocked() => false;
 
         internal static void NotifyThreadUnblocked()
         {
