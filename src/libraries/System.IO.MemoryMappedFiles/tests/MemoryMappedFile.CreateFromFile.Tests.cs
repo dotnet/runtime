@@ -697,7 +697,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
@@ -705,7 +704,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
             WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
