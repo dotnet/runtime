@@ -1,4 +1,3 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -21645,8 +21644,31 @@ void Compiler::considerGuardedDevirtualization(
     unsigned       likelihood          = 0;
     unsigned       numberOfClasses     = 0;
 
-    CORINFO_CLASS_HANDLE likelyClass =
-        getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+    CORINFO_CLASS_HANDLE likelyClass = NO_CLASS_HANDLE;
+
+    bool doRandomDevirt = false;
+
+#ifdef DEBUG
+    // Optional stress mode to pick a random known class, rather than
+    // the most likely known class.
+    //
+    doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
+
+    if (doRandomDevirt)
+    {
+        // Reuse the random inliner's random state.
+        //
+        CLRRandom* const random =
+            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+        likelihood      = 100;
+        numberOfClasses = 1;
+        likelyClass     = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+    }
+    else
+#endif
+    {
+        likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+    }
 
     if (likelyClass == NO_CLASS_HANDLE)
     {
@@ -21654,8 +21676,8 @@ void Compiler::considerGuardedDevirtualization(
         return;
     }
 
-    JITDUMP("Likely class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", dspPtr(objClass), objClassName,
-            likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
+    JITDUMP("%s class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", doRandomDevirt ? "Random" : "Likely",
+            dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
 
     // Todo: a more advanced heuristic using likelihood, number of
     // classes, and the profile count for this block.
