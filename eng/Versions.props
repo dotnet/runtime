@@ -47,7 +47,7 @@
     <MicrosoftCodeAnalysisVersion>3.8.0</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview6.21274.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview6.21281.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
     <!-- Arcade dependencies -->
