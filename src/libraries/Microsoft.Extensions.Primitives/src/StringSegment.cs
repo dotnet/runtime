@@ -144,7 +144,7 @@ namespace Microsoft.Extensions.Primitives
         /// </exception>
         public ReadOnlySpan<char> AsSpan(int start, int length)
         {
-            if (!HasValue || (start | length) < 0 || (uint)(start + length) > (uint)Length)
+            if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
             {
                 ThrowInvalidArguments(start, length, ExceptionArgument.start);
             }
@@ -396,7 +396,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string Substring(int offset, int length)
         {
-            if (!HasValue || (offset | length) < 0 || (uint)(offset + length) > (uint)Length)
+            if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
                 ThrowInvalidArguments(offset, length);
             }
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.Primitives
         /// </exception>
         public StringSegment Subsegment(int offset, int length)
         {
-            if (!HasValue || (offset | length) < 0 || (uint)(offset + length) > (uint)Length)
+            if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
                 ThrowInvalidArguments(offset, length);
             }
