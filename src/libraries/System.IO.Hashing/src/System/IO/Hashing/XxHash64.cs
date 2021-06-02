@@ -48,12 +48,20 @@ namespace System.IO.Hashing
             Reset();
         }
 
+        /// <summary>
+        ///   Resets the hash computation to the initial state.
+        /// </summary>
         public override void Reset()
         {
             _state = new State(_seed);
             _length = 0;
         }
 
+        /// <summary>
+        ///   Appends the contents of <paramref name="source"/> to the data already
+        ///   processed for the current hash computation.
+        /// </summary>
+        /// <param name="source">The data to process.</param>
         public override void Append(ReadOnlySpan<byte> source)
         {
             // Every time we've read 16 bytes, process the stripe.
@@ -97,6 +105,10 @@ namespace System.IO.Hashing
             }
         }
 
+        /// <summary>
+        ///   Writes the computed hash value to <paramref name="destination"/>
+        ///   without modifying accumulated state.
+        /// </summary>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
             unchecked
