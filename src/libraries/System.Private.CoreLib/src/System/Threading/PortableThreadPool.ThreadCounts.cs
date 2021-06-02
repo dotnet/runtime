@@ -49,7 +49,9 @@ namespace System.Threading
             public void InterlockedDecrementNumProcessingWork()
             {
                 Debug.Assert(NumProcessingWorkShift == 0);
-                Interlocked.Decrement(ref _data);
+
+                ThreadCounts counts = new ThreadCounts(Interlocked.Decrement(ref _data));
+                Debug.Assert(counts.NumProcessingWork >= 0);
             }
 
             /// <summary>

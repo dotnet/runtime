@@ -831,10 +831,8 @@ namespace System.Threading
 
         public void TransferLocalWork()
         {
-            object? cb;
-            while ((cb = workStealingQueue.LocalPop()) != null)
+            while (workStealingQueue.LocalPop() is object cb)
             {
-                Debug.Assert(null != cb);
                 workQueue.Enqueue(cb, forceGlobal: true);
             }
         }
@@ -844,11 +842,7 @@ namespace System.Threading
             // Transfer any pending workitems into the global queue so that they will be executed by another thread
             if (null != workStealingQueue)
             {
-                if (null != workQueue)
-                {
-                    TransferLocalWork();
-                }
-
+                TransferLocalWork();
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }

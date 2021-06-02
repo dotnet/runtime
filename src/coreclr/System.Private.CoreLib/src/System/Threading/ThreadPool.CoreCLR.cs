@@ -522,20 +522,13 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void NotifyWorkItemProgressNative();
 
-        internal static void NotifyThreadBlocked()
-        {
-            if (UsePortableThreadPool)
-            {
-                PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
-            }
-        }
+        internal static bool NotifyThreadBlocked() =>
+            UsePortableThreadPool && PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
 
         internal static void NotifyThreadUnblocked()
         {
-            if (UsePortableThreadPool)
-            {
-                PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
-            }
+            Debug.Assert(UsePortableThreadPool);
+            PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() =>

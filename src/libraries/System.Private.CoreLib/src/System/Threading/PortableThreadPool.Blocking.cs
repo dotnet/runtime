@@ -22,19 +22,10 @@ namespace System.Threading
             {
                 _threadAdjustmentLock.VerifyIsLocked();
 
-                short targetThreadsGoal = _minThreads;
-                if (_numBlockedThreads <= 0)
-                {
-                    return targetThreadsGoal;
-                }
-
-                short maxThreads = MaxThreadsForBlockingAdjustment;
-                targetThreadsGoal += _numBlockedThreads;
-                if (targetThreadsGoal < _numBlockedThreads || targetThreadsGoal > maxThreads)
-                {
-                    targetThreadsGoal = maxThreads;
-                }
-                return targetThreadsGoal;
+                return
+                    _numBlockedThreads <= 0
+                        ? _minThreads
+                        : (short)Math.Min((ushort)(_minThreads + _numBlockedThreads), (ushort)MaxThreadsForBlockingAdjustment);
             }
         }
 
@@ -43,17 +34,16 @@ namespace System.Threading
             get
             {
                 _threadAdjustmentLock.VerifyIsLocked();
-
-                short result = (short)(_minThreads + BlockingConfig.MaxThreadsToAddBeforeFallback);
-                return result < BlockingConfig.MaxThreadsToAddBeforeFallback || result > _maxThreads ? _maxThreads : result;
+                return
+                    (short)Math.Min((ushort)(_minThreads + BlockingConfig.MaxThreadsToAddBeforeFallback), (ushort)_maxThreads);
             }
         }
 
-        public void NotifyThreadBlocked()
+        public bool NotifyThreadBlocked()
         {
             if (!BlockingConfig.IsCooperativeBlockingEnabled || !Thread.CurrentThread.IsThreadPoolThread)
             {
-                return;
+                return false;
             }
 
             bool wakeGateThread = false;
@@ -82,14 +72,13 @@ namespace System.Threading
             {
                 GateThread.Wake(this);
             }
+            return true;
         }
 
         public void NotifyThreadUnblocked()
         {
-            if (!BlockingConfig.IsCooperativeBlockingEnabled || !Thread.CurrentThread.IsThreadPoolThread)
-            {
-                return;
-            }
+            Debug.Assert(BlockingConfig.IsCooperativeBlockingEnabled);
+            Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
 
             bool wakeGateThread = false;
             _threadAdjustmentLock.Acquire();
@@ -173,11 +162,8 @@ namespace System.Threading
             }
 
             short maxThreads = MaxThreadsForBlockingAdjustment;
-            short configuredMaxThreadsWithoutDelay = (short)(_minThreads + BlockingConfig.ThreadsToAddWithoutDelay);
-            if (configuredMaxThreadsWithoutDelay < BlockingConfig.ThreadsToAddWithoutDelay)
-            {
-                configuredMaxThreadsWithoutDelay = maxThreads;
-            }
+            short configuredMaxThreadsWithoutDelay =
+                (short)Math.Min((ushort)(_minThreads + BlockingConfig.ThreadsToAddWithoutDelay), (ushort)maxThreads);
 
             do
             {

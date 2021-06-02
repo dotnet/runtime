@@ -2973,14 +2973,17 @@ namespace System.Threading.Tasks
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44622
                     if (infiniteWait)
                     {
-                        ThreadPool.NotifyThreadBlocked();
+                        bool notifyWhenUnblocked = ThreadPool.NotifyThreadBlocked();
                         try
                         {
                             returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
                         }
                         finally
                         {
-                            ThreadPool.NotifyThreadUnblocked();
+                            if (notifyWhenUnblocked)
+                            {
+                                ThreadPool.NotifyThreadUnblocked();
+                            }
                         }
                     }
                     else
@@ -2988,14 +2991,17 @@ namespace System.Threading.Tasks
                         uint elapsedTimeTicks = ((uint)Environment.TickCount) - startTimeTicks;
                         if (elapsedTimeTicks < millisecondsTimeout)
                         {
-                            ThreadPool.NotifyThreadBlocked();
+                            bool notifyWhenUnblocked = ThreadPool.NotifyThreadBlocked();
                             try
                             {
                                 returnValue = mres.Wait((int)(millisecondsTimeout - elapsedTimeTicks), cancellationToken);
                             }
                             finally
                             {
-                                ThreadPool.NotifyThreadUnblocked();
+                                if (notifyWhenUnblocked)
+                                {
+                                    ThreadPool.NotifyThreadUnblocked();
+                                }
                             }
                         }
                     }
