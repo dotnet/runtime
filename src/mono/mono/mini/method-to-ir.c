@@ -5853,15 +5853,6 @@ static void
 emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 {
 	MonoInst *ins;
-	gboolean has_filter = FALSE;
-
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-			has_filter = TRUE;
-	}
-	if (!has_filter)
-		return;
 
 	MonoInst **iargs;
 	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
@@ -5871,9 +5862,12 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	MonoInst *ftndesc;
 
 	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
-	/* Tell the llvm backend to skip emitting the rest of the method code */
-	cfg->interp_entry_only = TRUE;
 
+	/*
+	 * Emit a call to the interp entry function. We emit it here instead of the llvm backend since
+	 * calling conventions etc. are easier to handle here. The LLVM backend will only emit the
+	 * entry/exit bblocks.
+	 */
 	g_assert (cfg->cbb == cfg->bb_init);
 	/* Obtain the interp entry function */
 	ftndesc = mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_get_interp_entry, iargs);
@@ -5883,8 +5877,15 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
 	ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
 	/* Do a normal return */
-	if (cfg->ret)
+	if (cfg->ret) {
 		emit_setret (cfg, ins);
+		/*
+		 * Since only bb_entry/bb_exit is emitted if interp_entry_only is set,
+		 * its possible that the return value becomes an OP_PHI node whose inputs
+		 * are not emitted. Make it volatile to prevent that.
+		 */
+		cfg->ret->flags |= MONO_INST_VOLATILE;
+	}
 	MONO_INST_NEW (cfg, ins, OP_BR);
 	ins->inst_target_bb = cfg->bb_exit;
 	MONO_ADD_INS (cfg->cbb, ins);
@@ -6489,8 +6490,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (cfg->llvm_only && cfg->interp)
-		emit_llvmonly_interp_entry (cfg, header);
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		for (int i = 0; i < header->num_clauses; ++i) {
+			MonoExceptionClause *clause = &header->clauses [i];
+			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
+				cfg->interp_entry_only = TRUE;
+		}
+
+		if (cfg->interp_entry_only)
+			emit_llvmonly_interp_entry (cfg, header);
+	}
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {
