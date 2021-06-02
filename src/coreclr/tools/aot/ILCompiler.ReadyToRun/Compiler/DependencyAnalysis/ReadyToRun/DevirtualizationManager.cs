@@ -57,7 +57,35 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-                return base.ResolveVirtualMethod(declMethod, implType);
+                MethodDesc resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType);
+
+                // Validate that the inheritance chain for resolution is within version bubble
+                // The rule is somewhat tricky here.
+                // If the resolved method is the declMethod, then only types which derive from the
+                // OwningType of the decl method need to be within the version bubble.
+                //
+                // If not, then then all the types from the implType to the Owning type of the resolved
+                // virtual method must be within the version bubble.
+                bool encounteredOutsideOfVersionBubbleType = false;
+                TypeDesc resolvedVirtualMethodOwningType = resolvedVirtualMethod.OwningType;
+                for (TypeDesc typeExamine = implType; typeExamine != null; typeExamine = typeExamine.BaseType)
+                {
+                    if (!_compilationModuleGroup.VersionsWithType(typeExamine.GetTypeDefinition()))
+                    {
+                        if (encounteredOutsideOfVersionBubbleType)
+                        {
+                            // Two levels of version bubble mismatch
+                            return null;
+                        }
+
+                        if (!declMethod.OwningType.HasSameTypeDefinition(resolvedVirtualMethodOwningType))
+                            return null;
+
+                        encounteredOutsideOfVersionBubbleType = true;
+                    }
+                    if (typeExamine.HasSameTypeDefinition(resolvedVirtualMethodOwningType))
+                        return resolvedVirtualMethod;
+                }
             }
 
             // Cannot devirtualize across version bubble boundary
