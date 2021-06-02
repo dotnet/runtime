@@ -9511,92 +9511,62 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 
 #if FEATURE_MULTIREG_RET
     call->InitializeStructReturnType(this, retClsHnd, call->GetUnmanagedCallConv());
-#endif // FEATURE_MULTIREG_RET
-
-#ifdef UNIX_AMD64_ABI
-
-    // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
-    assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
-
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
-    if (retRegCount == 0)
-    {
-        // struct not returned in registers i.e returned via hiddden retbuf arg.
-        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-    }
-    else if (retRegCount == 1)
-    {
-        return call;
-    }
-    else
-    {
-        // must be a struct returned in two registers
-        assert(retRegCount == 2);
+#else  // !FEATURE_MULTIREG_RET
+    const unsigned retRegCount = 1;
+#endif // !FEATURE_MULTIREG_RET
 
-        if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-        {
-            // Force a call returning multi-reg struct to be always of the IR form
-            //   tmp = call
-            //
-            // No need to assign a multi-reg struct to a local var if:
-            //  - It is a tail call or
-            //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
-        }
-    }
-
-#else // not UNIX_AMD64_ABI
-
-    // Check for TYP_STRUCT type that wraps a primitive type
-    // Such structs are returned using a single register
-    // and we change the return type on those calls here.
-    //
     structPassingKind howToReturnStruct;
-    var_types         returnType;
-
-    returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+    var_types         returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
 
     if (howToReturnStruct == SPK_ByReference)
     {
         assert(returnType == TYP_UNKNOWN);
         call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-    }
-    else
-    {
-
-#if !FEATURE_MULTIREG_RET
         return call;
-#else  // FEATURE_MULTIREG_RET
-        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
-        assert(retRegCount != 0);
-        if (retRegCount == 1)
-        {
-            return call;
-        }
-
-        assert(returnType == TYP_STRUCT);
-        assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
-
-        assert(call->gtReturnType == returnType);
-
-        assert(retRegCount >= 2);
-        if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-        {
-            // Force a call returning multi-reg struct to be always of the IR form
-            //   tmp = call
-            //
-            // No need to assign a multi-reg struct to a local var if:
-            //  - It is a tail call or
-            //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
-        }
-#endif // FEATURE_MULTIREG_RET
     }
+
+    if (retRegCount == 1)
+    {
+        // Recognize SIMD types as we do for LCL_VARs,
+        // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
+        // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
+        var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
+        if (simdReturnType != call->TypeGet())
+        {
+            assert(varTypeIsSIMD(simdReturnType));
+            JITDUMP("changing the type of a single reg call [%06u] from %s to %s\n", dspTreeID(call),
+                    varTypeName(call->TypeGet()), varTypeName(returnType));
+            call->ChangeType(simdReturnType);
+        }
+        return call;
+    }
+
+#if FEATURE_MULTIREG_RET
+    assert(returnType == TYP_STRUCT);
+    assert(call->gtReturnType == returnType);
+    assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
+
+#ifdef UNIX_AMD64_ABI
+    // must be a struct returned in two registers
+    assert(retRegCount == 2);
+#else  // not UNIX_AMD64_ABI
+    assert(retRegCount >= 2);
 #endif // not UNIX_AMD64_ABI
 
+    if (!call->CanTailCall() && !call->IsInlineCandidate())
+    {
+        // Force a call returning multi-reg struct to be always of the IR form
+        //   tmp = call
+        //
+        // No need to assign a multi-reg struct to a local var if:
+        //  - It is a tail call or
+        //  - The call is marked for in-lining later
+        return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
+    }
     return call;
+#endif // FEATURE_MULTIREG_RET
 }
 
 /*****************************************************************************
