@@ -218,31 +218,37 @@ public:
             // using the 12-bit scaled immediate stack offset. The load/stores can be implemented as 1/2/4/8
             // bytes each (natural binary sizes).
             //
-            // We emit offsets of these natural binary sizes, emitting larger entries first to keep them aligned
-            //
-            // The algorithm is generalized to move an arbitrary stack size argument.  This keeps the ABI details
-            // localized to the population of ArgLocDesc. We are relying on ArgLoc as the source of truth.
-            //
             // Each offset is encode as a log2 size and a 12-bit unsigned scaled offset.
+            // We only emit offsets of these natural binary sizes
+            //
+            // We choose the offset based on the ABI stack alignment requirements
+            // - Small integers are shuffled based on their size
+            // - HFA are shuffled based on their element size
+            // - Others are shuffled in full 8 byte chunks.
             int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
-            int log2Size = 0;
+            int log2Size = 3;
 
-            switch(m_argLocDesc->m_byteStackSize & 0x7)
+            // If isHFA, shuffle based on field size
+            // otherwise shuffle based on stack size
+            switch(m_argLocDesc->m_hfaFieldSize ? m_argLocDesc->m_hfaFieldSize : m_argLocDesc->m_byteStackSize)
             {
-                case 0: // Multiple of 8
-                    log2Size = 3;
+                case 1:
+                    log2Size = 0;
                     break;
-                case 2: // Multiple of 2
+                case 2:
                     log2Size = 1;
                     break;
-                case 4: // Multiple of 4
+                case 4:
                     log2Size = 2;
                     break;
-                case 6: // Multiple of 2
-                    log2Size = 1;
+                case 3: // Unsupported Size
+                case 5: // Unsupported Size
+                case 6: // Unsupported Size
+                case 7: // Unsupported Size
+                    _ASSERTE(false);
                     break;
-                default: // Odd
-                    log2Size = 0;
+                default: // Shoud be a multiple of 8 (TARGET_POINTER_SIZE)
+                    _ASSERTE(bytesRemaining >= TARGET_POINTER_SIZE);
                     break;
             }
 
