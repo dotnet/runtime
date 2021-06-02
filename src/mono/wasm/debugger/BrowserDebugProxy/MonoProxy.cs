@@ -134,15 +134,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                                     return true;
                                 }
-                            case "mono_wasm_fire_bp":
-                            case "_mono_wasm_fire_bp":
-                            case "_mono_wasm_fire_exception":
-                                {
-                                    return false;//await OnPause(sessionId, args, token);
-                                }
                             case "_mono_wasm_fire_debugger_agent_message":
                                 {
-                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                    try {
+                                        return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                    }
+                                    catch (Exception) //if the page is refreshed maybe it stops here.
+                                    {
+                                        return false;
+                                    }
                                 }
                         }
                         break;
@@ -652,7 +652,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return false;
         }
-        private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, CancellationToken token)
+        private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, IEnumerable<JObject> orig_callframes, CancellationToken token)
         {
             var callFrames = new List<object>();
             var frames = new List<Frame>();
@@ -759,6 +759,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             string[] bp_list = new string[bp == null ? 0 : 1];
             if (bp != null)
                 bp_list[0] = bp.StackId;
+
+            foreach (JObject frame in orig_callframes)
+            {
+                string function_name = frame["functionName"]?.Value<string>();
+                string url = frame["url"]?.Value<string>();
+                if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
+                        url.StartsWith("wasm://wasm/", StringComparison.Ordinal) || function_name == "_mono_wasm_fire_debugger_agent_message"))
+                {
+                    callFrames.Add(frame);
+                }
+            }
             var o = JObject.FromObject(new
             {
                 callFrames,
@@ -772,6 +783,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return true;
             }
             SendEvent(sessionId, "Debugger.paused", o, token);
+
             return true;
         }
         private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
@@ -815,7 +827,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             objectId = $"dotnet:object:{object_id}"
                         });
 
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args?["callFrames"]?.Values<JObject>(), token);
                         return ret;
                     }
                     case EventKind.USER_BREAK:
@@ -827,7 +839,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int method_id = 0;
                         if (event_kind != EventKind.USER_BREAK)
                             method_id = ret_debugger_cmd_reader.ReadInt32();
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args?["callFrames"]?.Values<JObject>(), token);
                         return ret;
                     }
                 }

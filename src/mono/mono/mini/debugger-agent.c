@@ -7175,6 +7175,22 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (req);
 				return err;
 			}
+#ifdef TARGET_WASM			
+			int isBPOnManagedCode = 0;
+			SingleStepReq *ss_req = req->info;
+			if (ss_req && ss_req->bps) {
+				GSList *l;
+
+				for (l = ss_req->bps; l; l = l->next) {
+					if (((MonoBreakpoint *)l->data)->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+						isBPOnManagedCode = 1;
+				}
+			}
+			if (!isBPOnManagedCode) {
+				mono_de_cancel_all_ss ();
+			}
+			buffer_add_byte (buf, isBPOnManagedCode);
+#endif
 		} else if (req->event_kind == EVENT_KIND_METHOD_ENTRY) {
 			req->info = mono_de_set_breakpoint (NULL, METHOD_ENTRY_IL_OFFSET, req, NULL);
 		} else if (req->event_kind == EVENT_KIND_METHOD_EXIT) {

@@ -756,9 +756,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write((int)kind);
             command_params_writer.Write((int)(StepFilter.StaticCtor | StepFilter.DebuggerHidden)); //filter
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
-            if (ret_debugger_cmd_reader != null)
-                return true;
-            return false;
+            if (ret_debugger_cmd_reader == null)
+                return false;
+            var isBPOnManagedCode = ret_debugger_cmd_reader.ReadInt32();
+            if (isBPOnManagedCode == 0)
+                return false;
+            return true;
         }
 
         public async Task<bool> ClearSingleStep(SessionId sessionId, int req_id, CancellationToken token)
