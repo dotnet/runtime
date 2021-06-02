@@ -7,10 +7,10 @@ function load_config() {
     // since this file loads before emsdk we don't have environment vars yet, so we define them locally
     var ENVIRONMENT_IS_NODE = typeof process === 'object';
     var ENVIRONMENT_IS_WEB = typeof window === 'object';
-    // var ENVIRONMENT_IS_WORKER = typeof importScripts === 'function';
-    // var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
-    callback = Module['onConfigLoaded'];
+    // In some cases there may be no Module object (such as in tests)
+    // so we no-op during the callback
+    let callback = Module ? Module['onConfigLoaded'] : (_) => {};
 
     if (ENVIRONMENT_IS_NODE){
         try {
