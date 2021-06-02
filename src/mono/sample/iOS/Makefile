@@ -47,7 +47,7 @@ run-catalyst:
 	/p:TargetOS=MacCatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=False \
-	/p:ForceAOT=False
+	/p:ForceAOT=True
 
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish \
@@ -66,7 +66,7 @@ run-catalyst-interp:
 	/p:TargetOS=MacCatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=False \
-	/p:ForceAOT=False \
+	/p:ForceAOT=True \
 	/p:MonoForceInterpreter=true
 
 clean:
