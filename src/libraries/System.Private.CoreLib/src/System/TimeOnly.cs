@@ -177,7 +177,7 @@ namespace System
         /// <returns>True, if the time falls within the range, false otherwise.</returns>
         /// <remarks>
         /// If <paramref name="start"/> and <paramref name="end"/> are equal, this method returns false, meaning there is zero elapsed time between the two values.
-        /// If you wish to treat such cases as 24 hours, then first check for equality before calling this method.
+        /// If you wish to treat such cases as representing one or more whole days, then first check for equality before calling this method.
         /// </remarks>
         public bool IsBetween(TimeOnly start, TimeOnly end)
         {
