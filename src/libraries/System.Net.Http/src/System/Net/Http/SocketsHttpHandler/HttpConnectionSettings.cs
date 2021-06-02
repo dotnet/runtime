@@ -68,6 +68,7 @@ namespace System.Net.Http
         internal IDictionary<string, object?>? _properties;
 
         internal TimeSpan? _fakeRtt;
+        internal bool _enableDynamicHttp2StreamWindowSizing = true;
 
         internal int _initialStreamWindowSize = 65535;
         internal int _streamWindowUpdateRatio = 8;
@@ -129,7 +130,8 @@ namespace System.Net.Http
                 _fakeRtt = _fakeRtt,
                 _initialStreamWindowSize = _initialStreamWindowSize,
                 _streamWindowUpdateRatio = _streamWindowUpdateRatio,
-                _streamWindowMagicMultiplier = _streamWindowMagicMultiplier
+                _streamWindowMagicMultiplier = _streamWindowMagicMultiplier,
+                _enableDynamicHttp2StreamWindowSizing = _enableDynamicHttp2StreamWindowSizing
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.

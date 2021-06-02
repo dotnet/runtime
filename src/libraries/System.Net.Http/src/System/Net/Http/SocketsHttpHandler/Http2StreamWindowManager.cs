@@ -88,7 +88,7 @@ namespace System.Net.Http
                 int windowSizeIncrement = _delivered;
                 TimeSpan currentTime = _stopwatch.Elapsed;
 
-                if (_connection._rttEstimator.Rtt > TimeSpan.Zero)
+                if (_connection._rttEstimator!.Rtt > TimeSpan.Zero)
                 {
                     TimeSpan rtt = _connection._rttEstimator.Rtt;
                     TimeSpan dt = currentTime - _lastWindowUpdate;

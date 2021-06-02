@@ -97,7 +97,7 @@ namespace System.Net.Http
 
                 _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
-                _windowManager = connection._rttEstimator != null ?
+                _windowManager = connection._pool.Settings._enableDynamicHttp2StreamWindowSizing  ?
                     new DynamicHttp2StreamWindowManager(connection, this) :
                     new Http2StreamWindowManager(connection, this);
 

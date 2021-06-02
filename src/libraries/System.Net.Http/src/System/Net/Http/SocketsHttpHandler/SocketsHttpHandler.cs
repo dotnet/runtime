@@ -55,6 +55,12 @@ namespace System.Net.Http
             }
         }
 
+        public bool EnableDynamicHttp2StreamWindowSizing
+        {
+            get => _settings._enableDynamicHttp2StreamWindowSizing;
+            set => _settings._enableDynamicHttp2StreamWindowSizing = value;
+        }
+
         public TimeSpan? FakeRtt
         {
             get => _settings._fakeRtt;

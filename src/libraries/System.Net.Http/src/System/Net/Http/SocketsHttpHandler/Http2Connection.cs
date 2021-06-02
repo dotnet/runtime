@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
-        private readonly RttEstimator _rttEstimator;
+        private readonly RttEstimator? _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
@@ -137,7 +137,8 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
             InitialStreamWindowSize = pool.Settings._initialStreamWindowSize;
-            _rttEstimator = new RttEstimator(this, pool.Settings._fakeRtt);
+            _rttEstimator = pool.Settings._enableDynamicHttp2StreamWindowSizing ?
+                new RttEstimator(this, pool.Settings._fakeRtt) : null;
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -589,7 +590,7 @@ namespace System.Net.Http
 
             if (frameData.Length > 0)
             {
-                _rttEstimator.Update();
+                _rttEstimator?.Update();
                 ExtendWindow(frameData.Length);
             }
 
@@ -1993,7 +1994,7 @@ namespace System.Net.Http
         {
             if (payload < 0) // RTT ping
             {
-                _rttEstimator.OnPingAck(payload);
+                _rttEstimator?.OnPingAck(payload);
                 return;
             }
             else // Keepalive ping
