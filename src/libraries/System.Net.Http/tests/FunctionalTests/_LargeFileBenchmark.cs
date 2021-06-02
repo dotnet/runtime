@@ -145,6 +145,12 @@ namespace System.Net.Http.Functional.Tests
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < NStreams; i++)
             {
+                message = new HttpRequestMessage
+                {
+                    RequestUri = message.RequestUri,
+                    Version = message.Version,
+                    VersionPolicy = message.VersionPolicy
+                };
                 var task = Task.Run(() => client.SendAsync(message));
                 tasks.Add(task);
             }
