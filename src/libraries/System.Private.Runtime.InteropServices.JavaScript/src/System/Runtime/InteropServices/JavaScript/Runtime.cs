@@ -566,22 +566,37 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.OBJECT;
         }
 
-        private static Dictionary<MarshalType, char> MarshalTypeToCallSignatureCharacter = new Dictionary<MarshalType, char> {
-            { MarshalType.BOOL, 'i' },
-            { MarshalType.INT, 'i' },
-            { MarshalType.UINT32, 'i' },
-            { MarshalType.UINT64, 'l' },
-            { MarshalType.INT64, 'l' },
-            { MarshalType.FP32, 'f' },
-            { MarshalType.FP64, 'd' },
-            { MarshalType.STRING, 's' },
-            { MarshalType.URI, 'u' },
-            { MarshalType.SAFEHANDLE, 'h' },
-            { MarshalType.ENUM, 'j' },
-            { MarshalType.ENUM64, 'k' },
-            { MarshalType.OBJECT, 'o' },
-            { MarshalType.VT, 'a' },
-        };
+        private static char? GetCallSignatureCharacterForMarshalType (MarshalType t) {
+            switch (t) {
+                case MarshalType.BOOL:
+                case MarshalType.INT:
+                case MarshalType.UINT32:
+                    return 'i';
+                case MarshalType.UINT64:
+                case MarshalType.INT64:
+                    return 'l';
+                case MarshalType.FP32:
+                    return 'f';
+                case MarshalType.FP64:
+                    return 'd';
+                case MarshalType.STRING:
+                    return 's';
+                case MarshalType.URI:
+                    return 'u';
+                case MarshalType.SAFEHANDLE:
+                    return 'h';
+                case MarshalType.ENUM:
+                    return 'j';
+                case MarshalType.ENUM64:
+                    return 'k';
+                case MarshalType.OBJECT:
+                    return 'o';
+                case MarshalType.VT:
+                    return 'a';
+                default:
+                    return null;
+            }
+        }
 
         public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
         {
@@ -603,7 +618,10 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 Type t = parms[c].ParameterType;
                 var mt = GetMarshalTypeFromType(t);
-                if (!MarshalTypeToCallSignatureCharacter.TryGetValue(mt, out res[c]))
+                var csc = GetCallSignatureCharacterForMarshalType(mt);
+                if (csc.HasValue)
+                    res[c] = csc.Value;
+                else
                     throw new Exception ("No signature character for marshal type " + mt);
             }
             return new string(res);
