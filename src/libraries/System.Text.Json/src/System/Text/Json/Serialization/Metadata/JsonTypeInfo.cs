@@ -191,6 +191,7 @@ namespace System.Text.Json.Serialization.Metadata
                                 : StringComparer.Ordinal);
 
                         Dictionary<string, MemberInfo>? ignoredMembers = null;
+                        Dictionary<string, PropertyInfo>? overrideProperties = null;
 
                         // We start from the most derived type.
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
@@ -213,7 +214,7 @@ namespace System.Text.Json.Serialization.Metadata
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, typeNumberHandling, cache, ref ignoredMembers);
+                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, typeNumberHandling, cache, ref ignoredMembers, ref overrideProperties);
                                 }
                                 else
                                 {
@@ -228,18 +229,13 @@ namespace System.Text.Json.Serialization.Metadata
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                             {
-                                if (PropertyIsOverridenAndIgnored(fieldInfo, ignoredMembers))
-                                {
-                                    continue;
-                                }
-
                                 bool hasJsonInclude = JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(fieldInfo) != null;
 
                                 if (fieldInfo.IsPublic)
                                 {
                                     if (hasJsonInclude || Options.IncludeFields)
                                     {
-                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, typeNumberHandling, cache, ref ignoredMembers);
+                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, typeNumberHandling, cache, ref ignoredMembers, ref overrideProperties);
                                     }
                                 }
                                 else
@@ -321,18 +317,23 @@ namespace System.Text.Json.Serialization.Metadata
             MemberInfo memberInfo,
             JsonNumberHandling? typeNumberHandling,
             Dictionary<string, JsonPropertyInfo> cache,
-            ref Dictionary<string, MemberInfo>? ignoredMembers)
+            ref Dictionary<string, MemberInfo>? ignoredMembers,
+            ref Dictionary<string, PropertyInfo>? overrideProperties)
         {
             JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, typeNumberHandling, Options);
             Debug.Assert(jsonPropertyInfo.NameAsString != null);
 
             string memberName = memberInfo.Name;
+            PropertyInfo? property = memberInfo as PropertyInfo;
 
-            // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-            if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+            // Virtual properties that are overrides are implicitly ignored regardless of a JsonPropertyNameAttribute.
+            if ((property == null ||
+                overrideProperties == null ||
+                !overrideProperties.TryGetValue(memberName, out PropertyInfo? overrideProperty) ||
+                !IsOverrideOf(overrideProperty, property)) &&
+                !JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo, out JsonPropertyInfo? other))
             {
-                JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
-
+                // The JsonPropertyNameAttribute or naming policy resulted in a collision.
                 if (other.IsIgnored)
                 {
                     // Overwrite previously cached property since it has [JsonIgnore].
@@ -344,7 +345,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Is the current property hidden by the previously cached property
                     // (with `new` keyword, or by overriding)?
                     other.MemberInfo!.Name != memberName &&
-                    // Was a property with the same CLR name was ignored? That property hid the current property,
+                    // Was a property with the same CLR name ignored? That property hid the current property,
                     // thus, if it was ignored, the current property should be ignored too.
                     ignoredMembers?.ContainsKey(memberName) != true)
                 {
@@ -358,6 +359,34 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 (ignoredMembers ??= new Dictionary<string, MemberInfo>()).Add(memberName, memberInfo);
             }
+            else if (property != null && IsOverride(property))
+            {
+                (overrideProperties ??= new Dictionary<string, PropertyInfo>())[memberName] = property;
+            }
+        }
+
+        private static bool IsOverrideOf(PropertyInfo property, PropertyInfo other)
+        {
+            MethodInfo? getMethod = property.GetMethod;
+            if (getMethod != null)
+            {
+                return getMethod.GetBaseDefinition() == other.GetMethod?.GetBaseDefinition();
+            }
+
+            MethodInfo? setMethod = property.SetMethod;
+            return setMethod != null && setMethod.GetBaseDefinition() == other.SetMethod?.GetBaseDefinition();
+        }
+
+        private static bool IsOverride(PropertyInfo property)
+        {
+            MethodInfo? getMethod = property.GetMethod;
+            if (getMethod != null)
+            {
+                return getMethod.GetBaseDefinition() != getMethod;
+            }
+
+            MethodInfo? setMethod = property.SetMethod;
+            return setMethod != null && setMethod.GetBaseDefinition() == setMethod;
         }
 
         private sealed class ParameterLookupKey
@@ -423,11 +452,10 @@ namespace System.Text.Json.Serialization.Metadata
                 string propertyName = jsonProperty.MemberInfo!.Name;
                 var key = new ParameterLookupKey(propertyName, GetMemberType(jsonProperty.MemberInfo));
                 var value= new ParameterLookupValue(jsonProperty);
-                if (!JsonHelpers.TryAdd(nameLookup, key, value))
+                if (!JsonHelpers.TryAdd(nameLookup, key, value, out ParameterLookupValue? existing))
                 {
                     // More than one property has the same case-insensitive name and Type.
                     // Remember so we can throw a nice exception if this property is used as a parameter name.
-                    ParameterLookupValue existing = nameLookup[key];
                     existing!.DuplicateName = propertyName;
                 }
             }
@@ -469,33 +497,16 @@ namespace System.Text.Json.Serialization.Metadata
             ParameterCache = parameterCache;
             ParameterCount = parameters.Length;
         }
-        private static bool PropertyIsOverridenAndIgnored(MemberInfo currentMember, Dictionary<string, MemberInfo>? ignoredMembers)
+        private static bool PropertyIsOverridenAndIgnored(PropertyInfo currentProperty, Dictionary<string, MemberInfo>? ignoredMembers)
         {
-            if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMember.Name, out MemberInfo? ignoredProperty))
+            if (ignoredMembers == null ||
+                !ignoredMembers.TryGetValue(currentProperty.Name, out MemberInfo? ignoredMember) ||
+                ignoredMember is not PropertyInfo ignoredProperty)
             {
                 return false;
             }
 
-            Debug.Assert(currentMember is PropertyInfo || currentMember is FieldInfo);
-            PropertyInfo? currentPropertyInfo = currentMember as PropertyInfo;
-            Type currentMemberType = currentPropertyInfo == null
-                ? Unsafe.As<FieldInfo>(currentMember).FieldType
-                : currentPropertyInfo.PropertyType;
-
-            Debug.Assert(ignoredProperty is PropertyInfo || ignoredProperty is FieldInfo);
-            PropertyInfo? ignoredPropertyInfo = ignoredProperty as PropertyInfo;
-            Type ignoredPropertyType = ignoredPropertyInfo == null
-                ? Unsafe.As<FieldInfo>(ignoredProperty).FieldType
-                : ignoredPropertyInfo.PropertyType;
-
-            return currentMemberType == ignoredPropertyType &&
-                PropertyIsVirtual(currentPropertyInfo) &&
-                PropertyIsVirtual(ignoredPropertyInfo);
-        }
-
-        private static bool PropertyIsVirtual(PropertyInfo? propertyInfo)
-        {
-            return propertyInfo != null && (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true);
+            return IsOverrideOf(currentProperty, ignoredProperty);
         }
 
         private bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
