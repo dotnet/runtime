@@ -33,5 +33,22 @@ namespace System.Globalization.Tests
                 Assert.Equal(display, ci.DisplayName);
             }, cultureName, uiCultureName, nativeName, displayName).Dispose();
         }
+
+        [ConditionalFact(nameof(IsIcuAndRemoteExecutionSupported))]
+        public void TestDisplayNameWithSettingUICultureMultipleTime()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                CultureInfo ci = CultureInfo.GetCultureInfo("en-US");
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+                Assert.Equal("English (United States)", ci.DisplayName);
+
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");
+                Assert.Equal("anglais (États-Unis)", ci.DisplayName);
+
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+                Assert.Equal("Englisch (Vereinigte Staaten)", ci.DisplayName);
+            }).Dispose();
+        }
     }
 }

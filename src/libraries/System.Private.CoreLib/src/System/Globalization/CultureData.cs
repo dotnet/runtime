@@ -1100,8 +1100,7 @@ namespace System.Globalization
                                                                             IcuGetThreeLetterWindowsLanguageName(_sRealName!);
 
         /// <summary>
-        /// Localized name for this language (Windows Only) ie: Inglis
-        /// This is only valid for Windows 8 and higher neutrals:
+        /// Localized name for this language
         /// </summary>
         private string LocalizedLanguageName
         {
@@ -1110,17 +1109,8 @@ namespace System.Globalization
                 string sLocalizedLanguage = NativeLanguageName;
                 if (!GlobalizationMode.Invariant && Name.Length > 0)
                 {
-                    // Usually the UI culture shouldn't be different than what we got from WinRT except
-                    // if DefaultThreadCurrentUICulture was set
-                    CultureInfo ci;
-
-                    if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                        ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
-                        !CultureInfo.DefaultThreadCurrentUICulture!.Name.Equals(ci.Name))
-                    {
-                        sLocalizedLanguage = NativeLanguageName;
-                    }
-                    else
+                    // If ICU is enabled we call it anyway. If NLS, we call it only if the Windows UI language match the Current UI language
+                    if (!GlobalizationMode.UseNls || CultureInfo.UserDefaultUICulture?.Name == CultureInfo.CurrentUICulture.Name)
                     {
                         sLocalizedLanguage = GetLocaleInfoCore(LocaleStringData.LocalizedLanguageName, CultureInfo.CurrentUICulture.Name);
                     }
