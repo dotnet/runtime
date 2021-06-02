@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32)]
-        public static extern int WaitForInputIdle(SafeProcessHandle handle, int milliseconds);
+        [GeneratedDllImport(Libraries.User32)]
+        public static partial int WaitForInputIdle(SafeProcessHandle handle, int milliseconds);
     }
 }
