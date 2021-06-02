@@ -7,10 +7,11 @@
     <TestRuntime>true</TestRuntime>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TargetOS Condition="'$(TargetOS)' == ''">iOSSimulator</TargetOS>
-    <MainLibraryFileName>iOS.Simulator.Aot.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>iOS.Simulator.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <MonoEnableLLVM>true</MonoEnableLLVM>
   </PropertyGroup>
 
   <ItemGroup>
