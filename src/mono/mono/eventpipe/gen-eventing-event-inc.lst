@@ -3,6 +3,7 @@
 AppDomainDCEnd_V1
 AssemblyDCEnd_V1
 AssemblyLoad_V1
+AssemblyUnload_V1
 DCEndComplete_V1
 DCEndInit_V1
 DomainModuleDCEnd_V1
@@ -18,7 +19,9 @@ MethodLoad_V1
 MethodLoadVerbose_V1
 ModuleDCEnd_V2
 ModuleLoad_V2
+ModuleUnload_V2
 RuntimeInformationDCStart
+ThreadCreated
 ThreadPoolIODequeue
 ThreadPoolIOEnqueue
 ThreadPoolWorkerThreadAdjustmentAdjustment
@@ -28,3 +31,4 @@ ThreadPoolWorkerThreadStart
 ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
+ThreadTerminated

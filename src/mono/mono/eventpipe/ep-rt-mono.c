@@ -164,6 +164,11 @@ struct _AssemblyEventData {
 
 typedef struct _AssemblyEventData AssemblyEventData;
 
+// Event flags.
+#define THREAD_FLAG_GC_SPECIAL 0x00000001
+#define THREAD_FLAG_FINALIZER 0x00000002
+#define THREAD_FLAG_THREADPOOL_WORKER 0x00000004
+
 /*
  * Forward declares of all static functions.
  */
@@ -1970,6 +1975,69 @@ ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly)
 }
 
 bool
+ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
+{
+	if (!EventEnabledThreadCreated ())
+		return true;
+
+	uint64_t managed_thread = 0;
+	uint64_t native_thread_id = ep_rt_thread_id_t_to_uint64_t (tid);
+	uint64_t managed_thread_id = 0;
+	uint32_t flags = 0;
+
+	MonoThread *thread = mono_thread_current ();
+	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid) {
+		managed_thread_id = (uint64_t)mono_thread_get_managed_id (thread);
+		managed_thread = (uint64_t)thread;
+
+		switch (mono_thread_info_get_flags (thread->thread_info)) {
+		case MONO_THREAD_INFO_FLAGS_NO_GC:
+		case MONO_THREAD_INFO_FLAGS_NO_SAMPLE:
+			flags |= THREAD_FLAG_GC_SPECIAL;
+		}
+
+		if (mono_gc_is_finalizer_thread (thread))
+			flags |= THREAD_FLAG_FINALIZER;
+
+		if (thread->threadpool_thread)
+			flags |= THREAD_FLAG_THREADPOOL_WORKER;
+	}
+
+	FireEtwThreadCreated (
+		managed_thread,
+		(uint64_t)mono_get_root_domain (),
+		flags,
+		managed_thread_id,
+		native_thread_id,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid)
+{
+	if (!EventEnabledThreadTerminated ())
+		return true;
+
+	uint64_t managed_thread = 0;
+	MonoThread *thread = mono_thread_current ();
+	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid)
+		managed_thread = (uint64_t)thread;
+
+	FireEtwThreadTerminated (
+		managed_thread,
+		(uint64_t)mono_get_root_domain (),
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
 ep_rt_write_event_threadpool_worker_thread_start (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,
@@ -2178,6 +2246,24 @@ profiler_assembly_unloaded (
 	ep_rt_mono_write_event_assembly_unload (assembly);
 }
 
+static
+void
+profiler_thread_started (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	ep_rt_mono_write_event_thread_created (ep_rt_uint64_t_to_thread_id_t (tid));
+}
+
+static
+void
+profiler_thread_stopped (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	ep_rt_mono_write_event_thread_terminated (ep_rt_uint64_t_to_thread_id_t (tid));
+}
+
 //no domain load/unload only one.
 //
 //unload module,
@@ -2216,12 +2302,16 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, profiler_image_unloaded);
 			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, profiler_assembly_loaded);
 			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, profiler_assembly_unloaded);
+			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, profiler_thread_started);
+			mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_thread_stopped);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
-			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_begin_callback (_ep_rt_mono_profiler, NULL);

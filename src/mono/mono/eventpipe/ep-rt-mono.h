@@ -2175,6 +2175,12 @@ bool
 ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
 
 bool
+ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid);
+
+bool
 ep_rt_write_event_threadpool_worker_thread_start (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,
