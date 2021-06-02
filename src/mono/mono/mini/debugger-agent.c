@@ -4516,7 +4516,7 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	StackFrame **frames = NULL;
 	int nframes = 0;
 	
-	GET_TLS_DATA(ss_req->thread);
+	GET_TLS_DATA (ss_req->thread);
 	
 	g_assert (tls);
 	if (!tls->context.valid) {
@@ -4773,8 +4773,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 	GSList *events;
 	MonoJitInfo *ji, *catch_ji;
 	EventInfo ei;
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	GET_TLS_DATA(thread);
+	GET_TLS_DATA (mono_thread_internal_current ());
 	if (tls != NULL) {
 		if (tls->abort_requested)
 			return;
@@ -7165,7 +7164,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			GET_TLS_DATA(THREAD_TO_INTERNAL(step_thread));
+			GET_TLS_DATA (THREAD_TO_INTERNAL(step_thread));
 			
 			g_assert (tls);
 		
@@ -8891,7 +8890,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		start_frame = decode_int (p, &p, end);
 
-		GET_TLS_DATA(thread);
+		GET_TLS_DATA (thread);
 		if (tls == NULL)
 			return ERR_UNLOADED;
 
@@ -8924,7 +8923,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (start_frame != 0 || length != -1)
 			return ERR_NOT_IMPLEMENTED;
-		GET_TLS_DATA(thread);
+		GET_TLS_DATA (thread);
 		if (tls == NULL)
 			return ERR_UNLOADED;
 
@@ -9112,7 +9111,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	id = decode_id (p, &p, end);
 
-	GET_TLS_DATA(thread);
+	GET_TLS_DATA (thread);
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {
