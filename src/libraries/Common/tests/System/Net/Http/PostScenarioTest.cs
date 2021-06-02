@@ -68,12 +68,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            if (remoteServer.HttpVersion.Major >= 2 && PlatformDetection.IsBrowser)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
-                return;
-            }
-
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
@@ -83,12 +77,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            if (remoteServer.HttpVersion.Major >= 2 && PlatformDetection.IsBrowser)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
-                return;
-            }
-
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
@@ -98,12 +86,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            if (remoteServer.HttpVersion.Major >= 2 && PlatformDetection.IsBrowser)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
-                return;
-            }
-
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
