@@ -352,6 +352,10 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+
+      <!-- remove any satellite assemblies -->
+      <_AotInputAssemblies Remove="@(_AotInputAssemblies)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('.resources.dll'))" />
+
       <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
@@ -421,9 +425,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
       <_WasmNativeFileForLinking Include="@(_BitcodeFile)" />
     </ItemGroup>
-
-    <Error Condition="@(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
-           Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
