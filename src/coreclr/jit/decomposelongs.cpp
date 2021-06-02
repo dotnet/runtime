@@ -1848,11 +1848,6 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
 
     if (varTypeIsSmall(dstType))
     {
-        // TODO-Cleanup: this path is not reachable right now
-        // because morph splits "long -> small type" casts into
-        // "long -> int -> small type" chains. Investigate what
-        // happens if you disable this decomposition.
-        // Likely, there will be CSE-related regressions.
         cast->CastOp() = loSrc;
     }
     else
