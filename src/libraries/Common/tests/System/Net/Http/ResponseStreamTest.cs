@@ -227,6 +227,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 #if NETCOREAPP
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
@@ -241,6 +242,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]
@@ -255,6 +257,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]

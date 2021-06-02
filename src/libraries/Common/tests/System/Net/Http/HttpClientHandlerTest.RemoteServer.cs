@@ -126,6 +126,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -142,6 +143,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
