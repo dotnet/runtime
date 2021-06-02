@@ -658,14 +658,25 @@ namespace System.IO.Pipes.Tests
             Task wait1 = server1.WaitForConnectionAsync();
             Task wait2 = server2.WaitForConnectionAsync();
             server1.Dispose();
+            await ValidateDisposedExceptionsAsync(server1);
 
             using NamedPipeClientStream client = CreateClientStream(pipeName);
             await client.ConnectAsync();
 
             await Assert.ThrowsAsync<IOException>(() => wait1);
-            await ValidateDisposedExceptionsAsync(server1);
 
             await wait2;
+
+            foreach ((Stream writeable, Stream readable) in GetReadWritePairs((server2, client)))
+            {
+                byte[] sent = new byte[] { 123 };
+                byte[] received = new byte[] { 0 };
+
+                Task t = Task.Run(() => writeable.Write(sent, 0, sent.Length));
+                Assert.Equal(sent.Length, readable.Read(received, 0, sent.Length));
+                Assert.Equal(sent, received);
+                await t;
+            }
         }
     }
 
