@@ -84,6 +84,23 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(BenchmarkServer, 16384)]
         public Task Download20_SpecificWindow_Run4(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
+        [Theory]
+        [InlineData(BenchmarkServer, 4096)]
+        public Task Download20_SpecificWindow_4M_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 4096)]
+        public Task Download20_SpecificWindow_4M_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 4096)]
+        public Task Download20_SpecificWindow_16M_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 4096)]
+        public Task Download20_SpecificWindow_16M_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+
         private Task Download20_SpecificWindow(string hostName, int initialWindowKbytes)
         {
             SocketsHttpHandler handler = new SocketsHttpHandler()
@@ -138,6 +155,7 @@ namespace System.Net.Http.Functional.Tests
             const int NStreams = 4;
             string info = $"SocketsHttpHandler HTTP 2.0 Dynamic {NStreams} concurrent streams";
 
+
             var message = GenerateRequestMessage(hostName, true, LengthMb);
             _output.WriteLine($"{info} / {LengthMb} MB from {message.RequestUri}");
 
@@ -145,13 +163,7 @@ namespace System.Net.Http.Functional.Tests
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < NStreams; i++)
             {
-                message = new HttpRequestMessage
-                {
-                    RequestUri = message.RequestUri,
-                    Version = message.Version,
-                    VersionPolicy = message.VersionPolicy
-                };
-                var task = Task.Run(() => client.SendAsync(message));
+                var task = Task.Run(() => client.SendAsync(GenerateRequestMessage(hostName, true, LengthMb)));
                 tasks.Add(task);
             }
 
@@ -178,6 +190,12 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task<TimeSpan> EstimateRttAsync(string hostName)
         {
+            int sep = hostName.IndexOf(':');
+            if (sep > 0)
+            {
+                hostName = hostName.Substring(0, sep);
+            }
+
             IPAddress addr;
             if (!IPAddress.TryParse(hostName, out addr))
             {
