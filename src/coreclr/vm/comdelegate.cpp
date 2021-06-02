@@ -247,7 +247,7 @@ public:
                 case 7: // Unsupported Size
                     _ASSERTE(false);
                     break;
-                default: // Shoud be a multiple of 8 (TARGET_POINTER_SIZE)
+                default: // Should be a multiple of 8 (TARGET_POINTER_SIZE)
                     _ASSERTE(bytesRemaining >= TARGET_POINTER_SIZE);
                     break;
             }
