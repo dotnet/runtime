@@ -13299,7 +13299,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                     }
                 }
             }
-#endif // DEBUGGING_SUPPORTED && !CROSSGEN_COMPILE
+#endif // DEBUGGING_SUPPORTED
         }
         else
         {
