@@ -244,7 +244,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 result.Should().Pass()
                     .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
-                    .And.HaveStdOutContaining($"Found install location path '{installLocation}'.")
+                    .And.HaveStdErrContaining($"Found install location path '{installLocation}'.")
                     .And.HaveStdErrContaining($"Only the first line in '{registeredInstallLocationOverride.PathValueOverride}' may not have an architecture prefix.")
                     .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
@@ -261,7 +261,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 registeredInstallLocationOverride.SetInstallLocation(new string[] {
                     $"{sharedState.RepoDirectories.BuildArchitecture.ToLower()}={installLocation}",
-                    $"someOtherArch={installLocation}/invalid/"
+                    $"someOtherArch={installLocation}/invalid"
                 });
 
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
@@ -275,7 +275,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 result.Should().Pass()
                     .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
-                    .And.HaveStdOutContaining($"Found architecture-specific install logcation path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
+                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
+                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}/invalid' ('someOtherArch').")
                     .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
@@ -305,8 +306,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 result.Should().Pass()
                     .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
-                    .And.HaveStdOutContaining($"Found install location path '{installLocation}/a/b/c'.")
-                    .And.HaveStdOutContaining($"Found architecture-specific install logcation path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
+                    .And.HaveStdErrContaining($"Found install location path '{installLocation}/a/b/c'.")
+                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
                     .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }

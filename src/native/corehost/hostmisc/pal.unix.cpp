@@ -448,7 +448,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         }
 
         char* pDelimiter = strchr(buffer, '=');
-        if (pDelimiter == nullptr)
+        if (pDelimiter == nullptr && len > 0)
         {
             if (is_first_line)
             {
@@ -468,7 +468,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         pal::string_t arch_prefix = pal::string_t(buffer).substr(0, delimiter_index);
         pal::string_t path_to_location = pal::string_t(buffer).substr(delimiter_index + 1);
 
-        trace::verbose(_X("Found architecture-specific install logcation path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
+        trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
         if (arch_prefix == get_arch())
         {
             architecture_install_location = path_to_location;
