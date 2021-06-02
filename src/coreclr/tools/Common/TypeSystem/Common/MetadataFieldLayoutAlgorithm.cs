@@ -840,9 +840,13 @@ namespace Internal.TypeSystem
                 result.Alignment = fieldType.Context.Target.LayoutPointerSize;
             }
 
-            if (hasLayout)
+            if (fieldType.Context.Target.Architecture != TargetArchitecture.ARM)
             {
                 result.Alignment = LayoutInt.Min(result.Alignment, new LayoutInt(packingSize));
+            }
+            else if (packingSize < 8)
+            {
+                result.Alignment = LayoutInt.Min(result.Alignment, fieldType.Context.Target.LayoutPointerSize);
             }
 
             return result;
@@ -850,8 +854,7 @@ namespace Internal.TypeSystem
 
         private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
         {
-            // If a type contains pointers then the metadata specified packing size is ignored (On .NET Framework this is disqualification from ManagedSequential)
-            if (layoutMetadata.PackingSize == 0 || type.ContainsGCPointers)
+            if (layoutMetadata.PackingSize == 0)
                 return type.Context.Target.DefaultPackingSize;
             else
                 return layoutMetadata.PackingSize;
