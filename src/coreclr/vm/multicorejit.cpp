@@ -1286,6 +1286,7 @@ void MulticoreJitManager::StopProfile(bool appDomainShutdown)
     if (pRecorder != NULL)
     {
         m_fRecorderActive = false;
+        MulticoreJitRecorder::CloseTimer();
 
         EX_TRY
         {
@@ -1496,16 +1497,7 @@ void MulticoreJitManager::WriteMulticoreJitProfiler()
     CONTRACTL_END;
 
     CrstHolder hold(& m_playerLock);
-
-    // Avoid saving after MulticoreJitRecorder is deleted, and saving twice
-    if (!MulticoreJitRecorder::CloseTimer())
-    {
-        return;
-    }
-    if (m_pMulticoreJitRecorder != NULL)
-    {
-        m_pMulticoreJitRecorder->StopProfile(false);
-    }
+    StopProfile(false);
 }
 #endif // !TARGET_UNIX
 
