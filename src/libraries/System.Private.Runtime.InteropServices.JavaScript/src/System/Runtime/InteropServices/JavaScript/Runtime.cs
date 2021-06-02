@@ -275,8 +275,6 @@ namespace System.Runtime.InteropServices.JavaScript
             OBJECT = 7,
             BOOL = 8,
             ENUM = 9,
-            DATE = 4, // HACK, see driver.c
-            DATEOFFSET = 4,
             URI = 22,
             SAFEHANDLE = 23,
             ARRAY_BYTE = 10,
@@ -537,10 +535,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             } else if (type == typeof(void))
                 return MarshalType.VOID;
-            else if (type == typeof(DateTime))
-                return MarshalType.DATE;
-            else if (type == typeof(DateTimeOffset))
-                return MarshalType.DATEOFFSET;
             else if (type == typeof(IntPtr))
                 return MarshalType.INT;
             else if (type == typeof(UIntPtr))
