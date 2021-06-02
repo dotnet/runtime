@@ -18,6 +18,7 @@ namespace System.Net.Http.Functional.Tests
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class HttpClientHandler_RemoteServerTest : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test content";

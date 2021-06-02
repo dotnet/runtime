@@ -548,6 +548,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
     {
         public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }

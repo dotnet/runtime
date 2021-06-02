@@ -1214,8 +1214,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             RemoteServer remoteServer = null;
