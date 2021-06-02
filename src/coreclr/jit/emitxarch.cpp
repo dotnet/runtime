@@ -175,15 +175,15 @@ bool emitter::DoesResetsOverflowAndCarryFlags(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsFlagsModified: check if the instruction modifies the flags.
+// IsFlagsAlwaysModified: check if the instruction always modifies the flags.
 //
 // Arguments:
 //    id - instruction to test
 //
 // Return Value:
-//    true if instruction modified any flag, false otherwise.
+//    true if instruction always modified any flag, false otherwise.
 //
-bool emitter::IsFlagsModified(instrDesc* id)
+bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 {
     instruction ins = id->idIns();
     insFormat   fmt = id->idInsFmt();
@@ -368,7 +368,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
-        if (DoesWritesZeroFlag(lastIns) && IsFlagsModified(id))
+        if (DoesWritesZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
