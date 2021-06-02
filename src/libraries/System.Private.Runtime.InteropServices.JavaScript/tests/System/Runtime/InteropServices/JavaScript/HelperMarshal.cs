@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return new CustomStruct { D = d };
             }
 
-            public static double ToJavaScript (ref CustomStruct ct) {
+            public static double ToJavaScript (in CustomStruct ct) {
                 return ct.D;
             }
         }
@@ -39,8 +39,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public class CustomDateMarshaler {
-            public static string FromJavaScriptPreFilter { get; } = "value.toISOString()";
-            public static string ToJavaScriptPostFilter { get; } = "new Date(value)";
+            public static string FromJavaScriptPreFilter => "value.toISOString()";
+            public static string ToJavaScriptPostFilter => "new Date(value)";
 
             public static CustomDate FromJavaScript (string s) {
                 // Console.WriteLine($"CustomDate.JSToManaged({s})");
@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             }
 
-            public static string ToJavaScript (ref CustomDate cd) {
+            public static string ToJavaScript (in CustomDate cd) {
                 var result = cd.Date.ToString("o");
                 // Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;
