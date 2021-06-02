@@ -145,7 +145,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsWriteZFFlags: check if the instruction write the
+// DoesWritesZeroFlag: check if the instruction write the
 //     ZF flag.
 //
 // Arguments:
@@ -154,13 +154,13 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 // Return Value:
 //    true if instruction writes the ZF flag, false otherwise.
 //
-bool emitter::IsWriteZFFlags(instruction ins)
+bool emitter::DoesWritesZeroFlag(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
 }
 
 //------------------------------------------------------------------------
-// IsResetsOCFlags: check if the instruction resets the
+// DoesResetsOverflowAndCarryFlags: check if the instruction resets the
 //     OF and CF flag.
 //
 // Arguments:
@@ -169,7 +169,7 @@ bool emitter::IsWriteZFFlags(instruction ins)
 // Return Value:
 //    true if instruction resets the OF and CF flag, false otherwise.
 //
-bool emitter::IsResetsOCFlags(instruction ins)
+bool emitter::DoesResetsOverflowAndCarryFlags(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_Resets_CF_OF_Flags) != 0;
 }
@@ -361,14 +361,14 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    if (IsResetsOCFlags(lastIns))
+    if (DoesResetsOverflowAndCarryFlags(lastIns))
     {
         return id->idOpSize() == opSize;
     }
 
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
-        if (IsWriteZFFlags(lastIns) && IsFlagsModified(id))
+        if (DoesWritesZeroFlag(lastIns) && IsFlagsModified(id))
         {
             return id->idOpSize() == opSize;
         }
