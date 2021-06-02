@@ -139,7 +139,7 @@ pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallb
 bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
     pal::string_t host_rid = get_current_rid(rid_fallback_graph);
-    
+
     for (auto& package : portable_assets->libs)
     {
         for (size_t asset_type_index = 0; asset_type_index < deps_entry_t::asset_types::count; asset_type_index++)
@@ -235,13 +235,16 @@ bool deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
 
                 const auto& rid = file.value[_X("rid")].GetString();
 
-                trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
-                    deps_entry_t::s_known_asset_types[asset_type_index],
-                    asset.relative_path.c_str(),
-                    rid,
-                    asset.assembly_version.as_str().c_str(),
-                    asset.file_version.as_str().c_str(),
-                    package.name.GetString());
+                if (trace::is_enabled())
+                {
+                    trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
+                        deps_entry_t::s_known_asset_types[asset_type_index],
+                        asset.relative_path.c_str(),
+                        rid,
+                        asset.assembly_version.as_str().c_str(),
+                        asset.file_version.as_str().c_str(),
+                        package.name.GetString());
+                }
 
                 assets.libs[package.name.GetString()][asset_type_index].rid_assets[rid].push_back(asset);
             }
@@ -289,12 +292,15 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                 pal::string_t file_name{file.name.GetString()};
                 deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version);
 
-                trace::info(_X("Adding %s asset %s assemblyVersion=%s fileVersion=%s from %s"),
-                    deps_entry_t::s_known_asset_types[i],
-                    asset.relative_path.c_str(),
-                    asset.assembly_version.as_str().c_str(),
-                    asset.file_version.as_str().c_str(),
-                    package.name.GetString());
+                if (trace::is_enabled())
+                {
+                    trace::info(_X("Adding %s asset %s assemblyVersion=%s fileVersion=%s from %s"),
+                        deps_entry_t::s_known_asset_types[i],
+                        asset.relative_path.c_str(),
+                        asset.assembly_version.as_str().c_str(),
+                        asset.file_version.as_str().c_str(),
+                        package.name.GetString());
+                }
 
                 assets.libs[package.name.GetString()][i].push_back(asset);
             }
@@ -403,7 +409,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
     pal::string_t pv = name;
     pv.push_back(_X('/'));
     pv.append(ver);
-    
+
     auto iter = m_rid_assets.libs.find(pv);
     if (iter != m_rid_assets.libs.end())
     {
@@ -415,7 +421,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
             }
         }
     }
-    
+
     return m_assets.libs.count(pv);
 }
 

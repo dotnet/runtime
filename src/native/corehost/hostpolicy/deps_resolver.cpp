@@ -96,10 +96,13 @@ void deps_resolver_t::add_tpa_asset(
     name_to_resolved_asset_map_t::iterator existing = items->find(resolved_asset.asset.name);
     if (existing == items->end())
     {
-        trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-            resolved_asset.resolved_path.c_str(),
-            resolved_asset.asset.assembly_version.as_str().c_str(),
-            resolved_asset.asset.file_version.as_str().c_str());
+        if (trace::is_enabled())
+        {
+            trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
+                resolved_asset.resolved_path.c_str(),
+                resolved_asset.asset.assembly_version.as_str().c_str(),
+                resolved_asset.asset.file_version.as_str().c_str());
+        }
 
         items->emplace(resolved_asset.asset.name, resolved_asset);
     }
@@ -311,7 +314,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             trace::verbose(_X("    Skipping... not runtime asset"));
             continue;
         }
-        pal::string_t probe_dir = config.probe_dir;
+
+        const pal::string_t& probe_dir = config.probe_dir;
         uint32_t search_options = deps_entry_t::search_options::none;
         if (needs_file_existence_checks())
         {
