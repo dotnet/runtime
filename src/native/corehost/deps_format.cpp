@@ -70,7 +70,9 @@ void deps_json_t::reconcile_libraries_with_targets(
         for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
             bool rid_specific = false;
-            for (const auto& asset : get_assets_fn(library.name.GetString(), i, &rid_specific))
+            const vec_asset_t& assets = get_assets_fn(lib_name, i, &rid_specific);
+            m_deps_entries[i].reserve(assets.size());
+            for (const auto& asset : assets)
             {
                 auto asset_name = asset.name;
                 if (ends_with(asset_name, _X(".ni"), false))
@@ -273,7 +275,10 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                 continue;
             }
 
-            for (const auto& file : iter->value.GetObject())
+            const auto& files = iter->value.GetObject();
+            vec_asset_t& asset_files = assets.libs[package.name.GetString()][i];
+            asset_files.reserve(files.MemberCount());
+            for (const auto& file : files)
             {
                 version_t assembly_version, file_version;
 
@@ -302,7 +307,7 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                         package.name.GetString());
                 }
 
-                assets.libs[package.name.GetString()][i].push_back(asset);
+                asset_files.push_back(asset);
             }
         }
     }
@@ -380,7 +385,9 @@ bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
         for (const auto& rid : json[_X("runtimes")].GetObject())
         {
             auto& vec = m_rid_fallback_graph[rid.name.GetString()];
-            for (const auto& fallback : rid.value.GetArray())
+            const auto& fallback_array = rid.value.GetArray();
+            vec.reserve(fallback_array.Size());
+            for (const auto& fallback : fallback_array)
             {
                 vec.push_back(fallback.GetString());
             }

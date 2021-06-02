@@ -50,7 +50,7 @@
 #error "Don't know how to obtain max path on this platform"
 #endif
 
-pal::string_t pal::to_lower(const pal::string_t& in)
+pal::string_t pal::to_lower(const pal::char_t* in)
 {
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
