@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Tests;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -22,42 +23,25 @@ namespace System.Globalization.Tests
         [InlineData("", "", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)")]
         public void TestDisplayName(string cultureName, string uiCultureName, string nativeName, string displayName)
         {
-            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
-
-            try
+            using (new ThreadCultureChange(null, CultureInfo.GetCultureInfo(uiCultureName)))
             {
                 CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
-                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(uiCultureName);
-
                 Assert.Equal(nativeName, ci.NativeName);
                 Assert.Equal(displayName, ci.DisplayName);
-            }
-            finally
-            {
-                CultureInfo.CurrentUICulture = originalUiCulture;
             }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void TestDisplayNameWithSettingUICultureMultipleTime()
         {
-            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
-
-            try
+            using (new ThreadCultureChange(null, CultureInfo.GetCultureInfo("en-US")))
             {
-                CultureInfo ci = CultureInfo.GetCultureInfo("en-US");
-                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+                CultureInfo ci = new CultureInfo("en-US");
                 Assert.Equal("English (United States)", ci.DisplayName);
-
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");
                 Assert.Equal("anglais (États-Unis)", ci.DisplayName);
-
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
                 Assert.Equal("Englisch (Vereinigte Staaten)", ci.DisplayName);
-            }
-            finally
-            {
-                CultureInfo.CurrentUICulture = originalUiCulture;
             }
         }
     }
