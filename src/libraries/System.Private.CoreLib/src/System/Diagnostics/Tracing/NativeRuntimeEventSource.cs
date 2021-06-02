@@ -52,7 +52,6 @@ namespace System.Diagnostics.Tracing
             }
 
             // Decode the payload.
-            Debug.WriteLine($"Decoding payload: {eventID}");
             object[] decodedPayloadFields = EventPipePayloadDecoder.DecodePayload(ref m_eventData[eventID], payload);
 
             var eventCallbackArgs = new EventWrittenEventArgs(this, (int)eventID, &activityId, &childActivityId)
