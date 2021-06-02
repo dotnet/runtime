@@ -1385,3 +1385,8 @@ EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_name (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
 }
+
+EMSCRIPTEN_KEEPALIVE char * 
+mono_wasm_get_type_aqn (MonoType * typePtr) {
+	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
+}

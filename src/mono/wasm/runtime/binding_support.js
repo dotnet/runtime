@@ -77,6 +77,7 @@ var BindingSupportLib = {
 			this.mono_wasm_class_get_type = Module.cwrap ('mono_wasm_class_get_type', 'number', ['number']);
 			this.mono_wasm_type_get_class = Module.cwrap ('mono_wasm_type_get_class', 'number', ['number']);
 			this.mono_wasm_get_type_name = Module.cwrap ('mono_wasm_get_type_name', 'string', ['number']);
+			this.mono_wasm_get_type_aqn = Module.cwrap ('mono_wasm_get_type_aqn', 'string', ['number']);
 
 			this._box_buffer = Module._malloc(32);
 			this._unbox_buffer_size = 65536;
@@ -1095,6 +1096,12 @@ var BindingSupportLib = {
 			return this.mono_wasm_get_type_name(typePtr);
 		},
 
+		_get_type_aqn: function (typePtr) {
+			if (!typePtr)
+				return "<null>";
+			return this.mono_wasm_get_type_aqn(typePtr);
+		},
+
 		_get_class_name: function (classPtr) {
 			if (!classPtr)
 				return "<null>";
@@ -1192,17 +1199,17 @@ var BindingSupportLib = {
 			
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
-				var fullName = this._get_type_name (typePtr);
-				var marshalerFullName = MONO._custom_marshaler_name_table[fullName];
-				if (!marshalerFullName) {
-					// console.log (`No custom marshaler configured for ${fullName}`);
+				var aqn = this._get_type_aqn (typePtr);
+				var marshalerAQN = MONO._custom_marshaler_name_table[aqn];
+				if (!marshalerAQN) {
+					// console.log (`No custom marshaler configured for ${aqn}`);
 					this._custom_marshaler_info_cache[typePtr] = null;
 					return null;
 				}
-				var json = this.get_custom_marshaler_info (typePtr, marshalerFullName);
+				var json = this.get_custom_marshaler_info (typePtr, marshalerAQN);
 				result = JSON.parse(json);
 				if (!result)
-					throw new Error (`Configured custom marshaler for ${fullName} could not be loaded: ${marshalerFullName}`);
+					throw new Error (`Configured custom marshaler for ${aqn} could not be loaded: ${marshalerAQN}`);
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);

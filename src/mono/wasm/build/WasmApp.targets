@@ -138,9 +138,9 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmIncludeDefaultMarshalers)' != 'false'">
-      <WasmMarshaledType Include="System.Uri" MarshalerType="System.Runtime.InteropServices.JavaScript.UriMarshaler" />
-      <WasmMarshaledType Include="System.DateTime" MarshalerType="System.Runtime.InteropServices.JavaScript.DateTimeMarshaler" />
-      <WasmMarshaledType Include="System.DateTimeOffset" MarshalerType="System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler" />
+      <WasmMarshaledType Include="[System.Private.Uri]System.Uri" MarshalerType="[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.UriMarshaler" />
+      <WasmMarshaledType Include="[System.Private.Corlib]System.DateTime" MarshalerType="[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.DateTimeMarshaler" />
+      <WasmMarshaledType Include="[System.Private.Corlib]System.DateTimeOffset" MarshalerType="[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler" />
     </ItemGroup>
 
     <WasmAppBuilder

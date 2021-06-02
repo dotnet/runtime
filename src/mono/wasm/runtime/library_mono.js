@@ -1548,10 +1548,10 @@ var MonoSupportLib = {
 			Module.ccall ('mono_wasm_load_profiler_coverage', null, ['string'], [arg]);
 		},
 
-		mono_wasm_register_custom_marshaler: function (fullName, marshalerFullName) {
-			if (MONO._custom_marshaler_name_table[fullName])
-				throw new Error(`A custom marshaler for ${fullName} is already registered.`);
-			MONO._custom_marshaler_name_table[fullName] = marshalerFullName;			
+		mono_wasm_register_custom_marshaler: function (aqn, marshalerAQN) {
+			if (MONO._custom_marshaler_name_table[aqn])
+				throw new Error(`A custom marshaler for ${aqn} is already registered.`);
+			MONO._custom_marshaler_name_table[aqn] = marshalerAQN;			
 		},
 
 		_apply_configuration_from_args: function (args) {
@@ -1750,7 +1750,8 @@ var MonoSupportLib = {
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		//    custom_marshalers: (optional) a dictionary-style Object. keys identify managed types by 
-		//      FullName, and values specify the FullName of a marshaler type responsible for them.
+		//      Assembly-Qualified Name, and values specify the Assembly-Qualified Name of a marshaler 
+		//      type responsible for them.
 		mono_load_runtime_and_bcl_args: function (args) {
 			try {
 				return this._load_assets_and_runtime (args);
