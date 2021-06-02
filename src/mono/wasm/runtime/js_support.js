@@ -5,16 +5,16 @@
 // Not meant to be used outside of this class (TODO make private to this file when project converted to TS)
 function load_config() {
     // since this file loads before emsdk we don't have environment vars yet, so we define them locally
-    var ENVIRONMENT_IS_NODE = typeof process === 'object';
-    var ENVIRONMENT_IS_WEB = typeof window === 'object';
+    var ENVIRONMENT_IS_NODE = typeof process === "object";
+    var ENVIRONMENT_IS_WEB = typeof window === "object";
 
     // In some cases there may be no Module object (such as in tests)
     // so we no-op during the callback
-    let callback = Module ? Module['onConfigLoaded'] : (_) => {};
+    let callback = typeof Module !== "undefined" ? Module['onConfigLoaded'] : (_) => {};
 
     if (ENVIRONMENT_IS_NODE){
         try {
-            var config = JSON.parse(require('./mono-config.json'));
+            var config = JSON.parse(require("./mono-config.json"));
             callback(config);
         } catch(e) {
             callback({error: "Error loading mono-config.json file from current directory"});
@@ -22,7 +22,7 @@ function load_config() {
     } else if (ENVIRONMENT_IS_WEB){
         var xobj = new XMLHttpRequest();
         xobj.overrideMimeType("application/json");
-        xobj.open('GET', './mono-config.json', true);
+        xobj.open("GET", "./mono-config.json", true);
         xobj.onreadystatechange = function() {
             if (xobj.readyState == XMLHttpRequest.DONE) {
                 if (xobj.status === 0 || (xobj.status >= 200 && xobj.status < 400)) {
