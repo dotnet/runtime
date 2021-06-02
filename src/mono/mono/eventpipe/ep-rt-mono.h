@@ -2166,7 +2166,13 @@ bool
 ep_rt_mono_write_event_module_load (MonoImage *image);
 
 bool
+ep_rt_mono_write_event_module_unload (MonoImage *image);
+
+bool
 ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
 
 bool
 ep_rt_write_event_threadpool_worker_thread_start (

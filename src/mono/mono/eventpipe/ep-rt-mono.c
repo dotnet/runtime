@@ -136,6 +136,34 @@ typedef struct _EventPipeSampleProfileData {
 #define DOMAIN_FLAGS_DEFAULT_DOMAIN 0x1
 #define DOMAIN_FLAGS_EXECUTABLE_DOMAIN 0x2
 
+// Event data types.
+struct _ModuleEventData {
+	uint8_t signature [EP_GUID_SIZE];
+	uint64_t domain_id;
+	uint64_t module_id;
+	uint64_t assembly_id;
+	const char *module_il_path;
+	const char *module_il_pdb_path;
+	const char *module_native_path;
+	const char *module_native_pdb_path;
+	uint32_t module_il_pdb_age;
+	uint32_t module_native_pdb_age;
+	uint32_t reserved_flags;
+	uint32_t module_flags;
+};
+
+typedef struct _ModuleEventData ModuleEventData;
+
+struct _AssemblyEventData {
+	uint64_t domain_id;
+	uint64_t assembly_id;
+	uint64_t binding_id;
+	char *assembly_name;
+	uint32_t assembly_flags;
+};
+
+typedef struct _AssemblyEventData AssemblyEventData;
+
 /*
  * Forward declares of all static functions.
  */
@@ -231,6 +259,18 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	void *data);
 
 static
+bool
+get_module_event_data (
+	MonoImage *image,
+	ModuleEventData *module_data);
+
+static
+bool
+get_assembly_event_data (
+	MonoAssembly *assembly,
+	AssemblyEventData *assembly_data);
+
+static
 void
 profiler_eventpipe_thread_exited (
 	MonoProfiler *prof,
@@ -263,7 +303,19 @@ profiler_image_loaded (
 
 static
 void
+profiler_image_unloaded (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
 profiler_assembly_loaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly);
+
+static
+void
+profiler_assembly_unloaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly);
 
@@ -1724,6 +1776,46 @@ ep_rt_mono_write_event_method_load (
 	return true;
 }
 
+static
+bool
+get_module_event_data (
+	MonoImage *image,
+	ModuleEventData *module_data)
+{
+	if (image && module_data) {
+		memset (module_data->signature, 0, EP_GUID_SIZE);
+
+		// Under netcore we only have root domain.
+		MonoDomain *root_domain = mono_get_root_domain ();
+
+		module_data->domain_id = (uint64_t)root_domain;
+		module_data->module_id = (uint64_t)image;
+		module_data->assembly_id = (uint64_t)image->assembly;
+
+		// TODO: Extract all module IL/Native paths and pdb metadata when available.
+		module_data->module_il_path = "";
+		module_data->module_il_pdb_path = "";
+		module_data->module_native_path = "";
+		module_data->module_native_pdb_path = "";
+
+		module_data->module_il_pdb_age = 0;
+		module_data->module_native_pdb_age = 0;
+
+		module_data->reserved_flags = 0;
+
+		// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
+		module_data->module_flags = MODULE_FLAGS_MANIFEST_MODULE;
+		if (image->dynamic)
+			module_data->module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
+		if (image->aot_module)
+			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
+
+		module_data->module_il_path = image->filename ? image->filename : "";
+	}
+
+	return true;
+}
+
 bool
 ep_rt_mono_write_event_module_load (MonoImage *image)
 {
@@ -1731,61 +1823,95 @@ ep_rt_mono_write_event_module_load (MonoImage *image)
 		return true;
 
 	if (image) {
+		ModuleEventData module_data;
+		if (get_module_event_data (image, &module_data)) {
+			FireEtwModuleLoad_V2 (
+				module_data.module_id,
+				module_data.assembly_id,
+				module_data.module_flags,
+				module_data.reserved_flags,
+				module_data.module_il_path,
+				module_data.module_native_path,
+				clr_instance_get_id (),
+				module_data.signature,
+				module_data.module_il_pdb_age,
+				module_data.module_il_pdb_path,
+				module_data.signature,
+				module_data.module_native_pdb_age,
+				module_data.module_native_pdb_path,
+				NULL,
+				NULL);
+
+			FireEtwDomainModuleLoad_V1 (
+				module_data.module_id,
+				module_data.assembly_id,
+				module_data.domain_id,
+				module_data.module_flags,
+				module_data.reserved_flags,
+				module_data.module_il_path,
+				module_data.module_native_path,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
+		}
+	}
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_module_unload (MonoImage *image)
+{
+	if (!EventEnabledModuleUnload_V2())
+		return true;
+
+	if (image) {
+		ModuleEventData module_data;
+		if (get_module_event_data (image, &module_data)) {
+			FireEtwModuleUnload_V2 (
+				module_data.module_id,
+				module_data.assembly_id,
+				module_data.module_flags,
+				module_data.reserved_flags,
+				module_data.module_il_path,
+				module_data.module_native_path,
+				clr_instance_get_id (),
+				module_data.signature,
+				module_data.module_il_pdb_age,
+				module_data.module_il_pdb_path,
+				module_data.signature,
+				module_data.module_native_pdb_age,
+				module_data.module_native_pdb_path,
+				NULL,
+				NULL);
+		}
+	}
+
+	return true;
+}
+
+static
+bool
+get_assembly_event_data (
+	MonoAssembly *assembly,
+	AssemblyEventData *assembly_data)
+{
+	if (assembly && assembly_data) {
 		// Under netcore we only have root domain.
 		MonoDomain *root_domain = mono_get_root_domain ();
 
-		uint64_t domain_id = (uint64_t)root_domain;
-		uint64_t module_id = (uint64_t)image;
-		uint64_t assembly_id = (uint64_t)image->assembly;
+		assembly_data->domain_id = (uint64_t)root_domain;
+		assembly_data->assembly_id = (uint64_t)assembly;
+		assembly_data->binding_id = 0;
 
-		// TODO: Extract all module IL/Native paths and pdb metadata when available.
-		const char *module_il_path = "";
-		const char *module_il_pdb_path = "";
-		const char *module_native_path = "";
-		const char *module_native_pdb_path = "";
-		uint8_t signature [EP_GUID_SIZE] = { 0 };
-		uint32_t module_il_pdb_age = 0;
-		uint32_t module_native_pdb_age = 0;
+		assembly_data->assembly_flags = 0;
+		if (assembly->dynamic)
+			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-		uint32_t reserved_flags = 0;
+		if (assembly->image && assembly->image->aot_module)
+			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 
-		// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
-		uint32_t module_flags = MODULE_FLAGS_MANIFEST_MODULE;
-		if (image->dynamic)
-			module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (image->aot_module)
-			module_flags |= MODULE_FLAGS_NATIVE_MODULE;
-
-		module_il_path = image->filename ? image->filename : "";
-
-		FireEtwModuleLoad_V2 (
-			module_id,
-			assembly_id,
-			module_flags,
-			reserved_flags,
-			module_il_path,
-			module_native_path,
-			clr_instance_get_id (),
-			signature,
-			module_il_pdb_age,
-			module_il_pdb_path,
-			signature,
-			module_native_pdb_age,
-			module_native_pdb_path,
-			NULL,
-			NULL);
-
-		FireEtwDomainModuleLoad_V1 (
-			module_id,
-			assembly_id,
-			domain_id,
-			module_flags,
-			reserved_flags,
-			module_il_path,
-			module_native_path,
-			clr_instance_get_id (),
-			NULL,
-			NULL);
+		assembly_data->assembly_name = mono_stringify_assembly_name (&assembly->aname);
 	}
 
 	return true;
@@ -1798,33 +1924,46 @@ ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly)
 		return true;
 
 	if (assembly) {
-		// Under netcore we only have root domain.
-		MonoDomain *root_domain = mono_get_root_domain ();
+		AssemblyEventData assembly_data;
+		if (get_assembly_event_data (assembly, &assembly_data)) {
+			FireEtwAssemblyLoad_V1 (
+				assembly_data.assembly_id,
+				assembly_data.domain_id,
+				assembly_data.binding_id,
+				assembly_data.assembly_flags,
+				assembly_data.assembly_name,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
 
-		uint64_t domain_id = (uint64_t)root_domain;
-		uint64_t assembly_id = (uint64_t)assembly;
-		uint64_t binding_id = 0;
+			g_free (assembly_data.assembly_name);
+		}
+	}
 
-		uint32_t assembly_flags = 0;
-		if (assembly->dynamic)
-			assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
+	return true;
+}
 
-		if (assembly->image && assembly->image->aot_module)
-			assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
+bool
+ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly)
+{
+	if (!EventEnabledAssemblyUnload_V1 ())
+		return true;
 
-		char *assembly_name = mono_stringify_assembly_name (&assembly->aname);
+	if (assembly) {
+		AssemblyEventData assembly_data;
+		if (get_assembly_event_data (assembly, &assembly_data)) {
+			FireEtwAssemblyUnload_V1 (
+				assembly_data.assembly_id,
+				assembly_data.domain_id,
+				assembly_data.binding_id,
+				assembly_data.assembly_flags,
+				assembly_data.assembly_name,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
 
-		FireEtwAssemblyLoad_V1 (
-			assembly_id,
-			domain_id,
-			binding_id,
-			assembly_flags,
-			assembly_name,
-			clr_instance_get_id (),
-			NULL,
-			NULL);
-
-		g_free (assembly_name);
+			g_free (assembly_data.assembly_name);
+		}
 	}
 
 	return true;
@@ -2013,12 +2152,44 @@ profiler_image_loaded (
 
 static
 void
+profiler_image_unloaded (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (image && image->heap_pdb.size == 0)
+		ep_rt_mono_write_event_module_unload (image);
+}
+
+static
+void
 profiler_assembly_loaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly)
 {
 	ep_rt_mono_write_event_assembly_load (assembly);
 }
+
+static
+void
+profiler_assembly_unloaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly)
+{
+	ep_rt_mono_write_event_assembly_unload (assembly);
+}
+
+//no domain load/unload only one.
+//
+//unload module,
+//unload assembly,
+//
+//jit_code_buffer -> EventEnabledMethodJitMemoryAllocatedForCode
+//class_loaded -> type load
+//vtable_loaded -> type load ?
+//
+//EventEnabledThreadCreated
+//FireEtwThreadTerminated
+
 
 void
 EventPipeEtwCallbackDotNETRuntime (
@@ -2042,11 +2213,15 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, profiler_jit_failed);
 			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, profiler_jit_done);
 			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, profiler_image_loaded);
+			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, profiler_image_unloaded);
 			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, profiler_assembly_loaded);
+			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, profiler_assembly_unloaded);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
 			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_begin_callback (_ep_rt_mono_profiler, NULL);
