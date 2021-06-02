@@ -30,6 +30,7 @@ namespace System.Net.Http.Functional.Tests
 #if !NETFRAMEWORK
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
         {
             const string requestBody = "ABC";
@@ -55,6 +56,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(RemoteServersMemberData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, null,
@@ -66,6 +68,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            if (remoteServer.HttpVersion.Major >= 2 && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
+                return;
+            }
+
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
@@ -75,6 +83,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            if (remoteServer.HttpVersion.Major >= 2 && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
+                return;
+            }
+
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
@@ -84,6 +98,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
+            if (remoteServer.HttpVersion.Major >= 2 && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
+                return;
+            }
+
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
@@ -224,6 +244,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(RemoteServersMemberData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task PostAsync_EmptyContent_ContentTypeHeaderNotSent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))

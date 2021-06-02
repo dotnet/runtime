@@ -32,6 +32,7 @@ namespace System.Net.Http.Functional.Tests
         }
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndReadModes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task GetStreamAsync_ReadToEnd_Success(Configuration.Http.RemoteServer remoteServer, int readMode)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -127,6 +128,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -146,6 +148,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -170,6 +173,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task GetStreamAsync_ReadZeroBytes_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -185,6 +189,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled(Configuration.Http.RemoteServer remoteServer)
         {
             var cts = new CancellationTokenSource();
