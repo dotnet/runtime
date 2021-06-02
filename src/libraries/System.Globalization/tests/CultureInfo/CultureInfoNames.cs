@@ -10,7 +10,9 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoNames
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        private static bool SupportFullIcuResources => PlatformDetection.IsNotMobile && PlatformDetection.IsIcuGlobalization;
+
+        [ConditionalTheory(nameof(SupportFullIcuResources))]
         [InlineData("en", "en", "English", "English")]
         [InlineData("en", "fr", "English", "anglais")]
         [InlineData("aa", "aa", "Afar", "Afar")]
@@ -31,7 +33,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalFact(nameof(SupportFullIcuResources))]
         public void TestDisplayNameWithSettingUICultureMultipleTime()
         {
             using (new ThreadCultureChange(null, CultureInfo.GetCultureInfo("en-US")))
