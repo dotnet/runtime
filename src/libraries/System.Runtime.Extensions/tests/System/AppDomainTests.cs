@@ -264,6 +264,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("Failed to load AOT module TestAppOutsideOfTPA.exe.so", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
