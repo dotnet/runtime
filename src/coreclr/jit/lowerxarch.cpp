@@ -6347,7 +6347,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 break;
                             }
-
+                            case NI_AVXVNNI_MultiplyWideningAndAdd:
+                            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op3);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    op3->SetRegOptional();
+                                }
+                                break;
+                            }
                             case NI_BMI2_MultiplyNoFlags:
                             case NI_BMI2_X64_MultiplyNoFlags:
                             {

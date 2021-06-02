@@ -1331,23 +1331,19 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
         // MOVK Rd, <2nd word>, LSL 1
         // MOVK Rd, <3nd word>, LSL 2
         // MOVK Rd, <4nd word>, LSL 3
-        WORD word = (WORD) (constant & WORD_MASK);
-        Emit32((DWORD)(0xD2<<24 | (4)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFF)) return;
 
-        word = (WORD) ((constant>>16) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (5)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFFFFFF)) return;
+        DWORD movInstr = 0xD2; // MOVZ
+        int shift = 0;
+        do
+        {
+            WORD word = (WORD) (constant & WORD_MASK);
+            Emit32((DWORD)(movInstr<<24 | (1 << 23) | (shift)<<21 | word<<5 | target));
+            shift++;
+            movInstr = 0xF2; // MOVK
+        }
+        while ((constant >>= 16) != 0);
 
-        word = (WORD) ((constant>>32) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (6)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFFFFFFFFFF)) return;
 
-        word = (WORD) ((constant>>48) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (7)<<21 | word<<5 | target));
 #undef WORD_MASK
 }
 

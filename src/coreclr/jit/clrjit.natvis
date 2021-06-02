@@ -41,6 +41,8 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Type Name="GenTreeOp">
     <DisplayString Condition="this->gtOper==GT_ASG">[{this-&gt;gtOp1,na}={this-&gt;gtOp2,na}]</DisplayString>
     <DisplayString Condition="this->gtOper==GT_CAST">[{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_SIMD">[{((GenTreeSIMD*)this)-&gt;gtSIMDIntrinsicID,en}, {gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">[{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}]</DisplayString>
     <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
 

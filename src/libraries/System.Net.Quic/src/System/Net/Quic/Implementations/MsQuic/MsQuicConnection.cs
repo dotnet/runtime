@@ -245,7 +245,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                                     additionalCertificates.Import(asn1);
                                     if (additionalCertificates.Count > 0)
                                     {
-                                        certificate = additionalCertificates[0];
+                                        certificate = additionalCertificates[additionalCertificates.Count - 1];
                                     }
                                 }
                             }
@@ -273,7 +273,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     if (additionalCertificates != null && additionalCertificates.Count > 1)
                     {
-                        for (int i = 1; i < additionalCertificates.Count; i++)
+                        for (int i = 0; i < additionalCertificates.Count - 1; i++)
                         {
                             chain.ChainPolicy.ExtraStore.Add(additionalCertificates[i]);
                         }
