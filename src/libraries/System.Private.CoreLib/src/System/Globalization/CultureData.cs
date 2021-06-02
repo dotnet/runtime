@@ -932,21 +932,10 @@ namespace System.Globalization
                 {
                     try
                     {
-                        const string ZH_CHT = "zh-CHT";
-                        const string ZH_CHS = "zh-CHS";
-
-                        if (Name.Equals(ZH_CHT, StringComparison.OrdinalIgnoreCase))
-                        {
-                            localizedDisplayName = GetLanguageDisplayNameCore("zh-Hant");
-                        }
-                        else if (Name.Equals(ZH_CHS, StringComparison.OrdinalIgnoreCase))
-                        {
-                            localizedDisplayName = GetLanguageDisplayNameCore("zh-Hans");
-                        }
-                        else
-                        {
-                            localizedDisplayName = GetLanguageDisplayNameCore(Name);
-                        }
+                        localizedDisplayName = GetLanguageDisplayNameCore(
+                            Name.Equals("zh-CHT", StringComparison.OrdinalIgnoreCase) ? "zh-Hant" :
+                            Name.Equals("zh-CHS", StringComparison.OrdinalIgnoreCase) ? "zh-Hans" :
+                            Name);
                     }
                     catch
                     {
@@ -1106,17 +1095,17 @@ namespace System.Globalization
         {
             get
             {
-                string sLocalizedLanguage = NativeLanguageName;
+                string localizedLanguage = NativeLanguageName;
                 if (!GlobalizationMode.Invariant && Name.Length > 0)
                 {
                     // If ICU is enabled we call it anyway. If NLS, we call it only if the Windows UI language match the Current UI language
                     if (!GlobalizationMode.UseNls || CultureInfo.UserDefaultUICulture?.Name == CultureInfo.CurrentUICulture.Name)
                     {
-                        sLocalizedLanguage = GetLocaleInfoCore(LocaleStringData.LocalizedLanguageName, CultureInfo.CurrentUICulture.Name);
+                        localizedLanguage = GetLocaleInfoCore(LocaleStringData.LocalizedLanguageName, CultureInfo.CurrentUICulture.Name);
                     }
                 }
 
-                return sLocalizedLanguage;
+                return localizedLanguage;
             }
         }
 

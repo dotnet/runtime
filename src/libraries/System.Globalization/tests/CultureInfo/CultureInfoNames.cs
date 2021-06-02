@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
@@ -10,8 +9,7 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoNames
     {
-        private static bool IsIcuAndRemoteExecutionSupported => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
-        [ConditionalTheory(nameof(IsIcuAndRemoteExecutionSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [InlineData("en", "en", "English", "English")]
         [InlineData("en", "fr", "English", "anglais")]
         [InlineData("aa", "aa", "Afar", "Afar")]
@@ -24,20 +22,28 @@ namespace System.Globalization.Tests
         [InlineData("", "", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)")]
         public void TestDisplayName(string cultureName, string uiCultureName, string nativeName, string displayName)
         {
-            RemoteExecutor.Invoke((locale, uiLocale, native, display) =>
-            {
-                CultureInfo ci = CultureInfo.GetCultureInfo(locale);
-                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(uiLocale);
+            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
 
-                Assert.Equal(native, ci.NativeName);
-                Assert.Equal(display, ci.DisplayName);
-            }, cultureName, uiCultureName, nativeName, displayName).Dispose();
+            try
+            {
+                CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(uiCultureName);
+
+                Assert.Equal(nativeName, ci.NativeName);
+                Assert.Equal(displayName, ci.DisplayName);
+            }
+            finally
+            {
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
         }
 
-        [ConditionalFact(nameof(IsIcuAndRemoteExecutionSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void TestDisplayNameWithSettingUICultureMultipleTime()
         {
-            RemoteExecutor.Invoke(() =>
+            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+
+            try
             {
                 CultureInfo ci = CultureInfo.GetCultureInfo("en-US");
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
@@ -48,7 +54,11 @@ namespace System.Globalization.Tests
 
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
                 Assert.Equal("Englisch (Vereinigte Staaten)", ci.DisplayName);
-            }).Dispose();
+            }
+            finally
+            {
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
         }
     }
 }
