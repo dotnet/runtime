@@ -59,16 +59,15 @@ namespace Microsoft.Win32.SafeHandles
 
             IntPtr handlePtr;
 
-            if (fileStream != null) {
-                _fileStreamHandle = fileStream.SafeFileHandle;
-
+            if (fileStream != null)
+            {
                 bool ignored = false;
-                _fileStreamHandle.DangerousAddRef(ref ignored);
+                fileStream.SafeFileHandle.DangerousAddRef(ref ignored);
 
+                _fileStreamHandle = fileStream.SafeFileHandle;
                 handlePtr = _fileStreamHandle.DangerousGetHandle();
             }
             else {
-                _fileStreamHandle = null;
                 handlePtr = IntPtr.MaxValue;
             }
 
@@ -86,8 +85,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         protected override bool ReleaseHandle() {
-            Debug.Assert(!IsInvalid);
-
             if (_fileStreamHandle != null) {
                 SetHandle((IntPtr) (-1));
                 _fileStreamHandle.DangerousRelease();
