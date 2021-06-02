@@ -193,11 +193,5 @@
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
     </ItemGroup>
-
-    <!-- $(WasmResolveAssembliesBeforeBuild) can add more assemblies, so no point checking the count in that case -->
-    <Error Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true' and @(WasmAssembliesFinal->Distinct()->Count()) != @(WasmAssembliesToBundle->Distinct()->Count()) and '$(WasmDedup)' != 'true'"
-      Text="Bug: The wasm build started with @(WasmAssembliesToBundle->Count()) assemblies, but completed with @(WasmAssembliesFinal->Count()).
-      WasmAssembliesToBundle: @(WasmAssembliesToBundle)
-      WasmAssembliesFinal: @(WasmAssembliesFinal)" />
   </Target>
 </Project>
