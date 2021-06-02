@@ -667,6 +667,7 @@ namespace System.Net.Security
 
             if (_nestedAuth != 1)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Ignoring unsolicited renegotiated certificate.");
                 // ignore certificates received outside of handshake or requested renegotiation.
                 sslPolicyErrors = SslPolicyErrors.None;
                 chainStatus = X509ChainStatusFlags.NoError;
