@@ -145,7 +145,7 @@ namespace System.Net.Http.Functional.Tests
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < NStreams; i++)
             {
-                var task = client.SendAsync(message);
+                var task = Task.Run(() => client.SendAsync(message));
                 tasks.Add(task);
             }
 
