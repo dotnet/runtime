@@ -176,7 +176,7 @@ namespace System
         /// <param name="end">The ending time of day, exclusive.</param>
         /// <returns>True, if the time falls within the range, false otherwise.</returns>
         /// <remarks>
-        /// If the start and end are equal this method always returns false, meaning there is zero elapsed time between the two values.
+        /// If <paramref name="start"/> and <paramref name="end"/> are equal, this method returns false, meaning there is zero elapsed time between the two values.
         /// If you wish to treat such cases as 24 hours, then first check for equality before calling this method.
         /// </remarks>
         public bool IsBetween(TimeOnly start, TimeOnly end)
