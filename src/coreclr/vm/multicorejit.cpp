@@ -1286,7 +1286,6 @@ void MulticoreJitManager::StopProfile(bool appDomainShutdown)
     if (pRecorder != NULL)
     {
         m_fRecorderActive = false;
-        MulticoreJitRecorder::CloseTimer();
 
         EX_TRY
         {
