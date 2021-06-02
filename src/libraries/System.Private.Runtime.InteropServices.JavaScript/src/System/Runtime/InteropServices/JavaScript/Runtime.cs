@@ -470,48 +470,44 @@ namespace System.Runtime.InteropServices.JavaScript
             if (type == null)
                 return MarshalType.VOID;
 
-            MarshalType? result = null;
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.UInt16:
                 case TypeCode.Int32:
-                    result = MarshalType.INT;
-                    break;
+                    if (type.IsEnum)
+                        return MarshalType.ENUM;
+                    else
+                        return MarshalType.INT;
                 case TypeCode.UInt32:
-                    result = MarshalType.UINT32;
-                    break;
+                    if (type.IsEnum)
+                        return MarshalType.ENUM;
+                    else
+                        return MarshalType.UINT32;
                 case TypeCode.Boolean:
-                    result = MarshalType.BOOL;
-                    break;
+                    return MarshalType.BOOL;
                 case TypeCode.Int64:
-                    result = MarshalType.INT64;
-                    break;
+                    if (type.IsEnum)
+                        return MarshalType.ENUM64;
+                    else
+                        return MarshalType.INT64;
                 case TypeCode.UInt64:
-                    result = MarshalType.UINT64;
-                    break;
+                    if (type.IsEnum)
+                        return MarshalType.ENUM64;
+                    else
+                        return MarshalType.UINT64;
                 case TypeCode.Single:
-                    result = MarshalType.FP32;
-                    break;
+                    return MarshalType.FP32;
                 case TypeCode.Double:
-                    result = MarshalType.FP64;
-                    break;
+                    return MarshalType.FP64;
                 case TypeCode.String:
-                    result = MarshalType.STRING;
-                    break;
+                    return MarshalType.STRING;
                 case TypeCode.Char:
-                    result = MarshalType.CHAR;
-                    break;
+                    return MarshalType.CHAR;
             }
 
-            // FIXME: Map underlying type somehow
-            if (type.IsEnum) {
-                return ((result == MarshalType.INT64) ||
-                    (result == MarshalType.UINT64))
-                    ? MarshalType.ENUM64
-                    : MarshalType.ENUM;
-            } else if (typeof(Array).IsAssignableFrom(type)) {
+            if (typeof(Array).IsAssignableFrom(type)) {
                 switch (Type.GetTypeCode(type.GetElementType())) {
                     case TypeCode.Byte:
                         return MarshalType.ARRAY_UBYTE;
@@ -558,9 +554,7 @@ namespace System.Runtime.InteropServices.JavaScript
             else if (type == typeof(SafeHandle))
                 return MarshalType.SAFEHANDLE;
 
-            if (result.HasValue)
-                return result.Value;
-            else if (type.IsValueType)
+            if (type.IsValueType)
                 return MarshalType.VT;
             else
                 return MarshalType.OBJECT;
