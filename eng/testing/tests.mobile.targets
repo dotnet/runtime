@@ -114,7 +114,6 @@
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"
-        UseLLVM="$(MonoEnableLLVM)"
         OutputDir="$(BundleDir)"
         AppDir="$(PublishDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
