@@ -2373,6 +2373,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
+            case NI_AVXVNNI_MultiplyWideningAndAdd:
+            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            {
+                assert(numArgs == 3);
+
+                tgtPrefUse = BuildUse(op1);
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(op2, op1);
+                srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_AVX2_GatherVector128:
             case NI_AVX2_GatherVector256:
             {
