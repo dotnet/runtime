@@ -641,12 +641,12 @@ struct BasicBlock : private LIR::Range
     }
 
 #ifdef DEBUG
-    void     dspFlags();                   // Print the flags
-    unsigned dspCheapPreds();              // Print the predecessors (bbCheapPreds)
-    unsigned dspPreds();                   // Print the predecessors (bbPreds)
-    unsigned dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
-                                           // regions are printed: see NumSucc() for details.
-    void dspJumpKind();                    // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
+    void     dspFlags();               // Print the flags
+    unsigned dspCheapPreds();          // Print the predecessors (bbCheapPreds)
+    unsigned dspPreds();               // Print the predecessors (bbPreds)
+    void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
+                                       // regions are printed: see NumSucc() for details.
+    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
@@ -1339,12 +1339,81 @@ struct BasicBlock : private LIR::Range
         BBArrayIterator end() const;
     };
 
+    // BBCompilerSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs(compiler)) ...
+    //
+    // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
+    // of the implications of this versus the version that does not take `Compiler*`.
+    class BBCompilerSuccList
+    {
+        Compiler*   m_comp;
+        BasicBlock* m_block;
+
+        // iterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
+        //
+        class iterator
+        {
+            Compiler*   m_comp;
+            BasicBlock* m_block;
+            unsigned    m_succNum;
+
+        public:
+            iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
+                : m_comp(comp), m_block(block), m_succNum(succNum)
+            {
+            }
+
+            BasicBlock* operator*() const
+            {
+                assert(m_block != nullptr);
+                BasicBlock* bTarget = m_block->GetSucc(m_succNum, m_comp);
+                assert(bTarget != nullptr);
+                return bTarget;
+            }
+
+            iterator& operator++()
+            {
+                ++m_succNum;
+                return *this;
+            }
+
+            bool operator!=(const iterator& i) const
+            {
+                return m_succNum != i.m_succNum;
+            }
+        };
+
+    public:
+        BBCompilerSuccList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
+        {
+        }
+
+        iterator begin() const
+        {
+            return iterator(m_comp, m_block, 0);
+        }
+
+        iterator end() const
+        {
+            return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
+        }
+    };
+
     // Succs: convenience methods for enabling range-based `for` iteration over a block's successors, e.g.:
     //    for (BasicBlock* const succ : block->Succs()) ...
     //
+    // There are two options: one that takes a Compiler* and one that doesn't. These correspond to the
+    // NumSucc()/GetSucc() functions that do or do not take a Compiler*. See the comment for NumSucc()/GetSucc()
+    // for the distinction.
     BBSuccList Succs() const
     {
         return BBSuccList(this);
+    }
+
+    BBCompilerSuccList Succs(Compiler* comp)
+    {
+        return BBCompilerSuccList(comp, this);
     }
 
     // Try to clone block state and statements from `from` block to `to` block (which must be new/empty),

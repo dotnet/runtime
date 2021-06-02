@@ -695,10 +695,8 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 
     for (BasicBlock* const block : Blocks())
     {
-        unsigned cSucc = block->NumSucc(this);
-        for (unsigned j = 0; j < cSucc; ++j)
+        for (BasicBlock* const succ : block->Succs(this))
         {
-            BasicBlock* succ = block->GetSucc(j, this);
             BlockSetOps::RemoveElemD(this, startNodes, succ->bbNum);
         }
     }
@@ -762,11 +760,8 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
             // pre and post actions are processed.
             stack.Push(DfsBlockEntry(DSS_Post, currentBlock));
 
-            unsigned cSucc = currentBlock->NumSucc(this);
-            for (unsigned j = 0; j < cSucc; ++j)
+            for (BasicBlock* const succ : currentBlock->Succs(this))
             {
-                BasicBlock* succ = currentBlock->GetSucc(j, this);
-
                 // If this is a node we haven't seen before, go ahead and process
                 if (!BlockSetOps::IsMember(this, visited, succ->bbNum))
                 {

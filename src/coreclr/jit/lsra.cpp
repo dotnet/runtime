@@ -907,13 +907,13 @@ void LinearScan::setBlockSequence()
 
         // First, update the NORMAL successors of the current block, adding them to the worklist
         // according to the desired order.  We will handle the EH successors below.
-        bool checkForCriticalOutEdge = (block->NumSucc(compiler) > 1);
+        const unsigned numSuccs                = block->NumSucc(compiler);
+        bool           checkForCriticalOutEdge = (numSuccs > 1);
         if (!checkForCriticalOutEdge && block->bbJumpKind == BBJ_SWITCH)
         {
             assert(!"Switch with single successor");
         }
 
-        const unsigned numSuccs = block->NumSucc(compiler);
         for (unsigned succIndex = 0; succIndex < numSuccs; succIndex++)
         {
             BasicBlock* succ = block->GetSucc(succIndex, compiler);

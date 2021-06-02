@@ -1122,11 +1122,14 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 #ifdef DEBUG
                 // Verify the edge still exists.
                 //
-                const unsigned numSucc = block->NumSucc(comp);
-                bool           found   = false;
-                for (unsigned i = 0; i < numSucc && !found; i++)
+                bool found = false;
+                for (BasicBlock* const succ : block->Succs(comp))
                 {
-                    found = (target == block->GetSucc(i, comp));
+                    if (target == succ)
+                    {
+                        found = true;
+                        break;
+                    }
                 }
                 assert(found);
 #endif

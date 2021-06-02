@@ -574,20 +574,16 @@ unsigned BasicBlock::dspCheapPreds()
 /*****************************************************************************
  *
  *  Display the basic block successors.
- *  Returns the count of successors.
  */
 
-unsigned BasicBlock::dspSuccs(Compiler* compiler)
+void BasicBlock::dspSuccs(Compiler* compiler)
 {
-    unsigned numSuccs = NumSucc(compiler);
-    unsigned count    = 0;
-    for (unsigned i = 0; i < numSuccs; i++)
+    bool first = true;
+    for (BasicBlock* const succ : Succs(compiler))
     {
-        printf("%s", (count == 0) ? "" : ",");
-        printf(FMT_BB, GetSucc(i, compiler)->bbNum);
-        count++;
+        printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
+        first = false;
     }
-    return count;
 }
 
 // Display a compact representation of the bbJumpKind, that is, where this block branches.

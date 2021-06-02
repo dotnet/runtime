@@ -3488,10 +3488,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Without these arcs, a block 'b' may not be a member of succs(preds(b))
     if (curr->bbJumpKind != BBJ_SWITCH)
     {
-        unsigned numSuccs = curr->NumSucc(this);
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (BasicBlock* const succ : curr->Succs(this))
         {
-            BasicBlock* succ = curr->GetSucc(i, this);
             if (succ != newBlock)
             {
                 JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succ->bbNum, curr->bbNum,
