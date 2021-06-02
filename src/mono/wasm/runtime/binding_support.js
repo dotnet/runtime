@@ -1052,47 +1052,6 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		name_for_marshal_type: function (mtype) {
-			var MarshalTypeValues = {
-				"INT": 1,
-				"FP64": 2,
-				"STRING": 3,
-				"VT": 4,
-				"DELEGATE": 5,
-				"TASK": 6,
-				"OBJECT": 7,
-				"BOOL": 8,
-				"ENUM": 9,
-				"DATE": 20,
-				"DATEOFFSET": 21,
-				"URI": 22,
-				"SAFEHANDLE": 23,
-				"ARRAY_BYTE": 10,
-				"ARRAY_UBYTE": 11,
-				"ARRAY_UBYTE_C": 12,
-				"ARRAY_SHORT": 13,
-				"ARRAY_USHORT": 14,
-				"ARRAY_INT": 15,
-				"ARRAY_UINT": 16,
-				"ARRAY_FLOAT": 17,
-				"ARRAY_DOUBLE": 18,
-				"FP32": 24,
-				"UINT32": 25,
-				"INT64": 26,
-				"UINT64": 27,
-				"CHAR": 28,
-				"STRING_INTERNED": 29,
-				"VOID": 30,
-			};
-
-			// FIXME
-			var MarshalTypeNames = {};
-			for (var k in MarshalTypeValues)
-				MarshalTypeNames[MarshalTypeValues[k]] = k;
-
-			return MarshalTypeNames[mtype] || String(mtype);
-		},
-
 		_get_type_name: function (typePtr) {
 			if (!typePtr)
 				return "<null>";

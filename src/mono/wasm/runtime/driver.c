@@ -53,16 +53,12 @@ void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
-static MonoClass* datetime_class;
-static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
 static MonoClass* voidtaskresult_class;
 
-static int resolved_datetime_class = 0,
-	resolved_datetimeoffset_class = 0,
-	resolved_uri_class = 0,
+static int resolved_uri_class = 0,
 	resolved_task_class = 0,
 	resolved_safehandle_class = 0,
 	resolved_voidtaskresult_class = 0;
@@ -798,9 +794,6 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_OBJECT 7
 #define MARSHAL_TYPE_BOOL 8
 #define MARSHAL_TYPE_ENUM 9
-// HACK: Necessary to fall back to struct marshaling for the new managed marshalers
-#define MARSHAL_TYPE_DATE MARSHAL_TYPE_VT
-#define MARSHAL_TYPE_DATEOFFSET MARSHAL_TYPE_VT
 #define MARSHAL_TYPE_URI 22
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
@@ -830,14 +823,6 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 
 void mono_wasm_ensure_classes_resolved ()
 {
-	if (!datetime_class && !resolved_datetime_class) {
-		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
-		resolved_datetime_class = 1;
-	}
-	if (!datetimeoffset_class && !resolved_datetimeoffset_class) {
-		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
-		resolved_datetimeoffset_class = 1;
-	}
 	if (!uri_class && !resolved_uri_class) {
 		MonoException** exc = NULL;
 		uri_class = mono_get_uri_class(exc);
@@ -916,10 +901,6 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	default:
 		mono_wasm_ensure_classes_resolved ();
 
-		if (klass == datetime_class)
-			return MARSHAL_TYPE_DATE;
-		if (klass == datetimeoffset_class)
-			return MARSHAL_TYPE_DATEOFFSET;
 		if (uri_class && klass && mono_class_is_assignable_from(uri_class, klass))
 			return MARSHAL_TYPE_URI;
 		if (klass == voidtaskresult_class)
