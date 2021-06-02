@@ -23,7 +23,7 @@
 #include <mono/utils/mono-memory-model.h>
 
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, "System.Runtime.CompilerServices", "RuntimeHelpers")
-static GENERATE_GET_CLASS_WITH_CACHE (memory_marshal, "System.Runtime.InteropServices", "MemoryMarshal")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (memory_marshal, "System.Runtime.InteropServices", "MemoryMarshal")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 /* optimize the simple GetGenericValueImpl/SetGenericValueImpl generic calls */
@@ -666,7 +666,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 {
 	MonoInst *ins = NULL;
 	MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
-	MonoClass *memory_marshal_class = mono_class_get_memory_marshal_class ();
 
 	const char* cmethod_klass_name_space;
 	if (m_class_get_nested_in (cmethod->klass))
@@ -940,7 +939,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		} else
 			return NULL;
-	} else if (cmethod->klass == memory_marshal_class) {
+	} else if (cmethod->klass == mono_class_try_get_memory_marshal_class ()) {
 		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
 			// Logic below works for both SZARRAY and MDARRAY
 			int dreg = alloc_preg (cfg);
