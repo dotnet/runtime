@@ -46,9 +46,7 @@ namespace System.Net.Security
         {
             try
             {
-                Interop.Ssl.SslErrorCode errorCode = Interop.Ssl.SslErrorCode.SSL_ERROR_NONE;
-
-                resultSize = Interop.OpenSsl.Encrypt(securityContext.SslContext, input.Span, ref output, out errorCode);
+                resultSize = Interop.OpenSsl.Encrypt(securityContext.SslContext, input.Span, ref output, out Interop.Ssl.SslErrorCode errorCode);
 
                 return MapNativeErrorCode(errorCode);
             }
@@ -63,9 +61,7 @@ namespace System.Net.Security
         {
             try
             {
-                Interop.Ssl.SslErrorCode errorCode = Interop.Ssl.SslErrorCode.SSL_ERROR_NONE;
-
-                int resultSize = Interop.OpenSsl.Decrypt(securityContext.SslContext, new Span<byte>(buffer, offset, count), out errorCode);
+                int resultSize = Interop.OpenSsl.Decrypt(securityContext.SslContext, new Span<byte>(buffer, offset, count), out Interop.Ssl.SslErrorCode errorCode);
 
                 SecurityStatusPal retVal = MapNativeErrorCode(errorCode);
 
