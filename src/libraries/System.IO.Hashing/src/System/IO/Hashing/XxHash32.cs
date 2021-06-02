@@ -16,6 +16,7 @@ namespace System.IO.Hashing
         private const int HashSize = sizeof(uint);
         private const int StripeSize = 4 * sizeof(uint);
 
+        private readonly uint _seed;
         private State _state;
         private byte[] _holdback;
         private int _length;
@@ -23,15 +24,33 @@ namespace System.IO.Hashing
         /// <summary>
         ///   Initializes a new instance of the <see cref="XxHash32"/> class.
         /// </summary>
+        /// <remarks>
+        ///   The XxHash32 algorithm supports an optional seed value.
+        ///   Instances created with this constructor use the default seed, zero.
+        /// </remarks>
         public XxHash32()
+            : this(0)
+        {
+            Reset();
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="XxHash32"/> class with
+        ///   a specified seed.
+        /// </summary>
+        /// <param name="seed">
+        ///   The hash seed value for computations from this instance.
+        /// </param>
+        public XxHash32(int seed)
             : base(HashSize)
         {
+            _seed = unchecked((uint)seed);
             Reset();
         }
 
         public override void Reset()
         {
-            _state = new State(0);
+            _state = new State(_seed);
             _length = 0;
         }
 
@@ -112,14 +131,32 @@ namespace System.IO.Hashing
         }
 
         /// <summary>
+        ///   Computes the XxHash32 hash of the provided data using the provided seed.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation.</param>
+        /// <returns>The XxHash32 hash of the provided data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source"/> is <see langword="null"/>.
+        /// </exception>
+        public static byte[] Hash(byte[] source, int seed)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return Hash(new ReadOnlySpan<byte>(source), seed);
+        }
+
+        /// <summary>
         ///   Computes the XxHash32 hash of the provided data.
         /// </summary>
         /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
         /// <returns>The XxHash32 hash of the provided data.</returns>
-        public static byte[] Hash(ReadOnlySpan<byte> source)
+        public static byte[] Hash(ReadOnlySpan<byte> source, int seed = 0)
         {
             byte[] ret = new byte[HashSize];
-            StaticHash(source, ret);
+            StaticHash(source, ret, seed);
             return ret;
         }
 
@@ -131,11 +168,12 @@ namespace System.IO.Hashing
         /// <param name="bytesWritten">
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
+        /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
         /// <returns>
         ///   <see langword="true"/> if <paramref name="destination"/> is long enough to receive
         ///   the computed hash value (4 bytes); otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int seed = 0)
         {
             if (destination.Length < HashSize)
             {
@@ -143,7 +181,7 @@ namespace System.IO.Hashing
                 return false;
             }
 
-            bytesWritten = StaticHash(source, destination);
+            bytesWritten = StaticHash(source, destination, seed);
             return true;
         }
 
@@ -152,21 +190,22 @@ namespace System.IO.Hashing
         /// </summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="destination">The buffer that receives the computed hash value.</param>
+        /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
         /// <returns>
         ///   The number of bytes written to <paramref name="destination"/>.
         /// </returns>
-        public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination)
+        public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination, int seed = 0)
         {
             if (destination.Length < HashSize)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
-            return StaticHash(source, destination);
+            return StaticHash(source, destination, seed);
         }
 
-        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination)
+        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination, int seed)
         {
             int totalLength = source.Length;
-            State state = new State(0);
+            State state = new State(unchecked((uint)seed));
 
             while (source.Length > StripeSize)
             {
