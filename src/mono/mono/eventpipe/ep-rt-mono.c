@@ -264,6 +264,12 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	void *data);
 
 static
+void
+profiler_eventpipe_thread_exited (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
 bool
 get_module_event_data (
 	MonoImage *image,
@@ -276,10 +282,8 @@ get_assembly_event_data (
 	AssemblyEventData *assembly_data);
 
 static
-void
-profiler_eventpipe_thread_exited (
-	MonoProfiler *prof,
-	uintptr_t tid);
+uint32_t
+get_type_start_id (MonoType *type);
 
 static
 void
@@ -323,6 +327,36 @@ void
 profiler_assembly_unloaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly);
+
+static
+void
+profiler_thread_started (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+profiler_thread_stopped (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+profiler_class_loading (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+profiler_class_failed (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+profiler_class_loaded (
+	MonoProfiler *prof,
+	MonoClass *klass);
 
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
@@ -2180,6 +2214,60 @@ ep_rt_write_event_threadpool_working_thread_count (
 }
 
 static
+uint32_t
+get_type_start_id (MonoType *type)
+{
+	uint32_t start_id = (uint32_t)(uintptr_t)type;
+
+	start_id = (((start_id * 215497) >> 16) ^ ((start_id * 1823231) + start_id));
+
+	// Mix in highest bits on 64-bit systems only
+	if (sizeof (type) > 4)
+		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+
+	return start_id;
+}
+
+bool
+ep_rt_mono_write_event_type_load_start (MonoType *type)
+{
+	if (!EventEnabledTypeLoadStart ())
+		return true;
+
+	FireEtwTypeLoadStart (
+		get_type_start_id (type),
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_type_load_stop (MonoType *type)
+{
+	if (!EventEnabledTypeLoadStop ())
+		return true;
+
+	char *type_name = NULL;
+	if (type)
+		type_name = mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_IL);
+
+	FireEtwTypeLoadStop (
+		get_type_start_id (type),
+		clr_instance_get_id (),
+		6 /* CLASS_LOADED */,
+		(uint64_t)type,
+		type_name,
+		NULL,
+		NULL);
+
+	g_free (type_name);
+
+	return true;
+}
+
+static
 void
 profiler_jit_begin (
 	MonoProfiler *prof,
@@ -2264,6 +2352,33 @@ profiler_thread_stopped (
 	ep_rt_mono_write_event_thread_terminated (ep_rt_uint64_t_to_thread_id_t (tid));
 }
 
+static
+void
+profiler_class_loading (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	ep_rt_mono_write_event_type_load_start (m_class_get_byval_arg (klass));
+}
+
+static
+void
+profiler_class_failed (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	ep_rt_mono_write_event_type_load_stop (m_class_get_byval_arg (klass));
+}
+
+static
+void
+profiler_class_loaded (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	ep_rt_mono_write_event_type_load_stop (m_class_get_byval_arg (klass));
+}
+
 //no domain load/unload only one.
 //
 //unload module,
@@ -2304,8 +2419,14 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, profiler_assembly_unloaded);
 			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, profiler_thread_started);
 			mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_thread_stopped);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, profiler_class_loading);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, profiler_class_loading);
 			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, NULL);

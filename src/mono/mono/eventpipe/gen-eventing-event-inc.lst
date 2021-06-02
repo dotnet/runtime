@@ -32,3 +32,5 @@ ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
 ThreadTerminated
+TypeLoadStart
+TypeLoadStop
