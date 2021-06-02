@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             if (OperatingSystem.IsWindows())
             {
-                Debug.Assert(installLocation.Length == 1 && !string.IsNullOrEmpty(architecture));
+                Debug.Assert(installLocation.Length >= 1 && !string.IsNullOrEmpty(architecture));
                 using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{architecture}"))
                 {
                     dotnetLocationKey.SetValue("InstallLocation", installLocation[0]);

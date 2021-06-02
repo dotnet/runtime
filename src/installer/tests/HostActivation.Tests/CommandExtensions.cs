@@ -35,11 +35,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr();
         }
 
-        public static Command DotNetRoot(this Command command, string dotNetRoot)
+        public static Command DotNetRoot(this Command command, string dotNetRoot, string architecture = null)
         {
-            return command
+            command = command
                 .EnvironmentVariable("DOTNET_ROOT", dotNetRoot)
                 .EnvironmentVariable("DOTNET_ROOT(x86)", dotNetRoot);
+            if (!string.IsNullOrEmpty(architecture))
+                command = command
+                    .EnvironmentVariable($"DOTNET_ROOT_{architecture.ToUpper()}", dotNetRoot);
+
+            return command;
         }
 
         public static Command MultilevelLookup(this Command command, bool enable)
