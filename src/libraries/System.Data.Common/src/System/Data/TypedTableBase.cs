@@ -19,7 +19,6 @@ namespace System.Data
         /// Default constructor for generic TypedTableBase.
         /// Will be called by generated Typed DataSet classes and is not for public use.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected TypedTableBase() : base() { }
 
         /// <summary>

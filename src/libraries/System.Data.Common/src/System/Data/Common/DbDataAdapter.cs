@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -31,12 +30,10 @@ namespace System.Data.Common
             internal Exception? _errors;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected DbDataAdapter() : base()
         {
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected DbDataAdapter(DbDataAdapter adapter) : base(adapter)
         {
             CloneFrom(adapter);
@@ -290,7 +287,6 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable? FillSchema(DataTable dataTable, SchemaType schemaType)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataTable, schemaType={1}", ObjectID, schemaType);
@@ -306,8 +302,6 @@ namespace System.Data.Common
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}", ObjectID, schemaType);
@@ -327,7 +321,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, string srcTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable={2}", ObjectID, (int)schemaType, srcTable);
@@ -343,7 +336,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType, command, srcTable, behavior={1}", ObjectID, behavior);
@@ -374,7 +366,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual DataTable? FillSchema(DataTable dataTable, SchemaType schemaType, IDbCommand command, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataTable, schemaType, command, behavior={1}", ObjectID, behavior);
@@ -406,7 +397,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object? FillSchemaInternal(DataSet? dataset, DataTable? datatable, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
         {
             object? dataTables = null;
@@ -447,8 +437,6 @@ namespace System.Data.Common
             return dataTables;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override int Fill(DataSet dataSet)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataSet", ObjectID);
@@ -465,7 +453,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Fill(DataSet dataSet, string srcTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataSet, srcTable='{1}'", ObjectID, srcTable);
@@ -482,7 +469,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Fill(DataSet dataSet, int startRecord, int maxRecords, string srcTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataSet, startRecord={1}, maxRecords={2}, srcTable='{3}'", ObjectID, startRecord, maxRecords, srcTable);
@@ -499,7 +485,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Fill(DataSet dataSet, int startRecord, int maxRecords, string srcTable, IDbCommand command, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataSet, startRecord, maxRecords, srcTable, command, behavior={1}", ObjectID, behavior);
@@ -533,7 +518,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Fill(DataTable dataTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataTable", ObjectID);
@@ -551,7 +535,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Fill(int startRecord, int maxRecords, params DataTable[] dataTables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, startRecord={1}, maxRecords={2}, dataTable[]", ObjectID, startRecord, maxRecords);
@@ -568,7 +551,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Fill(DataTable dataTable, IDbCommand command, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataTable, command, behavior={1}", ObjectID, behavior);
@@ -584,7 +566,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Fill(DataTable[] dataTables, int startRecord, int maxRecords, IDbCommand command, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Fill|API> {0}, dataTables[], startRecord, maxRecords, command, behavior={1}", ObjectID, behavior);
@@ -622,7 +603,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int FillInternal(DataSet? dataset, DataTable[]? datatables, int startRecord, int maxRecords, string? srcTable, IDbCommand command, CommandBehavior behavior)
         {
             int rowsAddedToDataSet = 0;
@@ -762,7 +742,6 @@ namespace System.Data.Common
         {
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ParameterInput(IDataParameterCollection parameters, StatementType typeIndex, DataRow row, DataTableMapping mappings)
         {
             Data.MissingMappingAction missingMapping = UpdateMappingAction;
@@ -797,7 +776,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ParameterOutput(IDataParameter parameter, DataRow row, DataTableMapping mappings, MissingMappingAction missingMapping, MissingSchemaAction missingSchema)
         {
             if (0 != (ParameterDirection.Output & parameter.Direction))
@@ -834,7 +812,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ParameterOutput(IDataParameterCollection parameters, DataRow row, DataTableMapping mappings)
         {
             Data.MissingMappingAction missingMapping = UpdateMappingAction;
@@ -857,14 +834,11 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override int Update(DataSet dataSet)
         {
             return Update(dataSet, DbDataAdapter.DefaultSourceTableName);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Update(DataRow[] dataRows)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataRows[]", ObjectID);
@@ -903,7 +877,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Update(DataTable dataTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataTable", ObjectID);
@@ -936,7 +909,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int Update(DataSet dataSet, string srcTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataSet, srcTable='{1}'", ObjectID, srcTable);
@@ -977,7 +949,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Update(DataRow[] dataRows, DataTableMapping tableMapping)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataRows[], tableMapping", ObjectID);
@@ -1381,7 +1352,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UpdateBatchExecute(BatchCommandInfo[] batchCommands, int commandCount, RowUpdatedEventArgs rowUpdatedEvent)
         {
             Debug.Assert(rowUpdatedEvent.Rows != null);
@@ -1500,7 +1470,6 @@ namespace System.Data.Common
             return connection.State;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int UpdateFromDataTable(DataTable dataTable, DataTableMapping tableMapping)
         {
             int rowsAffected = 0;
@@ -1512,7 +1481,6 @@ namespace System.Data.Common
             return rowsAffected;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UpdateRowExecute(RowUpdatedEventArgs rowUpdatedEvent, IDbCommand dataCommand, StatementType cmdIndex)
         {
             Debug.Assert(null != rowUpdatedEvent, "null rowUpdatedEvent");
@@ -1613,7 +1581,6 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int UpdatedRowStatus(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != rowUpdatedEvent, "null rowUpdatedEvent");
@@ -1636,7 +1603,6 @@ namespace System.Data.Common
             return cumulativeDataRowsAffected;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int UpdatedRowStatusContinue(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != batchCommands, "null batchCommands?");
@@ -1672,7 +1638,6 @@ namespace System.Data.Common
             return cumulativeDataRowsAffected;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int UpdatedRowStatusErrors(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != batchCommands, "null batchCommands?");
@@ -1743,7 +1708,6 @@ namespace System.Data.Common
             return cumulativeDataRowsAffected;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UpdatingRowStatusErrors(RowUpdatingEventArgs rowUpdatedEvent, DataRow dataRow)
         {
             Debug.Assert(null != dataRow, "null dataRow");

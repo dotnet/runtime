@@ -10,7 +10,7 @@ namespace System.Data
 {
     internal sealed class Select
     {
-        internal const string RequiresUnreferencedCodeMessage = "Members of types used in the filter expression might be trimmed";
+        internal const string RequiresUnreferencedCodeMessage = "Members of types used in the filter expression might be trimmed.";
         private readonly DataTable _table;
         private readonly IndexField[] _indexFields;
         private readonly DataViewRowState _recordStates;

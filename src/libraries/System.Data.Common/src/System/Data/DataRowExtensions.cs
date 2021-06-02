@@ -109,7 +109,6 @@ namespace System.Data
         /// <param name="row">The input DataRow.</param>
         /// <param name="columnIndex">The input ordinal specifying which row value to set.</param>
         /// <param name="value">The new row value for the specified column.</param>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static void SetField<T>(this DataRow row, int columnIndex, T? value)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -122,7 +121,6 @@ namespace System.Data
         /// <param name="row">The input DataRow.</param>
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="value">The new row value for the specified column.</param>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static void SetField<T>(this DataRow row, string columnName, T? value)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -135,7 +133,6 @@ namespace System.Data
         /// <param name="row">The input DataRow.</param>
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="value">The new row value for the specified column.</param>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static void SetField<T>(this DataRow row, DataColumn column, T? value)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));

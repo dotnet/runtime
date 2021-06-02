@@ -686,7 +686,6 @@ namespace System.ComponentModel
     }
     public partial interface ITypedList
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of property types might be trimmed if not referenced directly")]
         System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors);
         string GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors);
     }

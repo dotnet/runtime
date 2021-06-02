@@ -97,7 +97,7 @@ namespace System.Data
                 builder.Append("</DataViewSettingCollectionString>");
                 return builder.ToString();
             }
-            [RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed")]
+            [RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed.")]
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -278,7 +278,6 @@ namespace System.Data
             return string.Empty;
         }
 
-        [RequiresUnreferencedCode("Matching overriden method. This cannot be called directly due to explicit implementation")]
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
             DataSet? dataSet = DataSet;

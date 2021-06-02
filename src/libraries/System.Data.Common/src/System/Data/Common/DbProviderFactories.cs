@@ -38,22 +38,21 @@ namespace System.Data.Common
         private const string NameColumnName = "Name";
         private const string DescriptionColumnName = "Description";
         private const string ProviderGroupColumnName = "DbProviderFactories";
+        private const string RequiresUnreferencedCodeMessage = "Provider type and its members might be trimmed if not referenced directly.";
         private const string InstanceFieldName = "Instance";
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static bool TryGetFactory(string providerInvariantName, [NotNullWhen(true)] out DbProviderFactory? factory)
         {
             factory = GetFactory(providerInvariantName, throwOnError: false);
             return factory != null;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DbProviderFactory GetFactory(string providerInvariantName)
         {
             return GetFactory(providerInvariantName, throwOnError: true)!;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public static DbProviderFactory GetFactory(DataRow providerRow)
         {
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
@@ -81,7 +80,6 @@ namespace System.Data.Common
             return connection.ProviderFactory;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DataTable GetFactoryClasses()
         {
             DataColumn nameColumn = new DataColumn(NameColumnName, typeof(string)) { ReadOnly = true };
@@ -109,6 +107,7 @@ namespace System.Data.Common
             return _registeredFactories.Keys.ToList();
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName)
         {
             ADP.CheckArgumentLength(providerInvariantName, nameof(providerInvariantName));
@@ -118,6 +117,7 @@ namespace System.Data.Common
             _registeredFactories[providerInvariantName] = new ProviderRegistration(factoryTypeAssemblyQualifiedName, null);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public static void RegisterFactory(string providerInvariantName, Type providerFactoryClass)
         {
             RegisterFactory(providerInvariantName, GetFactoryInstance(providerFactoryClass));
@@ -137,7 +137,8 @@ namespace System.Data.Common
             return !string.IsNullOrWhiteSpace(providerInvariantName) && _registeredFactories.TryRemove(providerInvariantName, out _);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The warning is being display when registering a factory by name or type.")]
         private static DbProviderFactory? GetFactory(string providerInvariantName, bool throwOnError)
         {
             if (throwOnError)
@@ -193,7 +194,7 @@ namespace System.Data.Common
             return (DbProviderFactory)factory;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private static Type GetProviderTypeFromTypeName(string assemblyQualifiedName)
         {
             Type? providerType = Type.GetType(assemblyQualifiedName);

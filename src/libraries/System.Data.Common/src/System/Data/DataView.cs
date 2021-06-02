@@ -1141,15 +1141,9 @@ namespace System.Data
         string IBindingListView.Filter
         {
             get { return RowFilter; }
-            set { SetRowFilter(value); }
+            set { RowFilter = value; }
         }
 #nullable enable
-
-        // This method is only needed so that ILLink suppression can be added
-        private void SetRowFilter(string filter)
-        {
-            RowFilter = filter;
-        }
 
         ListSortDescriptionCollection IBindingListView.SortDescriptions => GetSortDescriptions();
 
@@ -1208,7 +1202,6 @@ namespace System.Data
             return string.Empty;
         }
 
-        [RequiresUnreferencedCode("Members of property types might be trimmed if not referenced directly")]
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
             if (_table != null)
@@ -1509,8 +1502,6 @@ namespace System.Data
             _rowViewCache = rvc;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Row filter is already marked as unsafe.")]
         internal void SetDataViewManager(DataViewManager? dataViewManager)
         {
             if (_table == null)
@@ -1532,7 +1523,7 @@ namespace System.Data
                     {
                         // sdub: check that we will not do unnesasary operation here if dataViewSetting.Sort == this.Sort ...
                         _applyDefaultSort = dataViewSetting.ApplyDefaultSort;
-                        DataExpression newFilter = new DataExpression(_table, dataViewSetting.RowFilter);
+                        DataExpression newFilter = CreateDataExpressionFromDataViewSettings(dataViewSetting);
                         SetIndex(dataViewSetting.Sort, dataViewSetting.RowStateFilter, newFilter);
                     }
                     catch (Exception e) when (Common.ADP.IsCatchableExceptionType(e))
@@ -1546,6 +1537,14 @@ namespace System.Data
                     SetIndex("", DataViewRowState.CurrentRows, null);
                 }
             }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "RowFilter is marked as unsafe because it can be used in DataExpression so that we only display warning when user is assigning an expression" +
+                " which means that in here we're either assigning empty filter which is safe or user has already seen a warning.")]
+        private DataExpression CreateDataExpressionFromDataViewSettings(DataViewSetting dataViewSetting)
+        {
+            return new DataExpression(_table, dataViewSetting.RowFilter);
         }
 
         internal virtual void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)

@@ -1778,8 +1778,9 @@ namespace System.Data
         private sealed class NameType : IComparable
         {
             public readonly string name;
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
             public readonly Type type;
-            public NameType(string n, Type t)
+            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type t)
             {
                 name = n;
                 type = t;
@@ -1870,6 +1871,7 @@ namespace System.Data
         }
 
         // input param dt is a "qName" for UDSimpleType else it assumes it's a XSD builtin simpleType
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type ParseDataType(string dt)
         {
             if (!IsXsdType(dt))

@@ -33,7 +33,6 @@ namespace System.Data
         /// </summary>
         /// <param name="table">The input table from which LinkDataView is to be created.</param>
         /// <param name="sortExpressionBuilder">The sort expression builder in case multiple selectors/comparers are added.</param>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal LinqDataView(DataTable table, SortExpressionBuilder<DataRow>? sortExpressionBuilder)
             : base(table)
         {
@@ -53,7 +52,6 @@ namespace System.Data
         /// <param name="comparison">The comparer function of DataRow to be used for sorting. </param>
         /// <param name="comparerKeyRow">A comparer function that compares a Key value to DataRow.</param>
         /// <param name="sortExpressionBuilder">Combined sort expression build using mutiple sort expressions.</param>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal LinqDataView(
                     DataTable table,
                     Predicate<DataRow>? predicate_system,
@@ -238,8 +236,6 @@ namespace System.Data
         /// <summary>
         /// Clears both expression-based and DataView's string-based sorting.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IBindingList.RemoveSort()
         {
             base.Sort = string.Empty;
@@ -252,8 +248,6 @@ namespace System.Data
         /// </summary>
         PropertyDescriptor IBindingList.SortProperty
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 return (base.SortComparison == null) ? base.GetSortProperty() : null;

@@ -191,7 +191,6 @@ namespace System.Data.ProviderBase
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ApplyToDataRow(DataRow dataRow)
         {
             DataColumnCollection columns = dataRow.Table.Columns;

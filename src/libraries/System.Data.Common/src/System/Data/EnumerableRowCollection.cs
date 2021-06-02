@@ -142,7 +142,6 @@ namespace System.Data
         /// a LinqDataView representing the LINQ query this class has collected.
         /// </summary>
         /// <returns>LinqDataView repesenting the LINQ query</returns>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal LinqDataView GetLinqDataView() // Called by AsLinqDataView
         {
             if ((null == _table) || !typeof(DataRow).IsAssignableFrom(typeof(TRow)))

@@ -109,8 +109,8 @@ namespace System.Data
         /// of the <see cref='System.Data.DataColumn'/> class
         /// using the specified name, data type, and expression.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public DataColumn(string? columnName, Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
+        [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
         {
         }
 
@@ -120,8 +120,8 @@ namespace System.Data
         /// the specified name, data type, expression, and value that determines whether the
         /// column is an attribute.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public DataColumn(string? columnName, Type dataType, string? expr, MappingType type)
+        [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType, string? expr, MappingType type)
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataColumn.DataColumn|API> {0}, columnName='{1}', expr='{2}', type={3}", ObjectID, columnName, expr, type);
@@ -730,7 +730,7 @@ namespace System.Data
         public string Expression
         {
             get { return (_expression == null ? "" : _expression.Expression); }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresUnreferencedCode("Members from types used in the expressions may be trimmed if not referenced directly.")]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_Expression|API> {0}, '{1}'", ObjectID, value);

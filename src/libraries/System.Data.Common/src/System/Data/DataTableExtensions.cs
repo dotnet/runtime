@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data
@@ -35,7 +34,6 @@ namespace System.Data
         /// <returns>DataTable containing copies of the source DataRows. Properties for the DataTable table will be taken from first DataRow in the source.</returns>
         /// <exception cref="ArgumentNullException">if source is null</exception>
         /// <exception cref="InvalidOperationException">if source is empty</exception>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DataTable CopyToDataTable<T>(this IEnumerable<T> source)
             where T : DataRow
         {
@@ -46,7 +44,6 @@ namespace System.Data
         /// <summary>
         /// Delegates to other CopyToDataTable overload with a null FillErrorEventHandler.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static void CopyToDataTable<T>(this IEnumerable<T> source, DataTable table, LoadOption options)
             where T : DataRow
         {
@@ -75,7 +72,6 @@ namespace System.Data
         /// <exception cref="ArgumentNullException">if source is null</exception>
         /// <exception cref="ArgumentNullException">if table is null</exception>
         /// <exception cref="InvalidOperationException">if source DataRow is in Deleted or Detached state</exception>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static void CopyToDataTable<T>(this IEnumerable<T> source, DataTable table, LoadOption options, FillErrorEventHandler? errorHandler)
             where T : DataRow
         {
@@ -84,7 +80,6 @@ namespace System.Data
             LoadTableFromEnumerable(source, table, options, errorHandler);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static DataTable LoadTableFromEnumerable<T>(IEnumerable<T> source, DataTable? table, LoadOption? options, FillErrorEventHandler? errorHandler)
             where T : DataRow
         {
@@ -229,7 +224,6 @@ namespace System.Data
         /// </summary>
         /// <param name="table">DataTable that the view is over.</param>
         /// <returns>An instance of LinkDataView.</returns>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DataView AsDataView(this DataTable table)
         {
             DataSetUtil.CheckArgumentNull<DataTable>(table, nameof(table));
@@ -242,7 +236,6 @@ namespace System.Data
         /// <typeparam name="T">Type of the row in the table. Must inherit from DataRow</typeparam>
         /// <param name="source">The enumerable-datatable over which view must be created.</param>
         /// <returns>Generated LinkDataView of type T</returns>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DataView AsDataView<T>(this EnumerableRowCollection<T> source) where T : DataRow
         {
             DataSetUtil.CheckArgumentNull<EnumerableRowCollection<T>>(source, nameof(source));

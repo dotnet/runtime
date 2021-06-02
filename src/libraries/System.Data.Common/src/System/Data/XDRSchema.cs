@@ -220,8 +220,9 @@ namespace System.Data
         private sealed class NameType : IComparable
         {
             public string name;
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
             public Type type;
-            public NameType(string n, Type t)
+            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type t)
             {
                 name = n;
                 type = t;
@@ -295,6 +296,7 @@ namespace System.Data
 
         private static readonly NameType s_enumerationNameType = FindNameType("enumeration");
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;

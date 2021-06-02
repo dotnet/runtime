@@ -1251,7 +1251,7 @@ namespace System.Data
         public string DisplayExpression
         {
             get { return DisplayExpressionInternal; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresUnreferencedCode("Members from types used in the expressions may be trimmed if not referenced directly.")]
             set
             {
                 _displayExpression = !string.IsNullOrEmpty(value) ?
@@ -2954,7 +2954,7 @@ namespace System.Data
         /// <summary>
         /// Computes the given expression on the current rows that pass the filter criteria.
         /// </summary>
-        [RequiresUnreferencedCode("Members of types used in the filter or expression might be trimmed")]
+        [RequiresUnreferencedCode("Members of types used in the filter or expression might be trimmed.")]
         public object Compute(string? expression, string? filter)
         {
             DataRow[] rows = Select(filter, "", DataViewRowState.CurrentRows);
