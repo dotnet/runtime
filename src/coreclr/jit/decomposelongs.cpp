@@ -1829,25 +1829,30 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
         return nextNode;
     }
 
-    JITDUMP("Optimized a truncating cast [%06u] from decomposed LONG [%06u] to %s:\n", cast->gtTreeID, src->gtTreeID,
-            varTypeName(dstType));
+    JITDUMP("Optimizing a truncating cast [%06u] from decomposed LONG [%06u]\n", cast->gtTreeID, src->gtTreeID);
     INDEBUG(GenTree* treeToDisplay = cast);
 
     // TODO-CQ: we could go perform this removal transitively.
     // See also identical code in shift decomposition.
     if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
     {
+        JITDUMP("Removing the HI part of [%06u] and marking its operands unused:\n", src->gtTreeID);
+        DISPNODE(hiSrc);
         Range().Remove(hiSrc, /* markOperandsUnused */ true);
     }
     else
     {
+        JITDUMP("The HI part of [%06u] has side effects, marking it unused\n", src->gtTreeID);
         hiSrc->SetUnusedValue();
     }
 
+    JITDUMP("Removing the LONG source:\n");
+    DISPNODE(src);
     Range().Remove(src);
 
     if (varTypeIsSmall(dstType))
     {
+        JITDUMP("Cast is to a small type, keeping it, the new source is [%06u]\n", loSrc->gtTreeID);
         cast->CastOp() = loSrc;
     }
     else
@@ -1862,11 +1867,16 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
             loSrc->SetUnusedValue();
         }
 
-        INDEBUG(treeToDisplay = loSrc);
         nextNode = cast->gtNext;
+
+        INDEBUG(treeToDisplay = loSrc);
+        JITDUMP("Removing the cast:\n");
+        DISPNODE(cast);
+
         Range().Remove(cast);
     }
 
+    JITDUMP("Final result:\n")
     DISPTREERANGE(Range(), treeToDisplay);
 
     return nextNode;
