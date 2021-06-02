@@ -54,7 +54,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(RemoteServersMemberData))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, null,
@@ -81,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
@@ -222,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(RemoteServersMemberData))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         public async Task PostAsync_EmptyContent_ContentTypeHeaderNotSent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
