@@ -230,6 +230,20 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT-LLVM\**\*.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher/tests/System.IO.FileSystem.Watcher.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'x64' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions/tests/System.Linq.Expressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
