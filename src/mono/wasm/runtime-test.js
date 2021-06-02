@@ -1,3 +1,4 @@
+"use strict";
 // -*- mode: js; js-indent-level: 4; -*-
 //
 // Run runtime tests under a JS shell or a browser
@@ -94,8 +95,8 @@ if (typeof performance == 'undefined') {
 try {
 	if (typeof arguments == "undefined")
 		arguments = WScript.Arguments;
-	load = WScript.LoadScriptFile;
-	read = WScript.LoadBinaryFile;
+	var load = WScript.LoadScriptFile;
+	var read = WScript.LoadBinaryFile;
 } catch (e) {
 }
 
@@ -146,12 +147,12 @@ function inspect_object (o) {
 // Preprocess arguments
 var args = testArguments;
 console.info("Arguments: " + testArguments);
-profilers = [];
-setenv = {};
-runtime_args = [];
-enable_gc = true;
-enable_zoneinfo = false;
-working_dir='/';
+var profilers = [];
+var setenv = {};
+var runtime_args = [];
+var enable_gc = true;
+var enable_zoneinfo = false;
+var working_dir='/';
 while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
@@ -337,12 +338,12 @@ var App = {
 				return;
 			}
 
-			main_assembly_name = args[1];
+			var main_assembly_name = args[1];
 			var app_args = args.slice (2);
 
 			var main_argc = args.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
-			aindex = 0;
+			var aindex = 0;
 			Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [1]), "i32")
 			aindex += 1;
 			for (var i = 2; i < args.length; ++i) {
