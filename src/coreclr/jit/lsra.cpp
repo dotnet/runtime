@@ -5615,10 +5615,6 @@ void LinearScan::allocateRegisters()
 // Return Value:
 //    None
 //
-// Assumptions:
-//    For ARM32, when "regType" is TYP_DOUBLE, "reg" should be a even-numbered
-//    float register, i.e. lower half of double register.
-//
 // Note:
 //    For ARM32, two float registers consisting a double register are updated
 //    together when "regType" is TYP_DOUBLE.
@@ -5631,8 +5627,8 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
     regNumber doubleReg           = REG_NA;
     if (regType == TYP_DOUBLE)
     {
-        doubleReg                        = reg->regNum;
-        RegRecord* anotherHalfReg        = getSecondHalfRegRec(reg);
+        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
+        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
         anotherHalfReg->assignedInterval = interval;
     }
     else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))

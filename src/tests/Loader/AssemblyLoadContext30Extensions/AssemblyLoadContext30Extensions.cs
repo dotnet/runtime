@@ -222,7 +222,6 @@ public class Program
 
             Assert(context != null);
             Assert(alc == context);
-            Assert(alc.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyName)));
         }
         catch (Exception e)
         {

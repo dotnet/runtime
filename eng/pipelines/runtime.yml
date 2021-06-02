@@ -296,7 +296,7 @@ jobs:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         scenarios:
-        #- buildwasmapps - https://github.com/dotnet/runtime/issues/53405
+        - buildwasmapps
         - normal
         - wasmtestonbrowser
         condition: >-

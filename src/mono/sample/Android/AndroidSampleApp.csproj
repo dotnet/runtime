@@ -79,6 +79,8 @@
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         OutputDir="$(ApkDir)"
         AppDir="$(PublishDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />

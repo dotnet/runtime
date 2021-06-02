@@ -255,37 +255,38 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle, CancellationToken cancellationToken)
         {
             bool userBuffer = _count != 0;
             Debug.Assert(!userBuffer || (!_buffer.Equals(default) && _count >= _acceptAddressBufferCount));
             Memory<byte> buffer = userBuffer ? _buffer : _acceptBuffer;
-            Debug.Assert(_asyncProcessingState == AsyncProcessingState.None);
 
-            NativeOverlapped* overlapped = AllocateNativeOverlapped();
-            try
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer.Span))
             {
-                _singleBufferHandle = buffer.Pin();
-                _asyncProcessingState = AsyncProcessingState.Set;
+                NativeOverlapped* overlapped = AllocateNativeOverlapped();
+                try
+                {
+                    Debug.Assert(_asyncProcessingState == AsyncProcessingState.None, $"Expected None, got {_asyncProcessingState}");
+                    _asyncProcessingState = AsyncProcessingState.InProcess;
 
-                bool success = socket.AcceptEx(
-                    handle,
-                    acceptHandle,
-                    userBuffer ? (IntPtr)((byte*)_singleBufferHandle.Pointer + _offset) : (IntPtr)_singleBufferHandle.Pointer,
-                    userBuffer ? _count - _acceptAddressBufferCount : 0,
-                    _acceptAddressBufferCount / 2,
-                    _acceptAddressBufferCount / 2,
-                    out int bytesTransferred,
-                    overlapped);
+                    bool success = socket.AcceptEx(
+                        handle,
+                        acceptHandle,
+                        (IntPtr)(userBuffer ? (bufferPtr + _offset) : bufferPtr),
+                        userBuffer ? _count - _acceptAddressBufferCount : 0,
+                        _acceptAddressBufferCount / 2,
+                        _acceptAddressBufferCount / 2,
+                        out int bytesTransferred,
+                        overlapped);
 
-                return ProcessIOCPResult(success, bytesTransferred, overlapped);
-            }
-            catch
-            {
-                _asyncProcessingState = AsyncProcessingState.None;
-                FreeNativeOverlapped(overlapped);
-                _singleBufferHandle.Dispose();
-                throw;
+                    return ProcessIOCPResultWithDeferredAsyncHandling(success, bytesTransferred, overlapped, buffer, cancellationToken);
+                }
+                catch
+                {
+                    _asyncProcessingState = AsyncProcessingState.None;
+                    FreeNativeOverlapped(overlapped);
+                    throw;
+                }
             }
         }
 
@@ -1088,20 +1089,26 @@ namespace System.Net.Sockets
                 safeHandle.DangerousAddRef(ref refAdded);
                 IntPtr handle = safeHandle.DangerousGetHandle();
 
-                Debug.Assert(_asyncProcessingState == AsyncProcessingState.Set);
-                bool userBuffer = _count >= _acceptAddressBufferCount;
+                // This matches the logic in DoOperationAccept
+                bool userBuffer = _count != 0;
+                Debug.Assert(!userBuffer || (!_buffer.Equals(default) && _count >= _acceptAddressBufferCount));
+                Memory<byte> buffer = userBuffer ? _buffer : _acceptBuffer;
 
-                _currentSocket.GetAcceptExSockaddrs(
-                    userBuffer ? (IntPtr)((byte*)_singleBufferHandle.Pointer + _offset) : (IntPtr)_singleBufferHandle.Pointer,
-                    _count != 0 ? _count - _acceptAddressBufferCount : 0,
-                    _acceptAddressBufferCount / 2,
-                    _acceptAddressBufferCount / 2,
-                    out localAddr,
-                    out localAddrLength,
-                    out remoteAddr,
-                    out remoteSocketAddress.InternalSize
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer.Span))
+                {
+                    _currentSocket.GetAcceptExSockaddrs(
+                        (IntPtr)(userBuffer ? (bufferPtr + _offset) : bufferPtr),
+                        userBuffer ? _count - _acceptAddressBufferCount : 0,
+                        _acceptAddressBufferCount / 2,
+                        _acceptAddressBufferCount / 2,
+                        out localAddr,
+                        out localAddrLength,
+                        out remoteAddr,
+                        out remoteSocketAddress.InternalSize
                     );
-                Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
+
+                    Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
+                }
 
                 socketError = Interop.Winsock.setsockopt(
                     _acceptSocket!.SafeHandle,

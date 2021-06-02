@@ -8977,6 +8977,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                         if (canonicallyMatchingInterfacesFound > 1)
                         {
                             // Multiple canonically identical interfaces found when attempting to devirtualize an inexact interface dispatch
+                            info->detail = CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL;
                             return false;
                         }
                     }
