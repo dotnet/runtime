@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO.Pipelines.Tests
 {
+    [ActiveIssue("Runtime crash, null pointer dereference ?", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
     public class PipeWriterStreamTests
     {
         public delegate Task WriteAsyncDelegate(Stream stream, byte[] data);

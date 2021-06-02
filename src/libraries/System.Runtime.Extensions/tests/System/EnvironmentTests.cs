@@ -551,7 +551,7 @@ namespace System.Tests
             Assert.Equal(folderPath, knownFolder);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
         {

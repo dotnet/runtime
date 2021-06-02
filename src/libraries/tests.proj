@@ -230,6 +230,16 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory.Data/tests/System.Memory.Data.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
 
+    <!-- No results -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration/tests/Microsoft.Extensions.Configuration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO/tests/System.IO.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http.Json/tests/UnitTests/System.Net.Http.Json.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives/tests/PalTests/System.Net.Primitives.Pal.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets/tests/FunctionalTests/System.Net.Sockets.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client/tests/System.Net.WebSockets.Client.Tests.csproj" />
+    
+
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\Interpreter\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InvariantCultureOnlyMode\*.Test.csproj" />
