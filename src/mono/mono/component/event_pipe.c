@@ -87,7 +87,16 @@ static MonoComponentEventPipe fn_table = {
 	&ep_provider_add_event,
 	&event_pipe_get_session_info,
 	&event_pipe_thread_ctrl_activity_id,
-	&ep_rt_mono_write_event_ee_startup_start
+	&ep_rt_mono_write_event_ee_startup_start,
+	&ep_rt_write_event_threadpool_worker_thread_start,
+	&ep_rt_write_event_threadpool_worker_thread_stop,
+	&ep_rt_write_event_threadpool_worker_thread_wait,
+	&ep_rt_write_event_threadpool_worker_thread_adjustment_sample,
+	&ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment,
+	&ep_rt_write_event_threadpool_worker_thread_adjustment_stats,
+	&ep_rt_write_event_threadpool_io_enqueue,
+	&ep_rt_write_event_threadpool_io_dequeue,
+	&ep_rt_write_event_threadpool_working_thread_count
 };
 
 static bool
