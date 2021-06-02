@@ -25,7 +25,6 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
-    public bool UseLLVM { get; set; }
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
@@ -126,13 +125,12 @@ public class ApkBuilder
 
         var assemblerFiles = new StringBuilder();
         var assemblerFilesToLink = new StringBuilder();
-        //var assemblerFiles = new List<string>();
-        //var llvmFiles = new StringBuilder();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
             var llvmObj = file.GetMetadata("LlvmObjectFile");
+
             if (!string.IsNullOrEmpty(obj))
             {
                 var name = Path.GetFileNameWithoutExtension(obj);
@@ -143,7 +141,6 @@ public class ApkBuilder
             if (!string.IsNullOrEmpty(llvmObj))
             {
                 var name = Path.GetFileNameWithoutExtension(llvmObj);
-                //assemblerFiles.AppendLine($"add_library({name} OBJECT {llvmObj})");
                 assemblerFilesToLink.AppendLine($"    {llvmObj}");
             }
         }
@@ -279,11 +276,6 @@ public class ApkBuilder
         nativeLibraries += assemblerFilesToLink.ToString();
 
         string aotSources = assemblerFiles.ToString();
-        //foreach (string asm in assemblerFiles)
-        //{
-            // these libraries are linked via modules.c
-        //    aotSources += $"    {asm}{Environment.NewLine}";
-        //}
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
             .Replace("%MonoInclude%", monoRuntimeHeaders)
@@ -328,8 +320,6 @@ public class ApkBuilder
             cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
             cmakeBuildArgs += " --config Debug";
         }
-
-        //cmakeBuildArgs += " /v:d";
 
         Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeGenArgs);
         Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeBuildArgs);

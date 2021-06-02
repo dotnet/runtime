@@ -79,8 +79,6 @@ public class AndroidAppBuilderTask : Task
 
     public bool ForceInterpreter { get; set; }
 
-    public bool UseLLVM { get; set; }
-
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
