@@ -1728,7 +1728,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 if (!withProperties)
                     return ret;
-                var props = await CreateJArrayForProperties(sessionId, typeId[i], Array.Empty<byte>(), ret, false, $"dotnet:object:{objectId}", i == 0, token);
+                var command_params_obj = new MemoryStream();
+                var command_params_obj_writer = new MonoBinaryWriter(command_params_obj);
+                command_params_obj_writer.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
+                var props = await CreateJArrayForProperties(sessionId, typeId[i], command_params_obj.ToArray(), ret, false, $"dotnet:object:{objectId}", i == 0, token);
                 ret = new JArray(ret.Union(props));
 
                 // ownProperties

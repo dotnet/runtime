@@ -1566,23 +1566,24 @@ static GHashTable *obj_to_objref;
 /* Protected by the dbg lock */
 static MonoGHashTable *suspended_objs;
 
-
+#ifdef TARGET_WASM
 void mono_init_debugger_agent_for_wasm (int log_level_parm)
 {
+	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
+		return;
+
 	ids_init();
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 
 	log_level = log_level;
 	event_requests = g_ptr_array_new ();
-	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
-		return;
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
 	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
 	agent_config.enabled = TRUE;
 }
-
+#endif
 
 
 static void
@@ -6983,16 +6984,21 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		//resolve the assembly
 		MonoImageOpenStatus status;
 		MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
+		if (!aname) {
+			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+			buffer_add_int(buf, -1);
+			break;
+		}
 		MonoAssemblyByNameRequest byname_req;
 		mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 		g_free (lookup_name);
+		mono_assembly_name_free_internal (aname);		
 		if (!assembly) {
 			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
 			buffer_add_int(buf, -1);
 			break;
 		}
-		mono_assembly_name_free_internal (aname);
 		buffer_add_assemblyid (buf, mono_get_root_domain (), assembly);
 		break;
 	}
@@ -10009,55 +10015,55 @@ wait_for_attach (void)
 }
 
 ErrorCode
-mono_process_dbg_packet (int id, CommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, Buffer *buf)
+mono_process_dbg_packet (int id, CommandSet command_set, int command, gboolean *no_reply, guint8 *buf, guint8 *end, Buffer *ret_buf)
 {
 	ErrorCode err;
 	/* Process the request */
 	switch (command_set) {
 	case CMD_SET_VM:
-		err = vm_commands (command, id, p, end, buf);
+		err = vm_commands (command, id, buf, end, ret_buf);
 		if (err == ERR_NONE && command == CMD_VM_INVOKE_METHOD)
 			/* Sent after the invoke is complete */
 			*no_reply = TRUE;
 		break;
 	case CMD_SET_EVENT_REQUEST:
-		err = event_commands (command, p, end, buf);
+		err = event_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_APPDOMAIN:
-		err = domain_commands (command, p, end, buf);
+		err = domain_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_ASSEMBLY:
-		err = assembly_commands (command, p, end, buf);
+		err = assembly_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_MODULE:
-		err = module_commands (command, p, end, buf);
+		err = module_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_FIELD:
-		err = field_commands (command, p, end, buf);
+		err = field_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_TYPE:
-		err = type_commands (command, p, end, buf);
+		err = type_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_METHOD:
-		err = method_commands (command, p, end, buf);
+		err = method_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_THREAD:
-		err = thread_commands (command, p, end, buf);
+		err = thread_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_STACK_FRAME:
-		err = frame_commands (command, p, end, buf);
+		err = frame_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_ARRAY_REF:
-		err = array_commands (command, p, end, buf);
+		err = array_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_STRING_REF:
-		err = string_commands (command, p, end, buf);
+		err = string_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_POINTER:
-		err = pointer_commands (command, p, end, buf);
+		err = pointer_commands (command, buf, end, ret_buf);
 		break;
 	case CMD_SET_OBJECT_REF:
-		err = object_commands (command, p, end, buf);
+		err = object_commands (command, buf, end, ret_buf);
 		break;
 	default:
 		err = ERR_NOT_IMPLEMENTED;
