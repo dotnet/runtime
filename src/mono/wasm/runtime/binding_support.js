@@ -954,7 +954,7 @@ var BindingSupportLib = {
 			
 			var converter = this._pick_automatic_converter_for_user_type(0, "a", typePtr);
 			if (!converter)
-				throw new Error (`No converter available for class ${this._get_type_name(klassPtr)}`);
+				throw new Error (`No converter available for class ${this._get_type_name(typePtr)}`);
 
 			return converter (js_obj);
 		},
@@ -1200,13 +1200,29 @@ var BindingSupportLib = {
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
 				var aqn = this._get_type_aqn (typePtr);
-				var marshalerAQN = MONO._custom_marshaler_name_table[aqn];
+				var table = MONO._custom_marshaler_name_table;
+				var marshalerAQN = table[aqn];
+				if (!marshalerAQN) {
+					for (var k in table) {
+						// Perform a loose match against the assembly-qualified type names,
+						//  because in some cases it is not possible or convenient to
+						//  include the full string (i.e. version, culture, etc)
+						var isMatch = k.startsWith(aqn) || aqn.startsWith(k);
+						// console.log(k, ".startsWith", aqn, "==", isMatch);
+						if (isMatch) {
+							marshalerAQN = table[k];
+							break;
+						}
+					}
+				}
 				if (!marshalerAQN) {
 					// console.log (`No custom marshaler configured for ${aqn}`);
 					this._custom_marshaler_info_cache[typePtr] = null;
 					return null;
 				}
+				// console.log (`Custom marshaler configured for ${aqn}: ${marshalerAQN}`);
 				var json = this.get_custom_marshaler_info (typePtr, marshalerAQN);
+				// console.log (json);
 				result = JSON.parse(json);
 				if (!result)
 					throw new Error (`Configured custom marshaler for ${aqn} could not be loaded: ${marshalerAQN}`);
@@ -1226,9 +1242,11 @@ var BindingSupportLib = {
 
 			if (!this._struct_unboxer_cache.has (typePtr)) {
 				var info = this._get_custom_marshaler_info_for_type (typePtr);
-				// HACK
-				if (!info)
-					info = {};
+				if (!info) {
+					this._struct_unboxer_cache.set (typePtr, null);
+					return null;
+				}
+
 				if (info.error)
 					console.error(`Error while configuring automatic converter for type ${this._get_type_name(typePtr)}: ${info.error}`);
 
