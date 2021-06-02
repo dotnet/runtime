@@ -137,7 +137,7 @@ public class ApkBuilder
             {
                 var name = Path.GetFileNameWithoutExtension(obj);
                 assemblerFiles.AppendLine($"add_library({name} OBJECT {obj})");
-                //assemblerFilesToLink.AppendLine($"    {name}");
+                assemblerFilesToLink.AppendLine($"    {name}");
             }
 
             if (!string.IsNullOrEmpty(llvmObj))

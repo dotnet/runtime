@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
 project(monodroid)
 
 enable_language(C ASM)
@@ -10,6 +8,9 @@ if(NOT USE_LLVM)
     # the assembler code we generate is GNU which isn't understood by llvm
     add_compile_options(-no-integrated-as)
 endif()
+
+# Prevent the warning: shared library text segment is not shareable which is treated as an error
+add_link_options(-Wl,--no-warn-shared-textrel)
 
 add_library(
     monodroid
