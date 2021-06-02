@@ -1229,6 +1229,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/LeakWheel/leakwheel/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/SingLinkList/singlinkgen/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
