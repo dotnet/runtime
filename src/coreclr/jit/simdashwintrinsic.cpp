@@ -794,8 +794,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
                         op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise,
-                                                         simdBaseJitType,
-                                                         simdSize);
+                                                         simdBaseJitType, simdSize);
                     }
 
                     return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
