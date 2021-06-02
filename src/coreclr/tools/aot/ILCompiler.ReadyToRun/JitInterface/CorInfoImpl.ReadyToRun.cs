@@ -23,7 +23,7 @@ using Internal.ReadyToRunConstants;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-
+using System.Text;
 
 namespace Internal.JitInterface
 {
@@ -245,6 +245,24 @@ namespace Internal.JitInterface
             sb.Append(Token.ToString());
             if (Unboxing)
                 sb.Append("; UNBOXING");
+        }
+
+        public override string ToString()
+        {
+            StringBuilder debuggingName = new StringBuilder();
+            debuggingName.Append(Method.ToString());
+            if (ConstrainedType != null)
+            {
+                debuggingName.Append(" @ ");
+                debuggingName.Append(ConstrainedType.ToString());
+            }
+
+            debuggingName.Append("; ");
+            debuggingName.Append(Token.ToString());
+            if (Unboxing)
+                debuggingName.Append("; UNBOXING");
+
+            return debuggingName.ToString();
         }
 
         public int CompareTo(MethodWithToken other, TypeSystemComparer comparer)

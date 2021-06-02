@@ -243,11 +243,16 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeFixupSignature(key.FixupKind, key.TypeDesc);
             });
 
+            _virtualResolutionSignatures = new NodeCache<VirtualResolutionFixupSignatureFixupKey, VirtualResolutionFixupSignature>(key =>
+            {
+                return new ReadyToRun.VirtualResolutionFixupSignature(key.FixupKind, key.DeclMethod, key.ImplType, key.ImplMethod);
+            });
+
             _dynamicHelperCellCache = new NodeCache<DynamicHelperCellKey, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperMethodImport(
                     this,
-                    DispatchImports,
+                    DispatchImports, 
                     ReadyToRunHelper.DelayLoad_Helper_Obj,
                     key.Method,
                     useVirtualCall: false,
@@ -502,6 +507,49 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeFixupKey fixupKey = new TypeFixupKey(fixupKind, typeDesc);
             return _typeSignatures.GetOrAdd(fixupKey);
+        }
+
+        private struct VirtualResolutionFixupSignatureFixupKey : IEquatable<VirtualResolutionFixupSignatureFixupKey>
+        {
+            public readonly ReadyToRunFixupKind FixupKind;
+            public readonly MethodWithToken DeclMethod;
+            public readonly TypeDesc ImplType;
+            public readonly MethodWithToken ImplMethod;
+
+            public VirtualResolutionFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
+            {
+                FixupKind = fixupKind;
+                DeclMethod = declMethod;
+                ImplType = implType;
+                ImplMethod = implMethod;
+            }
+
+            public bool Equals(VirtualResolutionFixupSignatureFixupKey other)
+            {
+                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType && ImplMethod.Equals(other.ImplMethod);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is VirtualResolutionFixupSignatureFixupKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                if (ImplMethod != null)
+                    return HashCode.Combine(FixupKind, DeclMethod, ImplType, ImplMethod);
+                else
+                    return HashCode.Combine(FixupKind, DeclMethod, ImplType);
+            }
+
+            public override string ToString() => $"'{FixupKind}' '{DeclMethod}' on '{ImplType}' results in '{(ImplMethod != null ? ImplMethod.ToString() : "null")}'";
+        }
+
+        private NodeCache<VirtualResolutionFixupSignatureFixupKey, VirtualResolutionFixupSignature> _virtualResolutionSignatures;
+
+        public VirtualResolutionFixupSignature VirtualResolutionFixupSignature(ReadyToRunFixupKind fixupKind, MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
+        {
+            return _virtualResolutionSignatures.GetOrAdd(new VirtualResolutionFixupSignatureFixupKey(fixupKind, declMethod, implType, implMethod));
         }
 
         private struct ImportThunkKey : IEquatable<ImportThunkKey>

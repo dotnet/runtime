@@ -805,6 +805,24 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             uint methodFlags = ReadUInt();
 
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
+            {
+                int moduleIndex = (int)ReadUInt();
+                IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader.MetadataReader, _image, _offset, _outerReader, _contextReader);
+                var result = refAsmDecoder.ParseMethodWithMethodFlags(methodFlags);
+                _offset = refAsmDecoder.Offset;
+                return result;
+            }
+            else
+            {
+                return ParseMethodWithMethodFlags(methodFlags);
+            }
+        }
+
+
+        private TMethod ParseMethodWithMethodFlags(uint methodFlags)
+        {
             TType owningTypeOverride = default(TType);
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
@@ -1346,6 +1364,28 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append(" (CHECK_TYPE_LAYOUT)");
                     else
                         builder.Append(" (VERIFY_TYPE_LAYOUT)");
+                    break;
+
+                case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
+                case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
+                    ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
+                    ParseMethod(builder);
+                    builder.Append($" ImplType :");
+                    ParseType(builder);
+                    if (flags.HasFlag(ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverriden))
+                    {
+                        builder.Append($" ImplMethod :");
+                        ParseMethod(builder);
+                    }
+                    else
+                    {
+                        builder.Append("Not Overriden");
+                    }
+
+                    if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
+                        builder.Append(" (Check_VirtualFunctionOverride)");
+                    else
+                        builder.Append(" (Verify_VirtualFunctionOverride)");
                     break;
 
                 case ReadyToRunFixupKind.Check_FieldOffset:

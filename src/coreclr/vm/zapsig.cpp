@@ -741,7 +741,8 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
 TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
                               Module *pInfoModule,
                               PCCOR_SIGNATURE pBuffer,
-                              ClassLoadLevel level)
+                              ClassLoadLevel level,
+                              PCCOR_SIGNATURE *ppAfterSig /*=NULL*/)
 {
     CONTRACTL
     {
@@ -766,6 +767,12 @@ TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
                                             NULL,
                                             pZapSigContext);
 
+    if (ppAfterSig != NULL)
+    {
+        IfFailThrow(p.SkipExactlyOne());
+        *ppAfterSig = p.GetPtr();
+    }
+
     return th;
 }
 
@@ -778,7 +785,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
 
     SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
     ZapSig::Context zapSigContext(pInfoModule, (void *)pReferencingModule, ZapSig::NormalTokens);
-    return DecodeMethod(pInfoModule, pBuffer, &typeContext, &zapSigContext, ppTH);
+    return DecodeMethod(pInfoModule, pBuffer, &typeContext, &zapSigContext, ppTH, NULL, NULL);
 }
 
 MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
@@ -787,7 +794,8 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                  ZapSig::Context *pZapSigContext,
                                  TypeHandle *ppTH, /*=NULL*/
                                  PCCOR_SIGNATURE *ppOwnerTypeSpecWithVars, /*=NULL*/
-                                 PCCOR_SIGNATURE *ppMethodSpecWithVars /*=NULL*/)
+                                 PCCOR_SIGNATURE *ppMethodSpecWithVars, /*=NULL*/
+                                 PCCOR_SIGNATURE *ppAfterSig /*=NULL*/)
 {
     STANDARD_VM_CONTRACT;
 
@@ -800,6 +808,22 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     IfFailThrow(sig.GetData(&methodFlags));
 
     TypeHandle thOwner = NULL;
+
+    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
+    {
+        uint32_t updatedModuleIndex;
+        IfFailThrow(sig.GetData(&updatedModuleIndex));
+#ifdef FEATURE_MULTICOREJIT
+        if (pZapSigContext->externalTokens == ZapSig::MulticoreJitTokens)
+        {
+            pInfoModule = MulticoreJitManager::DecodeModuleFromIndex(pZapSigContext->pModuleContext, updatedModuleIndex);
+        }
+        else
+#endif
+        {
+            pInfoModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
+        }
+    }
 
     if ( methodFlags & ENCODE_METHOD_SIG_OwnerType )
     {
@@ -863,7 +887,12 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     if (thOwner.IsNull())
     {
         if (pZapSigContext->externalTokens == ZapSig::MulticoreJitTokens)
+        {
+            if (ppAfterSig != NULL)
+                *ppAfterSig = sig.GetPtr();
+
             return NULL;
+        }
 
         thOwner = pMethod->GetMethodTable();
     }
@@ -940,6 +969,9 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                                 NULL,
                                                 pZapSigContext);
 
+        if (ppAfterSig != NULL)
+            IfFailThrow(sig.SkipExactlyOne());
+
         MethodDesc * directMethod = constrainedType.GetMethodTable()->TryResolveConstraintMethodApprox(thOwner.GetMethodTable(), pMethod);
         if (directMethod == NULL)
         {
@@ -959,6 +991,9 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
             pMethod = directMethod;
         }
     }
+
+    if (ppAfterSig != NULL)
+        *ppAfterSig = sig.GetPtr();
 
     return pMethod;
 }

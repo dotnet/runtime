@@ -1172,10 +1172,26 @@ namespace Internal.JitInterface
             // RyuJIT expects to get the canonical form back
             impl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (impl.OwningType.IsValueType)
+            bool unboxingStub = impl.OwningType.IsValueType;
+#if READYTORUN
+            // As there are a variety of situations where the resolved virtual method may be different at compile and runtime (primarily due to subtle differences
+            // in the virtual resolution algorithm between the runtime and the compiler, although details such as whether or not type equivalence is enabled
+            // can also have an effect), record any decisions made, and if there are differences, simply skip use of the compiled method.
+            var resolver = _compilation.NodeFactory.Resolver;
+            ModuleToken tokenDecl = resolver.GetModuleTokenForMethod(decl);
+            ModuleToken tokenImpl = resolver.GetModuleTokenForMethod(impl);
+            MethodWithToken methodWithTokenDecl = new MethodWithToken(decl, tokenDecl, null, false, null, devirtualizedMethodOwner: decl.OwningType);
+            MethodWithToken methodWithTokenImpl = new MethodWithToken(impl, tokenImpl, null, false, null, devirtualizedMethodOwner: impl.OwningType);
+
+            ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
+            _methodCodeNode.Fixups.Add(virtualResolutionNode);
+#endif
+
+            if (unboxingStub)
             {
                 impl = getUnboxingThunk(impl);
             }
+
 
             info->devirtualizedMethod = ObjectToHandle(impl);
             info->requiresInstMethodTableArg = false;
