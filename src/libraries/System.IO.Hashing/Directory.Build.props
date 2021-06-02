@@ -6,6 +6,6 @@
 
 Commonly Used Types:
 System.IO.Hashing.Crc32
-System.IO.Hashing.Crc64</PackageDescription>
+System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
 </Project>
