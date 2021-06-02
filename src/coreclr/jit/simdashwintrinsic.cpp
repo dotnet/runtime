@@ -783,6 +783,23 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(varTypeIsUnsigned(simdBaseType));
                     return op1;
                 }
+                case NI_VectorT128_Sum:
+                {
+                    GenTree* tmp;
+                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                    int      haddCount    = genLog2(vectorLength);
+
+                    for (int i = 0; i < haddCount; i++)
+                    {
+                        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise,
+                                                         simdBaseJitType,
+                                                         simdSize);
+                    }
+
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
+                }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
