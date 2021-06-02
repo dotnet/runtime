@@ -10,7 +10,9 @@ A note on the JIT codebases: JIT32 refers to the original JIT codebase that orig
 
 # Getting started
 
-Read everything in the documented Windows and non-Windows ABI documentation.
+Read everything in the documented Windows and non-Windows ABI documentation. The CLR follows those basic conventions. This document only describes things that are CLR-specific, or exceptions from those documents.
+
+## Windows ABI documentation
 
 AMD64: See [x64 Software Conventions](https://docs.microsoft.com/en-us/cpp/build/x64-software-conventions).
 
@@ -18,11 +20,11 @@ ARM: See [Overview of ARM32 ABI Conventions](https://docs.microsoft.com/en-us/cp
 
 ARM64: See [Overview of ARM64 ABI conventions](https://docs.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions).
 
-ARM corporation ABI documentation is [here](https://developer.arm.com/architectures/system-architectures/software-standards/abi) and [here](https://github.com/ARM-software/abi-aa).
+## Non-Windows ABI documentation
 
-The Linux System V x86_64 ABI is documented [here](https://software.intel.com/content/dam/develop/external/us/en/documents/mpx-linux64-abi.pdf), also [here](https://www.uclibc.org/docs/psABI-x86_64.pdf). It appears the latest version is 1.0 [here](https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf), with ABI source material [here](https://gitlab.com/x86-psABIs/x86-64-ABI).
+Arm corporation ABI documentation (for ARM32 and ARM64) is [here](https://developer.arm.com/architectures/system-architectures/software-standards/abi) and [here](https://github.com/ARM-software/abi-aa).
 
-The CLR follows those basic conventions. This document only describes things that are CLR-specific, or exceptions from those documents.
+The Linux System V x86_64 ABI is documented in [System V Application Binary Interface / AMD64 Architecture Processor Supplement](https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf), with document source material [here](https://gitlab.com/x86-psABIs/x86-64-ABI).
 
 # General Unwind/Frame Layout
 
@@ -694,7 +696,7 @@ EnC is not supported for generic methods and methods on generic types.
 This section relates mostly to calling conventions on System V systems (such as Ubuntu Linux and Mac OS X).
 The general rules outlined in the System V x86_64 ABI documentation are followed with a few exceptions, described below:
 
-1. The hidden argument for by-value passed structs is always after the `this` parameter (if there is one). This is a difference with the System V ABI and affects only the internal JIT calling conventions. For PInvoke calls the hidden argument is always the first parameter since there is no `this` parameter in this case.
+1. The hidden argument for by-value passed structs is always after the `this` parameter (if there is one). This is a difference with the System V ABI and affects only the internal JIT calling conventions. For PInvoke calls the hidden argument is always the first parameter since there is no `this` parameter in this case (except for the `CallConvMemberFunction` case).
 2. Managed structs that have no fields are always passed by-value on the stack.
 3. The JIT proactively generates frame register frames (with `RBP` as a frame register) in order to aid the native OS tooling for stack unwinding and the like.
 4. All the other internal VM contracts for PInvoke, EH, and generic support remains in place. Please see the relevant sections above for more details. Note, however, that the registers used are different on System V due to the different calling convention. For example, the integer argument registers are, in order, RDI, RSI, RDX, RCX, R8, and R9. Thus, where the first argument (typically, the `this` pointer) on Windows AMD64 goes in RCX, on System V it goes in RDI, and so forth.
@@ -732,13 +734,15 @@ The general rules outlined in the System V x86_64 ABI documentation are followed
 | %xmm8-%xmm15 | temporary registers                     | No                |
 ```
 
-# x86 Calling convention specifics
+# Calling convention specifics for x86
 
 Unlike the other architectures that RyuJIT supports, the managed x86 calling convention is different than the default native calling convention. This is true for both Windows and Unix x86.
 
 The standard managed calling convention is a variation on the Windows x86 fastcall convention. It differs primarily in the order in which arguments are pushed on the stack.
+
 The only values that can be passed in registers are managed and unmanaged pointers, object references, and the built-in integer types int8, unsigned int8, int16, unsigned int16, int32, unsigned it32, native int, native unsigned int, and enums and value types with only one 4-byte integer primitive-type field. Enums are passed as their underlying type. All floating-point values and 8-byte integer values are passed on the stack. When the return type is a value type that cannot be passed in a register, the caller shall create a buffer to hold the result and pass the address of this buffer as a hidden parameter.
-Arguments are passed in left-to-right order, starting with the this pointer (for instance and virtual methods), followed by the return buffer pointer if needed, followed by the user-specified argument values.  The first of these that can be placed in a register is put into ECX, the next in EDX, and all subsequent ones are passed on the stack. This is in contrast with the x86 native calling conventions, which push arguments onto the stack in right-to-left order.
+
+Arguments are passed in left-to-right order, starting with the `this` pointer (for instance and virtual methods), followed by the return buffer pointer if needed, followed by the user-specified argument values. The first of these that can be placed in a register is put into ECX, the next in EDX, and all subsequent ones are passed on the stack. This is in contrast with the x86 native calling conventions, which push arguments onto the stack in right-to-left order.
 
 The return value is handled as follows:
 
