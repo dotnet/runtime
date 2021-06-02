@@ -4807,6 +4807,7 @@ void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
     printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
         GetStringLiteral->GetBuffer(value.B), value.A);
+    GetStringLiteral->Unlock();
 }
 
 const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
@@ -5468,6 +5469,7 @@ void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agno
             printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
         }
+        AllocPgoInstrumentationBySchema->Unlock();
     }
     printf("}");
 }
@@ -5637,6 +5639,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 
             printf("}\n");
         }
+        GetPgoInstrumentationResults->Unlock();
     }
     printf("} data_index-%u", value.data_index);
 }

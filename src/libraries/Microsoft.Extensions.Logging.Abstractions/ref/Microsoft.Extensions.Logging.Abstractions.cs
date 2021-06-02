@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging
         public int Id { get { throw null; } }
         public string? Name { get { throw null; } }
         public bool Equals(Microsoft.Extensions.Logging.EventId other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Microsoft.Extensions.Logging.EventId left, Microsoft.Extensions.Logging.EventId right) { throw null; }
         public static implicit operator Microsoft.Extensions.Logging.EventId (int i) { throw null; }

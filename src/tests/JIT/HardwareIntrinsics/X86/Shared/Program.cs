@@ -72,6 +72,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.LogInformation($"  AES:       {Aes.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  AVX:       {Avx.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  AVX2:      {Avx2.IsSupported}");
+            TestLibrary.TestFramework.LogInformation($"  AVXVNNI:   {AvxVnni.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  BMI1:      {Bmi1.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  BMI2:      {Bmi2.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  FMA:       {Fma.IsSupported}");

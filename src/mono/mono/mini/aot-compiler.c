@@ -42,6 +42,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
@@ -1114,15 +1115,17 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
 
-#if TARGET_X86 || TARGET_AMD64
-	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
-#endif
-
 #if defined(TARGET_X86)
+#ifdef TARGET_ANDROID
+	g_string_append_printf (acfg->llc_args, " -mtriple=i686-none-linux-android21");
+#else
+	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
 	g_string_append_printf (acfg->llc_args, " -march=x86 %s", has_custom_args ? "" : "-mcpu=generic");
+#endif
 #endif
 
 #if defined(TARGET_AMD64)
+	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
 	g_string_append_printf (acfg->llc_args, " -march=x86-64 %s", has_custom_args ? "" : "-mcpu=generic");
 	/* NOP */
 	acfg->align_pad_value = 0x90;
@@ -14089,7 +14092,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #endif
 
 		/* required for mixed mode */
-		if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+		if (strcmp (acfg->image->assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME) == 0) {
 			add_gc_wrappers (acfg);
 
 			for (int i = 0; i < MONO_JIT_ICALL_count; ++i)

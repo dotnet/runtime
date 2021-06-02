@@ -2082,6 +2082,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
 	{ "Avx", MONO_CPU_X86_AVX, unsupported, sizeof (unsupported) },
 	{ "Avx2", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "AvxVnni", 0, unsupported, sizeof (unsupported) },
 	{ "Bmi1", MONO_CPU_X86_BMI1, bmi1_methods, sizeof (bmi1_methods) },
 	{ "Bmi2", MONO_CPU_X86_BMI2, bmi2_methods, sizeof (bmi2_methods) },
 	{ "Fma", MONO_CPU_X86_FMA, unsupported, sizeof (unsupported) },

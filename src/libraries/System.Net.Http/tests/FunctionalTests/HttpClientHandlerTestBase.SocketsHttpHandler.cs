@@ -16,7 +16,20 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual QuicImplementationProvider UseQuicImplementationProvider => null;
 
-        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
+        public static bool IsMsQuicSupported
+        {
+            get
+            {
+                try
+                {
+                    return QuicImplementationProviders.MsQuic.IsSupported;
+                }
+                catch (System.PlatformNotSupportedException)
+                {
+                    return false;
+                }
+            }
+        }
 
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null, bool allowAllHttp2Certificates = true)
         {

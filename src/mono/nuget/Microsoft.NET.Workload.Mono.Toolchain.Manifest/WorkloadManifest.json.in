@@ -230,29 +230,29 @@
       "kind": "Sdk",
       "version": "${EmscriptenVersion}",
       "alias-to": {
-        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.win-x64",
-        "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64",
-        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64"
+        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Node.win-x64",
+        "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Node.linux-x64",
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Node.osx-x64",
+        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Node.osx-x64"
       }
     },
     "Microsoft.NET.Runtime.Emscripten.Python" : {
       "kind": "Sdk",
       "version": "${EmscriptenVersion}",
       "alias-to": {
-        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.win-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64",
-        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64"
+        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Python.win-x64",
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Python.osx-x64",
+        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Python.osx-x64"
       }
     },
     "Microsoft.NET.Runtime.Emscripten.Sdk" : {
       "kind": "Sdk",
       "version": "${EmscriptenVersion}",
       "alias-to": {
-        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.win-x64",
-        "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64",
-        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64"
+        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Sdk.win-x64",
+        "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Sdk.linux-x64",
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Sdk.osx-x64",
+        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.21.Sdk.osx-x64"
       }
     }
   }
