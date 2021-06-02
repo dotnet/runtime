@@ -219,7 +219,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20210309143118-005aab4
+        image: ubuntu-18.04-webassembly-20210519131124-ba00c14
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

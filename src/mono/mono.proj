@@ -526,7 +526,7 @@
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_PATH)/upstream/lib/libclang.dylib</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'libclang.dll'))</MonoLibClang>
-      <PythonCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; python</PythonCmd>
+      <PythonCmd Condition="'$(OS)' == 'Windows_NT'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 

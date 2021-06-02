@@ -20,8 +20,6 @@
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>6.0.0-preview.6.21270.1</MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2012Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
@@ -174,6 +172,9 @@
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21281.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.21281.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21281.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <!-- emscripten / Node -->
+    <MicrosoftNETRuntimeEmscripten2021Nodewinx64Version>6.0.0-preview.6.21275.1</MicrosoftNETRuntimeEmscripten2021Nodewinx64Version>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2021Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
