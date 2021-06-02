@@ -678,20 +678,15 @@ public:
     }
 
 #ifndef TARGET_UNIX
-    static bool CloseTimer()
+    static void CloseTimer()
     {
         LIMITED_METHOD_CONTRACT;
 
         TP_TIMER * pTimer = InterlockedExchangeT(& s_delayedWriteTimer, NULL);
-
-        if (pTimer == NULL)
+        if (pTimer != NULL)
         {
-            return false;
+            CloseThreadpoolTimer(pTimer);
         }
-
-        CloseThreadpoolTimer(pTimer);
-
-        return true;
     }
 
     ~MulticoreJitRecorder()
