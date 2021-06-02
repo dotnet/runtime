@@ -24,14 +24,25 @@ namespace System.Globalization
                         int loaded = LoadICU();
                         if (loaded == 0)
                         {
-                            // This can't go into resources, because a resource lookup requires globalization, which requires ICU
-                            string message = "Couldn't find a valid ICU package installed on the system. " +
-                                             "Please install libicu using your package manager and try again. " +
-                                             "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
-                                             "Please see https://aka.ms/dotnet-missing-libicu for more information.";
-                            Environment.FailFast(message);
+                            Environment.FailFast(GetIcuLoadFailureMessage());
                         }
                     }
+                }
+            }
+
+            private static string GetIcuLoadFailureMessage()
+            {
+                // These strings can't go into resources, because a resource lookup requires globalization, which requires ICU
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsIOS() || OperatingSystem.IsAndroid())
+                {
+                    return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information";
+                }
+                else
+                {
+                    return "Couldn't find a valid ICU package installed on the system. " +
+                        "Please install libicu using your package manager and try again. " +
+                        "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
+                        "Please see https://aka.ms/dotnet-missing-libicu for more information.";
                 }
             }
         }
