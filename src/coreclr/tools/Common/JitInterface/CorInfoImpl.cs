@@ -1181,7 +1181,7 @@ namespace Internal.JitInterface
             ModuleToken tokenDecl = resolver.GetModuleTokenForMethod(decl);
             ModuleToken tokenImpl = resolver.GetModuleTokenForMethod(impl);
             MethodWithToken methodWithTokenDecl = new MethodWithToken(decl, tokenDecl, null, false, null, devirtualizedMethodOwner: decl.OwningType);
-            MethodWithToken methodWithTokenImpl = new MethodWithToken(impl, tokenImpl, null, false, null, devirtualizedMethodOwner: impl.OwningType);
+            MethodWithToken methodWithTokenImpl = new MethodWithToken(impl, tokenImpl, null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
 
             ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
             _methodCodeNode.Fixups.Add(virtualResolutionNode);

@@ -14311,7 +14311,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     pImplMethodRuntime = thImpl.GetMethodTable()->GetMethodDescForSlot(slot);
                 }
             }
-            
+
             if (pImplMethodRuntime != pImplMethodCompiler)
             {
                 if (kind == ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE)
@@ -14330,11 +14330,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                     if (pImplMethodRuntime != NULL)
                     {
+                        methodNameImplRuntime.Clear();
                         pImplMethodRuntime->GetFullMethodInfo(methodNameImplRuntime);
                     }
 
                     if (pImplMethodCompiler != NULL)
                     {
+                        methodNameImplCompiler.Clear();
                         pImplMethodCompiler->GetFullMethodInfo(methodNameImplCompiler);
                     }
 
