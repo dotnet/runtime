@@ -157,7 +157,7 @@ public:
         return -1;
     }
 
-    void Unlock() // did you really mean to use this?
+    void Unlock()
     {
         locked = false;
     }
