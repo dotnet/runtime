@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace System.SpanTests
 {
@@ -50,18 +51,27 @@ namespace System.SpanTests
             Assert.True(Unsafe.AreSame(ref theRef, ref theMdArrayRef));
         }
 
-        [Fact]
-        public static unsafe void GetArrayDataReference_EmptyInput_ReturnsRefToWhereFirstElementWouldBe_MdArray()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public static unsafe void GetArrayDataReference_EmptyInput_ReturnsRefToWhereFirstElementWouldBe_MdArray(int rank)
         {
             // First, compute how much distance there is between the start of the object data and the first element
             // of a baseline (non-empty) array.
 
-            Array baselineArray = Array.CreateInstance(typeof(int), new int[] { 1, 2, 3 }, new int[] { 10, 20, 30 });
+            int[] lowerDims = Enumerable.Range(100, rank).ToArray();
+            int[] lengths = Enumerable.Range(1, rank).ToArray();
+
+            Array baselineArray = Array.CreateInstance(typeof(int), lengths, lowerDims);
             IntPtr baselineOffset = Unsafe.ByteOffset(ref Unsafe.As<RawObject>(baselineArray).Data, ref MemoryMarshal.GetArrayDataReference(baselineArray));
 
             // Then, perform the same calculation with an empty array of equal rank, and ensure the offsets are identical.
 
-            Array emptyArray = Array.CreateInstance(typeof(int), new int[] { 0, 0, 0 }, new int[] { 10, 20, 30 });
+            lengths = new int[rank]; // = { 0, 0, 0, ... }
+
+            Array emptyArray = Array.CreateInstance(typeof(int), lengths, lowerDims);
             IntPtr emptyArrayOffset = Unsafe.ByteOffset(ref Unsafe.As<RawObject>(emptyArray).Data, ref MemoryMarshal.GetArrayDataReference(emptyArray));
 
             Assert.Equal(baselineOffset, emptyArrayOffset);
