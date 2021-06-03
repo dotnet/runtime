@@ -198,7 +198,7 @@ public class AppleAppBuilderTask : Task
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (ForceInterpreter && ForceAOT)
+        if (TargetOS != TargetNames.MacCatalyst && ForceInterpreter && ForceAOT)
         {
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }

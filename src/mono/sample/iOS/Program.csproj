@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <TargetOS>iOS</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -56,10 +56,16 @@
       </AotInputAssemblies>
     </ItemGroup>
 
+    <PropertyGroup>
+      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+    </PropertyGroup>
+
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
-        Mode="Full"
+        Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
@@ -82,7 +88,7 @@
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppDir)"
         Optimized="$(Optimized)"
-        ForceAOT="$(ForceAOT)"
+        ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         RuntimeComponents="$(RuntimeComponents)"
         DiagnosticPorts="$(DiagnosticPorts)"
@@ -93,6 +99,12 @@
 
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+  </Target>
+
+  <Target Name="RunAppBundle"
+          AfterTargets="BuildAppBundle"
+          Condition="'$(ArchiveTests)' != 'true'">
+    <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
 
     <!-- install and run on ios simulator -->
     <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
@@ -106,8 +118,8 @@
 
   </Target>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;BuildAppBundle" >
     <PropertyGroup>

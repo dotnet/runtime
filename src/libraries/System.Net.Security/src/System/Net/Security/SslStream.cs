@@ -689,6 +689,17 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+            if (RemoteCertificate != null)
+            {
+                throw new InvalidOperationException(SR.net_ssl_certificate_exist);
+            }
+
+            return RenegotiateAsync(cancellationToken);
+        }
+
         protected override void Dispose(bool disposing)
         {
             try

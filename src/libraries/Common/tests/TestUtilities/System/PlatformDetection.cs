@@ -60,6 +60,7 @@ namespace System
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
+        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
