@@ -23,6 +23,7 @@
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -2210,6 +2211,13 @@ bool
 ep_rt_mono_write_event_monitor_contention_stop (
 	MonoObject *obj,
 	EventPipeMonitorContentionFlags flags);
+
+bool
+ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
+	const uint8_t *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
 
 bool
 ep_rt_write_event_threadpool_worker_thread_start (

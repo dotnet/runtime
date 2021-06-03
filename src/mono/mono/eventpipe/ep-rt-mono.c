@@ -404,6 +404,15 @@ profiler_monitor_failed (
 	MonoProfiler *prof,
 	MonoObject *obj);
 
+static
+void
+profiler_jit_code_buffer (
+	MonoProfiler *prof,
+	const mono_byte *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
+
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
  */
@@ -1421,9 +1430,9 @@ ep_rt_mono_walk_managed_stack_for_thread (
 {
 	EP_ASSERT (thread != NULL && stack_contents != NULL);
 
-	if (thread == ep_rt_thread_get_handle ())
+	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, stack_contents);
-	else
+	else if (mono_get_eh_callbacks ()->mono_walk_stack_with_state)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, stack_contents);
 
 	return true;
@@ -2340,6 +2349,44 @@ ep_rt_mono_write_event_monitor_contention_stop (
 }
 
 bool
+ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
+	const uint8_t *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data)
+{
+	if (!EventEnabledMethodJitMemoryAllocatedForCode ())
+		return true;
+
+	if (type != MONO_PROFILER_CODE_BUFFER_METHOD)
+		return true;
+
+	uint64_t method_id = 0;
+	uint64_t module_id = 0;
+
+	if (data) {
+		MonoMethod *method;
+		method = (MonoMethod *)data;
+		method_id = (uint64_t)method;
+		if (method->klass)
+			module_id = (uint64_t)(uint64_t)m_class_get_image (method->klass);
+	}
+
+	FireEtwMethodJitMemoryAllocatedForCode (
+		method_id,
+		module_id,
+		size,
+		0,
+		size,
+		0,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
 ep_rt_write_event_threadpool_worker_thread_start (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,
@@ -2641,9 +2688,17 @@ profiler_monitor_failed (
 	ep_rt_mono_write_event_monitor_contention_stop (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
 }
 
-// contention
-// jit_code_buffer -> EventEnabledMethodJitMemoryAllocatedForCode
-//
+static
+void
+profiler_jit_code_buffer (
+	MonoProfiler *prof,
+	const mono_byte *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data)
+{
+	ep_rt_mono_write_event_method_jit_memory_allocated_for_code ((const uint8_t *)buffer, size, type, data);
+}
 
 void
 EventPipeEtwCallbackDotNETRuntime (
@@ -2680,8 +2735,10 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, profiler_monitor_contention);
 			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, profiler_monitor_acquired);
 			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, profiler_monitor_failed);
+			mono_profiler_set_jit_code_buffer_callback (_ep_rt_mono_profiler, profiler_jit_code_buffer);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
+			mono_profiler_set_jit_code_buffer_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, NULL);

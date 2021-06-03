@@ -23,6 +23,7 @@ MethodDCEndILToNativeMap
 MethodDCEnd_V1
 MethodDCEndVerbose_V1
 MethodILToNativeMap
+MethodJitMemoryAllocatedForCode
 MethodJittingStarted_V1
 MethodLoad_V1
 MethodLoadVerbose_V1
