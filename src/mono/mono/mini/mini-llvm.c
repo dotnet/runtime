@@ -5412,6 +5412,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (!MONO_IS_PHI (ins))
 			break;
 
+		if (cfg->interp_entry_only)
+			break;
+
 		int i;
 		gboolean empty = TRUE;
 
@@ -5657,46 +5660,65 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 		case OP_SETRET:
 			switch (linfo->ret.storage) {
-			case LLVMArgVtypeInReg: {
-				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef retval = LLVMGetUndef (ret_type);
-				if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret))) {
-					/* The return type is an LLVM aggregate type, so a bare bitcast cannot be used to do this conversion. */
-					int width = mono_type_size (sig->ret, NULL);
-					int elems = width / TARGET_SIZEOF_VOID_P;
-					/* The return value might not be set if there is a throw */
-					LLVMValueRef val = lhs ? LLVMBuildBitCast (builder, lhs, LLVMVectorType (IntPtrType (), elems), "") : LLVMConstNull (LLVMVectorType (IntPtrType (), elems));
-					for (int i = 0; i < elems; ++i) {
-						LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
-						retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
-					}
-				} else {
-					LLVMValueRef addr = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), "");
-					for (int i = 0; i < 2; ++i) {
-						if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
-							LLVMValueRef indexes [2], part_addr;
-
-							indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-							indexes [1] = LLVMConstInt (LLVMInt32Type (), i, FALSE);
-							part_addr = LLVMBuildGEP (builder, addr, indexes, 2, "");
-
-							retval = LLVMBuildInsertValue (builder, retval, LLVMBuildLoad (builder, part_addr, ""), i, "");
-						} else {
-							g_assert (linfo->ret.pair_storage [i] == LLVMArgNone);
-						}
-					}
-				}
-				LLVMBuildRet (builder, retval);
-				break;
-			}
+			case LLVMArgNormal:
+			case LLVMArgVtypeInReg:
 			case LLVMArgVtypeAsScalar: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef retval = NULL;
-				if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret)))
-					retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
-				else {
-					g_assert (addresses [ins->sreg1]);
-					retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
+				LLVMValueRef retval = LLVMGetUndef (ret_type);
+				gboolean src_in_reg = FALSE;
+				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+				switch (linfo->ret.storage) {
+				case LLVMArgNormal: src_in_reg = TRUE; break;
+				case LLVMArgVtypeInReg: case LLVMArgVtypeAsScalar: src_in_reg = is_simd; break;
+				}
+				if (src_in_reg && (!lhs || ctx->is_dead [ins->sreg1])) {
+					/*
+					 * The method did not set its return value, probably because it
+					 * ends with a throw.
+					 */
+					LLVMBuildRet (builder, retval);
+					break;
+				}
+				switch (linfo->ret.storage) {
+				case LLVMArgNormal:
+					retval = convert (ctx, lhs, type_to_llvm_type (ctx, sig->ret));
+					break;
+				case LLVMArgVtypeInReg:
+					if (is_simd) {
+						/* The return type is an LLVM aggregate type, so a bare bitcast cannot be used to do this conversion. */
+						int width = mono_type_size (sig->ret, NULL);
+						int elems = width / TARGET_SIZEOF_VOID_P;
+						/* The return value might not be set if there is a throw */
+						LLVMValueRef val = LLVMBuildBitCast (builder, lhs, LLVMVectorType (IntPtrType (), elems), "");
+						for (int i = 0; i < elems; ++i) {
+							LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
+							retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
+						}
+					} else {
+						LLVMValueRef addr = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), "");
+						for (int i = 0; i < 2; ++i) {
+							if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
+								LLVMValueRef indexes [2], part_addr;
+
+								indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+								indexes [1] = LLVMConstInt (LLVMInt32Type (), i, FALSE);
+								part_addr = LLVMBuildGEP (builder, addr, indexes, 2, "");
+
+								retval = LLVMBuildInsertValue (builder, retval, LLVMBuildLoad (builder, part_addr, ""), i, "");
+							} else {
+								g_assert (linfo->ret.pair_storage [i] == LLVMArgNone);
+							}
+						}
+					}
+					break;
+				case LLVMArgVtypeAsScalar:
+					if (is_simd) {
+						retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
+					} else {
+						g_assert (addresses [ins->sreg1]);
+						retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
+					}
+					break;
 				}
 				LLVMBuildRet (builder, retval);
 				break;
@@ -5742,26 +5764,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			}
 			case LLVMArgNone:
-			case LLVMArgNormal: {
-				if (!lhs || ctx->is_dead [ins->sreg1]) {
-					/*
-					 * The method did not set its return value, probably because it
-					 * ends with a throw.
-					 */
-					if (cfg->vret_addr)
-						LLVMBuildRetVoid (builder);
-					else
-						LLVMBuildRet (builder, LLVMConstNull (type_to_llvm_type (ctx, sig->ret)));
-				} else {
-					LLVMBuildRet (builder, convert (ctx, lhs, type_to_llvm_type (ctx, sig->ret)));
-				}
-				has_terminator = TRUE;
+				LLVMBuildRetVoid (builder);
 				break;
-			}
 			default:
 				g_assert_not_reached ();
 				break;
 			}
+			has_terminator = TRUE;
 			break;
 		case OP_ICOMPARE:
 		case OP_FCOMPARE:
@@ -11319,7 +11328,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					LLVMInsertIntoBuilder (builder, v);
 			}
 
-			if (ctx->module->llvm_only && ctx->module->static_link) {
+			if (ctx->module->llvm_only && ctx->module->static_link && cfg->interp) {
+				/* The caller will retry compilation */
+				LLVMDeleteFunction (ctx->lmethod);
+			} else if (ctx->module->llvm_only && ctx->module->static_link) {
 				// Keep a stub for the function since it might be called directly
 				int nbbs = LLVMCountBasicBlocks (ctx->lmethod);
 				LLVMBasicBlockRef *bblocks = g_new0 (LLVMBasicBlockRef, nbbs);
@@ -11540,7 +11552,7 @@ emit_method_inner (EmitContext *ctx)
 	}
 
 #ifdef TARGET_WASM
-	if (ctx->module->interp && cfg->header->code_size > 100000) {
+	if (ctx->module->interp && cfg->header->code_size > 100000 && !cfg->interp_entry_only) {
 		/* Large methods slow down llvm too much */
 		set_failure (ctx, "il code too large.");
 		return;
@@ -11690,6 +11702,9 @@ emit_method_inner (EmitContext *ctx)
 				if (!ctx_ok (ctx))
 					return;
 
+				if (cfg->interp_entry_only)
+					break;
+
 				if (ins->opcode == OP_VPHI) {
 					/* Treat valuetype PHI nodes as operating on the address itself */
 					g_assert (ins->klass);
@@ -11792,6 +11807,10 @@ emit_method_inner (EmitContext *ctx)
 	if (ctx->llvm_only && !ctx->cfg->interp_entry_only) {
 		size_t group_index = 0;
 		while (group_index < cfg->header->num_clauses) {
+			if (cfg->clause_is_dead [group_index]) {
+				group_index ++;
+				continue;
+			}
 			int count = 0;
 			size_t cursor = group_index;
 			while (cursor < cfg->header->num_clauses &&
@@ -12028,9 +12047,12 @@ after_codegen:
 			g_free (name);
 		}
 
-		//LLVMDumpValue (ctx->lmethod);
-		//int err = LLVMVerifyFunction (ctx->lmethod, LLVMPrintMessageAction);
-		//g_assert (err == 0);
+		/*
+		int err = LLVMVerifyFunction (ctx->lmethod, LLVMPrintMessageAction);
+		if (err != 0)
+			LLVMDumpValue (ctx->lmethod);
+		g_assert (err == 0);
+		*/
 	} else {
 		//LLVMVerifyFunction (method, 0);
 		llvm_jit_finalize_method (ctx);
@@ -13581,10 +13603,7 @@ llvm_jit_finalize_method (EmitContext *ctx)
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&var))
 		callee_vars [i ++] = var;
 
-	mono_codeman_enable_write ();
-	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, cfg, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
-	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
-	mono_codeman_disable_write ();
+	mono_llvm_optimize_method (ctx->lmethod);
 	if (cfg->verbose_level > 1) {
 		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, TRUE));
 		if (cfg->compile_aot) {
@@ -13594,6 +13613,11 @@ llvm_jit_finalize_method (EmitContext *ctx)
 		}
 		g_print ("***\n\n");
 	}
+
+	mono_codeman_enable_write ();
+	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, cfg, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
+	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
+	mono_codeman_disable_write ();
 
 	decode_llvm_eh_info (ctx, eh_frame);
 

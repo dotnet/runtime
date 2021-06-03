@@ -439,6 +439,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(RSA_set0_key) \
     REQUIRED_FUNCTION(RSA_set_method) \
     REQUIRED_FUNCTION(RSA_size) \
+    FALLBACK_FUNCTION(RSA_test_flags) \
     REQUIRED_FUNCTION(RSA_up_ref) \
     REQUIRED_FUNCTION(RSA_verify) \
     LIGHTUP_FUNCTION(SSL_CIPHER_find) \
@@ -875,6 +876,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_set0_key RSA_set0_key_ptr
 #define RSA_set_method RSA_set_method_ptr
 #define RSA_size RSA_size_ptr
+#define RSA_test_flags RSA_test_flags_ptr
 #define RSA_up_ref RSA_up_ref_ptr
 #define RSA_verify RSA_verify_ptr
 #define SSL_CIPHER_get_bits SSL_CIPHER_get_bits_ptr
@@ -1107,6 +1109,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_set0_factors local_RSA_set0_factors
 #define RSA_set0_key local_RSA_set0_key
 #define RSA_pkey_ctx_ctrl local_RSA_pkey_ctx_ctrl
+#define RSA_test_flags local_RSA_test_flags
 #define SSL_CTX_set_security_level local_SSL_CTX_set_security_level
 #define SSL_is_init_finished local_SSL_is_init_finished
 #define X509_CRL_get0_nextUpdate local_X509_CRL_get0_nextUpdate

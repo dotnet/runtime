@@ -356,6 +356,7 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     }
     else
     {
+        m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LocalField));
         loResult->SetOper(GT_LCL_FLD);
         loResult->AsLclFld()->SetLclOffs(0);
         loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());

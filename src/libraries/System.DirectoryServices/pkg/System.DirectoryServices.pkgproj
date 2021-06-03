@@ -12,6 +12,8 @@
     <File Include="$(PlaceHolderFile)">
       <TargetPath>runtimes/win/lib/net461</TargetPath>
     </File>
+
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

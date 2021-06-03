@@ -306,7 +306,9 @@ ep_on_error:
 }
 
 void
-ep_session_execute_rundown (EventPipeSession *session)
+ep_session_execute_rundown (
+	EventPipeSession *session,
+	ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	EP_ASSERT (session != NULL);
 
@@ -315,7 +317,7 @@ ep_session_execute_rundown (EventPipeSession *session)
 
 	ep_return_void_if_nok (session->file != NULL);
 
-	ep_rt_execute_rundown ();
+	ep_rt_execute_rundown (execution_checkpoints);
 }
 
 void

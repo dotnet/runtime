@@ -2419,6 +2419,11 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
     }
 
+    if (!JitConfig.EnableAVXVNNI())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
+    }
+
     if (!JitConfig.EnableLZCNT())
     {
         instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
@@ -9714,6 +9719,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "virtual method installed via explicit override";
         case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE:
             return "devirtualization crossed version bubble";
+        case CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL:
+            return "object class has multiple implementations of interface";
         default:
             return "undefined";
     }

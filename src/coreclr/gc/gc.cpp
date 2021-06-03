@@ -28536,7 +28536,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
         // We only need to make sure we fix the brick the last marked object's end is in.
         // Note this brick could have been fixed already.
         size_t last_marked_obj_start_b = brick_of (last_marked_obj_start);
-        size_t last_marked_obj_end_b = brick_of (last_marked_obj_end);
+        size_t last_marked_obj_end_b = brick_of (last_marked_obj_end - 1);
         dprintf (REGIONS_LOG, ("last live obj %Ix(%Ix)-%Ix, fixing its brick(s) %Ix-%Ix",
             last_marked_obj_start, method_table (last_marked_obj_start), last_marked_obj_end,
             last_marked_obj_start_b, last_marked_obj_end_b));

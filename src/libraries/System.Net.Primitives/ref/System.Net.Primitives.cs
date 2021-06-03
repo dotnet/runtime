@@ -83,6 +83,7 @@ namespace System.Net
         public void Add(System.Uri uri, System.Net.CookieCollection cookies) { }
         public string GetCookieHeader(System.Uri uri) { throw null; }
         public System.Net.CookieCollection GetCookies(System.Uri uri) { throw null; }
+        public System.Net.CookieCollection GetAllCookies() { throw null; }
         public void SetCookies(System.Uri uri, string cookieHeader) { }
     }
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable

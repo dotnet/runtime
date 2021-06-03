@@ -912,7 +912,7 @@ public:
     }
 
     // Set up or access random state (for use by RandomPolicy)
-    CLRRandom* GetRandom();
+    CLRRandom* GetRandom(int optionalSeed = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
