@@ -553,7 +553,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
 
         // Ask InlinePolicy if it has anything to dump as well:
-        if (m_Policy != nullptr)
+        if ((m_Policy != nullptr) && (JitConfig.JitInlinePolicyDumpXml() != 0))
         {
             m_Policy->DumpXml(file, indent + 2);
         }

@@ -558,10 +558,74 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
 void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
 {
-    fprintf(file, "%*s<DefaultPolicyData>\n", indent, "");
-    fprintf(file, "%*s<Multiplier>%g</Multiplier>\n", indent + 2, "", m_Multiplier);
-    // TODO: print all fields?
-    fprintf(file, "%*s</DefaultPolicyData>\n", indent, "");
+    // Let's use attributes in a single line here to reduce verbosity
+    fprintf(file,
+            "%*s<DefaultPolicyData"
+            " Multiplier=\"%g\""
+            " ProfileFrequency=\"%g\""
+            " CodeSize=\"%u\""
+            " CallsiteFrequency=\"%d\""
+            " CallsiteDepth=\"%u\""
+            " InstructionCount=\"%u\""
+            " LoadStoreCount=\"%u\""
+            " ArgFeedsTest=\"%u\""
+            " ArgFeedsConstantTest=\"%u\""
+            " ArgFeedsRangeCheck=\"%u\""
+            " ConstantArgFeedsConstantTest=\"%u\""
+            " UnknownFeedsConstantTest=\"%u\""
+            " ReturnsConstantTest=\"%u\""
+            " ArgCasted=\"%u\""
+            " ArgPromotable=\"%u\""
+            " ArgStruct=\"%u\""
+            " FoldableBox=\"%u\""
+            " Intrinsic=\"%u\""
+            " UncondBranch=\"%u\""
+            " BackwardJump=\"%u\""
+            " ThrowBlocks=\"%u\""
+            " ArgIsFinal=\"%u\""
+            " ArgIsFinalSigIsNot=\"%u\""
+            " ArgIsConst=\"%u\""
+            " ArgIsBoxed=\"%u\""
+            " FoldableIntrinsic=\"%u\""
+            " FoldableExpr=\"%u\""
+            " FoldableExprUn=\"%u\""
+            " FoldableBranch=\"%u\""
+            " DivByCns=\"%u\""
+            " CalleeNativeSizeEstimate=\"%d\""
+            " CallsiteNativeSizeEstimate=\"%d\""
+            " IsForceInline=\"%s\""
+            " IsForceInlineKnown=\"%s\""
+            " IsInstanceCtor=\"%s\""
+            " IsFromPromotableValueClass=\"%s\""
+            " HasSimd=\"%s\""
+            " LooksLikeWrapperMethod=\"%s\""
+            " MethodIsMostlyLoadStore=\"%s\""
+            " CallsiteIsInTryRegion=\"%s\""
+            " CallsiteIsInLoop=\"%s\""
+            " IsNoReturn=\"%s\""
+            " IsNoReturnKnown=\"%s\""
+            " ReturnsPromotable=\"%s\""
+            " ReturnsValueType=\"%s\""
+            " IsFromValueClass=\"%s\""
+            " IsGenericFromNonGeneric=\"%s\""
+            " CallsiteIsInNoReturnRegion=\"%s\""
+            " HasProfile=\"%s\""
+            "/>\n",
+            indent, "", m_Multiplier, m_ProfileFrequency, m_CodeSize, (int)m_CallsiteFrequency, m_CallsiteDepth,
+            m_InstructionCount, m_LoadStoreCount, m_ArgFeedsTest, m_ArgFeedsConstantTest, m_ArgFeedsRangeCheck,
+            m_ConstantArgFeedsConstantTest, m_UnknownFeedsConstantTest, m_ReturnsConstantTest, m_ArgCasted,
+            m_ArgPromotable, m_ArgStruct, m_FoldableBox, m_Intrinsic, m_UncondBranch, m_BackwardJump, m_ThrowBlocks,
+            m_ArgIsFinal, m_ArgIsFinalSigIsNot, m_ArgIsConst, m_ArgIsBoxed, m_FoldableIntrinsic, m_FoldableExpr,
+            m_FoldableExprUn, m_FoldableBranch, m_DivByCns, m_CalleeNativeSizeEstimate, m_CallsiteNativeSizeEstimate,
+            m_IsForceInline ? "True" : "False", m_IsForceInlineKnown ? "True" : "False",
+            m_IsInstanceCtor ? "True" : "False", m_IsFromPromotableValueClass ? "True" : "False",
+            m_HasSimd ? "True" : "False", m_LooksLikeWrapperMethod ? "True" : "False",
+            m_MethodIsMostlyLoadStore ? "True" : "False", m_CallsiteIsInTryRegion ? "True" : "False",
+            m_CallsiteIsInLoop ? "True" : "False", m_IsNoReturn ? "True" : "False",
+            m_IsNoReturnKnown ? "True" : "False", m_ReturnsPromotable ? "True" : "False",
+            m_ReturnsValueType ? "True" : "False", m_IsFromValueClass ? "True" : "False",
+            m_IsGenericFromNonGeneric ? "True" : "False", m_CallsiteIsInNoReturnRegion ? "True" : "False",
+            m_HasProfile ? "True" : "False");
 }
 
 //------------------------------------------------------------------------
