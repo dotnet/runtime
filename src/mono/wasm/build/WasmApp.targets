@@ -172,7 +172,7 @@
 
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm runtime.js -- %RUNTIME_ARGS% --run project.dll %*"
+      Lines="v8 --expose_wasm runtime.js -- %RUNTIME_ARGS% --run $(WasmMainAssemblyFileName) %*"
       Overwrite="true"
       Condition="'$(OS)' == 'Windows_NT'">
     </WriteLinesToFile>
