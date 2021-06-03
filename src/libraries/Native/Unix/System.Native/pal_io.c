@@ -1480,25 +1480,75 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
-int64_t SystemNative_PReadV(intptr_t fd, void* vectors, int32_t vectorCount, int64_t fileOffset)
+int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
     assert(vectorCount >= 0);
 
-    ssize_t count;
-    while ((count = preadv(ToFileDescriptor(fd), (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    ssize_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PREADV
+    while ((count = preadv(fileDescriptor, vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    ssize_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        struct iovec vector = vectors[i];
+        while ((current = pread(fileDescriptor, vector.iov_base, vector.iov_len, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // we stop on the first incomplete operation (the next call would fail)
+        if (current != vector.iov_len)
+        {
+            return (int64_t)count;
+        }
+    }
+#endif
 
     assert(count >= -1);
     return (int64_t)count;
 }
 
-int64_t SystemNative_PWriteV(intptr_t fd, void* vectors, int32_t vectorCount, int64_t fileOffset)
+int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
     assert(vectorCount >= 0);
 
-    ssize_t count;
-    while ((count = pwritev(ToFileDescriptor(fd), (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    ssize_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PWRITEV
+    while ((count = pwritev(fileDescriptor, vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    ssize_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        struct iovec vector = vectors[i];
+        while ((current = pwrite(fileDescriptor, vector.iov_base, vector.iov_len, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // we stop on the first incomplete operation (the next call would fail)
+        if (current != vector.iov_len)
+        {
+            return (int64_t)count;
+        }
+    }
+#endif
 
     assert(count >= -1);
     return (int64_t)count;

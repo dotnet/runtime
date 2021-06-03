@@ -750,11 +750,11 @@ PALEXPORT int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferS
  *
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
  */
-PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, void* vectors, int32_t vectorCount, int64_t fileOffset);
+PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset);
 
 /**
  * Writes the number of bytes specified in the buffers into the specified, opened file descriptor at specified offset.
  *
  * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
  */
-PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, void* vectors, int32_t vectorCount, int64_t fileOffset);
+PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset);
