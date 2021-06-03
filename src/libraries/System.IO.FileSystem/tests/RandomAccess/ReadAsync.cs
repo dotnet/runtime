@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -15,6 +16,17 @@ namespace System.IO.Tests
 
         protected override bool ShouldThrowForSyncHandle
             => OperatingSystem.IsWindows(); // on Windows we can NOT perform async IO using sync handle
+
+        [Fact]
+        public Task TaskAlreadyCanceledAsync()
+        {
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.ReadWrite, options: FileOptions.Asynchronous))
+            {
+                CancellationToken token = GetCancelledToken();
+                Assert.True(RandomAccess.ReadAsync(handle, new byte[1], 0, token).IsCanceled);
+                return Assert.ThrowsAsync<TaskCanceledException>(async () => await RandomAccess.ReadAsync(handle, new byte[1], 0, token));
+            }
+        }
 
         [Fact]
         public async Task HappyPath()

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO.Pipes;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -90,6 +91,15 @@ namespace System.IO.Tests
                     Assert.Equal("handle", ex.ParamName);
                 }
             }
+        }
+
+        protected static CancellationToken GetCancelledToken()
+        {
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
+            source.Cancel();
+
+            return token;
         }
     }
 }

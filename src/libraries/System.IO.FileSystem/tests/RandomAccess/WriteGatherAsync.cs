@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -22,6 +23,17 @@ namespace System.IO.Tests
             {
                 ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => RandomAccess.WriteAsync(handle, buffers: null, 0));
                 Assert.Equal("buffers", ex.ParamName);
+            }
+        }
+
+        [Fact]
+        public Task TaskAlreadyCanceledAsync()
+        {
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.ReadWrite, options: FileOptions.Asynchronous))
+            {
+                CancellationToken token = GetCancelledToken();
+                Assert.True(RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { new byte[1] }, 0, token).IsCanceled);
+                return Assert.ThrowsAsync<TaskCanceledException>(async () => await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { new byte[1] }, 0, token));
             }
         }
 
