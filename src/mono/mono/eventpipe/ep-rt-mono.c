@@ -2217,7 +2217,7 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
 
-		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_get_class (obj)), MONO_TYPE_NAME_FORMAT_IL);
+		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_class (obj)), MONO_TYPE_NAME_FORMAT_IL);
 
 		FireEtwExceptionThrown_V1 (
 			type_name,
