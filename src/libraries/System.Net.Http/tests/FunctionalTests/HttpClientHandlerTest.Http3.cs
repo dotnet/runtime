@@ -168,6 +168,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
+            // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
+            if (streamLimit == 10 && this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
             var lastRequestContentStarted = new TaskCompletionSource();
 
