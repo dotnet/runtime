@@ -114,7 +114,10 @@ namespace ILLink.RoslynAnalyzer
 		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
 		{
 			var message = requiresAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Message").Value.Value?.ToString ();
-			return string.IsNullOrEmpty (message) ? "" : $" {message}.";
+			if (!string.IsNullOrEmpty (message))
+				message = $" {message}{(message!.TrimEnd ().EndsWith (".") ? "" : ".")}";
+
+			return message!;
 		}
 	}
 }
