@@ -2197,20 +2197,11 @@ ep_rt_mono_write_event_exception_clause (
 	MonoExceptionEnum clause_type,
 	MonoObject *obj);
 
- typedef enum {
-	EP_MONITOR_CONTENTION_FLAGS_MANAGED = 0,
-	EP_MONITOR_CONTENTION_FLAGS_NATIVE = 1
-} EventPipeMonitorContentionFlags;
+bool
+ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj);
 
 bool
-ep_rt_mono_write_event_monitor_contention_start (
-	MonoObject *obj,
-	EventPipeMonitorContentionFlags flags);
-
-bool
-ep_rt_mono_write_event_monitor_contention_stop (
-	MonoObject *obj,
-	EventPipeMonitorContentionFlags flags);
+ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj);
 
 bool
 ep_rt_mono_write_event_method_jit_memory_allocated_for_code (

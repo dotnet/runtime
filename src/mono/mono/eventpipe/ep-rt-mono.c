@@ -1817,9 +1817,9 @@ ep_rt_mono_write_event_method_load (
 				method_code_size,
 				method_token,
 				method_flags | METHOD_FLAGS_EXTENT_HOT_SECTION,
-				method_namespace ? method_namespace : "",
+				method_namespace,
 				method_name,
-				method_signature ? method_signature : "",
+				method_signature,
 				clr_instance_get_id (),
 				NULL,
 				NULL);
@@ -2212,19 +2212,9 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
 			exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
-
-			MonoArray *captured_traces = (MonoArray *)exception->captured_traces;
-			if (captured_traces && mono_array_length_internal (captured_traces) != 0) {
-				MonoStackTrace *trace = mono_array_get_fast (captured_traces, MonoStackTrace *, 0);
-				if (trace && trace->frames && mono_array_length_internal (trace->frames) != 0) {
-					MonoStackFrame *frame = mono_array_get_fast (trace->frames, MonoStackFrame *, 0);
-					if (frame)
-						ip = (uintptr_t)(frame->method_address + frame->native_offset);
-				}
-			}
 		}
 
-		if (ip == 0)
+		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
 
 		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_get_class (obj)), MONO_TYPE_NAME_FORMAT_IL);
@@ -2315,15 +2305,13 @@ ep_rt_mono_write_event_exception_clause (
 }
 
 bool
-ep_rt_mono_write_event_monitor_contention_start (
-	MonoObject *obj,
-	EventPipeMonitorContentionFlags flags)
+ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj)
 {
 	if (!EventEnabledContentionStart_V1 ())
 		return true;
 
 	FireEtwContentionStart_V1 (
-		(uint8_t)flags,
+		0 /* ManagedContention */,
 		clr_instance_get_id (),
 		NULL,
 		NULL);
@@ -2332,15 +2320,13 @@ ep_rt_mono_write_event_monitor_contention_start (
 }
 
 bool
-ep_rt_mono_write_event_monitor_contention_stop (
-	MonoObject *obj,
-	EventPipeMonitorContentionFlags flags)
+ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj)
 {
 	if (!EventEnabledContentionStop ())
 		return true;
 
 	FireEtwContentionStop (
-		(uint8_t)flags,
+		0 /* ManagedContention */,
 		clr_instance_get_id (),
 		NULL,
 		NULL);
@@ -2378,7 +2364,7 @@ ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
 		size,
 		0,
 		size,
-		0,
+		0 /* CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN */,
 		clr_instance_get_id (),
 		NULL,
 		NULL);
@@ -2667,7 +2653,7 @@ profiler_monitor_contention (
 	MonoProfiler *prof,
 	MonoObject *obj)
 {
-	ep_rt_mono_write_event_monitor_contention_start (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
+	ep_rt_mono_write_event_monitor_contention_start (obj);
 }
 
 static
@@ -2676,7 +2662,7 @@ profiler_monitor_acquired (
 	MonoProfiler *prof,
 	MonoObject *obj)
 {
-	ep_rt_mono_write_event_monitor_contention_stop (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
+	ep_rt_mono_write_event_monitor_contention_stop (obj);
 }
 
 static
@@ -2685,7 +2671,7 @@ profiler_monitor_failed (
 	MonoProfiler *prof,
 	MonoObject *obj)
 {
-	ep_rt_mono_write_event_monitor_contention_stop (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
+	ep_rt_mono_write_event_monitor_contention_stop (obj);
 }
 
 static
