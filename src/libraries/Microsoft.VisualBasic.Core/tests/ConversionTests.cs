@@ -496,7 +496,6 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
-        [ActiveIssue("Ran out of trampolines of type 2 in '/data/user/0/net.dot.Microsoft.VisualBasic.Core.Tests/files/System.Private.CoreLib.dll' (limit 2000)", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         [InlineData(true, 1)]
         [InlineData(false, 0)]
         [InlineData("0", 0.0)]
