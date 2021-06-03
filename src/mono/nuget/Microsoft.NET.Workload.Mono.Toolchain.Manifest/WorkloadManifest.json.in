@@ -148,7 +148,7 @@
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
-        "win-x64": "Microsoft.netcore.app.runtime.aot.win-x64.Cross.android-arm64",
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-arm64",
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-arm64",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm64",
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm64"
