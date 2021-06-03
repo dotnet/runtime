@@ -36,7 +36,8 @@ namespace System.Net.Http.Functional.Tests
 
         private const double LengthMb = 500;
         //private const string BenchmarkServer = "10.194.114.94";
-        private const string BenchmarkServer = "192.168.0.152";
+        //private const string BenchmarkServer = "192.168.0.152";
+        private const string BenchmarkServer = "127.0.0.1:5000";
 
         [Theory]
         [InlineData(BenchmarkServer)]
@@ -142,7 +143,8 @@ namespace System.Net.Http.Functional.Tests
             _listener.Enabled = true;
             var handler = new SocketsHttpHandler
             {
-                FakeRtt = await EstimateRttAsync(hostName)
+                FakeRtt = await EstimateRttAsync(hostName),
+                StreamWindowUpdateRatio = 4
             };
 
             await TestHandler("SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT", hostName, true, LengthMb, handler);
@@ -217,9 +219,10 @@ namespace System.Net.Http.Functional.Tests
             PingReply reply2 = await ping.SendPingAsync(addr);
             TimeSpan rtt = TimeSpan.FromMilliseconds(reply1.RoundtripTime + reply2.RoundtripTime) / 2;
             _output.WriteLine($"Estimated RTT: {rtt}");
-            if (rtt == TimeSpan.Zero)
+            if (rtt < TimeSpan.FromMilliseconds(1))
             {
-                _output.WriteLine("RTT is indeed zero!");
+                _output.WriteLine("RTT < 1 ms, changing to 1 ms!");
+                rtt = TimeSpan.FromMilliseconds(1);
             }
             return rtt;
         }
