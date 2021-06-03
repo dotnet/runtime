@@ -1503,5 +1503,51 @@ namespace System
             double sin = Sin(rem * PI);
             return invert ? -sin : sin;
         }
+
+        /// <summary>
+        /// Returns the cosine of the specified angle measured in half-turns.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <returns>The cosine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Cos(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static double CosPi(double x)
+        {
+            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/cos_pi.hpp
+
+            if (Abs(x) < 0.25)
+            {
+                return Cos(x * PI);
+            }
+
+            if (x < 0)
+            {
+                x = -x;
+            }
+
+            bool invert = false;
+            double floor = Floor(x);
+            if (((int)floor & 1) != 0)
+            {
+                invert = !invert;
+            }
+
+            double rem = x - floor;
+            if (rem > 0.5)
+            {
+                rem = 1 - rem;
+                invert = !invert;
+            }
+            else if (rem == 0.5)
+            {
+                return 0;
+            }
+
+            double cos = rem > 0.25 ? Cos(0.5 - rem) : Cos(rem);
+            return invert ? -cos : cos;
+        }
     }
 }

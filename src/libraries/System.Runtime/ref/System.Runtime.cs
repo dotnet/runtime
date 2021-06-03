@@ -2786,6 +2786,7 @@ namespace System
         public static double CopySign(double x, double y) { throw null; }
         public static double Cos(double d) { throw null; }
         public static double Cosh(double value) { throw null; }
+        public static double CosPi(double x) { throw null; }
         public static int DivRem(int a, int b, out int result) { throw null; }
         public static long DivRem(long a, long b, out long result) { throw null; }
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right) { throw null; }
@@ -2873,9 +2874,9 @@ namespace System
         public static int Sign(sbyte value) { throw null; }
         public static int Sign(float value) { throw null; }
         public static double Sin(double a) { throw null; }
-        public static double SinPi(double x) { throw null; }
         public static (double Sin, double Cos) SinCos(double x) { throw null; }
         public static double Sinh(double value) { throw null; }
+        public static double SinPi(double x) { throw null; }
         public static double Sqrt(double d) { throw null; }
         public static double Tan(double a) { throw null; }
         public static double Tanh(double value) { throw null; }
@@ -2902,6 +2903,7 @@ namespace System
         public static float CopySign(float x, float y) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
+        public static float CosPi(float x) { throw null; }
         public static float Exp(float x) { throw null; }
         public static float Floor(float x) { throw null; }
         public static float FusedMultiplyAdd(float x, float y, float z) { throw null; }
@@ -2925,9 +2927,9 @@ namespace System
         public static float ScaleB(float x, int n) { throw null; }
         public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
-        public static float SinPi(float x) { throw null; }
         public static (float Sin, float Cos) SinCos(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
+        public static float SinPi(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
         public static float Tan(float x) { throw null; }
         public static float Tanh(float x) { throw null; }

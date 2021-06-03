@@ -3212,5 +3212,41 @@ namespace System.Tests
             Assert.Equal(0, MathF.SinPi(0.6789f) + MathF.SinPi(-0.6789f));
             Assert.Equal(0, MathF.SinPi(1.2345f) + MathF.SinPi(-1.2345f));
         }
+
+        [Fact]
+        public static void CosPi_Double_Precision()
+        {
+            Assert.Equal( 1, Math.CosPi( 0.0));
+            Assert.Equal( 0, Math.CosPi( 0.5));
+            Assert.Equal( 0, Math.CosPi(-0.5));
+            Assert.Equal(-1, Math.CosPi( 1.0));
+            Assert.Equal(-1, Math.CosPi(-1.0));
+            Assert.Equal( 0, Math.CosPi( 1.5));
+            Assert.Equal( 0, Math.CosPi(-1.5));
+            Assert.Equal( 1, Math.CosPi( 2.0));
+            Assert.Equal( 1, Math.CosPi(-2.0));
+
+            Assert.Equal(0, Math.CosPi(0.1234) - Math.CosPi(-0.1234));
+            Assert.Equal(0, Math.CosPi(0.6789) - Math.CosPi(-0.6789));
+            Assert.Equal(0, Math.CosPi(1.2345) - Math.CosPi(-1.2345));
+        }
+
+        [Fact]
+        public static void CosPi_Float_Precision()
+        {
+            Assert.Equal( 1, MathF.CosPi( 0.0f));
+            Assert.Equal( 0, MathF.CosPi( 0.5f));
+            Assert.Equal( 0, MathF.CosPi(-0.5f));
+            Assert.Equal(-1, MathF.CosPi( 1.0f));
+            Assert.Equal(-1, MathF.CosPi(-1.0f));
+            Assert.Equal( 0, MathF.CosPi( 1.5f));
+            Assert.Equal( 0, MathF.CosPi(-1.5f));
+            Assert.Equal( 1, MathF.CosPi( 2.0f));
+            Assert.Equal( 1, MathF.CosPi(-2.0f));
+
+            Assert.Equal(0, MathF.CosPi(0.1234f) - MathF.CosPi(-0.1234f));
+            Assert.Equal(0, MathF.CosPi(0.6789f) - MathF.CosPi(-0.6789f));
+            Assert.Equal(0, MathF.CosPi(1.2345f) - MathF.CosPi(-1.2345f));
+        }
     }
 }
