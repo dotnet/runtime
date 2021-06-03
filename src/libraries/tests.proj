@@ -228,7 +228,7 @@
     <!-- Can't link -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
   
-    <!-- Lots of NRE and CryptographicException -->
+    <!-- Lots of NRE and CryptographicException https://github.com/dotnet/runtime/issues/53682 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
 
     <!-- Crash -->
