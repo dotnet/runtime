@@ -2190,6 +2190,13 @@ bool
 ep_rt_mono_write_event_exception_thrown (MonoObject *object);
 
 bool
+ep_rt_mono_write_event_exception_clause (
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *obj);
+
+bool
 ep_rt_write_event_threadpool_worker_thread_start (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,

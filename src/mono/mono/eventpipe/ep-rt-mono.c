@@ -377,6 +377,15 @@ profiler_exception_throw (
 	MonoProfiler *prof,
 	MonoObject *exception);
 
+static
+void
+profiler_exception_clause (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *exc);
+
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
  */
@@ -2156,27 +2165,25 @@ get_exception_ip_func (
 }
 
 bool
-ep_rt_mono_write_event_exception_thrown (MonoObject *object)
+ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 {
 	if (!EventEnabledExceptionThrown_V1 ())
 		return true;
 
-	if (object) {
+	if (obj) {
 		ERROR_DECL (error);
-
 		char *type_name = NULL;
 		char *exception_message = NULL;
 		uint16_t flags = 0;
 		uint32_t hresult = 0;
 		uintptr_t ip = 0;
 
-		if (mono_object_isinst_checked ((MonoObject *) object, mono_get_exception_class (), error)) {
-			MonoException *exception = (MonoException *)object;
+		if (mono_object_isinst_checked ((MonoObject *) obj, mono_get_exception_class (), error)) {
+			MonoException *exception = (MonoException *)obj;
 			flags |= EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT;
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
-			MonoStringHandle exception_message_handle = MONO_HANDLE_NEW (MonoString, exception->message);
-			exception_message = mono_string_handle_to_utf8 (exception_message_handle, error);
+			exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 
 			MonoArray *captured_traces = (MonoArray *)exception->captured_traces;
@@ -2193,7 +2200,7 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *object)
 		if (ip == 0)
 			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
 
-		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_get_class (object)), MONO_TYPE_NAME_FORMAT_IL);
+		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_get_class (obj)), MONO_TYPE_NAME_FORMAT_IL);
 
 		FireEtwExceptionThrown_V1 (
 			type_name,
@@ -2209,6 +2216,74 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *object)
 		g_free (type_name);
 	}
 
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_exception_clause (
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *obj)
+{
+	if ((clause_type == MONO_EXCEPTION_CLAUSE_FAULT || clause_type == MONO_EXCEPTION_CLAUSE_NONE) && (!EventEnabledExceptionCatchStart() || !EventEnabledExceptionCatchStop()))
+		return true;
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER && (!EventEnabledExceptionFilterStart() || !EventEnabledExceptionFilterStop()))
+		return true;
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FINALLY && (!EventEnabledExceptionFinallyStart() || !EventEnabledExceptionFinallyStop()))
+		return true;
+
+	uintptr_t ip = 0; //TODO: Have profiler pass along IP of handler block.
+	uint64_t method_id = (uint64_t)method;
+	char *method_name = NULL;
+
+	method_name = mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL);
+
+	if ((clause_type == MONO_EXCEPTION_CLAUSE_FAULT || clause_type == MONO_EXCEPTION_CLAUSE_NONE)) {
+		FireEtwExceptionCatchStart (
+			(uint64_t)ip,
+			method_id,
+			(const ep_char8_t *)method_name,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		FireEtwExceptionCatchStop (
+			NULL,
+			NULL);
+	}
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		FireEtwExceptionFilterStart (
+			(uint64_t)ip,
+			method_id,
+			(const ep_char8_t *)method_name,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		FireEtwExceptionFilterStop (
+			NULL,
+			NULL);
+	}
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FINALLY) {
+		FireEtwExceptionFinallyStart (
+			(uint64_t)ip,
+			method_id,
+			(const ep_char8_t *)method_name,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		FireEtwExceptionFinallyStop (
+			NULL,
+			NULL);
+	}
+
+	g_free (method_name);
 	return true;
 }
 
@@ -2470,13 +2545,25 @@ static
 void
 profiler_exception_throw (
 	MonoProfiler *prof,
-	MonoObject *exception)
+	MonoObject *exc)
 {
-	ep_rt_mono_write_event_exception_thrown (exception);
+	ep_rt_mono_write_event_exception_thrown (exc);
+}
+
+static
+void
+profiler_exception_clause (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *exc)
+{
+	ep_rt_mono_write_event_exception_clause (method, clause_num, clause_type, exc);
 }
 
 // exception clauses.
-//
+// contention
 // jit_code_buffer -> EventEnabledMethodJitMemoryAllocatedForCode
 //
 
@@ -2511,8 +2598,10 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
 			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
 			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, profiler_exception_throw);
+			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, profiler_exception_clause);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
+			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, NULL);

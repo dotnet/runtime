@@ -9,7 +9,13 @@ DCEndInit_V1
 DomainModuleDCEnd_V1
 DomainModuleLoad_V1
 EEStartupStart_V1
+ExceptionCatchStart
+ExceptionCatchStop
 ExecutionCheckpointDCEnd
+ExceptionFilterStart
+ExceptionFilterStop
+ExceptionFinallyStart
+ExceptionFinallyStop
 ExceptionThrown_V1
 MethodDCEndILToNativeMap
 MethodDCEnd_V1
