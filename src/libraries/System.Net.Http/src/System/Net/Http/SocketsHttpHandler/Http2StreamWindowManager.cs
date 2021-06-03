@@ -157,12 +157,14 @@ namespace System.Net.Http
 
             internal void OnInitialSettingsSent()
             {
+                if (_staticRtt.HasValue) return;
                 _connection.TraceFlowControl("Initial SETTINGS sent");
                 _pingSentTimestamp = Stopwatch.GetTimestamp();
             }
 
             internal void OnInitialSettingsAckReceived()
             {
+                if (_staticRtt.HasValue) return;
                 _connection.TraceFlowControl("Initial SETTINGS ACK received");
                 RefreshRtt();
                 _status = Status.Waiting;
