@@ -309,23 +309,23 @@ namespace System.Runtime.InteropServices.JavaScript
             return $"{{ \"marshalType\": {(int)GetMarshalTypeFromType(type)}, \"typePtr\": {type.TypeHandle.Value} }}";
         }
 
-        public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
+        private static MethodBase? MethodFromPointers (IntPtr typePtr, IntPtr methodPtr) {
             if (methodPtr == IntPtr.Zero)
                 return null;
 
-            IntPtrAndHandle tmp = default(IntPtrAndHandle);
-            tmp.ptr = methodPtr;
+            var tmp = new IntPtrAndHandle { ptr = methodPtr };
             var methodHandle = tmp.handle;
-            tmp.ptr = typePtr;
-            var typeHandle = tmp.typeHandle;
 
-            var type = (typePtr != IntPtr.Zero)
-                ? Type.GetTypeFromHandle(typeHandle)
-                : null;
+            if (typePtr != IntPtr.Zero) {
+                tmp.ptr = typePtr;
+                return MethodBase.GetMethodFromHandle(methodHandle, tmp.typeHandle);
+            } else {
+                return MethodBase.GetMethodFromHandle(methodHandle);
+            }
+        }
 
-            MethodBase? mb = (typePtr != IntPtr.Zero)
-                ? MethodBase.GetMethodFromHandle(methodHandle, typeHandle)
-                : MethodBase.GetMethodFromHandle(methodHandle);
+        public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
+            var mb = MethodFromPointers(typePtr, methodPtr);
             if (mb == null)
                 return null;
 
@@ -403,7 +403,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var p = info.GetParameters();
             if (p.Length != 1)
-                throw new Exception($"Method {type.Name}.{name} must accept exactly one parameter");
+                throw new WasmInteropException($"Method {type.Name}.{name} must accept exactly one parameter");
 
             parameterType = p[0].ParameterType;
             returnType = info.ReturnType;
@@ -443,19 +443,19 @@ namespace System.Runtime.InteropServices.JavaScript
             var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? toReturnType, out Type? toParameterType);
 
             if (inputPtr == IntPtr.Zero)
-                throw new Exception($"{marshalerType.Name} must have a static FromJavaScript method");
+                throw new WasmInteropException($"{marshalerType.Name} must have a static FromJavaScript method");
             if (outputPtr == IntPtr.Zero)
-                throw new Exception($"{marshalerType.Name} must have a static ToJavaScript method");
+                throw new WasmInteropException($"{marshalerType.Name} must have a static ToJavaScript method");
 
             if (fromReturnType != type)
-                throw new Exception($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
+                throw new WasmInteropException($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
 
             if (type.IsValueType) {
                 if ((toParameterType == null) || !toParameterType.IsByRef || (toParameterType.GetElementType() != type))
-                    throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be 'ref {type.Name}' but was {toParameterType}");
+                    throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be 'ref {type.Name}' but was {toParameterType}");
             } else {
                 if (toParameterType != type)
-                    throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
+                    throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
             }
 
             return ("{\n" + $"\"typePtr\": {typePtr}, \n" +
@@ -610,7 +610,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (csc.HasValue)
                     res[c] = csc.Value;
                 else
-                    throw new Exception ("No signature character for marshal type " + mt);
+                    throw new WasmInteropException ("No signature character for marshal type " + mt);
             }
             return new string(res);
         }
@@ -761,5 +761,15 @@ namespace System.Runtime.InteropServices.JavaScript
             return safeHandle.DangerousGetHandle();
         }
 
+    }
+
+    public class WasmInteropException : Exception {
+        public WasmInteropException (string message)
+            : base (message) {
+        }
+
+        public WasmInteropException (string message, Exception innerException)
+            : base (message, innerException) {
+        }
     }
 }
