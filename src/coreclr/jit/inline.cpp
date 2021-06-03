@@ -517,9 +517,10 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         return;
     }
 
-    const bool  isRoot    = m_Parent == nullptr;
-    const bool  hasChild  = m_Child != nullptr;
-    unsigned    newIndent = indent;
+    const bool  isRoot     = m_Parent == nullptr;
+    const bool  hasChild   = m_Child != nullptr;
+    const char* inlineType = m_Success ? "Inline" : "FailedInline";
+    unsigned    newIndent  = indent;
 
     if (!isRoot)
     {
@@ -541,7 +542,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
             offset = (int)jitGetILoffs(m_Offset);
         }
 
-        fprintf(file, "%*s<Inline Success=\"%s\">\n", indent, "", m_Success ? "True" : "False");
+        fprintf(file, "%*s<%s>\n", indent, "", inlineType);
         fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
         fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
@@ -597,7 +598,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 
     if (!isRoot)
     {
-        fprintf(file, "%*s</Inline>\n", indent, "");
+        fprintf(file, "%*s</%s>\n", indent, "", inlineType);
     }
 }
 
