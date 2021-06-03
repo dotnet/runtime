@@ -561,7 +561,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
 {
     fprintf(file, "%*s<DefaultPolicyData", indent, "");
 
-    // To reduce verbosity, let's print only non-default values
+// To reduce verbosity, let's print only non-default values
 #define XATTR_I4(x)                                                                                                    \
     if ((INT32)x != 0)                                                                                                 \
     {                                                                                                                  \
