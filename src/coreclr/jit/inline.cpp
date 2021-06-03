@@ -541,14 +541,14 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
             offset = (int)jitGetILoffs(m_Offset);
         }
 
-        fprintf(file, "%*s<Inline Success=\"%s\">\n", indent, "", m_Success ? "true" : "false");
+        fprintf(file, "%*s<Inline Success=\"%s\">\n", indent, "", m_Success ? "True" : "False");
         fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
         fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
         fprintf(file, "%*s<ILSize>%d</ILSize>\n", indent + 2, "", m_ILSize);
-        fprintf(file, "%*s<Devirtualized>%s</Devirtualized>\n", indent + 2, "", m_Devirtualized ? "true" : "false");
-        fprintf(file, "%*s<Guarded>%s</Guarded>\n", indent + 2, "", m_Guarded ? "true" : "false");
-        fprintf(file, "%*s<Unboxed>%s</Unboxed>\n", indent + 2, "", m_Unboxed ? "true" : "false");
+        fprintf(file, "%*s<Devirtualized>%s</Devirtualized>\n", indent + 2, "", m_Devirtualized ? "True" : "False");
+        fprintf(file, "%*s<Guarded>%s</Guarded>\n", indent + 2, "", m_Guarded ? "True" : "False");
+        fprintf(file, "%*s<Unboxed>%s</Unboxed>\n", indent + 2, "", m_Unboxed ? "True" : "False");
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
 
