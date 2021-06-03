@@ -87,6 +87,7 @@ public:
         , m_RootCompiler(compiler)
         , m_StateMachine(nullptr)
         , m_Multiplier(0.0)
+        , m_ProfileFrequency(0.0)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
         , m_CallsiteDepth(0)
@@ -96,6 +97,25 @@ public:
         , m_ArgFeedsConstantTest(0)
         , m_ArgFeedsRangeCheck(0)
         , m_ConstantArgFeedsConstantTest(0)
+        , m_UnknownFeedsConstantTest(0)
+        , m_ReturnsConstantTest(0)
+        , m_ArgCasted(0)
+        , m_ArgPromotable(0)
+        , m_ArgStruct(0)
+        , m_FoldableBox(0)
+        , m_Intrinsic(0)
+        , m_UncondBranch(0)
+        , m_BackwardJump(0)
+        , m_ThrowBlocks(0)
+        , m_ArgIsFinal(0)
+        , m_ArgIsFinalSigIsNot(0)
+        , m_ArgIsConst(0)
+        , m_ArgIsBoxed(0)
+        , m_FoldableIntrinsic(0)
+        , m_FoldableExpr(0)
+        , m_FoldableExprUn(0)
+        , m_FoldableBranch(0)
+        , m_DivByCns(0)
         , m_CalleeNativeSizeEstimate(0)
         , m_CallsiteNativeSizeEstimate(0)
         , m_IsForceInline(false)
@@ -109,6 +129,12 @@ public:
         , m_CallsiteIsInLoop(false)
         , m_IsNoReturn(false)
         , m_IsNoReturnKnown(false)
+        , m_ReturnsPromotable(false)
+        , m_ReturnsValueType(false)
+        , m_IsFromValueClass(false)
+        , m_IsGenericFromNonGeneric(false)
+        , m_CallsiteIsInNoReturnRegion(false)
+        , m_HasProfile(false)
     {
         // empty
     }
@@ -155,6 +181,7 @@ protected:
     Compiler*               m_RootCompiler; // root compiler instance
     CodeSeqSM*              m_StateMachine;
     double                  m_Multiplier;
+    double                  m_ProfileFrequency;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
     unsigned                m_CallsiteDepth;
@@ -164,6 +191,25 @@ protected:
     unsigned                m_ArgFeedsConstantTest;
     unsigned                m_ArgFeedsRangeCheck;
     unsigned                m_ConstantArgFeedsConstantTest;
+    unsigned                m_UnknownFeedsConstantTest;
+    unsigned                m_ReturnsConstantTest;
+    unsigned                m_ArgCasted;
+    unsigned                m_ArgPromotable;
+    unsigned                m_ArgStruct;
+    unsigned                m_FoldableBox;
+    unsigned                m_Intrinsic;
+    unsigned                m_UncondBranch;
+    unsigned                m_BackwardJump;
+    unsigned                m_ThrowBlocks;
+    unsigned                m_ArgIsFinal;
+    unsigned                m_ArgIsFinalSigIsNot;
+    unsigned                m_ArgIsConst;
+    unsigned                m_ArgIsBoxed;
+    unsigned                m_FoldableIntrinsic;
+    unsigned                m_FoldableExpr;
+    unsigned                m_FoldableExprUn;
+    unsigned                m_FoldableBranch;
+    unsigned                m_DivByCns;
     int                     m_CalleeNativeSizeEstimate;
     int                     m_CallsiteNativeSizeEstimate;
     bool                    m_IsForceInline : 1;
@@ -177,6 +223,12 @@ protected:
     bool                    m_CallsiteIsInLoop : 1;
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
+    bool                    m_ReturnsPromotable : 1;
+    bool                    m_ReturnsValueType : 1;
+    bool                    m_IsFromValueClass : 1;
+    bool                    m_IsGenericFromNonGeneric : 1;
+    bool                    m_CallsiteIsInNoReturnRegion : 1;
+    bool                    m_HasProfile : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It

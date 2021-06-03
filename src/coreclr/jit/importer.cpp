@@ -6442,7 +6442,10 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 //   pResolvedToken is known to be a value type; ref type boxing
 //   is handled in the CEE_BOX clause.
 
-int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const BYTE* codeAddr, const BYTE* codeEndp)
+int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                 const BYTE*             codeAddr,
+                                 const BYTE*             codeEndp,
+                                 bool                    makeInlineObservation)
 {
     if (codeAddr >= codeEndp)
     {
@@ -6455,6 +6458,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             // box + unbox.any
             if (codeAddr + 1 + sizeof(mdToken) <= codeEndp)
             {
+                if (makeInlineObservation)
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                    return 1 + sizeof(mdToken);
+                }
+
                 CORINFO_RESOLVED_TOKEN unboxResolvedToken;
 
                 impResolveToken(codeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
@@ -6480,6 +6489,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             // box + br_true/false
             if ((codeAddr + ((codeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
             {
+                if (makeInlineObservation)
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                    return 0;
+                }
+
                 GenTree* const treeToBox       = impStackTop().val;
                 bool           canOptimize     = true;
                 GenTree*       treeToNullcheck = nullptr;
@@ -6542,6 +6557,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                     case CEE_BRFALSE_S:
                         if ((nextCodeAddr + ((nextCodeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
                         {
+                            if (makeInlineObservation)
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                                return 1 + sizeof(mdToken);
+                            }
+
                             if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
                             {
                                 CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
@@ -6618,6 +6639,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                     case CEE_UNBOX_ANY:
                         if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
                         {
+                            if (makeInlineObservation)
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                                return 2 + sizeof(mdToken) * 2;
+                            }
+
                             // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
                             CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
                             impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
@@ -18911,6 +18938,82 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             bool isSameThis = impIsThis(thisArg);
             inlineResult->NoteBool(InlineObservation::CALLSITE_IS_SAME_THIS, isSameThis);
         }
+    }
+
+    // Check if callee is a generic method when its caller is not
+    bool calleeIsGeneric = (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+                           (info.compClassAttr & CORINFO_FLG_SHAREDINST);
+    bool callerIsGeneric = (rootCompiler->info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+                           (rootCompiler->info.compClassAttr & CORINFO_FLG_SHAREDINST);
+
+    if (!callerIsGeneric && calleeIsGeneric)
+    {
+        inlineResult->Note(InlineObservation::CALLSITE_GENERIC_FROM_NONGENERIC);
+    }
+
+    // Inspect callee's arguments (and the actual values at the callsite for them)
+    CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
+    CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
+
+    GenTreeCall::Use* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtCallArgs;
+    for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
+    {
+        // const CorInfoType corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
+        CORINFO_CLASS_HANDLE sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+        GenTree*             argNode  = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
+
+        // Prepare for the next iteration
+        sigArg = info.compCompHnd->getArgNext(sigArg);
+        argUse = argUse == nullptr ? nullptr : argUse->GetNext();
+
+        if ((sigClass != nullptr) && structPromotionHelper->CanPromoteStructType(sigClass))
+        {
+            // The argument is a promotable struct. It means we'll have a smaller callsiteSize (and calleeSize)
+            inlineResult->Note(InlineObservation::CALLEE_ARG_IS_STRUCT_PROMOTABLE);
+        }
+        else if (argNode != nullptr)
+        {
+            bool                 isExact   = false;
+            bool                 isNonNull = false;
+            CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
+            if (isExact && (argCls != nullptr))
+            {
+                if ((argCls != sigClass) && (sigClass != nullptr))
+                {
+                    if (eeIsValueClass(argCls) && !eeIsValueClass(sigClass))
+                    {
+                        // E.g. sig accepts object and we pass Guid - we'll have to box it.
+                        inlineResult->Note(InlineObservation::CALLSITE_ARG_IS_BOXED);
+                    }
+                    else
+                    {
+                        // E.g. sig accepts object and we pass String
+                        inlineResult->Note(InlineObservation::CALLSITE_ARG_FINAL_SIG_IS_NOT);
+                    }
+                }
+                else
+                {
+                    inlineResult->Note(InlineObservation::CALLSITE_ARG_FINAL);
+                }
+            }
+
+            if (argNode->OperIsConst())
+            {
+                inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
+            }
+        }
+    }
+
+    // Note if the callee's return type is a value type
+    if ((info.compMethodInfo->args.retTypeClass != nullptr) &&
+        eeIsValueClass(info.compMethodInfo->args.retTypeClass))
+    {
+        if (structPromotionHelper->CanPromoteStructType(info.compMethodInfo->args.retTypeClass))
+        {
+            // it is also a promotable struct
+            inlineResult->Note(InlineObservation::CALLEE_RETURNS_PROMOTABLE);
+        }
+        inlineResult->Note(InlineObservation::CALLEE_RETURNS_VALUETYPE);
     }
 
     // Note if the callee's class is a promotable struct
