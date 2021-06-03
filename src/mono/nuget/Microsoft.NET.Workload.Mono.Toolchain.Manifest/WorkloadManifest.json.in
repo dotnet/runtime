@@ -54,6 +54,16 @@
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
     },
+    "microsoft-net-runtime-maccatalyst": {
+      "abstract": true,
+      "description": "MacCatalyst Mono Runtime and AOT Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.maccatalyst",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "platforms": [ "osx-arm64", "osx-x64" ]
+    },
     "microsoft-net-runtime-tvos": {
       "abstract": true,
       "description": "tvOS Mono Runtime and AOT Workload",
@@ -144,6 +154,14 @@
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm64"
       }
     },
+    "Microsoft.NETCore.App.Runtime.Mono.maccatalyst": {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64"
+      }
+    },
     "Microsoft.NETCore.App.Runtime.Mono.ios-arm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
@@ -185,6 +203,14 @@
       "alias-to": {
         "osx-arm64": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64",
         "osx-x64": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.maccatalyst-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.maccatalyst-x64"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator": {
