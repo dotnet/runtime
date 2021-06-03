@@ -25,6 +25,15 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void ThrowsOnReadAccess()
+        {
+            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { new byte[1] }, 0));
+            }
+        }
+
+        [Fact]
         public void HappyPath()
         {
             const int fileSize = 4_001;

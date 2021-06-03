@@ -16,6 +16,15 @@ namespace System.IO.Tests
             => OperatingSystem.IsWindows(); // on Windows we can NOT perform sync IO using async handle
 
         [Fact]
+        public void ThrowsOnWriteAccess()
+        {
+            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Write))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Read(handle, new byte[1], 0));
+            }
+        }
+
+        [Fact]
         public void HappyPath()
         {
             const int fileSize = 4_001;

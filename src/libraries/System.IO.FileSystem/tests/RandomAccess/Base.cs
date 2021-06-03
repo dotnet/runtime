@@ -101,5 +101,14 @@ namespace System.IO.Tests
 
             return token;
         }
+
+        protected SafeFileHandle GetHandleToExistingFile(FileAccess access)
+        {
+            string filePath = GetTestFilePath();
+            File.WriteAllBytes(filePath, new byte[1]);
+
+            FileOptions options = ShouldThrowForAsyncHandle ? FileOptions.None : FileOptions.Asynchronous;
+            return File.OpenHandle(filePath, FileMode.Open, access, FileShare.None, options);
+        }
     }
 }

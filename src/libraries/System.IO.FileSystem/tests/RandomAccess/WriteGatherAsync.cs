@@ -38,6 +38,15 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task ThrowsOnReadAccess()
+        {
+            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read))
+            {
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { new byte[1] }, 0));
+            }
+        }
+
+        [Fact]
         public async Task HappyPath()
         {
             const int fileSize = 4_001;
