@@ -562,8 +562,8 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
 
     // To reduce verbosity, let's print only non-default values
 #define XATTR_I4(x) if ((INT32)x != 0)  fprintf(file, " " #x "=\"%d\"",   indent + 2, "", (INT32)x);
-#define XATTR_B(x)  if (x != 0)         fprintf(file, " " #x "=\"True\"", indent + 2, "");
 #define XATTR_R8(x) if (fabs(x) < 0.01) fprintf(file, " " #x "=\"%.2lf\"", indent + 2, "", x);
+#define XATTR_B(x)  if (x)              fprintf(file, " " #x "=\"True\"", indent + 2, "");
 
     XATTR_R8(m_Multiplier);
     XATTR_R8(m_ProfileFrequency);

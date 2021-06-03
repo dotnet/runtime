@@ -1466,15 +1466,18 @@ void Compiler::compShutdown()
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     // Finish reading and/or writing inline xml
-    FILE* file = _wfopen(JitConfig.JitInlineDumpXmlFile(), W("a"));
-    if (file != nullptr)
+    if (JitConfig.JitInlineDumpXmlFile() != nullptr)
     {
-        InlineStrategy::FinalizeXml(file);
-        fflush(file);
-    }
-    else
-    {
-        InlineStrategy::FinalizeXml();
+        FILE* file = _wfopen(JitConfig.JitInlineDumpXmlFile(), W("a"));
+        if (file != nullptr)
+        {
+            InlineStrategy::FinalizeXml(file);
+            fflush(file);
+        }
+        else
+        {
+            InlineStrategy::FinalizeXml();
+        }
     }
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
