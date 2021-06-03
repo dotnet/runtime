@@ -197,7 +197,6 @@ public class AppleAppBuilderTask : Task
             if (!string.IsNullOrEmpty(llvmObj))
             {
                 assemblerFilesToLink.Add(llvmObj);
-                //assemblerFilesToLink.AppendLine($"    {llvmObj}");
             }
         }
 
