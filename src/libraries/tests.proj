@@ -247,6 +247,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets/tests/FunctionalTests/System.Net.Sockets.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client/tests/System.Net.WebSockets.Client.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Primitives/tests/System.Runtime.Serialization.Primitives.Tests.csproj" />
     
 
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\Interpreter\*.Test.csproj" />
