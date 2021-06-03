@@ -50,7 +50,10 @@ namespace ILLink.RoslynAnalyzer
 		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
 		{
 			var message = (string) requiresAttribute!.ConstructorArguments[0].Value!;
-			return message != string.Empty ? " " + message + "." : message;
+			if (!string.IsNullOrEmpty (message))
+				message = $" {message}{(message.TrimEnd ().EndsWith (".") ? "" : ".")}";
+
+			return message;
 		}
 	}
 }

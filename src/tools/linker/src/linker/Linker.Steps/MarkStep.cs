@@ -2727,7 +2727,7 @@ namespace Mono.Linker.Steps
 			if (Annotations.TryGetLinkerAttribute (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode)) {
 				string message = $"Using method '{method.GetDisplayName ()}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.";
 				if (!string.IsNullOrEmpty (requiresUnreferencedCode.Message))
-					message += $" {requiresUnreferencedCode.Message}.";
+					message += $" {requiresUnreferencedCode.Message}{(requiresUnreferencedCode.Message.TrimEnd ().EndsWith ('.') ? "" : ".")}";
 
 				if (!string.IsNullOrEmpty (requiresUnreferencedCode.Url))
 					message += " " + requiresUnreferencedCode.Url;

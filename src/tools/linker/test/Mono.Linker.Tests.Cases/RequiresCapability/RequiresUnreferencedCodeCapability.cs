@@ -58,6 +58,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresThroughReflectionInMethodFromCopiedAssembly ();
 			TestRequiresInDynamicallyAccessedMethodFromCopiedAssembly (typeof (RequiresUnreferencedCodeInCopyAssembly.IDerivedInterface));
 			TestRequiresInDynamicDependency ();
+			TestThatTrailingPeriodIsAddedToMessage ();
+			TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ();
 			TestRequiresOnAttributeOnGenericParameter ();
 		}
 
@@ -400,6 +402,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		static void TestRequiresInDynamicDependency ()
 		{
 			RequiresUnreferencedCodeInDynamicDependency ();
+		}
+
+		[RequiresUnreferencedCode ("Linker adds a trailing period to this message")]
+		static void WarningMessageWithoutEndingPeriod ()
+		{
+		}
+
+		[ExpectedWarning ("IL2026", "Linker adds a trailing period to this message.")]
+		static void TestThatTrailingPeriodIsAddedToMessage ()
+		{
+			WarningMessageWithoutEndingPeriod ();
+		}
+
+		[RequiresUnreferencedCode ("Linker does not add a period to this message.")]
+		static void WarningMessageEndsWithPeriod ()
+		{
+		}
+
+		[ExpectedWarning ("IL2026", "Linker does not add a period to this message.")]
+		static void TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ()
+		{
+			WarningMessageEndsWithPeriod ();
 		}
 
 		class AttributeWhichRequiresUnreferencedCodeAttribute : Attribute

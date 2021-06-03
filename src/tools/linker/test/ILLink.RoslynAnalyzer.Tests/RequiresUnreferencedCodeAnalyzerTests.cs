@@ -338,6 +338,36 @@ class C
 		}
 
 		[Fact]
+		public Task TestTrailingPeriodsOnWarningMessageAreNotDupplicated ()
+		{
+			var source = @"
+using System.Diagnostics.CodeAnalysis;
+
+class C
+{
+	[RequiresUnreferencedCode (""Warning message"")]
+	static void MessageWithoutTrailingPeriod ()
+	{
+	}
+
+	[RequiresUnreferencedCode (""Warning message."")]
+	static void MessageWithTrailingPeriod ()
+	{
+	}
+
+	static void Test ()
+	{
+		MessageWithoutTrailingPeriod ();
+		MessageWithTrailingPeriod ();
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source,
+				VerifyCS.Diagnostic ().WithSpan (18, 3, 18, 34).WithArguments ("C.MessageWithoutTrailingPeriod()", " Warning message.", string.Empty),
+				VerifyCS.Diagnostic ().WithSpan (19, 3, 19, 31).WithArguments ("C.MessageWithTrailingPeriod()", " Warning message.", string.Empty));
+		}
+
+		[Fact]
 		public Task TestRequiresOnPropertyGetter ()
 		{
 			var PropertyRequires = @"
