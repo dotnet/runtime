@@ -313,15 +313,6 @@ namespace Internal.TypeSystem
             // It is calculated as the field whose offset and size add to the greatest value.
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
-            if (!type.IsValueType)
-            {
-                // CoreCLR runtime has a bug in field offset calculation in the presence of class inheritance
-                // and explicit layout: in classlayoutinfo.cpp, the calculated layout adds base class size to
-                // field offsets (so that they are instance-relative) but HandleExplicitLayout in methodtablebuilder
-                // treats them as relative to the 'instance slice' which is offset by the base class size once more,
-                // effectively doubling the base class offset.
-                cumulativeInstanceFieldPos = cumulativeInstanceFieldPos + cumulativeInstanceFieldPos;
-            }
             LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
