@@ -514,6 +514,7 @@ namespace Internal.JitInterface
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
+            _resolvedExternalMethodsToTokens.Clear();
 #endif
 
             _pgoResults.Clear();
@@ -1178,10 +1179,24 @@ namespace Internal.JitInterface
             // in the virtual resolution algorithm between the runtime and the compiler, although details such as whether or not type equivalence is enabled
             // can also have an effect), record any decisions made, and if there are differences, simply skip use of the compiled method.
             var resolver = _compilation.NodeFactory.Resolver;
-            ModuleToken tokenDecl = resolver.GetModuleTokenForMethod(decl);
-            ModuleToken tokenImpl = resolver.GetModuleTokenForMethod(impl);
-            MethodWithToken methodWithTokenDecl = new MethodWithToken(decl, tokenDecl, null, false, null, devirtualizedMethodOwner: decl.OwningType);
-            MethodWithToken methodWithTokenImpl = new MethodWithToken(impl, tokenImpl, null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
+
+            MethodWithToken methodWithTokenDecl;
+            if (_resolvedExternalMethodsToTokens.TryGetValue(decl, out var tokenDeclData))
+            {
+                methodWithTokenDecl = new MethodWithToken(decl, tokenDeclData.Item1, null, false, tokenDeclData.Item2);
+            }
+            else
+            {
+                ModuleToken tokenDecl = resolver.GetModuleTokenForMethod(decl);
+                methodWithTokenDecl = new MethodWithToken(decl, tokenDecl, null, false, null, devirtualizedMethodOwner: decl.OwningType);
+            }
+
+            MethodWithToken methodWithTokenImpl;
+
+            if (decl == impl)
+                methodWithTokenImpl = methodWithTokenDecl;
+            else
+                methodWithTokenImpl = new MethodWithToken(impl, resolver.GetModuleTokenForMethod(impl), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
 
             ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
             _methodCodeNode.Fixups.Add(virtualResolutionNode);
@@ -1494,9 +1509,8 @@ namespace Internal.JitInterface
             bool recordToken = _compilation.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
 #endif
 
-            if (result is MethodDesc)
+            if (result is MethodDesc method)
             {
-                MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
 
                 TypeDesc owningClass = method.OwningType;
@@ -1509,7 +1523,21 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, HandleToModuleToken(ref pResolvedToken));
+                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
+                    var resolver = _compilation.NodeFactory.Resolver;
+                    resolver.AddModuleTokenForMethod(method, methodModuleToken);
+
+                    // This extra resolution info is only used for resolveVirtualMethod, which currently doesn't handle generic methods
+                    if (!method.HasInstantiation)
+                    {
+                        if (resolver.GetModuleTokenForMethod(method, throwIfNotFound: false).IsNull)
+                        {
+                            if (!_resolvedExternalMethodsToTokens.ContainsKey(method))
+                            {
+                                _resolvedExternalMethodsToTokens.Add(method, new ValueTuple<ModuleToken, object>(methodModuleToken, entityFromContext(pResolvedToken.tokenContext)));
+                            }
+                        }
+                    }
                 }
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, method);

@@ -360,6 +360,7 @@ namespace Internal.JitInterface
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
+        private Dictionary<MethodDesc, ValueTuple<ModuleToken, object>> _resolvedExternalMethodsToTokens = new Dictionary<MethodDesc, ValueTuple<ModuleToken, object>>();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
