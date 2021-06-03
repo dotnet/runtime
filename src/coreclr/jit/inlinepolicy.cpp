@@ -550,6 +550,21 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 }
 
 //------------------------------------------------------------------------
+// DumpXml: Dump DefaultPolicy data as XML
+//
+// Arguments:
+//    file     - stream to output to
+//    indent   - indent level
+
+void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
+{
+    fprintf(file, "%*s<DefaultPolicyData>\n", indent, "");
+    fprintf(file, "%*s<Multiplier>%g</Multiplier>\n", indent + 2, "", m_Multiplier);
+    // TODO: print all fields?
+    fprintf(file, "%*s</DefaultPolicyData>\n", indent, "");
+}
+
+//------------------------------------------------------------------------
 // BudgetCheck: see if this inline would exceed the current budget
 //
 // Returns:

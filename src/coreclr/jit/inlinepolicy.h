@@ -162,6 +162,8 @@ public:
         return "DefaultPolicy";
     }
 
+    void DumpXml(FILE* file, unsigned indent = 0) const override;
+
 #endif // (DEBUG) || defined(INLINE_DATA)
 
 protected:

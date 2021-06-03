@@ -519,7 +519,6 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 
     const bool  isRoot     = m_Parent == nullptr;
     const bool  hasChild   = m_Child != nullptr;
-    const char* inlineType = m_Success ? "Inline" : "FailedInline";
     unsigned    newIndent  = indent;
 
     if (!isRoot)
@@ -542,7 +541,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
             offset = (int)jitGetILoffs(m_Offset);
         }
 
-        fprintf(file, "%*s<%s>\n", indent, "", inlineType);
+        fprintf(file, "%*s<Inline Success=\"%s\">\n", indent, "", m_Success ? "true" : "false");
         fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
         fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
@@ -552,6 +551,12 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         fprintf(file, "%*s<Unboxed>%s</Unboxed>\n", indent + 2, "", m_Unboxed ? "true" : "false");
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
+
+        // Ask InlinePolicy if it has anything to dump as well:
+        if (m_Policy != nullptr)
+        {
+            m_Policy->DumpXml(file, indent + 2);
+        }
 
         // Optionally, dump data about the inline
         const int dumpDataSetting = JitConfig.JitInlineDumpData();
@@ -592,7 +597,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 
     if (!isRoot)
     {
-        fprintf(file, "%*s</%s>\n", indent, "", inlineType);
+        fprintf(file, "%*s</Inline>\n", indent, "");
     }
 }
 
