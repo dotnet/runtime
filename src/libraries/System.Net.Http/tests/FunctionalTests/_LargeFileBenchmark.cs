@@ -34,10 +34,10 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 500;
-        //private const string BenchmarkServer = "10.194.114.94";
+        private const double LengthMb = 100;
+        private const string BenchmarkServer = "10.194.114.94";
         //private const string BenchmarkServer = "192.168.0.152";
-        private const string BenchmarkServer = "127.0.0.1:5000";
+        // private const string BenchmarkServer = "127.0.0.1:5000";
 
         [Theory]
         [InlineData(BenchmarkServer)]
@@ -86,6 +86,23 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(BenchmarkServer, 16384)]
         public Task Download20_SpecificWindow_Run4(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
+
+        [Theory]
+        [InlineData(BenchmarkServer, 1024)]
+        [InlineData(BenchmarkServer, 2048)]
+        [InlineData(BenchmarkServer, 4096)]
+        [InlineData(BenchmarkServer, 8192)]
+        [InlineData(BenchmarkServer, 16384)]
+        public Task Download20_SpecificWindow_MegaBytes_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
+        [Theory]
+        [InlineData(BenchmarkServer, 1024)]
+        [InlineData(BenchmarkServer, 2048)]
+        [InlineData(BenchmarkServer, 4096)]
+        [InlineData(BenchmarkServer, 8192)]
+        [InlineData(BenchmarkServer, 16384)]
+        public Task Download20_SpecificWindow_MegaBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+
         [Theory]
         [InlineData(BenchmarkServer, 4096)]
         public Task Download20_SpecificWindow_4M_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
@@ -115,39 +132,66 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Theory]
-        [InlineData(BenchmarkServer)]
-        //[InlineData("10.194.114.94:5001")]
-        //[InlineData("10.194.114.94:5002")]
-        public async Task Download20_Dynamic_SingleStream_Run1(string hostName)
+        //[InlineData(BenchmarkServer)]
+        [InlineData("10.194.114.94:5001", 8)]
+        [InlineData("10.194.114.94:5001", 4)]
+        [InlineData("10.194.114.94:5001", 2)]
+        [InlineData("10.194.114.94:5002", 8)]
+        [InlineData("10.194.114.94:5002", 4)]
+        [InlineData("10.194.114.94:5002", 2)]
+        public Task Download20_Dynamic_SingleStream_Run1(string hostName, int ratio) => Download20_Dynamic_SingleStream(hostName, ratio);
+
+        [Theory]
+        //[InlineData(BenchmarkServer)]
+        [InlineData("10.194.114.94:5001", 8)]
+        [InlineData("10.194.114.94:5001", 4)]
+        [InlineData("10.194.114.94:5001", 2)]
+        [InlineData("10.194.114.94:5002", 8)]
+        [InlineData("10.194.114.94:5002", 4)]
+        [InlineData("10.194.114.94:5002", 2)]
+        public Task Download20_Dynamic_SingleStream_Run2(string hostName, int ratio) => Download20_Dynamic_SingleStream(hostName, ratio);
+
+        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio)
         {
             _listener.Enabled = true;
-            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic single stream Run1", hostName, true, LengthMb);
+            _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
+            var handler = new SocketsHttpHandler()
+            {
+                StreamWindowUpdateRatio = ratio
+            };
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio}", hostName, true, LengthMb, handler);
         }
 
         [Theory]
-        [InlineData(BenchmarkServer)]
-        //[InlineData("10.194.114.94:5001")]
-        //[InlineData("10.194.114.94:5002")]
-        public async Task Download20_Dynamic_SingleStream_Run2(string hostName)
-        {
-            _listener.Enabled = true;
-            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic single stream Run2", hostName, true, LengthMb);
-        }
+        //[InlineData(BenchmarkServer)]
+        [InlineData("10.194.114.94:5001", 8)]
+        [InlineData("10.194.114.94:5001", 4)]
+        [InlineData("10.194.114.94:5001", 2)]
+        [InlineData("10.194.114.94:5002", 8)]
+        [InlineData("10.194.114.94:5002", 4)]
+        [InlineData("10.194.114.94:5002", 2)]
+        public Task Download20_StaticRtt_Run1(string hostName, int ratio) => Download20_StaticRtt(hostName, ratio);
 
         [Theory]
-        [InlineData(BenchmarkServer)]
-        //[InlineData("10.194.114.94:5001")]
-        //[InlineData("10.194.114.94:5002")]
-        public async Task Download20_StaticRtt(string hostName)
+        //[InlineData(BenchmarkServer)]
+        [InlineData("10.194.114.94:5001", 8)]
+        [InlineData("10.194.114.94:5001", 4)]
+        [InlineData("10.194.114.94:5001", 2)]
+        [InlineData("10.194.114.94:5002", 8)]
+        [InlineData("10.194.114.94:5002", 4)]
+        [InlineData("10.194.114.94:5002", 2)]
+        public Task Download20_StaticRtt_Run2(string hostName, int ratio) => Download20_StaticRtt(hostName, ratio);
+
+        public async Task Download20_StaticRtt(string hostName, int ratio)
         {
             _listener.Enabled = true;
             var handler = new SocketsHttpHandler
             {
                 FakeRtt = await EstimateRttAsync(hostName),
-                StreamWindowUpdateRatio = 4
+                StreamWindowUpdateRatio = ratio
             };
 
-            await TestHandler("SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT", hostName, true, LengthMb, handler);
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio}", hostName, true, LengthMb, handler);
         }
 
         [Theory]
@@ -177,8 +221,8 @@ namespace System.Net.Http.Functional.Tests
 
             await Task.WhenAll(tasks);
 
-            long elapsedMs = sw.ElapsedMilliseconds;
-            _output.WriteLine($"{info}: completed in {elapsedMs} ms");
+            double elapsedSec = sw.ElapsedMilliseconds * 0.001;
+            _output.WriteLine($"{info}: completed in {elapsedSec} sec");
         }
 
 
@@ -191,9 +235,9 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine($"{info} / {lengthMb} MB from {message.RequestUri}");
             Stopwatch sw = Stopwatch.StartNew();
             var response = await client.SendAsync(message);
-            long elapsedMs = sw.ElapsedMilliseconds;
 
-            _output.WriteLine($"{info}: {response.StatusCode} in {elapsedMs} ms");
+            double elapsedSec = sw.ElapsedMilliseconds * 0.001;
+            _output.WriteLine($"{info}: completed in {elapsedSec} sec");
         }
 
         private async Task<TimeSpan> EstimateRttAsync(string hostName)
