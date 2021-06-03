@@ -228,7 +228,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    if (!info.IsByRef || info.RefKind == RefKind.In)
+                    if (!info.IsManagedReturnPosition && (!info.IsByRef || info.RefKind == RefKind.In))
                     {
                         yield return IfStatement(
                             IdentifierName(addRefdIdentifier),

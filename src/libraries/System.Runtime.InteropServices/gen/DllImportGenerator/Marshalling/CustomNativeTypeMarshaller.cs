@@ -231,7 +231,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    if (info.RefKind != RefKind.Out && _hasFreeNative)
+                    if (_hasFreeNative)
                     {
                         // <marshalerIdentifier>.FreeNative();
                         yield return ExpressionStatement(

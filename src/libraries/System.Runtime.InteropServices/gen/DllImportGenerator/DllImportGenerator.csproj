@@ -10,6 +10,7 @@
     <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
+    <IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -197,7 +197,7 @@ namespace Microsoft.Interop
                 int initialCount = statements.Count;
                 this.CurrentStage = stage;
 
-                if (!invokeReturnsVoid && (stage == Stage.Setup || stage == Stage.Unmarshal || stage == Stage.GuaranteedUnmarshal))
+                if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Unmarshal or Stage.GuaranteedUnmarshal or Stage.Cleanup))
                 {
                     // Handle setup and unmarshalling for return
                     var retStatements = retMarshaller.Generator.Generate(retMarshaller.TypeInfo, this);
