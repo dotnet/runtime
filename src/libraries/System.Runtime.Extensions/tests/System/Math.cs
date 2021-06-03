@@ -3176,5 +3176,41 @@ namespace System.Tests
             Assert.Equal( 4, MathF.Round( 3.5f, MidpointRounding.AwayFromZero));
             Assert.Equal(-4, MathF.Round(-3.5f, MidpointRounding.AwayFromZero));
         }
+
+        [Fact]
+        public static void SinPi_Double_Precision()
+        {
+            Assert.Equal( 0, Math.SinPi( 0.0));
+            Assert.Equal( 1, Math.SinPi( 0.5));
+            Assert.Equal(-1, Math.SinPi(-0.5));
+            Assert.Equal( 0, Math.SinPi( 1.0));
+            Assert.Equal( 0, Math.SinPi(-1.0));
+            Assert.Equal(-1, Math.SinPi( 1.5));
+            Assert.Equal( 1, Math.SinPi(-1.5));
+            Assert.Equal( 0, Math.SinPi( 2.0));
+            Assert.Equal( 0, Math.SinPi(-2.0));
+
+            Assert.Equal(0, Math.SinPi(0.1234) + Math.SinPi(-0.1234));
+            Assert.Equal(0, Math.SinPi(0.6789) + Math.SinPi(-0.6789));
+            Assert.Equal(0, Math.SinPi(1.2345) + Math.SinPi(-1.2345));
+        }
+
+        [Fact]
+        public static void SinPi_Float_Precision()
+        {
+            Assert.Equal( 0, MathF.SinPi( 0.0f));
+            Assert.Equal( 1, MathF.SinPi( 0.5f));
+            Assert.Equal(-1, MathF.SinPi(-0.5f));
+            Assert.Equal( 0, MathF.SinPi( 1.0f));
+            Assert.Equal( 0, MathF.SinPi(-1.0f));
+            Assert.Equal(-1, MathF.SinPi( 1.5f));
+            Assert.Equal( 1, MathF.SinPi(-1.5f));
+            Assert.Equal( 0, MathF.SinPi( 2.0f));
+            Assert.Equal( 0, MathF.SinPi(-2.0f));
+
+            Assert.Equal(0, MathF.SinPi(0.1234f) + MathF.SinPi(-0.1234f));
+            Assert.Equal(0, MathF.SinPi(0.6789f) + MathF.SinPi(-0.6789f));
+            Assert.Equal(0, MathF.SinPi(1.2345f) + MathF.SinPi(-1.2345f));
+        }
     }
 }

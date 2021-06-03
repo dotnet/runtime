@@ -1449,5 +1449,59 @@ namespace System
             double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
             return y * u;
         }
+
+        /// <summary>
+        /// Returns the sine of the specified angle measured in half-turns.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <returns>The sine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Sin(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static double SinPi(double x)
+        {
+            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/sin_pi.hpp
+
+            if (x < 0)
+            {
+                return -SinPi(-x);
+            }
+
+            bool invert;
+            if (x < 0.5)
+            {
+                return Sin(x * PI);
+            }
+            if (x < 1)
+            {
+                invert = true;
+                x = -x;
+            }
+            else
+            {
+                invert = false;
+            }
+
+            double floor = Floor(x);
+            if (((int)floor & 1) != 0)
+            {
+                invert = !invert;
+            }
+
+            double rem = x - floor;
+            if (rem > 0.5)
+            {
+                rem = 1 - rem;
+            }
+            else if (rem == 0.5)
+            {
+                return invert ? -1 : 1;
+            }
+
+            double sin = Sin(rem * PI);
+            return invert ? -sin : sin;
+        }
     }
 }

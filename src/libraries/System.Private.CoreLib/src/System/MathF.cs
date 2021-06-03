@@ -519,5 +519,59 @@ namespace System
             float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
             return y * u;
         }
+
+        /// <summary>
+        /// Returns the sine of the specified angle measured in half-turns.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <returns>The sine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="float.NaN"/>, <see cref="float.PositiveInfinity"/>,
+        /// or <see cref="float.NegativeInfinity"/>, this method returns <see cref="float.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Sin(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static float SinPi(float x)
+        {
+            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/sin_pi.hpp
+
+            if (x < 0)
+            {
+                return -SinPi(-x);
+            }
+
+            bool invert;
+            if (x < 0.5f)
+            {
+                return Sin(x * PI);
+            }
+            if (x < 1)
+            {
+                invert = true;
+                x = -x;
+            }
+            else
+            {
+                invert = false;
+            }
+
+            float floor = Floor(x);
+            if (((int)floor & 1) != 0)
+            {
+                invert = !invert;
+            }
+
+            float rem = x - floor;
+            if (rem > 0.5f)
+            {
+                rem = 1 - rem;
+            }
+            else if (rem == 0.5f)
+            {
+                return invert ? -1 : 1;
+            }
+
+            float sin = Sin(rem * PI);
+            return invert ? -sin : sin;
+        }
     }
 }
