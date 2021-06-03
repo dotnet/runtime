@@ -29,7 +29,7 @@ namespace System.IO.Hashing
         ///   Instances created with this constructor use the default seed, zero.
         /// </remarks>
         public XxHash64()
-            : base(HashSize)
+            : this(0)
         {
             Reset();
         }
