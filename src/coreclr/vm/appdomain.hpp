@@ -47,7 +47,9 @@ class LoadLevelLimiter;
 class TypeEquivalenceHashTable;
 
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#ifdef FEATURE_COMINTEROP
 class RCWCache;
+#endif
 class RCWRefCache;
 #endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
@@ -2243,9 +2245,10 @@ private:
     MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
 
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain
     RCWCache *m_pRCWCache;
-
+#endif
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
 #endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)

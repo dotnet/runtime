@@ -51,9 +51,9 @@
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+#if defined(FEATURE_COMWRAPPERS)
 #include "rcwrefcache.h"
-#endif // defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+#endif // FEATURE_COMWRAPPERS
 
 #include "typeequivalencehash.hpp"
 
@@ -2116,7 +2116,9 @@ AppDomain::AppDomain()
 
     m_dwFlags = 0;
 #if  defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
+#endif    
     m_pRCWRefCache = NULL;
 #endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
