@@ -1,7 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <ServicingVersion>1</ServicingVersion>
+    <ServicingVersion>2</ServicingVersion>
     <!-- This should be pinned to 5.0.0.1 for non-netfx assets as it is part of aspnetcore ref pack.-->
     <AssemblyVersion>5.0.0.1</AssemblyVersion>
   </PropertyGroup>
