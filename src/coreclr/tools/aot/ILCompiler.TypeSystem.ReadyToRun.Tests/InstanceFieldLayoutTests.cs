@@ -86,7 +86,7 @@ namespace TypeSystemTests
 
             // Class1 has size 24 which Class2 inherits from.  Class2 adds a byte at offset 20, so + 21
             // = 45, rounding up to the next pointer size = 48
-            Assert.Equal(56, class2Type.InstanceByteCount.AsInt);
+            Assert.Equal(48, class2Type.InstanceByteCount.AsInt);
 
             foreach (var f in class2Type.GetFields())
             {
@@ -97,12 +97,12 @@ namespace TypeSystemTests
                 {
                     // First field after base class, with offset 0 so it should lie on the byte count of 
                     // the base class = 24
-                    Assert.Equal(32, f.Offset.AsInt);
+                    Assert.Equal(20, f.Offset.AsInt);
                 }
                 else if (f.Name == "Omg")
                 {
                     // Offset 20 from base class byte count = 44
-                    Assert.Equal(52, f.Offset.AsInt);
+                    Assert.Equal(40, f.Offset.AsInt);
                 }
                 else
                 {
