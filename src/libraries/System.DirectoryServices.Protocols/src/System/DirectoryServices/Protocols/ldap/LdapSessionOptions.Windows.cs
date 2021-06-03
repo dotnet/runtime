@@ -23,5 +23,11 @@ namespace System.DirectoryServices.Protocols
                 SetIntValueHelper(LdapOption.LDAP_OPT_SSL, temp);
             }
         }
+
+        public int ProtocolVersion
+        {
+            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
+            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
+        }
     }
 }
