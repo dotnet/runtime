@@ -9528,25 +9528,26 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         return call;
     }
 
+    // Recognize SIMD types as we do for LCL_VARs,
+    // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
+    // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
+    var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
+    if (simdReturnType != call->TypeGet())
+    {
+        assert(varTypeIsSIMD(simdReturnType));
+        JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
+                varTypeName(returnType));
+        call->ChangeType(simdReturnType);
+    }
+
     if (retRegCount == 1)
     {
-        // Recognize SIMD types as we do for LCL_VARs,
-        // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
-        // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
-        var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
-        if (simdReturnType != call->TypeGet())
-        {
-            assert(varTypeIsSIMD(simdReturnType));
-            JITDUMP("changing the type of a single reg call [%06u] from %s to %s\n", dspTreeID(call),
-                    varTypeName(call->TypeGet()), varTypeName(returnType));
-            call->ChangeType(simdReturnType);
-        }
         return call;
     }
 
 #if FEATURE_MULTIREG_RET
+    assert(varTypeIsStruct(call)); // It could be a SIMD returned in several regs.
     assert(returnType == TYP_STRUCT);
-    assert(call->gtReturnType == returnType);
     assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
 
 #ifdef UNIX_AMD64_ABI
