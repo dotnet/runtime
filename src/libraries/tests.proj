@@ -258,9 +258,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/50965 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Encodings.Web\tests\System.Text.Encodings.Web.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51680 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
-
     <!-- Issue: https://github.com/dotnet/runtime/issues/51678 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
 
