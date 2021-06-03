@@ -799,27 +799,32 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         {
                             tmp = gtNewSimdAsHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType,
                                                              simdSize);
-                            return gtNewSimdAsHWIntrinsicNode(retType, tmp, NI_Vector64_ToScalar, simdBaseJitType,
+                            return gtNewSimdAsHWIntrinsicNode(retType, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
+                        }
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                            int      haddCount    = genLog2(vectorLength);
+
+                            for (int i = 0; i < haddCount; i++)
+                            {
+                                op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                                op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise,
+                                                                 simdBaseJitType, simdSize);
+                            }
+
+                            return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
                                                               simdSize);
                         }
                         default:
                         {
-                            break;
+                            unreached();
                         }
                     }
-
-                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-                    int      haddCount    = genLog2(vectorLength);
-
-                    for (int i = 0; i < haddCount; i++)
-                    {
-                        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
-                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise,
-                                                         simdBaseJitType, simdSize);
-                    }
-
-                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
                 }
 #else
 #error Unsupported platform
@@ -843,7 +848,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             argType = isInstanceMethod ? simdType
                                        : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
+            op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
