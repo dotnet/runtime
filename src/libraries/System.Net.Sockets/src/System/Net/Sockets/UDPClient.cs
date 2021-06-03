@@ -669,6 +669,27 @@ namespace System.Net.Sockets
             }
         }
 
+        public ValueTask<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            return WaitAndWrap(_clientSocket.ReceiveFromAsync(
+                _buffer,
+                SocketFlags.None,
+                _family == AddressFamily.InterNetwork ? IPEndPointStatics.Any : IPEndPointStatics.IPv6Any, cancellationToken));
+
+            async ValueTask<UdpReceiveResult> WaitAndWrap(ValueTask<SocketReceiveFromResult> task)
+            {
+                SocketReceiveFromResult result = await task.ConfigureAwait(false);
+
+                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
+                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
+                    _buffer;
+
+                return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
+            }
+        }
+
         private void CreateClientSocket()
         {
             // Common initialization code.

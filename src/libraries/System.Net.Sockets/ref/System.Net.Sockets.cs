@@ -756,6 +756,7 @@ namespace System.Net.Sockets
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr, System.Net.IPAddress localAddress) { }
         public byte[] Receive([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref System.Net.IPEndPoint? remoteEP) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.UdpReceiveResult> ReceiveAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.UdpReceiveResult> ReceiveAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public int Send(byte[] dgram, int bytes) { throw null; }
         public int Send(System.ReadOnlySpan<byte> datagram) {throw null; }
         public int Send(byte[] dgram, int bytes, System.Net.IPEndPoint? endPoint) { throw null; }
