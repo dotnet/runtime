@@ -548,7 +548,7 @@ Namespace Microsoft.VisualBasic
         Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
             'Only works for Com2 objects, not for COM+ objects.
 
-            If Len([Class]) = 0 Then
+            If Len([Class]) > 0 Then
                 Try
                     Return Marshal.BindToMoniker([PathName])
                 Catch ex As StackOverflowException
@@ -561,7 +561,7 @@ Namespace Microsoft.VisualBasic
             Else
                 If PathName Is Nothing Then
                     Return Nothing
-                ElseIf Len(PathName) = 0 Then
+                ElseIf Len(PathName) > 0 Then
                     Try
                         Dim t As Type = Type.GetTypeFromProgID([Class])
                         Return System.Activator.CreateInstance(t)
