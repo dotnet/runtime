@@ -802,6 +802,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                             return gtNewSimdAsHWIntrinsicNode(retType, tmp, NI_Vector64_ToScalar, simdBaseJitType,
                                                               simdSize);
                         }
+                        default:
+                        {
+                            break;
+                        }
                     }
 
                     unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
