@@ -50,7 +50,15 @@ jobs:
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     liveRuntimeBuildParams: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig, parameters.liveLibrariesBuildConfig, parameters.archType)) }}
-
+    compilerArg: ''
+    ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
+      compilerArg: '-clang9'
+    # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
+    ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+      compilerArg: ''
+    # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+    ${{ if eq(parameters.osGroup, 'OSX') }}:
+      compilerArg: ''
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -76,20 +84,6 @@ jobs:
 
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
-    variables:
-      - name: compilerArg
-        value: ''
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
-      - name: compilerArg
-        value: '-clang9'
-      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
-        - name: compilerArg
-          value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
-        - name: compilerArg
-          value: ''
 
     steps:
 
