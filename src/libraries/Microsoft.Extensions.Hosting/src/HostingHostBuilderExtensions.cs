@@ -199,31 +199,31 @@ namespace Microsoft.Extensions.Hosting
                 }
             });
 
-                        builder.ConfigureAppConfiguration((hostingContext, config) =>
-                        {
-                            IHostEnvironment env = hostingContext.HostingEnvironment;
-                            bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);
+            builder.ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                IHostEnvironment env = hostingContext.HostingEnvironment;
+                bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);
 
-                            config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
-                                  .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
+                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
 
-                            if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
-                            {
-                                var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                                if (appAssembly is not null)
-                                {
-                                    config.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
-                                }
-                            }
+                if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
+                {
+                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
+                    if (appAssembly is not null)
+                    {
+                        config.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
+                    }
+                }
 
-                            config.AddEnvironmentVariables();
+                config.AddEnvironmentVariables();
 
-                            if (args is { Length: > 0 })
-                            {
-                                config.AddCommandLine(args);
-                            }
-                        })
-.ConfigureLogging((hostingContext, logging) =>
+                if (args is { Length: > 0 })
+                {
+                    config.AddCommandLine(args);
+                }
+            })
+            .ConfigureLogging((hostingContext, logging) =>
             {
                 bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.Hosting
                 });
 
             })
-.UseDefaultServiceProvider((context, options) =>
+            .UseDefaultServiceProvider((context, options) =>
             {
                 bool isDevelopment = context.HostingEnvironment.IsDevelopment();
                 options.ValidateScopes = isDevelopment;
@@ -264,10 +264,8 @@ namespace Microsoft.Extensions.Hosting
 
             return builder;
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
-            static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) =>
-                            hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
+            static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
         }
 
         /// <summary>
