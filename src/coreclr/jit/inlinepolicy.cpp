@@ -558,74 +558,63 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
 void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
 {
-    // Let's use attributes in a single line here to reduce verbosity
-    fprintf(file,
-            "%*s<DefaultPolicyData"
-            " Multiplier=\"%g\""
-            " ProfileFrequency=\"%g\""
-            " CodeSize=\"%u\""
-            " CallsiteFrequency=\"%d\""
-            " CallsiteDepth=\"%u\""
-            " InstructionCount=\"%u\""
-            " LoadStoreCount=\"%u\""
-            " ArgFeedsTest=\"%u\""
-            " ArgFeedsConstantTest=\"%u\""
-            " ArgFeedsRangeCheck=\"%u\""
-            " ConstantArgFeedsConstantTest=\"%u\""
-            " UnknownFeedsConstantTest=\"%u\""
-            " ReturnsConstantTest=\"%u\""
-            " ArgCasted=\"%u\""
-            " ArgPromotable=\"%u\""
-            " ArgStruct=\"%u\""
-            " FoldableBox=\"%u\""
-            " Intrinsic=\"%u\""
-            " UncondBranch=\"%u\""
-            " BackwardJump=\"%u\""
-            " ThrowBlocks=\"%u\""
-            " ArgIsFinal=\"%u\""
-            " ArgIsFinalSigIsNot=\"%u\""
-            " ArgIsConst=\"%u\""
-            " ArgIsBoxed=\"%u\""
-            " FoldableIntrinsic=\"%u\""
-            " FoldableExpr=\"%u\""
-            " FoldableExprUn=\"%u\""
-            " FoldableBranch=\"%u\""
-            " DivByCns=\"%u\""
-            " CalleeNativeSizeEstimate=\"%d\""
-            " CallsiteNativeSizeEstimate=\"%d\""
-            " IsForceInline=\"%s\""
-            " IsForceInlineKnown=\"%s\""
-            " IsInstanceCtor=\"%s\""
-            " IsFromPromotableValueClass=\"%s\""
-            " HasSimd=\"%s\""
-            " LooksLikeWrapperMethod=\"%s\""
-            " MethodIsMostlyLoadStore=\"%s\""
-            " CallsiteIsInTryRegion=\"%s\""
-            " CallsiteIsInLoop=\"%s\""
-            " IsNoReturn=\"%s\""
-            " IsNoReturnKnown=\"%s\""
-            " ReturnsPromotable=\"%s\""
-            " ReturnsValueType=\"%s\""
-            " IsFromValueClass=\"%s\""
-            " IsGenericFromNonGeneric=\"%s\""
-            " CallsiteIsInNoReturnRegion=\"%s\""
-            " HasProfile=\"%s\""
-            "/>\n",
-            indent, "", m_Multiplier, m_ProfileFrequency, m_CodeSize, (int)m_CallsiteFrequency, m_CallsiteDepth,
-            m_InstructionCount, m_LoadStoreCount, m_ArgFeedsTest, m_ArgFeedsConstantTest, m_ArgFeedsRangeCheck,
-            m_ConstantArgFeedsConstantTest, m_UnknownFeedsConstantTest, m_ReturnsConstantTest, m_ArgCasted,
-            m_ArgPromotable, m_ArgStruct, m_FoldableBox, m_Intrinsic, m_UncondBranch, m_BackwardJump, m_ThrowBlocks,
-            m_ArgIsFinal, m_ArgIsFinalSigIsNot, m_ArgIsConst, m_ArgIsBoxed, m_FoldableIntrinsic, m_FoldableExpr,
-            m_FoldableExprUn, m_FoldableBranch, m_DivByCns, m_CalleeNativeSizeEstimate, m_CallsiteNativeSizeEstimate,
-            m_IsForceInline ? "True" : "False", m_IsForceInlineKnown ? "True" : "False",
-            m_IsInstanceCtor ? "True" : "False", m_IsFromPromotableValueClass ? "True" : "False",
-            m_HasSimd ? "True" : "False", m_LooksLikeWrapperMethod ? "True" : "False",
-            m_MethodIsMostlyLoadStore ? "True" : "False", m_CallsiteIsInTryRegion ? "True" : "False",
-            m_CallsiteIsInLoop ? "True" : "False", m_IsNoReturn ? "True" : "False",
-            m_IsNoReturnKnown ? "True" : "False", m_ReturnsPromotable ? "True" : "False",
-            m_ReturnsValueType ? "True" : "False", m_IsFromValueClass ? "True" : "False",
-            m_IsGenericFromNonGeneric ? "True" : "False", m_CallsiteIsInNoReturnRegion ? "True" : "False",
-            m_HasProfile ? "True" : "False");
+    fprintf(file, "%*s<DefaultPolicyData", indent, "");
+
+    // To reduce verbosity, let's print only non-default values
+#define XATTR_I4(x) if ((INT32)x != 0)  fprintf(file, " " #x "=\"%d\"",   indent + 2, "", (INT32)x);
+#define XATTR_B(x)  if (x != 0)         fprintf(file, " " #x "=\"True\"", indent + 2, "");
+#define XATTR_R8(x) if (fabs(x) < 0.01) fprintf(file, " " #x "=\"%.2lf\"", indent + 2, "", x);
+
+    XATTR_R8(m_Multiplier);
+    XATTR_R8(m_ProfileFrequency);
+    XATTR_I4(m_CodeSize);
+    XATTR_I4(m_CallsiteFrequency);
+    XATTR_I4(m_CallsiteDepth);
+    XATTR_I4(m_InstructionCount);
+    XATTR_I4(m_LoadStoreCount);
+    XATTR_I4(m_ArgFeedsTest);
+    XATTR_I4(m_ArgFeedsConstantTest);
+    XATTR_I4(m_ArgFeedsRangeCheck);
+    XATTR_I4(m_ConstantArgFeedsConstantTest);
+    XATTR_I4(m_UnknownFeedsConstantTest);
+    XATTR_I4(m_ReturnsConstantTest);
+    XATTR_I4(m_ArgCasted);
+    XATTR_I4(m_ArgPromotable);
+    XATTR_I4(m_ArgStruct);
+    XATTR_I4(m_FoldableBox);
+    XATTR_I4(m_Intrinsic);
+    XATTR_I4(m_UncondBranch);
+    XATTR_I4(m_BackwardJump);
+    XATTR_I4(m_ThrowBlocks);
+    XATTR_I4(m_ArgIsFinal);
+    XATTR_I4(m_ArgIsFinalSigIsNot);
+    XATTR_I4(m_ArgIsConst);
+    XATTR_I4(m_ArgIsBoxed);
+    XATTR_I4(m_FoldableIntrinsic);
+    XATTR_I4(m_FoldableExpr);
+    XATTR_I4(m_FoldableExprUn);
+    XATTR_I4(m_FoldableBranch);
+    XATTR_I4(m_DivByCns);
+    XATTR_I4(m_CalleeNativeSizeEstimate);
+    XATTR_I4(m_CallsiteNativeSizeEstimate);
+    XATTR_B(m_IsForceInline);
+    XATTR_B(m_IsForceInlineKnown);
+    XATTR_B(m_IsInstanceCtor);
+    XATTR_B(m_IsFromPromotableValueClass);
+    XATTR_B(m_HasSimd);
+    XATTR_B(m_LooksLikeWrapperMethod);
+    XATTR_B(m_MethodIsMostlyLoadStore);
+    XATTR_B(m_CallsiteIsInTryRegion);
+    XATTR_B(m_CallsiteIsInLoop);
+    XATTR_B(m_IsNoReturn);
+    XATTR_B(m_IsNoReturnKnown);
+    XATTR_B(m_ReturnsPromotable);
+    XATTR_B(m_ReturnsValueType);
+    XATTR_B(m_IsFromValueClass);
+    XATTR_B(m_IsGenericFromNonGeneric);
+    XATTR_B(m_CallsiteIsInNoReturnRegion);
+    XATTR_B(m_HasProfile);
+    fprintf(file, " />\n");
 }
 
 //------------------------------------------------------------------------
