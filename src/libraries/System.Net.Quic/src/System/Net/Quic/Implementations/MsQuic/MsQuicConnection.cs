@@ -29,7 +29,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         private readonly SafeMsQuicConfigurationHandle? _configuration;
 
         private readonly State _state = new State();
-        private GCHandle _stateHandle;
         private int _disposed;
 
         private IPEndPoint? _localEndPoint;
@@ -43,6 +42,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal sealed class State
         {
             public SafeMsQuicConnectionHandle Handle = null!; // set inside of MsQuicConnection ctor.
+            public GCHandle StateGCHandle;
 
             // These exists to prevent GC of the MsQuicConnection in the middle of an async op (Connect or Shutdown).
             public MsQuicConnection? Connection;
@@ -54,7 +54,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public bool Connected;
             public long AbortErrorCode = -1;
             public int StreamCount;
-            private IntPtr _closingGCHandle;
+            private bool _closing;
 
             // Queue for accepted streams.
             // Backlog limit is managed by MsQuic so it can be unbounded here.
@@ -66,57 +66,52 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void RemoveStream(MsQuicStream stream)
             {
-                bool closing;
+                bool releaseHandles;
                 lock (this)
                 {
                     StreamCount--;
-                    closing = _closingGCHandle != IntPtr.Zero && StreamCount == 0;
+                    releaseHandles = _closing && StreamCount == 0;
                 }
 
-                if (closing)
+                if (releaseHandles)
                 {
                     Handle?.Dispose();
-                    try
-                    {
-                        GCHandle gcHandle = GCHandle.FromIntPtr(_closingGCHandle);
-                        Debug.Assert(gcHandle.IsAllocated);
-                        if (gcHandle.IsAllocated) gcHandle.Free();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to restore GCHandle from ptr: {ex.Message}");
-                    }
+                    if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 }
             }
 
-            public bool TryAddStream(SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+            public bool TryQueueNewStream(SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+            {
+                var stream = new MsQuicStream(this, streamHandle, flags);
+                if (AcceptQueue.Writer.TryWrite(stream))
+                {
+                    return true;
+                }
+                else
+                {
+                    stream.Dispose();
+                    return false;
+                }
+            }
+
+            public bool TryAddStream(MsQuicStream stream)
             {
                 lock (this)
                 {
-                    if (_closingGCHandle != IntPtr.Zero)
+                    if (_closing)
                     {
                         return false;
                     }
 
-                    var stream = new MsQuicStream(this, streamHandle, flags);
-                    // once stream is created, it will call RemoveStream on disposal.
                     StreamCount++;
-                    if (AcceptQueue.Writer.TryWrite(stream))
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        stream.Dispose();
-                        return false;
-                    }
+                    return true;
                 }
             }
 
             // This is called under lock from connection dispose
-            public void SetClosing(GCHandle handle)
+            public void SetClosing()
             {
-                _closingGCHandle = GCHandle.ToIntPtr(handle);
+                _closing = true;
             }
         }
 
@@ -124,24 +119,23 @@ namespace System.Net.Quic.Implementations.MsQuic
         public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle)
         {
             _state.Handle = handle;
+            _state.StateGCHandle = GCHandle.Alloc(_state);
             _state.Connected = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
             _remoteCertificateRequired = false;
             _isServer = true;
 
-            _stateHandle = GCHandle.Alloc(_state);
-
             try
             {
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_connectionDelegate,
-                    GCHandle.ToIntPtr(_stateHandle));
+                    GCHandle.ToIntPtr(_state.StateGCHandle));
             }
             catch
             {
-                _stateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw;
             }
 
@@ -164,7 +158,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _remoteCertificateValidationCallback = options.ClientAuthenticationOptions.RemoteCertificateValidationCallback;
             }
 
-            _stateHandle = GCHandle.Alloc(_state);
+            _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
                 // this handle is ref counted by MsQuic, so safe to dispose here.
@@ -173,14 +167,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
-                    GCHandle.ToIntPtr(_stateHandle),
+                    GCHandle.ToIntPtr(_state.StateGCHandle),
                     out _state.Handle);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not open the connection.");
             }
             catch
             {
-                _stateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw;
             }
 
@@ -255,7 +249,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
             var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            if (!state.TryAddStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags))
+            if (!state.TryQueueNewStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags))
             {
                 // This will call StreamCloseDelegate and free the stream.
                 // We will return Success to the MsQuic to prevent double free.
@@ -393,25 +387,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
-            lock (_state)
-            {
-                var stream = new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
-                // once stream is created, it will call RemoveStream on disposal.
-                _state.StreamCount++;
-                return stream;
-            }
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
-            lock (_state)
-            {
-                var stream = new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
-                // once stream is created, it will call RemoveStream on disposal.
-                _state.StreamCount++;
-                return stream;
-            }
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
@@ -582,26 +564,27 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            bool releaseHandles = false;
             lock (_state)
             {
                 _state.Connection = null;
                 if (_state.StreamCount == 0)
                 {
-                    _state!.Handle?.Dispose();
-                    if (_stateHandle.IsAllocated) _stateHandle.Free();
+                    releaseHandles = true;
                 }
                 else
                 {
-                    // normally, _state would be rooted by 'this' and we would hold _stateHandle to prevent
-                    // GC from moving _state as we handed pointer to it by msquic. It was handed to msquic and
-                    // we may try to get _state from it in NativeCallbackHandler()
-                    // At this point we are being disposed either explicitly or by finalizer but we still have active streams.
-                    // To prevent issue, the handle will be transferred to state and it will be released when last stream is gone
-                    _state.SetClosing(_stateHandle);
+                    // We have pending streams so we need to defer cleanup until last one is gone.
+                    _state.SetClosing();
                 }
             }
 
             FlushAcceptQueue().GetAwaiter().GetResult();
+            if (releaseHandles)
+            {
+                _state!.Handle?.Dispose();
+                if (_state.StateGCHandle.IsAllocated) _state.StateGCHandle.Free();
+            }
         }
 
         // TODO: this appears abortive and will cause prior successfully shutdown and closed streams to drop data.

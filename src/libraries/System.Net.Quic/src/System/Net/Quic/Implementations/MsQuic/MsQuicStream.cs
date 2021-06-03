@@ -94,6 +94,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            if (!connectionState.TryAddStream(this))
+            {
+                _stateHandle.Free();
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
@@ -132,6 +138,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle?.Dispose();
                 _stateHandle.Free();
                 throw;
+            }
+
+            if (!connectionState.TryAddStream(this))
+            {
+                _state.Handle?.Dispose();
+                _stateHandle.Free();
+                throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
             if (NetEventSource.Log.IsEnabled())
