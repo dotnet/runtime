@@ -1054,30 +1054,30 @@ static SimdIntrinsic crc32_methods [] = {
 };
 
 static SimdIntrinsic crypto_aes_methods [] = {
-	{SN_Decrypt, OP_XOP_X_X_X, SIMD_OP_AES_DEC},
-	{SN_Encrypt, OP_XOP_X_X_X, SIMD_OP_AES_ENC},
-	{SN_InverseMixColumns, OP_XOP_X_X, SIMD_OP_AES_IMC},
-	{SN_MixColumns, OP_XOP_X_X, SIMD_OP_ARM64_AES_AESMC},
-	{SN_PolynomialMultiplyWideningLower, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_LOWER},
-	{SN_PolynomialMultiplyWideningUpper, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_UPPER},
+	{SN_Decrypt, OP_XOP_X_X_X, INTRINS_AARCH64_AESD},
+	{SN_Encrypt, OP_XOP_X_X_X, INTRINS_AARCH64_AESE},
+	{SN_InverseMixColumns, OP_XOP_X_X, INTRINS_AARCH64_AESIMC},
+	{SN_MixColumns, OP_XOP_X_X, INTRINS_AARCH64_AESMC},
+	{SN_PolynomialMultiplyWideningLower},
+	{SN_PolynomialMultiplyWideningUpper},
 	{SN_get_IsSupported},
 };
 
 static SimdIntrinsic sha1_methods [] = {
-	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
-	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
-	{SN_HashUpdateMajority, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1M},
-	{SN_HashUpdateParity, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1P},
-	{SN_ScheduleUpdate0, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1SU0},
-	{SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA1SU1},
+	{SN_FixedRotate, OP_XOP_X_X, INTRINS_AARCH64_SHA1H},
+	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA1C},
+	{SN_HashUpdateMajority, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA1M},
+	{SN_HashUpdateParity, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA1P},
+	{SN_ScheduleUpdate0, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA1SU0},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X, INTRINS_AARCH64_SHA1SU1},
 	{SN_get_IsSupported}
 };
 
 static SimdIntrinsic sha256_methods [] = {
-	{SN_HashUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H},
-	{SN_HashUpdate2, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H2},
-	{SN_ScheduleUpdate0, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA256SU0},
-	{SN_ScheduleUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256SU1},
+	{SN_HashUpdate1, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA256H},
+	{SN_HashUpdate2, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA256H2},
+	{SN_ScheduleUpdate0, OP_XOP_X_X_X, INTRINS_AARCH64_SHA256SU0},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X_X, INTRINS_AARCH64_SHA256SU1},
 	{SN_get_IsSupported}
 };
 
@@ -1488,7 +1488,7 @@ emit_arm64_intrinsics (
 		case SN_ReverseElementBits:
 			return emit_simd_ins_for_sig (cfg, klass,
 				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
-				(is_64bit ? SIMD_OP_ARM64_RBIT64 : SIMD_OP_ARM64_RBIT32),
+				(is_64bit ? INTRINS_BITREVERSE_I64 : INTRINS_BITREVERSE_I32),
 				arg0_type, fsig, args);
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
@@ -1499,13 +1499,13 @@ emit_arm64_intrinsics (
 		switch (id) {
 		case SN_ComputeCrc32:
 		case SN_ComputeCrc32C: {
-			SimdOp op = (SimdOp)0;
+			IntrinsicId op = (IntrinsicId)0;
 			gboolean is_c = info->id == SN_ComputeCrc32C;
 			switch (get_underlying_type (fsig->params [1])) {
-			case MONO_TYPE_U1: op = is_c ? SIMD_OP_ARM64_CRC32CB : SIMD_OP_ARM64_CRC32B; break;
-			case MONO_TYPE_U2: op = is_c ? SIMD_OP_ARM64_CRC32CH : SIMD_OP_ARM64_CRC32H; break;
-			case MONO_TYPE_U4: op = is_c ? SIMD_OP_ARM64_CRC32CW : SIMD_OP_ARM64_CRC32W; break;
-			case MONO_TYPE_U8: op = is_c ? SIMD_OP_ARM64_CRC32CX : SIMD_OP_ARM64_CRC32X; break;
+			case MONO_TYPE_U1: op = is_c ? INTRINS_AARCH64_CRC32CB : INTRINS_AARCH64_CRC32B; break;
+			case MONO_TYPE_U2: op = is_c ? INTRINS_AARCH64_CRC32CH : INTRINS_AARCH64_CRC32H; break;
+			case MONO_TYPE_U4: op = is_c ? INTRINS_AARCH64_CRC32CW : INTRINS_AARCH64_CRC32W; break;
+			case MONO_TYPE_U8: op = is_c ? INTRINS_AARCH64_CRC32CX : INTRINS_AARCH64_CRC32X; break;
 			default: g_assert_not_reached (); break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_XOP_I4_I4_I8 : OP_XOP_I4_I4_I4, op, arg0_type, fsig, args);
@@ -1746,6 +1746,17 @@ emit_arm64_intrinsics (
 			ret->sreg3 = scalar->dreg;
 			return ret;
 		}
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	if (feature == MONO_CPU_ARM64_CRYPTO) {
+		switch (id) {
+		case SN_PolynomialMultiplyWideningLower:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_AARCH64_PMULL64, 0, fsig, args);
+		case SN_PolynomialMultiplyWideningUpper:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_AARCH64_PMULL64, 1, fsig, args);
 		default:
 			g_assert_not_reached ();
 		}
