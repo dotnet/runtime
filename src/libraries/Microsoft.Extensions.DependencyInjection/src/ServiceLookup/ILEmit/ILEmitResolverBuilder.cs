@@ -18,6 +18,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly MethodInfo ScopeLockGetter = typeof(ServiceProviderEngineScope).GetProperty(
             nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
 
+        private static readonly MethodInfo ScopeIsRootScope = typeof(ServiceProviderEngineScope).GetProperty(
+            nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public).GetMethod;
+
+        private static readonly MethodInfo CallSiteRuntimeResolverResolveMethod = typeof(CallSiteRuntimeResolver).GetMethod(
+            nameof(CallSiteRuntimeResolver.Resolve), BindingFlags.Public | BindingFlags.Instance);
+
+        private static readonly MethodInfo CallSiteRuntimeResolverInstanceField = typeof(CallSiteRuntimeResolver).GetProperty(
+            nameof(CallSiteRuntimeResolver.Instance), BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance).GetMethod;
+
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
@@ -285,6 +294,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Factories = null
             };
 
+            // if (scope.IsRootScope)
+            // {
+            //     return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
+            // }
             //  var cacheKey = scopedCallSite.CacheKey;
             //  try
             //  {
@@ -313,8 +326,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 Label skipCreationLabel = context.Generator.DefineLabel();
                 Label returnLabel = context.Generator.DefineLabel();
+                Label defaultLabel = context.Generator.DefineLabel();
+
+                // Check if scope IsRootScope
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                context.Generator.Emit(OpCodes.Callvirt, ScopeIsRootScope);
+                context.Generator.Emit(OpCodes.Brfalse_S, defaultLabel);
+
+                context.Generator.Emit(OpCodes.Call, CallSiteRuntimeResolverInstanceField);
+                AddConstant(context, callSite);
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                context.Generator.Emit(OpCodes.Callvirt, CallSiteRuntimeResolverResolveMethod);
+                context.Generator.Emit(OpCodes.Ret);
 
                 // Generate cache key
+                context.Generator.MarkLabel(defaultLabel);
                 AddCacheKey(context, callSite.Cache.Key);
                 // and store to local
                 Stloc(context.Generator, cacheKeyLocal.LocalIndex);

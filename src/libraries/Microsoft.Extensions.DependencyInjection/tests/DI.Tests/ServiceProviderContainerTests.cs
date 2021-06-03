@@ -1102,14 +1102,14 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Thread.Sleep(10); // Give the background thread time to compile
             }
         }
-        
+
         [Fact]
         public void ScopedServiceResolvedFromSingletonAfterCompilation2()
         {
             ServiceProvider sp = new ServiceCollection()
                                 .AddScoped<A>()
                                 .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>()
-                                .BuildServiceProvider();
+                                .BuildServiceProvider(ServiceProviderMode.ILEmit);
 
             var scope = sp.CreateScope();
             for (int i = 0; i < 50; i++)
@@ -1129,7 +1129,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                                 .AddScoped<Aa>()
                                 .AddScoped<A>()
                                 .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>()
-                                .BuildServiceProvider();
+                                .BuildServiceProvider(ServiceProviderMode.ILEmit);
 
             var scope = sp.CreateScope();
             for (int i = 0; i < 50; i++)
