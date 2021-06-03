@@ -32,7 +32,7 @@ namespace System.IO.Tests
         public override void FileModeAppendExisting(string streamSpecifier)
         {
             // currently not enabled due to https://github.com/dotnet/runtime/issues/53432
-            GC.KeepAlive(streamSpecifier); // to keep the xUnit analyser happy
+            _ = streamSpecifier; // to keep the xUnit analyser happy
         }
 
         [Theory]

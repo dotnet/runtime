@@ -30,7 +30,7 @@ namespace System.IO
             {
                 int result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
                 FileStreamHelpers.CheckFileCall(result, path: null);
-                return  result;
+                return result;
             }
         }
 
