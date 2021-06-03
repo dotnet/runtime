@@ -19004,8 +19004,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
 
     // Note if the callee's return type is a value type
-    if ((info.compMethodInfo->args.retTypeClass != nullptr) &&
-        eeIsValueClass(info.compMethodInfo->args.retTypeClass))
+    if ((info.compMethodInfo->args.retTypeClass != nullptr) && eeIsValueClass(info.compMethodInfo->args.retTypeClass))
     {
         if (structPromotionHelper->CanPromoteStructType(info.compMethodInfo->args.retTypeClass))
         {
