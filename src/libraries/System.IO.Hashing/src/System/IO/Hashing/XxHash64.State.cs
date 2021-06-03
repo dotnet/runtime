@@ -27,7 +27,7 @@ namespace System.IO.Hashing
 
             internal State(ulong seed)
             {
-                _acc1 = seed + Prime64_1 + Prime64_2;
+                _acc1 = seed + unchecked(Prime64_1 + Prime64_2);
                 _acc2 = seed + Prime64_2;
                 _acc3 = seed;
                 _acc4 = seed - Prime64_1;

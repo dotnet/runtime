@@ -28,7 +28,7 @@ namespace System.IO.Hashing
 
             internal State(uint seed)
             {
-                _acc1 = seed + Prime32_1 + Prime32_2;
+                _acc1 = seed + unchecked(Prime32_1 + Prime32_2);
                 _acc2 = seed + Prime32_2;
                 _acc3 = seed;
                 _acc4 = seed - Prime32_1;
