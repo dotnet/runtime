@@ -7,7 +7,6 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -36,14 +35,6 @@ namespace System
         FormatSerialization = FormatNamespace |
                               FormatGenericParam |
                               FormatFullInst
-    }
-
-    internal enum TypeNameKind
-    {
-        Name,
-        ToString,
-        SerializationName,
-        FullName,
     }
 
     internal partial class RuntimeType
@@ -1127,8 +1118,122 @@ namespace System
 
             return compressMembers;
         }
-        #endregion
 
+        public override MemberInfo? GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        {
+            if (member is null) throw new ArgumentNullException(nameof(member));
+
+            return member.MemberType switch
+            {
+                MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(member),
+                MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(member),
+                MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(member),
+                MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(member),
+                MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(member),
+                MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(member),
+                _ => null
+            };
+        }
+
+        private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
+            BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+        private MemberInfo? GetMethodWithSameMetadataDefinitionAs(MemberInfo methodInfo)
+        {
+            ListBuilder<MethodInfo> methods = GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
+
+            for (int i = 0; i < methods.Count; i++)
+            {
+                MethodInfo candidate = methods[i];
+                if (candidate.HasSameMetadataDefinitionAs(methodInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetConstructorWithSameMetadataDefinitionAs(MemberInfo constructorInfo)
+        {
+            ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
+
+            for (int i = 0; i < ctors.Count; i++)
+            {
+                ConstructorInfo candidate = ctors[i];
+                if (candidate.HasSameMetadataDefinitionAs(constructorInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetPropertyWithSameMetadataDefinitionAs(MemberInfo propertyInfo)
+        {
+            ListBuilder<PropertyInfo> properties = GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
+
+            for (int i = 0; i < properties.Count; i++)
+            {
+                PropertyInfo candidate = properties[i];
+                if (candidate.HasSameMetadataDefinitionAs(propertyInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetFieldWithSameMetadataDefinitionAs(MemberInfo fieldInfo)
+        {
+            ListBuilder<FieldInfo> fields = GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+
+            for (int i = 0; i < fields.Count; i++)
+            {
+                FieldInfo candidate = fields[i];
+                if (candidate.HasSameMetadataDefinitionAs(fieldInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetEventWithSameMetadataDefinitionAs(MemberInfo eventInfo)
+        {
+            ListBuilder<EventInfo> events = GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+
+            for (int i = 0; i < events.Count; i++)
+            {
+                EventInfo candidate = events[i];
+                if (candidate.HasSameMetadataDefinitionAs(eventInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(MemberInfo nestedType)
+        {
+            ListBuilder<Type> nestedTypes = GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+
+            for (int i = 0; i < nestedTypes.Count; i++)
+            {
+                Type candidate = nestedTypes[i];
+                if (candidate.HasSameMetadataDefinitionAs(nestedType))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+        #endregion
 
         #region Hierarchy
 

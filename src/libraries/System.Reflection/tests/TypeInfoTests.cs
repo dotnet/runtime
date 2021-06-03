@@ -1578,6 +1578,10 @@ namespace System.Reflection.Tests
                 Assert.True(closedGenericMember != null, $"'{openGenericMember.Name}' was not found");
                 Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
                 Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
+                if (openGenericMember is not Type)
+                {
+                    Assert.True(closedGenericMember.DeclaringType == closedGenericType, $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
+                }
             }
         }
 
