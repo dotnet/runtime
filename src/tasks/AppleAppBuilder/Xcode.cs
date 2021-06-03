@@ -47,6 +47,7 @@ internal class Xcode
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
         string monoInclude,
@@ -179,6 +180,11 @@ internal class Xcode
             aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
             toLink += $"    {name}{Environment.NewLine}";
             aotList += $" {name}";
+        }
+
+        foreach (string asmLinkFile in asmLinkFiles)
+        {
+            toLink += $"    {asmLinkFile}{Environment.NewLine}";
         }
 
         string frameworks = "";
