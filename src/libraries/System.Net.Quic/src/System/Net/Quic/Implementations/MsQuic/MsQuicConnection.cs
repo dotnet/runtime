@@ -200,14 +200,24 @@ namespace System.Net.Quic.Implementations.MsQuic
             state.AcceptQueue.Writer.Complete();
 
             // Stop notifying about available streams.
+            TaskCompletionSource? unidirectionalTcs = null;
+            TaskCompletionSource? bidirectionalTcs = null;
             lock (state)
             {
-                state.NewUnidirectionalStreamsAvailable?.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
-                state.NewBidirectionalStreamsAvailable?.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+                unidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
                 state.NewUnidirectionalStreamsAvailable = null;
                 state.NewBidirectionalStreamsAvailable = null;
             }
 
+            if (unidirectionalTcs is not null)
+            {
+                unidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
+            if (bidirectionalTcs is not null)
+            {
+                bidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
             return MsQuicStatusCodes.Success;
         }
 
@@ -222,31 +232,30 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventStreamsAvailable(State state, ref ConnectionEvent connectionEvent)
         {
-            if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
+            TaskCompletionSource? unidirectionalTcs = null;
+            TaskCompletionSource? bidirectionalTcs = null;
+            lock (state)
             {
-                TaskCompletionSource? tcs;
-                lock (state)
+                if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
                 {
-                    tcs = state.NewUnidirectionalStreamsAvailable;
+                    unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
                     state.NewUnidirectionalStreamsAvailable = null;
                 }
-                if (tcs is not null)
+
+                if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
                 {
-                    tcs.SetResult();
-                }
-            }
-            if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
-            {
-                TaskCompletionSource? tcs;
-                lock (state)
-                {
-                    tcs = state.NewBidirectionalStreamsAvailable;
+                    bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
                     state.NewBidirectionalStreamsAvailable = null;
                 }
-                if (tcs is not null)
-                {
-                    tcs.SetResult();
-                }
+            }
+
+            if (unidirectionalTcs is not null)
+            {
+                unidirectionalTcs.SetResult();
+            }
+            if (bidirectionalTcs is not null)
+            {
+                bidirectionalTcs.SetResult();
             }
 
             return MsQuicStatusCodes.Success;
