@@ -88,9 +88,9 @@ namespace System.Net.Http
                 int windowSizeIncrement = _delivered;
                 TimeSpan currentTime = _stopwatch.Elapsed;
 
-                if (_connection._rttEstimator!.Rtt > TimeSpan.Zero)
+                if (_connection._rttEstimator!.MinRtt > TimeSpan.Zero)
                 {
-                    TimeSpan rtt = _connection._rttEstimator.Rtt;
+                    TimeSpan rtt = _connection._rttEstimator.MinRtt;
                     TimeSpan dt = currentTime - _lastWindowUpdate;
 
                     if (_magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
@@ -125,12 +125,12 @@ namespace System.Net.Http
         {
             private enum Status
             {
-                NotReady,
+                Init,
                 Waiting,
-                PingSent
+                PingSent,
             }
 
-            private const double PingIntervalInSeconds = .5;
+            private const double PingIntervalInSeconds = 1;
             private static readonly long PingIntervalInTicks =(long)(PingIntervalInSeconds * Stopwatch.Frequency);
 
             private Http2Connection _connection;
@@ -138,8 +138,9 @@ namespace System.Net.Http
             private Status _status;
             private long _pingSentTimestamp;
             private long _pingCounter = -1;
+            private int _initialBurst = 4;
 
-            public TimeSpan Rtt { get; private set; }
+            public TimeSpan MinRtt { get; private set; }
 
             private readonly TimeSpan? _staticRtt;
 
@@ -149,21 +150,36 @@ namespace System.Net.Http
                 _staticRtt = staticRtt;
                 if (_staticRtt.HasValue)
                 {
-                    Rtt = _staticRtt.Value;
-                    _connection.TraceFlowControl($"Using static RTT: {Rtt.TotalMilliseconds} ms");
+                    MinRtt = _staticRtt.Value;
+                    _connection.TraceFlowControl($"Using static RTT: {MinRtt.TotalMilliseconds} ms");
                 }
             }
 
-            internal void Update()
+            internal void OnInitialSettingsSent()
+            {
+                _connection.TraceFlowControl("Initial SETTINGS sent");
+                _pingSentTimestamp = Stopwatch.GetTimestamp();
+            }
+
+            internal void OnInitialSettingsAckReceived()
+            {
+                _connection.TraceFlowControl("Initial SETTINGS ACK received");
+                RefreshRtt();
+                _status = Status.Waiting;
+            }
+
+            internal void OnDataReceived()
             {
                 if (_staticRtt.HasValue) return;
 
-                if (_status == Status.NotReady || _status == Status.Waiting)
+                if (_status == Status.Waiting)
                 {
                     long now = Stopwatch.GetTimestamp();
-
-                    if (now - _pingSentTimestamp > PingIntervalInTicks) // also true if _status == NotReady
+                    bool initial = Interlocked.Decrement(ref _initialBurst) >= 0;
+                    if (initial || now - _pingSentTimestamp > PingIntervalInTicks)
                     {
+                        if (_initialBurst > 0) Interlocked.Decrement(ref _initialBurst);
+
                         // Send a PING
                         long payload = Interlocked.Decrement(ref _pingCounter);
                         _connection.LogExceptions(_connection.SendPingAsync(payload, isAck: false));
@@ -180,11 +196,17 @@ namespace System.Net.Http
 
                 if (Interlocked.Read(ref _pingCounter) != payload)
                     ThrowProtocolError();
-
-                long elapsedTicks = Stopwatch.GetTimestamp() - _pingSentTimestamp;
-                Rtt = TimeSpan.FromSeconds(elapsedTicks / (double)Stopwatch.Frequency);
-                _connection.TraceFlowControl($"Updated RTT: {Rtt.TotalMilliseconds} ms");
+                RefreshRtt();
                 _status = Status.Waiting;
+            }
+
+            private void RefreshRtt()
+            {
+                long elapsedTicks = Stopwatch.GetTimestamp() - _pingSentTimestamp;
+                TimeSpan prevRtt = MinRtt == TimeSpan.Zero ? TimeSpan.MaxValue : MinRtt;
+                TimeSpan currentRtt = TimeSpan.FromSeconds(elapsedTicks / (double)Stopwatch.Frequency);
+                MinRtt = new TimeSpan(Math.Min(prevRtt.Ticks, currentRtt.Ticks));
+                _connection.TraceFlowControl($"Updated MinRtt: {MinRtt.TotalMilliseconds} ms || prevRtt:{prevRtt.TotalMilliseconds} ms, currentRtt:{currentRtt.TotalMilliseconds} ms)");
             }
         }
     }

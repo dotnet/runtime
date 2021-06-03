@@ -208,6 +208,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
 
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                _rttEstimator?.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
                 _expectingSettingsAck = true;
@@ -590,7 +591,7 @@ namespace System.Net.Http
 
             if (frameData.Length > 0)
             {
-                _rttEstimator?.Update();
+                _rttEstimator?.OnDataReceived();
                 ExtendWindow(frameData.Length);
             }
 
@@ -621,6 +622,7 @@ namespace System.Net.Http
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
                 _expectingSettingsAck = false;
+                _rttEstimator?.OnInitialSettingsAckReceived();
             }
             else
             {
