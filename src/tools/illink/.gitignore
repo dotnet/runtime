@@ -34,5 +34,6 @@ bin/
 .dotnet
 .packages
 artifacts
+*.binlog
 
 test/Mono.Linker.Tests/TestResults.xml
