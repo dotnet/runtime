@@ -233,7 +233,7 @@ namespace System
         /// The <see cref="MemberInfo"/> representing the generic definition of the member.
         /// </param>
         /// <returns>An object representing the member on the current constructed generic type that matches the specified generic definition, if found; otherwise, null.</returns>
-        public virtual MemberInfo? GetMemberFromGenericMemberDefinition(MemberInfo member) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        public virtual MemberInfo? GetMemberWithSameMetadataDefinitionAs(MemberInfo member) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [DynamicallyAccessedMembers(GetAllMembers)]
         public abstract MemberInfo[] GetMembers(BindingFlags bindingAttr);

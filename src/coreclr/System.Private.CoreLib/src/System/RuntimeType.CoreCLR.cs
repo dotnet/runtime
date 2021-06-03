@@ -3069,22 +3069,23 @@ namespace System
             return compressMembers;
         }
 
-        public override MemberInfo? GetMemberFromGenericMemberDefinition(MemberInfo member)
+        public override MemberInfo? GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
 
             return member.MemberType switch
             {
-                MemberTypes.Method => GetMethodFromGenericMemberDefinition(member),
-                MemberTypes.Constructor => GetConstructorFromGenericMemberDefinition(member),
-                MemberTypes.Property => GetPropertyFromGenericMemberDefinition(member),
-                MemberTypes.Field => GetFieldFromGenericMemberDefinition(member),
-                MemberTypes.Event => GetEventFromGenericMemberDefinition(member),
+                MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(member),
+                MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(member),
+                MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(member),
+                MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(member),
+                MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(member),
+                MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(member),
                 _ => null
             };
         }
 
-        private MemberInfo? GetMethodFromGenericMemberDefinition(MemberInfo method)
+        private MemberInfo? GetMethodWithSameMetadataDefinitionAs(MemberInfo method)
         {
             RuntimeMethodInfo[] cache = Cache.GetMethodList(MemberListType.CaseSensitive, method.Name);
 
@@ -3100,7 +3101,7 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetConstructorFromGenericMemberDefinition(MemberInfo constructor)
+        private MemberInfo? GetConstructorWithSameMetadataDefinitionAs(MemberInfo constructor)
         {
             RuntimeConstructorInfo[] cache = Cache.GetConstructorList(MemberListType.CaseSensitive, constructor.Name);
 
@@ -3116,7 +3117,7 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetPropertyFromGenericMemberDefinition(MemberInfo property)
+        private MemberInfo? GetPropertyWithSameMetadataDefinitionAs(MemberInfo property)
         {
             RuntimePropertyInfo[] cache = Cache.GetPropertyList(MemberListType.CaseSensitive, property.Name);
 
@@ -3132,7 +3133,7 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetFieldFromGenericMemberDefinition(MemberInfo field)
+        private MemberInfo? GetFieldWithSameMetadataDefinitionAs(MemberInfo field)
         {
             RuntimeFieldInfo[] cache = Cache.GetFieldList(MemberListType.CaseSensitive, field.Name);
 
@@ -3148,7 +3149,7 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetEventFromGenericMemberDefinition(MemberInfo eventInfo)
+        private MemberInfo? GetEventWithSameMetadataDefinitionAs(MemberInfo eventInfo)
         {
             RuntimeEventInfo[] cache = Cache.GetEventList(MemberListType.CaseSensitive, eventInfo.Name);
 
@@ -3156,6 +3157,22 @@ namespace System
             {
                 RuntimeEventInfo candidate = cache[i];
                 if (candidate.HasSameMetadataDefinitionAs(eventInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(MemberInfo nestedType)
+        {
+            RuntimeType[] cache = Cache.GetNestedTypeList(MemberListType.CaseSensitive, nestedType.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeType candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(nestedType))
                 {
                     return candidate;
                 }

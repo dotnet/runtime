@@ -1566,19 +1566,18 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void GetMemberFromGenericMemberDefinition()
+        public void GetMemberWithSameMetadataDefinitionAs()
         {
-            //System.Diagnostics.Debugger.Launch();
             Type openGenericType = typeof(TI_GenericTypeWithAllMembers<>);
             Type closedGenericType = typeof(TI_GenericTypeWithAllMembers<int>);
 
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
             {
-                MemberInfo closedGenericMember = closedGenericType.GetMemberFromGenericMemberDefinition(openGenericMember);
-                Assert.True(closedGenericMember != null, openGenericMember.Name + " is null");
-                Assert.NotNull(closedGenericMember);
+                MemberInfo closedGenericMember = closedGenericType.GetMemberWithSameMetadataDefinitionAs(openGenericMember);
+                Assert.True(closedGenericMember != null, $"'{openGenericMember.Name}' was not found");
                 Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
+                Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
             }
         }
 
@@ -1863,6 +1862,11 @@ namespace System.Reflection.Tests
         private T PrivateInstanceProperty { get; set; }
         private T PrivateInstanceMethod(T t) => default;
         private T PrivateInstanceMethod(T t1, T t2) => default;
+
+        public class Nested
+        {
+            public T NestedField;
+        }
     }
 
 #pragma warning restore 0067, 0169
