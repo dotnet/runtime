@@ -17,6 +17,11 @@ namespace Internal.IL.Stubs
             Debug.Assert(((MetadataType)method.OwningType).Name == "MemoryMarshal");
             string methodName = method.Name;
 
+            if (method.Instantiation.Length != 1)
+            {
+                return null; // we only handle the generic method GetArrayDataReference<T>(T[])
+            }
+
             if (methodName == "GetArrayDataReference")
             {
                 ILEmitter emit = new ILEmitter();

@@ -40,7 +40,7 @@ int main(const int argc, const pal::char_t *argv[])
         // args: ... [<explicit_load>] [<assembly_path>] [<dotnet_root>] [<hostfxr_to_load>]
         bool explicit_load = false;
         if (argc >= 3)
-            explicit_load = pal::strcmp(pal::to_lower(pal::string_t{argv[2]}).c_str(), _X("true")) == 0;
+            explicit_load = pal::strcmp(pal::to_lower(argv[2]).c_str(), _X("true")) == 0;
 
         const pal::char_t *assembly_path = nullptr;
         if (argc >= 4 && pal::strcmp(argv[3], _X("nullptr")) != 0)
@@ -117,7 +117,7 @@ int main(const int argc, const pal::char_t *argv[])
         if (static_cast<StatusCode>(res) == StatusCode::Success)
         {
             std::cout << "get_hostfxr_path succeeded" << std::endl;
-            std::cout << "hostfxr_path: " << tostr(pal::to_lower(fxr_path)).data() << std::endl;
+            std::cout << "hostfxr_path: " << tostr(pal::to_lower(fxr_path.c_str())).data() << std::endl;
             return EXIT_SUCCESS;
         }
         else

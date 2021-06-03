@@ -65,8 +65,34 @@ namespace System
                 }
             }
 
+            // regionPtr will point at the region name encoded as ASCII.
+            IntPtr regionPtr = IntPtr.Zero;
+
+             // Regions usually are 2 or 3 characters length.
+            const int MaxRegionNameLength = 11;
+
+            // Ensure uppercasing the region as ICU require the region names be uppercased, otherwise ICU will assume default region and return unexpected result.
+            if (region is not null && region.Length < MaxRegionNameLength)
+            {
+                byte* regionInAscii = stackalloc byte[region.Length + 1];
+                int i = 0;
+                for (; i < region.Length && region[i] <= '\u007F'; i++)
+                {
+                    regionInAscii[i] = (uint)(region[i] - 'a') <= ('z' - 'a') ? (byte)((region[i] - 'a') + 'A') : (byte)region[i];
+                }
+
+                if (i >= region.Length)
+                {
+                    regionInAscii[region.Length] = 0;
+                    regionPtr = new IntPtr(regionInAscii);
+                }
+
+                // In case getting unexpected region names, we just fallback using the default region (pasing null region name to the ICU API).
+            }
+
             char* buffer = stackalloc char[100];
-            int length = Interop.Globalization.WindowsIdToIanaId(windowsId, region, buffer, 100);
+
+            int length = Interop.Globalization.WindowsIdToIanaId(windowsId, regionPtr, buffer, 100);
             if (length > 0)
             {
                 ianaId = allocate ? new string(buffer, 0, length) : null;

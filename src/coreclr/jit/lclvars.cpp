@@ -2635,6 +2635,9 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DNER_LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
             break;
+        case DNER_LongParamVar:
+            JITDUMP("it is a long parameter\n");
+            break;
 #endif
         default:
             unreached();

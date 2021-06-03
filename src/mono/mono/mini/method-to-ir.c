@@ -3826,6 +3826,48 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
+static MonoMethod*
+get_constrained_method (MonoCompile *cfg, MonoImage *image, guint32 token,
+						MonoMethod *cil_method, MonoClass *constrained_class,
+						MonoGenericContext *generic_context)
+{
+	MonoMethod *cmethod = cil_method;
+	gboolean constrained_is_generic_param =
+		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
+		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+
+	if (cfg->current_method->wrapper_type != MONO_WRAPPER_NONE) {
+		if (cfg->verbose_level > 2)
+			printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+		if (!(constrained_is_generic_param &&
+			  cfg->gshared)) {
+			cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, cfg->error);
+			CHECK_CFG_ERROR;
+		}
+	} else {
+		if (cfg->verbose_level > 2)
+			printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+
+		if (constrained_is_generic_param && cfg->gshared) {
+			/*
+			 * This is needed since get_method_constrained can't find
+			 * the method in klass representing a type var.
+			 * The type var is guaranteed to be a reference type in this
+			 * case.
+			 */
+			if (!mini_is_gsharedvt_klass (constrained_class))
+				g_assert (!m_class_is_valuetype (cmethod->klass));
+		} else {
+			cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, cfg->error);
+			CHECK_CFG_ERROR;
+		}
+	}
+	return cmethod;
+
+ mono_error_exit:
+	return NULL;
+}
+
 static gboolean
 method_does_not_return (MonoMethod *method)
 {
@@ -5641,7 +5683,10 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		}
 	}
 
-	if (constrained_partial_call) {
+	if (m_method_is_static (cmethod)) {
+		/* Call to an abstract static method */
+		return NULL;
+	} if (constrained_partial_call) {
 		gboolean need_box = TRUE;
 
 		/*
@@ -5808,15 +5853,6 @@ static void
 emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 {
 	MonoInst *ins;
-	gboolean has_filter = FALSE;
-
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-			has_filter = TRUE;
-	}
-	if (!has_filter)
-		return;
 
 	MonoInst **iargs;
 	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
@@ -5826,9 +5862,12 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	MonoInst *ftndesc;
 
 	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
-	/* Tell the llvm backend to skip emitting the rest of the method code */
-	cfg->interp_entry_only = TRUE;
 
+	/*
+	 * Emit a call to the interp entry function. We emit it here instead of the llvm backend since
+	 * calling conventions etc. are easier to handle here. The LLVM backend will only emit the
+	 * entry/exit bblocks.
+	 */
 	g_assert (cfg->cbb == cfg->bb_init);
 	/* Obtain the interp entry function */
 	ftndesc = mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_get_interp_entry, iargs);
@@ -5838,8 +5877,15 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
 	ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
 	/* Do a normal return */
-	if (cfg->ret)
+	if (cfg->ret) {
 		emit_setret (cfg, ins);
+		/*
+		 * Since only bb_entry/bb_exit is emitted if interp_entry_only is set,
+		 * its possible that the return value becomes an OP_PHI node whose inputs
+		 * are not emitted. Make it volatile to prevent that.
+		 */
+		cfg->ret->flags |= MONO_INST_VOLATILE;
+	}
 	MONO_INST_NEW (cfg, ins, OP_BR);
 	ins->inst_target_bb = cfg->bb_exit;
 	MONO_ADD_INS (cfg->cbb, ins);
@@ -6174,6 +6220,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->spvars = g_hash_table_new (NULL, NULL);
 			cfg->exvars = g_hash_table_new (NULL, NULL);
 		}
+		cfg->clause_is_dead = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
+
 		/* handle exception clauses */
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoBasicBlock *try_bb;
@@ -6430,13 +6478,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (is_virtual_call) {
 		MonoInst *arg_ins;
 
-		NEW_ARGLOAD (cfg, arg_ins, 0);
-		MONO_ADD_INS (cfg->cbb, arg_ins);
-		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
+		//
+		// This is just a hack to avoid checks in empty methods which could get inlined
+		// into finally clauses preventing the removal of empty finally clauses, since all
+		// variables in finally clauses are marked volatile so the check can't be removed
+		//
+		if (!(cfg->llvm_only && m_class_is_valuetype (method->klass) && header->code_size == 1 && header->code [0] == CEE_RET)) {
+			NEW_ARGLOAD (cfg, arg_ins, 0);
+			MONO_ADD_INS (cfg->cbb, arg_ins);
+			MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
+		}
 	}
 
-	if (cfg->llvm_only && cfg->interp)
-		emit_llvmonly_interp_entry (cfg, header);
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		for (int i = 0; i < header->num_clauses; ++i) {
+			MonoExceptionClause *clause = &header->clauses [i];
+			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
+				cfg->interp_entry_only = TRUE;
+		}
+
+		if (cfg->interp_entry_only)
+			emit_llvmonly_interp_entry (cfg, header);
+	}
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {
@@ -7128,36 +7191,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoMethod *cil_method; cil_method = cmethod;
 				
 			if (constrained_class) {
-				gboolean constrained_is_generic_param =
-					m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
-					m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class))
+					// FIXME:
+					GENERIC_SHARING_FAILURE (CEE_CALL);
 
-				if (method->wrapper_type != MONO_WRAPPER_NONE) {
-					if (cfg->verbose_level > 2)
-						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
-					if (!(constrained_is_generic_param &&
-						  cfg->gshared)) {
-						cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, cfg->error);
-						CHECK_CFG_ERROR;
-					}
-				} else {
-					if (cfg->verbose_level > 2)
-						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
-
-					if (constrained_is_generic_param && cfg->gshared) {
-						/* 
-						 * This is needed since get_method_constrained can't find 
-						 * the method in klass representing a type var.
-						 * The type var is guaranteed to be a reference type in this
-						 * case.
-						 */
-						if (!mini_is_gsharedvt_klass (constrained_class))
-							g_assert (!m_class_is_valuetype (cmethod->klass));
-					} else {
-						cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, cfg->error);
-						CHECK_CFG_ERROR;
-					}
-				}
+				cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
+				CHECK_CFG_ERROR;
 
 				if (m_class_is_enumtype (constrained_class) && !strcmp (cmethod->name, "GetHashCode")) {
 					/* Use the corresponding method from the base type to avoid boxing */
@@ -7405,7 +7444,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
 
-				if (context_used && mono_class_is_interface (cmethod->klass)) {
+				if (context_used && mono_class_is_interface (cmethod->klass) && !m_method_is_static (cmethod)) {
 					/* Generic method interface
 					   calls are resolved via a
 					   helper function and don't
@@ -10959,6 +10998,15 @@ mono_ldptr:
 
 			cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
+
+			if (constrained_class) {
+				if (m_method_is_static (cmethod) && mini_class_check_context_used (cfg, constrained_class))
+					// FIXME:
+					GENERIC_SHARING_FAILURE (CEE_LDFTN);
+				cmethod = get_constrained_method (cfg, image, n, cmethod, constrained_class, generic_context);
+				constrained_class = NULL;
+				CHECK_CFG_ERROR;
+			}
 
 			mono_class_init_internal (cmethod->klass);
 

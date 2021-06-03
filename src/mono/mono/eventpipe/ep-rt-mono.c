@@ -347,7 +347,7 @@ ep_rt_mono_method_get_full_name (
 	size_t name_len);
 
 void
-ep_rt_mono_execute_rundown (void);
+ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
 
 static
 inline
@@ -1405,7 +1405,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_mono_execute_rundown (void)
+ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
@@ -1435,6 +1435,20 @@ ep_rt_mono_execute_rundown (void)
 		runtime_module_path,
 		NULL,
 		NULL);
+
+	if (execution_checkpoints) {
+		ep_rt_execution_checkpoint_array_iterator_t execution_checkpoints_iterator = ep_rt_execution_checkpoint_array_iterator_begin (execution_checkpoints);
+		while (!ep_rt_execution_checkpoint_array_iterator_end (execution_checkpoints, &execution_checkpoints_iterator)) {
+			EventPipeExecutionCheckpoint *checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&execution_checkpoints_iterator);
+			FireEtwExecutionCheckpointDCEnd (
+				clr_instance_get_id (),
+				checkpoint->name,
+				checkpoint->timestamp,
+				NULL,
+				NULL);
+			ep_rt_execution_checkpoint_array_iterator_next (&execution_checkpoints_iterator);
+		}
+	}
 
 	FireEtwDCEndInit_V1 (
 		clr_instance_get_id (),
@@ -1814,6 +1828,148 @@ ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly)
 	}
 
 	return true;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_start (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadStart (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_stop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadStop (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_wait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadWait (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
+	double throughput,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadAdjustmentSample (
+		throughput,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadAdjustmentAdjustment (
+		average_throughput,
+		networker_thread_count,
+		reason,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_stats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadAdjustmentStats (
+		duration,
+		throughput,
+		threadpool_worker_thread_wait,
+		throughput_wave,
+		throughput_error_estimate,
+		average_throughput_error_estimate,
+		throughput_ratio,
+		confidence,
+		new_control_setting,
+		new_thread_wave_magnitude,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_io_enqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	bool multi_dequeues,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIOEnqueue (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
+		multi_dequeues,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_io_dequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIODequeue (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_working_thread_count (
+	uint16_t count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkingThreadCount (
+		count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
 }
 
 static

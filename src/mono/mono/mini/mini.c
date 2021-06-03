@@ -2368,10 +2368,16 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			printf ("Number of try block holes %d\n", num_holes);
 	}
 
-	if (COMPILE_LLVM (cfg))
+	if (COMPILE_LLVM (cfg)) {
 		num_clauses = cfg->llvm_ex_info_len;
-	else
+	} else {
 		num_clauses = header->num_clauses;
+		int dead_clauses = 0;
+		for (int i = 0; i < header->num_clauses; ++i)
+			if (cfg->clause_is_dead [i])
+				dead_clauses ++;
+		num_clauses -= dead_clauses;
+	}
 
 	if (cfg->method->dynamic)
 		jinfo = (MonoJitInfo *)g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
@@ -2509,14 +2515,17 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (COMPILE_LLVM (cfg)) {
 		if (num_clauses)
 			memcpy (&jinfo->clauses [0], &cfg->llvm_ex_info [0], num_clauses * sizeof (MonoJitExceptionInfo));
-	} else if (header->num_clauses) {
-		int i;
-
-		for (i = 0; i < header->num_clauses; i++) {
+	} else {
+		int eindex = 0;
+		for (int i = 0; i < header->num_clauses; i++) {
 			MonoExceptionClause *ec = &header->clauses [i];
-			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
+			MonoJitExceptionInfo *ei = &jinfo->clauses [eindex];
 			MonoBasicBlock *tblock;
 			MonoInst *exvar;
+
+			if (cfg->clause_is_dead [i])
+				continue;
+			eindex ++;
 
 			ei->flags = ec->flags;
 
@@ -2878,6 +2887,84 @@ mono_insert_branches_between_bblocks (MonoCompile *cfg)
 }
 
 static void
+remove_empty_finally_pass (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	MonoInst *ins;
+	gboolean remove_call_handler = FALSE;
+
+	// FIXME: other configurations
+	if (!cfg->llvm_only)
+		return;
+
+	for (int i = 0; i < cfg->header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &cfg->header->clauses [i];
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+			MonoInst *first, *last;
+
+			bb = cfg->cil_offset_to_bb [clause->handler_offset];
+			g_assert (bb);
+
+			/* Support only 1 bb for now */
+			first = mono_bb_first_inst (bb, 0);
+			if (first->opcode != OP_START_HANDLER)
+				break;
+
+			gboolean empty = TRUE;
+			while (TRUE) {
+				if (bb->out_count > 1) {
+					empty = FALSE;
+					break;
+				}
+				MONO_BB_FOR_EACH_INS (bb, ins) {
+					if (!(ins->opcode == OP_START_HANDLER || ins->opcode == OP_ENDFINALLY || MONO_INS_HAS_NO_SIDE_EFFECT (ins))) {
+						empty = FALSE;
+						break;
+					}
+				}
+				if (!empty)
+					break;
+				if (bb->out_count == 0)
+					break;
+				if (mono_bb_last_inst (bb, 0)->opcode == OP_ENDFINALLY)
+					break;
+				bb = bb->out_bb [0];
+			}
+			if (empty) {
+				bb->flags &= ~BB_EXCEPTION_HANDLER;
+				NULLIFY_INS (first);
+				last = mono_bb_last_inst (bb, 0);
+				if (last->opcode == OP_ENDFINALLY)
+					NULLIFY_INS (last);
+				if (cfg->verbose_level > 1)
+					g_print ("removed empty finally clause %d.\n", i);
+				cfg->clause_is_dead [i] = TRUE;
+				remove_call_handler = TRUE;
+			}
+		}
+	}
+
+	if (remove_call_handler) {
+		/* Remove OP_CALL_HANDLER opcodes pointing to the removed finally blocks */
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *handler_ins = NULL;
+			MONO_BB_FOR_EACH_INS (bb, ins) {
+				if (ins->opcode == OP_CALL_HANDLER && ins->inst_target_bb && !(ins->inst_target_bb->flags & BB_EXCEPTION_HANDLER)) {
+					handler_ins = ins;
+					break;
+				}
+			}
+			if (handler_ins) {
+				handler_ins->opcode = OP_BR;
+				for (ins = handler_ins->next; ins; ins = ins->next)
+					NULLIFY_INS (ins);
+			}
+		}
+	}
+}
+
+static void
 init_backend (MonoBackend *backend)
 {
 #ifdef MONO_ARCH_NEED_GOT_VAR
@@ -2991,6 +3078,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	gboolean full_aot = (flags & JIT_FLAG_FULL_AOT) ? 1 : 0;
 	gboolean disable_direct_icalls = (flags & JIT_FLAG_NO_DIRECT_ICALLS) ? 1 : 0;
 	gboolean gsharedvt_method = FALSE;
+	gboolean interp_entry_only = FALSE;
 #ifdef ENABLE_LLVM
 	gboolean llvm = (flags & JIT_FLAG_LLVM) ? 1 : 0;
 #endif
@@ -3107,6 +3195,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->check_pinvoke_callconv = mini_debug_options.check_pinvoke_callconv;
 	cfg->disable_direct_icalls = disable_direct_icalls;
 	cfg->direct_pinvoke = (flags & JIT_FLAG_DIRECT_PINVOKE) != 0;
+	cfg->interp_entry_only = interp_entry_only;
 	if (try_generic_shared)
 		cfg->gshared = TRUE;
 	cfg->compile_llvm = try_llvm;
@@ -3323,7 +3412,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		char *method_name;
 
 		method_name = mono_method_get_full_name (method);
-		g_print ("converting %s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", method_name);
+		g_print ("converting %s%s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", cfg->interp_entry_only ? "interp only " : "", method_name);
 		/*
 		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", method_name = mono_method_full_name (method, TRUE));
@@ -3404,7 +3493,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		// FIXME:
 		if (cfg->ret) {
 			// Allow SSA on the result value
-			cfg->ret->flags &= ~MONO_INST_VOLATILE;
+			if (!cfg->interp_entry_only)
+				cfg->ret->flags &= ~MONO_INST_VOLATILE;
 
 			// Add an explicit return instruction referencing the return value
 			MONO_INST_NEW (cfg, ins, OP_SETRET);
@@ -3491,6 +3581,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		MONO_TIME_TRACK (mono_jit_stats.jit_if_conversion, mono_if_conversion (cfg));
 		mono_cfg_dump_ir (cfg, "if_conversion");
 	}
+
+	remove_empty_finally_pass (cfg);
 
 	mono_threads_safepoint ();
 
@@ -3746,6 +3838,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 				//g_free (nm);
 			}
+			if (cfg->llvm_only && cfg->interp && !interp_entry_only) {
+				// If interp support is enabled, restart compilation, generating interp entry code only
+				interp_entry_only = TRUE;
+				mono_destroy_compile (cfg);
+				goto restart_compile;
+			}
+
 			if (cfg->llvm_only) {
 				cfg->disable_aot = TRUE;
 				return cfg;

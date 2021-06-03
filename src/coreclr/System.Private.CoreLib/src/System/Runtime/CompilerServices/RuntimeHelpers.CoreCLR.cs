@@ -227,11 +227,6 @@ namespace System.Runtime.CompilerServices
             return rawSize;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref byte GetRawArrayData(this Array array) =>
-            // See comment on RawArrayData for details
-            ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)GetMethodTable(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
-
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));

@@ -41,6 +41,7 @@ internal class Xcode
     }
 
     public bool EnableRuntimeLogging { get; set; }
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     public string GenerateXCode(
         string projectName,
@@ -197,7 +198,8 @@ internal class Xcode
         {
             defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
-        else if (forceAOT)
+
+        if (forceAOT)
         {
             defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }
@@ -210,6 +212,11 @@ internal class Xcode
         if (EnableRuntimeLogging)
         {
             defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            defines.AppendLine("\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
