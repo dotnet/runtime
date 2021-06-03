@@ -221,12 +221,12 @@ check_symbol_exists(
 
 check_symbol_exists(
     preadv
-    uio.h
+    sys/uio.h
     HAVE_PREADV)
 
 check_symbol_exists(
     pwritev
-    uio.h
+    sys/uio.h
     HAVE_PWRITEV)
 
 check_symbol_exists(
