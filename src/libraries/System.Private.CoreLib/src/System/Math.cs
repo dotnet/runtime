@@ -1549,5 +1549,17 @@ namespace System
             double cos = rem > 0.25 ? Cos(0.5 - rem) : Cos(rem);
             return invert ? -cos : cos;
         }
+
+        /// <summary>
+        /// Returns the tangent of the specified angle measured in half-turns.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <returns>The tangent of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Tan(x * PI), with higher precision.
+        /// It guarantees to return 0, <see cref="double.PositiveInfinity"/> or <see cref="double.NegativeInfinity"/> when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static double TanPi(double x) => SinPi(x) / CosPi(x);
     }
 }

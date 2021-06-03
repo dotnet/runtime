@@ -3248,5 +3248,33 @@ namespace System.Tests
             Assert.Equal(0, MathF.CosPi(0.6789f) - MathF.CosPi(-0.6789f));
             Assert.Equal(0, MathF.CosPi(1.2345f) - MathF.CosPi(-1.2345f));
         }
+
+        [Fact]
+        public static void TanPi_Double_Precision()
+        {
+            Assert.Equal(                      0, Math.TanPi( 0.0));
+            Assert.Equal(double.PositiveInfinity, Math.TanPi( 0.5));
+            Assert.Equal(double.NegativeInfinity, Math.TanPi(-0.5));
+            Assert.Equal(                      0, Math.TanPi( 1.0));
+            Assert.Equal(                      0, Math.TanPi(-1.0));
+            Assert.Equal(double.NegativeInfinity, Math.TanPi( 1.5));
+            Assert.Equal(double.PositiveInfinity, Math.TanPi(-1.5));
+            Assert.Equal(                      0, Math.TanPi( 2.0));
+            Assert.Equal(                      0, Math.TanPi(-2.0));
+        }
+
+        [Fact]
+        public static void TanPi_Float_Precision()
+        {
+            Assert.Equal(                     0, MathF.TanPi( 0.0f));
+            Assert.Equal(float.PositiveInfinity, MathF.TanPi( 0.5f));
+            Assert.Equal(float.NegativeInfinity, MathF.TanPi(-0.5f));
+            Assert.Equal(                     0, MathF.TanPi( 1.0f));
+            Assert.Equal(                     0, MathF.TanPi(-1.0f));
+            Assert.Equal(float.NegativeInfinity, MathF.TanPi( 1.5f));
+            Assert.Equal(float.PositiveInfinity, MathF.TanPi(-1.5f));
+            Assert.Equal(                     0, MathF.TanPi( 2.0f));
+            Assert.Equal(                     0, MathF.TanPi(-2.0f));
+        }
     }
 }

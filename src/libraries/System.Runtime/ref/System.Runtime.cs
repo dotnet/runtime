@@ -2880,6 +2880,7 @@ namespace System
         public static double Sqrt(double d) { throw null; }
         public static double Tan(double a) { throw null; }
         public static double Tanh(double value) { throw null; }
+        public static double TanPi(double x) { throw null; }
         public static decimal Truncate(decimal d) { throw null; }
         public static double Truncate(double d) { throw null; }
     }
@@ -2933,6 +2934,7 @@ namespace System
         public static float Sqrt(float x) { throw null; }
         public static float Tan(float x) { throw null; }
         public static float Tanh(float x) { throw null; }
+        public static float TanPi(float x) { throw null; }
         public static float Truncate(float x) { throw null; }
     }
     public partial class MemberAccessException : System.SystemException
