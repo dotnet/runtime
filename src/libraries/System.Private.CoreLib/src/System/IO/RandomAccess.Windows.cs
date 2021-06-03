@@ -167,6 +167,7 @@ namespace System.IO
                             vts.RegisterForCancellation(cancellationToken);
                             break;
 
+                        case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         case Interop.Errors.ERROR_BROKEN_PIPE:
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
@@ -178,7 +179,7 @@ namespace System.IO
                         default:
                             // Error. Callback will not be called.
                             vts.Dispose();
-                            return ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
                     }
                 }
             }
@@ -351,6 +352,7 @@ namespace System.IO
                             vts.RegisterForCancellation(cancellationToken);
                             break;
 
+                        case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         case Interop.Errors.ERROR_BROKEN_PIPE:
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
@@ -362,7 +364,7 @@ namespace System.IO
                         default:
                             // Error. Callback will not be called.
                             vts.Dispose();
-                            return ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
                     }
                 }
             }

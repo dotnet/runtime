@@ -195,10 +195,7 @@ namespace Microsoft.Win32.SafeHandles
                     case 0:
                     case Interop.Errors.ERROR_BROKEN_PIPE:
                     case Interop.Errors.ERROR_NO_DATA:
-                    // AsyncWindowsFileStreamStrategy checks the Length before calling ReadFile
-                    // and tries to perform a 0-byte read at EOF.
-                    // RandomAccess does not and we need to treat EOF as a successfull operation.
-                    case Interop.Errors.ERROR_HANDLE_EOF:
+                    case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         // Success
                         _source.SetResult((int)numBytes);
                         break;
