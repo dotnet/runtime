@@ -1537,6 +1537,10 @@ CritSecObject InlineStrategy::s_XmlWriterLock;
 
 void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 {
+    if (JitConfig.JitInlineDumpXml() == 0)
+    {
+        return;
+    }
 
     // Lock to prevent interleaving of trees.
     CritSecHolder writeLock(s_XmlWriterLock);
