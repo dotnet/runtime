@@ -1590,7 +1590,6 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     const Compiler::Options& opts = m_Compiler->opts;
 
     const bool isPrejitRoot  = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
