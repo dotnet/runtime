@@ -72,7 +72,7 @@ namespace Wasm.Build.Tests
                             ProjectName = projectName,
                             ExtraBuildArgs = $"/p:EMSDK_PATH={emsdkPath}"
             };
-            buildArgs = GetBuildArgsWith(buildArgs);
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             (_, string buildOutput) = BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
                       bool? dotnetWasmFromRuntimePack = null)
         {
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");

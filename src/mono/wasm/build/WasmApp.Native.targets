@@ -353,9 +353,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
 
-      <!-- remove any satellite assemblies -->
-      <_AotInputAssemblies Remove="@(_AotInputAssemblies)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('.resources.dll'))" />
-
       <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />

@@ -8,9 +8,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 #nullable enable
 
@@ -29,6 +31,7 @@ namespace Wasm.Build.Tests
         protected static readonly string s_emsdkPath;
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
+        protected static readonly string s_testAssetsPath;
 
         protected string? _projectDir;
         protected readonly ITestOutputHelper _testOutput;
@@ -72,6 +75,11 @@ namespace Wasm.Build.Tests
 
                 s_defaultBuildArgs = $" /p:RuntimeSrcDir={solutionRoot.FullName} /p:RuntimeConfig={s_runtimeConfig} /p:EMSDK_PATH={s_emsdkPath} ";
             }
+
+            string thisAsmPath = Assembly.GetExecutingAssembly().Location;
+            s_testAssetsPath = Path.Combine(Path.GetDirectoryName(thisAsmPath) ?? Environment.CurrentDirectory, "testassets");
+            if (!Directory.Exists(s_testAssetsPath))
+                throw new Exception($"Could not find testassets at {s_testAssetsPath}");
 
             string? logPathEnvVar = Environment.GetEnvironmentVariable(TestLogPathEnvVar);
             if (!string.IsNullOrEmpty(logPathEnvVar))
@@ -139,10 +147,10 @@ namespace Wasm.Build.Tests
                     .WithRunHosts(host)
                     .UnwrapItemsAsArrays();
 
-        protected void RunAndTestWasmApp(BuildArgs buildArgs, RunHost host, string id, Action<string> test, string? buildDir=null, int expectedExitCode=0, string? args=null)
+        protected string RunAndTestWasmApp(BuildArgs buildArgs, RunHost host, string id, Action<string> test, string? buildDir=null, int expectedExitCode=0, string? args=null, Dictionary<string, string>? envVars=null)
         {
             buildDir ??= _projectDir;
-            Dictionary<string, string>? envVars = new();
+            envVars ??= new();
             envVars["XHARNESS_DISABLE_COLORED_OUTPUT"] = "true";
             if (buildArgs.AOT)
             {
@@ -180,6 +188,8 @@ namespace Wasm.Build.Tests
                 Assert.DoesNotContain("AOT: image 'System.Private.CoreLib' found.", output);
                 Assert.DoesNotContain($"AOT: image '{buildArgs.ProjectName}' found.", output);
             }
+
+            return output;
         }
 
         protected static string RunWithXHarness(string testCommand, string testLogPath, string projectName, string bundleDir,
@@ -209,6 +219,8 @@ namespace Wasm.Build.Tests
             args.Append($" --run {projectName}.dll");
             args.Append($" {appArgs ?? string.Empty}");
 
+            _testOutput.WriteLine(string.Empty);
+            _testOutput.WriteLine($"---------- Running with {testCommand} ---------");
             var (exitCode, output) = RunProcess("dotnet", _testOutput,
                                         args: args.ToString(),
                                         workingDir: bundleDir,
@@ -253,7 +265,7 @@ namespace Wasm.Build.Tests
               </PropertyGroup>
             </Project>";
 
-        protected static BuildArgs GetBuildArgsWith(BuildArgs buildArgs, string? extraProperties=null, string projectTemplate=SimpleProjectTemplate)
+        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string? extraProperties=null, string projectTemplate=SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>\n";
@@ -305,6 +317,7 @@ namespace Wasm.Build.Tests
             sb.Append($" /p:Configuration={buildArgs.Config}");
 
             string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}.binlog");
+            _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /v:minimal /nologo");
             if (buildArgs.ExtraBuildArgs != null)
@@ -464,6 +477,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Running {path} {args}");
             Console.WriteLine($"Running: {path}: {args}");
             Console.WriteLine($"WorkingDirectory: {workingDir}");
+            _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
             var processStartInfo = new ProcessStartInfo
             {
@@ -584,7 +598,7 @@ namespace Wasm.Build.Tests
 
   <Target Name=""PrepareForWasmBuild"">
     <ItemGroup>
-      <WasmAssembliesToBundle Include=""$(TargetDir)publish\*.dll"" />
+      <WasmAssembliesToBundle Include=""$(TargetDir)publish\**\*.dll"" />
     </ItemGroup>
   </Target>
 

@@ -61,7 +61,6 @@
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
                                     (relative path can be set via %(TargetPath) metadata)
-      - @(WasmSatelliteAssemblies)
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
@@ -115,6 +114,13 @@
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
     <ItemGroup>
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
+
+      <_WasmSatelliteAssemblies Include="@(_WasmAssembliesInternal)" />
+      <_WasmSatelliteAssemblies Remove="@(_WasmSatelliteAssemblies)" Condition="!$([System.String]::Copy('%(Identity)').EndsWith('.resources.dll'))" />
+      <!-- FIXME: Only include the ones with valid culture name -->
+      <_WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+
+      <_WasmAssembliesInternal Remove="@(_WasmSatelliteAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -142,7 +148,7 @@
       MainJS="$(WasmMainJSPath)"
       Assemblies="@(_WasmAssembliesInternal)"
       InvariantGlobalization="$(InvariantGlobalization)"
-      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
+      SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileName="$(WasmIcuDataFileName)"
       RemoteSources="@(WasmRemoteSources)"
