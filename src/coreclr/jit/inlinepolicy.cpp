@@ -549,6 +549,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
     }
 }
 
+#if defined(DEBUG) || defined(INLINE_DATA)
 //------------------------------------------------------------------------
 // DumpXml: Dump DefaultPolicy data as XML
 //
@@ -561,9 +562,21 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     fprintf(file, "%*s<DefaultPolicyData", indent, "");
 
     // To reduce verbosity, let's print only non-default values
-#define XATTR_I4(x) if ((INT32)x != 0)  fprintf(file, " " #x "=\"%d\"", (INT32)x)
-#define XATTR_R8(x) if (fabs(x) > 0.01) fprintf(file, " " #x "=\"%.2lf\"", x)
-#define XATTR_B(x)  if (x)              fprintf(file, " " #x "=\"True\"")
+#define XATTR_I4(x)                                                                                                    \
+    if ((INT32)x != 0)                                                                                                 \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"%d\"", (INT32)x);                                                                     \
+    }
+#define XATTR_R8(x)                                                                                                    \
+    if (fabs(x) > 0.01)                                                                                                \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"%.2lf\"", x);                                                                         \
+    }
+#define XATTR_B(x)                                                                                                     \
+    if (x)                                                                                                             \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"True\"");                                                                             \
+    }
 
     XATTR_R8(m_Multiplier);
     XATTR_R8(m_ProfileFrequency);
@@ -616,6 +629,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_HasProfile);
     fprintf(file, " />\n");
 }
+#endif
 
 //------------------------------------------------------------------------
 // BudgetCheck: see if this inline would exceed the current budget

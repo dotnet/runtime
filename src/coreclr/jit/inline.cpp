@@ -517,9 +517,9 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         return;
     }
 
-    const bool  isRoot     = m_Parent == nullptr;
-    const bool  hasChild   = m_Child != nullptr;
-    unsigned    newIndent  = indent;
+    const bool  isRoot    = m_Parent == nullptr;
+    const bool  hasChild  = m_Child != nullptr;
+    unsigned    newIndent = indent;
 
     if (!isRoot)
     {
@@ -1594,7 +1594,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     const Compiler::Info&    info = m_Compiler->info;
     const Compiler::Options& opts = m_Compiler->opts;
 
-    const bool isPrejitRoot  = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
