@@ -28,15 +28,12 @@ namespace System.IO.Hashing
 
             internal State(uint seed)
             {
-                unchecked
-                {
-                    _acc1 = seed + Prime32_1 + Prime32_2;
-                    _acc2 = seed + Prime32_2;
-                    _acc3 = seed;
-                    _acc4 = seed - Prime32_1;
+                _acc1 = seed + Prime32_1 + Prime32_2;
+                _acc2 = seed + Prime32_2;
+                _acc3 = seed;
+                _acc4 = seed - Prime32_1;
 
-                    _smallAcc = seed + Prime32_5;
-                }
+                _smallAcc = seed + Prime32_5;
             }
 
             internal void ProcessStripe(ReadOnlySpan<byte> source)
@@ -61,52 +58,46 @@ namespace System.IO.Hashing
 
             private static uint ApplyRound(uint acc, ReadOnlySpan<byte> lane)
             {
-                unchecked
-                {
-                    acc += BinaryPrimitives.ReadUInt32LittleEndian(lane) * Prime32_2;
-                    acc = BitOperations.RotateLeft(acc, 13);
-                    acc *= Prime32_1;
-                }
+                acc += BinaryPrimitives.ReadUInt32LittleEndian(lane) * Prime32_2;
+                acc = BitOperations.RotateLeft(acc, 13);
+                acc *= Prime32_1;
 
                 return acc;
             }
 
             internal readonly uint Complete(int length, ReadOnlySpan<byte> remaining)
             {
-                unchecked
+                uint acc = length >= StripeSize ? Converge() : _smallAcc;
+
+                acc += (uint)length;
+
+                while (remaining.Length >= sizeof(uint))
                 {
-                    uint acc = length >= StripeSize ? Converge() : _smallAcc;
+                    uint lane = BinaryPrimitives.ReadUInt32LittleEndian(remaining);
+                    acc += lane * Prime32_3;
+                    acc = BitOperations.RotateLeft(acc, 17);
+                    acc *= Prime32_4;
 
-                    acc += (uint)length;
-
-                    while (remaining.Length >= sizeof(uint))
-                    {
-                        uint lane = BinaryPrimitives.ReadUInt32LittleEndian(remaining);
-                        acc += lane * Prime32_3;
-                        acc = BitOperations.RotateLeft(acc, 17);
-                        acc *= Prime32_4;
-
-                        remaining = remaining.Slice(sizeof(uint));
-                    }
-
-                    while (remaining.Length > 0)
-                    {
-                        uint lane = remaining[0];
-                        acc += lane * Prime32_5;
-                        acc = BitOperations.RotateLeft(acc, 11);
-                        acc *= Prime32_1;
-
-                        remaining = remaining.Slice(1);
-                    }
-
-                    acc ^= (acc >> 15);
-                    acc *= Prime32_2;
-                    acc ^= (acc >> 13);
-                    acc *= Prime32_3;
-                    acc ^= (acc >> 16);
-
-                    return acc;
+                    remaining = remaining.Slice(sizeof(uint));
                 }
+
+                while (remaining.Length > 0)
+                {
+                    uint lane = remaining[0];
+                    acc += lane * Prime32_5;
+                    acc = BitOperations.RotateLeft(acc, 11);
+                    acc *= Prime32_1;
+
+                    remaining = remaining.Slice(1);
+                }
+
+                acc ^= (acc >> 15);
+                acc *= Prime32_2;
+                acc ^= (acc >> 13);
+                acc *= Prime32_3;
+                acc ^= (acc >> 16);
+
+                return acc;
             }
         }
     }

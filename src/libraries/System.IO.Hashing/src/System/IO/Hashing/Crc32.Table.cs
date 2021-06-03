@@ -17,7 +17,7 @@ namespace System.IO.Hashing
 
             for (int i = 0; i < 256; i++)
             {
-                uint val = unchecked((uint)i);
+                uint val = (uint)i;
 
                 for (int j = 0; j < 8; j++)
                 {

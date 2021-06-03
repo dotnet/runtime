@@ -14,7 +14,7 @@ namespace System.IO.Hashing
 
             for (int i = 0; i < 256; i++)
             {
-                ulong val = unchecked((ulong)i) << 56;
+                ulong val = (ulong)i << 56;
 
                 for (int j = 0; j < 8; j++)
                 {

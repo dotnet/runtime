@@ -44,7 +44,7 @@ namespace System.IO.Hashing
         public XxHash32(int seed)
             : base(HashSize)
         {
-            _seed = unchecked((uint)seed);
+            _seed = (uint)seed;
             Reset();
         }
 
@@ -111,19 +111,16 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
-            unchecked
+            int remainingLength = _length & 0x0F;
+            ReadOnlySpan<byte> remaining = ReadOnlySpan<byte>.Empty;
+
+            if (remainingLength > 0)
             {
-                int remainingLength = _length & 0x0F;
-                ReadOnlySpan<byte> remaining = ReadOnlySpan<byte>.Empty;
-
-                if (remainingLength > 0)
-                {
-                    remaining = new ReadOnlySpan<byte>(_holdback, 0, remainingLength);
-                }
-
-                uint acc = _state.Complete(_length, remaining);
-                BinaryPrimitives.WriteUInt32BigEndian(destination, acc);
+                remaining = new ReadOnlySpan<byte>(_holdback, 0, remainingLength);
             }
+
+            uint acc = _state.Complete(_length, remaining);
+            BinaryPrimitives.WriteUInt32BigEndian(destination, acc);
         }
 
         /// <summary>
@@ -217,7 +214,7 @@ namespace System.IO.Hashing
         private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination, int seed)
         {
             int totalLength = source.Length;
-            State state = new State(unchecked((uint)seed));
+            State state = new State((uint)seed);
 
             while (source.Length > StripeSize)
             {
