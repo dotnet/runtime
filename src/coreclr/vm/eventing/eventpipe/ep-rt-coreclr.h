@@ -1235,6 +1235,9 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 
+EP_RT_DEFINE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+
 static
 void
 ep_rt_init (void)
@@ -1898,10 +1901,11 @@ ep_rt_is_running (void)
 static
 inline
 void
-ep_rt_execute_rundown (void)
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+	//TODO: Write execution checkpoint rundown events.
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeRundown) > 0) {
 		// Ask the runtime to emit rundown events.
 		if (g_fEEStarted && !g_fEEShutDown)

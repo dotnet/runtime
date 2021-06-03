@@ -297,6 +297,11 @@ ep_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackCo
 	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
 }
 
+bool
+ep_add_rundown_execution_checkpoint (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
 /*
  * EventPipePerf.
  */

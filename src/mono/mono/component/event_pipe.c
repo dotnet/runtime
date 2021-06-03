@@ -60,6 +60,17 @@ event_pipe_get_next_event (
 	EventPipeEventInstanceData *instance);
 
 static bool
+event_pipe_add_rundown_execution_checkpoint (const ep_char8_t *name);
+
+static bool
+event_pipe_add_rundown_execution_checkpoint_2 (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
+static ep_timestamp_t
+event_pipe_convert_100ns_ticks_to_timestamp_t (int64_t ticks_100ns);
+
+static bool
 event_pipe_get_session_info (
 	EventPipeSessionID session_id,
 	EventPipeSessionInfo *instance);
@@ -81,6 +92,9 @@ static MonoComponentEventPipe fn_table = {
 	&ep_get_wait_handle,
 	&ep_start_streaming,
 	&ep_write_event_2,
+	&event_pipe_add_rundown_execution_checkpoint,
+	&event_pipe_add_rundown_execution_checkpoint_2,
+	&event_pipe_convert_100ns_ticks_to_timestamp_t,
 	&ep_create_provider,
 	&ep_delete_provider,
 	&ep_get_provider,
@@ -179,6 +193,31 @@ event_pipe_get_next_event (
 	}
 
 	return next_instance != NULL;
+}
+
+static bool
+event_pipe_add_rundown_execution_checkpoint (const ep_char8_t *name)
+{
+	return ep_add_rundown_execution_checkpoint (name, ep_perf_timestamp_get ());
+}
+
+static bool
+event_pipe_add_rundown_execution_checkpoint_2 (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	return ep_add_rundown_execution_checkpoint (name, timestamp);
+}
+
+static ep_timestamp_t
+event_pipe_convert_100ns_ticks_to_timestamp_t (int64_t ticks_100ns)
+{
+	// Convert into event pipe timestamp from a relative number of 100ns ticks (+/-).
+	int64_t freq = ep_perf_frequency_query ();
+	ep_timestamp_t ticks = (ep_timestamp_t)(((double)ticks_100ns / 10000000) * freq);
+	ep_timestamp_t timestamp = ep_perf_timestamp_get () + ticks;
+
+	return timestamp > 0 ? timestamp : 0;
 }
 
 static bool
