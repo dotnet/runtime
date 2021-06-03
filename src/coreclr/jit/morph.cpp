@@ -6582,7 +6582,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             fgMorphStmt->SetRootNode(gtNewNothingNode());
         }
     }
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
     else if (call->gtCallType == CT_USER_FUNC)
     {
         FILE*   logFile;
