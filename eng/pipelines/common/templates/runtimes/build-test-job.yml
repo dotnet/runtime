@@ -86,10 +86,10 @@ jobs:
         value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
       - name: compilerArg
         value: ''
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
-      - name: compilerArg
-        value: '-clang9'
-      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
+        - name: compilerArg
+          value: '-clang9'
+        # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
