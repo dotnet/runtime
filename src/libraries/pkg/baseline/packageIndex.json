@@ -3602,6 +3602,12 @@
         "4.0.1.0": "4.3.0"
       }
     },
+    "System.IO.Hashing": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "6.0.0.0": "6.0.0"
+      }
+    },
     "System.IO.IsolatedStorage": {
       "StableVersions": [
         "4.0.0",
