@@ -19,7 +19,7 @@ globalThis.testConsole = console;
 
 function proxyMethod (prefix, func, asJson) {
 	return function() {
-		var args = [...arguments];
+		var args = [...raw_args];
 		if (asJson) {
 			func (JSON.stringify({
 				method: prefix,
@@ -58,10 +58,10 @@ if (is_browser) {
 
 	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
 	var url = new URL (decodeURI (window.location));
-	arguments = [];
+	var raw_args = [];
 	for (var v of url.searchParams) {
 		if (v [0] == "arg") {
-			arguments.push (v [1]);
+			raw_args.push (v [1]);
 		}
 	}
 }
@@ -93,28 +93,28 @@ if (typeof performance == 'undefined') {
 }
 
 try {
-	if (typeof arguments == "undefined")
-		arguments = WScript.Arguments;
+	if (typeof raw_args == "undefined")
+		raw_args = WScript.Arguments;
 	var load = WScript.LoadScriptFile;
 	var read = WScript.LoadBinaryFile;
 } catch (e) {
 }
 
 try {
-	if (typeof arguments == "undefined") {
+	if (typeof raw_args == "undefined") {
 		if (typeof scriptArgs !== "undefined")
-			arguments = scriptArgs;
+			raw_args = scriptArgs;
 	}
 } catch (e) {
 }
 
-if (arguments === undefined)
-	arguments = [];
+if (raw_args === undefined)
+	raw_args = [];
 
 //end of all the nice shell glue code.
 
 // set up a global variable to be accessed in App.init
-var testArguments = arguments;
+var testArguments = raw_args;
 
 function test_exit (exit_code) {
 	if (is_browser) {
@@ -373,7 +373,7 @@ var App = {
 		}
 	},
 	call_test_method: function (method_name, args, signature) {
-		if ((arguments.length > 2) && (typeof (signature) !== "string"))
+		if ((raw_args.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
 		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
