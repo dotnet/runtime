@@ -1924,6 +1924,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IOVector.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.IOVector.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LChflags.cs</Link>
     </Compile>
@@ -1975,8 +1978,14 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PRead.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PRead.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PReadV.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PReadV.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PWrite.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PWrite.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PWriteV.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PWriteV.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>

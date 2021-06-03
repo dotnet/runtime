@@ -22,6 +22,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
@@ -1477,4 +1478,28 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
 
     assert(count >= -1 && count <= bufferSize);
     return (int32_t)count;
+}
+
+int64_t SystemNative_PReadV(intptr_t fd, void* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    ssize_t count;
+    while ((count = preadv(ToFileDescriptor(fd), (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1);
+    return (int64_t)count;
+}
+
+int64_t SystemNative_PWriteV(intptr_t fd, void* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    ssize_t count;
+    while ((count = pwritev(ToFileDescriptor(fd), (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1);
+    return (int64_t)count;
 }

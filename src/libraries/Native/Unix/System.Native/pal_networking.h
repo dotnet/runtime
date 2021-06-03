@@ -276,7 +276,7 @@ typedef struct
 } LingerOption;
 
 // NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
-//       assertions in pal_networking.cpp that validate this.
+//       assertions in pal_networking.c that validate this.
 typedef struct
 {
     uint8_t* Base;

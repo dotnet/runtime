@@ -89,6 +89,11 @@ namespace System.IO
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<int> ReadAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
             ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
 
             return ReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
@@ -112,6 +117,11 @@ namespace System.IO
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<long> ReadAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<long>(cancellationToken);
+            }
+
             ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
             ValidateBuffers(buffers);
 
@@ -181,6 +191,11 @@ namespace System.IO
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<int> WriteAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
             ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
 
             return WriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
@@ -204,6 +219,11 @@ namespace System.IO
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<long> WriteAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<long>(cancellationToken);
+            }
+
             ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
             ValidateBuffers(buffers);
 
