@@ -467,6 +467,36 @@ void InlineContext::DumpData(unsigned indent)
 }
 
 //------------------------------------------------------------------------
+// EscapeNameForXml: Cheap xml quoting for values. Only < and & are
+//                   troublemakers, but change > for symmetry.
+//
+// Arguments:
+//    name     - string to escape (modifies content)
+
+static void EscapeNameForXml(char* name)
+{
+    int i = 0;
+    while (name[i] != '\0')
+    {
+        switch (name[i])
+        {
+            case '<':
+                name[i] = '[';
+                break;
+            case '>':
+                name[i] = ']';
+                break;
+            case '&':
+                name[i] = '#';
+                break;
+            default:
+                break;
+        }
+        i++;
+    }
+}
+
+//------------------------------------------------------------------------
 // DumpXml: Dump an InlineContext entry and all descendants in xml format
 //
 // Arguments:
@@ -499,6 +529,12 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         mdMethodDef calleeToken  = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
         unsigned    calleeHash   = compiler->compMethodHash(m_Callee);
         const char* inlineReason = InlGetObservationString(m_Observation);
+        const char* name         = compiler->eeGetMethodFullName(m_Callee);
+
+        char buf[1024];
+        strncpy(buf, name, sizeof(buf));
+        buf[sizeof(buf) - 1] = 0;
+        EscapeNameForXml(buf);
 
         int offset = -1;
         if (m_Offset != BAD_IL_OFFSET)
@@ -507,8 +543,13 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         }
 
         fprintf(file, "%*s<%s>\n", indent, "", inlineType);
-        fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
+        fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
         fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
+        fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
+        fprintf(file, "%*s<ILSize>%d</ILSize>\n", indent + 2, "", m_ILSize);
+        fprintf(file, "%*s<Devirtualized>%s</Devirtualized>\n", indent + 2, "", m_Devirtualized ? "true" : "false");
+        fprintf(file, "%*s<Guarded>%s</Guarded>\n", indent + 2, "", m_Guarded ? "true" : "false");
+        fprintf(file, "%*s<Unboxed>%s</Unboxed>\n", indent + 2, "", m_Unboxed ? "true" : "false");
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
 
@@ -1496,10 +1537,6 @@ CritSecObject InlineStrategy::s_XmlWriterLock;
 
 void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 {
-    if (JitConfig.JitInlineDumpXml() == 0)
-    {
-        return;
-    }
 
     // Lock to prevent interleaving of trees.
     CritSecHolder writeLock(s_XmlWriterLock);
@@ -1573,38 +1610,17 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 
     // Get method name just for root method, to make it a bit easier
     // to search for things in the inline xml.
-    const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+    const char* methodName = m_Compiler->eeGetMethodFullName(info.compMethodHnd);
 
-    // Cheap xml quoting for values. Only < and & are troublemakers,
-    // but change > for symmetry.
-    //
-    // Ok to truncate name, just ensure it's null terminated.
-    char buf[64];
+    char buf[1024];
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
-
-    for (size_t i = 0; i < _countof(buf); i++)
-    {
-        switch (buf[i])
-        {
-            case '<':
-                buf[i] = '[';
-                break;
-            case '>':
-                buf[i] = ']';
-                break;
-            case '&':
-                buf[i] = '#';
-                break;
-            default:
-                break;
-        }
-    }
+    EscapeNameForXml(buf);
 
     fprintf(file, "%*s<Method>\n", indent, "");
+    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
     fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", currentMethodToken);
     fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", hash);
-    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
     fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
     fprintf(file, "%*s<HotSize>%u</HotSize>\n", indent + 2, "", info.compTotalHotCodeSize);
     fprintf(file, "%*s<ColdSize>%u</ColdSize>\n", indent + 2, "", info.compTotalColdCodeSize);

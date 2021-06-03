@@ -435,7 +435,6 @@ CONFIG_INTEGER(EnableExtraSuperPmiQueries, W("EnableExtraSuperPmiQueries"), 0) /
 #endif                                                                         // DEBUG
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-CONFIG_STRING(JitListSuccessfulInlinesToFile, W("JitListSuccessfulInlinesToFile"))
 CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
 CONFIG_INTEGER(JitInlineDumpXml, W("JitInlineDumpXml"), 0) // 1 = full xml (+ failures in DEBUG)
                                                            // 2 = only methods with inlines (+ failures in DEBUG)

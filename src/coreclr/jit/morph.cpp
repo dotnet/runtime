@@ -6582,18 +6582,6 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             fgMorphStmt->SetRootNode(gtNewNothingNode());
         }
     }
-#if defined(DEBUG) || defined(INLINE_DATA)
-    else if (call->gtCallType == CT_USER_FUNC)
-    {
-        FILE*   logFile;
-        LPCWSTR logFileName = JitConfig.JitListSuccessfulInlinesToFile();
-        if ((logFileName != nullptr) && ((logFile = _wfopen(logFileName, W("a"))) != nullptr))
-        {
-            fprintf(logFile, "%s  <--  %s\n", info.compFullName, eeGetMethodFullName(call->gtCallMethHnd));
-            fclose(logFile);
-        }
-    }
-#endif
 }
 
 /*****************************************************************************
