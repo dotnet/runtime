@@ -66,6 +66,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				type.GetInterface ("ITestInterface").RequiresAll (); // Warns since only one of the values is guaranteed All
 			}
 
+			[ExpectedWarning ("IL2075", nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.Interfaces))]
+			static void TestMergedValues (int p, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type typeWithAll)
+			{
+				Type type = new TestType ().GetType ();
+				if (p == 0) {
+					type = typeWithAll;
+					type.GetInterface ("ITestInterface").RequiresInterfaces ();
+				}
+			}
+
 			public static void Test ()
 			{
 				TestNoAnnotation (typeof (TestType));
@@ -74,6 +84,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestWithAll (typeof (TestType));
 				TestKnownType ();
 				TestMultipleValues (0, typeof (TestType));
+				TestMergedValues (0, typeof (TestType));
 			}
 		}
 
