@@ -34,8 +34,9 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 100;
-        private const string BenchmarkServer = "10.194.114.94";
+        private const double LengthMb = 500;
+        //private const string BenchmarkServer = "10.194.114.94";
+        private const string BenchmarkServer = "192.168.0.152";
 
         [Theory]
         [InlineData(BenchmarkServer)]
@@ -93,11 +94,11 @@ namespace System.Net.Http.Functional.Tests
         public Task Download20_SpecificWindow_4M_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 4096)]
+        [InlineData(BenchmarkServer, 16384)]
         public Task Download20_SpecificWindow_16M_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 4096)]
+        [InlineData(BenchmarkServer, 16384)]
         public Task Download20_SpecificWindow_16M_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
 
@@ -113,8 +114,9 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Theory]
-        [InlineData("10.194.114.94:5001")]
-        [InlineData("10.194.114.94:5002")]
+        [InlineData(BenchmarkServer)]
+        //[InlineData("10.194.114.94:5001")]
+        //[InlineData("10.194.114.94:5002")]
         public async Task Download20_Dynamic_SingleStream_Run1(string hostName)
         {
             _listener.Enabled = true;
@@ -122,8 +124,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("10.194.114.94:5001")]
-        [InlineData("10.194.114.94:5002")]
+        [InlineData(BenchmarkServer)]
+        //[InlineData("10.194.114.94:5001")]
+        //[InlineData("10.194.114.94:5002")]
         public async Task Download20_Dynamic_SingleStream_Run2(string hostName)
         {
             _listener.Enabled = true;
@@ -131,8 +134,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("10.194.114.94:5001")]
-        [InlineData("10.194.114.94:5002")]
+        [InlineData(BenchmarkServer)]
+        //[InlineData("10.194.114.94:5001")]
+        //[InlineData("10.194.114.94:5002")]
         public async Task Download20_StaticRtt(string hostName)
         {
             _listener.Enabled = true;
@@ -141,12 +145,13 @@ namespace System.Net.Http.Functional.Tests
                 FakeRtt = await EstimateRttAsync(hostName)
             };
 
-            await TestHandler("SocketsHttpHandler HTTP 2.0 Dynamic single stream Run2", hostName, true, LengthMb, handler);
+            await TestHandler("SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT", hostName, true, LengthMb, handler);
         }
 
         [Theory]
-        [InlineData("10.194.114.94:5001")]
-        [InlineData("10.194.114.94:5002")]
+        [InlineData(BenchmarkServer)]
+        //[InlineData("10.194.114.94:5001")]
+        //[InlineData("10.194.114.94:5002")]
         public async Task Download20_Dynamic_MultiStream(string hostName)
         {
             _listener.Enabled = true;
@@ -211,7 +216,11 @@ namespace System.Net.Http.Functional.Tests
             PingReply reply1 = await ping.SendPingAsync(addr);
             PingReply reply2 = await ping.SendPingAsync(addr);
             TimeSpan rtt = TimeSpan.FromMilliseconds(reply1.RoundtripTime + reply2.RoundtripTime) / 2;
-            _output.WriteLine($"Estimated RTT: {rtt.TotalMilliseconds} ms");
+            _output.WriteLine($"Estimated RTT: {rtt}");
+            if (rtt == TimeSpan.Zero)
+            {
+                _output.WriteLine("RTT is indeed zero!");
+            }
             return rtt;
         }
 
