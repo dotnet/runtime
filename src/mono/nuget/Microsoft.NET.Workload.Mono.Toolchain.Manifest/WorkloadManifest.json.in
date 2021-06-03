@@ -30,6 +30,7 @@
       "abstract": true,
       "description": "Android Mono AOT Workload",
       "packs": [
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
