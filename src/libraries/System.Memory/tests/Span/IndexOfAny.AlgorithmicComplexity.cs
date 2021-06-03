@@ -127,7 +127,7 @@ namespace System.SpanTests
                 _isPoison = isPoison;
             }
 
-            public override bool Equals(object? obj) => base.Equals(obj);
+            public override bool Equals(object obj) => Equals(obj as CustomEquatableType<T>);
 
             public bool Equals(CustomEquatableType<T> other)
             {

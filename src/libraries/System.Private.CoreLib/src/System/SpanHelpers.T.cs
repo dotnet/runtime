@@ -990,7 +990,7 @@ namespace System
 
             if (typeof(T).IsValueType)
             {
-                for (int i = searchSpaceLength - 1; i >= 0; i--) // n.b. 'i' is signed so we can use negative bit to determine end of sequence
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
                 {
                     T candidate = Unsafe.Add(ref searchSpace, i);
                     for (int j = 0; j < valueLength; j++)
@@ -1004,10 +1004,7 @@ namespace System
             }
             else
             {
-                // Calling IEquatable<T>.Equals (virtual dispatch). We'll perform the null check
-                // in the outer loop instead of in the inner loop to save some branching.
-
-                for (int i = searchSpaceLength - 1; i >= 0; i--) // n.b. 'i' is signed so we can use negative bit to determine end of sequence
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
                 {
                     T candidate = Unsafe.Add(ref searchSpace, i);
                     if (candidate is not null)
