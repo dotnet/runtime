@@ -10734,7 +10734,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_ADDP_SCALAR: {
 			llvm_ovr_tag_t ovr_tag = INTRIN_vector128 | INTRIN_int64;
 			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UADDV, ovr_tag, &lhs, "arm64_addp_scalar");
-			result = LLVMBuildInsertElement (builder, LLVMGetUndef (v64_i8_t), result, const_int32 (0), "");
+			result = LLVMBuildInsertElement (builder, LLVMConstNull (v64_i8_t), result, const_int32 (0), "");
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10743,7 +10743,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef hi = LLVMBuildExtractElement (builder, lhs, const_int32 (0), "");
 			LLVMValueRef lo = LLVMBuildExtractElement (builder, lhs, const_int32 (1), "");
 			LLVMValueRef result = LLVMBuildFAdd (builder, hi, lo, "arm64_faddp_scalar");
-			result = LLVMBuildInsertElement (builder, LLVMGetUndef (ret_t), result, const_int32 (0), "");
+			result = LLVMBuildInsertElement (builder, LLVMConstNull (ret_t), result, const_int32 (0), "");
 			values [ins->dreg] = result;
 			break;
 		}
