@@ -305,7 +305,7 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        public static string MakeMarshalTypeRecord (Type type) {
+        private static string MakeMarshalTypeRecord (Type type) {
             return $"{{ \"marshalType\": {(int)GetMarshalTypeFromType(type)}, \"typePtr\": {type.TypeHandle.Value} }}";
         }
 
@@ -464,7 +464,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 "}");
         }
 
-        public static MarshalType GetMarshalTypeFromType (Type type) {
+        private static MarshalType GetMarshalTypeFromType (Type type) {
             if (type == null)
                 return MarshalType.VOID;
 
