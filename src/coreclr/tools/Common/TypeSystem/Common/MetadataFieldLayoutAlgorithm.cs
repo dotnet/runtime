@@ -840,13 +840,13 @@ namespace Internal.TypeSystem
                 result.Alignment = fieldType.Context.Target.LayoutPointerSize;
             }
 
-            if (!hasLayout || fieldType.Context.Target.Architecture != TargetArchitecture.ARM)
+            if (hasLayout)
             {
                 result.Alignment = LayoutInt.Min(result.Alignment, new LayoutInt(packingSize));
             }
-            else if (packingSize < 8)
+            else
             {
-                result.Alignment = LayoutInt.Min(result.Alignment, fieldType.Context.Target.LayoutPointerSize);
+                result.Alignment = LayoutInt.Min(result.Alignment, fieldType.Context.Target.GetObjectAlignment(result.Alignment));
             }
 
             return result;
