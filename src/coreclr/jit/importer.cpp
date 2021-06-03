@@ -18958,7 +18958,6 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     GenTreeCall::Use* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtCallArgs;
     for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
     {
-        // const CorInfoType corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
         CORINFO_CLASS_HANDLE sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
         GenTree*             argNode  = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
 
@@ -18991,7 +18990,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
                         inlineResult->Note(InlineObservation::CALLSITE_ARG_FINAL_SIG_IS_NOT);
                     }
                 }
-                else
+                else if (!eeIsValueClass(argCls))
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_FINAL);
                 }
