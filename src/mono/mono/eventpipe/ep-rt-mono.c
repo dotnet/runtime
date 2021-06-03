@@ -386,6 +386,24 @@ profiler_exception_clause (
 	MonoExceptionEnum clause_type,
 	MonoObject *exc);
 
+static
+void
+profiler_monitor_contention (
+	MonoProfiler *prof,
+	MonoObject *obj);
+
+static
+void
+profiler_monitor_acquired (
+	MonoProfiler *prof,
+	MonoObject *obj);
+
+static
+void
+profiler_monitor_failed (
+	MonoProfiler *prof,
+	MonoObject *obj);
+
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
  */
@@ -2288,6 +2306,40 @@ ep_rt_mono_write_event_exception_clause (
 }
 
 bool
+ep_rt_mono_write_event_monitor_contention_start (
+	MonoObject *obj,
+	EventPipeMonitorContentionFlags flags)
+{
+	if (!EventEnabledContentionStart_V1 ())
+		return true;
+
+	FireEtwContentionStart_V1 (
+		(uint8_t)flags,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_monitor_contention_stop (
+	MonoObject *obj,
+	EventPipeMonitorContentionFlags flags)
+{
+	if (!EventEnabledContentionStop ())
+		return true;
+
+	FireEtwContentionStop (
+		(uint8_t)flags,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
 ep_rt_write_event_threadpool_worker_thread_start (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,
@@ -2562,7 +2614,33 @@ profiler_exception_clause (
 	ep_rt_mono_write_event_exception_clause (method, clause_num, clause_type, exc);
 }
 
-// exception clauses.
+static
+void
+profiler_monitor_contention (
+	MonoProfiler *prof,
+	MonoObject *obj)
+{
+	ep_rt_mono_write_event_monitor_contention_start (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
+}
+
+static
+void
+profiler_monitor_acquired (
+	MonoProfiler *prof,
+	MonoObject *obj)
+{
+	ep_rt_mono_write_event_monitor_contention_stop (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
+}
+
+static
+void
+profiler_monitor_failed (
+	MonoProfiler *prof,
+	MonoObject *obj)
+{
+	ep_rt_mono_write_event_monitor_contention_stop (obj, EP_MONITOR_CONTENTION_FLAGS_MANAGED);
+}
+
 // contention
 // jit_code_buffer -> EventEnabledMethodJitMemoryAllocatedForCode
 //
@@ -2599,8 +2677,14 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
 			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, profiler_exception_throw);
 			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, profiler_exception_clause);
+			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, profiler_monitor_contention);
+			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, profiler_monitor_acquired);
+			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, profiler_monitor_failed);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
+			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, NULL);
