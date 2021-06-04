@@ -1,8 +1,16 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <!-- These are wrapper project files for packaging.-->
+  <!-- Even though this project doesn't compile, we keep the csproj extension so that the source
+       package infra globs for .cs files. -->
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <!-- Avoid trying to binplace non existent documentation file.-->
-    <EnableBinPlacing>false</EnableBinPlacing>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- The project doesn't compile anything therefore create the package during build. -->
+    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</GeneratePackageOnBuild>
+    <IsShipping>false</IsShipping>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- This is a source package which includes all .cs files by default. -->
+    <IsSourcePackage>true</IsSourcePackage>
+    <!-- This is non-shipping package. -->
+    <EnablePackageBaselineValidation>false</EnablePackageBaselineValidation>
+    <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
 </Project>

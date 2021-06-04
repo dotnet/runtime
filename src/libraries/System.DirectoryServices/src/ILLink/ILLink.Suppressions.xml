@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.Interop.UnsafeNativeMethods.IntADsOpenObject(System.String,System.String,System.String,System.Int32,System.Guid@,System.Object@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.DirectoryEntry.Invoke(System.String,System.Object[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.DirectoryEntry.InvokeGet(System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.DirectoryServices.DirectoryEntry.InvokeSet(System.String,System.Object[])</property>
+    </attribute>
+  </assembly>
+</linker>

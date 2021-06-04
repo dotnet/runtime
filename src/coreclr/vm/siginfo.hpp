@@ -506,53 +506,6 @@ private:
     TokenPairList *m_pNext;
 };  // class TokenPairList
 
-// Attempts to parse the provided calling convention names to construct a
-// calling convention with known modifiers.
-//
-// The Add* functions return false if the type is known but cannot be applied.
-// Otherwise, they return true.
-class CallConvBuilder final
-{
-public:
-    enum CallConvModifiers
-    {
-        CALL_CONV_MOD_NONE = 0,
-        CALL_CONV_MOD_SUPPRESSGCTRANSITION = 0x1,
-        CALL_CONV_MOD_MEMBERFUNCTION = 0x2
-    };
-
-    struct State
-    {
-        CorInfoCallConvExtension CallConvBase;
-        CallConvModifiers CallConvModifiers;
-    };
-
-private:
-    State _state;
-
-public:
-    // The initial "unset" base calling convention.
-    static const CorInfoCallConvExtension UnsetValue;
-
-    CallConvBuilder();
-
-    // Add a fully qualified type name to the calling convention computation.
-    bool AddFullyQualifiedTypeName(
-        _In_ size_t typeLength,
-        _In_z_ LPCSTR typeName);
-
-    // Add a simple type name to the calling convention computation.
-    bool AddTypeName(
-        _In_ size_t typeLength,
-        _In_z_ LPCSTR typeName);
-
-    // Get the currently computed calling convention value.
-    CorInfoCallConvExtension GetCurrentCallConv() const;
-
-    // Check if the modifier is set on the computed calling convention.
-    bool IsCurrentCallConvModSet(_In_ CallConvModifiers mod) const;
-};
-
 //---------------------------------------------------------------------------------------
 //
 class MetaSig
@@ -683,7 +636,6 @@ class MetaSig
         // defines in cor.h) - throws.
         //----------------------------------------------------------
         static BYTE GetCallingConvention(
-            Module          *pModule,
             const Signature &signature)
         {
             CONTRACTL
@@ -710,7 +662,6 @@ class MetaSig
         //----------------------------------------------------------
         __checkReturn
         static HRESULT GetCallingConvention_NoThrow(
-            Module          *pModule,
             const Signature &signature,
             BYTE            *pbCallingConvention)
         {
@@ -798,7 +749,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is vararg?
         //----------------------------------------------------------
-        static BOOL IsVarArg(Module *pModule, const Signature &signature)
+        static BOOL IsVarArg(const Signature &signature)
         {
             CONTRACTL
             {
@@ -812,7 +763,7 @@ class MetaSig
             HRESULT hr;
             BYTE    nCallingConvention;
 
-            hr = GetCallingConvention_NoThrow(pModule, signature, &nCallingConvention);
+            hr = GetCallingConvention_NoThrow(signature, &nCallingConvention);
             if (FAILED(hr))
             {   // Invalid signatures are not VarArg
                 return FALSE;
@@ -825,31 +776,6 @@ class MetaSig
             LIMITED_METHOD_DAC_CONTRACT;
 
             return m_pModule;
-        }
-
-        //----------------------------------------------------------
-        // Gets the unmanaged calling convention by reading any modopts.
-        //
-        // Returns:
-        //   S_OK - No errors
-        //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
-        //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
-        //                          than one calling convention specified)
-        //----------------------------------------------------------
-        static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
-            _In_ CORINFO_MODULE_HANDLE pModule,
-            _In_ PCCOR_SIGNATURE pSig,
-            _In_ ULONG cSig,
-            _Inout_ CallConvBuilder *builder,
-            _Out_ UINT *errorResID);
-
-        static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
-        {
-#ifdef TARGET_UNIX
-            return CorInfoCallConvExtension::C;
-#else // TARGET_UNIX
-            return CorInfoCallConvExtension::Stdcall;
-#endif // !TARGET_UNIX
         }
 
         //------------------------------------------------------------------

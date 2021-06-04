@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows;netstandard2.0;netcoreapp2.0-windows;netstandard2.0-windows;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
@@ -52,13 +52,10 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' and '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetsWindows)' != 'true' ">
-    <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="System\Text\CodePagesEncodingProvider.netcoreapp.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.netcoreapp.cs" />
   </ItemGroup>
@@ -72,8 +69,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
-                        $(TargetFramework.StartsWith('netcoreapp2.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
@@ -84,7 +80,7 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

@@ -996,6 +996,7 @@ MonoType *mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o
 
 MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 
 MonoGenericInst *

@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -14,7 +15,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal readonly DirectoryContext context;
         internal bool initialized;
         internal readonly Hashtable? changeList;
-        private readonly ArrayList _copyList = new ArrayList();
+        private readonly List<object> _copyList = new();
         private readonly DirectoryEntry? _crossRefEntry;
         private readonly bool _isADAM;
         private readonly bool _isForNC;
@@ -263,7 +264,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 for (int i = 0; i < _copyList.Count; i++)
                 {
-                    OnRemoveComplete(i, _copyList[i]!);
+                    OnRemoveComplete(i, _copyList[i]);
                 }
             }
         }
@@ -397,7 +398,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal string[] GetMultiValuedProperty()
         {
-            ArrayList values = new ArrayList();
+            var values = new List<string>();
             for (int i = 0; i < InnerList.Count; i++)
             {
                 DirectoryServer ds = (DirectoryServer)InnerList[i]!;
@@ -405,7 +406,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string ntdsaName = (ds is DomainController) ? ((DomainController)ds).NtdsaObjectName : ((AdamInstance)ds).NtdsaObjectName;
                 values.Add(ntdsaName);
             }
-            return (string[])values.ToArray(typeof(string));
+            return values.ToArray();
         }
     }
 }

@@ -20,6 +20,7 @@
 static volatile uint32_t _server_shutting_down_state = 0;
 static ep_rt_wait_event_handle_t _server_resume_runtime_startup_event = { 0 };
 static bool _server_disabled = false;
+static volatile bool _is_paused_for_startup = false;
 
 static
 inline
@@ -255,9 +256,12 @@ ds_server_shutdown (void)
 void
 ds_server_pause_for_diagnostics_monitor (void)
 {
+    _is_paused_for_startup = true;
+
 	if (ds_ipc_stream_factory_any_suspended_ports ()) {
 		EP_ASSERT (ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event));
 		DS_LOG_ALWAYS_0 ("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
+
 		if (ep_rt_wait_event_wait (&_server_resume_runtime_startup_event, 5000, false) != 0) {
 			ds_rt_server_log_pause_message ();
 			DS_LOG_ALWAYS_0 ("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waited 5 seconds.");
@@ -272,8 +276,16 @@ void
 ds_server_resume_runtime_startup (void)
 {
 	ds_ipc_stream_factory_resume_current_port ();
-	if (!ds_ipc_stream_factory_any_suspended_ports () && ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event))
+	if (!ds_ipc_stream_factory_any_suspended_ports () && ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event)) {
 		ep_rt_wait_event_set (&_server_resume_runtime_startup_event);
+        _is_paused_for_startup = false;
+	}
+}
+
+bool
+ds_server_is_paused_in_startup (void)
+{
+	return _is_paused_for_startup;
 }
 
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */

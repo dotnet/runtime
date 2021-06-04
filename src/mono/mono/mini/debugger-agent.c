@@ -8745,8 +8745,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (suspend_count)
 				wait_for_suspend();
 		}
-		int context_size = 0;
-		uint8_t * contextMemoryReceived = m_dbgprot_decode_byte_array(p, &p, end, &context_size);
+		int64_t sp_received = m_dbgprot_decode_long(p, &p, end);
 
 		mono_loader_lock();
 		tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread);
@@ -8756,17 +8755,14 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		compute_frame_info(thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
 
-		MonoContext ctx;
-		memcpy(&ctx, contextMemoryReceived+POS_RAX, sizeof(MonoContext));
 		for (int i = 0; i < tls->frame_count; i++)
 		{
-			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p] - [%p]\n", i, MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx), MONO_CONTEXT_GET_SP(&ctx));
-			if (MONO_CONTEXT_GET_SP(&ctx) == MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx)) {
+			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%lld] - [%lld]\n", i, (uint64_t) MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx), sp_received);
+			if (sp_received == (uint64_t)MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx)) {
 				buffer_add_int(buf, i);
 				break;
 			}
 		}
-		g_free (contextMemoryReceived);
 		break;
 	}
 	case MDBGPROT_CMD_THREAD_GET_CONTEXT: {
@@ -8788,7 +8784,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (start_frame < tls->frame_count)
 		{
-			buffer_add_byte_array (buf, (uint8_t *)&tls->frames [start_frame]->ctx, sizeof(MonoContext));
+			buffer_add_long(buf, (uint64_t)MONO_CONTEXT_GET_SP (&tls->frames [start_frame]->ctx));
 		}
 		break;
 	}
@@ -9654,7 +9650,9 @@ static const char* vm_cmds_str [] = {
 	"GET_TYPES",
 	"INVOKE_METHODS",
 	"START_BUFFERING",
-	"STOP_BUFFERING"
+	"STOP_BUFFERING",
+	"READ_MEMORY",
+	"WRITE_MEMORY"
 };
 
 static const char* thread_cmds_str[] = {

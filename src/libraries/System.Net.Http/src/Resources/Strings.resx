@@ -150,9 +150,6 @@
   <data name="net_http_headers_invalid_host_header" xml:space="preserve">
     <value>The specified value is not a valid 'Host' header string.</value>
   </data>
-  <data name="net_http_headers_invalid_from_header" xml:space="preserve">
-    <value>The specified value is not a valid 'From' header string.</value>
-  </data>
   <data name="net_http_headers_invalid_etag_name" xml:space="preserve">
     <value>The specified value is not a valid quoted string.</value>
   </data>
@@ -228,9 +225,6 @@
   <data name="net_http_log_headers_invalid_quality" xml:space="preserve">
     <value>The 'q' value is invalid: '{0}'.</value>
   </data>
-  <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
-    <value>Value '{0}' is not a valid email address</value>
-  </data>
   <data name="net_http_handler_not_assigned" xml:space="preserve">
     <value>The inner handler has not been assigned.</value>
   </data>
@@ -269,18 +263,6 @@
   </data>
   <data name="net_http_value_must_be_greater_than_or_equal" xml:space="preserve">
     <value>The specified value '{0}' must be greater than or equal to '{1}'.</value>
-  </data>
-  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
-    <value>An invalid character was found in the mail header: '{0}'.</value>
-  </data>
-  <data name="MailAddressInvalidFormat" xml:space="preserve">
-    <value>The specified string is not in the form required for an e-mail address.</value>
-  </data>
-  <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
-    <value>The mail header is malformed.</value>
-  </data>
-  <data name="InvalidHeaderName" xml:space="preserve">
-    <value>An invalid character was found in header name.</value>
   </data>
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>

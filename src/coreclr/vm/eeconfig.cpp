@@ -683,7 +683,7 @@ HRESULT EEConfig::sync()
         bLogCCWRefCountChange = true;
 
     fEnableRCWCleanupOnSTAShutdown = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableRCWCleanupOnSTAShutdown) != 0);
-    m_fBuiltInCOMInteropSupported = Configuration::GetKnobBooleanValue(W("System.Runtime.InteropServices.Marshal.IsComSupported"), true);
+    m_fBuiltInCOMInteropSupported = Configuration::GetKnobBooleanValue(W("System.Runtime.InteropServices.BuiltInComInterop.IsSupported"), true);
 #endif // FEATURE_COMINTEROP
 
 #ifdef _DEBUG
@@ -813,17 +813,7 @@ HRESULT EEConfig::sync()
 
         tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
 
-        bool hasSingleProcessor;
-#ifndef TARGET_UNIX
-        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-        {
-            hasSingleProcessor = CPUGroupInfo::GetNumActiveProcessors() == 1;
-        }
-        else
-#endif
-        {
-            hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
-        }
+        bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
             DWORD delayMultiplier = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DelaySingleProcMultiplier);

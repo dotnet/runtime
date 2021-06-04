@@ -1000,6 +1000,34 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo? s_getMemoryStreamMethod;
+        internal static MethodInfo GetMemoryStreamMethod
+        {
+            get
+            {
+                if (s_getMemoryStreamMethod == null)
+                {
+                    s_getMemoryStreamMethod = typeof(MemoryStreamAdapter).GetMethod("GetMemoryStream", Globals.ScanAllMembers);
+                    Debug.Assert(s_getMemoryStreamMethod != null);
+                }
+                return s_getMemoryStreamMethod;
+            }
+        }
+
+        private static MethodInfo? s_getMemoryStreamAdapterMethod;
+        internal static MethodInfo GetMemoryStreamAdapterMethod
+        {
+            get
+            {
+                if (s_getMemoryStreamAdapterMethod == null)
+                {
+                    s_getMemoryStreamAdapterMethod = typeof(MemoryStreamAdapter).GetMethod("GetMemoryStreamAdapter", Globals.ScanAllMembers);
+                    Debug.Assert(s_getMemoryStreamAdapterMethod != null);
+                }
+                return s_getMemoryStreamAdapterMethod;
+            }
+        }
+
         private static MethodInfo? s_getTypeHandleMethod;
         internal static MethodInfo GetTypeHandleMethod
         {

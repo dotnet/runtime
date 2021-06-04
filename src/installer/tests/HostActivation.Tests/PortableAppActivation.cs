@@ -456,16 +456,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         [InlineData(true)]
         [InlineData(false)]
         public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
 
@@ -521,13 +516,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_GUI_NoCustomErrorWriter_FrameworkMissing_ErrorReportedInDialog()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
 
@@ -564,14 +555,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_GUI_FrameworkDependent_DisabledGUIErrors_DialogNotShown()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
 

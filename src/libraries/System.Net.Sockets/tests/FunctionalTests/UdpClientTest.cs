@@ -257,6 +257,7 @@ namespace System.Net.Sockets.Tests
 
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "BSD like doesn't have an equivalent of DontFragment")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DontFragment_Roundtrips()
         {
             using (var udpClient = new UdpClient())
@@ -282,7 +283,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void EnableBroadcast_Roundtrips()
         {
             using (var udpClient = new UdpClient())

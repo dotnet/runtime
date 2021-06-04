@@ -5480,7 +5480,8 @@ namespace System.Threading.Tasks
         /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">
-        /// The provided <paramref name="cancellationToken"/> has already been disposed.
+        /// The <see cref="CancellationTokenSource"/> associated
+        /// with <paramref name="cancellationToken"/> has already been disposed.
         /// </exception>
         /// <remarks>
         /// If the cancellation token is signaled before the specified time delay, then the Task is completed in
@@ -5513,7 +5514,8 @@ namespace System.Threading.Tasks
         /// The <paramref name="millisecondsDelay"/> is less than -1.
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">
-        /// The provided <paramref name="cancellationToken"/> has already been disposed.
+        /// The <see cref="CancellationTokenSource"/> associated
+        /// with <paramref name="cancellationToken"/> has already been disposed.
         /// </exception>
         /// <remarks>
         /// If the cancellation token is signaled before the specified time delay, then the Task is completed in

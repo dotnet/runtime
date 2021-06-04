@@ -9,21 +9,21 @@ touch /var/log/kerberos/kadmin.log
 touch /var/log/kerberos/krb5lib.log
 
 # Create Kerberos database
-kdb5_util create -r LINUX.CONTOSO.COM -P password -s
+kdb5_util create -r LINUX.CONTOSO.COM -P PLACEHOLDERadmin. -s
 
 # Start KDC service
 krb5kdc
 
 # Add users
-kadmin.local -q "add_principal -pw password root/admin@LINUX.CONTOSO.COM"
-kadmin.local -q "add_principal -pw password user1@LINUX.CONTOSO.COM"
+kadmin.local -q "add_principal -pw PLACEHOLDERcorrect20 root/admin@LINUX.CONTOSO.COM"
+kadmin.local -q "add_principal -pw PLACEHOLDERcorrect20 user1@LINUX.CONTOSO.COM"
 
 # Add SPNs for services
-kadmin.local -q "add_principal -pw password HTTP/apacheweb.linux.contoso.com"
-kadmin.local -q "add_principal -pw password HTTP/altweb.linux.contoso.com:8080"
-kadmin.local -q "add_principal -pw password HOST/linuxclient.linux.contoso.com"
-kadmin.local -q "add_principal -pw password HOST/localhost"
-kadmin.local -q "add_principal -pw password NEWSERVICE/localhost"
+kadmin.local -q "add_principal -pw PLACEHOLDERadmin. HTTP/apacheweb.linux.contoso.com"
+kadmin.local -q "add_principal -pw PLACEHOLDERadmin. HTTP/altweb.linux.contoso.com:8080"
+kadmin.local -q "add_principal -pw PLACEHOLDERadmin. HOST/linuxclient.linux.contoso.com"
+kadmin.local -q "add_principal -pw PLACEHOLDERadmin. HOST/localhost"
+kadmin.local -q "add_principal -pw PLACEHOLDERadmin. NEWSERVICE/localhost"
 
 # Create keytab files for other machines
 kadmin.local ktadd -k /SHARED/apacheweb.keytab -norandkey -glob "HTTP/*web*"

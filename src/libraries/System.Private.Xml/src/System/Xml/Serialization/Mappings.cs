@@ -5,6 +5,8 @@ namespace System.Xml.Serialization
 {
     using System.Reflection;
     using System.Collections;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Xml.Schema;
     using System;
     using System.Text;
@@ -765,14 +767,14 @@ namespace System.Xml.Serialization
             Array.Sort(elements, new AccessorComparer());
         }
 
-        internal sealed class AccessorComparer : IComparer
+        internal sealed class AccessorComparer : IComparer<ElementAccessor>
         {
-            public int Compare(object? o1, object? o2)
+            public int Compare(ElementAccessor? a1, ElementAccessor? a2)
             {
-                if (o1 == o2)
+                if (a1 == a2)
                     return 0;
-                Accessor a1 = (Accessor)o1!;
-                Accessor a2 = (Accessor)o2!;
+                Debug.Assert(a1 != null);
+                Debug.Assert(a2 != null);
                 int w1 = a1.Mapping!.TypeDesc!.Weight;
                 int w2 = a2.Mapping!.TypeDesc!.Weight;
                 if (w1 == w2)
@@ -880,13 +882,12 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal sealed class MemberMappingComparer : IComparer
+    internal sealed class MemberMappingComparer : IComparer<MemberMapping>
     {
-        public int Compare(object? o1, object? o2)
+        public int Compare(MemberMapping? m1, MemberMapping? m2)
         {
-            MemberMapping m1 = (MemberMapping)o1!;
-            MemberMapping m2 = (MemberMapping)o2!;
-
+            Debug.Assert(m1 != null);
+            Debug.Assert(m2 != null);
             bool m1Text = m1.IsText;
             if (m1Text)
             {

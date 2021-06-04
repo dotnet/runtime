@@ -40,7 +40,7 @@ bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
     return (res != FALSE);
 }
 
-pal::string_t pal::to_lower(const pal::string_t& in)
+pal::string_t pal::to_lower(const pal::char_t* in)
 {
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(), ::towlower);
@@ -569,7 +569,7 @@ bool pal::get_module_path(dll_t mod, string_t* recv)
     return GetModuleFileNameWrapper(mod, recv);
 }
 
-bool pal::get_temp_directory(pal::string_t& tmp_dir)
+bool get_extraction_base_parent_directory(pal::string_t& directory)
 {
     const size_t max_len = MAX_PATH + 1;
     pal::char_t temp_path[max_len];
@@ -581,14 +581,14 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     }
 
     assert(len < max_len);
-    tmp_dir.assign(temp_path);
+    directory.assign(temp_path);
 
-    return realpath(&tmp_dir);
+    return pal::realpath(&directory);
 }
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
 {
-    if (!get_temp_directory(extraction_dir))
+    if (!get_extraction_base_parent_directory(extraction_dir))
     {
         return false;
     }

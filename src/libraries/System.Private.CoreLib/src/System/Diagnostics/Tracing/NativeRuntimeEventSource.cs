@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
+
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -9,7 +11,7 @@ namespace System.Diagnostics.Tracing
     /// Microsoft-Windows-DotNETRuntime provider and will throw a NotImplementedException without hand-written overloads of the Events.
     /// To have a runtime event be fired from the managed code, you need to add a managed definition for that event
     /// and call into the native runtime that invoke the appropriate native sinks for the platform (i.e. ETW, EventPipe, LTTng).
-    /// To see some examples of this, refer to NativeRuntimeEventSource.PortableThreadPool.CoreClr.cs and NativeRuntimeEventSource.PortableThreadPool.cs.
+    /// To see some examples of this, refer to NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs and NativeRuntimeEventSource.PortableThreadPool.cs.
     /// Then, modify genRuntimeEventSources.py to skip over the event so that it doesn't generate the dummy method.
     /// </summary>
     [EventSource(Guid = "E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4", Name = EventSourceName)]
@@ -51,13 +53,15 @@ namespace System.Diagnostics.Tracing
 
             // Decode the payload.
             object[] decodedPayloadFields = EventPipePayloadDecoder.DecodePayload(ref m_eventData[eventID], payload);
-            WriteToAllListeners(
-                eventId: (int)eventID,
-                osThreadId: &osThreadID,
-                timeStamp: &timeStamp,
-                activityID: &activityId,
-                childActivityID: &childActivityId,
-                args: decodedPayloadFields);
+
+            var eventCallbackArgs = new EventWrittenEventArgs(this, (int)eventID, &activityId, &childActivityId)
+            {
+                OSThreadId = (int)osThreadID,
+                TimeStamp = timeStamp,
+                Payload = new ReadOnlyCollection<object?>(decodedPayloadFields)
+            };
+
+            DispatchToAllListeners(eventCallbackArgs);
         }
 #endif // FEATURE_PERFTRACING
     }

@@ -6,10 +6,7 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
-    <PackageFile Include="buildTransitive\System.Drawing.Common.targets"
-                 TargetPath="buildTransitive\netcoreapp2.0" />
-    <File Include="$(PlaceHolderFile)"
-          TargetPath="buildTransitive\netcoreapp3.0" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -143,6 +143,11 @@ namespace System.Runtime.Serialization.Json
                     _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfDateTimeOffset);
                     _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetAdapterMethod);
                 }
+                else if (objType == Globals.TypeOfMemoryStreamAdapter)
+                {
+                    _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfMemoryStream);
+                    _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamAdapterMethod);
+                }
                 //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>.
                 else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
                 {

@@ -160,3 +160,7 @@ if(HOST_IOS)
 elseif(HOST_MACCAT)
   set(HAVE_SYSTEM 0)
 endif()
+
+if(HOST_BROWSER)
+  set(HAVE_FORK 0)
+endif()

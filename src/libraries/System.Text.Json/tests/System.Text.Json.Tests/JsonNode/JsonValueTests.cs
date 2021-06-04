@@ -5,14 +5,23 @@ using System.IO;
 using System.Text.Json.Serialization;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonValueTests
     {
         [Fact]
         public static void CreateFromNull()
         {
+            Assert.Null(JsonValue.Create((bool?)null));
+            Assert.Null(JsonValue.Create((string)null));
+            Assert.Null(JsonValue.Create((JsonElement?)null));
+            Assert.Null(JsonValue.Create(JsonDocument.Parse("null").RootElement));
+
             Assert.Null(JsonValue.Create((object)null));
+            Assert.Null(JsonValue.Create((bool?)null));
+            Assert.Null(JsonValue.Create((string)null));
+            Assert.Null(JsonValue.Create((JsonElement?)null));
+            Assert.Null(JsonValue.Create(JsonDocument.Parse("null").RootElement));
         }
 
         [Fact]
