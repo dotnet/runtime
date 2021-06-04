@@ -42,15 +42,7 @@ namespace Internal.Cryptography
                     throw new CryptographicException();
                 }
 
-                int length = destination.Length;
-
-                Check(Interop.Crypto.HmacOneShot(
-                    evpType,
-                    key,
-                    source,
-                    destination,
-                    out int written));
-
+                int written = Interop.Crypto.HmacOneShot(evpType, key, source, destination);
                 Debug.Assert(written == hashSize);
                 return written;
             }
