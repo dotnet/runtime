@@ -2886,7 +2886,7 @@ mono_insert_branches_between_bblocks (MonoCompile *cfg)
 	}
 }
 
-static void
+static G_GNUC_UNUSED void
 remove_empty_finally_pass (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
@@ -2918,6 +2918,7 @@ remove_empty_finally_pass (MonoCompile *cfg)
 					break;
 				}
 				MONO_BB_FOR_EACH_INS (bb, ins) {
+					// FIXME: OP_MOVE has no side effect, but it can still modify state
 					if (!(ins->opcode == OP_START_HANDLER || ins->opcode == OP_ENDFINALLY || MONO_INS_HAS_NO_SIDE_EFFECT (ins))) {
 						empty = FALSE;
 						break;
@@ -3582,7 +3583,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "if_conversion");
 	}
 
-	remove_empty_finally_pass (cfg);
+	// See the FIXME in the function
+	//remove_empty_finally_pass (cfg);
 
 	mono_threads_safepoint ();
 
