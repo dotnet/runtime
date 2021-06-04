@@ -1451,9 +1451,9 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the sine of the specified angle measured in half-turns.
+        /// Returns the sine of the specified angle measured in half-revolutions.
         /// </summary>
-        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
         /// <returns>The sine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
         /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
         /// <remarks>
@@ -1506,9 +1506,9 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the cosine of the specified angle measured in half-turns.
+        /// Returns the cosine of the specified angle measured in half-revolutions.
         /// </summary>
-        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
         /// <returns>The cosine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
         /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
         /// <remarks>
@@ -1561,9 +1561,9 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the tangent of the specified angle measured in half-turns.
+        /// Returns the tangent of the specified angle measured in half-revolutions.
         /// </summary>
-        /// <param name="x">An angle, measured in half-turns.</param>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
         /// <returns>The tangent of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
         /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
         /// <remarks>
@@ -1625,32 +1625,32 @@ namespace System
         // Guarded in unit test.
 
         /// <summary>
-        /// Returns the angle measured in half-turns whose sine is the specified number.
+        /// Returns the angle measured in half-revolutions whose sine is the specified number.
         /// </summary>
         /// <param name="x">A number representing a sine, where <paramref name="x"/> must be greater than or equal to -1, but
         /// less than or equal to 1.</param>
-        /// <returns>An angle, θ, measured in half-turns, such that -0.5 ≤ θ ≤ 0.5.
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
         /// -or-
         /// <see cref="double.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
         /// or <paramref name="x"/> equals <see cref="double.NaN"/>.</returns>
         public static double AsinPi(double x) => Asin(x) / PI;
 
         /// <summary>
-        /// Returns the angle measured in half-turns whose cosine is the specified number.
+        /// Returns the angle measured in half-revolutions whose cosine is the specified number.
         /// </summary>
         /// <param name="x">A number representing a cosine, where <paramref name="x"/> must be greater than or equal to -1, but
         /// less than or equal to 1.</param>
-        /// <returns>An angle, θ, measured in half-turns, such that -0.5 ≤ θ ≤ 0.5.
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
         /// -or-
         /// <see cref="double.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
         /// or <paramref name="x"/> equals <see cref="double.NaN"/>.</returns>
         public static double AcosPi(double x) => Acos(x) / PI;
 
         /// <summary>
-        /// Returns the angle measured in half-turns whose tangent is the specified number.
+        /// Returns the angle measured in half-revolutions whose tangent is the specified number.
         /// </summary>
         /// <param name="x">A number representing a tangent.</param>
-        /// <returns>An angle, θ, measured in half-turns, such that -0.5 ≤ θ ≤ 0.5.
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
         /// -or-
         /// <see cref="double.NaN"/> if <paramref name="x"/> equals <see cref="double.NaN"/>,
         /// -0.5 if <paramref name="x"/> equals <see cref="double.NegativeInfinity"/>,
@@ -1658,11 +1658,11 @@ namespace System
         public static double AtanPi(double x) => Atan(x) / PI;
 
         /// <summary>
-        /// Returns the angle whose measured in half-turns tangent is the quotient of two specified numbers.
+        /// Returns the angle whose measured in half-revolutions tangent is the quotient of two specified numbers.
         /// </summary>
         /// <param name="y">The y coordinate of a point.</param>
         /// <param name="x">The x coordinate of a point.</param>
-        /// <returns>An angle, θ, measured in half-turns, such that -1 ≤ θ ≤ 1, and tan(θ) = y / x,
+        /// <returns>An angle, θ, measured in half-revolutions, such that -1 ≤ θ ≤ 1, and tan(θ) = y / x,
         /// where (x, y) is a point in the Cartesian plane. Observe the following:
         /// <list type="bullet">
         /// <item>For (x, y) in quadrant 1, 0 &lt; θ &lt; 0.5. </item>
