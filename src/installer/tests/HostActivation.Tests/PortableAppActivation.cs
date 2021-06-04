@@ -300,7 +300,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 string architecture = fixture.CurrentRid.Split('-')[1];
                 if (useRegisteredLocation)
                 {
-                    registeredInstallLocationOverride.SetInstallLocation(new string[] { builtDotnet }, architecture);
+                    registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });
                 }
 
                 // Verify running with the default working directory

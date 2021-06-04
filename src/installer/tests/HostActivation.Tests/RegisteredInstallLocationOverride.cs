@@ -4,8 +4,10 @@
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -61,19 +63,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        public void SetInstallLocation(string[] installLocation, string architecture = "")
+        public void SetInstallLocation(params (string Architecture, string Path)[] locations)
         {
+            var locationsList = locations.ToList();
+            Debug.Assert(locationsList.Count >= 1);
             if (OperatingSystem.IsWindows())
             {
-                Debug.Assert(installLocation.Length >= 1 && !string.IsNullOrEmpty(architecture));
-                using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{architecture}"))
+                // Only the first location is used on Windows
+                using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{locationsList[0].Architecture}"))
                 {
-                    dotnetLocationKey.SetValue("InstallLocation", installLocation[0]);
+                    dotnetLocationKey.SetValue("InstallLocation", locationsList[0].Path);
                 }
             }
             else
             {
-                File.WriteAllText(PathValueOverride, string.Join (Environment.NewLine, installLocation));
+                File.WriteAllText(PathValueOverride, string.Join (Environment.NewLine,
+                    locationsList.Select(l => string.Format("{0}{1}".ToLower(),
+                        (!string.IsNullOrWhiteSpace(l.Architecture) ? l.Architecture + "=" : ""), l.Path))));
             }
         }
 

@@ -252,17 +252,6 @@ namespace pal
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
-    inline string_t to_lower(const char_t* in) {
-        pal::string_t ret = in;
-        std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
-        return ret;
-    }
-
-    inline string_t to_upper(const char_t* in) {
-        pal::string_t ret = in;
-        std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
-        return ret;
-    }
 
     inline void file_flush(FILE *f) { std::fflush(f); }
     inline void err_flush() { std::fflush(stderr); }

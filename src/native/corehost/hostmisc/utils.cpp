@@ -351,7 +351,7 @@ bool try_stou(const pal::string_t& str, unsigned* num)
 pal::string_t get_dotnet_root_env_var_name()
 {
     pal::string_t dotnet_root_arch = _X("DOTNET_ROOT_"), path;
-    dotnet_root_arch.append(pal::to_upper(get_arch()));
+    dotnet_root_arch.append(to_upper(get_arch()));
     if (pal::getenv(dotnet_root_arch.c_str(), &path))
         return dotnet_root_arch;
 
@@ -448,6 +448,18 @@ pal::string_t get_download_url(const pal::char_t *framework_name, const pal::cha
     url.append(rid);
 
     return url;
+}
+
+pal::string_t to_lower(const pal::char_t* in) {
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
+    return ret;
+}
+
+pal::string_t to_upper(const pal::char_t* in) {
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
+    return ret;
 }
 
 #define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"

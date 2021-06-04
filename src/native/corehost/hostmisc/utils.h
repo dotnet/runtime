@@ -54,6 +54,9 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path);
 // If no framework is specified, a download URL for the runtime is returned
 pal::string_t get_download_url(const pal::char_t *framework_name = nullptr, const pal::char_t *framework_version = nullptr);
 
+pal::string_t to_lower(const pal::char_t* in);
+pal::string_t to_upper(const pal::char_t* in);
+
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
 // with test-only marker.
