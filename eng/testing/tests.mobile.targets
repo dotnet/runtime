@@ -136,11 +136,7 @@
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-<<<<<<< HEAD
     <DevTeamProvisioning Condition="('$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS') and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
-=======
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
->>>>>>> upstream/main
   </PropertyGroup>
 
   <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
