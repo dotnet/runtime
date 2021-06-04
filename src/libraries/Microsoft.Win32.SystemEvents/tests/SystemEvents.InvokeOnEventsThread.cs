@@ -74,7 +74,7 @@ namespace Microsoft.Win32.SystemEventsTests
 
                 Assert.True(changing);
                 Assert.True(changed);
-            });
+            }).Dispose();
         }
     }
 }

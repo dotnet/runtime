@@ -5414,7 +5414,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 // A Vector3 return value is stored in xmm0 and xmm1.
                 // RyuJIT assumes that the upper unused bits of xmm1 are cleared but
                 // the native compiler doesn't guarantee it.
-                if (returnType == TYP_SIMD12)
+                if (call->IsUnmanaged() && (returnType == TYP_SIMD12))
                 {
                     returnReg = retTypeDesc->GetABIReturnReg(1);
                     // Clear the upper 32 bits by two shift instructions.

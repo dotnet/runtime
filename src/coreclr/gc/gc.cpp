@@ -3768,9 +3768,18 @@ bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end)
 
 // Large regions are 8x basic region sizes by default. If you need a larger region than that,
 // call allocate_region with the size.
-bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction)
+bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size)
 {
-    return allocate_region (large_region_alignment, start, end, direction);
+    if (size == 0)
+        size = large_region_alignment;
+    else
+    {
+        // round up size to a multiple of large_region_alignment
+        // for the below computation to work, large_region_alignment must be a power of 2
+        assert (round_up_power2(large_region_alignment) == large_region_alignment);
+        size = (size + (large_region_alignment - 1)) & ~(large_region_alignment - 1);
+    }
+    return allocate_region (size, start, end, direction);
 }
 
 void region_allocator::delete_region (uint8_t* region_start)
@@ -5649,7 +5658,7 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #endif //MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
-    heap_segment* res = hp->get_new_region (gen_number);
+    heap_segment* res = hp->get_new_region (gen_number, size);
 #else //USE_REGIONS
     gc_oh_num oh = gen_to_oh (gen_number);
     heap_segment* res = hp->get_segment (size, oh);
@@ -10814,7 +10823,7 @@ void gc_heap::return_free_region (heap_segment* region)
 // USE_REGIONS TODO: SOH should be able to get a large region and split it up into basic regions
 // if needed.
 // USE_REGIONS TODO: In Server GC we should allow to get a free region from another heap.
-heap_segment* gc_heap::get_free_region (int gen_number)
+heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 {
     heap_segment* region = 0;
 
@@ -10823,6 +10832,7 @@ heap_segment* gc_heap::get_free_region (int gen_number)
     // This is only used for recording.
     if (gen_number <= max_generation)
     {
+        assert (size == 0);
         if (free_regions)
         {
             num_free_regions--;
@@ -10837,15 +10847,29 @@ heap_segment* gc_heap::get_free_region (int gen_number)
     }
     else
     {
-        if (free_large_regions)
+        // look for a region that is large enough
+        heap_segment** link = &free_large_regions;
+        for (region = free_large_regions; region != nullptr; region = heap_segment_next (region))
+        {
+            uint8_t* region_start = get_region_start(region);
+            uint8_t* region_end = heap_segment_reserved(region);
+
+            if ((region_end - region_start) >= (ptrdiff_t)size)
+            {
+                // found a region that is large enough
+                break;
+            }
+            link = &heap_segment_next (region);
+        }
+
+        if (region != nullptr)
         {
             num_free_large_regions--;
             num_free_large_regions_removed++;
-            region = free_large_regions;
             dprintf (REGIONS_LOG, ("%d large free regions left, get %Ix-%Ix-%Ix",
                 num_free_large_regions, heap_segment_mem (region),
                 heap_segment_committed (region), heap_segment_used (region)));
-            free_large_regions = heap_segment_next (free_large_regions);
+            *link = heap_segment_next (region);
             committed_in_free -= heap_segment_committed (region) - get_region_start (region);
         }
     }
@@ -10866,7 +10890,7 @@ heap_segment* gc_heap::get_free_region (int gen_number)
     {
         // TODO: We should keep enough reserve in the free regions so we don't get OOM when
         // this is called within GC when we sweep.
-        region = allocate_new_region (__this, gen_number, (gen_number > max_generation));
+        region = allocate_new_region (__this, gen_number, (gen_number > max_generation), size);
     }
 
     if (region)
@@ -28241,9 +28265,9 @@ void gc_heap::thread_start_region (generation* gen, heap_segment* region)
     generation_tail_region (gen) = region;
 }
 
-heap_segment* gc_heap::get_new_region (int gen_number)
+heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
 {
-    heap_segment* new_region = get_free_region (gen_number);
+    heap_segment* new_region = get_free_region (gen_number, size);
 
     if (new_region)
     {
@@ -28257,13 +28281,17 @@ heap_segment* gc_heap::get_new_region (int gen_number)
     return new_region;
 }
 
-heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p)
+heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p, size_t size)
 {
     uint8_t* start = 0;
     uint8_t* end = 0;
+
+    // size parameter should be non-zero only for large regions
+    assert (uoh_p || size == 0);
+
     // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ? 
-        global_region_allocator.allocate_large_region (&start, &end, allocate_forward) :
+        global_region_allocator.allocate_large_region (&start, &end, allocate_forward, size) :
         global_region_allocator.allocate_basic_region (&start, &end));
 
     if (!allocated_p)
