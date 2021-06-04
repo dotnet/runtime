@@ -470,20 +470,16 @@ public:
 #endif
 
 /*****************************************************************************/
-#ifdef DEBUG
-/*****************************************************************************/
-
-#define DUMPER
-
-#else // !DEBUG
+#if !defined(DEBUG)
 
 #if DUMP_GC_TABLES
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
 const bool            dspGCtbls      = true;
 #endif
 
-/*****************************************************************************/
 #endif // !DEBUG
+
+/*****************************************************************************/
 
 #ifdef DEBUG
 #define JITDUMP(...)                                                                                                   \
