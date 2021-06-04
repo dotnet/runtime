@@ -86,9 +86,6 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_X86 and TARGET_ARM64
 #endif
-#if !defined(HOST_X86)
-#define _CROSS_COMPILER_
-#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -98,9 +95,6 @@
 #endif
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_AMD64 and TARGET_ARM64
-#endif
-#if !defined(HOST_AMD64)
-#define _CROSS_COMPILER_
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -112,9 +106,6 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_ARM and TARGET_ARM64
 #endif
-#if !defined(HOST_ARM)
-#define _CROSS_COMPILER_
-#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -124,9 +115,6 @@
 #endif
 #if defined(TARGET_ARM)
 #error Cannot define both TARGET_ARM64 and TARGET_ARM
-#endif
-#if !defined(HOST_ARM64)
-#define _CROSS_COMPILER_
 #endif
 #else
 #error Unsupported or unset target architecture
