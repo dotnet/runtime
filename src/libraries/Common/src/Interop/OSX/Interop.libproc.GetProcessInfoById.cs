@@ -89,8 +89,8 @@ internal static partial class Interop
         /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
-        [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static extern unsafe int proc_pidinfo(
+        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        private static unsafe partial int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
