@@ -1422,7 +1422,7 @@ namespace System.Net.Http.Functional.Tests
                 Send(request, cancellationToken);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();
