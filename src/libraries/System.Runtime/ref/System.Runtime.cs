@@ -2751,11 +2751,15 @@ namespace System
         public static float Abs(float value) { throw null; }
         public static double Acos(double d) { throw null; }
         public static double Acosh(double d) { throw null; }
+        public static double AcosPi(double x) { throw null; }
         public static double Asin(double d) { throw null; }
         public static double Asinh(double d) { throw null; }
+        public static double AsinPi(double x) { throw null; }
         public static double Atan(double d) { throw null; }
         public static double Atan2(double y, double x) { throw null; }
+        public static double Atan2Pi(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
+        public static double AtanPi(double x) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
         public static long BigMul(long a, long b, out long low) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -2892,11 +2896,15 @@ namespace System
         public static float Abs(float x) { throw null; }
         public static float Acos(float x) { throw null; }
         public static float Acosh(float x) { throw null; }
+        public static float AcosPi(float x) { throw null; }
         public static float Asin(float x) { throw null; }
         public static float Asinh(float x) { throw null; }
+        public static float AsinPi(float x) { throw null; }
         public static float Atan(float x) { throw null; }
         public static float Atan2(float y, float x) { throw null; }
+        public static float Atan2Pi(float y, float x) { throw null; }
         public static float Atanh(float x) { throw null; }
+        public static float AtanPi(float x) { throw null; }
         public static float BitDecrement(float x) { throw null; }
         public static float BitIncrement(float x) { throw null; }
         public static float Cbrt(float x) { throw null; }

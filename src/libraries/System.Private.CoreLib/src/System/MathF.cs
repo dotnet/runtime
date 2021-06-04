@@ -691,5 +691,68 @@ namespace System
             float tan = Tan(rem * PI);
             return invert ? -tan : tan;
         }
+
+        // We don't need to special case inverse-trigs as long as getting precise PI/2 and PI.
+        // Guarded in unit test.
+
+        /// <summary>
+        /// Returns the angle measured in half-turns whose sine is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a sine, where <paramref name="x"/> must be greater than or equal to -1, but
+        /// less than or equal to 1.</param>
+        /// <returns>An angle, θ, measured in half-turns, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="float.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
+        /// or <paramref name="x"/> equals <see cref="float.NaN"/>.</returns>
+        public static float AsinPi(float x) => Asin(x) / PI;
+
+        /// <summary>
+        /// Returns the angle measured in half-turns whose cosine is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a cosine, where <paramref name="x"/> must be greater than or equal to -1, but
+        /// less than or equal to 1.</param>
+        /// <returns>An angle, θ, measured in half-turns, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="float.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
+        /// or <paramref name="x"/> equals <see cref="float.NaN"/>.</returns>
+        public static float AcosPi(float x) => Acos(x) / PI;
+
+        /// <summary>
+        /// Returns the angle measured in half-turns whose tangent is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a tangent.</param>
+        /// <returns>An angle, θ, measured in half-turns, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="float.NaN"/> if <paramref name="x"/> equals <see cref="float.NaN"/>,
+        /// -0.5 if <paramref name="x"/> equals <see cref="float.NegativeInfinity"/>,
+        /// or 0.5 if <paramref name="x"/> equals <see cref="float.PositiveInfinity"/>.</returns>
+        public static float AtanPi(float x) => Atan(x) / PI;
+
+        /// <summary>
+        /// Returns the angle whose measured in half-turns tangent is the quotient of two specified numbers.
+        /// </summary>
+        /// <param name="y">The y coordinate of a point.</param>
+        /// <param name="x">The x coordinate of a point.</param>
+        /// <returns>An angle, θ, measured in half-turns, such that -1 ≤ θ ≤ 1, and tan(θ) = y / x,
+        /// where (x, y) is a point in the Cartesian plane. Observe the following:
+        /// <list type="bullet">
+        /// <item>For (x, y) in quadrant 1, 0 &lt; θ &lt; 0.5. </item>
+        /// <item>For (x, y) in quadrant 2, 0.5 &lt; θ ≤ 1. </item>
+        /// <item>For (x, y) in quadrant 3, -1 &lt; θ &lt; -0.5. </item>
+        /// <item>For (x, y) in quadrant 4, -0.5 &lt; θ &lt; 0. </item>
+        /// </list>
+        /// For points on the boundaries of the quadrants, the return value is the following:
+        /// <list type="bullet">
+        /// <item>If y is 0 and x is not negative, θ = 0.</item>
+        /// <item>If y is 0 and x is negative, θ = 1.</item>
+        /// <item>If y is positive and x is 0, θ = 0.5.</item>
+        /// <item>If y is negative and x is 0, θ = -0.5.</item>
+        /// <item>If y is 0 and x is 0, θ = 0.</item>
+        /// <item>If y is 0 and x is 0, θ = 0.</item>
+        /// </list>
+        /// If x or y is <see cref="float.NaN"/>, or if x and y are either
+        /// <see cref="float.PositiveInfinity"/> or <see cref="float.NegativeInfinity"/>,
+        /// the method returns <see cref="float.NaN"/>.</returns>
+        public static float Atan2Pi(float y, float x) => Atan2(y, x) / PI;
     }
 }
