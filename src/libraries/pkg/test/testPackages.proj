@@ -12,7 +12,6 @@
     <PackageReports Condition="'@(PackagesToTest)' != ''" Include="@(PackagesToTest->'$(PackageReportDir)%(Identity).json')" />
 
     <!-- support override via commandline -->
-    <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
     
@@ -25,9 +24,6 @@
     <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
     <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)"/>
     <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
-
-    <!-- we don't build alpine or older OSX versions -->
-    <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64;freebsd-x64" />
 
     <!-- no targeting pack was ever shipped for net463 -->
     <TargetFrameworksToExclude Include="net463" />
