@@ -190,4 +190,25 @@ namespace ILLink.Tasks.Tests
 		public void Process (LinkContext context) { }
 	}
 
+	public class MockCustomStep2 : MockCustomStep { }
+
+	public class MockCustomStep3 : MockCustomStep { }
+
+	public class MockCustomStep4 : MockCustomStep { }
+
+	public class MockCustomStep5 : MockCustomStep { }
+
+	public class MockCustomStep6 : MockCustomStep { }
+
+	public class MockMarkHandler : IMarkHandler
+	{
+		public void Initialize (LinkContext context, MarkContext markContext) { }
+	}
+
+	public class MockMarkHandler2 : MockMarkHandler { }
+
+	public class MockMarkHandler3 : MockMarkHandler { }
+
+	public class MockMarkHandler4 : MockMarkHandler { }
+
 }

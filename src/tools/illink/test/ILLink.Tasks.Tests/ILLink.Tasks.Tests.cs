@@ -671,6 +671,73 @@ namespace ILLink.Tasks.Tests
 		}
 
 		[Fact]
+		public void TestCustomStepOrdering ()
+		{
+			var customSteps = new ITaskItem[] {
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockCustomStep" },
+					{ "BeforeStep", "MarkStep" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockCustomStep2" },
+					{ "BeforeStep", "MarkStep" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockCustomStep3" },
+					{ "AfterStep", "MarkStep" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockCustomStep4" },
+					{ "AfterStep", "MarkStep" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockCustomStep5" },
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockCustomStep6" },
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockMarkHandler" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockMarkHandler2" },
+					{ "BeforeStep", "MockMarkHandler" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockMarkHandler3" },
+					{ "AfterStep", "MockMarkHandler2" }
+				}),
+				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+					{ "Type", "ILLink.Tasks.Tests.MockMarkHandler4" }
+				}),
+			};
+			var task = new MockTask () {
+				CustomSteps = customSteps
+			};
+			using (var driver = task.CreateDriver ()) {
+				var actualSteps = driver.Context.Pipeline.GetSteps ().Select (s => s.GetType ().Name).ToList ();
+				Assert.Equal (new List<string> {
+					"MockCustomStep",
+					"MockCustomStep2",
+					"MarkStep",
+					"MockCustomStep4",
+					"MockCustomStep3",
+				}, actualSteps.Skip (actualSteps.IndexOf ("MarkStep") - 2).Take (5).ToList ());
+				Assert.Equal (new List<string> {
+					"MockCustomStep5",
+					"MockCustomStep6"
+				}, actualSteps.TakeLast (2).ToList ());
+				var actualMarkHandlers = driver.Context.Pipeline.MarkHandlers.Select (h => h.GetType ().Name).ToList ();
+				Assert.Equal (new List<string> {
+					"MockMarkHandler2",
+					"MockMarkHandler3",
+					"MockMarkHandler",
+					"MockMarkHandler4"
+				}, actualMarkHandlers.TakeLast (4).ToList ());
+			}
+		}
+
+		[Fact]
 		public void TestCustomStepsMissingType ()
 		{
 			var customSteps = new ITaskItem[] {
