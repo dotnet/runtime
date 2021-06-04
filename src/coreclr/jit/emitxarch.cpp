@@ -145,7 +145,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// DoesWritesZeroFlag: check if the instruction write the
+// DoesWriteZeroFlag: check if the instruction write the
 //     ZF flag.
 //
 // Arguments:
@@ -154,14 +154,14 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 // Return Value:
 //    true if instruction writes the ZF flag, false otherwise.
 //
-bool emitter::DoesWritesZeroFlag(instruction ins)
+bool emitter::DoesWriteZeroFlag(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
 }
 
 //------------------------------------------------------------------------
-// DoesResetsOverflowAndCarryFlags: check if the instruction resets the
-//     OF and CF flag.
+// DoesResetOverflowAndCarryFlags: check if the instruction resets the
+//     OF and CF flag to 0.
 //
 // Arguments:
 //    ins - instruction to test
@@ -169,19 +169,20 @@ bool emitter::DoesWritesZeroFlag(instruction ins)
 // Return Value:
 //    true if instruction resets the OF and CF flag, false otherwise.
 //
-bool emitter::DoesResetsOverflowAndCarryFlags(instruction ins)
+bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] & INS_FLAGS_Resets_CF_OF_Flags) != 0;
 }
 
 //------------------------------------------------------------------------
-// IsFlagsAlwaysModified: check if the instruction always modifies the flags.
+// IsFlagsAlwaysModified: check if the instruction guarantee to modify any flags.
 //
 // Arguments:
 //    id - instruction to test
 //
 // Return Value:
-//    true if instruction always modified any flag, false otherwise.
+//    false, if instruction is guaranteed to not modify any flag.
+//    true, if instruction will modify some flag.
 //
 bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 {
@@ -311,9 +312,9 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 //                       the same values as if there were a compare to 0
 //
 // Arguments:
-//    reg - register of interest
-//    opSize - size of register
-//    needsOCFlags - additionally check the overflow and carry flags
+//    reg     - register of interest
+//    opSize  - size of register
+//    treeOps - type of tree node operation
 //
 // Return Value:
 //    true if the previous instruction set the flags for reg
@@ -361,14 +362,17 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    if (DoesResetsOverflowAndCarryFlags(lastIns))
+    // Certain instruction like and, or and xor modifies exactly same flags
+    // as "test" instruction.
+    // They reset OF and CF to 0 and modifies SF, ZF and PF.
+    if (DoesResetOverflowAndCarryFlags(lastIns))
     {
         return id->idOpSize() == opSize;
     }
 
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
-        if (DoesWritesZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
