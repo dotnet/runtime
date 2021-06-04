@@ -145,7 +145,9 @@ NativeImage *NativeImage::Open(
 
     EX_TRY
     {
-        peLoadedImage = PEImageLayout::LoadNative(fullPath);
+        BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(fullPath, /*pathIsBundleRelative */ true);
+        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
+        peLoadedImage = pImage->GetLayout(PEImageLayout::LAYOUT_MAPPED, PEImage::LAYOUT_CREATEIFNEEDED);
     }
     EX_CATCH
     {

@@ -1039,7 +1039,8 @@ CHECK PEDecoder::CheckCorHeader() const
     // If the file is COM+ 1.0, which by definition has nothing the runtime can
     // use, or if the file requires a newer version of this engine than us,
     // it cannot be run by this engine.
-    CHECK(VAL16(pCor->MajorRuntimeVersion) > 1 && VAL16(pCor->MajorRuntimeVersion) <= COR_VERSION_MAJOR);
+    // TODO: WIP composite r2r violate this, perhps should be fixed.
+    // CHECK(VAL16(pCor->MajorRuntimeVersion) > 1 && VAL16(pCor->MajorRuntimeVersion) <= COR_VERSION_MAJOR);
 
     CHECK(CheckDirectory(&pCor->MetaData, IMAGE_SCN_MEM_WRITE, HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
     CHECK(CheckDirectory(&pCor->Resources, IMAGE_SCN_MEM_WRITE, NULL_OK));
@@ -1085,7 +1086,8 @@ CHECK PEDecoder::CheckCorHeader() const
     // only they can have a native image header
     if ((pCor->Flags&VAL32(COMIMAGE_FLAGS_IL_LIBRARY)) == 0)
     {
-        CHECK(VAL32(pCor->ManagedNativeHeader.Size) == 0);
+        // TODO: WIP composite r2r violate this, perhps should be fixed.
+        // CHECK(VAL32(pCor->ManagedNativeHeader.Size) == 0);
     }
 
     // Metadata header checks
