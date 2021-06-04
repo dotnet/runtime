@@ -62,7 +62,6 @@ struct MulticoreJitPlayerStat
     unsigned short    m_nTotalDelay;
     unsigned short    m_nDelayCount;
     unsigned short    m_nWalkBack;
-    unsigned short    m_nNoJitCount;
 
     HRESULT           m_hr;
 
@@ -282,8 +281,7 @@ public:
 
     MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod);
 
-    void RecordMethodJit(MethodDesc * pMethod);
-    void RecordMethodLoad(MethodDesc * pMethod);
+    void RecordMethodJitOrLoad(MethodDesc * pMethod);
 
     MulticoreJitPlayerStat & GetStats()
     {

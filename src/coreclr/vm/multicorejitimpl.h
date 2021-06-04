@@ -23,8 +23,7 @@
 // Bits 0xff0000 are reserved method flags. Currently only first bit is used.
 const unsigned METHOD_FLAGS_MASK       = 0xff0000;
 const unsigned JIT_BY_APP_THREAD_TAG   = 0x10000;   // tag, that indicates whether method is jitted by application thread(1) or background thread(0)
-const unsigned NO_JIT_TAG              = 0x20000;   // tag, that indicates whether method should be jitted or simply loaded (i.e. related types are created, etc.)
-// Tags 0xfc0000 are currently free
+// Tags 0xfe0000 are currently free
 
 const unsigned RECORD_TYPE_OFFSET      = 24;        // offset of type of record
 
@@ -46,7 +45,7 @@ const int      MAX_WALKBACK      = 128;
 
 enum
 {
-    MULTICOREJIT_PROFILE_VERSION   = 103,
+    MULTICOREJIT_PROFILE_VERSION   = 102,
 
     MULTICOREJIT_HEADER_RECORD_ID           = 1,
     MULTICOREJIT_MODULE_RECORD_ID           = 2,
@@ -298,8 +297,8 @@ private:
 
     HRESULT HandleModuleRecord(const ModuleRecord * pMod);
     HRESULT HandleModuleInfoRecord(unsigned moduleTo, unsigned level);
-    HRESULT HandleNonGenericMethodInfoRecord(unsigned moduleIndex, unsigned token, bool dojit);
-    HRESULT HandleGenericMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length, bool dojit);
+    HRESULT HandleNonGenericMethodInfoRecord(unsigned moduleIndex, unsigned token);
+    HRESULT HandleGenericMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length);
     void CompileMethodInfoRecord(Module *pModule, MethodDesc *pMethod, bool isGeneric);
 
     bool CompileMethodDesc(Module * pModule, MethodDesc * pMD);
@@ -560,7 +559,7 @@ struct RecorderInfo
         _ASSERTE(IsFullyInitialized());
     }
 
-    void PackMethod(unsigned moduleIndex, MethodDesc * pMethod, bool application, bool dojit)
+    void PackMethod(unsigned moduleIndex, MethodDesc * pMethod, bool application)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -585,11 +584,6 @@ struct RecorderInfo
         {
              // Jitted by application threads, not background thread
             data1 |= JIT_BY_APP_THREAD_TAG;
-        }
-
-        if (!dojit)
-        {
-            data1 |= NO_JIT_TAG;
         }
 
         data2 = 0;
@@ -645,7 +639,7 @@ private:
 
     HRESULT WriteModuleRecord(IStream * pStream,  const RecorderModuleInfo & module);
 
-    void RecordMethodInfo(unsigned moduleIndex, MethodDesc * pMethod, bool application, bool dojit);
+    void RecordMethodInfo(unsigned moduleIndex, MethodDesc * pMethod, bool application);
     unsigned RecordModuleInfo(Module * pModule);
     void RecordOrUpdateModuleInfo(FileLoadLevel needLevel, unsigned moduleIndex);
 
@@ -711,7 +705,7 @@ public:
                (m_ModuleCount  >= MAX_MODULES);
     }
 
-    void RecordMethodJit(MethodDesc * pMethod, bool application, bool dojit);
+    void RecordMethodJitOrLoad(MethodDesc * pMethod, bool application);
 
     MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
 

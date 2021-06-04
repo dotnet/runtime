@@ -471,7 +471,6 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         header.shortCounters[ 8] = m_stats.m_nDelayCount;
         header.shortCounters[ 9] = m_stats.m_nWalkBack;
         header.shortCounters[10] = m_fAppxMode;
-        header.shortCounters[11] = m_stats.m_nNoJitCount;
 
         _ASSERTE(HEADER_W_COUNTER >= 14);
 
@@ -601,14 +600,14 @@ unsigned MulticoreJitRecorder::GetOrAddModuleIndex(Module * pModule)
     return slot;
 }
 
-void MulticoreJitRecorder::RecordMethodInfo(unsigned moduleIndex, MethodDesc * pMethod, bool application, bool dojit)
+void MulticoreJitRecorder::RecordMethodInfo(unsigned moduleIndex, MethodDesc * pMethod, bool application)
 {
     LIMITED_METHOD_CONTRACT;
 
     if (m_JitInfoArray != nullptr && m_JitInfoCount < (LONG) MAX_METHODS)
     {
         m_ModuleList[moduleIndex].methodCount++;
-        m_JitInfoArray[m_JitInfoCount++].PackMethod(moduleIndex, pMethod, application, dojit);
+        m_JitInfoArray[m_JitInfoCount++].PackMethod(moduleIndex, pMethod, application);
     }
 }
 
@@ -870,7 +869,7 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
 }
 
 
-void MulticoreJitRecorder::RecordMethodJit(MethodDesc * pMethod, bool application, bool dojit)
+void MulticoreJitRecorder::RecordMethodJitOrLoad(MethodDesc * pMethod, bool application)
 {
     STANDARD_VM_CONTRACT;
 
@@ -889,7 +888,7 @@ void MulticoreJitRecorder::RecordMethodJit(MethodDesc * pMethod, bool applicatio
         return;
     }
 
-    RecordMethodInfo(moduleIndex, pMethod, application, dojit);
+    RecordMethodInfo(moduleIndex, pMethod, application);
 }
 
 
@@ -1104,7 +1103,7 @@ MulticoreJitCodeInfo MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMetho
 
     if (!codeInfo.IsNull() && pManager->IsRecorderActive()) // recorder may be off when player is on (e.g. for Appx)
     {
-        RecordMethodJit(pMethod, false, true); // JITTed by background thread, returned to application
+        RecordMethodJitOrLoad(pMethod, false); // JITTed by background thread, returned to application
     }
 
     return codeInfo;
@@ -1427,7 +1426,7 @@ MulticoreJitCodeInfo MulticoreJitManager::RequestMethodCode(MethodDesc * pMethod
 // Call back from MethodDesc::MakeJitWorker for
 // Threading: protected by m_playerLock
 
-void MulticoreJitManager::RecordMethodJit(MethodDesc * pMethod)
+void MulticoreJitManager::RecordMethodJitOrLoad(MethodDesc * pMethod)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1435,24 +1434,7 @@ void MulticoreJitManager::RecordMethodJit(MethodDesc * pMethod)
 
     if (m_pMulticoreJitRecorder != NULL)
     {
-        m_pMulticoreJitRecorder->RecordMethodJit(pMethod, true, true);
-
-        if (m_pMulticoreJitRecorder->IsAtFullCapacity())
-        {
-            m_fRecorderActive = false;
-        }
-    }
-}
-
-void MulticoreJitManager::RecordMethodLoad(MethodDesc * pMethod)
-{
-    STANDARD_VM_CONTRACT;
-
-    CrstHolder hold(& m_playerLock);
-
-    if (m_pMulticoreJitRecorder != NULL)
-    {
-        m_pMulticoreJitRecorder->RecordMethodJit(pMethod, true, false);
+        m_pMulticoreJitRecorder->RecordMethodJitOrLoad(pMethod, true);
 
         if (m_pMulticoreJitRecorder->IsAtFullCapacity())
         {

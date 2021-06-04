@@ -502,7 +502,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
                     {
                         if (MulticoreJitManager::IsMethodSupported(this))
                         {
-                            mcJitManager.RecordMethodLoad(this);
+                            mcJitManager.RecordMethodJitOrLoad(this);
                         }
                     }
                 }
@@ -1152,7 +1152,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         {
             if (MulticoreJitManager::IsMethodSupported(this))
             {
-                mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
+                mcJitManager.RecordMethodJitOrLoad(this); // Tell multi-core JIT manager to record method on successful JITting
             }
         }
     }
