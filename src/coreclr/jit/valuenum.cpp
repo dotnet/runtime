@@ -3787,27 +3787,43 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
     return elem;
 }
 
-ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block)
+//------------------------------------------------------------------------
+// VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `srcVN`
+//    being writen using an indirection of 'dstIndType'.
+//
+// Arguments:
+//    srcVN - value number for the value being stored;
+//    dstIndType - type of the indirection storing the value to the memory;
+//    block - block where the assignment occurs/
+//
+// Return Value:
+//    The value number corresponding to memory after the assignment.
+//
+// Notes: It may insert a cast to dstIndType or return a unique value number for an incompatible indType.
+//
+ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum srcVN, var_types dstIndType, BasicBlock* block)
 {
-    var_types elemTyp = TypeOfVN(elem);
+    var_types srcType = TypeOfVN(srcVN);
 
-    // Check if the elemTyp is matching/compatible
+    ValueNum dstVN;
 
-    if (indType != elemTyp)
+    // Check if the elemTyp is matching/compatible.
+    if (dstIndType != srcType)
     {
-        bool isConstant = IsVNConstant(elem);
-        if (isConstant && (elemTyp == genActualType(indType)))
+        bool isConstant = IsVNConstant(srcVN);
+        if (isConstant && (srcType == genActualType(dstIndType)))
         {
             // (i.e. We recorded a constant of TYP_INT for a TYP_BYTE field)
+            dstVN = srcVN;
         }
         else
         {
             // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
-            if (varTypeIsStruct(indType))
+            if (varTypeIsStruct(dstIndType))
             {
                 // return a new unique value number
-                elem = VNMakeNormalUnique(elem);
+                dstVN = VNMakeNormalUnique(srcVN);
 
                 JITDUMP("    *** Mismatched types in VNApplySelectorsAssignTypeCoerce (indType is TYP_STRUCT)\n");
             }
@@ -3816,14 +3832,18 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_type
                 // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
                 // insert a cast of elem to 'indType'
-                elem = VNForCast(elem, indType, elemTyp);
+                dstVN = VNForCast(srcVN, dstIndType, srcType);
 
                 JITDUMP("    Cast to %s inserted in VNApplySelectorsAssignTypeCoerce (elemTyp is %s)\n",
-                        varTypeName(indType), varTypeName(elemTyp));
+                        varTypeName(dstIndType), varTypeName(srcType));
             }
         }
     }
-    return elem;
+    else
+    {
+        dstVN = srcVN;
+    }
+    return dstVN;
 }
 
 //------------------------------------------------------------------------
