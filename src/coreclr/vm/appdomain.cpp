@@ -2115,10 +2115,10 @@ AppDomain::AppDomain()
     m_pRootAssembly = NULL;
 
     m_dwFlags = 0;
-#if  defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 #ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
-#endif    
+#endif //FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)  
     m_pRCWRefCache = NULL;
 #endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 

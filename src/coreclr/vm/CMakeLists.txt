@@ -568,6 +568,9 @@ if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
             interoplibinterface.cpp
             rcwrefcache.cpp
         )
+        list(APPEND VM_HEADERS_WKS
+            rcwrefcache.h
+        )
     endif (FEATURE_COMWRAPPERS)
 
     if (FEATURE_OBJCMARSHAL)
@@ -660,12 +663,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 
 endif(CLR_CMAKE_TARGET_WIN32)
-
-if(CLR_CMAKE_HOST_UNIX)          
-    list(APPEND VM_HEADERS_WKS
-        rcwrefcache.h
-        )
-endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_WIN32)
 
