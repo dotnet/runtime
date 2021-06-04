@@ -1124,7 +1124,6 @@ arch_init (MonoAotCompile *acfg)
 #endif
 
 #if defined(TARGET_AMD64)
-	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
 	g_string_append_printf (acfg->llc_args, " -march=x86-64 %s", has_custom_args ? "" : "-mcpu=generic");
 	/* NOP */
 	acfg->align_pad_value = 0x90;
