@@ -25,17 +25,7 @@ namespace System.Threading
                 return
                     _numBlockedThreads <= 0
                         ? _minThreads
-                        : (short)Math.Min((ushort)(_minThreads + _numBlockedThreads), (ushort)MaxThreadsForBlockingAdjustment);
-            }
-        }
-
-        private short MaxThreadsForBlockingAdjustment
-        {
-            get
-            {
-                _threadAdjustmentLock.VerifyIsLocked();
-                return
-                    (short)Math.Min((ushort)(_minThreads + BlockingConfig.MaxThreadsToAddBeforeFallback), (ushort)_maxThreads);
+                        : (short)Math.Min((ushort)(_minThreads + _numBlockedThreads), (ushort)_maxThreads);
             }
         }
 
@@ -161,9 +151,8 @@ namespace System.Threading
                 return 0;
             }
 
-            short maxThreads = MaxThreadsForBlockingAdjustment;
             short configuredMaxThreadsWithoutDelay =
-                (short)Math.Min((ushort)(_minThreads + BlockingConfig.ThreadsToAddWithoutDelay), (ushort)maxThreads);
+                (short)Math.Min((ushort)(_minThreads + BlockingConfig.ThreadsToAddWithoutDelay), (ushort)_maxThreads);
 
             do
             {
@@ -171,7 +160,7 @@ namespace System.Threading
                 // waiting for work can be released for work without a delay, but creating a new thread may need a delay.
                 ThreadCounts counts = _separated.counts;
                 short maxThreadsGoalWithoutDelay =
-                    Math.Max(configuredMaxThreadsWithoutDelay, Math.Min(counts.NumExistingThreads, maxThreads));
+                    Math.Max(configuredMaxThreadsWithoutDelay, Math.Min(counts.NumExistingThreads, _maxThreads));
                 short targetThreadsGoalWithoutDelay = Math.Min(targetThreadsGoal, maxThreadsGoalWithoutDelay);
                 short newNumThreadsGoal;
                 if (numThreadsGoal < targetThreadsGoalWithoutDelay)
@@ -214,7 +203,7 @@ namespace System.Threading
                         counts.NumExistingThreads * (long)WorkerThread.EstimatedAdditionalStackUsagePerThreadBytes;
 
                     // The memory limit may already be less than the total amount of physical memory. We are only accounting for
-                    // thread pool worker threads above, and after fallback starvation will have to continue creating threads
+                    // thread pool worker threads above, and after fallback starvation may have to continue creating threads
                     // slowly to prevent a deadlock, so calculate a threshold before falling back by giving the memory limit
                     // some additional buffer.
                     long memoryThresholdForFallbackBytes = memoryLimitBytes * 8 / 10;
@@ -256,7 +245,7 @@ namespace System.Threading
             // limits on max thread count and max delays.
             _pendingBlockingAdjustment = PendingBlockingAdjustment.WithDelayIfNecessary;
             int delayStepCount = 1 + (numThreadsGoal - configuredMaxThreadsWithoutDelay) / BlockingConfig.ThreadsPerDelayStep;
-            return Math.Min((uint)delayStepCount * BlockingConfig.DelayStepMs, BlockingConfig.MaxDelayUntilFallbackMs);
+            return Math.Min((uint)delayStepCount * BlockingConfig.DelayStepMs, BlockingConfig.MaxDelayMs);
         }
 
         private enum PendingBlockingAdjustment : byte
@@ -272,10 +261,9 @@ namespace System.Threading
                 AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.Blocking.CooperativeBlocking", true);
 
             public static readonly short ThreadsToAddWithoutDelay;
-            public static readonly short MaxThreadsToAddBeforeFallback;
             public static readonly short ThreadsPerDelayStep;
             public static readonly uint DelayStepMs;
-            public static readonly uint MaxDelayUntilFallbackMs;
+            public static readonly uint MaxDelayMs;
 
 #pragma warning disable CA1810 // remove the explicit static constructor
             static BlockingConfig()
@@ -286,9 +274,7 @@ namespace System.Threading
                 // - After that, before each additional thread is created, a delay is induced, starting with DelayStepMs
                 // - For every ThreadsPerDelayStep threads that are added with a delay, an additional DelayStepMs is added to
                 //   the delay
-                // - Until MaxThreadsToAddBeforeFallback threads are added, the delay may not exceed MaxDelayUntilFallbackMs
-                // - After MaxThreadsToAddBeforeFallback threads are added, the system operates in fallback mode where a thread
-                //   would be created if starvation is detected and typically with longer delays
+                // - The delay may not exceed MaxDelayUntilFallbackMs
                 // - Delays are only induced before creating threads. If threads are already available, they would be released
                 //   without delay to compensate for cooperative blocking.
                 // - Physical memory usage and limits are also used and beyond a threshold, the system switches to fallback mode
@@ -299,15 +285,6 @@ namespace System.Threading
                     AppContextConfigHelper.GetInt32Config(
                         "System.Threading.ThreadPool.Blocking.ThreadsToAddWithoutDelay_ProcCountFactor",
                         1,
-                        false);
-
-                // After the thread count based on MinThreads is reached, this value (after it is multiplied by the processor
-                // count) specifies how many additional threads may be created, perhaps with delays, before fallback. In
-                // fallback mode a thread would be created if starvation is detected and typically with longer delays.
-                int blocking_maxThreadsToAddBeforeFallback_procCountFactor =
-                    AppContextConfigHelper.GetInt32Config(
-                        "System.Threading.ThreadPool.Blocking.MaxThreadsToAddBeforeFallback_ProcCountFactor",
-                        10,
                         false);
 
                 // After the thread count based on ThreadsToAddWithoutDelay is reached, this value (after it is multiplied by
@@ -328,31 +305,23 @@ namespace System.Threading
                         false);
 
                 // After the thread count based on ThreadsToAddWithoutDelay is reached, this value specifies the max delay to
-                // use before each new thread is created, until fallback. Fallback mode is used after the thread count based on
-                // MaxThreadsToAddBeforeFallback is reached, see that config value for more information.
-                MaxDelayUntilFallbackMs =
+                // use before each new thread is created
+                MaxDelayMs =
                     (uint)AppContextConfigHelper.GetInt32Config(
                         "System.Threading.ThreadPool.Blocking.MaxDelayUntilFallbackMs",
                         250,
                         false);
 
                 int processorCount = Environment.ProcessorCount;
-                MaxThreadsToAddBeforeFallback = (short)(processorCount * blocking_maxThreadsToAddBeforeFallback_procCountFactor);
-                if (MaxThreadsToAddBeforeFallback > MaxPossibleThreadCount ||
-                    MaxThreadsToAddBeforeFallback / processorCount != blocking_maxThreadsToAddBeforeFallback_procCountFactor)
-                {
-                    MaxThreadsToAddBeforeFallback = MaxPossibleThreadCount;
-                }
-
                 ThreadsToAddWithoutDelay = (short)(processorCount * blocking_threadsToAddWithoutDelay_procCountFactor);
-                if (ThreadsToAddWithoutDelay > MaxThreadsToAddBeforeFallback ||
+                if (ThreadsToAddWithoutDelay > MaxPossibleThreadCount ||
                     ThreadsToAddWithoutDelay / processorCount != blocking_threadsToAddWithoutDelay_procCountFactor)
                 {
-                    ThreadsToAddWithoutDelay = MaxThreadsToAddBeforeFallback;
+                    ThreadsToAddWithoutDelay = MaxPossibleThreadCount;
                 }
 
                 blocking_threadsPerDelayStep_procCountFactor = Math.Max(1, blocking_threadsPerDelayStep_procCountFactor);
-                short maxThreadsPerDelayStep = (short)(MaxThreadsToAddBeforeFallback - ThreadsToAddWithoutDelay);
+                short maxThreadsPerDelayStep = (short)(MaxPossibleThreadCount - ThreadsToAddWithoutDelay);
                 ThreadsPerDelayStep =
                     (short)(processorCount * blocking_threadsPerDelayStep_procCountFactor);
                 if (ThreadsPerDelayStep > maxThreadsPerDelayStep ||
@@ -361,8 +330,8 @@ namespace System.Threading
                     ThreadsPerDelayStep = maxThreadsPerDelayStep;
                 }
 
-                MaxDelayUntilFallbackMs = Math.Max(1, Math.Min(MaxDelayUntilFallbackMs, GateThread.GateActivitiesPeriodMs));
-                DelayStepMs = Math.Max(1, Math.Min(DelayStepMs, MaxDelayUntilFallbackMs));
+                MaxDelayMs = Math.Max(1, Math.Min(MaxDelayMs, GateThread.GateActivitiesPeriodMs));
+                DelayStepMs = Math.Max(1, Math.Min(DelayStepMs, MaxDelayMs));
             }
 #pragma warning restore CA1810
         }

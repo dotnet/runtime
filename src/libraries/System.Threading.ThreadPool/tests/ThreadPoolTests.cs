@@ -893,25 +893,23 @@ namespace System.Threading.ThreadPools.Tests
             // would cause the thread pool to create threads
             RemoteExecutor.Invoke(() =>
             {
-                // All but the last of these work items will block and the last queued work item would release the blocking. Without
-                // cooperative blocking, this would lead to starvation after <proc count> work items run. Since starvation adds threads
-                // at a rate of at most 2 per second, the extra 120 work items would take roughly 60 seconds to get unblocked and since
-                // the test waits for 30 seconds it would time out. Cooperative blocking is configured below to ensure that starvation
-                // would not be hit for this many work items, and to increase the rate of thread injection for testing purposes while
-                // getting a decent amount of coverage for its behavior. With cooperative blocking as configured below, the test should
-                // finish within a few seconds.
+                // All but the last of these work items will block and the last queued work item would release the blocking.
+                // Without cooperative blocking, this would lead to starvation after <proc count> work items run. Since
+                // starvation adds threads at a rate of at most 2 per second, the extra 120 work items would take roughly 60
+                // seconds to get unblocked and since the test waits for 30 seconds it would time out. Cooperative blocking is
+                // configured below to increase the rate of thread injection for testing purposes while getting a decent amount
+                // of coverage for its behavior. With cooperative blocking as configured below, the test should finish within a
+                // few seconds.
                 int processorCount = Environment.ProcessorCount;
                 int workItemCount = processorCount + 120;
-                int workItemCount_procCountFactor = workItemCount / processorCount;
-                workItemCount = workItemCount_procCountFactor * processorCount;
                 SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
-                SetBlockingConfigValue("MaxThreadsToAddBeforeFallback_ProcCountFactor", workItemCount_procCountFactor);
-                SetBlockingConfigValue("MaxDelayUntilFallbackMs", 1);
+                SetBlockingConfigValue("MaxDelayMs", 1);
 
                 var allWorkItemsUnblocked = new AutoResetEvent(false);
 
-                // Run a second iteration for some extra coverage. Iterations after the first one would be much faster because the
-                // necessary number of threads would already have been created by then, and would not add much to the test time.
+                // Run a second iteration for some extra coverage. Iterations after the first one would be much faster because
+                // the necessary number of threads would already have been created by then, and would not add much to the test
+                // time.
                 for (int iterationIndex = 0; iterationIndex < 2; ++iterationIndex)
                 {
                     var tcs = new TaskCompletionSource<int>();
