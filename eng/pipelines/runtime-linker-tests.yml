@@ -71,6 +71,7 @@ jobs:
     buildConfig: release
     platforms:
     - Browser_wasm
+    - Browser_wasm_win
     jobParameters:
       testGroup: innerloop
       timeoutInMinutes: 120
