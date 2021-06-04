@@ -101,6 +101,7 @@ namespace System.SpanTests
             static string FixupSequences(string input)
             {
                 // We use <XYZ> markers so that the original strings show up better in the xunit test runner
+                // <VT> is included as a negative test; we *do not* want ReplaceLineEndings to honor it
 
                 if (input is null) { return null; }
                 return input.Replace("<CR>", "\r")
@@ -139,8 +140,8 @@ namespace System.SpanTests
         {
             // This test ensures that the complexity of any call to MoveNext is O(i), where i is the
             // index of the first occurrence of any NLF within the span; rather than O(n), where
-            // n is the length of the span. See comments in SpanLineEnumerator.MoveNext for why
-            // we care about this.
+            // n is the length of the span. See comments in SpanLineEnumerator.MoveNext and
+            // string.IndexOfNewlineChar for more information.
             //
             // We test this by utilizing the BoundedMemory infrastructure to allocate a poison page
             // after the scratch buffer, then we intentionally use MemoryMarshal to manipulate the

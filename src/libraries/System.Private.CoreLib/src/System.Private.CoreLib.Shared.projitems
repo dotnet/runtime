@@ -965,7 +965,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Encoding.Sealed.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Utility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Utility.Helpers.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\NewLineUtility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\NormalizationForm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Rune.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanLineEnumerator.cs" />

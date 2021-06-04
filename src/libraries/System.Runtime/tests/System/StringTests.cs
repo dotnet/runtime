@@ -557,6 +557,7 @@ namespace System.Tests
             static string FixupSequences(string input)
             {
                 // We use <XYZ> markers so that the original strings show up better in the xunit test runner
+                // <VT> is included as a negative test; we *do not* want ReplaceLineEndings to honor it
 
                 return input.Replace("<CR>", "\r")
                     .Replace("<LF>", "\n")

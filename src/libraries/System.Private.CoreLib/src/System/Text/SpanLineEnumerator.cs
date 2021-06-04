@@ -46,19 +46,20 @@ namespace System.Text
                 return false; // EOF previously reached or enumerator was never initialized
             }
 
-            // See comment in GetIndexOfFirstNewLineChar for why we don't use IndexOfAny.
-
-            int idx = NewLineUtility.GetIndexOfFirstNewLineChar(_remaining, out int charsToConsume);
+            int idx = string.IndexOfNewlineChar(_remaining, out int stride);
             if (idx >= 0)
             {
                 _current = _remaining.Slice(0, idx);
-                _remaining = _remaining.Slice(idx + charsToConsume);
+                _remaining = _remaining.Slice(idx + stride);
             }
             else
             {
+                // We've reached EOF, but we still need to return 'true' for this final
+                // iteration so that the caller can query the Current property once more.
+
                 _current = _remaining;
                 _remaining = default;
-                _isEnumeratorActive = false; // EOF reached, but return 'true' for this iteration
+                _isEnumeratorActive = false;
             }
 
             return true;
