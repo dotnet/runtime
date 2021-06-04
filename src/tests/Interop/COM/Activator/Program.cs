@@ -32,225 +32,308 @@ namespace Activator
                 "Non-IClassFactory request should fail");
         }
 
-        static void NonrootedAssemblyPath()
+        static void NonrootedAssemblyPath(bool builtInComDisabled=false)
         {
             Console.WriteLine($"Running {nameof(NonrootedAssemblyPath)}...");
 
-            ArgumentException e = Assert.Throws<ArgumentException>(
-                () =>
-                {
-                    var cxt = new ComActivationContext()
+            if(!builtInComDisabled)
+            {
+                ArgumentException e = Assert.Throws<ArgumentException>(
+                    () =>
                     {
-                        InterfaceId = typeof(IClassFactory).GUID,
-                        AssemblyPath = "foo.dll"
-                    };
-                    ComActivator.GetClassFactoryForType(cxt);
-                },
-                "Non-root assembly path should not be valid");
+                        var cxt = new ComActivationContext()
+                        {
+                            InterfaceId = typeof(IClassFactory).GUID,
+                            AssemblyPath = "foo.dll"
+                        };
+                        ComActivator.GetClassFactoryForType(cxt);
+                    },
+                    "Non-root assembly path should not be valid");
+            }else
+            {
+                NotSupportedException e = Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        var cxt = new ComActivationContext()
+                        {
+                            InterfaceId = typeof(IClassFactory).GUID,
+                            AssemblyPath = "foo.dll"
+                        };
+                        ComActivator.GetClassFactoryForType(cxt);
+                    },
+                    "Built-in COM has been disabled via a feature switch");
+            }
         }
 
-        static void ClassNotRegistered()
+        static void ClassNotRegistered(bool builtInComDisabled=false)
         {
             Console.WriteLine($"Running {nameof(ClassNotRegistered)}...");
 
-            COMException e = Assert.Throws<COMException>(
-                () =>
-                {
-                    var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
-                    var cxt = new ComActivationContext()
+            if(!builtInComDisabled)
+            {
+
+                COMException e = Assert.Throws<COMException>(
+                    () =>
                     {
-                        ClassId = CLSID_NotRegistered,
-                        InterfaceId = typeof(IClassFactory).GUID,
-                        AssemblyPath = @"C:\foo.dll"
-                    };
-                    ComActivator.GetClassFactoryForType(cxt);
-                },
-                "Class should not be found");
+                        var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
+                        var cxt = new ComActivationContext()
+                        {
+                            ClassId = CLSID_NotRegistered,
+                            InterfaceId = typeof(IClassFactory).GUID,
+                            AssemblyPath = @"C:\foo.dll"
+                        };
+                        ComActivator.GetClassFactoryForType(cxt);
+                    },
+                    "Class should not be found");
 
-            const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
-            Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
+                const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
+                Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
+            }
+            else
+            {
+                var e = Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
+                        var cxt = new ComActivationContext()
+                        {
+                            ClassId = CLSID_NotRegistered,
+                            InterfaceId = typeof(IClassFactory).GUID,
+                            AssemblyPath = @"C:\foo.dll"
+                        };
+                        ComActivator.GetClassFactoryForType(cxt);
+                    },
+                    "Built-in COM has been disabled via a feature switch");
+            }
         }
 
-        static void ValidateAssemblyIsolation()
+        static void ValidateAssemblyIsolation(bool builtInComDisabled=false)
         {
-            Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}...");
-
-            string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
-            string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
-            string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
-            string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
-            string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
-
-            HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
-
-            var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
-            Guid iid = typeof(IGetTypeFromC).GUID;
-            Type typeCFromAssemblyA;
-            Type typeCFromAssemblyB;
-
-            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
-                0,
-                assemblyPaths,
-                string.Empty,
-                string.Empty))
+            if(!builtInComDisabled)
             {
-                var cxt = new ComActivationContext()
+                Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}...");
+
+                string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
+                string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
+                string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
+                string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
+                string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
+
+                HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
+
+                var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
+                Guid iid = typeof(IGetTypeFromC).GUID;
+                Type typeCFromAssemblyA;
+                Type typeCFromAssemblyB;
+
+                using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                    0,
+                    assemblyPaths,
+                    string.Empty,
+                    string.Empty))
                 {
-                    ClassId = CLSID_NotUsed,
-                    InterfaceId = typeof(IClassFactory).GUID,
-                    AssemblyPath = assemblyAPath,
-                    AssemblyName = "AssemblyA",
-                    TypeName = "ClassFromA"
-                };
-
-                var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
-
-                IntPtr svrRaw;
-                factory.CreateInstance(null, ref iid, out svrRaw);
-                var svr = (IGetTypeFromC)Marshal.GetObjectForIUnknown(svrRaw);
-                Marshal.Release(svrRaw);
-                typeCFromAssemblyA = (Type)svr.GetTypeFromC();
-            }
-
-            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
-                0,
-                assemblyPaths,
-                string.Empty,
-                string.Empty))
-            {
-                var cxt = new ComActivationContext()
-                {
-                    ClassId = CLSID_NotUsed,
-                    InterfaceId = typeof(IClassFactory).GUID,
-                    AssemblyPath = assemblyBPath,
-                    AssemblyName = "AssemblyB",
-                    TypeName = "ClassFromB"
-                };
-
-                var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
-
-                IntPtr svrRaw;
-                factory.CreateInstance(null, ref iid, out svrRaw);
-                var svr = (IGetTypeFromC)Marshal.GetObjectForIUnknown(svrRaw);
-                Marshal.Release(svrRaw);
-                typeCFromAssemblyB = (Type)svr.GetTypeFromC();
-            }
-
-            Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
-        }
-
-        static void ValidateUserDefinedRegistrationCallbacks()
-        {
-            Console.WriteLine($"Running {nameof(ValidateUserDefinedRegistrationCallbacks)}...");
-
-            string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
-            string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
-            string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
-            string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
-            string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
-
-            HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
-
-            var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
-            Guid iid = typeof(IValidateRegistrationCallbacks).GUID;
-
-            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
-                0,
-                assemblyPaths,
-                string.Empty,
-                string.Empty))
-            {
-                string[] typeNamesToValidate = {
-                    "ValidRegistrationTypeCallbacks",
-                    "ValidRegistrationStringCallbacks",
-                    "InheritedRegistrationTypeCallbacks",
-                    "InheritedRegistrationStringCallbacks"
-                };
-
-                foreach (string typeName in typeNamesToValidate)
-                {
-                    Console.WriteLine($"Validating {typeName}...");
-
                     var cxt = new ComActivationContext()
                     {
                         ClassId = CLSID_NotUsed,
                         InterfaceId = typeof(IClassFactory).GUID,
                         AssemblyPath = assemblyAPath,
                         AssemblyName = "AssemblyA",
-                        TypeName = typeName
+                        TypeName = "ClassFromA"
                     };
 
                     var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
                     IntPtr svrRaw;
                     factory.CreateInstance(null, ref iid, out svrRaw);
-                    var svr = Marshal.GetObjectForIUnknown(svrRaw);
+                    var svr = (IGetTypeFromC)Marshal.GetObjectForIUnknown(svrRaw);
                     Marshal.Release(svrRaw);
+                    typeCFromAssemblyA = (Type)svr.GetTypeFromC();
+                }
 
-                    var inst = (IValidateRegistrationCallbacks)svr;
-                    Assert.IsFalse(inst.DidRegister());
-                    Assert.IsFalse(inst.DidUnregister());
+                using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                    0,
+                    assemblyPaths,
+                    string.Empty,
+                    string.Empty))
+                {
+                    var cxt = new ComActivationContext()
+                    {
+                        ClassId = CLSID_NotUsed,
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = assemblyBPath,
+                        AssemblyName = "AssemblyB",
+                        TypeName = "ClassFromB"
+                    };
 
-                    cxt.InterfaceId = Guid.Empty;
-                    ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
-                    ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
+                    var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
-                    Assert.IsTrue(inst.DidRegister(), $"User-defined register function should have been called.");
-                    Assert.IsTrue(inst.DidUnregister(), $"User-defined unregister function should have been called.");
+                    IntPtr svrRaw;
+                    factory.CreateInstance(null, ref iid, out svrRaw);
+                    var svr = (IGetTypeFromC)Marshal.GetObjectForIUnknown(svrRaw);
+                    Marshal.Release(svrRaw);
+                    typeCFromAssemblyB = (Type)svr.GetTypeFromC();
+                }
+
+                Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
+            }
+            else
+            {
+                Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}...");
+
+                string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
+                string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
+                string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
+                string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
+                string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
+
+                HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
+
+                var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
+                Guid iid = typeof(IGetTypeFromC).GUID;
+                Type typeCFromAssemblyA;
+                Type typeCFromAssemblyB;
+
+                using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                    0,
+                    assemblyPaths,
+                    string.Empty,
+                    string.Empty))
+                {
+                    var cxt = new ComActivationContext()
+                    {
+                        ClassId = CLSID_NotUsed,
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = assemblyAPath,
+                        AssemblyName = "AssemblyA",
+                        TypeName = "ClassFromA"
+                    };
+
+                    var e = Assert.Throws<NotSupportedException>(
+                        () => 
+                        {
+                            var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+                        },
+                        "Built-in COM has been disabled via a feature switch");
                 }
             }
+        }
 
-            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
-                0,
-                assemblyPaths,
-                string.Empty,
-                string.Empty))
+        static void ValidateUserDefinedRegistrationCallbacks(bool builtInComDisabled=false)
+        {
+            // We don't test with builtInComDisabled since ValidateAssemblyIsolation() above covers it
+            if(!builtInComDisabled)
             {
-                foreach (string typename in new[] { "NoRegistrationCallbacks",  "InvalidArgRegistrationCallbacks", "InvalidInstanceRegistrationCallbacks", "MultipleRegistrationCallbacks" })
-                {
-                    Console.WriteLine($"Validating {typename}...");
+                Console.WriteLine($"Running {nameof(ValidateUserDefinedRegistrationCallbacks)}...");
 
-                    var cxt = new ComActivationContext()
-                    {
-                        ClassId = CLSID_NotUsed,
-                        InterfaceId = typeof(IClassFactory).GUID,
-                        AssemblyPath = assemblyAPath,
-                        AssemblyName = "AssemblyA",
-                        TypeName = typename
+                string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
+                string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
+                string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
+                string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
+                string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
+
+                HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
+
+                var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
+                Guid iid = typeof(IValidateRegistrationCallbacks).GUID;
+
+                using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                    0,
+                    assemblyPaths,
+                    string.Empty,
+                    string.Empty))
+                {
+                    string[] typeNamesToValidate = {
+                        "ValidRegistrationTypeCallbacks",
+                        "ValidRegistrationStringCallbacks",
+                        "InheritedRegistrationTypeCallbacks",
+                        "InheritedRegistrationStringCallbacks"
                     };
 
-                    var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
-
-                    IntPtr svrRaw;
-                    factory.CreateInstance(null, ref iid, out svrRaw);
-                    var svr = Marshal.GetObjectForIUnknown(svrRaw);
-                    Marshal.Release(svrRaw);
-
-                    var inst = (IValidateRegistrationCallbacks)svr;
-                    cxt.InterfaceId = Guid.Empty;
-                    bool exceptionThrown = false;
-                    try
+                    foreach (string typeName in typeNamesToValidate)
                     {
+                        Console.WriteLine($"Validating {typeName}...");
+
+                        var cxt = new ComActivationContext()
+                        {
+                            ClassId = CLSID_NotUsed,
+                            InterfaceId = typeof(IClassFactory).GUID,
+                            AssemblyPath = assemblyAPath,
+                            AssemblyName = "AssemblyA",
+                            TypeName = typeName
+                        };
+
+                        var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+
+                        IntPtr svrRaw;
+                        factory.CreateInstance(null, ref iid, out svrRaw);
+                        var svr = Marshal.GetObjectForIUnknown(svrRaw);
+                        Marshal.Release(svrRaw);
+
+                        var inst = (IValidateRegistrationCallbacks)svr;
+                        Assert.IsFalse(inst.DidRegister());
+                        Assert.IsFalse(inst.DidUnregister());
+
+                        cxt.InterfaceId = Guid.Empty;
                         ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
-                    }
-                    catch
-                    {
-                        exceptionThrown = true;
-                    }
-
-                    Assert.IsTrue(exceptionThrown || !inst.DidRegister());
-
-                    exceptionThrown = false;
-                    try
-                    {
                         ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
-                    }
-                    catch
-                    {
-                        exceptionThrown = true;
-                    }
 
-                    Assert.IsTrue(exceptionThrown || !inst.DidUnregister());
+                        Assert.IsTrue(inst.DidRegister(), $"User-defined register function should have been called.");
+                        Assert.IsTrue(inst.DidUnregister(), $"User-defined unregister function should have been called.");
+                    }
+                }
+
+                using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                    0,
+                    assemblyPaths,
+                    string.Empty,
+                    string.Empty))
+                {
+                    foreach (string typename in new[] { "NoRegistrationCallbacks",  "InvalidArgRegistrationCallbacks", "InvalidInstanceRegistrationCallbacks", "MultipleRegistrationCallbacks" })
+                    {
+                        Console.WriteLine($"Validating {typename}...");
+
+                        var cxt = new ComActivationContext()
+                        {
+                            ClassId = CLSID_NotUsed,
+                            InterfaceId = typeof(IClassFactory).GUID,
+                            AssemblyPath = assemblyAPath,
+                            AssemblyName = "AssemblyA",
+                            TypeName = typename
+                        };
+
+                        var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+
+                        IntPtr svrRaw;
+                        factory.CreateInstance(null, ref iid, out svrRaw);
+                        var svr = Marshal.GetObjectForIUnknown(svrRaw);
+                        Marshal.Release(svrRaw);
+
+                        var inst = (IValidateRegistrationCallbacks)svr;
+                        cxt.InterfaceId = Guid.Empty;
+                        bool exceptionThrown = false;
+                        try
+                        {
+                            ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
+                        }
+                        catch
+                        {
+                            exceptionThrown = true;
+                        }
+
+                        Assert.IsTrue(exceptionThrown || !inst.DidRegister());
+
+                        exceptionThrown = false;
+                        try
+                        {
+                            ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
+                        }
+                        catch
+                        {
+                            exceptionThrown = true;
+                        }
+
+                        Assert.IsTrue(exceptionThrown || !inst.DidUnregister());
+                    }
                 }
             }
         }
@@ -259,11 +342,19 @@ namespace Activator
         {
             try
             {
+                bool builtInComDisabled=false;
+                var comConfig = AppContext.GetData("System.Runtime.InteropServices.BuiltInComInterop.IsSupported");
+                if(comConfig != null && !bool.Parse(comConfig.ToString()))
+                {
+                    builtInComDisabled=true;
+                }
+                Console.WriteLine($"Built-in COM Disabled?: {builtInComDisabled}");
+
                 InvalidInterfaceRequest();
-                ClassNotRegistered();
-                NonrootedAssemblyPath();
-                ValidateAssemblyIsolation();
-                ValidateUserDefinedRegistrationCallbacks();
+                ClassNotRegistered(builtInComDisabled);
+                NonrootedAssemblyPath(builtInComDisabled);
+                ValidateAssemblyIsolation(builtInComDisabled);
+                ValidateUserDefinedRegistrationCallbacks(builtInComDisabled);
             }
             catch (Exception e)
             {
