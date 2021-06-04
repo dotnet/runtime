@@ -587,7 +587,7 @@ namespace System
         /// </remarks>
         public static float CosPi(float x)
         {
-            if (Abs(x) < 0.5f || !double.IsFinite(x))
+            if (Abs(x) < 0.5f || !float.IsFinite(x))
             {
                 // Fast path for small/special values, also covers +0/-0
                 return Cos(x * PI);
@@ -640,6 +640,56 @@ namespace System
         /// This method is effectively Tan(x * PI), with higher precision.
         /// It guarantees to return 0, <see cref="float.PositiveInfinity"/> or <see cref="float.NegativeInfinity"/> when <paramref name="x"/> is integer or half-integer.
         /// </remarks>
-        public static float TanPi(float x) => SinPi(x) / CosPi(x);
+        public static float TanPi(float x)
+        {
+
+            if (Abs(x) < 0.5f || !float.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Tan(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+                invert = true;
+            }
+
+            float floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +2n and -0 for +2n+1
+                // -0 for -2n and +0 for -2n-1
+                if (((int)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? -0.0f : 0.0f;
+            }
+
+            // fold all input into (0, 0.5]
+            float rem = x - floor;
+            if (rem == 0.5f)
+            {
+                // +inf for +2n+0.5 and -inf for +2n+1.5
+                // -inf for -2n-0.5 and +inf for -2n-1.5
+                if (((long)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? float.NegativeInfinity : float.PositiveInfinity;
+            }
+
+            if (rem > 0.5)
+            {
+                // tan(PI - x) = -tan(x)
+                rem = 1 - rem;
+                invert = !invert;
+            }
+
+            float tan = Tan(rem * PI);
+            return invert ? -tan : tan;
+        }
     }
 }

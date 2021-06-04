@@ -1570,6 +1570,55 @@ namespace System
         /// This method is effectively Tan(x * PI), with higher precision.
         /// It guarantees to return 0, <see cref="double.PositiveInfinity"/> or <see cref="double.NegativeInfinity"/> when <paramref name="x"/> is integer or half-integer.
         /// </remarks>
-        public static double TanPi(double x) => SinPi(x) / CosPi(x);
+        public static double TanPi(double x)
+        {
+            if (Abs(x) < 0.5 || !double.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Tan(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+                invert = true;
+            }
+
+            double floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +2n and -0 for +2n+1
+                // -0 for -2n and +0 for -2n-1
+                if (((long)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? -0.0 : 0.0;
+            }
+
+            // fold all input into (0, 0.5]
+            double rem = x - floor;
+            if (rem == 0.5)
+            {
+                // +inf for +2n+0.5 and -inf for +2n+1.5
+                // -inf for -2n-0.5 and +inf for -2n-1.5
+                if (((long)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? double.NegativeInfinity : double.PositiveInfinity;
+            }
+
+            if (rem > 0.5)
+            {
+                // tan(PI - x) = -tan(x)
+                rem = 1 - rem;
+                invert = !invert;
+            }
+
+            double tan = Tan(rem * PI);
+            return invert ? -tan : tan;
+        }
     }
 }
