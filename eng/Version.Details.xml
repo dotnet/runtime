@@ -210,9 +210,9 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>defa37b05c734e025292c5747664e970cd2ac444</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21281.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21303.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>2a24834bde0dab496ed9eba1bf9b87e39544b9b5</Sha>
+      <Sha>cdb083b2626582af4ff1171f577d9ff5a424c877</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
