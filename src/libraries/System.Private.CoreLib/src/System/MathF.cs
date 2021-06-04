@@ -532,42 +532,43 @@ namespace System
         /// </remarks>
         public static float SinPi(float x)
         {
-            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/sin_pi.hpp
-
-            if (x < 0)
+            if (Abs(x) < 0.5f || !float.IsFinite(x))
             {
-                return -SinPi(-x);
-            }
-
-            bool invert;
-            if (x < 0.5f)
-            {
+                // Fast path for small/special values, also covers +0/-0
                 return Sin(x * PI);
             }
-            if (x < 1)
+
+            bool invert = false;
+            if (x < 0)
             {
-                invert = true;
                 x = -x;
-            }
-            else
-            {
-                invert = false;
+                invert = true;
             }
 
             float floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +n and -0 for -n
+                return invert ? -0.0f : 0.0f;
+            }
+
+            // fold all input into (0, 0.5]
             if (((int)floor & 1) != 0)
             {
+                // sin(x + PI) = -sin(x)
                 invert = !invert;
             }
 
             float rem = x - floor;
-            if (rem > 0.5f)
-            {
-                rem = 1 - rem;
-            }
-            else if (rem == 0.5f)
+            if (rem == 0.5f)
             {
                 return invert ? -1 : 1;
+            }
+
+            if (rem > 0.5f)
+            {
+                // sin(PI - x) = sin(x)
+                rem = 1 - rem;
             }
 
             float sin = Sin(rem * PI);
@@ -586,37 +587,46 @@ namespace System
         /// </remarks>
         public static float CosPi(float x)
         {
-            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/cos_pi.hpp
-
-            if (Abs(x) < 0.25f)
+            if (Abs(x) < 0.5f || !double.IsFinite(x))
             {
+                // Fast path for small/special values, also covers +0/-0
                 return Cos(x * PI);
             }
 
+            bool invert = false;
             if (x < 0)
             {
                 x = -x;
             }
 
-            bool invert = false;
             float floor = Floor(x);
+
+            // fold all input into [0, 0.5]
             if (((int)floor & 1) != 0)
             {
+                // cos(x + PI) = -cos(x)
                 invert = !invert;
+            }
+
+            if (x == floor)
+            {
+                return invert ? -1 : 1;
             }
 
             float rem = x - floor;
+            if (rem == 0.5f)
+            {
+                return 0.0f;
+            }
+
             if (rem > 0.5f)
             {
+                // cos(PI - x) = -cos(x)
                 rem = 1 - rem;
                 invert = !invert;
             }
-            else if (rem == 0.5f)
-            {
-                return 0;
-            }
 
-            float cos = rem > 0.25f ? Cos(0.5f - rem) : Cos(rem);
+            float cos = Cos(rem * PI);
             return invert ? -cos : cos;
         }
 

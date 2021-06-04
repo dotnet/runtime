@@ -1462,42 +1462,43 @@ namespace System
         /// </remarks>
         public static double SinPi(double x)
         {
-            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/sin_pi.hpp
-
-            if (x < 0)
+            if (Abs(x) < 0.5 || !double.IsFinite(x))
             {
-                return -SinPi(-x);
-            }
-
-            bool invert;
-            if (x < 0.5)
-            {
+                // Fast path for small/special values, also covers +0/-0
                 return Sin(x * PI);
             }
-            if (x < 1)
+
+            bool invert = false;
+            if (x < 0)
             {
-                invert = true;
                 x = -x;
-            }
-            else
-            {
-                invert = false;
+                invert = true;
             }
 
             double floor = Floor(x);
-            if (((int)floor & 1) != 0)
+            if (x == floor)
             {
+                // +0 for +n and -0 for -n
+                return invert ? -0.0 : 0.0;
+            }
+
+            // fold all input into (0, 0.5]
+            if (((long)floor & 1) != 0)
+            {
+                // sin(x + PI) = -sin(x)
                 invert = !invert;
             }
 
             double rem = x - floor;
-            if (rem > 0.5)
-            {
-                rem = 1 - rem;
-            }
-            else if (rem == 0.5)
+            if (rem == 0.5)
             {
                 return invert ? -1 : 1;
+            }
+
+            if (rem > 0.5)
+            {
+                // sin(PI - x) = sin(x)
+                rem = 1 - rem;
             }
 
             double sin = Sin(rem * PI);
@@ -1516,37 +1517,46 @@ namespace System
         /// </remarks>
         public static double CosPi(double x)
         {
-            // Implementation based on https://github.com/boostorg/math/blob/develop/include/boost/math/special_functions/cos_pi.hpp
-
-            if (Abs(x) < 0.25)
+            if (Abs(x) < 0.5 || !double.IsFinite(x))
             {
+                // Fast path for small/special values, also covers +0/-0
                 return Cos(x * PI);
             }
 
+            bool invert = false;
             if (x < 0)
             {
                 x = -x;
             }
 
-            bool invert = false;
             double floor = Floor(x);
-            if (((int)floor & 1) != 0)
+
+            // fold all input into [0, 0.5]
+            if (((long)floor & 1) != 0)
             {
+                // cos(x + PI) = -cos(x)
                 invert = !invert;
+            }
+
+            if (x == floor)
+            {
+                return invert ? -1 : 1;
             }
 
             double rem = x - floor;
+            if (rem == 0.5)
+            {
+                return 0.0;
+            }
+
             if (rem > 0.5)
             {
+                // cos(PI - x) = -cos(x)
                 rem = 1 - rem;
                 invert = !invert;
             }
-            else if (rem == 0.5)
-            {
-                return 0;
-            }
 
-            double cos = rem > 0.25 ? Cos(0.5 - rem) : Cos(rem);
+            double cos = Cos(rem * PI);
             return invert ? -cos : cos;
         }
 
