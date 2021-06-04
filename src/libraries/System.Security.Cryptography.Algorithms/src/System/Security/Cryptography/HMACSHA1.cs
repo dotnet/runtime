@@ -128,7 +128,9 @@ namespace System.Security.Cryptography
         public static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (!TryHashData(key, source, destination, out int bytesWritten))
+            {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
 
             return bytesWritten;
         }

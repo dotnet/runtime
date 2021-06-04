@@ -25,7 +25,7 @@ namespace Internal.Cryptography
 
         internal static class OneShotHashProvider
         {
-            public static unsafe int MacData(
+            public static int MacData(
                 string hashAlgorithmId,
                 ReadOnlySpan<byte> key,
                 ReadOnlySpan<byte> source,
@@ -44,22 +44,15 @@ namespace Internal.Cryptography
 
                 int length = destination.Length;
 
-                fixed (byte* pKey = key)
-                fixed (byte* pSource = source)
-                fixed (byte* pDestination = destination)
-                {
-                    Check(Interop.Crypto.HmacOneShot(
-                        evpType,
-                        pKey,
-                        key.Length,
-                        pSource,
-                        source.Length,
-                        pDestination,
-                        ref length));
-                    Debug.Assert(length == hashSize);
-                }
+                Check(Interop.Crypto.HmacOneShot(
+                    evpType,
+                    key,
+                    source,
+                    destination,
+                    out int written));
 
-                return length;
+                Debug.Assert(written == hashSize);
+                return written;
             }
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
