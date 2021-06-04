@@ -897,20 +897,21 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	default:
 		mono_wasm_ensure_classes_resolved ();
 
-		if (uri_class && klass && mono_class_is_assignable_from(uri_class, klass))
-			return MARSHAL_TYPE_URI;
-		if (klass == voidtaskresult_class)
-			return MARSHAL_TYPE_VOID;
-		if (mono_class_is_enum (klass))
-			return MARSHAL_TYPE_ENUM;
-		if (type && !mono_type_is_reference (type)) //vt
-			return MARSHAL_TYPE_VT;
-		if (klass && mono_class_is_delegate (klass))
-			return MARSHAL_TYPE_DELEGATE;
-		if (klass && class_is_task(klass))
-			return MARSHAL_TYPE_TASK;
-		if (klass && safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
-			return MARSHAL_TYPE_SAFEHANDLE;
+		if (klass) {
+			if (uri_class && mono_class_is_assignable_from(uri_class, klass))
+				return MARSHAL_TYPE_URI;
+			if (klass == voidtaskresult_class)
+				return MARSHAL_TYPE_VOID;
+			if (mono_class_is_enum (klass))
+				return MARSHAL_TYPE_ENUM;
+			if (type && !mono_type_is_reference (type)) //vt
+				return MARSHAL_TYPE_VT;
+			if (mono_class_is_delegate (klass))
+				return MARSHAL_TYPE_DELEGATE;
+			if (class_is_task(klass))
+				return MARSHAL_TYPE_TASK;
+			if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0)))
+				return MARSHAL_TYPE_SAFEHANDLE;
 		}
 
 		return MARSHAL_TYPE_OBJECT;
