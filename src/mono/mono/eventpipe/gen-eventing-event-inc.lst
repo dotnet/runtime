@@ -19,6 +19,7 @@ ExceptionFilterStop
 ExceptionFinallyStart
 ExceptionFinallyStop
 ExceptionThrown_V1
+ExceptionThrownStop
 MethodDCEndILToNativeMap
 MethodDCEnd_V1
 MethodDCEndVerbose_V1

@@ -19,6 +19,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/mini/mini-runtime.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
@@ -2229,8 +2230,16 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 			NULL,
 			NULL);
 
+		if (!mono_component_profiler_clauses_enabled ()) {
+			FireEtwExceptionThrownStop (
+				NULL,
+				NULL);
+		}
+
 		g_free (exception_message);
 		g_free (type_name);
+
+		mono_error_cleanup (error);
 	}
 
 	return true;
@@ -2243,6 +2252,9 @@ ep_rt_mono_write_event_exception_clause (
 	MonoExceptionEnum clause_type,
 	MonoObject *obj)
 {
+	if (!mono_component_profiler_clauses_enabled ())
+		return true;
+
 	if ((clause_type == MONO_EXCEPTION_CLAUSE_FAULT || clause_type == MONO_EXCEPTION_CLAUSE_NONE) && (!EventEnabledExceptionCatchStart() || !EventEnabledExceptionCatchStop()))
 		return true;
 
@@ -2268,6 +2280,10 @@ ep_rt_mono_write_event_exception_clause (
 			NULL);
 
 		FireEtwExceptionCatchStop (
+			NULL,
+			NULL);
+
+		FireEtwExceptionThrownStop (
 			NULL,
 			NULL);
 	}
