@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <OutputType>Exe</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Handlers\DeflateHandler.cs" />
+    <Compile Include="Handlers\EchoHandler.cs" />
+    <Compile Include="Handlers\EchoWebSocketHandler.cs" />
+    <Compile Include="Handlers\EchoWebSocketHeadersHandler.cs" />
+    <Compile Include="Handlers\EmptyContentHandler.cs" />
+    <Compile Include="Handlers\GZipHandler.cs" />
+    <Compile Include="Handlers\RedirectHandler.cs" />
+    <Compile Include="Handlers\StatusCodeHandler.cs" />
+    <Compile Include="Handlers\TestHandler.cs" />
+    <Compile Include="Handlers\VerifyUploadHandler.cs" />
+    <Compile Include="Handlers\VersionHandler.cs" />
+    <Compile Include="Helpers\AuthenticationHelper.cs" />
+    <Compile Include="Helpers\ContentHelper.cs" />
+    <Compile Include="Helpers\NameValueCollectionConverter.cs" />
+    <Compile Include="Helpers\RequestHelper.cs" />
+    <Compile Include="Helpers\RequestInformation.cs" />
+    <Compile Include="GenericHandler.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Startup.cs" />
+  </ItemGroup>
+</Project>

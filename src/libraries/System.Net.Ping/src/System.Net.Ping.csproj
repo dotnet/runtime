@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetPing_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetsApple Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</TargetsApple>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
@@ -34,7 +35,7 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IcmpV4MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\IcmpV6MessageConstants.cs" />
-    <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
+    <Compile Include="System\Net\NetworkInformation\Ping.RawSocket.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\RawSocketPermissions.cs"
              Link="Common\System\Net\RawSocketPermissions.cs" />
@@ -57,6 +58,13 @@
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsApple)' != 'true'">
+    <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
+    <Compile Include="System\Net\NetworkInformation\Ping.PingUtility.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsApple)' == 'true'">
+    <Compile Include="System\Net\NetworkInformation\Ping.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.Windows.cs" />

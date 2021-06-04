@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Security;
-using System.Threading.Tasks;
 using System.Net.Quic.Implementations;
-using Xunit;
-using System.Threading;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Net.Quic.Tests
 {
@@ -21,12 +22,20 @@ namespace System.Net.Quic.Tests
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
+        public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+
+        public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
+            return true;
+        }
+
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
+                ServerCertificate = ServerCertificate
             };
         }
 
@@ -35,7 +44,7 @@ namespace System.Net.Quic.Tests
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => { return true; }
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
             };
         }
 

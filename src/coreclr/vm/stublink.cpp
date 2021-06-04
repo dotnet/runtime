@@ -815,56 +815,6 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 //
 // Throws COM+ exception on failure.
 //---------------------------------------------------------------
-Stub *StubLinker::LinkInterceptor(LoaderHeap *pHeap, Stub* interceptee, void *pRealAddr)
-{
-    STANDARD_VM_CONTRACT;
-
-    int globalsize = 0;
-    int size = CalculateSize(&globalsize);
-
-    _ASSERTE(!pHeap || pHeap->IsExecutable());
-
-    StubHolder<Stub> pStub;
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    StubUnwindInfoSegmentBoundaryReservationList ReservedStubs;
-
-    for (;;)
-#endif
-    {
-        pStub = InterceptStub::NewInterceptedStub(pHeap, size, interceptee,
-                                                    pRealAddr
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                                                    , UnwindInfoSize(globalsize)
-#endif
-                                                    );
-        bool fSuccess; fSuccess = EmitStub(pStub, globalsize, pHeap);
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        if (fSuccess)
-        {
-            break;
-        }
-        else
-        {
-            ReservedStubs.AddStub(pStub);
-            pStub.SuppressRelease();
-        }
-#else
-        CONSISTENCY_CHECK_MSG(fSuccess, ("EmitStub should always return true"));
-#endif
-    }
-
-    return pStub.Extract();
-}
-
-//---------------------------------------------------------------
-// Generate the actual stub. The returned stub has a refcount of 1.
-// No other methods (other than the destructor) should be called
-// after calling Link().
-//
-// Throws COM+ exception on failure.
-//---------------------------------------------------------------
 Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
 {
     STANDARD_VM_CONTRACT;
@@ -1947,11 +1897,6 @@ BOOL Stub::DecRef()
     _ASSERTE(m_signature == kUsedStub);
     int count = FastInterlockDecrement((LONG*)&m_refcount);
     if (count <= 0) {
-        if(m_patchOffset & INTERCEPT_BIT)
-        {
-            ((InterceptStub*)this)->ReleaseInterceptedStub();
-        }
-
         DeleteStub();
         return TRUE;
     }
@@ -2081,11 +2026,6 @@ TADDR Stub::GetAllocationBase()
     TADDR info = dac_cast<TADDR>(this);
     SIZE_T cbPrefix = 0;
 
-    if (IsIntercept())
-    {
-        cbPrefix += 2 * sizeof(TADDR);
-    }
-
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (HasUnwindInfo())
     {
@@ -2146,11 +2086,6 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
 
     S_SIZE_T size = S_SIZE_T(sizeof(Stub));
-
-    if (flags & NEWSTUB_FL_INTERCEPT)
-    {
-        size += sizeof(Stub *) + sizeof(void*);
-    }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (nUnwindInfoSize != 0)
@@ -2233,8 +2168,6 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
     m_refcount = 1;
     m_patchOffset = 0;
 
-    if((flags & NEWSTUB_FL_INTERCEPT) != 0)
-        m_patchOffset |= INTERCEPT_BIT;
     if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
         m_patchOffset |= LOADER_HEAP_BIT;
     if((flags & NEWSTUB_FL_MULTICAST) != 0)
@@ -2271,84 +2204,6 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     g_StubUnwindInfoHeapSegmentsCrst.Init(CrstStubUnwindInfoHeapSegments);
 #endif
-}
-
-/*static*/ Stub* InterceptStub::NewInterceptedStub(void* pCode,
-                                            Stub* interceptee,
-                                            void* pRealAddr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    InterceptStub *pStub = (InterceptStub *) NewStub(pCode, NEWSTUB_FL_INTERCEPT);
-
-    *pStub->GetInterceptedStub() = interceptee;
-    *pStub->GetRealAddr() = (TADDR)pRealAddr;
-
-    LOG((LF_CORDB, LL_INFO10000, "For Stub 0x%x, set intercepted stub to 0x%x\n",
-        pStub, interceptee));
-
-    return pStub;
-}
-
-//-------------------------------------------------------------------
-// Stub allocation done here.
-//-------------------------------------------------------------------
-/*static*/ Stub* InterceptStub::NewInterceptedStub(LoaderHeap *pHeap,
-                                                   UINT numCodeBytes,
-                                                   Stub* interceptee,
-                                                   void* pRealAddr
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                                                   , UINT nUnwindInfoSize
-#endif
-                                                   )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    InterceptStub *pStub = (InterceptStub *) NewStub(
-            pHeap,
-            numCodeBytes,
-            NEWSTUB_FL_INTERCEPT
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-            , nUnwindInfoSize
-#endif
-            );
-
-    *pStub->GetInterceptedStub() = interceptee;
-    *pStub->GetRealAddr() = (TADDR)pRealAddr;
-
-    LOG((LF_CORDB, LL_INFO10000, "For Stub 0x%x, set intercepted stub to 0x%x\n",
-        pStub, interceptee));
-
-    return pStub;
-}
-
-//-------------------------------------------------------------------
-// Release the stub that is owned by this stub
-//-------------------------------------------------------------------
-void InterceptStub::ReleaseInterceptedStub()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    Stub** intercepted = GetInterceptedStub();
-    // If we own the stub then decrement it. It can be null if the
-    // linked stub is actually a jitted stub.
-    if(*intercepted)
-        (*intercepted)->DecRef();
 }
 
 //-------------------------------------------------------------------

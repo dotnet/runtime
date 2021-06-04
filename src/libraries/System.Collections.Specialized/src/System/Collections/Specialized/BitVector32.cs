@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Specialized
 {
@@ -184,7 +185,7 @@ namespace System.Collections.Specialized
             return new Section(CreateMaskFromHighValue(maxValue), offset);
         }
 
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             if (!(o is BitVector32))
             {
@@ -253,7 +254,7 @@ namespace System.Collections.Specialized
                 }
             }
 
-            public override bool Equals(object? o)
+            public override bool Equals([NotNullWhen(true)] object? o)
             {
                 if (o is Section)
                     return Equals((Section)o);

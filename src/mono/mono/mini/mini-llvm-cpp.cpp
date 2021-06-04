@@ -520,6 +520,14 @@ mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind)
 }
 
 void
+mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
+{
+	Function *func = unwrap<Argument> (param)->getParent ();
+	int n = unwrap<Argument> (param)->getArgNo ();
+	func->addParamAttr (n, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+}
+
+void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
 	#if LLVM_API_VERSION >= 1100
@@ -527,6 +535,16 @@ mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 	#else
 	CallSite (unwrap<Instruction> (val)).addAttribute (index, convert_attr (kind));
 	#endif
+}
+
+void
+mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type)
+{
+#if LLVM_API_VERSION >= 1100
+	unwrap<CallBase> (val)->addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#else
+	CallSite (unwrap<Instruction> (val)).addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#endif
 }
 
 void*
@@ -674,7 +692,7 @@ get_intrins_id (IntrinsicId id)
 #if LLVM_API_VERSION >= 1100
 #define Generic IndependentIntrinsics
 #define X86 X86Intrinsics
-#define Arm64 AArch64Intrinsics
+#define Arm64 AARCH64Intrinsics
 #define Wasm WASMIntrinsics
 #define INTRINS(id, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
 #else

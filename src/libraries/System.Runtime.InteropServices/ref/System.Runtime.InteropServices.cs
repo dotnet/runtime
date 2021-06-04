@@ -497,6 +497,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr AllocHGlobal(int cb) { throw null; }
         public static System.IntPtr AllocHGlobal(System.IntPtr cb) { throw null; }
         public static bool AreComObjectsAvailableForCleanup() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object BindToMoniker(string monikerName) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -623,8 +624,8 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type structureType) { throw null; }
-        public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(System.IntPtr ptr) { throw null; }
+        public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors| System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type structureType) { throw null; }
+        public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
@@ -1089,6 +1090,12 @@ namespace System.Runtime.InteropServices
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class UnmanagedCallConvAttribute : System.Attribute
+    {
+        public UnmanagedCallConvAttribute() { }
+        public System.Type[]? CallConvs;
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
@@ -1799,6 +1806,43 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
         VAR_CONST = 2,
         VAR_DISPATCH = 3,
+    }
+}
+namespace System.Runtime.InteropServices.ObjectiveC
+{
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ObjectiveCTrackedTypeAttribute : System.Attribute
+    {
+        public ObjectiveCTrackedTypeAttribute() { }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.CLSCompliantAttribute(false)]
+    public static class ObjectiveCMarshal
+    {
+        public unsafe delegate delegate* unmanaged<System.IntPtr, void> UnhandledExceptionPropagationHandler(
+            System.Exception exception,
+            System.RuntimeMethodHandle lastMethod,
+            out System.IntPtr context);
+        public static unsafe void Initialize(
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+        public static GCHandle CreateReferenceTrackingHandle(
+            object obj,
+            out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public enum MessageSendFunction
+        {
+            MsgSend,
+            MsgSendFpret,
+            MsgSendStret,
+            MsgSendSuper,
+            MsgSendSuperStret,
+        }
+        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
+        public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
 namespace System.Security

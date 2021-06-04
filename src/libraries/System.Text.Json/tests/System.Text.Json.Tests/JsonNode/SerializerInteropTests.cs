@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class SerializerInteropTests
     {

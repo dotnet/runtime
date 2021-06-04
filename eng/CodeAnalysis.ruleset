@@ -63,6 +63,7 @@
     <Rule Id="CA1307" Action="None" />          <!-- Specify StringComparison -->
     <Rule Id="CA1308" Action="None" />          <!-- Normalize strings to uppercase -->
     <Rule Id="CA1309" Action="None" />          <!-- Use ordinal stringcomparison -->
+    <Rule Id="CA1310" Action="Info" />          <!-- Specify StringComparison for correctness -->
     <Rule Id="CA1401" Action="Warning" />       <!-- P/Invokes should not be visible -->
     <Rule Id="CA1416" Action="Warning" />       <!-- Validate platform compatibility -->
     <Rule Id="CA1417" Action="Warning" />       <!-- Do not use 'OutAttribute' on string parameters for P/Invokes -->
@@ -119,6 +120,12 @@
     <Rule Id="CA1838" Action="Warning" />       <!-- Avoid 'StringBuilder' parameters for P/Invokes -->
     <Rule Id="CA1839" Action="Warning" />       <!-- Use 'Environment.ProcessPath' -->
     <Rule Id="CA1840" Action="Warning" />       <!-- Use 'Environment.CurrentManagedThreadId' -->
+    <Rule Id="CA1841" Action="Warning" />       <!-- Prefer Dictionary.Contains methods -->
+    <Rule Id="CA1842" Action="Warning" />       <!-- Do not use 'WhenAll' with a single task -->
+    <Rule Id="CA1843" Action="Warning" />       <!-- Do not use 'WaitAll' with a single task -->
+    <Rule Id="CA1844" Action="Warning" />       <!-- Provide memory-based overrides of async methods when subclassing 'Stream' -->
+    <Rule Id="CA1845" Action="Warning" />       <!-- Use span-based 'string.Concat' -->
+    <Rule Id="CA1846" Action="Warning" />       <!-- Prefer 'AsSpan' over 'Substring' -->
     <Rule Id="CA2000" Action="None" />          <!-- Dispose objects before losing scope -->
     <Rule Id="CA2002" Action="None" />          <!-- Do not lock on objects with weak identity -->
     <Rule Id="CA2007" Action="Warning" />       <!-- Consider calling ConfigureAwait on the awaited task -->
@@ -165,6 +172,8 @@
     <Rule Id="CA2247" Action="Warning" />       <!-- Argument passed to TaskCompletionSource constructor should be TaskCreationOptions enum instead of TaskContinuationOptions enum. -->
     <Rule Id="CA2248" Action="Warning" />       <!-- Provide correct 'enum' argument to 'Enum.HasFlag' -->
     <Rule Id="CA2249" Action="Warning" />       <!-- Consider using 'string.Contains' instead of 'string.IndexOf' -->
+    <Rule Id="CA2250" Action="Warning" />       <!-- Use 'ThrowIfCancellationRequested' -->
+    <Rule Id="CA2251" Action="Warning" />       <!-- Use 'string.Equals' -->
     <Rule Id="CA2300" Action="None" />          <!-- Do not use insecure deserializer BinaryFormatter -->
     <Rule Id="CA2301" Action="None" />          <!-- Do not call BinaryFormatter.Deserialize without first setting BinaryFormatter.Binder -->
     <Rule Id="CA2302" Action="None" />          <!-- Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize -->
@@ -254,8 +263,6 @@
     <Rule Id="CA5401" Action="None" />          <!-- Do not use CreateEncryptor with non-default IV -->
     <Rule Id="CA5402" Action="None" />          <!-- Use CreateEncryptor with the default IV  -->
     <Rule Id="CA5403" Action="None" />          <!-- Do not hard-code certificate -->
-    <Rule Id="IL3000" Action="None" />          <!-- Avoid using accessing Assembly file path when publishing as a single-file -->
-    <Rule Id="IL3001" Action="None" />          <!-- Avoid using accessing Assembly file path when publishing as a single-file -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" />          <!-- Analyzer threw an exception -->

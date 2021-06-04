@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ApplicationManifest>App.manifest</ApplicationManifest>
+    <UseManagedCOMServer>true</UseManagedCOMServer>
+    <IsManagedCOMClient>true</IsManagedCOMClient>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GlobalInstance.cs" />
+    <Compile Include="GlobalInstance.Marshalling.cs" />
+    <Compile Include="../Common.cs" />
+    <Compile Include="../../ServerContracts/Server.Contracts.cs" />
+    <Compile Include="../../ServerContracts/ServerGuids.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
+    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <ProjectReference Include="../../NETServer/NETServer.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CoreShim.X.manifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
+  </ItemGroup>
+</Project>

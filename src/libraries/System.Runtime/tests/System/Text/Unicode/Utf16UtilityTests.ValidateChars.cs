@@ -165,11 +165,11 @@ namespace System.Text.Unicode.Tests
             processedInput[0] = '\u0080'; // 2-byte UTF-8 sequence
             processedInput[1] = '\u0800'; // 3-byte UTF-8 sequence
             processedInput[2] = '\u0080'; // 2-byte UTF-8 sequence
-            processedInput[3] = '\u0800'; // 3-byte UTF-8 sequence
+            processedInput[3] = '\u8000'; // 3-byte UTF-8 sequence (a negative number, when signed)
             processedInput[4] = '\u0080'; // 2-byte UTF-8 sequence
             processedInput[5] = '\u0800'; // 3-byte UTF-8 sequence
             processedInput[6] = '\u0080'; // 2-byte UTF-8 sequence
-            processedInput[7] = '\u0800'; // 3-byte UTF-8 sequence
+            processedInput[7] = '\u8880'; // 3-byte UTF-8 sequence (a negative number, when signed, with 0x0800 and 0x0080 marker bits also set)
 
             expectedUtf8ByteCount += 12;
 

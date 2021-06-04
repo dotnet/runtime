@@ -274,7 +274,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         {
             szFieldName = "Invalid FieldDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::InitializeFieldDescForEnC %s\n", szFieldName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::FixupFieldDescForEnC %08x %s\n", fieldDef, szFieldName));
     }
 #endif //LOGGING
 

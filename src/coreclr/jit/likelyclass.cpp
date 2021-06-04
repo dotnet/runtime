@@ -33,11 +33,10 @@ struct LikelyClassHistogramEntry
 };
 
 // Summarizes a ClassProfile table by forming a Histogram
-
 //
 struct LikelyClassHistogram
 {
-    LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount);
+    LikelyClassHistogram(INT_PTR* histogramEntries, unsigned entryCount);
 
     // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in
     // m_histogram
@@ -54,7 +53,14 @@ struct LikelyClassHistogram
     }
 };
 
-LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount)
+//------------------------------------------------------------------------
+// LikelyClassHistogram::LikelyClassHistgram: construct a new histogram
+//
+// Arguments:
+//    histogramEntries - pointer to the table portion of a ClassProfile* object (see corjit.h)
+//    entryCount - number of entries in the table to examine
+//
+LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned entryCount)
 {
     m_unknownTypes                 = 0;
     m_totalCount                   = 0;
@@ -97,8 +103,29 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
     }
 }
 
-// This is used by the devirtualization logic below, and by crossgen2 when producing the R2R image (to reduce the size
-// cost of carrying the type histogram)
+//------------------------------------------------------------------------
+// getLikelyClass: find class profile data for an IL offset, and return the most likely class
+//
+// Arguments:
+//    schema - profile schema
+//    countSchemaItems - number of items in the schema
+//    pInstrumentationData - associated data
+//    ilOffset - il offset of the callvirt
+//    pLikelihood - [OUT] likelihood of observing that entry [0...100]
+//    pNumberOfClasses - [OUT] estimated number of classes seen at runtime
+//
+// Returns:
+//    Class handle for the most likely class, or nullptr
+//
+// Notes:
+//    A "monomorphic" call site will return likelihood 100 and number of entries = 1.
+//
+//   This is used by the devirtualization logic below, and by crossgen2 when producing
+//   the R2R image (to reduce the sizecost of carrying the type histogram)
+//
+//   This code can runs without a jit instance present, so JITDUMP and related
+//   cannot be used.
+//
 extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
                                                                 UINT32                                 countSchemaItems,
                                                                 BYTE*   pInstrumentationData,
@@ -129,14 +156,16 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
                 return (CORINFO_CLASS_HANDLE)result;
         }
 
-        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
-            (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
+        bool isHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount) ||
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+
+        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
         {
             // Form a histogram
             //
-            LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset),
-                                   (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
+            LikelyClassHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
 
             // Use histogram count as number of classes estimate
             //
@@ -204,7 +233,6 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
                     if (maxKnownCount > 0)
                     {
                         *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;
-                        ;
                         return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(maxKnownIndex).m_mt;
                     }
 
@@ -218,4 +246,83 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
     // Failed to find histogram data for this method
     //
     return NULL;
+}
+
+//------------------------------------------------------------------------
+// getRandomClass: find class profile data for an IL offset, and return
+//   one of the possible classes at random
+//
+// Arguments:
+//    schema - profile schema
+//    countSchemaItems - number of items in the schema
+//    pInstrumentationData - associated data
+//    ilOffset - il offset of the callvirt
+//    random - randomness generator
+//
+// Returns:
+//    Randomly observed class, or nullptr.
+//
+CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSchema* schema,
+                                              UINT32                                 countSchemaItems,
+                                              BYTE*                                  pInstrumentationData,
+                                              int32_t                                ilOffset,
+                                              CLRRandom*                             random)
+{
+    if (schema == nullptr)
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+    for (COUNT_T i = 0; i < countSchemaItems; i++)
+    {
+        if (schema[i].ILOffset != (int32_t)ilOffset)
+        {
+            continue;
+        }
+
+        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) &&
+            (schema[i].Count == 1))
+        {
+            INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
+            if (ICorJitInfo::IsUnknownTypeHandle(result))
+            {
+                return NO_CLASS_HANDLE;
+            }
+            else
+            {
+                return (CORINFO_CLASS_HANDLE)result;
+            }
+        }
+
+        bool isHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount) ||
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+
+        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
+            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
+        {
+            // Form a histogram
+            //
+            LikelyClassHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
+
+            if (h.countHistogramElements == 0)
+            {
+                return NO_CLASS_HANDLE;
+            }
+
+            // Choose an entry at random.
+            //
+            unsigned                  randomEntryIndex = random->Next(0, h.countHistogramElements - 1);
+            LikelyClassHistogramEntry randomEntry      = h.HistogramEntryAt(randomEntryIndex);
+
+            if (ICorJitInfo::IsUnknownTypeHandle(randomEntry.m_mt))
+            {
+                return NO_CLASS_HANDLE;
+            }
+
+            return (CORINFO_CLASS_HANDLE)randomEntry.m_mt;
+        }
+    }
+
+    return NO_CLASS_HANDLE;
 }

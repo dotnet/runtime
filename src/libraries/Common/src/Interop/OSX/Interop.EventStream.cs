@@ -78,8 +78,8 @@ internal static partial class Interop
         {
             public CFIndex version;
             public IntPtr info;
-            public IntPtr retainFunc;
-            public IntPtr releaseFunc;
+            public IntPtr retain;
+            public IntPtr release;
             public IntPtr copyDescription;
         }
 

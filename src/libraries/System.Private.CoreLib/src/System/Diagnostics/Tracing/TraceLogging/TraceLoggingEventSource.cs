@@ -745,19 +745,15 @@ namespace System.Diagnostics.Tracing
 
         private unsafe void WriteToAllListeners(string? eventName, ref EventDescriptor eventDescriptor, EventTags tags, Guid* pActivityId, Guid* pChildActivityId, EventPayload? payload)
         {
-            EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
-            eventCallbackArgs.EventName = eventName;
-            eventCallbackArgs.m_level = (EventLevel)eventDescriptor.Level;
-            eventCallbackArgs.m_keywords = (EventKeywords)eventDescriptor.Keywords;
-            eventCallbackArgs.m_opcode = (EventOpcode)eventDescriptor.Opcode;
-            eventCallbackArgs.m_tags = tags;
-
             // Self described events do not have an id attached. We mark it internally with -1.
-            eventCallbackArgs.EventId = -1;
-            if (pActivityId != null)
-                eventCallbackArgs.ActivityId = *pActivityId;
-            if (pChildActivityId != null)
-                eventCallbackArgs.RelatedActivityId = *pChildActivityId;
+            var eventCallbackArgs = new EventWrittenEventArgs(this, -1, pActivityId, pChildActivityId)
+            {
+                EventName = eventName,
+                Level = (EventLevel)eventDescriptor.Level,
+                Keywords = (EventKeywords)eventDescriptor.Keywords,
+                Opcode = (EventOpcode)eventDescriptor.Opcode,
+                Tags = tags
+            };
 
             if (payload != null)
             {
@@ -765,7 +761,7 @@ namespace System.Diagnostics.Tracing
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
             }
 
-            DispatchToAllListeners(-1, eventCallbackArgs);
+            DispatchToAllListeners(eventCallbackArgs);
         }
 
 #if ES_BUILD_STANDALONE

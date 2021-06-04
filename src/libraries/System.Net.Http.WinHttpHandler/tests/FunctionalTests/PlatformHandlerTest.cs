@@ -104,6 +104,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         public PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
@@ -260,6 +261,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http2_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;

@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <IsPackable>true</IsPackable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>

@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class DynamicTests
     {

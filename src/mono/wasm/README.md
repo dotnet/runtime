@@ -13,7 +13,7 @@ Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building ta
 you are directly using the `dotnet build`, or `build.sh`.
 
 * Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.12`. See [emscripten-version.txt](./emscripten-version.txt)
+Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.21`. See [emscripten-version.txt](./emscripten-version.txt)
 
 Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
 
@@ -137,7 +137,7 @@ To run a test with `FooBar` in the name:
 
 (See https://docs.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
 
-Additional arguments for `dotnet test` can be passed via `TEST_ARGS`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
+Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
 ## Run samples
 

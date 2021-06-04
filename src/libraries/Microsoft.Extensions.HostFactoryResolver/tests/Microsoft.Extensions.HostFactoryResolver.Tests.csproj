@@ -8,6 +8,11 @@
     <Compile Include="HostFactoryResolverTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="BuildWebHostInvalidSignature\BuildWebHostInvalidSignature.csproj" />
     <ProjectReference Include="BuildWebHostPatternTestSite\BuildWebHostPatternTestSite.csproj" />

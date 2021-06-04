@@ -7,6 +7,9 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     public sealed partial class AesGcm : IDisposable
     {
         private const int NonceSize = 12;
@@ -15,22 +18,26 @@ namespace System.Security.Cryptography
 
         public AesGcm(ReadOnlySpan<byte> key)
         {
-            AesAEAD.CheckKeySize(key.Length * 8);
+            ThrowIfNotSupported();
+
+            AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
         public AesGcm(byte[] key)
         {
+            ThrowIfNotSupported();
+
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            AesAEAD.CheckKeySize(key.Length * 8);
+            AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
-            AesAEAD.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
 
@@ -42,12 +49,12 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            EncryptInternal(nonce, plaintext, ciphertext, tag, associatedData);
+            EncryptCore(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
         {
-            AesAEAD.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }
 
@@ -59,7 +66,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            DecryptInternal(nonce, ciphertext, tag, plaintext, associatedData);
+            DecryptCore(nonce, ciphertext, tag, plaintext, associatedData);
         }
 
         private static void CheckParameters(
@@ -76,6 +83,14 @@ namespace System.Security.Cryptography
 
             if (!tag.Length.IsLegalSize(TagByteSizes))
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tag));
+        }
+
+        private static void ThrowIfNotSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(AesGcm)));
+            }
         }
     }
 }

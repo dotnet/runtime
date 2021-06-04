@@ -176,15 +176,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-#if defined(TARGET_XARCH)
-    CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
-#elif defined(TARGET_ARM64)
-    CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-    if (!compOpportunisticallyDependsOn(minimumIsa) || !JitConfig.EnableHWIntrinsic())
+    if (!IsBaselineSimdIsaSupported())
     {
         // The user disabled support for the baseline ISA so
         // don't emit any SIMD intrinsics as they all require
@@ -230,6 +222,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         isInstanceMethod = true;
         argClass         = clsHnd;
+
+        if (SimdAsHWIntrinsicInfo::BaseTypeFromThisArg(intrinsic))
+        {
+            assert(simdBaseJitType == CORINFO_TYPE_UNDEF);
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
+        }
     }
     else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
     {
@@ -434,6 +432,39 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
             break;
         }
+
+#if defined(TARGET_XARCH)
+        case NI_VectorT256_get_Item:
+        case NI_VectorT128_get_Item:
+        {
+            switch (simdBaseType)
+            {
+                // Using software fallback if simdBaseType is not supported by hardware
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_INT:
+                case TYP_UINT:
+                case TYP_LONG:
+                case TYP_ULONG:
+                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                    {
+                        return nullptr;
+                    }
+                    break;
+
+                case TYP_DOUBLE:
+                case TYP_FLOAT:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    // short/ushort/float/double is supported by SSE2
+                    break;
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+#endif // TARGET_XARCH
 
 #if defined(TARGET_XARCH)
         case NI_VectorT128_Dot:
@@ -735,6 +766,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     copyBlkSrc = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize,
                                                               /* isSimdAsHWIntrinsic */ true);
                     break;
+                }
+
+                case NI_VectorT128_get_Item:
+                case NI_VectorT256_get_Item:
+                {
+                    return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Vector2_op_Division:
@@ -1056,6 +1094,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     copyBlkSrc = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize,
                                                               /* isSimdAsHWIntrinsic */ true);
                     break;
+                }
+
+                case NI_VectorT128_get_Item:
+                {
+                    return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_Max:

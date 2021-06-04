@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonArrayTests
     {
@@ -42,19 +42,20 @@ namespace System.Text.Json.Node.Tests
             Assert.Throws<ArgumentNullException>(() => new JsonArray().WriteTo(null));
         }
 
-        [Fact]
-        public static void WriteTo()
+        [Theory]
+        [InlineData("[]")]
+        [InlineData("[42]")]
+        [InlineData("[42,43]")]
+        public static void WriteTo(string json)
         {
-            const string Json = "[42]";
-
-            JsonArray jArray = JsonNode.Parse(Json).AsArray();
+            JsonArray jArray = JsonNode.Parse(json).AsArray();
             var stream = new MemoryStream();
             var writer = new Utf8JsonWriter(stream);
             jArray.WriteTo(writer);
             writer.Flush();
 
-            string json = Encoding.UTF8.GetString(stream.ToArray());
-            Assert.Equal(Json, json);
+            string result = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Equal(json, result);
         }
 
         [Fact]

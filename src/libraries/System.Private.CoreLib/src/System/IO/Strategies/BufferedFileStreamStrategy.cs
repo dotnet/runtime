@@ -354,17 +354,18 @@ namespace System.IO.Strategies
                 bool releaseTheLock = true;
                 try
                 {
-                    if (_readLen - _readPos >= buffer.Length)
+                    if (_readLen == _readPos && buffer.Length >= _bufferSize)
                     {
-                        // hot path #1: there is enough data in the buffer
+                        // hot path #1: the read buffer is empty and buffering would not be beneficial
+                        // To find out why we are bypassing cache here, please see WriteAsync comments.
+                        return _strategy.ReadAsync(buffer, cancellationToken);
+                    }
+                    else if (_readLen - _readPos >= buffer.Length)
+                    {
+                        // hot path #2: there is enough data in the buffer
                         _buffer.AsSpan(_readPos, buffer.Length).CopyTo(buffer.Span);
                         _readPos += buffer.Length;
                         return new ValueTask<int>(buffer.Length);
-                    }
-                    else if (_readLen == _readPos && buffer.Length >= _bufferSize)
-                    {
-                        // hot path #2: the read buffer is empty and buffering would not be beneficial
-                        return _strategy.ReadAsync(buffer, cancellationToken);
                     }
 
                     releaseTheLock = false;
@@ -650,18 +651,28 @@ namespace System.IO.Strategies
                 bool releaseTheLock = true;
                 try
                 {
-                    // hot path #1 if the write completely fits into the buffer, we can complete synchronously:
-                    if (_bufferSize - _writePos >= buffer.Length)
+                    // hot path #1: the write buffer is empty and buffering would not be beneficial
+                    if (_writePos == 0 && buffer.Length >= _bufferSize)
                     {
+                        // The fact that Strategy can be wrapped by BufferedFileStreamStrategy
+                        // is transparent to every Strategy implementation. It means, that
+                        // every Strategy must work fine no matter if buffering is enabled or not.
+                        // In case of AsyncWindowsFileStreamStrategy.WriteAsync,
+                        // it updates it's private position BEFORE it enqueues the IO request.
+                        // This combined with the fact that BufferedFileStreamStrategy state
+                        // is not modified here, allows us to NOT await the call
+                        // and release the lock BEFORE the IO request completes.
+                        // It improves the performance of common scenario, where buffering is enabled (default)
+                        // but the user provides buffers larger (or equal) to the internal buffer size.
+                        return _strategy.WriteAsync(buffer, cancellationToken);
+                    }
+                    else if (_bufferSize - _writePos >= buffer.Length)
+                    {
+                        // hot path #2 if the write completely fits into the buffer, we can complete synchronously:
                         EnsureBufferAllocated();
                         buffer.Span.CopyTo(_buffer.AsSpan(_writePos));
                         _writePos += buffer.Length;
                         return default;
-                    }
-                    else if (_writePos == 0 && buffer.Length >= _bufferSize)
-                    {
-                        // hot path #2: the write buffer is empty and buffering would not be beneficial
-                        return _strategy.WriteAsync(buffer, cancellationToken);
                     }
 
                     releaseTheLock = false;

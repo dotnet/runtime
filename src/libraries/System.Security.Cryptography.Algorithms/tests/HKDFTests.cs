@@ -439,6 +439,24 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
 
             [Fact]
+            public void Rfc5869ExpandOutputLengthZero()
+            {
+                byte[] prk = new byte[20];
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "outputLength",
+                    () => HKDF.Expand(HashAlgorithmName.SHA1, prk, 0, Array.Empty<byte>()));
+            }
+
+            [Fact]
+            public void Rfc5869ExpandOutputLengthLessThanZero()
+            {
+                byte[] prk = new byte[20];
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "outputLength",
+                    () => HKDF.Expand(HashAlgorithmName.SHA1, prk, -1, Array.Empty<byte>()));
+            }
+
+            [Fact]
             public void Rfc5869DeriveKeyNullIkm()
             {
                 AssertExtensions.Throws<ArgumentNullException>(
@@ -462,6 +480,24 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(
                     "outputLength",
                     () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, 8421505, Array.Empty<byte>(), Array.Empty<byte>()));
+            }
+
+            [Fact]
+            public void Rfc5869DeriveOutputLengthZero()
+            {
+                byte[] ikm = new byte[20];
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "outputLength",
+                    () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, 0, Array.Empty<byte>(), Array.Empty<byte>()));
+            }
+
+            [Fact]
+            public void Rfc5869DeriveOutputLengthLessThanZero()
+            {
+                byte[] ikm = new byte[20];
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "outputLength",
+                    () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, -1, Array.Empty<byte>(), Array.Empty<byte>()));
             }
         }
 
@@ -531,6 +567,17 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
 
             [Fact]
+            public void Rfc5869ExpandOutputLengthZero()
+            {
+                byte[] prk = new byte[20];
+                byte[] okm = new byte[0];
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "output",
+                    () => HKDF.Expand(HashAlgorithmName.SHA1, prk, okm, Array.Empty<byte>()));
+            }
+
+            [Fact]
             public void Rfc5869DeriveKeySpanOkmMaxSizePlusOne()
             {
                 byte[] ikm = new byte[20];
@@ -545,6 +592,17 @@ namespace System.Security.Cryptography.Algorithms.Tests
             {
                 byte[] ikm = new byte[20];
                 byte[] okm = new byte[8421505];
+                AssertExtensions.Throws<ArgumentException>(
+                    "output",
+                    () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, okm, Array.Empty<byte>(), Array.Empty<byte>()));
+            }
+
+            [Fact]
+            public void Rfc5869DeriveKeyOutputLengthZero()
+            {
+                byte[] ikm = new byte[20];
+                byte[] okm = new byte[0];
+
                 AssertExtensions.Throws<ArgumentException>(
                     "output",
                     () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, okm, Array.Empty<byte>(), Array.Empty<byte>()));

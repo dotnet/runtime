@@ -1143,6 +1143,8 @@ DWORD_PTR GetCurrentProcessCpuMask();
 
 #endif // HOST_WINDOWS
 
+int GetTotalProcessorCount();
+
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************
@@ -4713,12 +4715,12 @@ void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler l
 namespace Clr { namespace Util
 {
 
-#ifdef FEATURE_COMINTEROP
+#ifdef HOST_WINDOWS
 namespace Com
 {
     HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name);
 }
-#endif // FEATURE_COMINTEROP
+#endif // HOST_WINDOWS
 
 }}
 

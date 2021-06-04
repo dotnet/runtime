@@ -5,7 +5,6 @@
 
 #include <jni.h>
 #include <android/log.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "pal_safecrt.h"
 
@@ -466,13 +465,48 @@ extern jmethodID g_KeyAgreementInit;
 extern jmethodID g_KeyAgreementDoPhase;
 extern jmethodID g_KeyAgreementGenerateSecret;
 
+// Compatibility macros
+#if !defined (__mallocfunc)
+#if defined (__clang__) || defined (__GNUC__)
+#define __mallocfunc __attribute__((__malloc__))
+#else // def (__clang__ || __GNUC__)
+#define __mallocfunc
+#endif // ndef (__clang__ || __GNUC__)
+#endif
+
+#if !defined (__BIONIC_ALLOC_SIZE)
+#if defined (__clang__) || defined (__GNUC__)
+#define __BIONIC_ALLOC_SIZE(...) __attribute__((__alloc_size__(__VA_ARGS__)))
+#else // def (__clang__ || __GNUC__)
+#define __BIONIC_ALLOC_SIZE(...)
+#endif // ndef (__clang__ || __GNUC__)
+#endif
+
+#if !defined (__wur)
+#if defined (__clang__) || defined (__GNUC__)
+#define __wur __attribute__((__warn_unused_result__))
+#else // def (__clang__ || __GNUC__)
+#define __wur
+#endif // ndef (__clang__ || __GNUC__)
+#endif
+
+#if defined (__clang__) || defined (__GNUC__)
+#define ARGS_NON_NULL(...) __attribute__((nonnull (__VA_ARGS__)))
+#else
+#define ARGS_NON_NULL_ALL
+#define ARGS_NON_NULL(_idx1_, ...)
+#endif
+
+#define ARGS_NON_NULL_ALL ARGS_NON_NULL()
+
 // Logging helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define LOG_WARN(fmt, ...) ((void)__android_log_print(ANDROID_LOG_WARN, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define LOG_FATAL(fmt, ...) ((void)__android_log_print(ANDROID_LOG_FATAL, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 
 // JNI helpers - assume there is a JNIEnv* variable named env
-#define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 #define ON_EXCEPTION_PRINT_AND_GOTO(label) if (CheckJNIExceptions(env)) goto label
 
 // Explicitly ignore jobject return value
@@ -500,24 +534,64 @@ do { \
     } \
 } while(0)
 
-void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite);
-jobject ToGRef(JNIEnv *env, jobject lref);
-jobject AddGRef(JNIEnv *env, jobject gref);
-void ReleaseGRef(JNIEnv *env, jobject gref);
-void ReleaseLRef(JNIEnv *env, jobject lref);
-jclass GetClassGRef(JNIEnv *env, const char* name);
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite) ARGS_NON_NULL(1,2);
+jobject ToGRef(JNIEnv *env, jobject lref) ARGS_NON_NULL(1);
+jobject AddGRef(JNIEnv *env, jobject gref) ARGS_NON_NULL(1);
+void ReleaseGRef(JNIEnv *env, jobject gref) ARGS_NON_NULL(1);
+void ReleaseLRef(JNIEnv *env, jobject lref) ARGS_NON_NULL(1);
+jclass GetClassGRef(JNIEnv *env, const char* name) ARGS_NON_NULL(1);
 
 // Print and clear any JNI exceptions. Returns true if there was an exception, false otherwise.
-bool CheckJNIExceptions(JNIEnv* env);
+bool CheckJNIExceptions(JNIEnv* env) ARGS_NON_NULL_ALL;
 
 // Clear any JNI exceptions without printing them. Returns true if there was an exception, false otherwise.
-bool TryClearJNIExceptions(JNIEnv* env);
+bool TryClearJNIExceptions(JNIEnv* env) ARGS_NON_NULL_ALL;
 
 // Get any pending JNI exception. Returns true if there was an exception, false otherwise.
-bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException);
+bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException) ARGS_NON_NULL(1,2);
 
-jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
-jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
-jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
+jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
+jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
+jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 JNIEnv* GetJNIEnv(void);
-int GetEnumAsInt(JNIEnv *env, jobject enumObj);
+
+int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
+
+void* xmalloc (size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1) __wur;
+void* xcalloc (size_t nmemb, size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1,2) __wur;
+
+ARGS_NON_NULL_ALL static inline jstring make_java_string (JNIEnv *env, const char* str)
+{
+    jstring ret = (jstring)(*env)->NewStringUTF(env, str);
+    if(ret != NULL)
+    {
+        return ret;
+    }
+
+    CheckJNIExceptions(env);
+    abort();
+}
+
+ARGS_NON_NULL_ALL static inline jbyteArray make_java_byte_array (JNIEnv *env, int32_t flen)
+{
+    jbyteArray ret = (*env)->NewByteArray(env, flen);
+    if(ret != NULL)
+    {
+        return ret;
+    }
+
+    CheckJNIExceptions(env);
+    abort();
+}
+
+ARGS_NON_NULL(1, 3) static inline jobjectArray make_java_object_array (JNIEnv *env, int32_t flen, jclass elementClass, jobject initialElement)
+{
+    jobjectArray ret = (*env)->NewObjectArray(env, flen, elementClass, initialElement);
+    if(ret != NULL)
+    {
+        return ret;
+    }
+
+    CheckJNIExceptions(env);
+    abort();
+}

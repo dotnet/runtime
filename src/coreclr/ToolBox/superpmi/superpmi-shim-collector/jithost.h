@@ -9,8 +9,6 @@ class JitHost : public ICorJitHost
 public:
     JitHost(ICorJitHost* wrappedHost, MethodContext* methodContext);
 
-    void setMethodContext(MethodContext* methodContext);
-
 #include "icorjithostimpl.h"
 
 private:

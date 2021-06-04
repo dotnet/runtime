@@ -1,7 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

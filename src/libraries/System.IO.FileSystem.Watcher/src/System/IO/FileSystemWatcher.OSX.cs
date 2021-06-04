@@ -275,9 +275,6 @@ namespace System.IO
 
                     StaticWatcherRunLoopManager.UnscheduleFromRunLoop(eventStream);
                     eventStream.Dispose();
-
-                    Debug.Assert(_gcHandle.IsAllocated);
-                    _gcHandle.Free();
                 }
             }
 
@@ -314,6 +311,7 @@ namespace System.IO
 
                     Interop.EventStream.FSEventStreamContext context = default;
                     context.info = GCHandle.ToIntPtr(_gcHandle);
+                    context.release = (IntPtr)(delegate* unmanaged<IntPtr, void>)&ReleaseCallback;
 
                     // Create the event stream for the path and tell the stream to watch for file system events.
                     SafeEventStreamHandle eventStream = Interop.EventStream.FSEventStreamCreate(
@@ -336,7 +334,10 @@ namespace System.IO
                 finally
                 {
                     if (cleanupGCHandle)
+                    {
+                        Debug.Assert(_gcHandle.Target is RunningInstance);
                         _gcHandle.Free();
+                    }
                     arrPaths?.Dispose();
                     path?.Dispose();
                 }
@@ -349,7 +350,7 @@ namespace System.IO
                     if (!Interop.EventStream.FSEventStreamStart(_eventStream))
                     {
                         // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
-                        int error = Marshal.GetLastWin32Error();
+                        int error = Marshal.GetLastPInvokeError();
                         if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                         {
                             // An error occurred while trying to start the run loop so fail out
@@ -371,6 +372,14 @@ namespace System.IO
                         CleanupEventStream();
                     }
                 }
+            }
+
+            [UnmanagedCallersOnly]
+            private static void ReleaseCallback(IntPtr clientCallBackInfo)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr(clientCallBackInfo);
+                Debug.Assert(gcHandle.Target is RunningInstance);
+                gcHandle.Free();
             }
 
             [UnmanagedCallersOnly]

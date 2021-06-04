@@ -27,6 +27,7 @@ int32_t local_RSA_meth_get_flags(const RSA_METHOD* meth);
 int32_t local_RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t local_RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t local_RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
+int local_RSA_test_flags(const RSA *r, int flags);
 int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2);
 int32_t local_SSL_is_init_finished(const SSL* ssl);
 int32_t local_SSL_CTX_config(SSL_CTX* ctx, const char* name);

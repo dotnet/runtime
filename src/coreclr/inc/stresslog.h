@@ -314,6 +314,14 @@ public:
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
+    struct ModuleDesc
+    {
+        uint8_t* baseAddress;
+        size_t        size;
+    };
+    static const size_t MAX_MODULES = 5;
+    ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
+
 #if defined(HOST_WINDOWS) && defined(HOST_64BIT)
 #define MEMORY_MAPPED_STRESSLOG
 #endif
@@ -322,12 +330,6 @@ public:
     MapViewHolder hMapView;
     static void* AllocMemoryMapped(size_t n);
 
-    struct ModuleDesc
-    {
-        uint8_t*      baseAddress;
-        size_t        size;
-    };
-    static const size_t MAX_MODULES = 5;
     struct StressLogHeader
     {
         size_t        headerSize;               // size of this header including size field and moduleImage

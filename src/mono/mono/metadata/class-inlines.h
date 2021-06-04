@@ -206,6 +206,18 @@ m_class_is_private (MonoClass *klass)
 }
 
 static inline gboolean
+m_method_is_static (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_STATIC) != 0;
+}
+
+static inline gboolean
+m_method_is_virtual (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_VIRTUAL) != 0;
+}
+
+static inline gboolean
 m_method_is_icall (MonoMethod *method)
 {
 	return (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) != 0;
