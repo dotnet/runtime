@@ -1119,11 +1119,11 @@ namespace System
             return compressMembers;
         }
 
-        public override MemberInfo? GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
 
-            return member.MemberType switch
+            MemberInfo? result = member.MemberType switch
             {
                 MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(member),
                 MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(member),
@@ -1133,6 +1133,8 @@ namespace System
                 MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(member),
                 _ => null
             };
+
+            return result ?? throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
         }
 
         private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =

@@ -5,6 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -1565,12 +1567,43 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
         }
 
-        [Fact]
-        public void GetMemberWithSameMetadataDefinitionAs()
+        public static IEnumerable<object[]> GetMemberWithSameMetadataDefinitionAsData()
         {
-            Type openGenericType = typeof(TI_GenericTypeWithAllMembers<>);
-            Type closedGenericType = typeof(TI_GenericTypeWithAllMembers<int>);
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<int>) };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>) };
 
+            static TypeInfo GetTypeDelegator(Type t) => new TypeDelegator(t);
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>) };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)) };
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)) };
+
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                (Type generatedType1, Type generatedType2) = CreateGeneratedTypes();
+
+                yield return new object[] { generatedType1, generatedType2 };
+                yield return new object[] { generatedType2, generatedType1 };
+            }
+        }
+
+        private static (Type, Type) CreateGeneratedTypes()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("GetMemberWithSameMetadataDefinitionAsGeneratedAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("GetMemberWithSameMetadataDefinitionAsGeneratedModule");
+            TypeBuilder genericType = module.DefineType("GenericGeneratedType");
+            genericType.DefineGenericParameters("T0");
+            genericType.DefineField("_int", typeof(int), FieldAttributes.Private);
+            genericType.DefineProperty("Prop", PropertyAttributes.None, typeof(string), null);
+
+            Type builtGenericType = genericType.CreateType();
+            Type closedType = builtGenericType.MakeGenericType(typeof(int));
+
+            return (genericType, closedType);
+        }
+
+        [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
+        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType)
+        {
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
             {
@@ -1580,9 +1613,12 @@ namespace System.Reflection.Tests
                 Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
                 if (openGenericMember is not Type)
                 {
-                    Assert.True(closedGenericMember.DeclaringType == closedGenericType, $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
+                    Assert.True(closedGenericMember.DeclaringType.Equals(closedGenericType), $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
                 }
             }
+
+            Assert.Throws<ArgumentNullException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(null));
+            Assert.Throws<ArgumentException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(string).GetMethod("get_Length")));
         }
 
 #pragma warning disable 0067, 0169

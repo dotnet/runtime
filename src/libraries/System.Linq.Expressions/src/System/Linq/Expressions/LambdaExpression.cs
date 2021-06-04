@@ -121,7 +121,7 @@ namespace System.Linq.Expressions
                 return typeof(LambdaExpression).GetMethod("Compile", Type.EmptyTypes)!;
             }
 
-            return (MethodInfo)lambdaExpressionType.GetMemberWithSameMetadataDefinitionAs(s_expressionCompileMethodInfo)!;
+            return (MethodInfo)lambdaExpressionType.GetMemberWithSameMetadataDefinitionAs(s_expressionCompileMethodInfo);
         }
 
         /// <summary>

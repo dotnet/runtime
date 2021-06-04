@@ -389,7 +389,7 @@ namespace System.Runtime.Serialization
         {
             if (Nullable.GetUnderlyingType(type) != null)
             {
-                return (FieldInfo)type.GetMemberWithSameMetadataDefinitionAs(s_nullableValueField)!;
+                return (FieldInfo)type.GetMemberWithSameMetadataDefinitionAs(s_nullableValueField);
             }
 
             return null;

@@ -617,7 +617,7 @@ namespace System.Linq.Expressions.Compiler
         private static FieldInfo GetCallSiteTargetField(Type siteType)
         {
             Debug.Assert(siteType.IsGenericType && siteType.GetGenericTypeDefinition() == typeof(CallSite<>));
-            return (FieldInfo)siteType.GetMemberWithSameMetadataDefinitionAs(s_callSiteTargetField)!;
+            return (FieldInfo)siteType.GetMemberWithSameMetadataDefinitionAs(s_callSiteTargetField);
         }
 
         private void EmitNewExpression(Expression expr)
