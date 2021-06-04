@@ -137,7 +137,7 @@
   </Target>
 
   <PropertyGroup>
-    <TestDependsOn Condition="'$(TargetFramework)' != ''">
+    <TestDependsOn>
       LogBeginTest;
       VerifyNotDependsOnNetStandard;
       VerifyReferenceClosure;
@@ -145,14 +145,9 @@
       VerifyRuntimeClosure;
       VerifyRuntimeTypes;
     </TestDependsOn>
-    <TestDependsOn Condition="'$(TargetFramework)' == ''">
-      _ComputeTargetFrameworkItems
-    </TestDependsOn>
+    <InnerTargets>Test</InnerTargets>
   </PropertyGroup>
   
   <!-- Runs all tests scenarios for this project -->
-  <Target Name="Test"
-          DependsOnTargets="$(TestDependsOn)">
-    <MSBuild Projects="@(_InnerBuildProjects)" Targets="Test" BuildInParallel="true" />
-  </Target>
+  <Target Name="Test" DependsOnTargets="$(TestDependsOn)"/>
 </Project>
