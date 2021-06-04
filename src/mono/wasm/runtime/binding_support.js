@@ -505,10 +505,9 @@ var BindingSupportLib = {
 				case 17:
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
-				case 20: // clr .NET DateTime
-					return this.extract_js_obj_with_converter (mono_obj, klass);
-				case 21: // clr .NET DateTimeOffset
-					return this.extract_js_obj_with_converter (mono_obj, klass);
+				case 20:
+				case 21:
+					throw new Error ("Unsupported legacy marshal type code");
 				case 22: // clr .NET Uri
 					var uriValue = this._object_to_string (mono_obj);
 					return uriValue;
@@ -531,7 +530,6 @@ var BindingSupportLib = {
 				case 1: // int
 					return Module.HEAP32[this._unbox_buffer / 4];
 				case 4: // struct
-					// FIXME: broken on re-entrant marshaling!!!!!!!
 					return this._unbox_struct_rooted (this._unbox_buffer, mono_obj);
 				case 25: // uint32
 					return Module.HEAPU32[this._unbox_buffer / 4];
@@ -647,9 +645,8 @@ var BindingSupportLib = {
 						BINDING.set_task_failure (tcs, reason);
 					})
 					return this.get_task_and_bind (tcs, js_obj);
-				case js_obj.constructor.name === "Date": {
+				case js_obj.constructor.name === "Date":
 					return this.box_js_obj_with_converter(js_obj, this.find_corlib_class ("System", "DateTime", true));
-				} 
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -905,11 +902,14 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_resolve_class_ptr: function (ptrOrName) {
-			if (typeof (ptrOrName) === "string")
-				throw new Error("nyi: klass lookup");
-			else
-				return ptrOrName | 0;
+		_resolve_class_ptr: function (ptr) {
+			if (typeof (ptr) !== "number")
+				throw new Error("Expected class pointer");
+
+			ptr = ptr | 0;
+			if (!ptr)
+				throw new Error("Expected class pointer");
+			return ptr;
 		},
 
 		extract_js_obj_with_converter: function (mono_obj, klass) {
@@ -917,8 +917,6 @@ var BindingSupportLib = {
 				return null;
 
 			var klassPtr = this._resolve_class_ptr (klass);
-			if (!klassPtr)
-				throw new Error("No class pointer specified");
 			var typePtr = this.mono_wasm_class_get_type (klassPtr);
 			var converter = this._get_struct_unboxer_for_type (typePtr);
 			if (converter)
@@ -932,9 +930,6 @@ var BindingSupportLib = {
 				return null;
 
 			var klassPtr = this._resolve_class_ptr (klass);
-			if (!klassPtr)
-				throw new Error("No class pointer specified");
-
 			var typePtr = this.mono_wasm_class_get_type (klassPtr);
 			var converter = this._get_struct_unboxer_for_type (typePtr);
 			if (converter)
@@ -948,9 +943,6 @@ var BindingSupportLib = {
 				return 0;
 
 			var klassPtr = this._resolve_class_ptr (klass);
-			if (!klassPtr)
-				throw new Error("No class pointer specified");
-			
 			var typePtr = this.mono_wasm_class_get_type (klassPtr);
 			if (!typePtr)
 				throw new Error("No type pointer for class");
@@ -1085,12 +1077,10 @@ var BindingSupportLib = {
 			var classMismatch = !!result && (result.typePtr !== typePtr);
 			if (!result) {
 				var typeName = this._get_type_name(typePtr);
-				// console.log(`Calling MakeMarshalSignatureInfo for typePtr ${typePtr} and methodPtr ${methodPtr} (typeName ${typeName})`);
 				var json = this.make_marshal_signature_info (typePtr, methodPtr);
 				if (!json)
 					throw new Error (`MakeMarshalSignatureInfo failed for type ${typeName}`);
 
-				// console.log(json);
 				var result = JSON.parse(json);
 				result.typePtr = typePtr;
 
@@ -1115,9 +1105,7 @@ var BindingSupportLib = {
 			};
 			var body = [
 				"var value = boundConverter (js_value), filteredValue = null;",
-				// "console.log(`value === ${value}`);",
 				`{ filteredValue = ${js}; }`,
-				// "console.log(`filteredValue === ${filteredValue}`);",
 				"return filteredValue;"
 			];
 			
@@ -1127,7 +1115,6 @@ var BindingSupportLib = {
 				["js_value"], bodyJs, closure
 			);
 
-			// console.log("compile result", result);
 			return result;
 		},
 
@@ -1182,7 +1169,6 @@ var BindingSupportLib = {
 						//  because in some cases it is not possible or convenient to
 						//  include the full string (i.e. version, culture, etc)
 						var isMatch = k.startsWith(aqn) || aqn.startsWith(k);
-						// console.log(k, ".startsWith", aqn, "==", isMatch);
 						if (isMatch) {
 							marshalerAQN = table[k];
 							break;
@@ -1190,13 +1176,10 @@ var BindingSupportLib = {
 					}
 				}
 				if (!marshalerAQN) {
-					// console.log (`No custom marshaler configured for ${aqn}`);
 					this._custom_marshaler_info_cache[typePtr] = null;
 					return null;
 				}
-				// console.log (`Custom marshaler configured for ${aqn}: ${marshalerAQN}`);
 				var json = this.get_custom_marshaler_info (typePtr, marshalerAQN);
-				// console.log (json);
 				result = JSON.parse(json);
 				if (!result)
 					throw new Error (`Configured custom marshaler for ${aqn} could not be loaded: ${marshalerAQN}`);
@@ -1204,8 +1187,6 @@ var BindingSupportLib = {
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);
 			}
-
-			// console.log(result);
 
 			return result;
 		},
@@ -1226,8 +1207,6 @@ var BindingSupportLib = {
 
 				var postFilter = info.postFilter;
 
-				// console.log ("postFilter", postFilter);
-
 				var convMethod = info.outputPtr;
 				if (!convMethod) {
 					if (info.typePtr)
@@ -1247,21 +1226,28 @@ var BindingSupportLib = {
 		},
 
 		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
-			var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
-			var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
-			var dataOffset = unbox_buffer + 8;
-			if (!classPtr)
-				throw new Error("classPtr is null or undefined");
+			// TODO: Solve this by using a temporary unbox buffer, or using a different spot in the unbox buffer
+			if (this._is_unboxing_struct)
+				throw new Error("Re-entrant struct unboxing detected. This is not currently supported.");
 
-			// console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
+			try {
+				this._is_unboxing_struct = true;
+				var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
+				var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
+				var dataOffset = unbox_buffer + 8;
+				if (!classPtr)
+					throw new Error("classPtr is null or undefined");
 
-			var typePtr = this.mono_wasm_class_get_type(classPtr);
-			var unboxer = this._get_struct_unboxer_for_type(typePtr);
-			if (!unboxer)
-				throw new Error (`No CustomJavaScriptMarshaler found for struct type ${this._get_type_name(typePtr)}`);
+				var typePtr = this.mono_wasm_class_get_type(classPtr);
+				var unboxer = this._get_struct_unboxer_for_type(typePtr);
+				if (!unboxer)
+					throw new Error (`No CustomJavaScriptMarshaler found for struct type ${this._get_type_name(typePtr)}`);
 
-			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
-			return unboxer (dataOffset);
+				// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
+				return unboxer (dataOffset);
+			} finally {
+				this._is_unboxing_struct = false;
+			}
 		},
 
 		_compile_pre_filter: function (typePtr, boundConverter, js) {
@@ -1277,11 +1263,8 @@ var BindingSupportLib = {
 			};
 			var body = [
 				"var filteredValue = null;",
-				// "console.log(`preFilter(${value})`);",
 				`{ filteredValue = ${js}; }`,
-				// "console.log(`preFilter === ${filteredValue}`);",
 				"var convertedResult = boundConverter (filteredValue, method, parmIdx);",
-				// "console.log(`convertedResult === ${convertedResult}`);",
 				"return convertedResult;"
 			];
 			
@@ -1291,7 +1274,6 @@ var BindingSupportLib = {
 				["value", "method", "parmIdx"], bodyJs, closure
 			);
 
-			// console.log("compile result", result);
 			return result;
 		},
 
@@ -1311,8 +1293,6 @@ var BindingSupportLib = {
 
 				var preFilter = info.preFilter;
 
-				// console.log ("preFilter", preFilter);
-
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
 					if (info.typePtr)
@@ -1325,7 +1305,6 @@ var BindingSupportLib = {
 				var sigInfo = this.get_method_signature_info (0, convMethod);
 				// Return unboxed so it can go directly into the arguments list
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
-				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
 					convMethod, 0, signature, this._get_type_name(typePtr) + "$FromJavaScript"
 				);
@@ -1345,12 +1324,6 @@ var BindingSupportLib = {
 				key: 'a'
 			};
 
-			/*
-			console.log("paramRecord", JSON.stringify(paramRecord));
-			if (paramRecord.typePtr)
-				console.log("name", this._get_type_name(paramRecord.typePtr));
-			*/
-
 			switch (paramRecord.marshalType) {
 				case 4: // Struct
 					result.needs_unbox = true;
@@ -1358,7 +1331,6 @@ var BindingSupportLib = {
 				case 7: // OBJECT
 					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.typePtr);
 					if (res) {
-						// console.log(`res for type ${this._get_type_name(paramRecord.typePtr)} == ${res}`);
 						result.convert = res;
 						break;
 					} else if (result.needs_unbox) {
@@ -1453,7 +1425,6 @@ var BindingSupportLib = {
 			if (converter instanceof Map) {
 				map = converter;
 				converter = map.get (method);
-				// console.log (`method-keyed converter map for signature '${args_marshal}' result for method ${method}:`, converter);
 			}
 
 			if (!converter) {
@@ -1461,7 +1432,6 @@ var BindingSupportLib = {
 				if (converter.method) {
 					if (!map)
 						this._signature_converters.set (args_marshal, map = new Map ());
-					// console.log (`compiled converter for signature '${args_marshal}' and method '${method}'`);
 					map.set (converter.method, converter);
 				} else {
 					this._signature_converters.set (args_marshal, converter);
@@ -1773,32 +1743,25 @@ var BindingSupportLib = {
 			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
 
-			// try {
-				// check if the method signature needs argument mashalling
-				if (needs_converter) {
-					var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
-					if (!classPtr)
-						throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
+			// check if the method signature needs argument mashalling
+			if (needs_converter) {
+				var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
+				if (!classPtr)
+					throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
 
-					var typePtr = this.mono_wasm_class_get_type (classPtr);
-					converter = this._compile_converter_for_marshal_string (typePtr, method, args_marshal);
+				var typePtr = this.mono_wasm_class_get_type (classPtr);
+				converter = this._compile_converter_for_marshal_string (typePtr, method, args_marshal);
 
-					is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
+				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
-					argsRootBuffer = this._get_args_root_buffer_for_method_call (converter, null);
+				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter, null);
 
-					var scratchBuffer = this._get_buffer_for_method_call (converter, null);
+				var scratchBuffer = this._get_buffer_for_method_call (converter, null);
 
-					buffer = converter.compiled_variadic_function (scratchBuffer, argsRootBuffer, method, args);
-				}
-
-				return this._call_method_with_converted_args (method, this_arg, converter, token, buffer, is_result_marshaled, argsRootBuffer);
-			/*
-			} catch (exc) {
-				console.log("while calling method", this._method_descriptions.get(method) || method);
-				throw exc;
+				buffer = converter.compiled_variadic_function (scratchBuffer, argsRootBuffer, method, args);
 			}
-			*/
+
+			return this._call_method_with_converted_args (method, this_arg, converter, token, buffer, is_result_marshaled, argsRootBuffer);
 		},
 
 		_handle_exception_for_call: function (
@@ -2004,7 +1967,6 @@ var BindingSupportLib = {
 					"    case 1:", // int
 					"        result = Module.HEAP32[unbox_buffer / 4]; break;",
 					"    case 4:", // struct
-					// FIXME: broken on re-entrant marshaling!!!!!!!
 					"        result = binding_support._unbox_struct_rooted (unbox_buffer, resultPtr); break;",
 					"    case 25:", // uint32
 					"        result = Module.HEAPU32[unbox_buffer / 4]; break;",
