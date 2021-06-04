@@ -226,12 +226,6 @@ var Module = {
         }
 
         Module.config = config;
-
-		if (is_node) {
-			eval (read ("dotnet.js").toString());
-		} else {
-			loadScript ("dotnet.js");
-		}
     },
 
 	onRuntimeInitialized: function () {
@@ -297,6 +291,7 @@ var Module = {
 		MONO.mono_load_runtime_and_bcl_args (Module.config);
 	},
 };
+loadScript ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 

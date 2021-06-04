@@ -45,9 +45,9 @@ function load_config() {
             // other kinds of errors
             callback({error: "Error loading mono-config.json file from current directory"});
         }
-    } else {
+    } else { // shell or worker
         try {
-            var config = JSON.parse(load("./mono-config.json"));
+            var config = JSON.parse(read("./mono-config.json")); // read is a v8 debugger command
             callback(config);
         } catch(e) {
             callback({error: "Error loading mono-config.json file from current directory"});
