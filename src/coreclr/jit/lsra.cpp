@@ -994,14 +994,7 @@ void LinearScan::setBlockSequence()
     {
         JITDUMP(FMT_BB, block->bbNum);
 
-        if (block->isMaxBBWeight())
-        {
-            JITDUMP("(MAX) ");
-        }
-        else
-        {
-            JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
-        }
+        JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
 
         if (blockInfo[block->bbNum].hasEHBoundaryIn)
         {
