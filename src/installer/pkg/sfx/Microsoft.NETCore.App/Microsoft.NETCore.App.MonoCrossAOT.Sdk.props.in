@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <MonoAotCrossCompilerPath Include="$(MSBuildThisFileDirectory)..\tools\mono-aot-cross${ExeSuffix}" RuntimeIdentifier="${TargetRid}" />
+    <MonoAotCrossCompiler Include="$(MSBuildThisFileDirectory)..\tools\mono-aot-cross${ExeSuffix}" RuntimeIdentifier="${TargetRid}" />
   </ItemGroup>
 </Project>
 
