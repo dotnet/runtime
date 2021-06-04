@@ -164,7 +164,7 @@ namespace Mono.Linker
 
 			var body_substituter_steps = new Stack<string> ();
 			var xml_custom_attribute_steps = new Stack<string> ();
-			var custom_steps = new Stack<string> ();
+			var custom_steps = new List<string> ();
 			var set_optimizations = new List<(CodeOptimizations, string, bool)> ();
 			bool dumpDependencies = false;
 			string dependenciesFileName = null;
@@ -298,7 +298,7 @@ namespace Mono.Linker
 							continue;
 						}
 					case "--custom-step":
-						if (!GetStringParam (token, l => custom_steps.Push (l)))
+						if (!GetStringParam (token, l => custom_steps.Add (l)))
 							return -1;
 
 						continue;
