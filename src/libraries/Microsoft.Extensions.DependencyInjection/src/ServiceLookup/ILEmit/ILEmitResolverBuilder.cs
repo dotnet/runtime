@@ -62,10 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            Func<ServiceProviderEngineScope, object> lambda = BuildType(callSite).Lambda;
-
-            return (scope) => scope.IsRootScope ?
-                CallSiteRuntimeResolver.Instance.Resolve(callSite, scope) : lambda(scope);
+            return BuildType(callSite).Lambda;
         }
 
         private GeneratedMethod BuildType(ServiceCallSite callSite)
