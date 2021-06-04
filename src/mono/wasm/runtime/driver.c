@@ -579,10 +579,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
+	assert (name);
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
-	if (!name)
-		return NULL;
 
 	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
 	mono_assembly_name_free (aname);
@@ -599,16 +598,14 @@ mono_wasm_get_corlib ()
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
-	if (!assembly)
-		return NULL;
+	assert (assembly);
 	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
-	if (!klass)
-		return NULL;
+	assert (klass);
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
@@ -621,8 +618,7 @@ mono_wasm_get_delegate_invoke (MonoObject *delegate)
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 {
-	if (!klass)
-		return NULL;
+	assert (klass);
 
 	MonoType *type = mono_class_get_type (klass);
 	int alignment;
