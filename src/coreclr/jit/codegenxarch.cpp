@@ -1987,7 +1987,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     // and needs to be assembled into a single xmm register,
     // note we can't check reg0=EAX, reg1=EDX because they could be already moved.
 
-    inst_RV_RV(ins_Copy(reg0, TYP_FLOAT), targetReg, reg0, TYP_INT);
+    inst_Mov(TYP_FLOAT, targetReg, reg0, /* canSkip */ false);
     const emitAttr size = emitTypeSize(TYP_SIMD8);
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
@@ -1996,7 +1996,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     else
     {
         regNumber tempXmm = lclNode->GetSingleTempReg();
-        inst_RV_RV(ins_Copy(reg1, TYP_FLOAT), tempXmm, reg1, TYP_INT);
+        inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
         GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
     }
 #elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
@@ -5414,7 +5414,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 // A Vector3 return value is stored in xmm0 and xmm1.
                 // RyuJIT assumes that the upper unused bits of xmm1 are cleared but
                 // the native compiler doesn't guarantee it.
-                if (returnType == TYP_SIMD12)
+                if (call->IsUnmanaged() && (returnType == TYP_SIMD12))
                 {
                     returnReg = retTypeDesc->GetABIReturnReg(1);
                     // Clear the upper 32 bits by two shift instructions.

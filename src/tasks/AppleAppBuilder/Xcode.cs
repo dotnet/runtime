@@ -41,11 +41,13 @@ internal class Xcode
     }
 
     public bool EnableRuntimeLogging { get; set; }
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     public string GenerateXCode(
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
         string monoInclude,
@@ -180,6 +182,11 @@ internal class Xcode
             aotList += $" {name}";
         }
 
+        foreach (string asmLinkFile in asmLinkFiles)
+        {
+            toLink += $"    {asmLinkFile}{Environment.NewLine}";
+        }
+
         string frameworks = "";
         if ((Target == TargetNames.iOS) || (Target == TargetNames.iOSsim) || (Target == TargetNames.MacCatalyst))
         {
@@ -197,7 +204,8 @@ internal class Xcode
         {
             defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
-        else if (forceAOT)
+
+        if (forceAOT)
         {
             defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }
@@ -210,6 +218,11 @@ internal class Xcode
         if (EnableRuntimeLogging)
         {
             defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            defines.AppendLine("\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());

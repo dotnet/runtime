@@ -10,6 +10,18 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
+        private class ConstructorContext
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            private readonly Type _type;
+
+            public ConstructorContext([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+                => _type = type;
+
+            public object? CreateInstance()
+                => Activator.CreateInstance(_type, nonPublic: false);
+        }
+
         public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -26,7 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            return () => Activator.CreateInstance(type, nonPublic: false);
+            return new ConstructorContext(type).CreateInstance;
         }
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)

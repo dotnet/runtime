@@ -216,18 +216,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
 
-            lock (_state)
+            // Make sure start has completed
+            if (!_started)
             {
-                if (_state.SendState == SendState.Aborted)
-                {
-                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
-                }
-                else if (_state.SendState == SendState.ConnectionClosed)
-                {
-                    throw GetConnectionAbortedException(_state);
-                }
+                await _state.SendResettableCompletionSource.GetTypelessValueTask().ConfigureAwait(false);
+                _started = true;
             }
 
+            // if token was already cancelled, this would execute syncronously
             CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
@@ -248,11 +244,17 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }, _state);
 
-            // Make sure start has completed
-            if (!_started)
+            lock (_state)
             {
-                await _state.SendResettableCompletionSource.GetTypelessValueTask().ConfigureAwait(false);
-                _started = true;
+                if (_state.SendState == SendState.Aborted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
+                }
+                else if (_state.SendState == SendState.ConnectionClosed)
+                {
+                    throw GetConnectionAbortedException(_state);
+                }
             }
 
             return registration;
@@ -262,7 +264,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             lock (_state)
             {
-                if (_state.SendState == SendState.Finished || _state.SendState == SendState.Aborted)
+                if (_state.SendState == SendState.Finished)
                 {
                     _state.SendState = SendState.None;
                 }
@@ -827,6 +829,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventSendComplete(State state, ref StreamEvent evt)
         {
+            StreamEventDataSendComplete sendCompleteEvent = evt.Data.SendComplete;
+            bool canceled = sendCompleteEvent.Canceled != 0;
+
             bool complete = false;
 
             lock (state)
@@ -836,13 +841,26 @@ namespace System.Net.Quic.Implementations.MsQuic
                     state.SendState = SendState.Finished;
                     complete = true;
                 }
+
+                if (canceled)
+                {
+                    state.SendState = SendState.Aborted;
+                }
             }
 
             if (complete)
             {
                 CleanupSendState(state);
-                // TODO throw if a write was canceled.
-                state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
+
+                if (!canceled)
+                {
+                    state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
+                }
+                else
+                {
+                    state.SendResettableCompletionSource.CompleteException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Write was canceled")));
+                }
             }
 
             return MsQuicStatusCodes.Success;

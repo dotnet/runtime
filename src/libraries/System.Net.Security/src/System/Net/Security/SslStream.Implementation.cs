@@ -26,7 +26,7 @@ namespace System.Net.Security
             BeforeSSL3,     // SSlv2
             SinceSSL3,      // SSlv3 & TLS
             Unified,        // Intermediate on first frame until response is processes.
-            Invalid         // Somthing is wrong.
+            Invalid         // Something is wrong.
         }
 
         // This is set on the first packet to figure out the framing style.
@@ -302,6 +302,59 @@ namespace System.Net.Security
             {
                 _handshakeWaiter!.SetResult(true);
                 _handshakeWaiter = null;
+            }
+        }
+
+        // This will initiate renegotiation or PHA for Tls1.3
+        private async Task RenegotiateAsync(CancellationToken cancellationToken)
+        {
+            if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "NegotiateClientCertificateAsync", "renegotiate"));
+            }
+
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+            }
+
+            if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
+            {
+                _nestedRead = 0;
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
+            }
+
+            _sslAuthenticationOptions!.RemoteCertRequired = true;
+            IReadWriteAdapter adapter = new AsyncReadWriteAdapter(InnerStream, cancellationToken);
+
+            try
+            {
+                SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
+                if (nextmsg?.Length > 0)
+                {
+                    await adapter.WriteAsync(nextmsg, 0, nextmsg.Length).ConfigureAwait(false);
+                    await adapter.FlushAsync().ConfigureAwait(false);
+                }
+
+                if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    if (status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
+                    {
+                        // peer does not want to renegotiate. That should keep session usable.
+                        return;
+                    }
+
+                    throw SslStreamPal.GetException(status);
+                }
+
+                // Issue empty read to get renegotiation going.
+                await ReadAsyncInternal(adapter, Memory<byte>.Empty, renegotiation: true).ConfigureAwait(false);
+            }
+            finally
+            {
+                _nestedRead = 0;
+                _nestedWrite = 0;
+                // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
         }
 
@@ -612,6 +665,15 @@ namespace System.Net.Security
         {
             _context!.ProcessHandshakeSuccess();
 
+            if (_nestedAuth != 1)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Ignoring unsolicited renegotiated certificate.");
+                // ignore certificates received outside of handshake or requested renegotiation.
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+                return true;
+            }
+
             if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
@@ -753,12 +815,15 @@ namespace System.Net.Security
             }
         }
 
-        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
+        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer, bool renegotiation = false)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            if (!renegotiation)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+                if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+                {
+                    throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+                }
             }
 
             Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
@@ -769,10 +834,15 @@ namespace System.Net.Security
                 {
                     if (_decryptedBytesCount != 0)
                     {
+                        if (renegotiation)
+                        {
+                            throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
+                        }
+
                         return CopyDecryptedData(buffer);
                     }
 
-                    if (buffer.Length == 0 && _internalBuffer is null)
+                    if (buffer.Length == 0 && _internalBuffer is null && !renegotiation)
                     {
                         // User requested a zero-byte read, and we have no data available in the buffer for processing.
                         // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
@@ -844,7 +914,6 @@ namespace System.Net.Security
                             // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                             // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-
                             if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13)
                             {
                                 // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
@@ -880,8 +949,12 @@ namespace System.Net.Security
                             {
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
-
                             await ReplyOnReAuthenticationAsync(adapter, extraBuffer).ConfigureAwait(false);
+                            if (renegotiation)
+                            {
+                                // if we received data frame instead, we would not be here but we would decrypt data and hit check above.
+                                return 0;
+                            }
                             // Loop on read.
                             continue;
                         }
@@ -897,7 +970,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested))
+                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested) || renegotiation)
                 {
                     throw;
                 }

@@ -16,6 +16,7 @@ namespace System.Net.Quic.Implementations.Mock
         private readonly bool _isInitiator;
 
         private readonly StreamState _streamState;
+        private bool _writesCanceled;
 
         internal MockStream(StreamState streamState, bool isInitiator)
         {
@@ -84,6 +85,10 @@ namespace System.Net.Quic.Implementations.Mock
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
             CheckDisposed();
+            if (Volatile.Read(ref _writesCanceled))
+            {
+                throw new OperationCanceledException();
+            }
 
             StreamBuffer? streamBuffer = WriteStreamBuffer;
             if (streamBuffer is null)
@@ -102,12 +107,23 @@ namespace System.Net.Quic.Implementations.Mock
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
+            if (Volatile.Read(ref _writesCanceled))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw new OperationCanceledException();
+            }
 
             StreamBuffer? streamBuffer = WriteStreamBuffer;
             if (streamBuffer is null)
             {
                 throw new NotSupportedException();
             }
+
+            using var registration = cancellationToken.UnsafeRegister(static s =>
+            {
+                var stream = (MockStream)s!;
+                Volatile.Write(ref stream._writesCanceled, true);
+            }, this);
 
             await streamBuffer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -514,6 +515,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
             var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
@@ -538,6 +540,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
         public async Task TupleDeserialization_DefaultValuesUsed_WhenJsonMissing()
         {
             // Seven items; only three provided.
