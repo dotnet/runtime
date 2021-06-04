@@ -3155,7 +3155,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     // TODO: Many AltSvc tests are failing for HTTP3.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
+    //[ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_MsQuic : HttpClientHandler_AltSvc_Test
     {
