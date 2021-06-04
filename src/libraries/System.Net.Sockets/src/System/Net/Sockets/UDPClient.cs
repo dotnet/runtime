@@ -618,6 +618,9 @@ namespace System.Net.Sockets
         public Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) =>
             SendAsync(datagram, bytes, GetEndpoint(hostname, port));
 
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, string? hostname, int port, CancellationToken cancellationToken = default) =>
+            SendAsync(datagram, GetEndpoint(hostname, port), cancellationToken);
+
         public Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint? endPoint)
         {
             ValidateDatagram(datagram, bytes, endPoint);

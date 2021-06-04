@@ -768,6 +768,7 @@ namespace System.Net.Sockets
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, System.Net.IPEndPoint? endPoint) { throw null; }
         public System.Threading.Tasks.ValueTask<int> SendAsync(System.ReadOnlyMemory<byte> datagram, System.Net.IPEndPoint? endPoint, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> SendAsync(System.ReadOnlyMemory<byte> datagram, string? hostname, int port, System.Threading.CancellationToken cancellationToken = default)  { throw null; }
     }
     public partial struct UdpReceiveResult : System.IEquatable<System.Net.Sockets.UdpReceiveResult>
     {
