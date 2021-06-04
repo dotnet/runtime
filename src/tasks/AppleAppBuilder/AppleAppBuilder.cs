@@ -183,13 +183,20 @@ public class AppleAppBuilderTask : Task
         Directory.CreateDirectory(binDir);
 
         var assemblerFiles = new List<string>();
+        var assemblerFilesToLink = new List<string>();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
+            var llvmObj = file.GetMetadata("LlvmObjectFile");
             if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
+            }
+
+            if (!string.IsNullOrEmpty(llvmObj))
+            {
+                assemblerFilesToLink.Add(llvmObj);
             }
         }
 
@@ -224,7 +231,7 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
             generator.DiagnosticPorts = DiagnosticPorts;
 
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)

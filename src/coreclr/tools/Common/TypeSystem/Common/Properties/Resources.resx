@@ -183,4 +183,7 @@
   <data name="BadImageFormatSpecific" xml:space="preserve">
     <value>The format of a DLL or executable being loaded is invalid with {0}</value>
   </data>
+  <data name="MarshalDirectiveGeneric" xml:space="preserve">
+    <value>Marshaling directives are invalid</value>
+  </data>
 </root>
