@@ -1150,6 +1150,18 @@ var BindingSupportLib = {
 			return signatureChForMtype[mtype] || 'a';
 		},
 
+		_pre_filter_date: function (value) {
+			switch (typeof (value)) {
+				case "number":
+					return (new Date(value)).toISOString();
+				default:
+					if (!value || (typeof (value["toISOString"]) !== "function"))
+						throw new Error("value must be a Date with a toISOString method, or a Number");
+					else
+						return value.toISOString();
+			}
+		},
+
 		_get_custom_marshaler_info_for_type: function (typePtr) {
 			if (!typePtr)
 				return null;

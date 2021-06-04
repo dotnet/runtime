@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static class DateTimeMarshaler
     {
-        public static string FromJavaScriptPreFilter => "value.toISOString()";
+        public static string FromJavaScriptPreFilter => "BINDING._pre_filter_date(value)";
         public static string ToJavaScriptPostFilter => "new Date(value)";
 
         public static DateTime FromJavaScript (string s)
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
     public static class DateTimeOffsetMarshaler
     {
-        public static string FromJavaScriptPreFilter => "value.toISOString()";
+        public static string FromJavaScriptPreFilter => "BINDING._pre_filter_date(value)";
         public static string ToJavaScriptPostFilter => "new Date(value)";
 
         public static DateTimeOffset FromJavaScript (string s)

@@ -920,19 +920,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
 
-        /*
-        // FIXME
-        // [Fact]
+        [Fact]
         public static void MarshalDateTimeByValueAutomatic()
         {
             HelperMarshal._dateTimeValue = default(DateTime);
             Runtime.InvokeJS(
                 $"var dt = new Date('{ExpectedDateString}');\r\n" +
-                "App.call_test_method ('InvokeDateTimeByValue', [ 12345 ], 'a');"
+                "App.call_test_method ('InvokeDateTimeByValue', [ dt.valueOf() ], 'a');"
             );
             Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
-        */
 
         [Fact]
         public static void MarshalUri()
