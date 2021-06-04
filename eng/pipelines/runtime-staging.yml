@@ -67,7 +67,6 @@ jobs:
     platforms:
     - iOSSimulator_x64
     - tvOSSimulator_x64
-    - MacCatalyst_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
