@@ -31,7 +31,7 @@ namespace System.Xml
             _doc = other._doc;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XPathNavigator Clone() => new DataDocumentXPathNavigator(this);
 
@@ -51,7 +51,7 @@ namespace System.Xml
 
         public override string Value
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
@@ -71,7 +71,7 @@ namespace System.Xml
         // Attributes
         public override bool HasAttributes => _curNode.AttributeCount > 0;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override string GetAttribute(string localName, string namespaceURI)
         {
@@ -84,7 +84,7 @@ namespace System.Xml
             return _temp.MoveToAttribute(localName, namespaceURI) ? _temp.Value! : string.Empty;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override string GetNamespace(string name) => _curNode.GetNamespace(name);
 
@@ -92,13 +92,13 @@ namespace System.Xml
             _curNode.NodeType != XPathNodeType.Element ?
                 false : _curNode.MoveToNamespace(name);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope) =>
             _curNode.NodeType != XPathNodeType.Element ?
                 false : _curNode.MoveToFirstNamespace(namespaceScope);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope) =>
             _curNode.NodeType != XPathNodeType.Namespace ?
@@ -172,11 +172,11 @@ namespace System.Xml
 
         //the function is only called for XPathNodeList enumerate nodes and
         // shouldn't be promoted to frequently use because it will cause foliation
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         XmlNode IHasXmlNode.GetNode() => _curNode.Node!;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlNodeOrder ComparePosition(XPathNavigator? other)
         {

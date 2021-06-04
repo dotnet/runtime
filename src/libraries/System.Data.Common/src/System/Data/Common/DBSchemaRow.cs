@@ -13,8 +13,6 @@ namespace System.Data.Common
         private readonly DbSchemaTable _schemaTable;
         private readonly DataRow _dataRow;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Filter expression is null.")]
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {
             DataColumn? sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];
@@ -30,8 +28,8 @@ namespace System.Data.Common
             };
             DbSchemaTable schemaTable = new DbSchemaTable(dataTable, returnProviderSpecificTypes);
 
-            const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
-            DataRow[] dataRows = dataTable.Select(null, "ColumnOrdinal ASC", rowStates);
+
+            DataRow[] dataRows = SelectRows(dataTable, returnProviderSpecificTypes);
             Debug.Assert(null != dataRows, "GetSchemaRows: unexpected null dataRows");
 
             DbSchemaRow[] schemaRows = new DbSchemaRow[dataRows.Length];
@@ -41,6 +39,14 @@ namespace System.Data.Common
                 schemaRows[i] = new DbSchemaRow(schemaTable, dataRows[i]);
             }
             return schemaRows;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Filter expression is null.")]
+        private static DataRow[] SelectRows(DataTable dataTable, bool returnProviderSpecificTypes)
+        {
+            const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
+            return dataTable.Select(null, "ColumnOrdinal ASC", rowStates);
         }
 
         internal DbSchemaRow(DbSchemaTable schemaTable, DataRow dataRow)

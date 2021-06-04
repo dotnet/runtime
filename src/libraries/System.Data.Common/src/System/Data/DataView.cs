@@ -579,7 +579,7 @@ namespace System.Data
             _fInitInProgress = true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Warning related to RowFilter has already been shown when RowFilter was delay set.")]
         public void EndInit()
         {
@@ -1130,7 +1130,7 @@ namespace System.Data
 
         // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Safe because filter is set to empty string.")]
         void IBindingListView.RemoveFilter()
         {
@@ -1539,7 +1539,7 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "RowFilter is marked as unsafe because it can be used in DataExpression so that we only display warning when user is assigning an expression" +
                 " which means that in here we're either assigning empty filter which is safe or user has already seen a warning.")]
         private DataExpression CreateDataExpressionFromDataViewSettings(DataViewSetting dataViewSetting)

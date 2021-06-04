@@ -137,7 +137,7 @@ namespace System.Data.Common
             return !string.IsNullOrWhiteSpace(providerInvariantName) && _registeredFactories.TryRemove(providerInvariantName, out _);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The warning is being display when registering a factory by name or type.")]
         private static DbProviderFactory? GetFactory(string providerInvariantName, bool throwOnError)
         {

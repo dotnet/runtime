@@ -288,7 +288,7 @@ namespace System.Data.Common
             xmlWriter.WriteString(ConvertObjectToXml(value)); // should it be NO OP?
         }
 
-        public static DataStorage CreateStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType, StorageType typeCode)
+        public static DataStorage CreateStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType, StorageType typeCode)
         {
             Debug.Assert(typeCode == GetStorageType(dataType), "Incorrect storage type specified");
             if ((StorageType.Empty == typeCode) && (null != dataType))
@@ -564,7 +564,7 @@ namespace System.Data.Common
         /// Types like "System.Data.SqlTypes.SqlString" will load because they are in the same assembly as this code
         /// Types like "System.Numerics.BigInteger" won't load because they are not special and not same assembly as this code
         /// </remarks>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Calls Type.GetType")]
         internal static Type GetType(string value)
         {
             Type? dataType = Type.GetType(value); // throwOnError=false, ignoreCase=fase

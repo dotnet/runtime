@@ -76,7 +76,7 @@ namespace System.Data
             return _right.DependsOn(column);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Evaluating constant expression is safe.")]
         internal override ExpressionNode Optimize()
         {

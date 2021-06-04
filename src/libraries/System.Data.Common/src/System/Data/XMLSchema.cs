@@ -26,7 +26,7 @@ namespace System.Data
             return TypeDescriptor.GetConverter(type);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Calls into TypeDescriptor.GetProperties. Type cannot be statically discovered.")]
         internal static void SetProperties(object instance, XmlAttributeCollection attrs)
         {
             // This is called from both XSD and XDR schemas.
@@ -1778,9 +1778,9 @@ namespace System.Data
         private sealed class NameType : IComparable
         {
             public readonly string name;
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
             public readonly Type type;
-            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type t)
+            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type t)
             {
                 name = n;
                 type = t;

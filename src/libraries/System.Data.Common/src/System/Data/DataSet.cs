@@ -1097,7 +1097,7 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Only parameterless constructors are used here but warning is about serialization constructor.")]
         private DataSet CreateInstanceOfThisType()
         {

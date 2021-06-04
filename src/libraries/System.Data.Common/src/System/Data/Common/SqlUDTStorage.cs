@@ -22,7 +22,7 @@ namespace System.Data.Common
 
         private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 
-        public SqlUdtStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+        public SqlUdtStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
         : this(column, type, GetStaticNullForUdtType(type))
         {
         }
@@ -35,10 +35,10 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(type));
+        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(type));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The only callsite is marked as unsafe. Workaround for https://github.com/mono/linker/issues/1981")]
+            Justification = "The only callsite is marked with DynamicallyAccessedMembers. Workaround for https://github.com/mono/linker/issues/1981")]
         private static object GetStaticNullForUdtTypeCore(Type type)
         {
             // TODO: Is it OK for the null value of a UDT to be null? For now annotating is non-nullable.

@@ -118,7 +118,7 @@ namespace System.Data
             return Evaluate((DataRow?)null, DataRowVersion.Default);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Constructors taking expression are marked as unsafe")]
         internal object Evaluate(DataRow? row, DataRowVersion version)
         {
@@ -163,7 +163,7 @@ namespace System.Data
             return Evaluate(rows, DataRowVersion.Default);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Constructors taking expression are marked as unsafe")]
         internal object Evaluate(DataRow[] rows, DataRowVersion version)
         {
@@ -191,7 +191,7 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Constructors taking expression are marked as unsafe")]
         public bool Invoke(DataRow row, DataRowVersion version)
         {

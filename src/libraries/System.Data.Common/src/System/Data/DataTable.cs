@@ -4203,7 +4203,7 @@ namespace System.Data
         /// <summary>
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Filter expression is empty therefore this is safe.")]
         public DataRow[] Select()
         {
@@ -4835,7 +4835,7 @@ namespace System.Data
                    action == DataRowAction.ChangeCurrentAndOriginal);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "DataColumn with int type is simple type which is safe.")]
         internal DataColumn AddUniqueKey(int position)
         {
@@ -4884,7 +4884,7 @@ namespace System.Data
 
         internal DataColumn AddUniqueKey() => AddUniqueKey(-1);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Expression is null and potential problem with data type has already been reported when constructing parentKey")]
         internal DataColumn AddForeignKey(DataColumn parentKey)
         {
@@ -6942,7 +6942,7 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This is unsafe only when columns have associated expression. All ways to add such expression are marked unsafe.")]
         internal void EvaluateExpressions(DataRow row, DataRowAction action, List<DataRow>? cachedRows)
         {

@@ -246,7 +246,7 @@ namespace System.Data
             return false;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Constant expressions are safe to be evaluated.")]
         internal override ExpressionNode Optimize()
         {

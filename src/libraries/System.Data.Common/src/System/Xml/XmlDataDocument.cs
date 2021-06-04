@@ -19,6 +19,7 @@ namespace System.Xml
     [Obsolete("XmlDataDocument class will be removed in a future release.")]
     public class XmlDataDocument : XmlDocument
     {
+        private const string RequiresUnreferencedCodeMessage = "XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.";
         private DataSet _dataSet;
 
         private DataSetMapper _mapper;
@@ -339,7 +340,7 @@ namespace System.Xml
         /// Creates an element with the specified Prefix, LocalName, and
         /// NamespaceURI.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlElement CreateElement(string? prefix, string localName, string? namespaceURI)
         {
@@ -1041,7 +1042,7 @@ namespace System.Xml
             return newNode;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlNode CloneNode(bool deep)
         {
@@ -1171,7 +1172,7 @@ namespace System.Xml
         /// <summary>
         /// Loads the XML document from the specified XmlReader.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override void Load(XmlReader reader)
         {
@@ -2596,7 +2597,7 @@ namespace System.Xml
         /// <summary>
         /// Initializes a new instance of the XmlDataDocument class.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlDataDocument() : base(new XmlDataImplementation())
         {
             Init();
@@ -2608,13 +2609,13 @@ namespace System.Xml
         /// Initializes a new instance of the XmlDataDocument class with the specified
         /// DataSet.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlDataDocument(DataSet dataset) : base(new XmlDataImplementation())
         {
             Init(dataset);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal XmlDataDocument(XmlImplementation imp) : base(imp)
         {
             // This constructor is used by XmlDataImplementation.CreateDocument(), which
@@ -3002,7 +3003,7 @@ namespace System.Xml
             return true;
         }
         */
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         protected override XPathNavigator? CreateNavigator(XmlNode node)
         {

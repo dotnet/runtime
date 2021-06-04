@@ -220,9 +220,9 @@ namespace System.Data
         private sealed class NameType : IComparable
         {
             public string name;
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
             public Type type;
-            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type t)
+            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type t)
             {
                 name = n;
                 type = t;

@@ -32,7 +32,7 @@ namespace System.Data
         private bool _allowNull = true;
         private string? _caption;
         private string _columnName;
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         private Type _dataType = null!; // Always set in UpdateColumnType
         private StorageType _storageType;
         internal object _defaultValue = DBNull.Value; // DefaultValue Converter
@@ -78,7 +78,7 @@ namespace System.Data
         /// Initializes a new instance of a <see cref='System.Data.DataColumn'/>
         /// class.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This is safe because type is string and expression is null.")]
         public DataColumn() : this(null, typeof(string), null, MappingType.Element)
         {
@@ -88,7 +88,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This is safe because type is string and expression is null.")]
         public DataColumn(string? columnName) : this(columnName, typeof(string), null, MappingType.Element)
         {
@@ -98,9 +98,9 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name and data type.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Expression is null and `dataType` is marked appropriately.")]
-        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType) : this(columnName, dataType, null, MappingType.Element)
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType) : this(columnName, dataType, null, MappingType.Element)
         {
         }
 
@@ -110,7 +110,7 @@ namespace System.Data
         /// using the specified name, data type, and expression.
         /// </summary>
         [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
         {
         }
 
@@ -121,7 +121,7 @@ namespace System.Data
         /// column is an attribute.
         /// </summary>
         [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType, string? expr, MappingType type)
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType, string? expr, MappingType type)
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataColumn.DataColumn|API> {0}, columnName='{1}', expr='{2}', type={3}", ObjectID, columnName, expr, type);
@@ -153,7 +153,7 @@ namespace System.Data
             _columnMapping = type;
         }
 
-        private void UpdateColumnType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, StorageType typeCode)
+        private void UpdateColumnType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type, StorageType typeCode)
         {
             TypeLimiter.EnsureTypeIsAllowed(type);
             _dataType = type;
@@ -221,7 +221,7 @@ namespace System.Data
         public bool AutoIncrement
         {
             get { return ((null != _autoInc) && (_autoInc.Auto)); }
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Setting DataType to int.")]
             set
             {
@@ -492,7 +492,7 @@ namespace System.Data
         [DefaultValue(typeof(string))]
         [RefreshProperties(RefreshProperties.All)]
         [TypeConverter(typeof(ColumnTypeConverter))]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         [AllowNull]
         public Type DataType
         {
@@ -1540,7 +1540,7 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Only using parameterless constructor which is safe. Class has appropriate attribute.")]
         internal DataColumn Clone()
         {
@@ -1897,7 +1897,7 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "User has already got warning when creating original column.")]
         internal void CopyExpressionFrom(DataColumn source)
         {
