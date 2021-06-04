@@ -7430,18 +7430,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         //
                         if (lcl->gtVNPair.GetLiberal() == ValueNumStore::NoVN)
                         {
-                            // So far, we know about two of these cases:
+#ifdef DEBUG
+
+                            // So far, we know about three of these cases:
                             // Case 1) We have a local var who has never been defined but it's seen as a use.
                             //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
                             //         take the address of the variable, this doesn't mean it's a use nor we have to
-                            //         initialize it, so in this very rare case, we fabricate a value number.
-                            // Case 2) Local variables that represent structs which are assigned using CpBlk.
+                            //         initialize it, so in this very rare case, we fabricate a value number;
+                            // Case 2) Local variables that represent structs which are assigned using CpBlk;
+                            // Case 3) Local variable was written using a partial write,
+                            //         for example, BLK<1>(ADDR(LCL_VAR int)) = 1, it will change only the first byte.
+                            //         Check that there was ld-addr-op on the local.
                             //
-                            // Make sure we have either case 1 or case 2
+                            // Make sure we have one of these cases.
                             //
-                            GenTree* nextNode = lcl->gtNext;
+                            const GenTree*   nextNode = lcl->gtNext;
+                            const LclVarDsc* varDsc   = lvaGetDesc(lcl);
+
                             assert((nextNode->gtOper == GT_ADDR && nextNode->AsOp()->gtOp1 == lcl) ||
-                                   varTypeIsStruct(lcl->TypeGet()));
+                                   varTypeIsStruct(lcl->TypeGet()) || varDsc->lvHasLdAddrOp);
+#endif // DEBUG
 
                             // We will assign a unique value number for these
                             //
@@ -7908,8 +7916,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                                     if (fieldSeq == FieldSeqStore::NotAField())
                                     {
+                                        assert(!isEntire);
                                         // We don't know where we're storing, so give the local a new, unique VN.
                                         // Do this by considering it an "entire" assignment, with an unknown RHS.
+                                        isEntire = true;
+                                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
+                                    }
+                                    else if ((fieldSeq == nullptr) && !isEntire)
+                                    {
+                                        // It is a particial store of a LCL_VAR without using LCL_FLD.
+                                        // Generate a unique VN.
                                         isEntire = true;
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                                     }
