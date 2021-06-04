@@ -2618,7 +2618,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
-    if (newId >= m_maxDynamicEntries)
+    if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
         CrstHolder ch(&m_Crst);
 
@@ -2637,7 +2637,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
                 memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
             m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            m_maxDynamicEntries = maxDynamicEntries;
+            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
         }
     }
 
@@ -8898,8 +8898,6 @@ void Module::Fixup(DataImage *image)
     image->ZeroField(this, offsetof(Module, m_pSimpleName), sizeof(m_pSimpleName));
 
     image->ZeroField(this, offsetof(Module, m_file), sizeof(m_file));
-
-    image->FixupPointerField(this, offsetof(Module, m_pDllMain));
 
     image->ZeroField(this, offsetof(Module, m_dwTransientFlags), sizeof(m_dwTransientFlags));
 

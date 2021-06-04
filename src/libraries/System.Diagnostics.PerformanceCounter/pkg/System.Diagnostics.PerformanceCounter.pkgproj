@@ -5,9 +5,8 @@
       <SupportedFramework>uap10.0.16299;net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.PerformanceCounter.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -480,7 +480,7 @@ namespace System.Diagnostics.Tests
             context = ActivityContext.Parse(w3cId, null);
             Assert.Null(context.TraceState);
 
-            Assert.Throws<ArgumentNullException>(() => ActivityContext.TryParse(null, "k=v", out context));
+            Assert.False(ActivityContext.TryParse(null, "k=v", out context));
             Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
             Assert.Throws<ArgumentException>(() => ActivityContext.Parse("BadW3C", null));
 

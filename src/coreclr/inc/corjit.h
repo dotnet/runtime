@@ -16,7 +16,7 @@
 //
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
-// The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
+// The JIT/EE interface is versioned. By "interface", we mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
 //
@@ -112,7 +112,7 @@ enum CorJitResult
 // to guide the memory allocation for the code, readonly data, and read-write data
 enum CorJitAllocMemFlag
 {
-    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
+    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will use the normal alignment
     CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN   = 0x00000001, // The code will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
@@ -396,6 +396,17 @@ public:
         int32_t Other;
     };
 
+    enum class PgoSource
+    {
+        Unknown = 0,    // PGO data source unknown
+        Static = 1,     // PGO data comes from embedded R2R profile data
+        Dynamic = 2,    // PGO data comes from current run
+        Blend = 3,      // PGO data comes from blend of prior runs and current run
+        Text = 4,       // PGO data comes from text file
+        IBC = 5,        // PGO data from classic IBC
+        Sampling= 6,    // PGO data derived from sampling
+    };
+
 #define DEFAULT_UNKNOWN_TYPEHANDLE 1
 #define UNKNOWN_TYPEHANDLE_MIN 1
 #define UNKNOWN_TYPEHANDLE_MAX 33
@@ -412,8 +423,9 @@ public:
             PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
                                                                    // (pointer will not remain valid after jit completes).
             uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
-            uint8_t **                 pInstrumentationData        // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
+            uint8_t **                 pInstrumentationData,       // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
+            PgoSource *                pPgoSource                  // OUT: value describing source of pgo data
             ) = 0;
 
     // Allocate a profile buffer for use in the current process

@@ -2334,7 +2334,7 @@ void LinearScan::buildIntervals()
         }
 
         LIR::Range& blockRange = LIR::AsRange(block);
-        for (GenTree* node : blockRange.NonPhiNodes())
+        for (GenTree* node : blockRange)
         {
             // We increment the location of each tree node by 2 so that the node definition, if any,
             // is at a new location and doesn't interfere with the uses.

@@ -1606,6 +1606,8 @@ typedef struct {
 	/* pointer to context datastructure used for graph dumping */
 	MonoGraphDumper *gdump_ctx;
 
+	gboolean *clause_is_dead;
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;
@@ -2890,38 +2892,6 @@ enum {
 	SIMD_PREFETCH_MODE_1,
 	SIMD_PREFETCH_MODE_2,
 };
-
-/* SIMD operations */
-typedef enum {
-	SIMD_OP_AES_IMC,
-	SIMD_OP_AES_ENC,
-	SIMD_OP_AES_ENCLAST,
-	SIMD_OP_AES_DEC,
-	SIMD_OP_AES_DECLAST,
-	SIMD_OP_ARM64_CRC32B,
-	SIMD_OP_ARM64_CRC32H,
-	SIMD_OP_ARM64_CRC32W,
-	SIMD_OP_ARM64_CRC32X,
-	SIMD_OP_ARM64_CRC32CB,
-	SIMD_OP_ARM64_CRC32CH,
-	SIMD_OP_ARM64_CRC32CW,
-	SIMD_OP_ARM64_CRC32CX,
-	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64,
-	SIMD_OP_ARM64_AES_AESMC,
-	SIMD_OP_ARM64_SHA1C,
-	SIMD_OP_ARM64_SHA1H,
-	SIMD_OP_ARM64_SHA1M,
-	SIMD_OP_ARM64_SHA1P,
-	SIMD_OP_ARM64_SHA1SU0,
-	SIMD_OP_ARM64_SHA1SU1,
-	SIMD_OP_ARM64_SHA256H,
-	SIMD_OP_ARM64_SHA256H2,
-	SIMD_OP_ARM64_SHA256SU0,
-	SIMD_OP_ARM64_SHA256SU1,
-	SIMD_OP_ARM64_PMULL64_LOWER,
-	SIMD_OP_ARM64_PMULL64_UPPER,
-} SimdOp;
 
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);

@@ -9489,9 +9489,10 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
 #endif // DEBUG
 
 //-----------------------------------------------------------------------------------
-//  impFixupCallStructReturn: For a call node that returns a struct type either
-//  adjust the return type to an enregisterable type, or set the flag to indicate
-//  struct return via retbuf arg.
+//  impFixupCallStructReturn: For a call node that returns a struct do one of the following:
+//  - set the flag to indicate struct return via retbuf arg;
+//  - adjust the return type to a SIMD type if it is returned in 1 reg;
+//  - spill call result into a temp if it is returned into 2 registers or more and not tail call or inline candidate.
 //
 //  Arguments:
 //    call       -  GT_CALL GenTree node
@@ -9511,92 +9512,63 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 
 #if FEATURE_MULTIREG_RET
     call->InitializeStructReturnType(this, retClsHnd, call->GetUnmanagedCallConv());
-#endif // FEATURE_MULTIREG_RET
-
-#ifdef UNIX_AMD64_ABI
-
-    // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
-    assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
-
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
-    if (retRegCount == 0)
-    {
-        // struct not returned in registers i.e returned via hiddden retbuf arg.
-        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-    }
-    else if (retRegCount == 1)
-    {
-        return call;
-    }
-    else
-    {
-        // must be a struct returned in two registers
-        assert(retRegCount == 2);
+#else  // !FEATURE_MULTIREG_RET
+    const unsigned retRegCount = 1;
+#endif // !FEATURE_MULTIREG_RET
 
-        if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-        {
-            // Force a call returning multi-reg struct to be always of the IR form
-            //   tmp = call
-            //
-            // No need to assign a multi-reg struct to a local var if:
-            //  - It is a tail call or
-            //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
-        }
-    }
-
-#else // not UNIX_AMD64_ABI
-
-    // Check for TYP_STRUCT type that wraps a primitive type
-    // Such structs are returned using a single register
-    // and we change the return type on those calls here.
-    //
     structPassingKind howToReturnStruct;
-    var_types         returnType;
-
-    returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+    var_types         returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
 
     if (howToReturnStruct == SPK_ByReference)
     {
         assert(returnType == TYP_UNKNOWN);
         call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-    }
-    else
-    {
-
-#if !FEATURE_MULTIREG_RET
         return call;
-#else  // FEATURE_MULTIREG_RET
-        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
-        assert(retRegCount != 0);
-        if (retRegCount == 1)
-        {
-            return call;
-        }
-
-        assert(returnType == TYP_STRUCT);
-        assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
-
-        assert(call->gtReturnType == returnType);
-
-        assert(retRegCount >= 2);
-        if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
-        {
-            // Force a call returning multi-reg struct to be always of the IR form
-            //   tmp = call
-            //
-            // No need to assign a multi-reg struct to a local var if:
-            //  - It is a tail call or
-            //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
-        }
-#endif // FEATURE_MULTIREG_RET
     }
+
+    // Recognize SIMD types as we do for LCL_VARs,
+    // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
+    // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
+    var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
+    if (simdReturnType != call->TypeGet())
+    {
+        assert(varTypeIsSIMD(simdReturnType));
+        JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
+                varTypeName(returnType));
+        call->ChangeType(simdReturnType);
+    }
+
+    if (retRegCount == 1)
+    {
+        return call;
+    }
+
+#if FEATURE_MULTIREG_RET
+    assert(varTypeIsStruct(call)); // It could be a SIMD returned in several regs.
+    assert(returnType == TYP_STRUCT);
+    assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
+
+#ifdef UNIX_AMD64_ABI
+    // must be a struct returned in two registers
+    assert(retRegCount == 2);
+#else  // not UNIX_AMD64_ABI
+    assert(retRegCount >= 2);
 #endif // not UNIX_AMD64_ABI
 
+    if (!call->CanTailCall() && !call->IsInlineCandidate())
+    {
+        // Force a call returning multi-reg struct to be always of the IR form
+        //   tmp = call
+        //
+        // No need to assign a multi-reg struct to a local var if:
+        //  - It is a tail call or
+        //  - The call is marked for in-lining later
+        return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
+    }
     return call;
+#endif // FEATURE_MULTIREG_RET
 }
 
 /*****************************************************************************
@@ -13456,10 +13428,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     callNode = varTypeIsFloating(impStackTop().val->TypeGet());
                 }
 
-                // At this point uns, ovf, callNode all set
-
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1);
+
+                // Casts from floating point types must not have GTF_UNSIGNED set.
+                if (varTypeIsFloating(op1))
+                {
+                    uns = false;
+                }
+
+                // At this point uns, ovf, callNode are all set.
 
                 if (varTypeIsSmall(lclTyp) && !ovfl && op1->gtType == TYP_INT && op1->gtOper == GT_AND)
                 {
@@ -20719,19 +20697,21 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     assert(pContextHandle != nullptr);
 
     // This should be a virtual vtable or virtual stub call.
+    //
     assert(call->IsVirtual());
 
     // Possibly instrument, if not optimizing.
     //
-    if (opts.OptimizationDisabled() && (call->gtCallType != CT_INDIRECT))
+    if (opts.OptimizationDisabled())
     {
         // During importation, optionally flag this block as one that
         // contains calls requiring class profiling. Ideally perhaps
         // we'd just keep track of the calls themselves, so we don't
         // have to search for them later.
         //
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-            (JitConfig.JitClassProfiling() > 0) && !isLateDevirtualization)
+        if ((call->gtCallType != CT_INDIRECT) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
+            !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && (JitConfig.JitClassProfiling() > 0) &&
+            !isLateDevirtualization)
         {
             JITDUMP("\n ... marking [%06u] in " FMT_BB " for class profile instrumentation\n", dspTreeID(call),
                     compCurBB->bbNum);
@@ -20769,7 +20749,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodName,
                                                                            rootCompiler->info.compClassName,
                                                                            &rootCompiler->info.compMethodInfo->args);
-
 #endif // DEBUG
 
     // Fetch information about the virtual method we're calling.
@@ -20905,6 +20884,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dvInfo.virtualMethod = baseMethod;
     dvInfo.objClass      = objClass;
     dvInfo.context       = *pContextHandle;
+    dvInfo.detail        = CORINFO_DEVIRTUALIZATION_UNKNOWN;
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
@@ -20912,9 +20892,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CONTEXT_HANDLE exactContext  = dvInfo.exactContext;
     CORINFO_CLASS_HANDLE   derivedClass  = NO_CLASS_HANDLE;
 
-    if (exactContext != nullptr)
+    if (derivedMethod != nullptr)
     {
-        // We currently expect the context to always be a class context.
+        assert(exactContext != nullptr);
         assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
         derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
     }
@@ -20936,7 +20916,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if (derivedMethod == nullptr)
     {
-        JITDUMP("--- no derived method\n");
+        JITDUMP("--- no derived method: %s\n", devirtualizationDetailToString(dvInfo.detail));
     }
     else
     {
@@ -20980,6 +20960,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         JITDUMP("    Class not final or exact%s\n", isInterface ? "" : ", and method not final");
 
+#if defined(DEBUG)
+        // If we know the object type exactly, we generally expect we can devirtualize.
+        // (don't when doing late devirt as we won't have an owner type (yet))
+        //
+        if (!isLateDevirtualization && (isExact || objClassIsFinal) && JitConfig.JitNoteFailedExactDevirtualization())
+        {
+            printf("@@@ Exact/Final devirt failure in %s at [%06u] $ %s\n", info.compFullName, dspTreeID(call),
+                   devirtualizationDetailToString(dvInfo.detail));
+        }
+#endif
+
         // Don't try guarded devirtualiztion if we're doing late devirtualization.
         //
         if (isLateDevirtualization)
@@ -20994,17 +20985,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // All checks done. Time to transform the call.
+    //
+    // We should always have an exact class context.
+    //
+    // Note that wouldnt' be true if the runtime side supported array interface devirt,
+    // the resulting method would be a generic method of the non-generic SZArrayHelper class.
+    //
     assert(canDevirtualize);
 
     JITDUMP("    %s; can devirtualize\n", note);
-
-    // See if the method we're devirtualizing to is an intrinsic.
-    //
-    if (derivedMethodAttribs & (CORINFO_FLG_JIT_INTRINSIC | CORINFO_FLG_INTRINSIC))
-    {
-        JITDUMP("!!! Devirt to intrinsic in %s, calling %s::%s\n", impInlineRoot()->info.compFullName, derivedClassName,
-                derivedMethodName);
-    }
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
@@ -21037,6 +21026,67 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
                baseMethodName, derivedClassName, derivedMethodName, note);
     }
+
+    // If we successfully devirtualized based on an exact or final class,
+    // and we have dynamic PGO data describing the likely class, make sure they agree.
+    //
+    // If pgo source is not dynamic we may see likely classes from other versions of this code
+    // where types had different properties.
+    //
+    // If method is an inlinee we may be specializing to a class that wasn't seen at runtime.
+    //
+    const bool canSensiblyCheck =
+        (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
+    if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
+    {
+        unsigned likelihood      = 0;
+        unsigned numberOfClasses = 0;
+
+        CORINFO_CLASS_HANDLE likelyClass =
+            getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+
+        if (likelyClass != NO_CLASS_HANDLE)
+        {
+            // PGO had better agree the class we devirtualized to is plausible.
+            //
+            if (likelyClass != derivedClass)
+            {
+                // Managed type system may report different addresses for a class handle
+                // at different times....?
+                //
+                // Also, AOT may have a more nuanced notion of class equality.
+                //
+                if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+                {
+                    bool mismatch = true;
+
+                    // derivedClass will be the introducer of derived method, so it's possible
+                    // likelyClass is a non-overriding subclass. Check up the hierarchy.
+                    //
+                    CORINFO_CLASS_HANDLE parentClass = likelyClass;
+                    while (parentClass != NO_CLASS_HANDLE)
+                    {
+                        if (parentClass == derivedClass)
+                        {
+                            mismatch = false;
+                            break;
+                        }
+
+                        parentClass = info.compCompHnd->getParentType(parentClass);
+                    }
+
+                    if (mismatch || (numberOfClasses != 1) || (likelihood != 100))
+                    {
+                        printf("@@@ Likely %p (%s) != Derived %p (%s) [n=%u, l=%u, il=%u] in %s \n", likelyClass,
+                               eeGetClassName(likelyClass), derivedClass, eeGetClassName(derivedClass), numberOfClasses,
+                               likelihood, ilOffset, info.compFullName);
+                    }
+
+                    assert(!(mismatch || (numberOfClasses != 1) || (likelihood != 100)));
+                }
+            }
+        }
+    }
 #endif // defined(DEBUG)
 
     // If the 'this' object is a value class, see if we can rework the call to invoke the
@@ -21045,6 +21095,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     // We won't optimize explicit tail calls, as ensuring we get the right tail call info
     // is tricky (we'd need to pass an updated sig and resolved token back to some callers).
+    //
+    // Note we may not have a derived class in some cases (eg interface call on an array)
     //
     if (info.compCompHnd->isValueClass(derivedClass))
     {
@@ -21564,8 +21616,31 @@ void Compiler::considerGuardedDevirtualization(
     unsigned       likelihood          = 0;
     unsigned       numberOfClasses     = 0;
 
-    CORINFO_CLASS_HANDLE likelyClass =
-        getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+    CORINFO_CLASS_HANDLE likelyClass = NO_CLASS_HANDLE;
+
+    bool doRandomDevirt = false;
+
+#ifdef DEBUG
+    // Optional stress mode to pick a random known class, rather than
+    // the most likely known class.
+    //
+    doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
+
+    if (doRandomDevirt)
+    {
+        // Reuse the random inliner's random state.
+        //
+        CLRRandom* const random =
+            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+        likelihood      = 100;
+        numberOfClasses = 1;
+        likelyClass     = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+    }
+    else
+#endif
+    {
+        likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+    }
 
     if (likelyClass == NO_CLASS_HANDLE)
     {
@@ -21573,8 +21648,8 @@ void Compiler::considerGuardedDevirtualization(
         return;
     }
 
-    JITDUMP("Likely class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", dspPtr(objClass), objClassName,
-            likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
+    JITDUMP("%s class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", doRandomDevirt ? "Random" : "Likely",
+            dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
 
     // Todo: a more advanced heuristic using likelihood, number of
     // classes, and the profile count for this block.

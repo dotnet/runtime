@@ -30,9 +30,16 @@ namespace
         enum
         {
             Flags_None = 0,
+
+            // The EOC has been collected and is no longer visible from managed code.
             Flags_Collected = 1,
+
             Flags_ReferenceTracker = 2,
             Flags_InCache = 4,
+
+            // The EOC is "detached" and no longer used to map between identity and a managed object.
+            // This will only be set if the EOC was inserted into the cache.
+            Flags_Detached = 8,
         };
         DWORD Flags;
 
@@ -78,6 +85,17 @@ namespace
             _ASSERTE(GCHeapUtilities::IsGCInProgress());
             SyncBlockIndex = InvalidSyncBlockIndex;
             Flags |= Flags_Collected;
+        }
+
+        void MarkDetached()
+        {
+            _ASSERTE(GCHeapUtilities::IsGCInProgress());
+            Flags |= Flags_Detached;
+        }
+
+        void MarkNotInCache()
+        {
+            ::InterlockedAnd((LONG*)&Flags, (~Flags_InCache));
         }
 
         OBJECTREF GetObjectRef()
@@ -428,6 +446,32 @@ namespace
 
             _hashMap.Remove(cxt->GetKey());
         }
+
+        void DetachNotPromotedEOCs()
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+                PRECONDITION(GCHeapUtilities::IsGCInProgress()); // GC is in progress and the runtime is suspended
+            }
+            CONTRACTL_END;
+
+            Iterator curr = _hashMap.Begin();
+            Iterator end = _hashMap.End();
+
+            ExternalObjectContext* cxt;
+            for (; curr != end; ++curr)
+            {
+                cxt = *curr;
+                if (!cxt->IsSet(ExternalObjectContext::Flags_Detached)
+                    && !GCHeapUtilities::GetGCHeap()->IsPromoted(OBJECTREFToObject(cxt->GetObjectRef())))
+                {
+                    cxt->MarkDetached();
+                }
+            }
+        }
     };
 
     // Global instance of the external object cache
@@ -726,6 +770,15 @@ namespace
                 {
                     handle = handleLocal;
                 }
+            }
+            else if (extObjCxt != NULL && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
+            {
+                // If an EOC has been found but is marked detached, then we will remove it from the
+                // cache here instead of letting the GC do it later and pretend like it wasn't found.
+                STRESS_LOG1(LF_INTEROP, LL_INFO10, "Detached EOC requested: 0x%p\n", extObjCxt);
+                cache->Remove(extObjCxt);
+                extObjCxt->MarkNotInCache();
+                extObjCxt = NULL;
             }
         }
 
@@ -1794,6 +1847,21 @@ void ComWrappersNative::OnFullGCFinished()
         (void)InteropLib::Com::EndExternalObjectReferenceTracking();
         STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
     }
+}
+
+void ComWrappersNative::AfterRefCountedHandleCallbacks()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+    if (cache != NULL)
+        cache->DetachNotPromotedEOCs();
 }
 
 #endif // FEATURE_COMWRAPPERS

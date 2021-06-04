@@ -3585,7 +3585,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     // force the fromType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
     {
-        fromType = genUnsignedType(fromType);
+        fromType = varTypeToUnsigned(fromType);
     }
 
     // If we have a cast involving floating point types, then bail.
@@ -4992,6 +4992,9 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         bool ignoreRoot = true;
 
         gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
+
+        JITDUMP("Extracted side effects from a constant tree [%06u]:\n", tree->gtTreeID);
+        DISPTREE(sideEffList);
     }
 
     return sideEffList;

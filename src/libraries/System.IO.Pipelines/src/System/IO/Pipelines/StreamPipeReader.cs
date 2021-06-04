@@ -513,7 +513,7 @@ namespace System.IO.Pipelines
                     ClearCancellationToken();
                 }
 
-                ReadOnlySequence<byte> buffer = _readHead == null ? default : GetCurrentReadOnlySequence();
+                ReadOnlySequence<byte> buffer = GetCurrentReadOnlySequence();
 
                 result = new ReadResult(buffer, isCancellationRequested, _isStreamCompleted);
                 return true;
@@ -525,8 +525,8 @@ namespace System.IO.Pipelines
 
         private ReadOnlySequence<byte> GetCurrentReadOnlySequence()
         {
-            Debug.Assert(_readHead != null && _readTail != null);
-            return new ReadOnlySequence<byte>(_readHead, _readIndex, _readTail, _readTail.End);
+            // If _readHead is null then _readTail is also null
+            return _readHead is null ? default : new ReadOnlySequence<byte>(_readHead, _readIndex, _readTail!, _readTail!.End);
         }
 
         private void AllocateReadTail(int? minimumSize = null)

@@ -28,17 +28,15 @@ namespace System
         /// <remarks>Keep in sync with AllocateString in gchelpers.cpp.</remarks>
         internal const int MaxLength = 0x3FFFFFDF;
 
+#if !CORERT
         // The Empty constant holds the empty string value. It is initialized by the EE during startup.
         // It is treated as intrinsic by the JIT as so the static constructor would never run.
         // Leaving it uninitialized would confuse debuggers.
-        //
-        // We need to call the String constructor so that the compiler doesn't mark this as a literal.
-        // Marking this as a literal would mean that it doesn't show up as a field which we can access
-        // from native.
 #pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
         [Intrinsic]
         public static readonly string Empty;
 #pragma warning restore CS8618
+#endif
 
         //
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
@@ -463,14 +461,11 @@ namespace System
                 elementCount: (uint)count);
         }
 
-        // TODO: https://github.com/dotnet/runtime/issues/51061
-        // Make these {Try}CopyTo methods public and use throughout dotnet/runtime.
-
         /// <summary>Copies the contents of this string into the destination span.</summary>
         /// <param name="destination">The span into which to copy this string's contents.</param>
         /// <exception cref="System.ArgumentException">The destination span is shorter than the source string.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void CopyTo(Span<char> destination)
+        public void CopyTo(Span<char> destination)
         {
             if ((uint)Length <= (uint)destination.Length)
             {
@@ -486,7 +481,7 @@ namespace System
         /// <param name="destination">The span into which to copy this string's contents.</param>
         /// <returns>true if the data was copied; false if the destination was too short to fit the contents of the string.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryCopyTo(Span<char> destination)
+        public bool TryCopyTo(Span<char> destination)
         {
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)

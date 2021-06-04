@@ -868,9 +868,49 @@ namespace System.Linq.Tests
         [Fact]
         public static void MaxBy_Generic_EmptyStructSource_ThrowsInvalidOperationException()
         {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MaxBy(x => x));
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MaxBy(x => x, comparer: null));
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MaxBy(x => x, Comparer<int>.Create((_, _) => 0)));
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MaxBy(x => x.ToString()));
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MaxBy(x => x.ToString(), comparer: null));
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MaxBy(x => x.ToString(), Comparer<string>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MaxBy_Generic_EmptyNullableSource_ReturnsNull()
+        {
+            Assert.Null(Enumerable.Empty<int?>().MaxBy(x => x.GetHashCode()));
+            Assert.Null(Enumerable.Empty<int?>().MaxBy(x => x.GetHashCode(), comparer: null));
+            Assert.Null(Enumerable.Empty<int?>().MaxBy(x => x.GetHashCode(), Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MaxBy_Generic_EmptyReferenceSource_ReturnsNull()
+        {
+            Assert.Null(Enumerable.Empty<string>().MaxBy(x => x.GetHashCode()));
+            Assert.Null(Enumerable.Empty<string>().MaxBy(x => x.GetHashCode(), comparer: null));
+            Assert.Null(Enumerable.Empty<string>().MaxBy(x => x.GetHashCode(), Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MaxBy_Generic_StructSourceAllKeysAreNull_ReturnsLastElement()
+        {
+            Assert.Equal(4, Enumerable.Range(0, 5).MaxBy(x => default(string)));
+            Assert.Equal(4, Enumerable.Range(0, 5).MaxBy(x => default(string), comparer: null));
+            Assert.Equal(4, Enumerable.Range(0, 5).MaxBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+        }
+
+        [Fact]
+        public static void MaxBy_Generic_NullableSourceAllKeysAreNull_ReturnsLastElement()
+        {
+            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?)));
+            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?), comparer: null));
+            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MaxBy(x => default(int?), Comparer<int?>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+        }
+
+        [Fact]
+        public static void MaxBy_Generic_ReferenceSourceAllKeysAreNull_ReturnsLastElement()
+        {
+            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string)));
+            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string), comparer: null));
+            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MaxBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
         }
 
         [Theory]
@@ -954,6 +994,12 @@ namespace System.Linq.Tests
                 keySelector: x => x.Name,
                 comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
                 expected: (Name: "Dick", Age: 55));
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 43), (null, 55), ("Harry", 20) },
+                keySelector: x => x.Name,
+                comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
+                expected: (Name: "Harry", Age: 20));
 
             object[] WrapArgs<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer, TSource? expected)
                 => new object[] { source, keySelector, comparer, expected };
