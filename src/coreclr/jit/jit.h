@@ -209,7 +209,7 @@
 #if defined(DEBUG) && !defined(OSX_ARM64_ABI)
 // On all platforms except Arm64 OSX arguments on the stack are taking
 // register size slots. On these platforms we could check that stack slots count
-// matchs out new byte size calculations.
+// matches our new byte size calculations.
 #define DEBUG_ARG_SLOTS
 #endif
 
