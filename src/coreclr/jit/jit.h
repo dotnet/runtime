@@ -644,12 +644,6 @@ private:
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /*****************************************************************************/
-#ifdef ICECAP
-#include "icapexp.h"
-#include "icapctrl.h"
-#endif
-
-/*****************************************************************************/
 
 #include "error.h"
 
