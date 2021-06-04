@@ -722,10 +722,6 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
 const size_t MAX_USHORT_SIZE_T   = static_cast<size_t>(static_cast<unsigned short>(-1));
 const size_t MAX_UNSIGNED_SIZE_T = static_cast<size_t>(static_cast<unsigned>(-1));
 
-// These assume 2's complement...
-const int MAX_SHORT_AS_INT = 32767;
-const int MIN_SHORT_AS_INT = -32768;
-
 /*****************************************************************************/
 
 class Compiler;
