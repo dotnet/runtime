@@ -75,7 +75,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       timeoutInMinutes: 120
-      nameSuffix: Runtime_Release
+      nameSuffix: ${{ format('{0}_Runtime_Release', parameters.hostedOs) }}
       buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
       extraStepsParameters:
