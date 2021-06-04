@@ -198,11 +198,9 @@
 
 #ifdef DEBUG
 #define INDEBUG(x) x
-#define INDEBUG_COMMA(x) x,
 #define DEBUGARG(x) , x
 #else
 #define INDEBUG(x)
-#define INDEBUG_COMMA(x)
 #define DEBUGARG(x)
 #endif
 
@@ -239,11 +237,6 @@
 
 #if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
-#define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
-#define PUT_STRUCT_ARG_STK_ONLY(x) x
-#else
-#define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
-#define PUT_STRUCT_ARG_STK_ONLY(x)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -297,8 +290,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define INFO6 LL_INFO10000   // Did Jit or Inline succeeded?
 #define INFO7 LL_INFO100000  // NYI stuff
 #define INFO8 LL_INFO1000000 // Weird failures
-#define INFO9 LL_EVERYTHING  // Info about incoming settings
-#define INFO10 LL_EVERYTHING // Totally verbose
 
 #endif // DEBUG
 
@@ -307,11 +298,6 @@ typedef class ICorJitInfo* COMP_HANDLE;
 const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = (CORINFO_CLASS_HANDLE) nullptr;
 
 /*****************************************************************************/
-
-inline bool False()
-{
-    return false;
-} // Use to disable code while keeping prefast happy
 
 // We define two IL offset types, as follows:
 //
@@ -591,20 +577,7 @@ inline bool IsUninitialized(T data);
 
 /*****************************************************************************/
 
-enum accessLevel
-{
-    ACL_NONE,
-    ACL_PRIVATE,
-    ACL_DEFAULT,
-    ACL_PROTECTED,
-    ACL_PUBLIC,
-};
-
-/*****************************************************************************/
-
 #define castto(var, typ) (*(typ*)&var)
-
-#define sizeto(typ, mem) (offsetof(typ, mem) + sizeof(((typ*)0)->mem))
 
 /*****************************************************************************/
 
@@ -645,22 +618,10 @@ inline size_t roundUp(size_t size, size_t mult = sizeof(size_t))
     return (size + (mult - 1)) & ~(mult - 1);
 }
 
-inline size_t roundDn(size_t size, size_t mult = sizeof(size_t))
-{
-    assert(mult && ((mult & (mult - 1)) == 0)); // power of two test
-
-    return (size) & ~(mult - 1);
-}
-
 #ifdef HOST_64BIT
 inline unsigned int roundUp(unsigned size, unsigned mult)
 {
     return (unsigned int)roundUp((size_t)size, (size_t)mult);
-}
-
-inline unsigned int roundDn(unsigned size, unsigned mult)
-{
-    return (unsigned int)roundDn((size_t)size, (size_t)mult);
 }
 #endif // HOST_64BIT
 
