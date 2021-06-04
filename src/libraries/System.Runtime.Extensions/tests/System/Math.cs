@@ -3180,101 +3180,115 @@ namespace System.Tests
         [Fact]
         public static void SinPi_Double_Precision()
         {
-            Assert.Equal( 0, Math.SinPi( 0.0));
-            Assert.Equal( 1, Math.SinPi( 0.5));
-            Assert.Equal(-1, Math.SinPi(-0.5));
-            Assert.Equal( 0, Math.SinPi( 1.0));
-            Assert.Equal( 0, Math.SinPi(-1.0));
-            Assert.Equal(-1, Math.SinPi( 1.5));
-            Assert.Equal( 1, Math.SinPi(-1.5));
-            Assert.Equal( 0, Math.SinPi( 2.0));
-            Assert.Equal( 0, Math.SinPi(-2.0));
+            AssertEqual( 0.0, Math.SinPi( 0.0), 0.0);
+            AssertEqual(-0.0, Math.SinPi(-0.0), 0.0);
+            AssertEqual( 1.0, Math.SinPi( 0.5), 0.0);
+            AssertEqual(-1.0, Math.SinPi(-0.5), 0.0);
+            AssertEqual( 0.0, Math.SinPi( 1.0), 0.0);
+            AssertEqual(-0.0, Math.SinPi(-1.0), 0.0);
+            AssertEqual(-1.0, Math.SinPi( 1.5), 0.0);
+            AssertEqual( 1.0, Math.SinPi(-1.5), 0.0);
+            AssertEqual( 0.0, Math.SinPi( 2.0), 0.0);
+            AssertEqual(-0.0, Math.SinPi(-2.0), 0.0);
 
-            Assert.Equal(0, Math.SinPi(0.1234) + Math.SinPi(-0.1234));
-            Assert.Equal(0, Math.SinPi(0.6789) + Math.SinPi(-0.6789));
-            Assert.Equal(0, Math.SinPi(1.2345) + Math.SinPi(-1.2345));
+            AssertEqual(0.0, Math.SinPi(0.1234) + Math.SinPi(-0.1234), 0.0);
+            AssertEqual(0.0, Math.SinPi(0.6789) + Math.SinPi(-0.6789), 0.0);
+            AssertEqual(0.0, Math.SinPi(1.2345) + Math.SinPi(-1.2345), 0.0);
         }
 
         [Fact]
         public static void SinPi_Float_Precision()
         {
-            Assert.Equal( 0, MathF.SinPi( 0.0f));
-            Assert.Equal( 1, MathF.SinPi( 0.5f));
-            Assert.Equal(-1, MathF.SinPi(-0.5f));
-            Assert.Equal( 0, MathF.SinPi( 1.0f));
-            Assert.Equal( 0, MathF.SinPi(-1.0f));
-            Assert.Equal(-1, MathF.SinPi( 1.5f));
-            Assert.Equal( 1, MathF.SinPi(-1.5f));
-            Assert.Equal( 0, MathF.SinPi( 2.0f));
-            Assert.Equal( 0, MathF.SinPi(-2.0f));
+            AssertEqual( 0.0f, MathF.SinPi( 0.0f), 0.0f);
+            AssertEqual(-0.0f, MathF.SinPi(-0.0f), 0.0f);
+            AssertEqual( 1.0f, MathF.SinPi( 0.5f), 0.0f);
+            AssertEqual(-1.0f, MathF.SinPi(-0.5f), 0.0f);
+            AssertEqual( 0.0f, MathF.SinPi( 1.0f), 0.0f);
+            AssertEqual(-0.0f, MathF.SinPi(-1.0f), 0.0f);
+            AssertEqual(-1.0f, MathF.SinPi( 1.5f), 0.0f);
+            AssertEqual( 1.0f, MathF.SinPi(-1.5f), 0.0f);
+            AssertEqual( 0.0f, MathF.SinPi( 2.0f), 0.0f);
+            AssertEqual(-0.0f, MathF.SinPi(-2.0f), 0.0f);
 
-            Assert.Equal(0, MathF.SinPi(0.1234f) + MathF.SinPi(-0.1234f));
-            Assert.Equal(0, MathF.SinPi(0.6789f) + MathF.SinPi(-0.6789f));
-            Assert.Equal(0, MathF.SinPi(1.2345f) + MathF.SinPi(-1.2345f));
+            AssertEqual(0.0f, MathF.SinPi(0.1234f) + MathF.SinPi(-0.1234f), 0.0f);
+            AssertEqual(0.0f, MathF.SinPi(0.6789f) + MathF.SinPi(-0.6789f), 0.0f);
+            AssertEqual(0.0f, MathF.SinPi(1.2345f) + MathF.SinPi(-1.2345f), 0.0f);
         }
 
         [Fact]
         public static void CosPi_Double_Precision()
         {
-            Assert.Equal( 1, Math.CosPi( 0.0));
-            Assert.Equal( 0, Math.CosPi( 0.5));
-            Assert.Equal( 0, Math.CosPi(-0.5));
-            Assert.Equal(-1, Math.CosPi( 1.0));
-            Assert.Equal(-1, Math.CosPi(-1.0));
-            Assert.Equal( 0, Math.CosPi( 1.5));
-            Assert.Equal( 0, Math.CosPi(-1.5));
-            Assert.Equal( 1, Math.CosPi( 2.0));
-            Assert.Equal( 1, Math.CosPi(-2.0));
+            AssertEqual( 1.0, Math.CosPi( 0.0), 0.0);
+            AssertEqual( 1.0, Math.CosPi(-0.0), 0.0);
+            AssertEqual( 0.0, Math.CosPi( 0.5), 0.0);
+            AssertEqual( 0.0, Math.CosPi(-0.5), 0.0);
+            AssertEqual(-1.0, Math.CosPi( 1.0), 0.0);
+            AssertEqual(-1.0, Math.CosPi(-1.0), 0.0);
+            AssertEqual( 0.0, Math.CosPi( 1.5), 0.0);
+            AssertEqual( 0.0, Math.CosPi(-1.5), 0.0);
+            AssertEqual( 1.0, Math.CosPi( 2.0), 0.0);
+            AssertEqual( 1.0, Math.CosPi(-2.0), 0.0);
 
-            Assert.Equal(0, Math.CosPi(0.1234) - Math.CosPi(-0.1234));
-            Assert.Equal(0, Math.CosPi(0.6789) - Math.CosPi(-0.6789));
-            Assert.Equal(0, Math.CosPi(1.2345) - Math.CosPi(-1.2345));
+            AssertEqual(0.0, Math.CosPi(0.1234) - Math.CosPi(-0.1234), 0.0);
+            AssertEqual(0.0, Math.CosPi(0.6789) - Math.CosPi(-0.6789), 0.0);
+            AssertEqual(0.0, Math.CosPi(1.2345) - Math.CosPi(-1.2345), 0.0);
         }
 
         [Fact]
         public static void CosPi_Float_Precision()
         {
-            Assert.Equal( 1, MathF.CosPi( 0.0f));
-            Assert.Equal( 0, MathF.CosPi( 0.5f));
-            Assert.Equal( 0, MathF.CosPi(-0.5f));
-            Assert.Equal(-1, MathF.CosPi( 1.0f));
-            Assert.Equal(-1, MathF.CosPi(-1.0f));
-            Assert.Equal( 0, MathF.CosPi( 1.5f));
-            Assert.Equal( 0, MathF.CosPi(-1.5f));
-            Assert.Equal( 1, MathF.CosPi( 2.0f));
-            Assert.Equal( 1, MathF.CosPi(-2.0f));
+            AssertEqual( 1.0f, MathF.CosPi( 0.0f), 0.0f);
+            AssertEqual( 1.0f, MathF.CosPi(-0.0f), 0.0f);
+            AssertEqual( 0.0f, MathF.CosPi( 0.5f), 0.0f);
+            AssertEqual( 0.0f, MathF.CosPi(-0.5f), 0.0f);
+            AssertEqual(-1.0f, MathF.CosPi( 1.0f), 0.0f);
+            AssertEqual(-1.0f, MathF.CosPi(-1.0f), 0.0f);
+            AssertEqual( 0.0f, MathF.CosPi( 1.5f), 0.0f);
+            AssertEqual( 0.0f, MathF.CosPi(-1.5f), 0.0f);
+            AssertEqual( 1.0f, MathF.CosPi( 2.0f), 0.0f);
+            AssertEqual( 1.0f, MathF.CosPi(-2.0f), 0.0f);
 
-            Assert.Equal(0, MathF.CosPi(0.1234f) - MathF.CosPi(-0.1234f));
-            Assert.Equal(0, MathF.CosPi(0.6789f) - MathF.CosPi(-0.6789f));
-            Assert.Equal(0, MathF.CosPi(1.2345f) - MathF.CosPi(-1.2345f));
+            AssertEqual(0.0f, MathF.CosPi(0.1234f) - MathF.CosPi(-0.1234f), 0.0f);
+            AssertEqual(0.0f, MathF.CosPi(0.6789f) - MathF.CosPi(-0.6789f), 0.0f);
+            AssertEqual(0.0f, MathF.CosPi(1.2345f) - MathF.CosPi(-1.2345f), 0.0f);
         }
 
         [Fact]
         public static void TanPi_Double_Precision()
         {
-            Assert.Equal(                      0, Math.TanPi( 0.0));
-            Assert.Equal(double.PositiveInfinity, Math.TanPi( 0.5));
-            Assert.Equal(double.NegativeInfinity, Math.TanPi(-0.5));
-            Assert.Equal(                      0, Math.TanPi( 1.0));
-            Assert.Equal(                      0, Math.TanPi(-1.0));
-            Assert.Equal(double.NegativeInfinity, Math.TanPi( 1.5));
-            Assert.Equal(double.PositiveInfinity, Math.TanPi(-1.5));
-            Assert.Equal(                      0, Math.TanPi( 2.0));
-            Assert.Equal(                      0, Math.TanPi(-2.0));
+            AssertEqual(                    0.0, Math.TanPi( 0.0), 0.0);
+            AssertEqual(                   -0.0, Math.TanPi(-0.0), 0.0);
+            AssertEqual(double.PositiveInfinity, Math.TanPi( 0.5), 0.0);
+            AssertEqual(double.NegativeInfinity, Math.TanPi(-0.5), 0.0);
+            AssertEqual(                   -0.0, Math.TanPi( 1.0), 0.0);
+            AssertEqual(                    0.0, Math.TanPi(-1.0), 0.0);
+            AssertEqual(double.NegativeInfinity, Math.TanPi( 1.5), 0.0);
+            AssertEqual(double.PositiveInfinity, Math.TanPi(-1.5), 0.0);
+            AssertEqual(                    0.0, Math.TanPi( 2.0), 0.0);
+            AssertEqual(                   -0.0, Math.TanPi(-2.0), 0.0);
+
+            AssertEqual(0.0, Math.TanPi(0.1234) + Math.TanPi(-0.1234), 0.0);
+            AssertEqual(0.0, Math.TanPi(0.6789) + Math.TanPi(-0.6789), 0.0);
+            AssertEqual(0.0, Math.TanPi(1.2345) + Math.TanPi(-1.2345), 0.0);
         }
 
         [Fact]
         public static void TanPi_Float_Precision()
         {
-            Assert.Equal(                     0, MathF.TanPi( 0.0f));
-            Assert.Equal(float.PositiveInfinity, MathF.TanPi( 0.5f));
-            Assert.Equal(float.NegativeInfinity, MathF.TanPi(-0.5f));
-            Assert.Equal(                     0, MathF.TanPi( 1.0f));
-            Assert.Equal(                     0, MathF.TanPi(-1.0f));
-            Assert.Equal(float.NegativeInfinity, MathF.TanPi( 1.5f));
-            Assert.Equal(float.PositiveInfinity, MathF.TanPi(-1.5f));
-            Assert.Equal(                     0, MathF.TanPi( 2.0f));
-            Assert.Equal(                     0, MathF.TanPi(-2.0f));
+            AssertEqual(                  0.0f, MathF.TanPi( 0.0f), 0.0f);
+            AssertEqual(                 -0.0f, MathF.TanPi(-0.0f), 0.0f);
+            AssertEqual(float.PositiveInfinity, MathF.TanPi( 0.5f), 0.0f);
+            AssertEqual(float.NegativeInfinity, MathF.TanPi(-0.5f), 0.0f);
+            AssertEqual(                 -0.0f, MathF.TanPi( 1.0f), 0.0f);
+            AssertEqual(                  0.0f, MathF.TanPi(-1.0f), 0.0f);
+            AssertEqual(float.NegativeInfinity, MathF.TanPi( 1.5f), 0.0f);
+            AssertEqual(float.PositiveInfinity, MathF.TanPi(-1.5f), 0.0f);
+            AssertEqual(                  0.0f, MathF.TanPi( 2.0f), 0.0f);
+            AssertEqual(                 -0.0f, MathF.TanPi(-2.0f), 0.0f);
+
+            AssertEqual(0.0f, MathF.TanPi(0.1234f) + MathF.TanPi(-0.1234f), 0.0f);
+            AssertEqual(0.0f, MathF.TanPi(0.6789f) + MathF.TanPi(-0.6789f), 0.0f);
+            AssertEqual(0.0f, MathF.TanPi(1.2345f) + MathF.TanPi(-1.2345f), 0.0f);
         }
     }
 }
