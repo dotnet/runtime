@@ -16,6 +16,9 @@
       https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6-transport/nuget/v3/index.json;
       $(LocalPackagesPath)
     </RestoreSources>
+
+    <!-- Make sure the SDK raises the runtime items so that they are passed to conflict resolution -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <Import Project="tools\build\Packaging.common.targets" />
@@ -72,24 +75,25 @@
 
   <Target Name="PrepareForRuntimeTesting" DependsOnTargets="ResolveReferences">
     <ItemGroup>
-      <RuntimeLibToTest Include="@(RuntimeCopyLocalItems)" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == '$(TestPackageId)'" RuntimeIdentifier="none" />
-      <RuntimeLibToTest Include="@(RuntimeTargetsCopyLocalItems)" Condition="'%(RuntimeTargetsCopyLocalItems.NuGetPackageId)' == '$(TestPackageId)' AND '%(RuntimeTargetsCopyLocalItems.CopyLocal)' == 'true'" />
+      <ReferenceLibToTest Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' == '$(TestPackageId)'" />
+      <RuntimeLibToTest Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' == '$(TestPackageId)'" />
+      <RuntimeLibToTest Condition="'%(RuntimeLibToTest.RuntimeIdentifier)' == ''" RuntimeIdentifier="none" />
     </ItemGroup>
 
     <ItemGroup>
       <RuntimeLibToTestDependency Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' != '$(TestPackageId)'" />
 
-      <!-- Some dependent packages may be excluded from compile, consider these as candiates as well.  
-           We assume they must expose a RID agnostic asset, thus we only check RuntimeCopyLocalItems. -->
-      <RuntimeCopyLocalItems Original="%(Identity)" />
-      <_runtimeCopyLocalItemsPackages Include="@(RuntimeCopyLocalItems->'%(NuGetPackageId)')" 
+      <!-- Some dependent packages may be excluded from compile, consider these as candiates as well.-->
+      <ReferenceCopyLocalPaths Original="%(Identity)" />
+      <_referenceCopyLocalPathsPackages Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" 
+                                      Condition="'%(ReferenceCopyLocalPaths.RuntimeIdentifier)' == ''"
                                       Exclude="@(ReferencePath->'%(NuGetPackageId)');$(TestPackageId)" />
-      <RuntimeLibToTestDependency Include="@(_runtimeCopyLocalItemsPackages->'%(Original)')" />
+      <RuntimeLibToTestDependency Include="@(_referenceCopyLocalPathsPackages->'%(Original)')" />
     </ItemGroup>
 
-    <Error Condition="'@(RuntimeLibToTest)' == ''" Text="Could not locate any runtime items from Package $(TestPackageID)" />
+    <Error Condition="'@(RuntimeLibToTest)' == '' AND '@(ReferenceLibToTest)' != ''" Text="Could not locate any runtime items from Package $(TestPackageID)" />
     
-    <Message Importance="High" Text="Testing $(TestPackageID) TFM=$(TargetFramework) RIDs=@(RuntimeLibToTest->'%(RuntimeIdentifier)'->Distinct())" />
+    <Message Condition="'@(RuntimeLibToTest)' != ''" Importance="High" Text="Testing $(TestPackageID) runtime on TFM=$(TargetFramework) RIDs=@(RuntimeLibToTest->'%(RuntimeIdentifier)'->Distinct())" />
   </Target>
 
   <Target Name="VerifyRuntimeClosure" 
@@ -116,7 +120,7 @@
           Outputs="unused"
           DependsOnTargets="PrepareForRuntimeTesting"
           Condition="'$(ShouldVerifyTypes)' == 'true'">
-    <Message Importance="High" Text="Testing for duplicate types for  for $(TestPackageID) TFM=$(TargetFramework) RID=%(RuntimeLibToTest.RuntimeIdentifier)" />
+    <Message Importance="High" Text="Testing for duplicate types for $(TestPackageID) TFM=$(TargetFramework) RID=%(RuntimeLibToTest.RuntimeIdentifier)" />
     <ItemGroup>
       <_runTypesFileNames Include="@(RuntimeLibToTestDependency->'%(FileName)');@(RuntimeLibToTest->'%(FileName)')">
         <Original>%(Identity)</Original>
