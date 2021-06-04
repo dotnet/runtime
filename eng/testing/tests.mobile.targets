@@ -153,9 +153,8 @@
       <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
     </PropertyGroup>
     <PropertyGroup>
-      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+      <AOTMode>Full</AOTMode>
+      <AOTMode Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
     </PropertyGroup>
     <ItemGroup>
       <_AotExcludeAssemblies Include="$(PublishDir)System.Runtime.WindowsRuntime.dll" />
