@@ -207,7 +207,7 @@ g_assertion_message (const gchar *format, ...)
 	failure_assertion = g_logv_nofree (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 
 	va_end (args);
-	exit (0);
+	exit (-1);
 }
 
 // Emscriptem emulates varargs, and fails to stack pack multiple outgoing varargs areas,
