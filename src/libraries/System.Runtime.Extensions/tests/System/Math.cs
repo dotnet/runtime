@@ -3290,5 +3290,29 @@ namespace System.Tests
             AssertEqual(0.0f, MathF.TanPi(0.6789f) + MathF.TanPi(-0.6789f), 0.0f);
             AssertEqual(0.0f, MathF.TanPi(1.2345f) + MathF.TanPi(-1.2345f), 0.0f);
         }
+
+        [Theory]
+        [InlineData(0.1234)]
+        [InlineData(0.6789)]
+        [InlineData(1.2345)]
+        [InlineData(1.9876)]
+        public static void TriPi_Double_Correctness(double x)
+        {
+            AssertEqual(Math.Sin(x * Math.PI), Math.SinPi(x), CrossPlatformMachineEpsilonForEstimates);
+            AssertEqual(Math.Cos(x * Math.PI), Math.CosPi(x), CrossPlatformMachineEpsilonForEstimates);
+            AssertEqual(Math.Tan(x * Math.PI), Math.TanPi(x), CrossPlatformMachineEpsilonForEstimates);
+        }
+
+        [Theory]
+        [InlineData(0.1234f)]
+        [InlineData(0.6789f)]
+        [InlineData(1.2345f)]
+        [InlineData(1.9876f)]
+        public static void TriPi_Float_Correctness(float x)
+        {
+            AssertEqual(MathF.Sin(x * MathF.PI), MathF.SinPi(x), (float)CrossPlatformMachineEpsilonForEstimates);
+            AssertEqual(MathF.Cos(x * MathF.PI), MathF.CosPi(x), (float)CrossPlatformMachineEpsilonForEstimates);
+            AssertEqual(MathF.Tan(x * MathF.PI), MathF.TanPi(x), (float)CrossPlatformMachineEpsilonForEstimates);
+        }
     }
 }
