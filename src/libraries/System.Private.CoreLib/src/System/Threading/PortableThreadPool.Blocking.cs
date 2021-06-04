@@ -274,10 +274,11 @@ namespace System.Threading
                 // - After that, before each additional thread is created, a delay is induced, starting with DelayStepMs
                 // - For every ThreadsPerDelayStep threads that are added with a delay, an additional DelayStepMs is added to
                 //   the delay
-                // - The delay may not exceed MaxDelayUntilFallbackMs
+                // - The delay may not exceed MaxDelayMs
                 // - Delays are only induced before creating threads. If threads are already available, they would be released
                 //   without delay to compensate for cooperative blocking.
                 // - Physical memory usage and limits are also used and beyond a threshold, the system switches to fallback mode
+                //   where threads would be created if starvation is detected, typically with higher delays
 
                 // After the thread count based on MinThreads is reached, this value (after it is multiplied by the processor
                 // count) specifies how many additional threads may be created without a delay
@@ -308,7 +309,7 @@ namespace System.Threading
                 // use before each new thread is created
                 MaxDelayMs =
                     (uint)AppContextConfigHelper.GetInt32Config(
-                        "System.Threading.ThreadPool.Blocking.MaxDelayUntilFallbackMs",
+                        "System.Threading.ThreadPool.Blocking.MaxDelayMs",
                         250,
                         false);
 
