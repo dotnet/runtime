@@ -474,7 +474,7 @@ public:
 
 #if DUMP_GC_TABLES
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
-const bool            dspGCtbls      = true;
+const bool dspGCtbls = true;
 #endif
 
 #endif // !DEBUG
