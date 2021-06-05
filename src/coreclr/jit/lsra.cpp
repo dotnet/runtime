@@ -831,10 +831,7 @@ void LinearScan::setBlockSequence()
     }
 #endif // TRACK_LSRA_STATS
 
-<<<<<<< HEAD
     JITDUMP("Start LSRA Block Sequence: \n");
-=======
->>>>>>> Add iterator for switch targets
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
         JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
