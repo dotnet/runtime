@@ -3361,50 +3361,52 @@ namespace System.Tests
             AssertEqual(-0.5f, MathF.AtanPi(float.NegativeInfinity), 0.0f);
         }
 
-        [Fact]
-        public static void Atan2Pi_Double_Precision()
+        [Theory]
+        [InlineData( 0.0, -0.0,  1.0)]
+        [InlineData(-0.0, -0.0, -1.0)]
+        [InlineData( 0.0, -1.0,  1.0)]
+        [InlineData(-0.0, -1.0, -1.0)]
+        [InlineData(-1.0,  0.0, -0.5)]
+        [InlineData(-1.0, -0.0, -0.5)]
+        [InlineData( 1.0,  0.0,  0.5)]
+        [InlineData( 1.0, -0.0,  0.5)]
+        [InlineData( 1.0, double.NegativeInfinity,  1.0)]
+        [InlineData(-1.0, double.NegativeInfinity, -1.0)]
+        [InlineData(double.PositiveInfinity,  1.0,  0.5)]
+        [InlineData(double.PositiveInfinity, -1.0,  0.5)]
+        [InlineData(double.NegativeInfinity,  1.0, -0.5)]
+        [InlineData(double.NegativeInfinity, -1.0, -0.5)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity,  0.75)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity, -0.75)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity,  0.25)]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, -0.25)]
+        public static void Atan2Pi_Double_Precision(double y, double x, double expected)
         {
-            AssertEqual( 1.00, Math.Atan2Pi( 0.0, -0.0), 0.0);
-            AssertEqual(-1.00, Math.Atan2Pi(-0.0, -0.0), 0.0);
-            AssertEqual( 1.00, Math.Atan2Pi( 0.0, -1.0), 0.0);
-            AssertEqual(-1.00, Math.Atan2Pi(-0.0, -1.0), 0.0);
-            AssertEqual(-0.50, Math.Atan2Pi(-1.0,  0.0), 0.0);
-            AssertEqual(-0.50, Math.Atan2Pi(-1.0, -0.0), 0.0);
-            AssertEqual( 0.50, Math.Atan2Pi( 1.0,  0.0), 0.0);
-            AssertEqual( 0.50, Math.Atan2Pi( 1.0, -0.0), 0.0);
-            AssertEqual( 1.00, Math.Atan2Pi( 1.0, double.NegativeInfinity), 0.0);
-            AssertEqual(-1.00, Math.Atan2Pi(-1.0, double.NegativeInfinity), 0.0);
-            AssertEqual( 0.50, Math.Atan2Pi(double.PositiveInfinity,  1.0), 0.0);
-            AssertEqual( 0.50, Math.Atan2Pi(double.PositiveInfinity, -1.0), 0.0);
-            AssertEqual(-0.50, Math.Atan2Pi(double.NegativeInfinity,  1.0), 0.0);
-            AssertEqual(-0.50, Math.Atan2Pi(double.NegativeInfinity, -1.0), 0.0);
-            AssertEqual( 0.75, Math.Atan2Pi(double.PositiveInfinity, double.NegativeInfinity), 0.0);
-            AssertEqual(-0.75, Math.Atan2Pi(double.NegativeInfinity, double.NegativeInfinity), 0.0);
-            AssertEqual( 0.25, Math.Atan2Pi(double.PositiveInfinity, double.PositiveInfinity), 0.0);
-            AssertEqual(-0.25, Math.Atan2Pi(double.NegativeInfinity, double.PositiveInfinity), 0.0);
+            AssertEqual(expected, Math.Atan2Pi(y, x), 0.0);
         }
 
-        [Fact]
-        public static void Atan2Pi_Float_Precision()
+        [Theory]
+        [InlineData( 0.0f, -0.0f,  1.0f)]
+        [InlineData(-0.0f, -0.0f, -1.0f)]
+        [InlineData( 0.0f, -1.0f,  1.0f)]
+        [InlineData(-0.0f, -1.0f, -1.0f)]
+        [InlineData(-1.0f,  0.0f, -0.5f)]
+        [InlineData(-1.0f, -0.0f, -0.5f)]
+        [InlineData( 1.0f,  0.0f,  0.5f)]
+        [InlineData( 1.0f, -0.0f,  0.5f)]
+        [InlineData( 1.0f, float.NegativeInfinity,  1.0f)]
+        [InlineData(-1.0f, float.NegativeInfinity, -1.0f)]
+        [InlineData(float.PositiveInfinity,  1.0f,  0.5f)]
+        [InlineData(float.PositiveInfinity, -1.0f,  0.5f)]
+        [InlineData(float.NegativeInfinity,  1.0f, -0.5f)]
+        [InlineData(float.NegativeInfinity, -1.0f, -0.5f)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity,  0.75f)]
+        [InlineData(float.NegativeInfinity, float.NegativeInfinity, -0.75f)]
+        [InlineData(float.PositiveInfinity, float.PositiveInfinity,  0.25f)]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, -0.25f)]
+        public static void Atan2Pi_Float_Precision(float y, float x, float expected)
         {
-            AssertEqual( 1.00f, MathF.Atan2Pi( 0.0f, -0.0f), 0.0f);
-            AssertEqual(-1.00f, MathF.Atan2Pi(-0.0f, -0.0f), 0.0f);
-            AssertEqual( 1.00f, MathF.Atan2Pi( 0.0f, -1.0f), 0.0f);
-            AssertEqual(-1.00f, MathF.Atan2Pi(-0.0f, -1.0f), 0.0f);
-            AssertEqual(-0.50f, MathF.Atan2Pi(-1.0f,  0.0f), 0.0f);
-            AssertEqual(-0.50f, MathF.Atan2Pi(-1.0f, -0.0f), 0.0f);
-            AssertEqual( 0.50f, MathF.Atan2Pi( 1.0f,  0.0f), 0.0f);
-            AssertEqual( 0.50f, MathF.Atan2Pi( 1.0f, -0.0f), 0.0f);
-            AssertEqual( 1.00f, MathF.Atan2Pi( 1.0f, float.NegativeInfinity), 0.0f);
-            AssertEqual(-1.00f, MathF.Atan2Pi(-1.0f, float.NegativeInfinity), 0.0f);
-            AssertEqual( 0.50f, MathF.Atan2Pi(float.PositiveInfinity,  1.0f), 0.0f);
-            AssertEqual( 0.50f, MathF.Atan2Pi(float.PositiveInfinity, -1.0f), 0.0f);
-            AssertEqual(-0.50f, MathF.Atan2Pi(float.NegativeInfinity,  1.0f), 0.0f);
-            AssertEqual(-0.50f, MathF.Atan2Pi(float.NegativeInfinity, -1.0f), 0.0f);
-            AssertEqual( 0.75f, MathF.Atan2Pi(float.PositiveInfinity, float.NegativeInfinity), 0.0f);
-            AssertEqual(-0.75f, MathF.Atan2Pi(float.NegativeInfinity, float.NegativeInfinity), 0.0f);
-            AssertEqual( 0.25f, MathF.Atan2Pi(float.PositiveInfinity, float.PositiveInfinity), 0.0f);
-            AssertEqual(-0.25f, MathF.Atan2Pi(float.NegativeInfinity, float.PositiveInfinity), 0.0f);
+            AssertEqual(expected, MathF.Atan2Pi(y, x), 0.0f);
         }
     }
 }
