@@ -704,7 +704,19 @@ namespace System
         /// -or-
         /// <see cref="float.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
         /// or <paramref name="x"/> equals <see cref="float.NaN"/>.</returns>
-        public static float AsinPi(float x) => Asin(x) / PI;
+        public static float AsinPi(float x)
+        {
+            if (x == 1)
+            {
+                return 0.5f;
+            }
+            if (x == -1)
+            {
+                return -0.5f;
+            }
+
+            return Asin(x) / PI;
+        }
 
         /// <summary>
         /// Returns the angle measured in half-revolutions whose cosine is the specified number.
@@ -777,18 +789,16 @@ namespace System
         /// the method returns <see cref="float.NaN"/>.</returns>
         public static float Atan2Pi(float y, float x)
         {
-            // There are many special values specified by IEEE754:2019
-            // involving +0/-0 which are not easy to handle
-            // To simplify, only special case failures in tests
-            if (float.IsPositiveInfinity(y) && float.IsFinite(x))
+            float atan = Atan2(y, x) / PI;
+
+            // if x or y is 0 or inf, it's a special value required by IEEE754:2019
+            // rounding to nearist quarter-integer (keeps +0/-0)
+            if (x == 0 || y == 0 || float.IsInfinity(x) || float.IsInfinity(y))
             {
-                return 0.5f;
+                return Round(atan * 4) / 4;
             }
-            if (float.IsNegativeInfinity(y) && float.IsFinite(x))
-            {
-                return -0.5f;
-            }
-            return Atan2(y, x) / PI;
+
+            return atan;
         }
     }
 }
