@@ -2125,10 +2125,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_SSE) {
 		switch (id) {
 		case SN_Shuffle:
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFFLE, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant mask (generate a switch)
-			return emit_invalid_operation (cfg, "mask in Sse.Shuffle must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFPS, 0, arg0_type, fsig, args);
 		case SN_ConvertScalarToVector128Single: {
 			int op = 0;
 			switch (fsig->params [1]->type) {

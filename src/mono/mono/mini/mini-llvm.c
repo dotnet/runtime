@@ -8313,36 +8313,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE_SHUFFLE: {
-			LLVMValueRef shuffle_vec = create_const_vector_4_i32 (
-				((ins->inst_c0 >> 0) & 0x3) + 0, // take two elements from lhs
-				((ins->inst_c0 >> 2) & 0x3) + 0, 
-				((ins->inst_c0 >> 4) & 0x3) + 4, // and two from rhs
-				((ins->inst_c0 >> 6) & 0x3) + 4);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, shuffle_vec, "");
-			break;
-		}
-
-		case OP_SSE2_SHUFFLE: {
-			LLVMValueRef right_vec;
-			LLVMValueRef shuffle_vec;
-			if (ins->inst_c1 == MONO_TYPE_R8) {
-				right_vec = rhs;
-				shuffle_vec = create_const_vector_2_i32 (
-					((ins->inst_c0 >> 0) & 0x1) + 0,
-					((ins->inst_c0 >> 1) & 0x1) + 2);
-			} else {
-				right_vec = LLVMGetUndef (LLVMVectorType (LLVMInt32Type (), 4));
-				shuffle_vec = create_const_vector_4_i32 (
-					(ins->inst_c0 >> 0) & 0x3,
-					(ins->inst_c0 >> 2) & 0x3, 
-					(ins->inst_c0 >> 4) & 0x3,
-					(ins->inst_c0 >> 6) & 0x3);
-			}
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, right_vec, shuffle_vec, "");
-			break;
-		}
-
 		case OP_SSE_OR: {
 			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
 			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
@@ -8778,50 +8748,50 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSE_SHUFPS:
 		case OP_SSE2_SHUFPD:
 		case OP_SSE2_PSHUFD:
 		case OP_SSE2_PSHUFHW:
 		case OP_SSE2_PSHUFLW: {
-			LLVMBasicBlockRef bbs [256 + 1];
-			LLVMValueRef switch_ins;
-			LLVMValueRef v1, v2, mask;
-			LLVMValueRef phi_values [256 + 1];
-			int ncases;
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef l = lhs;
+			LLVMValueRef r = rhs;
+			LLVMValueRef ctl = arg3;
+			const char *oname = "";
+			int ncases = 0;
 
-			// FIXME: Optimize constant shuffle mask
-
-			if (ins->opcode == OP_SSE2_SHUFPD) {
-				/* 3 parameter version */
-				v1 = lhs;
-				v2 = rhs;
-				mask = values [ins->sreg3];
-				ncases = 4;
-			} else {
-				/* 2 parameter version */
-				v1 = v2 = lhs;
-				mask = rhs;
-				ncases = 256;
+			switch (ins->opcode) {
+			case OP_SSE_SHUFPS: ncases = 256; break;
+			case OP_SSE2_SHUFPD: ncases = 4; break;
+			case OP_SSE2_PSHUFD: case OP_SSE2_PSHUFHW: case OP_SSE2_PSHUFLW: ncases = 256; r = lhs; ctl = rhs; break;
 			}
 
-			for (int i = 0; i < ncases; ++i)
-				bbs [i] = gen_bb (ctx, "PSHUFHW_CASE_BB");
-			cbb = gen_bb (ctx, "PSHUFHW_COND_BB");
-			/* No default case */
-			switch_ins = LLVMBuildSwitch (builder, mask, bbs [0], 0);
-			for (int i = 0; i < ncases; ++i) {
-				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
-				LLVMPositionBuilderAtEnd (builder, bbs [i]);
+			switch (ins->opcode) {
+			case OP_SSE_SHUFPS: oname = "sse_shufps"; break;
+			case OP_SSE2_SHUFPD: oname = "sse2_shufpd"; break;
+			case OP_SSE2_PSHUFD: oname = "sse2_pshufd"; break;
+			case OP_SSE2_PSHUFHW: oname = "sse2_pshufhw"; break;
+			case OP_SSE2_PSHUFLW: oname = "sse2_pshuflw"; break;
+			}
 
-				/* Convert the x86 shuffle mask to LLVM's */
-				guint32 imask = i;
-				int mask_values [8];
-				int mask_len = 0;
+			ctl = LLVMBuildAnd (builder, ctl, const_int32 (ncases - 1), "");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, ncases, ctl, ret_t, oname);
+			int mask_values [8];
+			int mask_len = 0;
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
 				switch (ins->opcode) {
+				case OP_SSE_SHUFPS:
+					mask_len = 4;
+					mask_values [0] = ((i >> 0) & 0x3) + 0; // take two elements from lhs
+					mask_values [1] = ((i >> 2) & 0x3) + 0;
+					mask_values [2] = ((i >> 4) & 0x3) + 4; // and two from rhs
+					mask_values [3] = ((i >> 6) & 0x3) + 4;
+					break;
 				case OP_SSE2_SHUFPD:
-					/* Bit 0 selects v1[0] or v1[1], bit 1 selects v2[0] or v2[1] */
 					mask_len = 2;
-					mask_values [0] = ((imask >> 0) & 1);
-					mask_values [1] = ((imask >> 1) & 1) + 2;
+					mask_values [0] = ((i >> 0) & 0x1) + 0;
+					mask_values [1] = ((i >> 1) & 0x1) + 2;
 					break;
 				case OP_SSE2_PSHUFD:
 					/*
@@ -8830,7 +8800,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					 */
 					mask_len = 4;
 					for (int j = 0; j < 4; ++j) {
-						int windex = (imask >> (j * 2)) & 0x3;
+						int windex = (i >> (j * 2)) & 0x3;
 						mask_values [j] = windex;
 					}
 					break;
@@ -8844,7 +8814,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					for (int j = 0; j < 4; ++j)
 						mask_values [j] = j;
 					for (int j = 0; j < 4; ++j) {
-						int windex = (imask >> (j * 2)) & 0x3;
+						int windex = (i >> (j * 2)) & 0x3;
 						mask_values [j + 4] = 4 + windex;
 					}
 					break;
@@ -8854,21 +8824,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					for (int j = 0; j < 4; ++j)
 						mask_values [j + 4] = j + 4;
 					for (int j = 0; j < 4; ++j) {
-						int windex = (imask >> (j * 2)) & 0x3;
+						int windex = (i >> (j * 2)) & 0x3;
 						mask_values [j] = windex;
 					}
 					break;
-				default:
-					g_assert_not_reached ();
-					break;
 				}
-				phi_values [i] = LLVMBuildShuffleVector (builder, v1, v2, create_const_vector_i32 (mask_values, mask_len), "");
-				LLVMBuildBr (builder, cbb);
+				LLVMValueRef mask = create_const_vector_i32 (mask_values, mask_len);
+				LLVMValueRef result = LLVMBuildShuffleVector (builder, l, r, mask, oname);
+				immediate_unroll_commit (&ictx, i, result);
 			}
-
-			LLVMPositionBuilderAtEnd (builder, cbb);
-			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
-			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, ncases);
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (ret_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
