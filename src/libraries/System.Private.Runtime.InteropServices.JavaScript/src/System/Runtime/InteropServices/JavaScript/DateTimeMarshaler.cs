@@ -13,19 +13,14 @@ namespace System.Runtime.InteropServices.JavaScript
         public static string FromJavaScriptPreFilter => "BINDING._pre_filter_date(value)";
         public static string ToJavaScriptPostFilter => "new Date(value)";
 
-        public static DateTime FromJavaScript (string s)
+        public static DateTime FromJavaScript (double msecsSinceEpoch)
         {
-            // For consistency with the old DateTime marshaling implementation we
-            //  convert JS Date values (which have no time zone) to UTC after parsing.
-            // toISOString always produces UTC strings anyway, so this is correct.
-            return DateTime.Parse(s).ToUniversalTime();
+            return DateTimeOffset.FromUnixTimeMilliseconds((long)msecsSinceEpoch).UtcDateTime;
         }
 
-        public static string ToJavaScript (in DateTime dt)
+        public static double ToJavaScript (in DateTime dt)
         {
-            // "o" produces a culture-independent ISO 8601 datetime value that can be
-            //  safely exchanged with JavaScript.
-            return dt.ToString("o");
+            return (double)((new DateTimeOffset(dt)).ToUnixTimeMilliseconds());
         }
     }
 
@@ -34,15 +29,14 @@ namespace System.Runtime.InteropServices.JavaScript
         public static string FromJavaScriptPreFilter => "BINDING._pre_filter_date(value)";
         public static string ToJavaScriptPostFilter => "new Date(value)";
 
-        public static DateTimeOffset FromJavaScript (string s)
+        public static DateTimeOffset FromJavaScript (double msecsSinceEpoch)
         {
-            return DateTimeOffset.Parse(s);
+            return DateTimeOffset.FromUnixTimeMilliseconds((long)msecsSinceEpoch);
         }
 
-        public static string ToJavaScript (in DateTimeOffset dto)
+        public static double ToJavaScript (in DateTimeOffset dto)
         {
-            // As above, produces a culture-independent ISO 8601 datetime value
-            return dto.ToString("o");
+            return (double)dto.ToUnixTimeMilliseconds();
         }
     }
 }

@@ -1140,12 +1140,12 @@ var BindingSupportLib = {
 		_pre_filter_date: function (value) {
 			switch (typeof (value)) {
 				case "number":
-					return (new Date(value)).toISOString();
+					return value;
 				default:
-					if (!value || (typeof (value["toISOString"]) !== "function"))
-						throw new Error("value must be a Date with a toISOString method, or a Number");
+					if (value instanceof Date)
+						return value.valueOf();
 					else
-						return value.toISOString();
+						throw new Error("Value must be a number (msecs since unix epoch), or a Date");
 			}
 		},
 
