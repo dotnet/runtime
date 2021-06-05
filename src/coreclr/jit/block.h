@@ -319,52 +319,6 @@ public:
     }
 };
 
-// PredEdgeIterator: forward iterator for the predecessor edges linked list.
-//
-class PredEdgeIterator
-{
-    flowList* m_pred;
-
-public:
-    PredEdgeIterator(flowList* pred) : m_pred(pred)
-    {
-    }
-
-    flowList* operator*() const
-    {
-        return m_pred;
-    }
-
-    PredEdgeIterator& operator++();
-
-    bool operator!=(const PredEdgeIterator& i) const
-    {
-        return m_pred != i.m_pred;
-    }
-};
-
-// PredBlockIterator: forward iterator for the predecessor edges linked list, yielding the predecessor
-// block, not the edge.
-//
-class PredBlockIterator
-{
-    flowList* m_pred;
-
-public:
-    PredBlockIterator(flowList* pred) : m_pred(pred)
-    {
-    }
-
-    BasicBlock* operator*() const;
-
-    PredBlockIterator& operator++();
-
-    bool operator!=(const PredBlockIterator& i) const
-    {
-        return m_pred != i.m_pred;
-    }
-};
-
 // PredEdgeList: adapter class for forward iteration of the predecessor edge linked list using range-based `for`,
 // normally used via BasicBlock::PredEdges(), e.g.:
 //    for (flowList* const edge : block->PredEdges()) ...
@@ -373,19 +327,43 @@ class PredEdgeList
 {
     flowList* m_begin;
 
+    // Forward iterator for the predecessor edges linked list.
+    //
+    class iterator
+    {
+        flowList* m_pred;
+
+    public:
+        iterator(flowList* pred) : m_pred(pred)
+        {
+        }
+
+        flowList* operator*() const
+        {
+            return m_pred;
+        }
+
+        iterator& operator++();
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_pred != i.m_pred;
+        }
+    };
+
 public:
     PredEdgeList(flowList* pred) : m_begin(pred)
     {
     }
 
-    PredEdgeIterator begin() const
+    iterator begin() const
     {
-        return PredEdgeIterator(m_begin);
+        return iterator(m_begin);
     }
 
-    PredEdgeIterator end() const
+    iterator end() const
     {
-        return PredEdgeIterator(nullptr);
+        return iterator(nullptr);
     }
 };
 
@@ -397,19 +375,40 @@ class PredBlockList
 {
     flowList* m_begin;
 
+    // Forward iterator for the predecessor edges linked list, yielding the predecessor block, not the edge.
+    //
+    class iterator
+    {
+        flowList* m_pred;
+
+    public:
+        iterator(flowList* pred) : m_pred(pred)
+        {
+        }
+
+        BasicBlock* operator*() const;
+
+        iterator& operator++();
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_pred != i.m_pred;
+        }
+    };
+
 public:
     PredBlockList(flowList* pred) : m_begin(pred)
     {
     }
 
-    PredBlockIterator begin() const
+    iterator begin() const
     {
-        return PredBlockIterator(m_begin);
+        return iterator(m_begin);
     }
 
-    PredBlockIterator end() const
+    iterator end() const
     {
-        return PredBlockIterator(nullptr);
+        return iterator(nullptr);
     }
 };
 
@@ -1795,18 +1794,18 @@ public:
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and flowList)
 
-inline PredEdgeIterator& PredEdgeIterator::operator++()
+inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
 {
     m_pred = m_pred->flNext;
     return *this;
 }
 
-inline BasicBlock* PredBlockIterator::operator*() const
+inline BasicBlock* PredBlockList::iterator::operator*() const
 {
     return m_pred->getBlock();
 }
 
-inline PredBlockIterator& PredBlockIterator::operator++()
+inline PredBlockList::iterator& PredBlockList::iterator::operator++()
 {
     m_pred = m_pred->flNext;
     return *this;

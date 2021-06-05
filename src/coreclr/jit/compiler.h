@@ -11290,35 +11290,6 @@ public:
     }
 };
 
-// EHDscIterator: forward iterator for the exception handling table entries. Iteration is in
-// table order.
-//
-class EHDscIterator
-{
-    EHblkDsc* m_ehDsc;
-
-public:
-    EHDscIterator(EHblkDsc* ehDsc) : m_ehDsc(ehDsc)
-    {
-    }
-
-    EHblkDsc* operator*() const
-    {
-        return m_ehDsc;
-    }
-
-    EHDscIterator& operator++()
-    {
-        ++m_ehDsc;
-        return *this;
-    }
-
-    bool operator!=(const EHDscIterator& i) const
-    {
-        return m_ehDsc != i.m_ehDsc;
-    }
-};
-
 // EHClauses: adapter class for forward iteration of the exception handling table using range-based `for`, e.g.:
 //    for (EHblkDsc* const ehDsc : EHClauses(compiler))
 //
@@ -11327,20 +11298,48 @@ class EHClauses
     EHblkDsc* m_begin;
     EHblkDsc* m_end;
 
+    // Forward iterator for the exception handling table entries. Iteration is in table order.
+    //
+    class iterator
+    {
+        EHblkDsc* m_ehDsc;
+
+    public:
+        iterator(EHblkDsc* ehDsc) : m_ehDsc(ehDsc)
+        {
+        }
+
+        EHblkDsc* operator*() const
+        {
+            return m_ehDsc;
+        }
+
+        iterator& operator++()
+        {
+            ++m_ehDsc;
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_ehDsc != i.m_ehDsc;
+        }
+    };
+
 public:
     EHClauses(Compiler* comp) : m_begin(comp->compHndBBtab), m_end(comp->compHndBBtab + comp->compHndBBtabCount)
     {
         assert((m_begin != nullptr) || (m_begin == m_end));
     }
 
-    EHDscIterator begin() const
+    iterator begin() const
     {
-        return EHDscIterator(m_begin);
+        return iterator(m_begin);
     }
 
-    EHDscIterator end() const
+    iterator end() const
     {
-        return EHDscIterator(m_end);
+        return iterator(m_end);
     }
 };
 
