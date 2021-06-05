@@ -128,5 +128,5 @@
     static const char* gcRelocateReferenceMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "Relocating reference *(%p) = %p";
+        return "Relocating reference *(%p) from %p to %p";
     }

@@ -474,12 +474,14 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         if (s_valueFilterCount > 0)
         {
             size_t src = (size_t)args[0];
-            size_t dst = (size_t)args[1];
+            size_t dst_from = (size_t)args[1];
+            size_t dst_to = (size_t)args[2];
             // print this message if the source or destination contain (part of) the range we're looking for
             for (int i = 0; i < s_valueFilterCount; i++)
             {
                 if ((s_valueFilter[i].end < src || src < s_valueFilter[i].start) &&
-                    (s_valueFilter[i].end < dst || dst < s_valueFilter[i].start))
+                    (s_valueFilter[i].end < dst_from || dst_from < s_valueFilter[i].start)) &&
+                    (s_valueFilter[i].end < dst_to || dst_to < s_valueFilter[i].start))
                 {
                     // empty intersection with both the source and the destination
                     continue;
