@@ -2411,7 +2411,8 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
     }
 
-    bool initMemOrLargeAlloc = compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
+    bool initMemOrLargeAlloc; // Declaration must be separate from initialization to avoid clang compiler error.
+    initMemOrLargeAlloc = compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
 
 #if FEATURE_FIXED_OUT_ARGS
     // If we have an outgoing arg area then we must adjust the SP by popping off the
