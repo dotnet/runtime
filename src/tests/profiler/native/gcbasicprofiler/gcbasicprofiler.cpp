@@ -76,7 +76,6 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
             printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
             return S_OK;
         }
-
         // loop through all ranges
         for (int i = nObjectRanges - 1; i >= 0; i--)
         {
@@ -86,7 +85,16 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
                 printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: invalid generation: %d\n",objectRanges[i].generation);
             }
         }
+        if (nObjectRanges > 3 && objectRanges[2].generation == 2 && objectRanges[2].rangeLength == 0x18 && objectRanges[2].generation == 1)
+        {
+            if (objectRanges[3].rangeLength != 0x18)
+            {
+                _failures++;
+                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: in the first GC for the segment case, gen 1 should have size 0x18");
+            }
+        }
     }
+
     return S_OK;
 }
 
