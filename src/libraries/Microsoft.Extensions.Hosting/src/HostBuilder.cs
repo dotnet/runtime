@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
@@ -127,13 +128,30 @@ namespace Microsoft.Extensions.Hosting
             }
             _hostBuilt = true;
 
+            // REVIEW: If we want to raise more events outside of these calls then we will need to
+            // stash this in a field.
+            using var diagnosticListener = new DiagnosticListener("Microsoft.Extensions.Hosting");
+            const string hostBuildingEventName = "HostBuilding";
+            const string hostBuiltEventName = "HostBuilt";
+
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuildingEventName))
+            {
+                diagnosticListener.Write(hostBuildingEventName, this);
+            }
+
             BuildHostConfiguration();
             CreateHostingEnvironment();
             CreateHostBuilderContext();
             BuildAppConfiguration();
             CreateServiceProvider();
 
-            return _appServices.GetRequiredService<IHost>();
+            var host = _appServices.GetRequiredService<IHost>();
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuiltEventName))
+            {
+                diagnosticListener.Write(hostBuiltEventName, host);
+            }
+
+            return host;
         }
 
         private void BuildHostConfiguration()
