@@ -109,7 +109,7 @@ namespace System.IO
             {
                 bufferSize = DefaultBufferSize;
             }
-            else if (bufferSize <= 0)
+            else if (bufferSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
