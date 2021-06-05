@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
@@ -136,7 +137,7 @@ namespace Microsoft.Extensions.Hosting
 
             if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuildingEventName))
             {
-                diagnosticListener.Write(hostBuildingEventName, this);
+                Write(diagnosticListener, hostBuildingEventName, this);
             }
 
             BuildHostConfiguration();
@@ -148,10 +149,20 @@ namespace Microsoft.Extensions.Hosting
             var host = _appServices.GetRequiredService<IHost>();
             if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuiltEventName))
             {
-                diagnosticListener.Write(hostBuiltEventName, host);
+                Write(diagnosticListener, hostBuiltEventName, host);
             }
 
             return host;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The values being passed into Write are being consumed by the application already.")]
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            string name,
+            T value)
+        {
+            diagnosticSource.Write(name, value);
         }
 
         private void BuildHostConfiguration()
