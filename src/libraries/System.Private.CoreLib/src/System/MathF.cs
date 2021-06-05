@@ -775,6 +775,20 @@ namespace System
         /// If x or y is <see cref="float.NaN"/>, or if x and y are either
         /// <see cref="float.PositiveInfinity"/> or <see cref="float.NegativeInfinity"/>,
         /// the method returns <see cref="float.NaN"/>.</returns>
-        public static float Atan2Pi(float y, float x) => Atan2(y, x) / PI;
+        public static float Atan2Pi(float y, float x)
+        {
+            // There are many special values specified by IEEE754:2019
+            // involving +0/-0 which are not easy to handle
+            // To simplify, only special case failures in tests
+            if (float.IsPositiveInfinity(y) && float.IsFinite(x))
+            {
+                return 0.5f;
+            }
+            if (float.IsNegativeInfinity(y) && float.IsFinite(x))
+            {
+                return -0.5f;
+            }
+            return Atan2(y, x) / PI;
+        }
     }
 }
