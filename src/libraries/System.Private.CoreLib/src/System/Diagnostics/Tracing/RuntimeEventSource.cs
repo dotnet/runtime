@@ -39,6 +39,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
+        private IncrementingPollingCounter? _jitTimeCounter;
 
         public static void Initialize()
         {
@@ -85,6 +86,7 @@ namespace System.Diagnostics.Tracing
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
                 _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
                 _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "Number of Methods Jitted" };
+                _jitTimeCounter ??= new IncrementingPollingCounter("nanoseconds-in-jit", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetNanosecondsInJit()) { DisplayName = "Nanoseconds spent in JIT", DisplayUnits = "ns", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
             }
 
         }

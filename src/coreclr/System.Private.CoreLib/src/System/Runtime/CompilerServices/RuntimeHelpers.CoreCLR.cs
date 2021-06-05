@@ -361,6 +361,12 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetMethodsJittedCount();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern long GetNanosecondsInJit();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern long GetNanosecondsInJitForThread();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

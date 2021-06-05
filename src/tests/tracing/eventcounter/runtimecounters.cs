@@ -42,7 +42,8 @@ namespace RuntimeEventCounterTests
                 { "poh-size", false },
                 { "assembly-count", false },
                 { "il-bytes-jitted", false },
-                { "methods-jitted-count", false }
+                { "methods-jitted-count", false },
+                { "nanoseconds-in-jit", false }
             };
         }
         private Dictionary<string, bool> observedRuntimeCounters;

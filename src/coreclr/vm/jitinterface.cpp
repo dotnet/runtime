@@ -104,6 +104,8 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 uint64_t g_cbILJitted = 0;
 uint32_t g_cMethodsJitted = 0;
+thread_local int64_t g_cNanosecondsInJitForThread = 0;
+int64_t g_cNanosecondsInJit = 0;
 
 #ifndef CROSSGEN_COMPILE
 FCIMPL0(INT64, GetJittedBytes)
@@ -119,6 +121,22 @@ FCIMPL0(INT32, GetJittedMethodsCount)
     FCALL_CONTRACT;
 
     return g_cMethodsJitted;
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GetNanosecondsInJit)
+{
+    FCALL_CONTRACT;
+
+    return g_cNanosecondsInJit;
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GetNanosecondsInJitForThread)
+{
+    FCALL_CONTRACT;
+
+    return g_cNanosecondsInJitForThread;
 }
 FCIMPLEND
 #endif
@@ -13015,8 +13033,20 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
     PCODE ret = NULL;
+    int64_t jitStartTimestamp = 0;
+    int64_t jitEndTimestamp = 0;
+    int64_t jitTimeNs = 0;
+    static int64_t qpcFrequency = 1;
+    LARGE_INTEGER qpcValue;
 
     COOPERATIVE_TRANSITION_BEGIN();
+
+    if (qpcFrequency == 1)
+        if (QueryPerformanceFrequency (&qpcValue))
+            qpcFrequency = static_cast<int64_t>(qpcValue.QuadPart) / 1000000000 /* ns per s */;
+
+    if (QueryPerformanceCounter (&qpcValue))
+        jitStartTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
 
 #ifdef FEATURE_PREJIT
 
@@ -13379,6 +13409,13 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         printf(".");
 #endif // _DEBUG
 
+    if (QueryPerformanceCounter (&qpcValue))
+        jitEndTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
+
+    jitTimeNs = jitEndTimestamp - jitStartTimestamp;
+    jitTimeNs /= qpcFrequency;
+    FastInterlockExchangeAddLong((LONG64*)&g_cNanosecondsInJit, jitTimeNs);
+    FastInterlockExchangeAddLong((LONG64*)&g_cNanosecondsInJitForThread, jitTimeNs);
     FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
     FastInterlockIncrement((LONG*)&g_cMethodsJitted);
 

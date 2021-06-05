@@ -1157,6 +1157,8 @@ bool __stdcall TrackAllocationsEnabled();
 
 FCDECL0(INT64, GetJittedBytes);
 FCDECL0(INT32, GetJittedMethodsCount);
+FCDECL0(INT64, GetNanosecondsInJit);
+FCDECL0(INT64, GetNanosecondsInJitForThread);
 
 #endif // JITINTERFACE_H
 

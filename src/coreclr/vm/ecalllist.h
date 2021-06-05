@@ -878,6 +878,8 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("GetILBytesJitted", GetJittedBytes)
     FCFuncElement("GetMethodsJittedCount", GetJittedMethodsCount)
+    FCFuncElement("GetNanosecondsInJit", GetNanosecondsInJit)
+    FCFuncElement("GetNanosecondsInJitForThread", GetNanosecondsInJitForThread)
 FCFuncEnd()
 
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)
