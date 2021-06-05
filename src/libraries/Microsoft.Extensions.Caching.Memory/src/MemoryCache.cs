@@ -402,8 +402,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Sort items by expired & priority status
             DateTimeOffset now = _options.Clock.UtcNow;
-            foreach (CacheEntry entry in _entries.Values)
+            foreach (KeyValuePair<object, CacheEntry> item in cache._entries)
             {
+                CacheEntry entry = item.Value;
                 if (entry.CheckExpired(now))
                 {
                     entriesToRemove.Add(entry);
