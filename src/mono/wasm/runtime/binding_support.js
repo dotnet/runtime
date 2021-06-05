@@ -128,6 +128,7 @@ var BindingSupportLib = {
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
+			this._temp_mallocs = [];
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
 			this._interned_string_full_root_buffers = [];
@@ -920,9 +921,18 @@ var BindingSupportLib = {
 			var typePtr = this.mono_wasm_class_get_type (klassPtr);
 			var converter = this._get_struct_unboxer_for_type (typePtr);
 			if (converter)
-				return converter (mono_obj);
+				return this._invoke_converter_inside_frame(converter, mono_obj);
 			else
 				throw new Error (`No converter available for object ${mono_obj} of class ${this._get_type_name(klassPtr)}`);
+		},
+
+		_invoke_converter_inside_frame: function (converter, mono_obj) {
+			this._create_temp_frame();
+			try {
+				return converter (mono_obj);
+			} finally {
+				this._release_temp_frame();
+			}
 		},
 
 		extract_js_obj_with_possible_converter: function (mono_obj, klass) {
@@ -933,7 +943,7 @@ var BindingSupportLib = {
 			var typePtr = this.mono_wasm_class_get_type (klassPtr);
 			var converter = this._get_struct_unboxer_for_type (typePtr);
 			if (converter)
-				return converter (mono_obj);
+				return this._invoke_converter_inside_frame(converter, mono_obj);
 
 			return this.extract_js_obj (mono_obj);
 		},
@@ -951,7 +961,7 @@ var BindingSupportLib = {
 			if (!converter)
 				throw new Error (`No converter available for class ${this._get_type_name(typePtr)}`);
 
-			return converter (js_obj);
+			return this._invoke_converter_inside_frame(converter, js_obj);
 		},
 
 		extract_js_obj: function (mono_obj) {
@@ -1101,11 +1111,18 @@ var BindingSupportLib = {
 				BINDING: this,
 				typePtr: typePtr, 
 				// (value) => filtered_value
-				boundConverter: boundConverter 
+				boundConverter: boundConverter,
+				temp_malloc: this._temp_malloc.bind(this)
 			};
+
+			var filterExpression = this._create_named_function(
+				"post_filter_for_type" + typePtr,
+				["value"], js, closure
+			);
+			closure.filter = filterExpression;
+
 			var body = [
-				"var value = boundConverter (js_value), filteredValue = null;",
-				`{ filteredValue = ${js}; }`,
+				"var value = boundConverter (js_value), filteredValue = filter(value);",
 				"return filteredValue;"
 			];
 			
@@ -1131,6 +1148,7 @@ var BindingSupportLib = {
 				26: 'l',
 				27: 'l',
 				28: 'i', // FIXME
+				32: 'm',
 			};
 			if (mtype === 4)
 				throw new Error ("ManagedToJS cannot return a struct");
@@ -1259,11 +1277,19 @@ var BindingSupportLib = {
 				BINDING: this,
 				typePtr: typePtr, 
 				// (js_obj, method, parmIdx) => value
-				boundConverter: boundConverter 
+				boundConverter: boundConverter,
+				temp_malloc: this._temp_malloc.bind(this)
 			};
+
+			var filterExpression = this._create_named_function(
+				"pre_filter_for_type" + typePtr,
+				["value"], js, closure
+			);
+
+			closure.filter = filterExpression;
+
 			var body = [
-				"var filteredValue = null;",
-				`{ filteredValue = ${js}; }`,
+				"var filteredValue = filter(value);",
 				"var convertedResult = boundConverter (filteredValue, method, parmIdx);",
 				"return convertedResult;"
 			];
@@ -1305,8 +1331,9 @@ var BindingSupportLib = {
 				var sigInfo = this.get_method_signature_info (0, convMethod);
 				// Return unboxed so it can go directly into the arguments list
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
+				var methodName = this._get_type_name(typePtr) + "$FromJavaScript";
 				var boundConverter = this.bind_method (
-					convMethod, 0, signature, this._get_type_name(typePtr) + "$FromJavaScript"
+					convMethod, 0, signature, methodName
 				);
 
 				var result = this._compile_pre_filter (typePtr, boundConverter, preFilter);
@@ -1743,7 +1770,10 @@ var BindingSupportLib = {
 			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
 
-			// check if the method signature needs argument mashalling
+			// TODO: Only do this if the signature needs marshalling
+			this._create_temp_frame ();
+
+			// check if the method signature needs argument marshalling
 			if (needs_converter) {
 				var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
 				if (!classPtr)
@@ -1789,7 +1819,35 @@ var BindingSupportLib = {
 			return result;
 		},
 
+		_temp_malloc: function (size) {
+			if (!this._temp_mallocs || !this._temp_mallocs.length)
+				throw new Error("No temp frames have been created at this point");
+				
+			var frame = this._temp_mallocs[this._temp_mallocs.length - 1] || [];
+			var result = Module._malloc(size);
+			frame.push(result);
+			this._temp_mallocs[this._temp_mallocs.length - 1] = frame;
+			return result;
+		},
+
+		_create_temp_frame: function () {
+			this._temp_mallocs.push(null);
+		},
+
+		_release_temp_frame: function () {
+			if (!this._temp_mallocs.length)
+				throw new Error("No temp frames have been created at this point");
+
+			var frame = this._temp_mallocs.pop();
+			if (!frame)
+				return;
+			
+			for (var i = 0, l = frame.length; i < l; i++)
+				Module._free(frame[i]);
+		},
+
 		_teardown_after_call: function (converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer) {
+			this._release_temp_frame ();
 			this._release_args_root_buffer_from_method_call (converter, token, argsRootBuffer);
 			this._release_buffer_from_method_call (converter, token, buffer | 0);
 
@@ -1876,7 +1934,7 @@ var BindingSupportLib = {
 				binding_support: this,
 				method: method,
 				this_arg: this_arg,
-				token: token
+				token: token,
 			};
 
 			var converterKey = "converter_" + converter.name;
@@ -1886,6 +1944,7 @@ var BindingSupportLib = {
 
 			var argumentNames = [];
 			var body = [
+				"binding_support._create_temp_frame();",
 				"let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot;",
 				"token.scratchResultRoot = null;",
 				"token.scratchExceptionRoot = null;",

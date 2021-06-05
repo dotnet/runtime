@@ -1007,5 +1007,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
+
+        [Fact]
+        public static void InvokeCustomVector3()
+        {
+            HelperMarshal._vec3Value = default(HelperMarshal.CustomVector3);
+            Runtime.InvokeJS(
+                @"App.call_test_method ('InvokeCustomVector3', [ [1, 2.5, 4] ], 'a');"
+            );
+            Assert.Equal(1, HelperMarshal._vec3Value.X);
+            Assert.Equal(2.5, HelperMarshal._vec3Value.Y);
+            Assert.Equal(4, HelperMarshal._vec3Value.Z);
+        }
+
+        [Fact]
+        public static void ReturnCustomVector3()
+        {
+            HelperMarshal._vec3Value = default(HelperMarshal.CustomVector3);
+            Runtime.InvokeJS(
+                @"var cv3 = App.call_test_method ('ReturnCustomVector3', [ [1, 2.5, 4] ], 'a');" +
+                @"App.call_test_method ('InvokeCustomVector3', [ cv3 ], 'a');"
+            );
+            Assert.Equal(1, HelperMarshal._vec3Value.X);
+            Assert.Equal(2.5, HelperMarshal._vec3Value.Y);
+            Assert.Equal(4, HelperMarshal._vec3Value.Z);
+        }
     }
 }

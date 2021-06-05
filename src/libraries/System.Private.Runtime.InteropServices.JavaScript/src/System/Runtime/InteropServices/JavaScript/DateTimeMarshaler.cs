@@ -10,8 +10,8 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static class DateTimeMarshaler
     {
-        public static string FromJavaScriptPreFilter => "BINDING._pre_filter_date(value)";
-        public static string ToJavaScriptPostFilter => "new Date(value)";
+        public static string FromJavaScriptPreFilter => "return BINDING._pre_filter_date(value)";
+        public static string ToJavaScriptPostFilter => "return new Date(value)";
 
         public static DateTime FromJavaScript (double msecsSinceEpoch)
         {
@@ -26,8 +26,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
     public static class DateTimeOffsetMarshaler
     {
-        public static string FromJavaScriptPreFilter => "BINDING._pre_filter_date(value)";
-        public static string ToJavaScriptPostFilter => "new Date(value)";
+        public static string FromJavaScriptPreFilter => "return BINDING._pre_filter_date(value)";
+        public static string ToJavaScriptPostFilter => "return new Date(value)";
 
         public static DateTimeOffset FromJavaScript (double msecsSinceEpoch)
         {

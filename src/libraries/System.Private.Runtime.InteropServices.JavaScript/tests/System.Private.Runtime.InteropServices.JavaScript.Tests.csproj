@@ -11,6 +11,8 @@
       MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomStructMarshaler" />
     <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDate" 
       MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDateMarshaler" />
+    <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomVector3" 
+      MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomVector3Marshaler" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />

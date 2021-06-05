@@ -293,7 +293,8 @@ namespace System.Runtime.InteropServices.JavaScript
             CHAR = 28,
             STRING_INTERNED = 29,
             VOID = 30,
-            ENUM64 = 31
+            ENUM64 = 31,
+            POINTER = 32
         }
 
         // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
@@ -450,9 +451,10 @@ namespace System.Runtime.InteropServices.JavaScript
             if (fromReturnType != type)
                 throw new WasmInteropException($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
 
-            if (type.IsValueType) {
-                if ((toParameterType == null) || !toParameterType.IsByRef || (toParameterType.GetElementType() != type))
-                    throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be 'ref {type.Name}' but was {toParameterType}");
+            if (type.IsValueType && (toParameterType != null)) {
+                var typeMatches = toParameterType.GetElementType() == type;
+                if (!typeMatches || !(toParameterType.IsPointer || toParameterType.IsByRef))
+                    throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be 'in {type.Name}' or '{type.Name}*' but was {toParameterType}");
             } else {
                 if (toParameterType != type)
                     throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
@@ -467,6 +469,8 @@ namespace System.Runtime.InteropServices.JavaScript
         private static MarshalType GetMarshalTypeFromType (Type type) {
             if (type == null)
                 return MarshalType.VOID;
+            else if (type.IsPointer)
+                return MarshalType.POINTER;
 
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Byte:
@@ -581,6 +585,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     return 'o';
                 case MarshalType.VT:
                     return 'a';
+                case MarshalType.POINTER:
+                    return 'm';
                 default:
                     return null;
             }

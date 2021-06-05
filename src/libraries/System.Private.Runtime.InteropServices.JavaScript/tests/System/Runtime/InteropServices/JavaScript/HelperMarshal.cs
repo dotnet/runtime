@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        public class CustomClassMarshaler {
+        public static class CustomClassMarshaler {
             public static CustomClass FromJavaScript (double d) {
                 return new CustomClass { D = d };
             }
@@ -24,7 +25,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public double D;
         }
 
-        public class CustomStructMarshaler {
+        public static class CustomStructMarshaler {
             public static CustomStruct FromJavaScript (double d) {
                 return new CustomStruct { D = d };
             }
@@ -38,9 +39,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public double D;
         }
 
-        public class CustomDateMarshaler {
-            public static string FromJavaScriptPreFilter => "value.toISOString()";
-            public static string ToJavaScriptPostFilter => "new Date(value)";
+        public static class CustomDateMarshaler {
+            public static string FromJavaScriptPreFilter => "return value.toISOString()";
+            public static string ToJavaScriptPostFilter => "return new Date(value)";
 
             public static CustomDate FromJavaScript (string s) {
                 // Console.WriteLine($"CustomDate.JSToManaged({s})");
@@ -60,6 +61,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public struct CustomDate {
             public DateTime Date;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CustomVector3 {
+            public float X, Y, Z;
+
+            public override string ToString () {
+                return $"[{X}, {Y}, {Z}]";
+            }
+        }
+
+        public static class CustomVector3Marshaler {
+            public static string FromJavaScriptPreFilter => "let ptr = temp_malloc(4 * 3), view = new Float32Array(Module.HEAPU8.buffer, ptr, 3); " +
+                "for (var i = 0; i < 3; i++) view[i] = value[i];" +
+                "return ptr;";
+            public static string ToJavaScriptPostFilter => 
+                "return [ Module.HEAPF32[((value / 4) | 0) + 0], Module.HEAPF32[((value / 4) | 0) + 1], Module.HEAPF32[((value / 4) | 0) + 2] ]";
+
+            public static unsafe CustomVector3 FromJavaScript (float * p) =>
+                new CustomVector3 {
+                    X = p[0],
+                    Y = p[1],
+                    Z = p[2]
+                };
+
+            public static unsafe CustomVector3 * ToJavaScript (CustomVector3 * pv3) => pv3;
         }
 
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
@@ -201,6 +228,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static CustomDate ReturnCustomDate(CustomDate cd)
         {
             return cd;
+        }
+
+        internal static CustomVector3 _vec3Value;
+        private static void InvokeCustomVector3(CustomVector3 cv3)
+        {
+            _vec3Value = cv3;
+        }
+        private static CustomVector3 ReturnCustomVector3(CustomVector3 cv3)
+        {
+            return cv3;
         }
 
         internal static System.Uri _uriValue;
