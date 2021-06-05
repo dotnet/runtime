@@ -514,7 +514,6 @@ namespace Internal.JitInterface
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
-            _resolvedExternalMethodsToTokens.Clear();
 #endif
 
             _pgoResults.Clear();
@@ -562,8 +561,8 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* ObjectToHandle(TypeDesc type) => (CORINFO_CLASS_STRUCT_*)ObjectToHandle((Object)type);
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((IntPtr)field);
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) => (CORINFO_FIELD_STRUCT_*)ObjectToHandle((object)field);
-        private MethodIL HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((IntPtr)module);
-        private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodIL methodIL) => (CORINFO_MODULE_STRUCT_*)ObjectToHandle((object)methodIL);
+        private MethodILScope HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((IntPtr)module);
+        private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodILScope methodIL) => (CORINFO_MODULE_STRUCT_*)ObjectToHandle((object)methodIL);
         private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((IntPtr)method);
         private MethodSignatureInfo* ObjectToHandle(MethodSignature method) => (MethodSignatureInfo*)ObjectToHandle((object)method);
 
@@ -1174,6 +1173,13 @@ namespace Internal.JitInterface
             impl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             bool unboxingStub = impl.OwningType.IsValueType;
+
+            MethodDesc nonUnboxingImpl = impl;
+            if (unboxingStub)
+            {
+                impl = getUnboxingThunk(impl);
+            }
+
 #if READYTORUN
             // As there are a variety of situations where the resolved virtual method may be different at compile and runtime (primarily due to subtle differences
             // in the virtual resolution algorithm between the runtime and the compiler, although details such as whether or not type equivalence is enabled
@@ -1181,38 +1187,87 @@ namespace Internal.JitInterface
             var resolver = _compilation.NodeFactory.Resolver;
 
             MethodWithToken methodWithTokenDecl;
-            if (_resolvedExternalMethodsToTokens.TryGetValue(decl, out var tokenDeclData))
+
+            if (info->pResolvedTokenVirtualMethod != null)
             {
-                methodWithTokenDecl = new MethodWithToken(decl, tokenDeclData.Item1, null, false, tokenDeclData.Item2);
+                methodWithTokenDecl = ComputeMethodWithToken(decl, ref *info->pResolvedTokenVirtualMethod, null, false);
             }
             else
             {
-                ModuleToken tokenDecl = resolver.GetModuleTokenForMethod(decl);
-                methodWithTokenDecl = new MethodWithToken(decl, tokenDecl, null, false, null, devirtualizedMethodOwner: decl.OwningType);
+                ModuleToken declToken = resolver.GetModuleTokenForMethod(impl.GetTypicalMethodDefinition(), throwIfNotFound: false);
+                if (declToken.IsNull)
+                {
+                    return false;
+                }
+                methodWithTokenDecl = new MethodWithToken(decl, declToken, null, false, null, devirtualizedMethodOwner: decl.OwningType);
             }
-
             MethodWithToken methodWithTokenImpl;
 
             if (decl == impl)
+            {
                 methodWithTokenImpl = methodWithTokenDecl;
+                if (info->pResolvedTokenVirtualMethod != null)
+                {
+                    info->resolvedTokenDevirtualizedMethod = *info->pResolvedTokenVirtualMethod;
+                }
+                else
+                {
+                    info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(decl, methodWithTokenDecl);
+                }
+                info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
+            }
             else
-                methodWithTokenImpl = new MethodWithToken(impl, resolver.GetModuleTokenForMethod(impl), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
+            {
+                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition()), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
+
+                info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(impl, methodWithTokenImpl);
+
+                if (unboxingStub)
+                {
+                    info->resolvedTokenDevirtualizedUnboxedMethod = info->resolvedTokenDevirtualizedMethod;
+                    info->resolvedTokenDevirtualizedMethod.tokenContext = contextFromMethod(nonUnboxingImpl);
+                    info->resolvedTokenDevirtualizedMethod.hMethod = ObjectToHandle(nonUnboxingImpl);
+                }
+                else
+                {
+                    info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
+                }
+            }
 
             ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
             _methodCodeNode.Fixups.Add(virtualResolutionNode);
+#else
+            info->resolvedTokenDevirtualizedMethod = default(CORINFO_RESOLVED_TOKEN);
+            info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
 #endif
 
-            if (unboxingStub)
-            {
-                impl = getUnboxingThunk(impl);
-            }
-
-
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->requiresInstMethodTableArg = false;
+            info->requiresInstMethodTableArg = false;   // TODO! Remove this field, but the VM and crossgen2 always set this to false
             info->exactContext = contextFromType(owningType);
 
             return true;
+
+#if READYTORUN
+            CORINFO_RESOLVED_TOKEN CreateResolvedTokenFromMethod(MethodDesc method, MethodWithToken methodWithToken)
+            {
+                CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
+                MethodILScope scope = _compilation.GetMethodIL(methodWithToken.Method);
+                if (scope == null)
+                {
+                    scope = Internal.IL.EcmaMethodILScope.Create((EcmaMethod)methodWithToken.Method.GetTypicalMethodDefinition());
+                }
+                result.tokenScope = ObjectToHandle(scope);
+                result.tokenContext = contextFromMethod(method);
+                result.token = methodWithToken.Token.Token;
+                if (methodWithToken.Token.TokenType != CorTokenType.mdtMethodDef)
+                    throw new NotSupportedException();
+                result.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod;
+                result.hClass = ObjectToHandle(methodWithToken.OwningType);
+                result.hMethod = ObjectToHandle(method);
+
+                return result;
+            }
+#endif
         }
 
         private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
@@ -1367,11 +1422,11 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
-        private static object ResolveTokenWithSubstitution(MethodIL methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
+        private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
             // Grab the generic definition of the method IL, resolve the token within the definition,
             // and instantiate it with the given context.
-            object result = methodIL.GetMethodILDefinition().GetObject((int)token);
+            object result = methodIL.GetMethodILScopeDefinition().GetObject((int)token);
 
             if (result is MethodDesc methodResult)
             {
@@ -1389,7 +1444,7 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private static object ResolveTokenInScope(MethodIL methodIL, object typeOrMethodContext, mdToken token)
+        private static object ResolveTokenInScope(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
         {
             MethodDesc owningMethod = methodIL.OwningMethod;
 
@@ -1481,7 +1536,7 @@ namespace Internal.JitInterface
                         /* If the resolved type is not runtime determined there's a chance we went down this path
                            because there was a literal typeof(__Canon) in the compiled IL - check for that
                            by resolving the token in the definition. */
-                        ((TypeDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                        ((TypeDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
                 }
 
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
@@ -1526,18 +1581,6 @@ namespace Internal.JitInterface
                     ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
-
-                    // This extra resolution info is only used for resolveVirtualMethod, which currently doesn't handle generic methods
-                    if (!method.HasInstantiation)
-                    {
-                        if (resolver.GetModuleTokenForMethod(method, throwIfNotFound: false).IsNull)
-                        {
-                            if (!_resolvedExternalMethodsToTokens.ContainsKey(method))
-                            {
-                                _resolvedExternalMethodsToTokens.Add(method, new ValueTuple<ModuleToken, object>(methodModuleToken, entityFromContext(pResolvedToken.tokenContext)));
-                            }
-                        }
-                    }
                 }
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, method);
@@ -1661,7 +1704,7 @@ namespace Internal.JitInterface
 
         private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
-            MethodIL methodIL = HandleToObject(module);
+            MethodILScope methodIL = HandleToObject(module);
             string s = (string)methodIL.GetObject((int)metaTOK);
             length = (int)s.Length;
             return (char*)GetPin(s);

@@ -8929,7 +8929,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isExplicitTailCall     = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
             const bool isLateDevirtualization = false;
-            impDevirtualizeCall(call->AsCall(), &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
+            impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
                                 &exactContextHnd, isLateDevirtualization, isExplicitTailCall, rawILOffset);
         }
 
@@ -20683,6 +20683,7 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //     is not exactly known, and there is a plausible guess for the type.
 //
 void Compiler::impDevirtualizeCall(GenTreeCall*            call,
+                                   CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                    CORINFO_METHOD_HANDLE*  method,
                                    unsigned*               methodFlags,
                                    CORINFO_CONTEXT_HANDLE* pContextHandle,
@@ -20881,16 +20882,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // and prepare to fetch the method attributes.
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
-    dvInfo.virtualMethod = baseMethod;
-    dvInfo.objClass      = objClass;
-    dvInfo.context       = *pContextHandle;
-    dvInfo.detail        = CORINFO_DEVIRTUALIZATION_UNKNOWN;
+    dvInfo.virtualMethod               = baseMethod;
+    dvInfo.objClass                    = objClass;
+    dvInfo.context                     = *pContextHandle;
+    dvInfo.detail                      = CORINFO_DEVIRTUALIZATION_UNKNOWN;
+    dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
-    CORINFO_METHOD_HANDLE  derivedMethod = dvInfo.devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE exactContext  = dvInfo.exactContext;
-    CORINFO_CLASS_HANDLE   derivedClass  = NO_CLASS_HANDLE;
+    CORINFO_METHOD_HANDLE   derivedMethod = dvInfo.devirtualizedMethod;
+    CORINFO_CONTEXT_HANDLE  exactContext  = dvInfo.exactContext;
+    CORINFO_CLASS_HANDLE    derivedClass  = NO_CLASS_HANDLE;
+    CORINFO_RESOLVED_TOKEN *pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
 
     if (derivedMethod != nullptr)
     {
@@ -21181,8 +21184,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                     beforeArg->SetNext(gtNewCallArgs(methodTableArg));
                                 }
 
-                                call->gtCallMethHnd = unboxedEntryMethod;
-                                derivedMethod       = unboxedEntryMethod;
+                                call->gtCallMethHnd    = unboxedEntryMethod;
+                                derivedMethod          = unboxedEntryMethod;
+                                pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
                                 // Method attributes will differ because unboxed entry point is shared
                                 //
@@ -21215,6 +21219,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             call->gtCallMethHnd = unboxedEntryMethod;
                             call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
                             derivedMethod = unboxedEntryMethod;
+                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
                             optimizedTheBox = true;
                         }
@@ -21282,8 +21287,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
                             JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
                                     unboxedMethodAttribs);
-                            derivedMethod        = unboxedEntryMethod;
-                            derivedMethodAttribs = unboxedMethodAttribs;
+                            derivedMethod         = unboxedEntryMethod;
+                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                            derivedMethodAttribs  = unboxedMethodAttribs;
 
                             // Add the method table argument.
                             //
@@ -21327,6 +21333,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         call->gtCallMethHnd = unboxedEntryMethod;
                         call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
                         derivedMethod = unboxedEntryMethod;
+                        pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
                     }
                 }
             }
@@ -21362,21 +21369,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (opts.IsReadyToRun())
     {
         // For R2R, getCallInfo triggers bookkeeping on the zap
-        // side so we need to call it here.
-        //
-        // First, cons up a suitable resolved token.
-        CORINFO_RESOLVED_TOKEN derivedResolvedToken = {};
-
-        derivedResolvedToken.tokenScope   = info.compCompHnd->getMethodModule(derivedMethod);
-        derivedResolvedToken.tokenContext = *pContextHandle;
-        derivedResolvedToken.token        = info.compCompHnd->getMethodDefFromMethod(derivedMethod);
-        derivedResolvedToken.tokenType    = CORINFO_TOKENKIND_DevirtualizedMethod;
-        derivedResolvedToken.hClass       = derivedClass;
-        derivedResolvedToken.hMethod      = derivedMethod;
+        // side and acquires the actual symbol to call so we need to call it here.
 
         // Look up the new call info.
         CORINFO_CALL_INFO derivedCallInfo;
-        eeGetCallInfo(&derivedResolvedToken, nullptr, addVerifyFlag(CORINFO_CALLINFO_ALLOWINSTPARAM), &derivedCallInfo);
+        eeGetCallInfo(pDerivedResolvedToken, nullptr, addVerifyFlag(CORINFO_CALLINFO_ALLOWINSTPARAM), &derivedCallInfo);
 
         // Update the call.
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
@@ -21658,9 +21655,11 @@ void Compiler::considerGuardedDevirtualization(
     // Figure out which method will be called.
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
-    dvInfo.virtualMethod = baseMethod;
-    dvInfo.objClass      = likelyClass;
-    dvInfo.context       = *pContextHandle;
+    dvInfo.virtualMethod               = baseMethod;
+    dvInfo.objClass                    = likelyClass;
+    dvInfo.context                     = *pContextHandle;
+    dvInfo.exactContext                = *pContextHandle;
+    dvInfo.pResolvedTokenVirtualMethod = NULL;
 
     const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 

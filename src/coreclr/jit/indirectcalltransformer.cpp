@@ -754,7 +754,7 @@ private:
             CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
             const bool             isLateDevirtualization = true;
             const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
+            compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
                                           explicitTailCall);
 
             // We know this call can devirtualize or we would not have set up GDV here.

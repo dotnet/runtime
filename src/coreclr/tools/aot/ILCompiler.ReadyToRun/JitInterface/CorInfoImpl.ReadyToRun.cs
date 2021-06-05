@@ -360,7 +360,6 @@ namespace Internal.JitInterface
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
-        private Dictionary<MethodDesc, ValueTuple<ModuleToken, object>> _resolvedExternalMethodsToTokens = new Dictionary<MethodDesc, ValueTuple<ModuleToken, object>>();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -937,7 +936,9 @@ namespace Internal.JitInterface
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
-            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) || methodDesc.IsPInvoke))
+            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) 
+                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod) 
+                || methodDesc.IsPInvoke))
             {
                 if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
                     methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
@@ -973,8 +974,8 @@ namespace Internal.JitInterface
             // within the current version bubble**, but this happens to be good enough because
             // we only do this replacement within CoreLib to replace method bodies in places
             // that we cannot express in C# right now and for p/invokes in large version bubbles).
-            MethodIL methodILDef = methodIL.GetMethodILDefinition();
-            bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
+            MethodILScope methodILDef = methodIL.GetMethodILScopeDefinition();
+            bool isFauxMethodIL = !(methodILDef is IEcmaMethodIL);
             if (isFauxMethodIL)
             {
                 object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
@@ -1034,10 +1035,10 @@ namespace Internal.JitInterface
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            MethodIL methodIL = HandleToObject(module);
+            MethodILScope methodIL = HandleToObject(module);
 
             // If this is not a MethodIL backed by a physical method body, we need to remap the token.
-            Debug.Assert(methodIL.GetMethodILDefinition() is EcmaMethodIL);
+            Debug.Assert(methodIL.GetMethodILScopeDefinition() is EcmaMethodIL);
 
             EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
             ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
@@ -1542,7 +1543,7 @@ namespace Internal.JitInterface
                     exactType == MethodBeingCompiled.OwningType)
                 {
                     var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token);
                     if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
                     {
                         pResult->contextHandle = contextFromMethodBeingCompiled();

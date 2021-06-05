@@ -1093,6 +1093,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* virtualMethod;
         public CORINFO_CLASS_STRUCT_* objClass;
         public CORINFO_CONTEXT_STRUCT* context;
+        public CORINFO_RESOLVED_TOKEN* pResolvedTokenVirtualMethod;
 
         //
         // [Out] results of resolveVirtualMethod.
@@ -1107,6 +1108,8 @@ namespace Internal.JitInterface
         public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
+        public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
+        public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
     }
 
     //----------------------------------------------------------------------------

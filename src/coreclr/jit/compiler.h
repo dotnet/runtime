@@ -3947,6 +3947,7 @@ public:
     }
 
     void impDevirtualizeCall(GenTreeCall*            call,
+                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              CORINFO_METHOD_HANDLE*  method,
                              unsigned*               methodFlags,
                              CORINFO_CONTEXT_HANDLE* contextHandle,
