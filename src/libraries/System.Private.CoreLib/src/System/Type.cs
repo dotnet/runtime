@@ -236,6 +236,9 @@ namespace System
         /// <remarks>This method can be used to find a constructed generic member given a member from a generic type definition.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="member"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="member"/> does not match a member on the current <see cref="Type"/>.</exception>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "This is finding the MemberInfo with the same MetadataToken as specified MemberInfo. If the specified MemberInfo " +
+                            "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
         public virtual MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
