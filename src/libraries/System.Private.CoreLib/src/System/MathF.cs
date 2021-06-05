@@ -419,45 +419,45 @@ namespace System
                     // Rounds to the nearest value; if the number falls midway,
                     // it is rounded to the nearest value with an even least significant digit
                     case MidpointRounding.ToEven:
-                    {
-                        x = Round(x);
-                        break;
-                    }
+                        {
+                            x = Round(x);
+                            break;
+                        }
                     // Rounds to the nearest value; if the number falls midway,
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
-                    {
-                        float fraction = ModF(x, &x);
-
-                        if (Abs(fraction) >= 0.5f)
                         {
-                            x += Sign(fraction);
-                        }
+                            float fraction = ModF(x, &x);
 
-                        break;
-                    }
+                            if (Abs(fraction) >= 0.5f)
+                            {
+                                x += Sign(fraction);
+                            }
+
+                            break;
+                        }
                     // Directed rounding: Round to the nearest value, toward to zero
                     case MidpointRounding.ToZero:
-                    {
-                        x = Truncate(x);
-                        break;
-                    }
+                        {
+                            x = Truncate(x);
+                            break;
+                        }
                     // Directed Rounding: Round down to the next value, toward negative infinity
                     case MidpointRounding.ToNegativeInfinity:
-                    {
-                        x = Floor(x);
-                        break;
-                    }
+                        {
+                            x = Floor(x);
+                            break;
+                        }
                     // Directed rounding: Round up to the next value, toward positive infinity
                     case MidpointRounding.ToPositiveInfinity:
-                    {
-                        x = Ceiling(x);
-                        break;
-                    }
+                        {
+                            x = Ceiling(x);
+                            break;
+                        }
                     default:
-                    {
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
-                    }
+                        {
+                            throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
+                        }
                 }
 
                 x /= power10;
@@ -692,8 +692,8 @@ namespace System
             return invert ? -tan : tan;
         }
 
-        // We don't need to special case inverse-trigs as long as getting precise PI/2 and PI.
-        // Guarded in unit test.
+        // Double inverse-trigs fail special value tests on some platforms.
+        // Special case them.
 
         /// <summary>
         /// Returns the angle measured in half-revolutions whose sine is the specified number.
@@ -715,7 +715,15 @@ namespace System
         /// -or-
         /// <see cref="float.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
         /// or <paramref name="x"/> equals <see cref="float.NaN"/>.</returns>
-        public static float AcosPi(float x) => Acos(x) / PI;
+        public static float AcosPi(float x)
+        {
+            if (x == 0)
+            {
+                return 0.5f;
+            }
+
+            return x > 0 ? Acos(x) / PI : 1 - Acos(-x) / PI;
+        }
 
         /// <summary>
         /// Returns the angle measured in half-revolutions whose tangent is the specified number.
@@ -726,7 +734,21 @@ namespace System
         /// <see cref="float.NaN"/> if <paramref name="x"/> equals <see cref="float.NaN"/>,
         /// -0.5 if <paramref name="x"/> equals <see cref="float.NegativeInfinity"/>,
         /// or 0.5 if <paramref name="x"/> equals <see cref="float.PositiveInfinity"/>.</returns>
-        public static float AtanPi(float x) => Atan(x) / PI;
+        public static float AtanPi(float x)
+        {
+            if (float.IsPositiveInfinity(x))
+            {
+                return 0.5f;
+            }
+            else if (float.IsNegativeInfinity(x))
+            {
+                return -0.5f;
+            }
+            else
+            {
+                return Atan(x) / PI;
+            }
+        }
 
         /// <summary>
         /// Returns the angle whose measured in half-revolutions tangent is the quotient of two specified numbers.

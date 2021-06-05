@@ -1621,8 +1621,8 @@ namespace System
             return invert ? -tan : tan;
         }
 
-        // We don't need to special case inverse-trigs as long as getting precise PI/2 and PI.
-        // Guarded in unit test.
+        // Double inverse-trigs pass all special value tests on all platforms.
+        // Keep them fast.
 
         /// <summary>
         /// Returns the angle measured in half-revolutions whose sine is the specified number.
