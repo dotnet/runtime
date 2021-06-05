@@ -132,6 +132,10 @@ namespace System.Collections
 
         private bucket[] _buckets = null!;
 
+#if TARGET_64BIT
+        // The FastMod Mulitplier
+        private ulong _fastModMultiplier;
+#endif
         // The total number of entries in the hash table.
         private int _count;
 
@@ -273,6 +277,9 @@ namespace System.Collections
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
             _buckets = new bucket[hashsize];
 
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)hashsize);
+#endif
             _loadsize = (int)(_loadFactor * hashsize);
             _isWriterInProgress = false;
             // Based on the current algorithm, loadsize must be less than hashsize.
@@ -403,7 +410,11 @@ namespace System.Collections
             // visit every bucket in the table exactly once within hashsize
             // iterations.  Violate this and it'll cause obscure bugs forever.
             // If you change this calculation for h2(key), update putEntry too!
+#if TARGET_64BIT
+            incr = (uint)(1 + HashHelpers.FastMod(seed * HashHelpers.HashPrime, (uint)hashsize - 1, _fastModMultiplier));
+#else
             incr = (uint)(1 + ((seed * HashHelpers.HashPrime) % ((uint)hashsize - 1)));
+#endif
             return hashcode;
         }
 
@@ -485,7 +496,11 @@ namespace System.Collections
             int ntry = 0;
 
             bucket b;
+#if TARGET_64BIT
+            int bucketNumber = (int)HashHelpers.FastMod(seed, (uint)lbuckets.Length, _fastModMultiplier);
+#else
             int bucketNumber = (int)(seed % (uint)lbuckets.Length);
+#endif
             do
             {
                 b = lbuckets[bucketNumber];
@@ -496,7 +511,11 @@ namespace System.Collections
                 if (((b.hash_coll & 0x7FFFFFFF) == hashcode) &&
                     KeyEquals(b.key, key))
                     return true;
+#if TARGET_64BIT
+                bucketNumber = (int)HashHelpers.FastMod((uint)((long)bucketNumber + incr), (uint)lbuckets.Length, _fastModMultiplier);
+#else
                 bucketNumber = (int)(((long)bucketNumber + incr) % (uint)lbuckets.Length);
+#endif
             } while (b.hash_coll < 0 && ++ntry < lbuckets.Length);
             return false;
         }
@@ -643,7 +662,11 @@ namespace System.Collections
                 int ntry = 0;
 
                 bucket b;
+#if TARGET_64BIT
+                int bucketNumber = (int)HashHelpers.FastMod(seed, (uint)lbuckets.Length, _fastModMultiplier);
+#else
                 int bucketNumber = (int)(seed % (uint)lbuckets.Length);
+#endif
                 do
                 {
                     int currentversion;
@@ -684,7 +707,11 @@ namespace System.Collections
                     if (((b.hash_coll & 0x7FFFFFFF) == hashcode) &&
                         KeyEquals(b.key, key))
                         return b.val;
+#if TARGET_64BIT
+                    bucketNumber = (int)HashHelpers.FastMod((uint)((long)bucketNumber + incr), (uint)lbuckets.Length, _fastModMultiplier);
+#else
                     bucketNumber = (int)(((long)bucketNumber + incr) % (uint)lbuckets.Length);
+#endif
                 } while (b.hash_coll < 0 && ++ntry < lbuckets.Length);
                 return null;
             }
@@ -730,6 +757,9 @@ namespace System.Collections
             //   2) Protect against an OutOfMemoryException while allocating this
             //      new bucket[].
             bucket[] newBuckets = new bucket[newsize];
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newsize);
+#endif
 
             // rehash table into new buckets
             int nb;
@@ -858,8 +888,13 @@ namespace System.Collections
             uint hashcode = InitHash(key, _buckets.Length, out uint seed, out uint incr);
             int ntry = 0;
             int emptySlotNumber = -1; // We use the empty slot number to cache the first empty slot. We chose to reuse slots
+
             // create by remove that have the collision bit set over using up new slots.
+#if TARGET_64BIT
+            int bucketNumber = (int)HashHelpers.FastMod(seed, (uint)_buckets.Length, _fastModMultiplier);
+#else
             int bucketNumber = (int)(seed % (uint)_buckets.Length);
+#endif
             do
             {
                 // Set emptySlot number to current bucket if it is the first available bucket that we have seen
@@ -922,7 +957,11 @@ namespace System.Collections
                     }
                 }
 
+#if TARGET_64BIT
+                bucketNumber = (int)HashHelpers.FastMod((uint)((long)bucketNumber + incr), (uint)_buckets.Length, _fastModMultiplier);
+#else
                 bucketNumber = (int)(((long)bucketNumber + incr) % (uint)_buckets.Length);
+#endif
             } while (++ntry < _buckets.Length);
 
             // This code is here if and only if there were no buckets without a collision bit set in the entire table
@@ -953,8 +992,13 @@ namespace System.Collections
             Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint)hashcode;
+#if TARGET_64BIT
+            uint incr = unchecked((uint)(1 + HashHelpers.FastMod(seed * HashHelpers.HashPrime, (uint)newBuckets.Length - 1, _fastModMultiplier)));
+            int  bucketNumber = (int)HashHelpers.FastMod(seed, (uint)newBuckets.Length, _fastModMultiplier);
+#else
             uint incr = unchecked((uint)(1 + ((seed * HashHelpers.HashPrime) % ((uint)newBuckets.Length - 1))));
             int bucketNumber = (int)(seed % (uint)newBuckets.Length);
+#endif
             while (true)
             {
                 if ((newBuckets[bucketNumber].key == null) || (newBuckets[bucketNumber].key == _buckets))
@@ -970,7 +1014,11 @@ namespace System.Collections
                     newBuckets[bucketNumber].hash_coll |= unchecked((int)0x80000000);
                     _occupancy++;
                 }
+#if TARGET_64BIT
+                bucketNumber = (int)HashHelpers.FastMod((uint)((long)bucketNumber + incr), (uint)newBuckets.Length, _fastModMultiplier);
+#else
                 bucketNumber = (int)(((long)bucketNumber + incr) % (uint)newBuckets.Length);
+#endif
             }
         }
 
@@ -992,31 +1040,39 @@ namespace System.Collections
             int ntry = 0;
 
             bucket b;
-            int bn = (int)(seed % (uint)_buckets.Length);  // bucketNumber
+#if TARGET_64BIT
+            int bucketNumber = (int)HashHelpers.FastMod(seed, (uint)_buckets.Length, _fastModMultiplier);
+#else
+            int bucketNumber = (int)(seed % (uint)_buckets.Length);
+#endif
             do
             {
-                b = _buckets[bn];
+                b = _buckets[bucketNumber];
                 if (((b.hash_coll & 0x7FFFFFFF) == hashcode) &&
                     KeyEquals(b.key, key))
                 {
                     _isWriterInProgress = true;
                     // Clear hash_coll field, then key, then value
-                    _buckets[bn].hash_coll &= unchecked((int)0x80000000);
-                    if (_buckets[bn].hash_coll != 0)
+                    _buckets[bucketNumber].hash_coll &= unchecked((int)0x80000000);
+                    if (_buckets[bucketNumber].hash_coll != 0)
                     {
-                        _buckets[bn].key = _buckets;
+                        _buckets[bucketNumber].key = _buckets;
                     }
                     else
                     {
-                        _buckets[bn].key = null;
+                        _buckets[bucketNumber].key = null;
                     }
-                    _buckets[bn].val = null;  // Free object references sooner & simplify ContainsValue.
+                    _buckets[bucketNumber].val = null;  // Free object references sooner & simplify ContainsValue.
                     _count--;
                     UpdateVersion();
                     _isWriterInProgress = false;
                     return;
                 }
-                bn = (int)(((long)bn + incr) % (uint)_buckets.Length);
+#if TARGET_64BIT
+                bucketNumber = (int)HashHelpers.FastMod((uint)((long)bucketNumber + incr), (uint)_buckets.Length, _fastModMultiplier);
+#else
+                bucketNumber = (int)(((long)bn + incr) % (uint)_buckets.Length);
+#endif
             } while (b.hash_coll < 0 && ++ntry < _buckets.Length);
         }
 
