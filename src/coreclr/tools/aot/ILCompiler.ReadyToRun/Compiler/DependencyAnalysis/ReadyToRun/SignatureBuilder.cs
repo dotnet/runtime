@@ -417,7 +417,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
 
-            EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, context);
+            EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 
             if (method.ConstrainedType != null)
             {
@@ -438,7 +438,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         private void EmitMethodSpecificationSignature(MethodWithToken method, 
-            uint flags, bool enforceDefEncoding, SignatureContext context)
+            uint flags, bool enforceDefEncoding, bool enforceOwningType, SignatureContext context)
         {
             ModuleToken methodToken = method.Token;
 
@@ -470,8 +470,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
             }
 
-            if (method.Token.Module != context.LocalContext)
+            if ((method.Token.Module != context.LocalContext) && !enforceOwningType)
             {
+                // If enforeOwningType is set, this is an entry for the InstanceEntryPoint or InstrumentationDataTable nodes
+                // which are not used in quite the same way, and for which the MethodDef is always matched to the module
+                // which defines the type
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext;
             }
 
