@@ -1103,13 +1103,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [Fact]
-        public void ScopedServiceResolvedFromSingletonAfterCompilation2()
+        [Theory]
+        [InlineData(ServiceProviderMode.Default)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        private void ScopedServiceResolvedFromSingletonAfterCompilation2(ServiceProviderMode mode)
         {
             ServiceProvider sp = new ServiceCollection()
                                 .AddScoped<A>()
                                 .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>()
-                                .BuildServiceProvider(ServiceProviderMode.ILEmit);
+                                .BuildServiceProvider(mode);
 
             var scope = sp.CreateScope();
             for (int i = 0; i < 50; i++)
