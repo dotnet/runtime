@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
-            return args => new DeferredHostBuilder(args, assembly);
+            return args => new DeferredHostBuilder(args, assembly.EntryPoint);
         }
 
         private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Hosting
             public IDictionary<object, object> Properties { get; } = new Dictionary<object, object>();
 
             private readonly string[] _args;
-            private readonly Assembly _assembly;
+            private readonly MethodInfo _entryPoint;
 
             private readonly TaskCompletionSource<IHost> _hostTcs = new();
             private IDisposable? _disposable;
@@ -157,10 +157,10 @@ namespace Microsoft.Extensions.Hosting
             // The amount of time we wait for the diagnostic source events to fire
             private static readonly TimeSpan _waitTimeout = TimeSpan.FromSeconds(5);
 
-            public DeferredHostBuilder(string[] args, Assembly assembly)
+            public DeferredHostBuilder(string[] args, MethodInfo entryPoint)
             {
                 _args = args;
-                _assembly = assembly;
+                _entryPoint = entryPoint;
                 _configure = b =>
                 {
                     // Copy the properties from this builder into the builder
@@ -182,14 +182,14 @@ namespace Microsoft.Extensions.Hosting
                 {
                     try
                     {
-                        var parameters = _assembly.EntryPoint!.GetParameters();
+                        var parameters = _entryPoint.GetParameters();
                         if (parameters.Length == 0)
                         {
-                            _assembly.EntryPoint!.Invoke(null, Array.Empty<object>());
+                            _entryPoint.Invoke(null, Array.Empty<object>());
                         }
                         else
                         {
-                            _assembly.EntryPoint!.Invoke(null, new object[] { _args });
+                            _entryPoint.Invoke(null, new object[] { _args });
                         }
 
                         // Try to set an exception if the entrypoint returns gracefully, this will force
