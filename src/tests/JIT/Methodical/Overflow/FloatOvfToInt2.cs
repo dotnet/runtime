@@ -7,6 +7,9 @@ using System.Runtime.CompilerServices;
 internal class FloatOvfToInt
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool BreakUpFlow() => false;
+    
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static long FloatToLong(float f)
     {
         return (long)f;
@@ -228,6 +231,41 @@ internal class FloatOvfToInt
         return 100;
     }
 
+    public static int TestValuesFloatLongVN()
+    {
+        float bigf = 100000000000000000000000000000.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToLong(bigf) != FloatToLongInline(bigf)) return 401;
+        if (FloatToUlong(bigf) != FloatToUlongInline(bigf)) return 402;
+        if (FloatToLong(-bigf) != FloatToLongInline(-bigf)) return 403;
+        if (FloatToUlong(-bigf) != FloatToUlongInline(-bigf)) return 404;
+
+        bigf = 987654321001234567899876543210.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToLong(bigf) != FloatToLongInline(bigf)) return 401;
+        if (FloatToUlong(bigf) != FloatToUlongInline(bigf)) return 402;
+        if (FloatToLong(-bigf) != FloatToLongInline(-bigf)) return 403;
+        if (FloatToUlong(-bigf) != FloatToUlongInline(-bigf)) return 404;
+
+        bigf = 254783961024896571038054632179.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToLong(bigf) != FloatToLongInline(bigf)) return 401;
+        if (FloatToUlong(bigf) != FloatToUlongInline(bigf)) return 402;
+        if (FloatToLong(-bigf) != FloatToLongInline(-bigf)) return 403;
+        if (FloatToUlong(-bigf) != FloatToUlongInline(-bigf)) return 404;
+
+        return 100;
+    }
+
     public static int TestValuesFloatInt()
     {
         float bigf = 100000000000000000000000000000.0f;
@@ -247,6 +285,41 @@ internal class FloatOvfToInt
         if (FloatToUint(bigf) != FloatToUintInline(bigf)) return 112;
         if (FloatToInt(-bigf) != FloatToIntInline(-bigf)) return 113;
         if (FloatToUint(-bigf) != FloatToUintInline(-bigf)) return 114;
+
+        return 100;
+    }
+
+    public static int TestValuesFloatIntVN()
+    {
+        float bigf = 100000000000000000000000000000.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToInt(bigf) != FloatToIntInline(bigf)) return 411;
+        if (FloatToUint(bigf) != FloatToUintInline(bigf)) return 412;
+        if (FloatToInt(-bigf) != FloatToIntInline(-bigf)) return 413;
+        if (FloatToUint(-bigf) != FloatToUintInline(-bigf)) return 414;
+
+        bigf = 987654321001234567899876543210.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToInt(bigf) != FloatToIntInline(bigf)) return 411;
+        if (FloatToUint(bigf) != FloatToUintInline(bigf)) return 412;
+        if (FloatToInt(-bigf) != FloatToIntInline(-bigf)) return 413;
+        if (FloatToUint(-bigf) != FloatToUintInline(-bigf)) return 414;
+
+        bigf = 254783961024896571038054632179.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToInt(bigf) != FloatToIntInline(bigf)) return 411;
+        if (FloatToUint(bigf) != FloatToUintInline(bigf)) return 412;
+        if (FloatToInt(-bigf) != FloatToIntInline(-bigf)) return 413;
+        if (FloatToUint(-bigf) != FloatToUintInline(-bigf)) return 414;
 
         return 100;
     }
@@ -274,6 +347,42 @@ internal class FloatOvfToInt
         return 100;
     }
 
+    public static int TestValuesFloatShortVN()
+    {
+        float bigf = 100000000000000000000000000000.0f;
+
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToShort(bigf) != FloatToShortInline(bigf)) return 421;
+        if (FloatToUshort(bigf) != FloatToUshortInline(bigf)) return 422;
+        if (FloatToShort(-bigf) != FloatToShortInline(-bigf)) return 423;
+        if (FloatToUshort(-bigf) != FloatToUshortInline(-bigf)) return 424;
+
+        bigf = 987654321001234567899876543210.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToShort(bigf) != FloatToShortInline(bigf)) return 421;
+        if (FloatToUshort(bigf) != FloatToUshortInline(bigf)) return 422;
+        if (FloatToShort(-bigf) != FloatToShortInline(-bigf)) return 423;
+        if (FloatToUshort(-bigf) != FloatToUshortInline(-bigf)) return 424;
+
+        bigf = 254783961024896571038054632179.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToShort(bigf) != FloatToShortInline(bigf)) return 421;
+        if (FloatToUshort(bigf) != FloatToUshortInline(bigf)) return 422;
+        if (FloatToShort(-bigf) != FloatToShortInline(-bigf)) return 423;
+        if (FloatToUshort(-bigf) != FloatToUshortInline(-bigf)) return 424;
+
+        return 100;
+    }
+
+
     public static int TestValuesFloatByte()
     {
         float bigf = 100000000000000000000000000000.0f;
@@ -297,25 +406,95 @@ internal class FloatOvfToInt
         return 100;
     }
 
+    public static int TestValuesFloatByteVN()
+    {
+        float bigf = 100000000000000000000000000000.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToSbyte(bigf) != FloatToSbyteInline(bigf)) return 441;
+        if (FloatToByte(bigf) != FloatToByteInline(bigf)) return 442;
+        if (FloatToSbyte(-bigf) != FloatToSbyteInline(-bigf)) return 443;
+        if (FloatToByte(-bigf) != FloatToByteInline(-bigf)) return 444;
+
+        bigf = 987654321001234567899876543210.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToSbyte(bigf) != FloatToSbyteInline(bigf)) return 441;
+        if (FloatToByte(bigf) != FloatToByteInline(bigf)) return 442;
+        if (FloatToSbyte(-bigf) != FloatToSbyteInline(-bigf)) return 443;
+        if (FloatToByte(-bigf) != FloatToByteInline(-bigf)) return 444;
+
+        bigf = 254783961024896571038054632179.0f;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (FloatToSbyte(bigf) != FloatToSbyteInline(bigf)) return 441;
+        if (FloatToByte(bigf) != FloatToByteInline(bigf)) return 442;
+        if (FloatToSbyte(-bigf) != FloatToSbyteInline(-bigf)) return 443;
+        if (FloatToByte(-bigf) != FloatToByteInline(-bigf)) return 444;
+
+        return 100;
+    }
+
     public static int TestValuesDoubleLong()
     {
         double bigd = 100000000000000000000000000000.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
         if (DoubleToLong(bigd) != DoubleToLongInline(bigd)) return 201;
         if (DoubleToUlong(bigd) != DoubleToUlongInline(bigd)) return 202;
         if (DoubleToLong(-bigd) != DoubleToLongInline(-bigd)) return 203;
         if (DoubleToUlong(-bigd) != DoubleToUlongInline(-bigd)) return 204;
 
         bigd = 987654321001234567899876543210.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
         if (DoubleToLong(bigd) != DoubleToLongInline(bigd)) return 201;
         if (DoubleToUlong(bigd) != DoubleToUlongInline(bigd)) return 202;
         if (DoubleToLong(-bigd) != DoubleToLongInline(-bigd)) return 203;
         if (DoubleToUlong(-bigd) != DoubleToUlongInline(-bigd)) return 204;
 
         bigd = 254783961024896571038054632179.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
         if (DoubleToLong(bigd) != DoubleToLongInline(bigd)) return 201;
         if (DoubleToUlong(bigd) != DoubleToUlongInline(bigd)) return 202;
         if (DoubleToLong(-bigd) != DoubleToLongInline(-bigd)) return 203;
         if (DoubleToUlong(-bigd) != DoubleToUlongInline(-bigd)) return 204;
+
+        return 100;
+    }
+
+    public static int TestValuesDoubleLongVN()
+    {
+        double bigd = 100000000000000000000000000000.0;
+        if (DoubleToLong(bigd) != DoubleToLongInline(bigd)) return 301;
+        if (DoubleToUlong(bigd) != DoubleToUlongInline(bigd)) return 302;
+        if (DoubleToLong(-bigd) != DoubleToLongInline(-bigd)) return 303;
+        if (DoubleToUlong(-bigd) != DoubleToUlongInline(-bigd)) return 304;
+
+        bigd = 987654321001234567899876543210.0;
+        if (DoubleToLong(bigd) != DoubleToLongInline(bigd)) return 301;
+        if (DoubleToUlong(bigd) != DoubleToUlongInline(bigd)) return 302;
+        if (DoubleToLong(-bigd) != DoubleToLongInline(-bigd)) return 303;
+        if (DoubleToUlong(-bigd) != DoubleToUlongInline(-bigd)) return 304;
+
+        bigd = 254783961024896571038054632179.0;
+        if (DoubleToLong(bigd) != DoubleToLongInline(bigd)) return 301;
+        if (DoubleToUlong(bigd) != DoubleToUlongInline(bigd)) return 302;
+        if (DoubleToLong(-bigd) != DoubleToLongInline(-bigd)) return 303;
+        if (DoubleToUlong(-bigd) != DoubleToUlongInline(-bigd)) return 304;
 
         return 100;
     }
@@ -343,6 +522,41 @@ internal class FloatOvfToInt
         return 100;
     }
 
+    public static int TestValuesDoubleIntVN()
+    {
+        double bigd = 100000000000000000000000000000.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToInt(bigd) != DoubleToIntInline(bigd)) return 311;
+        if (DoubleToUint(bigd) != DoubleToUintInline(bigd)) return 312;
+        if (DoubleToInt(-bigd) != DoubleToIntInline(-bigd)) return 313;
+        if (DoubleToUint(-bigd) != DoubleToUintInline(-bigd)) return 314;
+
+        bigd = 987654321001234567899876543210.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToInt(bigd) != DoubleToIntInline(bigd)) return 311;
+        if (DoubleToUint(bigd) != DoubleToUintInline(bigd)) return 312;
+        if (DoubleToInt(-bigd) != DoubleToIntInline(-bigd)) return 313;
+        if (DoubleToUint(-bigd) != DoubleToUintInline(-bigd)) return 314;
+
+        bigd = 254783961024896571038054632179.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToInt(bigd) != DoubleToIntInline(bigd)) return 311;
+        if (DoubleToUint(bigd) != DoubleToUintInline(bigd)) return 312;
+        if (DoubleToInt(-bigd) != DoubleToIntInline(-bigd)) return 313;
+        if (DoubleToUint(-bigd) != DoubleToUintInline(-bigd)) return 314;
+
+        return 100;
+    }
+
     public static int TestValuesDoubleShort()
     {
         double bigd = 100000000000000000000000000000.0;
@@ -362,6 +576,41 @@ internal class FloatOvfToInt
         if (DoubleToUshort(bigd) != DoubleToUshortInline(bigd)) return 222;
         if (DoubleToShort(-bigd) != DoubleToShortInline(-bigd)) return 223;
         if (DoubleToUshort(-bigd) != DoubleToUshortInline(-bigd)) return 224;
+
+        return 100;
+    }
+
+    public static int TestValuesDoubleShortVN()
+    {
+        double bigd = 100000000000000000000000000000.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToShort(bigd) != DoubleToShortInline(bigd)) return 321;
+        if (DoubleToUshort(bigd) != DoubleToUshortInline(bigd)) return 322;
+        if (DoubleToShort(-bigd) != DoubleToShortInline(-bigd)) return 323;
+        if (DoubleToUshort(-bigd) != DoubleToUshortInline(-bigd)) return 324;
+
+        bigd = 987654321001234567899876543210.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToShort(bigd) != DoubleToShortInline(bigd)) return 321;
+        if (DoubleToUshort(bigd) != DoubleToUshortInline(bigd)) return 322;
+        if (DoubleToShort(-bigd) != DoubleToShortInline(-bigd)) return 323;
+        if (DoubleToUshort(-bigd) != DoubleToUshortInline(-bigd)) return 324;
+
+        bigd = 254783961024896571038054632179.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToShort(bigd) != DoubleToShortInline(bigd)) return 321;
+        if (DoubleToUshort(bigd) != DoubleToUshortInline(bigd)) return 322;
+        if (DoubleToShort(-bigd) != DoubleToShortInline(-bigd)) return 323;
+        if (DoubleToUshort(-bigd) != DoubleToUshortInline(-bigd)) return 324;
 
         return 100;
     }
@@ -389,17 +638,60 @@ internal class FloatOvfToInt
         return 100;
     }
 
+    public static int TestValuesDoubleByteVN()
+    {
+        double bigd = 100000000000000000000000000000.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToSbyte(bigd) != DoubleToSbyteInline(bigd)) return 341;
+        if (DoubleToByte(bigd) != DoubleToByteInline(bigd)) return 342;
+        if (DoubleToSbyte(-bigd) != DoubleToSbyteInline(-bigd)) return 343;
+        if (DoubleToByte(-bigd) != DoubleToByteInline(-bigd)) return 344;
+
+        bigd = 987654321001234567899876543210.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToSbyte(bigd) != DoubleToSbyteInline(bigd)) return 341;
+        if (DoubleToByte(bigd) != DoubleToByteInline(bigd)) return 342;
+        if (DoubleToSbyte(-bigd) != DoubleToSbyteInline(-bigd)) return 343;
+        if (DoubleToByte(-bigd) != DoubleToByteInline(-bigd)) return 344;
+
+        bigd = 254783961024896571038054632179.0;
+        
+        if (BreakUpFlow())
+            return 1000;
+        
+        if (DoubleToSbyte(bigd) != DoubleToSbyteInline(bigd)) return 341;
+        if (DoubleToByte(bigd) != DoubleToByteInline(bigd)) return 342;
+        if (DoubleToSbyte(-bigd) != DoubleToSbyteInline(-bigd)) return 343;
+        if (DoubleToByte(-bigd) != DoubleToByteInline(-bigd)) return 344;
+
+        return 100;
+    }
+
     public static int TestValues()
     {
         int res = TestValuesFloatLong(); if (res != 100) return res;
+        res = TestValuesFloatLongVN(); if (res != 100) return res;
         res = TestValuesFloatInt(); if (res != 100) return res;
+        res = TestValuesFloatIntVN(); if (res != 100) return res;
         res = TestValuesFloatShort(); if (res != 100) return res;
+        res = TestValuesFloatShortVN(); if (res != 100) return res;
         res = TestValuesFloatByte(); if (res != 100) return res;
+        res = TestValuesFloatByteVN(); if (res != 100) return res;
 
         res = TestValuesDoubleLong(); if (res != 100) return res;
+        res = TestValuesDoubleLongVN(); if (res != 100) return res;
         res = TestValuesDoubleInt(); if (res != 100) return res;
+        res = TestValuesDoubleIntVN(); if (res != 100) return res;
         res = TestValuesDoubleShort(); if (res != 100) return res;
+        res = TestValuesDoubleShortVN(); if (res != 100) return res;
         res = TestValuesDoubleByte(); if (res != 100) return res;
+        res = TestValuesDoubleByteVN(); if (res != 100) return res;
 
         return res;
     }
