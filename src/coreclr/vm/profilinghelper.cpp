@@ -95,33 +95,6 @@
 // first, which the writer will be sure to see in (c).  For more details about how the
 // evacuation counters work, see code:ProfilingAPIUtility::IsProfilerEvacuated.
 //
-// WHEN ARE BEGIN/END_PROFILER_CALLBACK REQUIRED?
-//
-// In general, any time you access g_profControlBlock.pProfInterface, you must be inside
-// a BEGIN/END_PROFILER_CALLBACK block. This is pretty much always true throughout the EE, but
-// there are some exceptions inside the profiling API code itself, where the BEGIN / END
-// macros are unnecessary:
-//     * If you are inside a public ICorProfilerInfo function's implementation, the
-//         profiler is already pinned. This is because the profiler called the Info
-//         function from either:
-//         * a callback implemented inside of g_profControlBlock.pProfInterface, in which
-//             case the BEGIN/END macros are already in place around the call to that
-//             callback, OR
-//         * a hijacked thread or a thread of the profiler's own creation. In either
-//             case, it's the profiler's responsibility to end hijacking and end its own
-//             threads before requesting a detach. So the profiler DLL is guaranteed not
-//             to disappear while hijacking or profiler-created threads are in action.
-//    * If you're executing while code:ProfilingAPIUtility::s_csStatus is held, then
-//        you're explicitly serialized against all code that might unload the profiler's
-//        DLL and delete g_profControlBlock.pProfInterface. So the profiler is therefore
-//        still guaranteed not to disappear.
-//    * If slow ELT helpers, fast ELT hooks, or profiler-instrumented code is on the
-//        stack, then the profiler cannot be detached yet anyway. Today, we outright
-//        refuse a detach request from a profiler that instrumented code or enabled ELT.
-//        Once rejit / revert is implemented, the evacuation checks will ensure all
-//        instrumented code (including ELT) are reverted and off all stacks before
-//        attempting to unload the profielr.
-
 
 #include "common.h"
 
@@ -463,6 +436,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     }
 
     AttemptLoadProfilerForStartup();
+    AttemptLoadDelayedStartupProfilers();
     AttemptLoadProfilerList();
 
     // For now, the return value from AttemptLoadProfilerForStartup is of no use to us.
@@ -813,14 +787,9 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     WCHAR *currentPath = NULL;
     WCHAR *currentGuid = NULL;
 
-    // Copy in to writeable buffer
-    constexpr size_t maxSize = 1024;
-    WCHAR buffer[maxSize];
-    wcscpy_s(buffer, maxSize, wszProfilerList);
-
     HRESULT storedHr = S_OK;
     // Get each semicolon delimited config
-    currentSection = wcstok_s(buffer, W(";"), &pOuter);
+    currentSection = wcstok_s(wszProfilerList, W(";"), &pOuter);
     while (currentSection != NULL)
     {
         // Parse this config "path={guid}"
@@ -1236,11 +1205,19 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
 
     if (loadType == kStartupLoad)
     {
+        // This EvacuationCounterHolder is just to make asserts in EEToProfInterfaceImpl happy.
+        // Using it like this without the dirty read/evac counter increment/clean read pattern
+        // is not safe generally, but in this specific case we can skip all that since we haven't
+        // published it yet, so we are the only thread that can access it.
         EvacuationCounterHolder holder(pProfilerInfo);
         hr = pProfilerInfo->pProfInterface->Initialize();
     }
     else
     {
+        // This EvacuationCounterHolder is just to make asserts in EEToProfInterfaceImpl happy.
+        // Using it like this without the dirty read/evac counter increment/clean read pattern
+        // is not safe generally, but in this specific case we can skip all that since we haven't
+        // published it yet, so we are the only thread that can access it.
         EvacuationCounterHolder holder(pProfilerInfo);
 
         _ASSERTE(loadType == kAttachLoad);
@@ -1402,6 +1379,10 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // code:ProfilerFunctionEnum::Init#ProfilerEnumGeneral
 
         {
+            // This EvacuationCounterHolder is just to make asserts in EEToProfInterfaceImpl happy.
+            // Using it like this without the dirty read/evac counter increment/clean read pattern
+            // is not safe generally, but in this specific case we can skip all that since we haven't
+            // published it yet, so we are the only thread that can access it.
             EvacuationCounterHolder holder(pProfilerInfo);
             pProfilerInfo->pProfInterface->ProfilerAttachComplete();
         }

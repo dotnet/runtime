@@ -135,6 +135,16 @@ enum class ProfilerCallbackType
 // cause another profiler to not be able to detach. We can't just check the event masks
 // before and after the call because it is legal for a profiler to change its event mask,
 // and then it would be possible for a profiler to permanently prevent itself from detaching.
+// 
+// WHEN IS EvacuationCounterHolder REQUIRED?
+// Answer: any time you access a ProfilerInfo *. There is a specific sequence that must be followed:
+//   - Do a dirty read of the Profiler interface
+//   - Increment an evacuation counter by using EvacuationCounterHolder as a RAII guard class
+//   - Now do a clean read of the ProfilerInfo's status - this will be changed during detach and
+//     is always read with a memory barrier
+//
+// The DoProfilerCallback/IterateProfilers functions automate this process for you, you should use
+// them unless you are absoultely sure you know what you're doing
 class EvacuationCounterHolder
 {
 private:
