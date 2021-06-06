@@ -765,20 +765,28 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    NewArrayHolder<WCHAR> wszProfilerList(NULL);
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, &wszProfilerList));
-    if (wszProfilerList == NULL)
-    {
-        // No profiler list specified, bail
-        return S_OK;
-    }
-
     DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
     if (dwEnabled == 0)
     {
         // Profiler list explicitly disabled, bail
         LogProfInfo(IDS_E_PROF_NOTIFICATION_DISABLED);
         return S_OK;
+    }
+
+    NewArrayHolder<WCHAR> wszProfilerList(NULL);
+#ifdef TARGET_64BIT
+    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, &wszProfilerList);
+#else // TARGET_64BIT
+    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, &wszProfilerList);
+#endif // TARGET_64BIT
+    if (wszProfilerList == NULL)
+    {
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, &wszProfilerList);
+        if (wszProfilerList == NULL)
+        {
+            // No profiler list specified, bail
+            return S_OK;
+        }
     }
 
     WCHAR *pOuter = NULL;
