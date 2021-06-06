@@ -18992,7 +18992,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
                     }
                 }
                 // Arg is a reference type in the signature, but a value type was passed.
-                else if (isArgValueType && (impIsPrimitive(corType) || (corType == CORINFO_TYPE_VALUECLASS)))
+                else if (isArgValueType && (corType == CORINFO_TYPE_CLASS))
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_BOXED);
                 }
