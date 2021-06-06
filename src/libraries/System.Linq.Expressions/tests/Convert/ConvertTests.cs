@@ -1650,7 +1650,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/13651")]
         public static void ConvertDoubleToUIntTest(bool useInterpreter)
         {
             foreach (double value in new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN })
@@ -1660,7 +1659,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/13651")]
         public static void ConvertDoubleToNullableUIntTest(bool useInterpreter)
         {
             foreach (double value in new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN })
