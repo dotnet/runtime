@@ -605,7 +605,6 @@ typedef enum
                                               COR_PRF_MONITOR_APPDOMAIN_LOADS |
                                               COR_PRF_MONITOR_JIT_COMPILATION |
                                               COR_PRF_MONITOR_EXCEPTIONS |
-                                              COR_PRF_MONITOR_GC |
                                               COR_PRF_MONITOR_OBJECT_ALLOCATED |
                                               COR_PRF_MONITOR_THREADS |
                                               COR_PRF_MONITOR_CODE_TRANSITIONS |

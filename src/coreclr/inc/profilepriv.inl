@@ -143,7 +143,7 @@ inline void ProfControlBlock::Init()
     fTestOnlyEnableICorProfilerInfo = FALSE;
 #endif // _DEBUG
 
-    dwConcurrentGCDisabledForAttach = 0;
+    fConcurrentGCDisabledForAttach = FALSE;
 
     mainProfilerInfo.ResetPerSessionStatus();
 

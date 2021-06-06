@@ -491,6 +491,10 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
         
         {
+            // This EvacuationCounterHolder is just to make asserts in EEToProfInterfaceImpl happy.
+            // Using it like this without the dirty read/evac counter increment/clean read pattern
+            // is not safe generally, but in this specific case we can skip all that since we are in
+            // a critical section and are the only ones with access to the ProfilerInfo *
             EvacuationCounterHolder evacuationCounter(pDetachInfo->m_pProfilerInfo);
             pDetachInfo->m_pProfilerInfo->pProfInterface->ProfilerDetachSucceeded();
         }

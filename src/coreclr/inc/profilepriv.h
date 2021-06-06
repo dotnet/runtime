@@ -269,7 +269,7 @@ public:
 #endif // _DEBUG
 
     // Whether we've turned off concurrent GC during attach
-    Volatile<DWORD> dwConcurrentGCDisabledForAttach;
+    Volatile<BOOL> fConcurrentGCDisabledForAttach;
 
     Volatile<BOOL> fProfControlBlockInitialized;
 

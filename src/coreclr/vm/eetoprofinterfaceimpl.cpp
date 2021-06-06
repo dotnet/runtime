@@ -2399,7 +2399,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     if (fNeedToTurnOffConcurrentGC)
     {
         // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
-        g_profControlBlock.dwConcurrentGCDisabledForAttach++;
+        g_profControlBlock.fConcurrentGCDisabledForAttach = TRUE;
 
         // Turn off concurrent GC if it is on so that user can walk the heap safely in GC callbacks
         IGCHeap * pGCHeap = GCHeapUtilities::GetGCHeap();
@@ -2433,13 +2433,9 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
             // TODO: think about race conditions... I am pretty sure there is one
             // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
-            g_profControlBlock.dwConcurrentGCDisabledForAttach--;
-
-            if (g_profControlBlock.dwConcurrentGCDisabledForAttach.Load() == 0)
-            {
-                pGCHeap->TemporaryEnableConcurrentGC();
-            }
-
+            g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
+            pGCHeap->TemporaryEnableConcurrentGC();
+            
             return hr;
         }
 

@@ -1550,16 +1550,13 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
 
         // Attach/Load/Detach are all synchronized with the Status Crst, don't need to worry about races
         // If we disabled concurrent GC and somehow failed later during the initialization
-        if (g_profControlBlock.dwConcurrentGCDisabledForAttach.Load() > 0)
+        if (g_profControlBlock.fConcurrentGCDisabledForAttach.Load() && g_profControlBlock.IsMainProfiler(pProfilerInfo->pProfInterface))
         {
-            g_profControlBlock.dwConcurrentGCDisabledForAttach--;
+            g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
 
-            if (g_profControlBlock.dwConcurrentGCDisabledForAttach.Load() == 0)
-            {
-                // We know for sure GC has been fully initialized as we've turned off concurrent GC before
-                _ASSERTE(IsGarbageCollectorFullyInitialized());
-                GCHeapUtilities::GetGCHeap()->TemporaryEnableConcurrentGC();
-            }
+            // We know for sure GC has been fully initialized as we've turned off concurrent GC before
+            _ASSERTE(IsGarbageCollectorFullyInitialized());
+            GCHeapUtilities::GetGCHeap()->TemporaryEnableConcurrentGC();
         }
 
         // #ProfileResetSessionStatus Reset all the status variables that are for the current
