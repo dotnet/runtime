@@ -13394,23 +13394,8 @@ DONE_MORPHING_CHILDREN:
                         tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
                     }
                 }
-                else if (op2->OperIsCompare() && varTypeIsByte(effectiveOp1->TypeGet()))
-                {
-                    /* We don't need to zero extend the setcc instruction */
-                    op2->gtType = TYP_BYTE;
-                }
             }
-            // If we introduced a CSE we may need to undo the optimization above
-            // (i.e. " op2->gtType = TYP_BYTE;" which depends upon op1 being a GT_IND of a byte type)
-            // When we introduce the CSE we remove the GT_IND and subsitute a GT_LCL_VAR in it place.
-            else if (op2->OperIsCompare() && (op2->gtType == TYP_BYTE) && (op1->gtOper == GT_LCL_VAR))
-            {
-                unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* varDsc = &lvaTable[varNum];
 
-                /* We again need to zero extend the setcc instruction */
-                op2->gtType = varDsc->TypeGet();
-            }
             fgAssignSetVarDef(tree);
 
             /* We can't CSE the LHS of an assignment */
