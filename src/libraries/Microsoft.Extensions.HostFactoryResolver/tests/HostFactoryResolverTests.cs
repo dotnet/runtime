@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Null(factory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderInvalidSignature.Program))]
         public void CreateHostBuilderPattern__Invalid_CantFindServiceProvider()
         {
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
         public void NoSpecialEntryPointPattern()
         {
@@ -140,7 +140,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternThrows.Program))]
         public void NoSpecialEntryPointPatternThrows()
         {
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<Exception>(() => factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternExits.Program))]
         public void NoSpecialEntryPointPatternExits()
         {
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternHangs.Program))]
         public void NoSpecialEntryPointPatternHangs()
         {
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternMainNoArgs.Program))]
         public void NoSpecialEntryPointPatternMainNoArgs()
         {
@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TopLevelStatements()
         {
             var assembly = Assembly.Load("TopLevelStatements");
