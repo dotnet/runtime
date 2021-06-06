@@ -4,6 +4,7 @@
 using MockHostTypes;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -174,6 +175,16 @@ namespace Microsoft.Extensions.Hosting.Tests
         public void NoSpecialEntryPointPatternMainNoArgs()
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [Fact]
+        public void TopLevelStatements()
+        {
+            var assembly = Assembly.Load("TopLevelStatements");
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly);
 
             Assert.NotNull(factory);
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
