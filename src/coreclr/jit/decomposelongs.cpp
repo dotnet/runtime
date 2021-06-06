@@ -1797,8 +1797,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 // Accounts for side effects and marks nodes unused as neccessary.
 //
 // Only accepts casts to integer types that are not long.
-// Can optimize away a checked cast from u/long to u/int if the high part
-// of the source is a zero constant.
+// Does not optimize checked casts.
 //
 // Arguments:
 //    cast - the cast tree that has a GT_LONG node as its operand.
@@ -1816,18 +1815,13 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
     assert(src->OperIs(GT_LONG));
     assert(genActualType(dstType) == TYP_INT);
 
-    GenTree* loSrc = src->gtGetOp1();
-    GenTree* hiSrc = src->gtGetOp2();
-
-    // We can only optimize a checked cast if:
-    //  1. It is from ulong/long to uint/int.
-    //  2. We know the upper bits to be all zeroes.
-    // All other cases - mismatched signedness or small types - are not optimizable.
-    bool signsMatch = varTypeIsUnsigned(dstType) == cast->IsUnsigned();
-    if (cast->gtOverflow() && !(hiSrc->IsIntegralConst(0) && varTypeIsInt(dstType) && signsMatch))
+    if (cast->gtOverflow())
     {
         return nextNode;
     }
+
+    GenTree* loSrc = src->gtGetOp1();
+    GenTree* hiSrc = src->gtGetOp2();
 
     JITDUMP("Optimizing a truncating cast [%06u] from decomposed LONG [%06u]\n", cast->gtTreeID, src->gtTreeID);
     INDEBUG(GenTree* treeToDisplay = cast);

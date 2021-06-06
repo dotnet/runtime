@@ -220,12 +220,6 @@ inline bool varTypeIsSmallInt(T vt)
 }
 
 template <class T>
-inline bool varTypeIsInt(T vt)
-{
-    return (TypeGet(vt) >= TYP_INT) && (TypeGet(vt) <= TYP_UINT);
-}
-
-template <class T>
 inline bool varTypeIsIntOrI(T vt)
 {
     return ((TypeGet(vt) == TYP_INT)
