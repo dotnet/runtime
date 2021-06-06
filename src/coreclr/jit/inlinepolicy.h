@@ -128,8 +128,7 @@ public:
         , m_CallsiteIsInLoop(false)
         , m_IsNoReturn(false)
         , m_IsNoReturnKnown(false)
-        , m_ReturnsPromotable(false)
-        , m_ReturnsValueType(false)
+        , m_ReturnsStructByValue(false)
         , m_IsFromValueClass(false)
         , m_IsCalleeGeneric(false)
         , m_IsCallerGeneric(false)
@@ -224,8 +223,7 @@ protected:
     bool                    m_CallsiteIsInLoop : 1;
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
-    bool                    m_ReturnsPromotable : 1;
-    bool                    m_ReturnsValueType : 1;
+    bool                    m_ReturnsStructByValue : 1;
     bool                    m_IsFromValueClass : 1;
     bool                    m_IsCalleeGeneric : 1;
     bool                    m_IsCallerGeneric : 1;

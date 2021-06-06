@@ -288,12 +288,8 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsInstanceCtor = value;
                 break;
 
-            case InlineObservation::CALLEE_RETURNS_PROMOTABLE:
-                m_ReturnsPromotable = value;
-                break;
-
-            case InlineObservation::CALLEE_RETURNS_VALUETYPE:
-                m_ReturnsValueType = value;
+            case InlineObservation::CALLEE_RETURNS_STRUCT:
+                m_ReturnsStructByValue = value;
                 break;
 
             case InlineObservation::CALLEE_CLASS_VALUETYPE:
@@ -620,8 +616,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_CallsiteIsInLoop);
     XATTR_B(m_IsNoReturn);
     XATTR_B(m_IsNoReturnKnown);
-    XATTR_B(m_ReturnsPromotable);
-    XATTR_B(m_ReturnsValueType);
+    XATTR_B(m_ReturnsStructByValue);
     XATTR_B(m_IsFromValueClass);
     XATTR_B(m_IsCalleeGeneric);
     XATTR_B(m_IsCallerGeneric);
@@ -942,15 +937,11 @@ double DefaultPolicy::DetermineMultiplier()
             break;
     }
 
-    if (m_ReturnsValueType)
+    if (m_ReturnsStructByValue)
     {
         // It'd be nice to also note 'newobj/initobj' for structs
         // but we currently don't resolve such tokens.
-        JITDUMP("\nInline candidate returns a struct.");
-        if (m_ReturnsPromotable)
-        {
-            JITDUMP(" Which is promotable.");
-        }
+        JITDUMP("\nInline candidate returns a struct by value.");
     }
 
     if (m_IsCalleeGeneric && !m_IsCallerGeneric)
@@ -2411,7 +2402,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_FoldableExprUn);
     fprintf(file, ",%u", m_FoldableBranch);
     fprintf(file, ",%u", m_DivByCns);
-    fprintf(file, ",%u", m_ReturnsPromotable ? 1 : 0);
+    fprintf(file, ",%u", m_ReturnsStructByValue ? 1 : 0);
     fprintf(file, ",%u", m_IsFromValueClass ? 1 : 0);
     fprintf(file, ",%u", m_IsCalleeGeneric ? 1 : 0);
     fprintf(file, ",%u", m_IsCallerGeneric ? 1 : 0);
