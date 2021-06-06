@@ -173,7 +173,15 @@ namespace Microsoft.Extensions.Hosting
                 {
                     try
                     {
-                        _assembly.EntryPoint!.Invoke(null, new object[] { _args });
+                        var parameters = _assembly.EntryPoint!.GetParameters();
+                        if (parameters.Length == 0)
+                        {
+                            _assembly.EntryPoint!.Invoke(null, Array.Empty<object>());
+                        }
+                        else
+                        {
+                            _assembly.EntryPoint!.Invoke(null, new object[] { _args });
+                        }
 
                         // Try to set an exception if the entrypoint returns gracefully, this will force
                         // build to throw

@@ -168,5 +168,15 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(factory);
             Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
         }
+
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternMainNoArgs.Program))]
+        public void NoSpecialEntryPointPatternMainNoArgs()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
     }
 }

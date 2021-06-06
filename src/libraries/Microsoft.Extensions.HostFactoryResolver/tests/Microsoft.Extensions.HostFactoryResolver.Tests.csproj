@@ -24,6 +24,7 @@
     <ProjectReference Include="NoSpecialEntryPointPatternThrows\NoSpecialEntryPointPatternThrows.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternExits\NoSpecialEntryPointPatternExits.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternHangs\NoSpecialEntryPointPatternHangs.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternMainNoArgs\NoSpecialEntryPointPatternMainNoArgs.csproj" />
   </ItemGroup>
 
   <ItemGroup>
