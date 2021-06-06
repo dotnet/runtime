@@ -2383,6 +2383,8 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     m_pProfilerInfo->eventMask.SetEventMask(dwEventMask);
     m_pProfilerInfo->eventMask.SetEventMaskHigh(dwEventMaskHigh);
 
+    g_profControlBlock.UpdateGlobalEventMask();
+
     if (fEnterLeaveHooksAffected)
     {
         hr = DetermineAndSetEnterLeaveFunctionHooksForJit();
@@ -2443,8 +2445,6 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Concurrent GC has been turned off at attach.\n"));
     }
-
-    g_profControlBlock.UpdateGlobalEventMask();
 
     // Return success
     return S_OK;
@@ -6046,7 +6046,7 @@ HRESULT EEToProfInterfaceImpl::EventPipeProviderCreated(EventPipeProvider *provi
 #endif // FEATURE_PERFTRACING
 }
 
-HRESULT EEToProfInterfaceImpl::CanThisProfilerBeLoadedAsNotficationOnly(BOOL *pbNotificationOnly)
+HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
 {
     CONTRACTL
     {
@@ -6062,7 +6062,7 @@ HRESULT EEToProfInterfaceImpl::CanThisProfilerBeLoadedAsNotficationOnly(BOOL *pb
 
     LOG((LF_CORPROF,
         LL_INFO1000,
-        "**PROF: CanThisProfilerBeLoadedAsNotficationOnly.\n"));
+        "**PROF: LoadAsNotficationOnly.\n"));
 
     if (m_pCallback11 == NULL)
     {
@@ -6070,7 +6070,7 @@ HRESULT EEToProfInterfaceImpl::CanThisProfilerBeLoadedAsNotficationOnly(BOOL *pb
         return S_OK;
     }
 
-    return m_pCallback11->CanThisProfilerBeLoadedAsNotficationOnly(pbNotificationOnly);
+    return m_pCallback11->LoadAsNotficationOnly(pbNotificationOnly);
 }
 
 #endif // PROFILING_SUPPORTED

@@ -8373,7 +8373,7 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
     ICorProfilerCallback11 : public ICorProfilerCallback10
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE CanThisProfilerBeLoadedAsNotficationOnly( 
+        virtual HRESULT STDMETHODCALLTYPE LoadAsNotficationOnly( 
             BOOL *pbNotificationOnly) = 0;
         
     };
@@ -8843,7 +8843,7 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
             ICorProfilerCallback11 * This,
             /* [in] */ EVENTPIPE_PROVIDER provider);
         
-        HRESULT ( STDMETHODCALLTYPE *CanThisProfilerBeLoadedAsNotficationOnly )( 
+        HRESULT ( STDMETHODCALLTYPE *LoadAsNotficationOnly )( 
             ICorProfilerCallback11 * This,
             BOOL *pbNotificationOnly);
         
@@ -9162,8 +9162,8 @@ EXTERN_C const IID IID_ICorProfilerCallback11;
     ( (This)->lpVtbl -> EventPipeProviderCreated(This,provider) ) 
 
 
-#define ICorProfilerCallback11_CanThisProfilerBeLoadedAsNotficationOnly(This,pbNotificationOnly)    \
-    ( (This)->lpVtbl -> CanThisProfilerBeLoadedAsNotficationOnly(This,pbNotificationOnly) ) 
+#define ICorProfilerCallback11_LoadAsNotficationOnly(This,pbNotificationOnly)    \
+    ( (This)->lpVtbl -> LoadAsNotficationOnly(This,pbNotificationOnly) ) 
 
 #endif /* COBJMACROS */
 

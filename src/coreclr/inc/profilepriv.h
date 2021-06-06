@@ -156,7 +156,28 @@ public:
 // code:ProfControlBlock::ResetPerSessionStatus#ProfileResetSessionStatus for more details.
 class ProfControlBlock
 {
+private:    
+    // IsProfilerPresent(pProfilerInfo) returns whether or not a CLR Profiler is actively loaded
+    // (meaning it's initialized and ready to receive callbacks).
+    inline BOOL IsProfilerPresent(ProfilerInfo *pProfilerInfo)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return pProfilerInfo->curProfStatus.Get() >= kProfStatusActive;
+    }
+
+    inline BOOL IsProfilerPresentOrInitializing(ProfilerInfo *pProfilerInfo)
+    {
+        return pProfilerInfo->curProfStatus.Get() > kProfStatusDetaching;
+    }
+
 public:
+    enum class ProfileCallbackType
+    {
+        Active,
+        ActiveOrInitializing
+    };
+
     BOOL fGCInProgress;
     BOOL fBaseSystemClassesLoaded;
 
@@ -216,28 +237,35 @@ public:
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
 
     template<typename Func, typename... Args>
-    inline VOID IterateProfilers(Func callback, Args... args)
+    inline VOID DoOneIteration(ProfilerInfo *pProfilerInfo, Func callback, ProfileCallbackType callbackType, Args... args)
     {
-        if (mainProfilerInfo.pProfInterface.Load() != NULL)
+        // This is the dirty read
+        if (pProfilerInfo->pProfInterface.Load() != NULL)
         {
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-            EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
+            // Now indicate we are accessing the profiler
+            EvacuationCounterHolder evacuationCounter(pProfilerInfo);
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
-            callback(&mainProfilerInfo, args...);
+            
+            if ((callbackType == ProfileCallbackType::Active && IsProfilerPresent(pProfilerInfo))
+                || (callbackType == ProfileCallbackType::ActiveOrInitializing && IsProfilerPresentOrInitializng(pProfilerInfo)))
+            {
+                callback(pProfilerInfo, args...);
+            }
         }
+    }
 
+    template<typename Func, typename... Args>
+    inline VOID IterateProfilers(Func callback, ProfileCallbackType callbackType, Args... args)
+    {
+        DoOneIteration(&mainProfilerInfo);
+        
         if (notificationProfilerCount > 0)
         {
             for (SIZE_T i = 0; i < MAX_NOTIFICATION_PROFILERS; ++i)
             {
                 ProfilerInfo *current = &(notificationOnlyProfilers[i]);
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-                EvacuationCounterHolder evacuationCounter(current);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-                if (current->pProfInterface.Load() != NULL)
-                {
-                    callback(current, args...);
-                }
+                DoOneIteration(current);
             }
         }
     }
@@ -262,7 +290,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    ProfilerInfo *GetNextFreeProfilerInfo();
+    ProfilerInfo *FindNextFreeProfilerInfoSlot();
     void DeRegisterProfilerInfo(ProfilerInfo *pProfilerInfo);
     void UpdateGlobalEventMask();
 #endif // DACCESS_COMPILE

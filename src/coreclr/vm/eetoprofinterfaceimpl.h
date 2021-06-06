@@ -474,7 +474,7 @@ public:
 
     HRESULT EventPipeProviderCreated(EventPipeProvider *provider);
 
-    HRESULT CanThisProfilerBeLoadedAsNotficationOnly(BOOL *pbNotificationOnly);
+    HRESULT LoadAsNotficationOnly(BOOL *pbNotificationOnly);
 
 private:
 

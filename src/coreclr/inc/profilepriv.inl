@@ -43,8 +43,7 @@ inline EventMask& EventMask::operator=(const EventMask& other)
 
 inline BOOL EventMask::IsEventMaskSet(DWORD eventMask)
 {
-    return (eventMask == (DWORD)-1) 
-            || ((GetEventMask() & eventMask) != 0);
+    return (GetEventMask() & eventMask) != 0;
 }
 
 inline DWORD EventMask::GetEventMask()
@@ -59,8 +58,7 @@ inline void EventMask::SetEventMask(DWORD eventMask)
 
 inline BOOL EventMask::IsEventMaskHighSet(DWORD eventMaskHigh)
 {
-    return (eventMaskHigh == (DWORD)-1) 
-            || ((GetEventMaskHigh() & eventMaskHigh) != 0);
+    return (GetEventMaskHigh() & eventMaskHigh) != 0;
 }
 
 inline DWORD EventMask::GetEventMaskHigh()
@@ -166,15 +164,6 @@ inline BOOL ProfControlBlock::IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE)
     return pProfInterface != NULL && pProfInterface->m_pProfToEE == pProfToEE;
 }
 
-// IsProfilerPresent(pProfilerInfo) returns whether or not a CLR Profiler is actively loaded
-// (meaning it's initialized and ready to receive callbacks).
-inline BOOL IsProfilerPresent(ProfilerInfo *pProfilerInfo)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return pProfilerInfo->curProfStatus.Get() >= kProfStatusActive;
-}
-
 inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE)
 {
     ProfilerInfo *pProfilerInfo = NULL;
@@ -191,13 +180,8 @@ inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pP
     return pProfilerInfo;
 }
 
-inline BOOL IsProfilerPresentOrInitializing(ProfilerInfo *pProfilerInfo)
-{
-    return pProfilerInfo->curProfStatus.Get() > kProfStatusDetaching;
-}
-
 #ifndef DACCESS_COMPILE
-inline ProfilerInfo *ProfControlBlock::GetNextFreeProfilerInfo()
+inline ProfilerInfo *ProfControlBlock::FindNextFreeProfilerInfoSlot()
 {
     for (SIZE_T i = 0; i < MAX_NOTIFICATION_PROFILERS; ++i)
     {
@@ -233,6 +217,8 @@ inline void ProfControlBlock::UpdateGlobalEventMask()
                           },
                           &qwEventMask);
         
+        // We are relying on the memory barrier introduced by InterlockedCompareExchange64 to observer any
+        // change to the global event mask.
         if ((UINT64)InterlockedCompareExchange64((LONG64 *)&(globalEventMask.m_eventMask), (LONG64)qwEventMask, (LONG64)originalEventMask) == originalEventMask)
         {
             break;

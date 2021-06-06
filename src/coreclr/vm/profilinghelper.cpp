@@ -1193,7 +1193,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         BOOL notificationOnly = FALSE;
         {
             EvacuationCounterHolder holder(&profilerInfo);
-            HRESULT callHr = profilerInfo.pProfInterface->CanThisProfilerBeLoadedAsNotficationOnly(&notificationOnly);
+            HRESULT callHr = profilerInfo.pProfInterface->LoadAsNotficationOnly(&notificationOnly);
             if (FAILED(callHr))
             {
                 notificationOnly = FALSE;
@@ -1202,7 +1202,13 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
 
         if (notificationOnly)
         {
-            pProfilerInfo = g_profControlBlock.GetNextFreeProfilerInfo();
+            pProfilerInfo = g_profControlBlock.FindNextFreeProfilerInfoSlot();
+            if (pProfilerInfo == NULL)
+            {
+                LogProfError(IDS_E_PROF_NOTIFICATION_LIMIT_EXCEEDED);
+                return CORPROF_E_PROFILER_ALREADY_ACTIVE;
+            }
+            
             *pProfilerInfo = profilerInfo;
         }
         else
