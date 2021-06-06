@@ -310,12 +310,10 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	STATIC_CONTRACT_NOTHROW;
 
 	HRESULT hr = S_OK;
-	EX_TRY {
-		Pair<CLSID, SString> profilerData;
+	EX_TRY {        
+		Pair<CLSID, SString> &profilerData = *(g_profControlBlock.storedProfilers.Append());
 		memcpy(&(profilerData.First()), reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)), sizeof(CLSID));
 		profilerData.Second().Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
-
-		g_profControlBlock.storedProfilers.Append(profilerData);
 	}
 	EX_CATCH_HRESULT (hr);
 
