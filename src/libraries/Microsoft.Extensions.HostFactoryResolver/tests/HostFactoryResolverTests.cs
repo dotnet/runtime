@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(BuildWebHostInvalidSignature.Program).Assembly);
 
-            Assert.Null(factory);
+            Assert.NotNull(factory);
         }
 
         [Fact]
@@ -125,7 +125,18 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly);
 
-            Assert.Null(factory);
+            Assert.NotNull(factory);
+            Assert.Throws<OperationCanceledException>(() => factory(Array.Empty<string>()));
+        }
+
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPattern()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
         }
     }
 }

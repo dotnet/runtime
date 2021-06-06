@@ -4,16 +4,13 @@
 using MockHostTypes;
 using Microsoft.Extensions.Hosting;
 
-namespace CreateHostBuilderInvalidSignature
+namespace NoSpecialEntryPointPattern
 {
     public class Program
     {
         public static void Main(string[] args)
         {
-            var webHost = CreateHostBuilder(null, args).Build();
+            var host = new HostBuilder().Build();
         }
-
-        // Extra parameter
-        private static IHostBuilder CreateHostBuilder(object extraParam, string[] args) => null;
     }
 }

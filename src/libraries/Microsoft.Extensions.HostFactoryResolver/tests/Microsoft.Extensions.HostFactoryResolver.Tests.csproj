@@ -20,5 +20,10 @@
     <ProjectReference Include="CreateHostBuilderPatternTestSite\CreateHostBuilderPatternTestSite.csproj" />
     <ProjectReference Include="CreateWebHostBuilderInvalidSignature\CreateWebHostBuilderInvalidSignature.csproj" />
     <ProjectReference Include="CreateWebHostBuilderPatternTestSite\CreateWebHostBuilderPatternTestSite.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPattern\NoSpecialEntryPointPattern.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting.Abstractions\src\Microsoft.Extensions.Hosting.Abstractions.csproj" />
   </ItemGroup>
 </Project>
