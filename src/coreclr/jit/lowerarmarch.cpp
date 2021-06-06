@@ -1379,8 +1379,8 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
 #ifdef TARGET_ARM64
-    GenTree* src = node->AsOp()->gtOp2;
-    if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+    GenTree* src = node->Data();
+    if (src->IsIntegralConst(0))
     {
         // an integer zero for 'src' can be contained.
         MakeSrcContained(node, src);
