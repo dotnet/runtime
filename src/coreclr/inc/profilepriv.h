@@ -175,20 +175,20 @@ class ProfControlBlock
 private:
     // IsProfilerPresent(pProfilerInfo) returns whether or not a CLR Profiler is actively loaded
     // (meaning it's initialized and ready to receive callbacks).
-    inline BOOL IsProfilerPresent(ProfilerInfo *pProfilerInfo)
+    FORCEINLINE BOOL IsProfilerPresent(ProfilerInfo *pProfilerInfo)
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return pProfilerInfo->curProfStatus.Get() >= kProfStatusActive;
     }
 
-    inline BOOL IsProfilerPresentOrInitializing(ProfilerInfo *pProfilerInfo)
+    FORCEINLINE BOOL IsProfilerPresentOrInitializing(ProfilerInfo *pProfilerInfo)
     {
         return pProfilerInfo->curProfStatus.Get() > kProfStatusDetaching;
     }
 
     template<typename Func, typename... Args>
-    inline VOID DoOneProfilerIteration(ProfilerInfo *pProfilerInfo, ProfilerCallbackType callbackType, Func callback, Args... args)
+    FORCEINLINE VOID DoOneProfilerIteration(ProfilerInfo *pProfilerInfo, ProfilerCallbackType callbackType, Func callback, Args... args)
     {
         // This is the dirty read
         if (pProfilerInfo->pProfInterface.Load() != NULL)
@@ -207,7 +207,7 @@ private:
     }
 
     template<typename Func, typename... Args>
-    inline VOID IterateProfilers(ProfilerCallbackType callbackType, Func callback, Args... args)
+    FORCEINLINE VOID IterateProfilers(ProfilerCallbackType callbackType, Func callback, Args... args)
     {
         DoOneProfilerIteration(&mainProfilerInfo, callbackType, callback, args...);
         
@@ -281,7 +281,7 @@ public:
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
 
     template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
-    inline HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
+    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
     {
         HRESULT hr = S_OK;
         IterateProfilers(callbackType,

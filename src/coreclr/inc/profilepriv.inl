@@ -187,7 +187,7 @@ inline ProfilerInfo *ProfControlBlock::FindNextFreeProfilerInfoSlot()
 {
     for (SIZE_T i = 0; i < MAX_NOTIFICATION_PROFILERS; ++i)
     {
-        if (InterlockedCompareExchange((LONG *)notificationOnlyProfilers[i].inUse.GetPointer(), TRUE, FALSE)) 
+        if (InterlockedCompareExchange((LONG *)notificationOnlyProfilers[i].inUse.GetPointer(), TRUE, FALSE) == FALSE) 
         {
             InterlockedIncrement(notificationProfilerCount.GetPointer());
             return &(notificationOnlyProfilers[i]);
