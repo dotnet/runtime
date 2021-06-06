@@ -93,7 +93,8 @@ template<typename ConditionFunc>
 inline BOOL AnyProfilerPassesCondition(ConditionFunc condition)
 {
     BOOL anyPassed = FALSE;
-    (&g_profControlBlock)->DoProfilerCallback(condition, 
+    (&g_profControlBlock)->DoProfilerCallback(ProfilerCallbackType::ActiveOrInitializing,
+                                              condition, 
                                               &anyPassed,
                                               [](BOOL *pAnyPassed, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                                               {
@@ -167,9 +168,10 @@ inline BOOL ProfControlBlock::IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE)
 inline ProfilerInfo *ProfControlBlock::GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE)
 {
     ProfilerInfo *pProfilerInfo = NULL;
-    IterateProfilers([](ProfilerInfo *pProfilerInfo, ProfToEEInterfaceImpl *pProfToEE, ProfilerInfo **ppFoundProfilerInfo)
+    IterateProfilers(ProfilerCallbackType::Active,
+                    [](ProfilerInfo *pProfilerInfo, ProfToEEInterfaceImpl *pProfToEE, ProfilerInfo **ppFoundProfilerInfo)
                       {
-                          if (IsProfilerPresent(pProfilerInfo) && pProfilerInfo->pProfInterface->m_pProfToEE == pProfToEE)
+                          if (pProfilerInfo->pProfInterface->m_pProfToEE == pProfToEE)
                           {
                               *ppFoundProfilerInfo = pProfilerInfo;
                           }
@@ -208,12 +210,10 @@ inline void ProfControlBlock::UpdateGlobalEventMask()
         UINT64 originalEventMask = globalEventMask.m_eventMask;
         UINT64 qwEventMask = 0;
 
-        IterateProfilers([](ProfilerInfo *pProfilerInfo, UINT64 *pEventMask)
+        IterateProfilers(ProfilerCallbackType::ActiveOrInitializing,
+                        [](ProfilerInfo *pProfilerInfo, UINT64 *pEventMask)
                           {
-                              if (IsProfilerPresentOrInitializing(pProfilerInfo))
-                              {
-                                  *pEventMask |= pProfilerInfo->eventMask.m_eventMask;
-                              }
+                              *pEventMask |= pProfilerInfo->eventMask.m_eventMask;
                           },
                           &qwEventMask);
         
@@ -257,22 +257,26 @@ inline bool DoesProfilerWantEEFunctionIDMapper(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-             ((pProfilerInfo->pProfInterface->GetFunctionIDMapper()  != NULL) ||
-             (pProfilerInfo->pProfInterface->GetFunctionIDMapper2() != NULL)));
+    return ((pProfilerInfo->pProfInterface->GetFunctionIDMapper()  != NULL) ||
+             (pProfilerInfo->pProfInterface->GetFunctionIDMapper2() != NULL));
 }
 
 inline UINT_PTR ProfControlBlock::EEFunctionIDMapper(FunctionID funcId, BOOL *pbHookFunction)
 {
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-    if (DoesProfilerWantEEFunctionIDMapper(&mainProfilerInfo))
-    {
-        return mainProfilerInfo.pProfInterface->EEFunctionIDMapper(funcId, pbHookFunction);
-    }
+    LIMITED_METHOD_CONTRACT;
+    UINT_PTR ptr = NULL;
+    DoOneProfilerIteration(&mainProfilerInfo,
+                          ProfilerCallbackType::Active,
+                          [](ProfilerInfo *pProfilerInfo, FunctionID funcId, BOOL *pbHookFunction, UINT_PTR *pPtr)
+                          {
+                               if (DoesProfilerWantEEFunctionIDMapper(pProfilerInfo))
+                               {
+                                   *pPtr = pProfilerInfo->pProfInterface->EEFunctionIDMapper(funcId, pbHookFunction);
+                               }
+                          },
+                          funcId, pbHookFunction, &ptr);
 
-    return NULL;
+    return ptr;
 }
 
 inline BOOL IsProfilerTrackingThreads(ProfilerInfo *pProfilerInfo)
@@ -285,15 +289,15 @@ inline BOOL IsProfilerTrackingThreads(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_THREADS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_THREADS);
 }
 
 inline void ProfControlBlock::ThreadCreated(ThreadID threadID)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingThreads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingThreads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID threadID)
                         {
@@ -306,7 +310,8 @@ inline void ProfControlBlock::ThreadDestroyed(ThreadID threadID)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingThreads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingThreads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID threadID)
                         {
@@ -319,7 +324,8 @@ inline void ProfControlBlock::ThreadAssignedToOSThread(ThreadID managedThreadId,
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingThreads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingThreads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID managedThreadId, DWORD osThreadId)
                         {
@@ -332,7 +338,8 @@ inline void ProfControlBlock::ThreadNameChanged(ThreadID managedThreadId, ULONG 
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingThreads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingThreads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID managedThreadId, ULONG cchName, WCHAR name[])
                         {
@@ -345,7 +352,8 @@ inline void ProfControlBlock::Shutdown()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerPresent,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       [](ProfilerInfo *pProfilerInfo) { return true; },
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -363,15 +371,15 @@ inline BOOL IsProfilerTrackingJITInfo(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_JIT_COMPILATION)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_JIT_COMPILATION);
 }
 
 inline void ProfControlBlock::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingJITInfo,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingJITInfo,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
                         {
@@ -384,7 +392,8 @@ inline void ProfControlBlock::JITCompilationStarted(FunctionID functionId, BOOL 
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingJITInfo,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingJITInfo,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL fIsSafeToBlock)
                         {
@@ -397,7 +406,8 @@ inline void ProfControlBlock::DynamicMethodJITCompilationStarted(FunctionID func
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingJITInfo,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingJITInfo,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL fIsSafeToBlock, LPCBYTE pILHeader, ULONG cbILHeader)
                         {
@@ -410,7 +420,8 @@ inline void ProfControlBlock::DynamicMethodJITCompilationFinished(FunctionID fun
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingJITInfo,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingJITInfo,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
                         {
@@ -429,15 +440,15 @@ inline BOOL IsProfilerMonitoringDynamicFunctionUnloads(ProfilerInfo *pProfilerIn
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-        (pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS)));
+    return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS);
 }
 
 inline void ProfControlBlock::DynamicMethodUnloaded(FunctionID functionId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerMonitoringDynamicFunctionUnloads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerMonitoringDynamicFunctionUnloads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
                         {
@@ -456,8 +467,7 @@ inline BOOL IsProfilerTrackingCacheSearches(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CACHE_SEARCHES)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CACHE_SEARCHES);
 }
 
 inline void ProfControlBlock::JITCachedFunctionSearchStarted(FunctionID functionId, BOOL *pbUseCachedFunction)
@@ -465,7 +475,8 @@ inline void ProfControlBlock::JITCachedFunctionSearchStarted(FunctionID function
     LIMITED_METHOD_CONTRACT;
 
     BOOL allTrue = TRUE;
-    DoProfilerCallback(IsProfilerTrackingCacheSearches,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingCacheSearches,
                        &allTrue,
                        [](BOOL *pAllTrue, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL *pbUseCachedFunction)
                         {
@@ -483,7 +494,8 @@ inline void ProfControlBlock::JITCachedFunctionSearchFinished(FunctionID functio
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingCacheSearches,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingCacheSearches,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, COR_PRF_JIT_CACHE result)
                         {
@@ -497,7 +509,8 @@ inline HRESULT ProfControlBlock::JITInlining(FunctionID callerId, FunctionID cal
     LIMITED_METHOD_CONTRACT;
 
     BOOL allTrue = TRUE;
-    HRESULT hr =  DoProfilerCallback(IsProfilerTrackingJITInfo,
+    HRESULT hr =  DoProfilerCallback(ProfilerCallbackType::Active,
+                                     IsProfilerTrackingJITInfo,
                                      &allTrue,
                                      [](BOOL *pAllTrue, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID callerId, FunctionID calleeId, BOOL *pfShouldInline)
                                       {
@@ -520,51 +533,63 @@ inline BOOL IsRejitEnabled(ProfilerInfo *pProfilerInfo)
 inline void ProfControlBlock::ReJITCompilationStarted(FunctionID functionId, ReJITID reJitId, BOOL fIsSafeToBlock)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-    if (IsRejitEnabled(&mainProfilerInfo))
-    {
-        mainProfilerInfo.pProfInterface->ReJITCompilationStarted(functionId, reJitId, fIsSafeToBlock);
-    }
+    DoOneProfilerIteration(&mainProfilerInfo,
+                          ProfilerCallbackType::Active,
+                          [](ProfilerInfo *pProfilerInfo, FunctionID functionId, ReJITID reJitId, BOOL fIsSafeToBlock)
+                          {
+                               if (IsRejitEnabled(pProfilerInfo))
+                               {
+                                   pProfilerInfo->pProfInterface->ReJITCompilationStarted(functionId, reJitId, fIsSafeToBlock);
+                               }
+                          },
+                          functionId, reJitId, fIsSafeToBlock);
 }
 
 inline HRESULT ProfControlBlock::GetReJITParameters(ModuleID moduleId, mdMethodDef methodId, ICorProfilerFunctionControl *pFunctionControl)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-    if (IsRejitEnabled(&mainProfilerInfo))
-    {
-        return mainProfilerInfo.pProfInterface->GetReJITParameters(moduleId, methodId, pFunctionControl);
-    }
-
-    return E_FAIL;
+    HRESULT hr = S_OK;
+    DoOneProfilerIteration(&mainProfilerInfo,
+                          ProfilerCallbackType::Active,
+                          [](ProfilerInfo *pProfilerInfo, ModuleID moduleId, mdMethodDef methodId, ICorProfilerFunctionControl *pFunctionControl, HRESULT *pHr)
+                          {
+                               if (IsRejitEnabled(pProfilerInfo))
+                               {
+                                   *pHr = pProfilerInfo->pProfInterface->GetReJITParameters(moduleId, methodId, pFunctionControl);
+                               }
+                          },
+                          moduleId, methodId, pFunctionControl, &hr);
+    return hr;
 }
 
 inline void ProfControlBlock::ReJITCompilationFinished(FunctionID functionId, ReJITID reJitId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-    if (IsRejitEnabled(&mainProfilerInfo))
-    {
-        mainProfilerInfo.pProfInterface->ReJITCompilationFinished(functionId, reJitId, hrStatus, fIsSafeToBlock);
-    }
+    DoOneProfilerIteration(&mainProfilerInfo,
+                          ProfilerCallbackType::Active,
+                          [](ProfilerInfo *pProfilerInfo, FunctionID functionId, ReJITID reJitId, HRESULT hrStatus, BOOL fIsSafeToBlock)
+                          {
+                               if (IsRejitEnabled(pProfilerInfo))
+                               {
+                                   pProfilerInfo->pProfInterface->ReJITCompilationFinished(functionId, reJitId, hrStatus, fIsSafeToBlock);
+                               }
+                          },
+                          functionId, reJitId, hrStatus, fIsSafeToBlock);
 }
 
 inline void ProfControlBlock::ReJITError(ModuleID moduleId, mdMethodDef methodId, FunctionID functionId, HRESULT hrStatus)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    EvacuationCounterHolder evacuationCounter(&mainProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-    if (IsRejitEnabled(&mainProfilerInfo))
-    {
-        mainProfilerInfo.pProfInterface->ReJITError(moduleId, methodId, functionId, hrStatus);
-    }
+    DoOneProfilerIteration(&mainProfilerInfo,
+                          ProfilerCallbackType::Active,
+                          [](ProfilerInfo *pProfilerInfo, ModuleID moduleId, mdMethodDef methodId, FunctionID functionId, HRESULT hrStatus)
+                          {
+                               if (IsRejitEnabled(pProfilerInfo))
+                               {
+                                   pProfilerInfo->pProfInterface->ReJITError(moduleId, methodId, functionId, hrStatus);
+                               }
+                          },
+                          moduleId, methodId, functionId, hrStatus);
 }
 
 inline BOOL IsProfilerTrackingModuleLoads(ProfilerInfo *pProfilerInfo)
@@ -577,15 +602,15 @@ inline BOOL IsProfilerTrackingModuleLoads(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_MODULE_LOADS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_MODULE_LOADS);
 }
 
 inline void ProfControlBlock::ModuleLoadStarted(ModuleID moduleId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingModuleLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingModuleLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId)
                         {
@@ -598,7 +623,8 @@ inline void ProfControlBlock::ModuleLoadFinished(ModuleID moduleId, HRESULT hrSt
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingModuleLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingModuleLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId, HRESULT hrStatus)
                         {
@@ -611,7 +637,8 @@ inline void ProfControlBlock::ModuleUnloadStarted(ModuleID moduleId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingModuleLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingModuleLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId)
                         {
@@ -624,7 +651,8 @@ inline void ProfControlBlock::ModuleUnloadFinished(ModuleID moduleId, HRESULT hr
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingModuleLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingModuleLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId, HRESULT hrStatus)
                         {
@@ -637,7 +665,8 @@ inline void ProfControlBlock::ModuleAttachedToAssembly(ModuleID moduleId, Assemb
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingModuleLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingModuleLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId, AssemblyID AssemblyId)
                         {
@@ -656,15 +685,15 @@ inline BOOL IsProfilerTrackingInMemorySymbolsUpdatesEnabled(ProfilerInfo *pProfi
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-        (pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED)));
+    return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED);
 }
 
 inline void ProfControlBlock::ModuleInMemorySymbolsUpdated(ModuleID moduleId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingInMemorySymbolsUpdatesEnabled,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingInMemorySymbolsUpdatesEnabled,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId)
                         {
@@ -683,15 +712,15 @@ inline BOOL IsProfilerTrackingClasses(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CLASS_LOADS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CLASS_LOADS);
 }
 
 inline void ProfControlBlock::ClassLoadStarted(ClassID classId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingClasses,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingClasses,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId)
                         {
@@ -704,7 +733,8 @@ inline void ProfControlBlock::ClassLoadFinished(ClassID classId, HRESULT hrStatu
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingClasses,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingClasses,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId, HRESULT hrStatus)
                         {
@@ -717,7 +747,8 @@ inline void ProfControlBlock::ClassUnloadStarted(ClassID classId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingClasses,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingClasses,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId)
                         {
@@ -730,7 +761,8 @@ inline void ProfControlBlock::ClassUnloadFinished(ClassID classId, HRESULT hrSta
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingClasses,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingClasses,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId, HRESULT hrStatus)
                         {
@@ -749,15 +781,15 @@ inline BOOL IsProfilerTrackingAppDomainLoads(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_APPDOMAIN_LOADS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_APPDOMAIN_LOADS);
 }
 
 inline void ProfControlBlock::AppDomainCreationStarted(AppDomainID appDomainId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAppDomainLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAppDomainLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId)
                         {
@@ -770,7 +802,8 @@ inline void ProfControlBlock::AppDomainCreationFinished(AppDomainID appDomainId,
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAppDomainLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAppDomainLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId, HRESULT hrStatus)
                         {
@@ -783,7 +816,8 @@ inline void ProfControlBlock::AppDomainShutdownStarted(AppDomainID appDomainId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAppDomainLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAppDomainLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId)
                         {
@@ -796,7 +830,8 @@ inline void ProfControlBlock::AppDomainShutdownFinished(AppDomainID appDomainId,
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAppDomainLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAppDomainLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId, HRESULT hrStatus)
                         {
@@ -815,15 +850,15 @@ inline BOOL IsProfilerTrackingAssemblyLoads(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_ASSEMBLY_LOADS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_ASSEMBLY_LOADS);
 }
 
 inline void ProfControlBlock::AssemblyLoadStarted(AssemblyID assemblyId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAssemblyLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAssemblyLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId)
                         {
@@ -836,7 +871,8 @@ inline void ProfControlBlock::AssemblyLoadFinished(AssemblyID assemblyId, HRESUL
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAssemblyLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAssemblyLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId, HRESULT hrStatus)
                         {
@@ -849,7 +885,8 @@ inline void ProfControlBlock::AssemblyUnloadStarted(AssemblyID assemblyId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAssemblyLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAssemblyLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId)
                         {
@@ -862,7 +899,8 @@ inline void ProfControlBlock::AssemblyUnloadFinished(AssemblyID assemblyId, HRES
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAssemblyLoads,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAssemblyLoads,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId, HRESULT hrStatus)
                         {
@@ -881,15 +919,15 @@ inline BOOL IsProfilerTrackingTransitions(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CODE_TRANSITIONS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CODE_TRANSITIONS);
 }
 
 inline void ProfControlBlock::UnmanagedToManagedTransition(FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingTransitions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingTransitions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
                         {
@@ -902,7 +940,8 @@ inline void ProfControlBlock::ManagedToUnmanagedTransition(FunctionID functionId
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingTransitions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingTransitions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
                         {
@@ -921,15 +960,15 @@ inline BOOL IsProfilerTrackingExceptions(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_EXCEPTIONS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_EXCEPTIONS);
 }
 
 inline void ProfControlBlock::ExceptionThrown(ObjectID thrownObjectId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID thrownObjectId)
                         {
@@ -942,7 +981,8 @@ inline void ProfControlBlock::ExceptionSearchFunctionEnter(FunctionID functionId
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
                         {
@@ -955,7 +995,8 @@ inline void ProfControlBlock::ExceptionSearchFunctionLeave()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -967,7 +1008,8 @@ inline void ProfControlBlock::ExceptionSearchFilterEnter(FunctionID funcId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID funcId)
                         {
@@ -980,7 +1022,8 @@ inline void ProfControlBlock::ExceptionSearchFilterLeave()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -992,7 +1035,8 @@ inline void ProfControlBlock::ExceptionSearchCatcherFound(FunctionID functionId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
                         {
@@ -1005,7 +1049,8 @@ inline void ProfControlBlock::ExceptionOSHandlerEnter(FunctionID funcId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID funcId)
                         {
@@ -1018,7 +1063,8 @@ inline void ProfControlBlock::ExceptionOSHandlerLeave(FunctionID funcId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID funcId)
                         {
@@ -1031,7 +1077,8 @@ inline void ProfControlBlock::ExceptionUnwindFunctionEnter(FunctionID functionId
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
                         {
@@ -1044,7 +1091,8 @@ inline void ProfControlBlock::ExceptionUnwindFunctionLeave()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1056,7 +1104,8 @@ inline void ProfControlBlock::ExceptionUnwindFinallyEnter(FunctionID functionId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
                         {
@@ -1069,7 +1118,8 @@ inline void ProfControlBlock::ExceptionUnwindFinallyLeave()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1081,7 +1131,8 @@ inline void ProfControlBlock::ExceptionCatcherEnter(FunctionID functionId, Objec
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, ObjectID objectId)
                         {
@@ -1094,7 +1145,8 @@ inline void ProfControlBlock::ExceptionCatcherLeave()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingExceptions,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingExceptions,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1112,15 +1164,15 @@ inline BOOL IsProfilerTrackingCCW(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CCW)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CCW);
 }
 
 inline void ProfControlBlock::COMClassicVTableCreated(ClassID wrappedClassId, REFGUID implementedIID, void *pVTable, ULONG cSlots)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingCCW,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingCCW,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID wrappedClassId, REFGUID implementedIID, void *pVTable, ULONG cSlots)
                         {
@@ -1139,15 +1191,15 @@ inline BOOL IsProfilerTrackingSuspends(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_SUSPENDS)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_SUSPENDS);
 }
 
 inline void ProfControlBlock::RuntimeSuspendStarted(COR_PRF_SUSPEND_REASON suspendReason)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, COR_PRF_SUSPEND_REASON suspendReason)
                         {
@@ -1160,7 +1212,8 @@ inline void ProfControlBlock::RuntimeSuspendFinished()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1172,7 +1225,8 @@ inline void ProfControlBlock::RuntimeSuspendAborted()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1184,7 +1238,8 @@ inline void ProfControlBlock::RuntimeResumeStarted()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1196,7 +1251,8 @@ inline void ProfControlBlock::RuntimeResumeFinished()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1208,7 +1264,8 @@ inline void ProfControlBlock::RuntimeThreadSuspended(ThreadID suspendedThreadId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID suspendedThreadId)
                         {
@@ -1221,7 +1278,8 @@ inline void ProfControlBlock::RuntimeThreadResumed(ThreadID resumedThreadId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingSuspends,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingSuspends,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID resumedThreadId)
                         {
@@ -1240,17 +1298,16 @@ inline BOOL IsProfilerTrackingAllocations(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return
-           (IsProfilerPresent(pProfilerInfo) &&
-               (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_ENABLE_OBJECT_ALLOCATED)
-                || pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED)));
+    return (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_ENABLE_OBJECT_ALLOCATED)
+                || pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED));
 }
 
 inline void ProfControlBlock::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingAllocations,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingAllocations,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID objectId, ClassID classId)
                         {
@@ -1270,15 +1327,15 @@ inline BOOL IsProfilerTrackingGC(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-            (pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_GC)));
+    return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_GC);
 }
 
 inline void ProfControlBlock::FinalizeableObjectQueued(BOOL isCritical, ObjectID objectID)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BOOL isCritical, ObjectID objectID)
                         {
@@ -1291,7 +1348,8 @@ inline void ProfControlBlock::MovedReference(BYTE *pbMemBlockStart, BYTE *pbMemB
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BYTE *pbMemBlockStart, BYTE *pbMemBlockEnd, ptrdiff_t cbRelocDistance, void *pHeapId, BOOL fCompacting)
                         {
@@ -1304,7 +1362,8 @@ inline void ProfControlBlock::EndMovedReferences(void *pHeapId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
                         {
@@ -1317,7 +1376,8 @@ inline void ProfControlBlock::RootReference2(BYTE *objectId, EtwGCRootKind dwEtw
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BYTE *objectId, EtwGCRootKind dwEtwRootKind, EtwGCRootFlags dwEtwRootFlags, void *rootID, void *pHeapId)
                         {
@@ -1330,7 +1390,8 @@ inline void ProfControlBlock::EndRootReferences2(void *pHeapId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
                         {
@@ -1343,7 +1404,8 @@ inline void ProfControlBlock::ConditionalWeakTableElementReference(BYTE *primary
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BYTE *primaryObjectId, BYTE *secondaryObjectId, void *rootID, void *pHeapId)
                         {
@@ -1361,7 +1423,8 @@ inline void ProfControlBlock::EndConditionalWeakTableElementReferences(void *pHe
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
                         {
@@ -1379,7 +1442,8 @@ inline void ProfControlBlock::AllocByClass(ObjectID objId, ClassID classId, void
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID objId, ClassID classId, void *pHeapId)
                         {
@@ -1392,7 +1456,8 @@ inline void ProfControlBlock::EndAllocByClass(void *pHeapId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
                         {
@@ -1405,7 +1470,8 @@ inline HRESULT ProfControlBlock::ObjectReference(ObjectID objId, ClassID classId
 {
     LIMITED_METHOD_CONTRACT;
 
-    return DoProfilerCallback(IsProfilerTrackingGC,
+    return DoProfilerCallback(ProfilerCallbackType::Active,
+                              IsProfilerTrackingGC,
                               (void *)NULL,
                               [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID objId, ClassID classId, ULONG cNumRefs, ObjectID *arrObjRef)
                                {
@@ -1418,7 +1484,8 @@ inline void ProfControlBlock::HandleCreated(UINT_PTR handleId, ObjectID initialO
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, UINT_PTR handleId, ObjectID initialObjectId)
                         {
@@ -1431,7 +1498,8 @@ inline void ProfControlBlock::HandleDestroyed(UINT_PTR handleId)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, UINT_PTR handleId)
                         {
@@ -1451,8 +1519,7 @@ inline BOOL IsProfilerTrackingBasicGC(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-         (pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_BASIC_GC)));
+    return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_BASIC_GC);
 }
 
 inline BOOL IsProfilerTrackingMovedObjects(ProfilerInfo *pProfilerInfo)
@@ -1465,8 +1532,7 @@ inline BOOL IsProfilerTrackingMovedObjects(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-         (pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS)));
+    return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS);
 }
 
 inline BOOL IsProfilerTrackingGCOrBasicGC(ProfilerInfo *pProfilerInfo)
@@ -1483,7 +1549,8 @@ inline void ProfControlBlock::GarbageCollectionStarted(int cGenerations, BOOL ge
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGCOrBasicGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGCOrBasicGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
                         {
@@ -1496,7 +1563,8 @@ inline void ProfControlBlock::GarbageCollectionFinished()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerTrackingGCOrBasicGC,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerTrackingGCOrBasicGC,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
                         {
@@ -1515,8 +1583,7 @@ inline BOOL IsProfilerMonitoringEventPipe(ProfilerInfo *pProfilerInfo)
     }
     CONTRACTL_END;
 
-    return (IsProfilerPresent(pProfilerInfo) &&
-        (pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_EVENT_PIPE)));
+    return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_EVENT_PIPE);
 }
 
 
@@ -1535,7 +1602,8 @@ inline void ProfControlBlock::EventPipeEventDelivered(EventPipeProvider *provide
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerMonitoringEventPipe,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerMonitoringEventPipe,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, EventPipeProvider *provider,
                           DWORD eventId,
@@ -1581,7 +1649,8 @@ inline void ProfControlBlock::EventPipeProviderCreated(EventPipeProvider *provid
 {
     LIMITED_METHOD_CONTRACT;
 
-    DoProfilerCallback(IsProfilerMonitoringEventPipe,
+    DoProfilerCallback(ProfilerCallbackType::Active,
+                       IsProfilerMonitoringEventPipe,
                        (void *)NULL,
                        [](void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, EventPipeProvider *provider)
                         {
@@ -1599,7 +1668,7 @@ inline BOOL CORProfilerPresent()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return AnyProfilerPassesCondition(IsProfilerPresent);
+    return AnyProfilerPassesCondition([](ProfilerInfo *pProfilerInfo) { return pProfilerInfo->curProfStatus.Get() >= kProfStatusActive; });
 }
 
 inline BOOL CORMainProfilerPresent()
@@ -1952,7 +2021,7 @@ inline BOOL CORProfilerTrackConditionalWeakTableElements()
 inline BOOL CORProfilerPresentOrInitializing()
 {
     LIMITED_METHOD_CONTRACT;
-    return AnyProfilerPassesCondition(IsProfilerPresentOrInitializing);
+    return AnyProfilerPassesCondition([](ProfilerInfo *pProfilerInfo) { return pProfilerInfo->curProfStatus.Get() > kProfStatusDetaching; });
 }
 
 // These return whether a CLR Profiler has requested the specified functionality.
