@@ -97,5 +97,16 @@ namespace Microsoft.Extensions.Hosting.Internal
                     message: SR.BackgroundServiceExceptionStoppedHost);
             }
         }
+
+        public static void StartAborted(this ILogger logger)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.LogWarning(
+                    eventId: LoggerEventIds.StartAborted,
+                    message: "Host is stopping before completely started. Note that some hosted services may not have been started."
+                );
+            }
+        }
     }
 }

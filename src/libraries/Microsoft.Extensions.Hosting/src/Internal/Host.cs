@@ -63,6 +63,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 if (_applicationLifetime.ApplicationStopping.IsCancellationRequested)
                 {
+                    _logger.StartAborted();
                     return;
                 }
 
