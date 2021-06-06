@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly);
 
             Assert.NotNull(factory);
-            Assert.Throws<OperationCanceledException>(() => factory(Array.Empty<string>()));
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
         }
 
         [Fact]
@@ -137,6 +137,36 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             Assert.NotNull(factory);
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternThrows.Program))]
+        public void NoSpecialEntryPointPatternThrows()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternThrows.Program).Assembly);
+
+            Assert.NotNull(factory);
+            Assert.Throws<Exception>(() => factory(Array.Empty<string>()));
+        }
+
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternExits.Program))]
+        public void NoSpecialEntryPointPatternExits()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternExits.Program).Assembly);
+
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+        }
+
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternHangs.Program))]
+        public void NoSpecialEntryPointPatternHangs()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternHangs.Program).Assembly);
+
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
         }
     }
 }

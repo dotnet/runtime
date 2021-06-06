@@ -10,7 +10,7 @@ namespace CreateHostBuilderInvalidSignature
     {
         public static void Main(string[] args)
         {
-            var webHost = CreateHostBuilder(null, args).Build();
+            var webHost = CreateHostBuilder(null, args)?.Build();
         }
 
         // Extra parameter

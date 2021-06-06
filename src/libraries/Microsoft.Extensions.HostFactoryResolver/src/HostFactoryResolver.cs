@@ -202,13 +202,22 @@ namespace Microsoft.Extensions.Hosting
                 // Start the thread
                 thread.Start();
 
-                // Wait before throwing an exception
-                using var cts = new CancellationTokenSource(_waitTimeout);
-                _hostTcs.Task.Wait(cts.Token);
+                try
+                {
+                    // Wait before throwing an exception
+                    if (!_hostTcs.Task.Wait(_waitTimeout))
+                    {
+                        throw new InvalidOperationException("Unable to build IHost");
+                    }
+                }
+                catch (AggregateException) when (_hostTcs.Task.IsCompleted)
+                {
+                    // Lets this propogate out of the call to GetAwaiter().GetResult()
+                }
 
                 Debug.Assert(_hostTcs.Task.IsCompleted);
 
-                return _hostTcs.Task.Result;
+                return _hostTcs.Task.GetAwaiter().GetResult();
             }
 
             public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
