@@ -20,6 +20,7 @@ using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
 
 using Internal.Runtime;
+using Internal.TypeSystem;
 
 namespace R2RDump
 {
@@ -426,8 +427,8 @@ namespace R2RDump
                     if (string.IsNullOrEmpty(perfmapPath))
                     {
                         perfmapPath = Path.ChangeExtension(r2r.Filename, ".map");
-                        PerfMapWriter.Write(perfmapPath, ProduceDebugInfoMethods(r2r));
                     }
+                    PerfMapWriter.Write(perfmapPath, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), r2r.TargetOperatingSystem, r2r.TargetArchitecture);
                 }
 
                 if (standardDump)
@@ -454,6 +455,21 @@ namespace R2RDump
                 mi.ColdLength = 0;
                 
                 yield return mi;
+            }
+        }
+
+        IEnumerable<AssemblyInfo> ProduceDebugInfoAssemblies(ReadyToRunReader r2r)
+        {
+            if (r2r.Composite)
+            {
+                foreach (KeyValuePair<string, int> kvpRefAssembly in r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    yield return new AssemblyInfo(kvpRefAssembly.Key, r2r.GetAssemblyMvid(kvpRefAssembly.Value));
+                }
+            }
+            else
+            {
+                yield return new AssemblyInfo(r2r.GetGlobalAssemblyName(), r2r.GetAssemblyMvid(0));
             }
         }
 

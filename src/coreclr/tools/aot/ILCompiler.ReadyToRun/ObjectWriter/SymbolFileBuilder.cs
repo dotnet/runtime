@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Internal.TypeSystem;
 using ILCompiler.Diagnostics;
 
 namespace ILCompiler.PEWriter
@@ -28,12 +29,11 @@ namespace ILCompiler.PEWriter
             new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
         }
 
-        public void SavePerfMap(string perfMapPath, string dllFileName, Guid? perfMapMvid)
+        public void SavePerfMap(string perfMapPath, string dllFileName, TargetOS targetOS, TargetArchitecture targetArch)
         {
-            string mvidComponent = (perfMapMvid.HasValue ? perfMapMvid.Value.ToString() : "composite");
-            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.{" + mvidComponent + "}.map");
+            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.map");
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
-            PerfMapWriter.Write(perfMapFileName, _outputInfoBuilder.EnumerateMethods());
+            PerfMapWriter.Write(perfMapFileName, _outputInfoBuilder.EnumerateMethods(), _outputInfoBuilder.EnumerateInputAssemblies(), targetOS, targetArch);
         }
     }
 }
