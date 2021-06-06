@@ -1309,11 +1309,6 @@ BasicBlock::weight_t emitter::getCurrentBlockWeight()
 
 void emitter::dispIns(instrDesc* id)
 {
-    if (emitLastIns->idIns() != INS_mov_eliminated)
-    {
-        emitLastEmittedIns = emitLastIns;
-    }
-
 #ifdef DEBUG
     emitInsSanityCheck(id);
 
@@ -1347,6 +1342,19 @@ void emitter::dispIns(instrDesc* id)
 
 void emitter::appendToCurIG(instrDesc* id)
 {
+    assert(id == emitLastIns);
+
+    if (emitLastIns->idIns() != INS_mov_eliminated)
+    {
+        // emitAllocAnyInstr sets emitLastIns and id
+        // to be the same. However, for the purposes
+        // of looking back we only want to consider
+        // certain "non-zero" size instructions and
+        // so we'll update the last emitted instruction
+        // when appending to the current IG.
+
+        emitLastEmittedIns = emitLastIns;
+    }
     emitCurIGsize += id->idCodeSize();
 }
 
@@ -1460,7 +1468,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #error "Undefined target for pseudorandom NOP insertion"
 #endif
 
-            emitCurIGsize += nopSize;
+            appendToCurIG(emitCurIGsize);
             emitNextNop = emitNextRandomNop();
         }
         else
