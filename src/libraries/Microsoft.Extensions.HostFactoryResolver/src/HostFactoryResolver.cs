@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.Hosting
             private readonly TaskCompletionSource<IHost> _hostTcs = new();
             private IDisposable? _disposable;
 
-            private Action<IHostBuilder> _configure = b => { };
+            private Action<IHostBuilder> _configure;
 
             // The amount of time we wait for the diagnostic source events to fire
             private static readonly TimeSpan _waitTimeout = TimeSpan.FromSeconds(5);
@@ -161,6 +161,15 @@ namespace Microsoft.Extensions.Hosting
             {
                 _args = args;
                 _assembly = assembly;
+                _configure = b =>
+                {
+                    // Copy the properties from this builder into the builder
+                    // that we're going to receive
+                    foreach (var pair in Properties)
+                    {
+                        b.Properties[pair.Key] = pair.Value;
+                    }
+                };
             }
 
             public IHost Build()
