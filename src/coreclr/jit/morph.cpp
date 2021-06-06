@@ -262,7 +262,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // AArch, unlike x86/amd64, has instructions that can cast directly from
     // all integers (except for longs on AArch32 of course) to floats.
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
-    // casts are always inported as CAST(float <- CAST(double <- uint/ulong)).
+    // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can eliminate the redundant intermediate cast as an optimization.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
 #ifdef TARGET_ARM
