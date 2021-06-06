@@ -70,10 +70,10 @@ INLINE_OBSERVATION(ARG_FEEDS_CONSTANT_TEST,   bool,   "argument feeds constant t
 INLINE_OBSERVATION(ARG_FEEDS_TEST,            bool,   "argument feeds test",                  INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_CAST,            int,    "argument feeds castclass or isinst",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_RANGE_CHECK,     bool,   "argument feeds range check",           INFORMATION, CALLEE)
+INLINE_OBSERVATION(ARG_STRUCT,                int,    "arg is a struct passed by value",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(UNKNOWN_CONSTANT_TEST,     int,    "unknown node feeds constant test",     INFORMATION, CALLEE)
 INLINE_OBSERVATION(RETURN_CONST_CMP,          int,    "'return X cmp CNS' pattern",           INFORMATION, CALLEE)
-INLINE_OBSERVATION(ARG_IS_STRUCT_PROMOTABLE,  int,    "arg is a promotable struct",           INFORMATION, CALLEE)
-INLINE_OBSERVATION(ARG_IS_STRUCT,             int,    "arg is a struct",                      INFORMATION, CALLEE)
+INLINE_OBSERVATION(GENERIC,                   bool,   "callee is generic",                    INFORMATION, CALLEE)
 INLINE_OBSERVATION(BEGIN_OPCODE_SCAN,         bool,   "prepare to look at opcodes",           INFORMATION, CALLEE)
 INLINE_OBSERVATION(BELOW_ALWAYS_INLINE_SIZE,  bool,   "below ALWAYS_INLINE size",             INFORMATION, CALLEE)
 INLINE_OBSERVATION(CLASS_PROMOTABLE,          bool,   "promotable value class",               INFORMATION, CALLEE)
@@ -175,11 +175,11 @@ INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc str
 
 // ------ Call Site Information -------
 
-INLINE_OBSERVATION(GENERIC_FROM_NONGENERIC,   bool,   "callee is generic, caller is not",     INFORMATION, CALLSITE)
-INLINE_OBSERVATION(ARG_FINAL,                 int,    "arg is of a sealed class",             INFORMATION, CALLSITE)
-INLINE_OBSERVATION(ARG_FINAL_SIG_IS_NOT,      int,    "arg is of a sealed class, sig is not", INFORMATION, CALLSITE)
+INLINE_OBSERVATION(GENERIC,                   bool,   "caller is generic",                    INFORMATION, CALLSITE)
+INLINE_OBSERVATION(ARG_EXACT_CLS,             int,    "arg is of an exact class",             INFORMATION, CALLSITE)
+INLINE_OBSERVATION(ARG_EXACT_CLS_SIG_IS_NOT,  int,    "arg is more concrete than in sig.",    INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_CONST,                 int,    "arg is a constant",                    INFORMATION, CALLSITE)
-INLINE_OBSERVATION(ARG_IS_BOXED,              int,    "arg is boxed at call site",            INFORMATION, CALLSITE)
+INLINE_OBSERVATION(ARG_BOXED,                 int,    "arg is boxed at call site",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_INTRINSIC,        int,    "foldable intrinsic",                   INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_EXPR,             int,    "foldable binary expression",           INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_EXPR_UN,          int,    "foldable unary expression",            INFORMATION, CALLSITE)

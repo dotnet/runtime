@@ -300,8 +300,12 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsFromValueClass = value;
                 break;
 
-            case InlineObservation::CALLSITE_GENERIC_FROM_NONGENERIC:
-                m_IsGenericFromNonGeneric = value;
+            case InlineObservation::CALLEE_GENERIC:
+                m_IsCalleeGeneric = value;
+                break;
+
+            case InlineObservation::CALLSITE_GENERIC:
+                m_IsCallerGeneric = value;
                 break;
 
             case InlineObservation::CALLEE_CLASS_PROMOTABLE:
@@ -316,12 +320,8 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ReturnsConstantTest++;
                 break;
 
-            case InlineObservation::CALLEE_ARG_IS_STRUCT:
-                m_ArgStruct++;
-                break;
-
-            case InlineObservation::CALLEE_ARG_IS_STRUCT_PROMOTABLE:
-                m_ArgPromotable++;
+            case InlineObservation::CALLEE_ARG_STRUCT:
+                m_ArgIsStructByValue++;
                 break;
 
             case InlineObservation::CALLEE_ARG_FEEDS_CAST:
@@ -348,11 +348,11 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_UncondBranch++;
                 break;
 
-            case InlineObservation::CALLSITE_ARG_FINAL:
+            case InlineObservation::CALLSITE_ARG_EXACT_CLS:
                 m_ArgIsFinal++;
                 break;
 
-            case InlineObservation::CALLSITE_ARG_IS_BOXED:
+            case InlineObservation::CALLSITE_ARG_BOXED:
                 m_ArgIsBoxed++;
                 break;
 
@@ -360,7 +360,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ArgIsConst++;
                 break;
 
-            case InlineObservation::CALLSITE_ARG_FINAL_SIG_IS_NOT:
+            case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
                 m_ArgIsFinalSigIsNot++;
                 break;
 
@@ -486,7 +486,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
             }
 
             case InlineObservation::CALLSITE_IN_NORETURN_REGION:
-                m_CallsiteIsInNoReturnRegion = true;
+                m_IsCallsiteInNoReturnRegion = true;
                 break;
 
             case InlineObservation::CALLSITE_IN_TRY_REGION:
@@ -592,8 +592,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_UnknownFeedsConstantTest);
     XATTR_I4(m_ReturnsConstantTest);
     XATTR_I4(m_ArgCasted);
-    XATTR_I4(m_ArgPromotable);
-    XATTR_I4(m_ArgStruct);
+    XATTR_I4(m_ArgIsStructByValue);
     XATTR_I4(m_FoldableBox);
     XATTR_I4(m_Intrinsic);
     XATTR_I4(m_UncondBranch);
@@ -624,8 +623,9 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_ReturnsPromotable);
     XATTR_B(m_ReturnsValueType);
     XATTR_B(m_IsFromValueClass);
-    XATTR_B(m_IsGenericFromNonGeneric);
-    XATTR_B(m_CallsiteIsInNoReturnRegion);
+    XATTR_B(m_IsCalleeGeneric);
+    XATTR_B(m_IsCallerGeneric);
+    XATTR_B(m_IsCallsiteInNoReturnRegion);
     XATTR_B(m_HasProfile);
     fprintf(file, " />\n");
 }
@@ -953,14 +953,18 @@ double DefaultPolicy::DetermineMultiplier()
         }
     }
 
-    if (m_IsGenericFromNonGeneric)
+    if (m_IsCalleeGeneric && !m_IsCallerGeneric)
     {
         // Especially if such a callee has many foldable branches like
         // 'typeof(T) == typeof(T2)' we should try harder to inline it.
         JITDUMP("\nInline candidate is generic and caller is not.");
     }
+    else if (m_IsCalleeGeneric && m_IsCallerGeneric)
+    {
+        JITDUMP("\nBoth caller and inline candidate are generic.");
+    }
 
-    if (m_CallsiteIsInNoReturnRegion)
+    if (m_IsCallsiteInNoReturnRegion)
     {
         // E.g.
         //
@@ -981,7 +985,7 @@ double DefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        JITDUMP("\nInline candidate has %d foldable branch(es).", m_FoldableBranch);
+        JITDUMP("\nInline candidate has %d foldable branches.", m_FoldableBranch);
     }
 
     if (m_ArgCasted > 0)
@@ -989,15 +993,9 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.", m_ArgCasted);
     }
 
-    if (m_ArgPromotable > 0)
+    if (m_ArgIsStructByValue > 0)
     {
-        JITDUMP("\n%d arguments are promotable structs.", m_ArgPromotable);
-    }
-
-    if (m_ArgStruct > 0)
-    {
-        // If we inline such a callee - we'll be able to avoid spilling on stack
-        JITDUMP("\n%d arguments are structs.", m_ArgStruct);
+        JITDUMP("\n%d arguments are structs passed by value.", m_ArgIsStructByValue);
     }
 
     if (m_FoldableBox > 0)
@@ -2398,7 +2396,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_UnknownFeedsConstantTest);
     fprintf(file, ",%u", m_ReturnsConstantTest);
     fprintf(file, ",%u", m_ArgCasted);
-    fprintf(file, ",%u", m_ArgPromotable);
+    fprintf(file, ",%u", m_ArgIsStructByValue);
     fprintf(file, ",%u", m_FoldableBox);
     fprintf(file, ",%u", m_Intrinsic);
     fprintf(file, ",%u", m_UncondBranch);
@@ -2415,8 +2413,9 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_DivByCns);
     fprintf(file, ",%u", m_ReturnsPromotable ? 1 : 0);
     fprintf(file, ",%u", m_IsFromValueClass ? 1 : 0);
-    fprintf(file, ",%u", m_IsGenericFromNonGeneric ? 1 : 0);
-    fprintf(file, ",%u", m_CallsiteIsInNoReturnRegion ? 1 : 0);
+    fprintf(file, ",%u", m_IsCalleeGeneric ? 1 : 0);
+    fprintf(file, ",%u", m_IsCallerGeneric ? 1 : 0);
+    fprintf(file, ",%u", m_IsCallsiteInNoReturnRegion ? 1 : 0);
     fprintf(file, ",%u", m_HasProfile ? 1 : 0);
 }
 

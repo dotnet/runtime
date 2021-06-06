@@ -543,15 +543,15 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         }
 
         fprintf(file, "%*s<%s>\n", indent, "", inlineType);
-        fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
-        fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
+        fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
+        fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
+        fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
+        fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
         fprintf(file, "%*s<ILSize>%d</ILSize>\n", indent + 2, "", m_ILSize);
         fprintf(file, "%*s<Devirtualized>%s</Devirtualized>\n", indent + 2, "", m_Devirtualized ? "True" : "False");
         fprintf(file, "%*s<Guarded>%s</Guarded>\n", indent + 2, "", m_Guarded ? "True" : "False");
         fprintf(file, "%*s<Unboxed>%s</Unboxed>\n", indent + 2, "", m_Unboxed ? "True" : "False");
-        fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
-        fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
 
         // Ask InlinePolicy if it has anything to dump as well:
         if ((m_Policy != nullptr) && (JitConfig.JitInlinePolicyDumpXml() != 0))
@@ -1627,7 +1627,6 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     EscapeNameForXml(buf);
 
     fprintf(file, "%*s<Method>\n", indent, "");
-    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
     fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", currentMethodToken);
     fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", hash);
     fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
@@ -1636,6 +1635,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     fprintf(file, "%*s<JitTime>%u</JitTime>\n", indent + 2, "", microsecondsSpentJitting);
     fprintf(file, "%*s<SizeEstimate>%u</SizeEstimate>\n", indent + 2, "", m_CurrentSizeEstimate / 10);
     fprintf(file, "%*s<TimeEstimate>%u</TimeEstimate>\n", indent + 2, "", m_CurrentTimeEstimate);
+    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
 
     // For prejit roots also propagate out the assessment of the root method
     if (isPrejitRoot)

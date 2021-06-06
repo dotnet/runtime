@@ -18940,15 +18940,16 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         }
     }
 
-    // Check if callee is a generic method when its caller is not
-    bool calleeIsGeneric = (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
-                           (info.compClassAttr & CORINFO_FLG_SHAREDINST);
-    bool callerIsGeneric = (rootCompiler->info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
-                           (rootCompiler->info.compClassAttr & CORINFO_FLG_SHAREDINST);
 
-    if (!callerIsGeneric && calleeIsGeneric)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+        (info.compClassAttr & CORINFO_FLG_SHAREDINST))
     {
-        inlineResult->Note(InlineObservation::CALLSITE_GENERIC_FROM_NONGENERIC);
+        inlineResult->Note(InlineObservation::CALLEE_GENERIC);
+    }
+    else if ((rootCompiler->info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+             (rootCompiler->info.compClassAttr & CORINFO_FLG_SHAREDINST))
+    {
+        inlineResult->Note(InlineObservation::CALLSITE_GENERIC);
     }
 
     // Inspect callee's arguments (and the actual values at the callsite for them)
@@ -18958,41 +18959,42 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     GenTreeCall::Use* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtCallArgs;
     for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
     {
-        CORINFO_CLASS_HANDLE sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-        GenTree*             argNode  = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
+        CORINFO_CLASS_HANDLE sigClass;
+        CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
+        sigClass                     = info.compCompHnd->getArgClass(&sig, sigArg);
+        GenTree* argNode             = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
 
-        // Prepare for the next iteration
-        sigArg = info.compCompHnd->getArgNext(sigArg);
-        argUse = argUse == nullptr ? nullptr : argUse->GetNext();
-
-        if ((sigClass != nullptr) && structPromotionHelper->CanPromoteStructType(sigClass))
+        if (corType == CORINFO_TYPE_VALUECLASS)
         {
-            // The argument is a promotable struct. It means we'll have a smaller callsiteSize (and calleeSize)
-            inlineResult->Note(InlineObservation::CALLEE_ARG_IS_STRUCT_PROMOTABLE);
+            inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
         }
-        else if (argNode != nullptr)
+        else if (corType == CORINFO_TYPE_BYREF)
+        {
+            corType = info.compCompHnd->getChildType(sigClass, &sigClass);
+        }
+
+        if (argNode != nullptr)
         {
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
-            if (isExact && (argCls != nullptr))
+            if (argCls != nullptr)
             {
-                if ((argCls != sigClass) && (sigClass != nullptr))
+                const bool isArgValueType = eeIsValueClass(argCls);
+                // Exact class of the arg is known
+                if (isExact && !isArgValueType)
                 {
-                    if (eeIsValueClass(argCls) && !eeIsValueClass(sigClass))
+                    inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS);
+                    if ((argCls != sigClass) && (sigClass != nullptr))
                     {
-                        // E.g. sig accepts object and we pass Guid - we'll have to box it.
-                        inlineResult->Note(InlineObservation::CALLSITE_ARG_IS_BOXED);
-                    }
-                    else
-                    {
-                        // E.g. sig accepts object and we pass String
-                        inlineResult->Note(InlineObservation::CALLSITE_ARG_FINAL_SIG_IS_NOT);
+                        // .. but the signature accepts a less concrete type.
+                        inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT);
                     }
                 }
-                else if (!eeIsValueClass(argCls))
+                // Arg is a reference type in the signature, but a value type was passed.
+                else if (isArgValueType && (impIsPrimitive(corType) || (corType == CORINFO_TYPE_VALUECLASS)))
                 {
-                    inlineResult->Note(InlineObservation::CALLSITE_ARG_FINAL);
+                    inlineResult->Note(InlineObservation::CALLSITE_ARG_BOXED);
                 }
             }
 
@@ -19001,6 +19003,9 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
                 inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
             }
         }
+
+        sigArg = info.compCompHnd->getArgNext(sigArg);
+        argUse = argUse == nullptr ? nullptr : argUse->GetNext();
     }
 
     // Note if the callee's return type is a value type

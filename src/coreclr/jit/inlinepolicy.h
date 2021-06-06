@@ -100,8 +100,7 @@ public:
         , m_UnknownFeedsConstantTest(0)
         , m_ReturnsConstantTest(0)
         , m_ArgCasted(0)
-        , m_ArgPromotable(0)
-        , m_ArgStruct(0)
+        , m_ArgIsStructByValue(0)
         , m_FoldableBox(0)
         , m_Intrinsic(0)
         , m_UncondBranch(0)
@@ -132,8 +131,9 @@ public:
         , m_ReturnsPromotable(false)
         , m_ReturnsValueType(false)
         , m_IsFromValueClass(false)
-        , m_IsGenericFromNonGeneric(false)
-        , m_CallsiteIsInNoReturnRegion(false)
+        , m_IsCalleeGeneric(false)
+        , m_IsCallerGeneric(false)
+        , m_IsCallsiteInNoReturnRegion(false)
         , m_HasProfile(false)
     {
         // empty
@@ -196,8 +196,7 @@ protected:
     unsigned                m_UnknownFeedsConstantTest;
     unsigned                m_ReturnsConstantTest;
     unsigned                m_ArgCasted;
-    unsigned                m_ArgPromotable;
-    unsigned                m_ArgStruct;
+    unsigned                m_ArgIsStructByValue;
     unsigned                m_FoldableBox;
     unsigned                m_Intrinsic;
     unsigned                m_UncondBranch;
@@ -228,8 +227,9 @@ protected:
     bool                    m_ReturnsPromotable : 1;
     bool                    m_ReturnsValueType : 1;
     bool                    m_IsFromValueClass : 1;
-    bool                    m_IsGenericFromNonGeneric : 1;
-    bool                    m_CallsiteIsInNoReturnRegion : 1;
+    bool                    m_IsCalleeGeneric : 1;
+    bool                    m_IsCallerGeneric : 1;
+    bool                    m_IsCallsiteInNoReturnRegion : 1;
     bool                    m_HasProfile : 1;
 };
 
