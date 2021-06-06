@@ -7916,7 +7916,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                                     if (fieldSeq == FieldSeqStore::NotAField())
                                     {
-                                        assert(!isEntire);
+                                        assert(!isEntire && "did not expect an entire NotAField write.");
                                         // We don't know where we're storing, so give the local a new, unique VN.
                                         // Do this by considering it an "entire" assignment, with an unknown RHS.
                                         isEntire = true;
@@ -7924,7 +7924,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     }
                                     else if ((fieldSeq == nullptr) && !isEntire)
                                     {
-                                        // It is a particial store of a LCL_VAR without using LCL_FLD.
+                                        // It is a partial store of a LCL_VAR without using LCL_FLD.
                                         // Generate a unique VN.
                                         isEntire = true;
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
