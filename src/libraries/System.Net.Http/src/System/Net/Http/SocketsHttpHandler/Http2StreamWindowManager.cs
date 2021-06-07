@@ -68,7 +68,7 @@ namespace System.Net.Http
             private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
             private TimeSpan _lastWindowUpdate;
 
-            private long _magic = 1;
+            private double _magic = 1;
             private readonly TimeSpan _start;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
@@ -96,12 +96,11 @@ namespace System.Net.Http
                     TimeSpan rtt = _connection._rttEstimator.MinRtt;
                     TimeSpan dt = currentTime - _lastWindowUpdate;
 
-                    if (_magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
+                    if (_magic * _delivered * rtt.Ticks > (double)StreamWindowThreshold * dt.Ticks)
                     {
                         windowSizeIncrement += _streamWindowSize;
                         _streamWindowSize *= 2;
 
-                        // Trace info:
                         _stream.TraceFlowControl(
                             $"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold} | S-T={(currentTime - _start).TotalSeconds} sec {Environment.NewLine}");
                     }

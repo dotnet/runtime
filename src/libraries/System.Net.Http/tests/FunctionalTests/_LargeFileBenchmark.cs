@@ -94,55 +94,61 @@ namespace System.Net.Http.Functional.Tests
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler);
         }
 
-        public static TheoryData<string, int> Download20_ServerAndRatio = new TheoryData<string, int>
+        public static TheoryData<string, int, double> Download20_ServerAndRatio = new TheoryData<string, int, double>
         {
-            { BenchmarkServer, 8 },
-            { BenchmarkServer, 4 },
-            { BenchmarkServer, 2 },
-            { BenchmarkServerGo, 8 },
-            { BenchmarkServerGo, 4 },
-            { BenchmarkServerGo, 2 },
+            { BenchmarkServer, 8, 0.5 },
+            { BenchmarkServer, 8, 0.25 },
+            { BenchmarkServer, 8, 0.125 },
+            { BenchmarkServer, 4, 0.5 },
+            { BenchmarkServer, 4, 0.25 },
+            { BenchmarkServerGo, 8, 0.5 },
+            { BenchmarkServerGo, 8, 0.25 },
+            { BenchmarkServerGo, 8, 0.125 },
+            { BenchmarkServerGo, 4, 0.5 },
+            { BenchmarkServerGo, 4, 0.25 },
         };
 
 
         [Theory]
         [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_Dynamic_SingleStream_Run1(string hostName, int ratio) => Download20_Dynamic_SingleStream(hostName, ratio);
+        public Task Download20_Dynamic_SingleStream_Run1(string hostName, int ratio, double magic) => Download20_Dynamic_SingleStream(hostName, ratio, magic);
 
         [Theory]
         [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_Dynamic_SingleStream_Run2(string hostName, int ratio) => Download20_Dynamic_SingleStream(hostName, ratio);
+        public Task Download20_Dynamic_SingleStream_Run2(string hostName, int ratio, double magic) => Download20_Dynamic_SingleStream(hostName, ratio, magic);
 
-        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio)
+        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, double magic)
         {
             _listener.Enabled = true;
             _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
             var handler = new SocketsHttpHandler()
             {
-                StreamWindowUpdateRatio = ratio
+                StreamWindowUpdateRatio = ratio,
+                StreamWindowMagicMultiplier = magic
             };
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio}", hostName, true, LengthMb, handler);
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler);
         }
 
         [Theory]
         [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_StaticRtt_Run1(string hostName, int ratio) => Download20_StaticRtt(hostName, ratio);
+        public Task Download20_StaticRtt_Run1(string hostName, int ratio, double magic) => Download20_StaticRtt(hostName, ratio, magic);
 
         [Theory]
         [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_StaticRtt_Run2(string hostName, int ratio) => Download20_StaticRtt(hostName, ratio);
+        public Task Download20_StaticRtt_Run2(string hostName, int ratio, double magic) => Download20_StaticRtt(hostName, ratio, magic);
 
-        public async Task Download20_StaticRtt(string hostName, int ratio)
+        public async Task Download20_StaticRtt(string hostName, int ratio, double magic)
         {
             _listener.Enabled = true;
             _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
             var handler = new SocketsHttpHandler
             {
                 FakeRtt = await EstimateRttAsync(hostName),
-                StreamWindowUpdateRatio = ratio
+                StreamWindowUpdateRatio = ratio,
+                StreamWindowMagicMultiplier = magic
             };
 
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio}", hostName, true, LengthMb, handler);
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler);
         }
 
         [Theory]

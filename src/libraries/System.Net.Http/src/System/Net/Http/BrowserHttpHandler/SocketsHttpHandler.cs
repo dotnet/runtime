@@ -49,7 +49,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public int StreamWindowMagicMultiplier
+        public double StreamWindowMagicMultiplier
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

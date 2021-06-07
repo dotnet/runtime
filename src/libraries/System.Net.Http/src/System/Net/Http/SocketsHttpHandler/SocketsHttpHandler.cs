@@ -79,7 +79,7 @@ namespace System.Net.Http
             set => _settings._streamWindowUpdateRatio = value;
         }
 
-        public int StreamWindowMagicMultiplier
+        public double StreamWindowMagicMultiplier
         {
             get => _settings._streamWindowMagicMultiplier;
             set => _settings._streamWindowMagicMultiplier = value;

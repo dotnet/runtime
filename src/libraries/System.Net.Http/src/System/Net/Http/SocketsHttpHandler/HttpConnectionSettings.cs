@@ -72,7 +72,7 @@ namespace System.Net.Http
 
         internal int _initialStreamWindowSize = 65535;
         internal int _streamWindowUpdateRatio = 8;
-        internal int _streamWindowMagicMultiplier = 1;
+        internal double _streamWindowMagicMultiplier = 1;
 
         public HttpConnectionSettings()
         {
