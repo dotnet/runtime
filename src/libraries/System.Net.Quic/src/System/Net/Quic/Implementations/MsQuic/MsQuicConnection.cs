@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private X509RevocationMode _revocationMode = X509RevocationMode.Offline;
         private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
 
-        private sealed class State
+        internal sealed class State
         {
             public SafeMsQuicConnectionHandle Handle = null!; // set inside of MsQuicConnection ctor.
 
@@ -50,6 +50,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             // TODO: only allocate these when there is an outstanding connect/shutdown.
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Note that there's no such thing as resetable TCS, so we cannot reuse the same instance after we've set the result.
+            // We also cannot use solutions like ManualResetValueTaskSourceCore, since we can have multiple waiters on the same TCS.
+            // As a result, we allocate a new TCS when needed, which is when someone explicitely asks for them in WaitForAvailableStreamsAsync.
+            public TaskCompletionSource? NewUnidirectionalStreamsAvailable;
+            public TaskCompletionSource? NewBidirectionalStreamsAvailable;
 
             public bool Connected;
             public long AbortErrorCode = -1;
@@ -87,6 +93,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] inbound connection created");
+            }
         }
 
         // constructor for outbound connections
@@ -120,6 +131,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 _stateHandle.Free();
                 throw;
+            }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] outbound connection created");
             }
         }
 
@@ -182,13 +198,33 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Stop accepting new streams.
             state.AcceptQueue.Writer.Complete();
+
+            // Stop notifying about available streams.
+            TaskCompletionSource? unidirectionalTcs = null;
+            TaskCompletionSource? bidirectionalTcs = null;
+            lock (state)
+            {
+                unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
+                bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                state.NewUnidirectionalStreamsAvailable = null;
+                state.NewBidirectionalStreamsAvailable = null;
+            }
+
+            if (unidirectionalTcs is not null)
+            {
+                unidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
+            if (bidirectionalTcs is not null)
+            {
+                bidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+            }
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
             var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            var stream = new MsQuicStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
+            var stream = new MsQuicStream(state, streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
 
             state.AcceptQueue.Writer.TryWrite(stream);
             return MsQuicStatusCodes.Success;
@@ -196,6 +232,32 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventStreamsAvailable(State state, ref ConnectionEvent connectionEvent)
         {
+            TaskCompletionSource? unidirectionalTcs = null;
+            TaskCompletionSource? bidirectionalTcs = null;
+            lock (state)
+            {
+                if (connectionEvent.Data.StreamsAvailable.UniDirectionalCount > 0)
+                {
+                    unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
+                    state.NewUnidirectionalStreamsAvailable = null;
+                }
+
+                if (connectionEvent.Data.StreamsAvailable.BiDirectionalCount > 0)
+                {
+                    bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                    state.NewBidirectionalStreamsAvailable = null;
+                }
+            }
+
+            if (unidirectionalTcs is not null)
+            {
+                unidirectionalTcs.SetResult();
+            }
+            if (bidirectionalTcs is not null)
+            {
+                bidirectionalTcs.SetResult();
+            }
+
             return MsQuicStatusCodes.Success;
         }
 
@@ -235,7 +297,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                                     additionalCertificates.Import(asn1);
                                     if (additionalCertificates.Count > 0)
                                     {
-                                        certificate = additionalCertificates[0];
+                                        certificate = additionalCertificates[additionalCertificates.Count - 1];
                                     }
                                 }
                             }
@@ -263,7 +325,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     if (additionalCertificates != null && additionalCertificates.Count > 1)
                     {
-                        for (int i = 1; i < additionalCertificates.Count; i++)
+                        for (int i = 0; i < additionalCertificates.Count - 1; i++)
                         {
                             chain.ChainPolicy.ExtraStore.Add(additionalCertificates[i]);
                         }
@@ -284,18 +346,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
                     if (!success && NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(state.Connection, "Remote certificate rejected by verification callback");
+                        NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] remote  certificate rejected by verification callback");
                     return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(state.Connection, $"Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
+                    NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
 
                 return (sslPolicyErrors == SslPolicyErrors.None) ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state.Connection, $"Certificate validation failed ${ex.Message}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] certificate validation failed ${ex.Message}");
             }
 
             return MsQuicStatusCodes.InternalError;
@@ -313,34 +375,88 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (ChannelClosedException)
             {
-                throw _state.AbortErrorCode switch
-                {
-                    -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                    long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
-                };
+                throw ThrowHelper.GetConnectionAbortedException(_state.AbortErrorCode);
             }
 
             return stream;
         }
 
+        internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            TaskCompletionSource? tcs = _state.NewUnidirectionalStreamsAvailable;
+            if (tcs is null)
+            {
+                lock (_state)
+                {
+                    if (_state.NewUnidirectionalStreamsAvailable is null)
+                    {
+                        if (_state.ShutdownTcs.Task.IsCompleted)
+                        {
+                            throw new QuicOperationAbortedException();
+                        }
+
+                        if (GetRemoteAvailableUnidirectionalStreamCount() > 0)
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+
+                        _state.NewUnidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                    tcs = _state.NewUnidirectionalStreamsAvailable;
+                }
+            }
+
+            return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
+        }
+
+        internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        {
+            TaskCompletionSource? tcs = _state.NewBidirectionalStreamsAvailable;
+            if (tcs is null)
+            {
+                lock (_state)
+                {
+                    if (_state.NewBidirectionalStreamsAvailable is null)
+                    {
+                        if (_state.ShutdownTcs.Task.IsCompleted)
+                        {
+                            throw new QuicOperationAbortedException();
+                        }
+
+                        if (GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        {
+                            return ValueTask.CompletedTask;
+                        }
+
+                        _state.NewBidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                    tcs = _state.NewBidirectionalStreamsAvailable;
+                }
+            }
+
+            return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
+        }
+
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
+
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
 
-        internal override long GetRemoteAvailableUnidirectionalStreamCount()
+        internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
-        internal override long GetRemoteAvailableBidirectionalStreamCount()
+        internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
@@ -430,6 +546,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             ref ConnectionEvent connectionEvent)
         {
             var state = (State)GCHandle.FromIntPtr(context).Target!;
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] received event {connectionEvent.Type}");
+            }
+
             try
             {
                 switch (connectionEvent.Type)

@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using Microsoft.Diagnostics.NETCore.Client;
+using Tracing.Tests.Common;
 
 // This is to work around having to wait for an update to the DiagnosticsClient nuget before adding
 // a test. I really hope this isn't permanent
@@ -41,36 +42,11 @@ namespace Profiler.Tests
             MethodInfo startupProfiler = typeof(DiagnosticsClient).GetMethod("SetStartupProfiler", BindingFlags.Public);
             if (startupProfiler != null)
             {
-                throw new Exception("You updated DiagnosticsClient to a version that supports SetStartupProfiler, please remove this nonsense and use the real code.");
+                throw new Exception("You updated DiagnosticsClient to a version that supports SetStartupProfiler, please remove this and use the real code.");
             }
-
-            DiagnosticsClient client = new DiagnosticsClient(_processId);
-
-            Console.WriteLine("Sending startup profiler message.");            
-            // Send StartupProfiler command
-            object ipcMessage = MakeStartupProfilerMessage(profilerGuid, profilerPath);
-            SendMessage(_processId, ipcMessage);
-        }
-
-        private static object MakeHeader(byte commandSet, byte commandId)
-        {
-            Type commandEnumType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerCommandSet");
-            object enumCommandSet = Enum.ToObject(commandEnumType, commandSet);
-            Type ipcHeaderType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.IpcHeader");
-            object ipcHeader = Activator.CreateInstance(ipcHeaderType, new object[] { enumCommandSet, commandId });
-            return ipcHeader;
-        }
-
-        private static object MakeMessage(object ipcHeader, byte[] payload)
-        {
-                Type ipcMessageType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.IpcMessage");
-                object ipcMessage = Activator.CreateInstance(ipcMessageType, new object[] { ipcHeader, payload });
-                return ipcMessage;
-        }
-
-        private static object MakeStartupProfilerMessage(Guid profilerGuid, string profilerPath)
-        {
-            // public IpcMessage(IpcHeader header, byte[] payload = null)
+            
+            Console.WriteLine("Sending startup profiler message.");
+            
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
             {
@@ -80,51 +56,63 @@ namespace Profiler.Tests
                 writer.Flush();
                 byte[] payload = stream.ToArray();
                 
-                object ipcHeader = MakeHeader(3, 2);
-                return MakeMessage(ipcHeader, payload);
+                var message = new IpcMessage(0x03, 0x02, payload);
+                Console.WriteLine($"Sent: {message.ToString()}");
+                IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(_processId), message);
+                Console.WriteLine($"Received: {response.ToString()}");
             }
+
+            Console.WriteLine("Finished sending startup profiler message.");
         }
 
-        private static object MakeResumeRuntimeMessage()
+        public bool SetEnvironmentVariable(string name, string val)
         {
-            object ipcHeader = MakeHeader(4, 1);
-            return MakeMessage(ipcHeader, new byte[0]);
+            MethodInfo setEnvironmentVariable = typeof(DiagnosticsClient).GetMethod("SetEnvironmentVariable", BindingFlags.Public);
+            if (setEnvironmentVariable != null)
+            {
+                throw new Exception("You updated DiagnosticsClient to a version that supports SetEnvironmentVariable, please remove this and use the real code.");
+            }
+
+            Console.WriteLine($"Sending SetEnvironmentVariable message name={name} value={val ?? "NULL"}.");
+            
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.WriteString(name);
+                writer.WriteString(val);
+
+                writer.Flush();
+                byte[] payload = stream.ToArray();
+                
+                var message = new IpcMessage(0x04, 0x03, payload);
+                Console.WriteLine($"Sent: {message.ToString()}");
+                IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(_processId), message);
+                Console.WriteLine($"Received: {response.ToString()}");
+
+                if (response.Header.CommandSet != 255 || response.Header.CommandId != 0)
+                {
+                    Console.WriteLine($"SetEnvironmentVariable failed.");
+                    return false;
+                }
+            }
+
+            Console.WriteLine($"Finished sending SetEnvironmentVariable message.");
+
+            return true;
         }
 
-        private static Type GetPrivateType(string typeName)
+        private static string ReadString(byte[] buffer)
         {
-            return typeof(DiagnosticsClient).Assembly.GetType(typeName);
-        }
+            int index = 0;
+            // Length of the string of UTF-16 characters
+            int length = (int)BitConverter.ToUInt32(buffer, index);
+            index += sizeof(UInt32);
 
-        private static int GetResponseCommandSet(object response)
-        {
-            PropertyInfo header = response.GetType().GetProperty("Header");
-            object ipcHeader = header.GetValue(response);
-
-            FieldInfo commandId = ipcHeader.GetType().GetField("CommandSet");
-            byte id = (byte)commandId.GetValue(ipcHeader);
-            return id;
-        }
-
-        private static int GetResponseCommandId(object response)
-        {
-            PropertyInfo header = response.GetType().GetProperty("Header");
-            object ipcHeader = header.GetValue(response);
-
-            FieldInfo commandId = ipcHeader.GetType().GetField("CommandId");
-            byte id = (byte)commandId.GetValue(ipcHeader);
-            return id;
-        }
-
-        private static void SendMessage(object processId, object message)
-        {
-            Type ipcClientType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.IpcClient");
-            Type ipcMessageType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.IpcMessage");
-            MethodInfo clientSendMessage = ipcClientType.GetMethod("SendMessage", new Type[] { typeof(int), ipcMessageType } );
-            object response = clientSendMessage.Invoke(null, new object[] { processId, message });
-            int responseCommandSet = GetResponseCommandSet(response);
-            int responseCommandId = GetResponseCommandId(response);
-            Console.WriteLine($"SendMessage response CommandSet={responseCommandSet} CommandId={responseCommandId}");
+            int size = (int)length * sizeof(char);
+            // The string contains an ending null character; remove it before returning the value
+            string value = Encoding.Unicode.GetString(buffer, index, size).Substring(0, length - 1);
+            index += size;
+            return value;
         }
     }
 }

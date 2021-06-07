@@ -123,6 +123,7 @@ namespace System.Composition.UnitTests
         // In future, the set of allowable generic type mappings will be expanded (see
         // ignored tests above).
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void TypesWithMismatchedGenericParameterListsAreDetectedDuringDiscovery()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(RepositoryWithKey<,>)));
@@ -130,6 +131,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void TypesWithNonGenericExportsAreDetectedDuringDiscovery()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(RepositoryWithNonGenericExport<>)));

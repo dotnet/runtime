@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
     public class XmlConfigurationExtensionsTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50870", TestPlatforms.Android)]
         public void AddXmlFile_ThrowsIfFileDoesNotExistAtPath()
         {
             var config = new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml");

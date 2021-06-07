@@ -941,10 +941,7 @@ namespace System.IO
                 return Task.CompletedTask;
             }
 
-            Task flushTask = Core(flushStream, flushEncoder, cancellationToken);
-
-            _charPos = 0;
-            return flushTask;
+            return Core(flushStream, flushEncoder, cancellationToken);
 
             async Task Core(bool flushStream, bool flushEncoder, CancellationToken cancellationToken)
             {
@@ -961,6 +958,7 @@ namespace System.IO
                 byte[] byteBuffer = _byteBuffer ??= new byte[_encoding.GetMaxByteCount(_charBuffer.Length)];
 
                 int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
+                _charPos = 0;
                 if (count > 0)
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);

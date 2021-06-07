@@ -350,7 +350,7 @@ namespace System.IO
                     if (!Interop.EventStream.FSEventStreamStart(_eventStream))
                     {
                         // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
-                        int error = Marshal.GetLastWin32Error();
+                        int error = Marshal.GetLastPInvokeError();
                         if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                         {
                             // An error occurred while trying to start the run loop so fail out

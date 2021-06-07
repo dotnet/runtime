@@ -127,9 +127,14 @@ public class AppleAppBuilderTask : Task
     public bool ForceAOT { get; set; }
 
     /// <summary>
-    /// List of components to static link, if available
+    /// List of enabled runtime components
     /// </summary>
-    public string? StaticLinkedComponentNames { get; set; } = ""!;
+    public string? RuntimeComponents { get; set; } = ""!;
+
+    /// <summary>
+    /// Diagnostic ports configuration string
+    /// </summary>
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     /// <summary>
     /// Forces the runtime to use the invariant mode
@@ -178,13 +183,20 @@ public class AppleAppBuilderTask : Task
         Directory.CreateDirectory(binDir);
 
         var assemblerFiles = new List<string>();
+        var assemblerFilesToLink = new List<string>();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
+            var llvmObj = file.GetMetadata("LlvmObjectFile");
             if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
+            }
+
+            if (!string.IsNullOrEmpty(llvmObj))
+            {
+                assemblerFilesToLink.Add(llvmObj);
             }
         }
 
@@ -193,18 +205,34 @@ public class AppleAppBuilderTask : Task
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (ForceInterpreter && ForceAOT)
+        if (TargetOS != TargetNames.MacCatalyst && ForceInterpreter && ForceAOT)
         {
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            bool validDiagnosticsConfig = false;
+
+            if (string.IsNullOrEmpty(RuntimeComponents))
+                validDiagnosticsConfig = false;
+            else if (RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
+                validDiagnosticsConfig = true;
+            else if (RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase))
+                validDiagnosticsConfig = true;
+
+            if (!validDiagnosticsConfig)
+                throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
         if (GenerateXcodeProject)
         {
             Xcode generator = new Xcode(TargetOS, Arch);
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
+            generator.DiagnosticPorts = DiagnosticPorts;
 
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, StaticLinkedComponentNames, NativeMainSource);
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
             {

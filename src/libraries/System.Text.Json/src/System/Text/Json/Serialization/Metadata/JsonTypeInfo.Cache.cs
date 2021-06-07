@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
         /// </summary>
-        public static readonly Type ObjectType = typeof(object);
+        internal static readonly Type ObjectType = typeof(object);
 
         // The length of the property name embedded in the key (in bytes).
         // The key is a ulong (8 bytes) containing the first 7 bytes of the property name
@@ -568,14 +568,24 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializeSerializePropCache()
         {
-            Debug.Assert(PropInitFunc != null);
-            Debug.Assert(Options._context != null);
+            JsonSerializerContext? context = Options._context;
 
-            PropertyCacheArray = PropInitFunc(Options._context);
+            Debug.Assert(context != null);
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            if (PropInitFunc == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                return;
+            }
+
+            PropertyCacheArray = PropInitFunc(context);
         }
 
         internal void InitializeDeserializePropCache()
         {
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
             if (PropertyCacheArray == null)
             {
                 InitializeSerializePropCache();

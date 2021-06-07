@@ -244,7 +244,7 @@ internal class IOServices
         long userBytes;
         if (!DllImports.GetDiskFreeSpaceEx(drive, out userBytes, out ignored, out ignored))
         {
-            throw new IOException("DriveName: " + drive + " ErrorCode:" + Marshal.GetLastWin32Error());
+            throw new IOException("DriveName: " + drive + " ErrorCode:" + Marshal.GetLastPInvokeError());
         }
 
         return userBytes;
@@ -257,7 +257,7 @@ internal class IOServices
         long ignored;
         if (!DllImports.GetDiskFreeSpaceEx(drive, out ignored, out ignored, out ignored))
         {
-            return Marshal.GetLastWin32Error() != ERROR_NOT_READY;
+            return Marshal.GetLastPInvokeError() != ERROR_NOT_READY;
         }
 
         return true;

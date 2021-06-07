@@ -84,6 +84,60 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
+        {
+            if (!SupportsMultiConnect)
+                return;
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                Task connectTask = MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
+                await connectTask;
+
+                var localEndPoint = client.LocalEndPoint as IPEndPoint;
+                Assert.NotNull(localEndPoint);
+                Assert.Equal(IPAddress.Loopback.MapToIPv6(), localEndPoint.Address);
+
+                var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
+                Assert.NotNull(remoteEndPoint);
+                Assert.Equal(IPAddress.Loopback.MapToIPv6(), remoteEndPoint.Address);
+            }
+        }
+
+        [Fact]
+        public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
+        {
+            var localhostAddresses = Dns.GetHostAddresses("localhost");
+            if (Array.IndexOf(localhostAddresses, IPAddress.Loopback) == -1 ||
+                Array.IndexOf(localhostAddresses, IPAddress.IPv6Loopback) == -1)
+            {
+                return;
+            }
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                Task connectTask = ConnectAsync(client, new DnsEndPoint("localhost", port));
+                await connectTask;
+
+                var localEndPoint = client.LocalEndPoint as IPEndPoint;
+                Assert.NotNull(localEndPoint);
+                Assert.Equal(IPAddress.Loopback.MapToIPv6(), localEndPoint.Address);
+
+                var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
+                Assert.NotNull(remoteEndPoint);
+                Assert.Equal(IPAddress.Loopback.MapToIPv6(), remoteEndPoint.Address);
+            }
+        }
+
+        [Fact]
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;

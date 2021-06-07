@@ -427,7 +427,7 @@ namespace System.Security.Cryptography
                         }
                         finally
                         {
-                            Array.Clear(ecParameters.D!, 0, ecParameters.D!.Length);
+                            Array.Clear(ecParameters.D!);
                         }
                     }
                 }

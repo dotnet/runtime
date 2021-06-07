@@ -1213,6 +1213,7 @@ namespace System.Configuration
     {
         String = 0,
         Xml = 1,
+        [System.ObsoleteAttribute(System.Obsoletions.BinaryFormatterMessage + @". Consider using Xml instead.", false)]
         Binary = 2,
         ProviderSpecific = 3,
     }

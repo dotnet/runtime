@@ -1035,7 +1035,7 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#endif // CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -1061,7 +1061,6 @@ void EEStartupHelper()
 
         // Perform CoreLib consistency check if requested
         g_CoreLib.CheckExtended();
-
 #endif // _DEBUG
 
 #endif // !CROSSGEN_COMPILE
