@@ -1295,6 +1295,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     {
         ClrFlsSetThreadType(ThreadType_Shutdown);
 
+        AppDomain::GetCurrentDomain()->ListMethodsWithPollutedProfile();
+
         if (fIsDllUnloading && g_fEEShutDown)
         {
             // I'm in the final shutdown and the first part has already been run.

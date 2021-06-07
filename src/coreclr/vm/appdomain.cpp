@@ -2133,6 +2133,7 @@ AppDomain::AppDomain()
 #endif
 
     m_pRefClassFactHash = NULL;
+    s_methodsWithPollutedProfiles = NULL;
 
     m_ForceTrivialWaitOperations = false;
     m_Stage=STAGE_CREATING;
@@ -2230,6 +2231,7 @@ void AppDomain::Init()
 
     m_ReflectionCrst.Init(CrstReflection, CRST_UNSAFE_ANYMODE);
     m_RefClassFactCrst.Init(CrstClassFactInfoHash);
+    m_MethodsWithPollutedProfileCrst.Init(CrstMethodsWithPollutedProfiles, CRST_UNSAFE_ANYMODE);
 
     SetStage(STAGE_READYFORMANAGEDCODE);
 
@@ -2390,6 +2392,79 @@ EEClassFactoryInfoHashTable* AppDomain::SetupClassFactHash()
     }
 
     return m_pRefClassFactHash;
+}
+
+void AppDomain::LogMethodWithPollutedProfile(CORINFO_METHOD_HANDLE method)
+{
+    CrstHolder ch(&m_MethodsWithPollutedProfileCrst);
+
+    if (s_methodsWithPollutedProfiles == nullptr)
+    {
+        NewHolder<EEPtrHashTable> pCache(new EEPtrHashTable());
+        if (!pCache->Init(20, nullptr, nullptr, false))
+            return;
+        s_methodsWithPollutedProfiles = pCache.Extract();
+    }
+
+    PTR_VOID key = method;
+    HashDatum value;
+    if (s_methodsWithPollutedProfiles->GetValue(key, &value))
+    {
+        // Increment the counter
+        value = reinterpret_cast<HashDatum>(reinterpret_cast<UINT64>(value) + 1);
+        s_methodsWithPollutedProfiles->ReplaceValue(key, value);
+    }
+    else
+    {
+        s_methodsWithPollutedProfiles->InsertValue(key, reinterpret_cast<HashDatum>(1));
+    }
+}
+
+void AppDomain::ListMethodsWithPollutedProfile()
+{
+    if (s_methodsWithPollutedProfiles == nullptr)
+    {
+        return;
+    }
+
+    LPWSTR filePath = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ProfileValidationPath);
+    if (filePath == nullptr)
+    {
+        return;
+    }
+
+    FILE* file = _wfopen(filePath, W("a"));
+    if (file == nullptr)
+    {
+        return;
+    }
+
+    CrstHolder ch(&m_MethodsWithPollutedProfileCrst);
+
+    // CSV Format
+    fprintf(file, "Method name, Cold block hits\n");
+
+    EEHashTableIteration iter;
+    s_methodsWithPollutedProfiles->IterateStart(&iter);
+    BOOL keepGoing = s_methodsWithPollutedProfiles->IterateNext(&iter);
+    while (keepGoing)
+    {
+        auto key = static_cast<CORINFO_METHOD_HANDLE>(s_methodsWithPollutedProfiles->IterateGetKey(&iter));
+        if (key != nullptr)
+        {
+            MethodDesc* method = GetMethod(key);
+            if (method != nullptr)
+            {
+                HashDatum value = s_methodsWithPollutedProfiles->IterateGetValue(&iter);
+                const UINT64 counter = reinterpret_cast<UINT64>(value);
+                fprintf(file, "%s, %llu\n", method->GetName(), counter);
+            }
+        }
+        keepGoing = s_methodsWithPollutedProfiles->IterateNext(&iter);
+    }
+    delete s_methodsWithPollutedProfiles;
+    s_methodsWithPollutedProfiles = nullptr;
+    fclose(file);
 }
 
 #ifdef FEATURE_COMINTEROP

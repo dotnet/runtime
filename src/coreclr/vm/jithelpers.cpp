@@ -5322,12 +5322,12 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
 }
 HCIMPLEND
 
-HCIMPL2(void, JIT_ProfileValidator, CORINFO_METHOD_HANDLE methodHnd, unsigned blockId)
+HCIMPL1(void, JIT_ProfileValidator, CORINFO_METHOD_HANDLE methodHnd)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
-    // TODO: add to a global hashmap [methodHnd - counter] ?
-    printf("PGO_WARN: Cold block is called in %s for BB%u!\n", GetMethod(methodHnd)->GetName(), blockId);
+
+    AppDomain::GetCurrentDomain()->LogMethodWithPollutedProfile(methodHnd);
 }
 HCIMPLEND
 

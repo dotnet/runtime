@@ -297,6 +297,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
+        CORINFO_HELP_PROFILE_VALIDATOR,
         CORINFO_HELP_COUNT,
     }
 }

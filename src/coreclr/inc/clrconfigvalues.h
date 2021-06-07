@@ -289,7 +289,7 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ConvertIbcData, W("ConvertIbcData"), 1, "Converts between v1 and v2 IBC data")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DisableIBC, W("DisableIBC"), 0, "Disables the use of IBC data")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseIBCFile, W("UseIBCFile"), 0, "")
-
+RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_ProfileValidationPath, W("ProfileValidationPath"), "Path to save list of methods with polluted profiles to.")
 
 ///
 /// JIT

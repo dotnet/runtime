@@ -2074,8 +2074,9 @@ public:
 private:
     CrstExplicitInit    m_ReflectionCrst;
     CrstExplicitInit    m_RefClassFactCrst;
+    CrstExplicitInit    m_MethodsWithPollutedProfileCrst;
 
-
+    EEPtrHashTable *s_methodsWithPollutedProfiles;
     EEClassFactoryInfoHashTable *m_pRefClassFactHash;   // Hash table that maps a class factory info to a COM comp.
 #ifdef FEATURE_COMINTEROP
     DispIDCache *m_pRefDispIDCache;
@@ -2090,6 +2091,9 @@ public:
 
         return &m_RefClassFactCrst;
     }
+
+    void LogMethodWithPollutedProfile(CORINFO_METHOD_HANDLE method);
+    void ListMethodsWithPollutedProfile();
 
 #ifndef DACCESS_COMPILE
     EEClassFactoryInfoHashTable* GetClassFactHash()

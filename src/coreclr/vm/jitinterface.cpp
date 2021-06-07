@@ -12947,6 +12947,12 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
     }
 
+    // Instrument cold blocks in order to validate profiles.
+    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ProfileValidationPath) != nullptr)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_VALIDATE_PROFILE);
+    }
+
 #endif
 
     return flags;
