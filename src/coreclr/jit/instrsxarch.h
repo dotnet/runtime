@@ -86,7 +86,7 @@ INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // Note that emitter has only partial support for BT. It can only emit the reg,reg form
 // and the registers need to be reversed to get the correct encoding.
-INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                Undefined_OF   | Undefined_SF                  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 
 INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF  )
@@ -303,10 +303,10 @@ INST3(cvttpd2dq,        "cvttpd2dq",        IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(cvtdq2pd,         "cvtdq2pd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xE6),                            INS_FLAGS_None)    // cvt packed DWORDs to doubles
 
 // SSE2 comparison instructions
-INST3(comiss,           "comiss",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2F),                            Resets_CF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // ordered compare singles
-INST3(comisd,           "comisd",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2F),                            Resets_CF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // ordered compare doubles
-INST3(ucomiss,          "ucomiss",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2E),                            Resets_CF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // unordered compare singles
-INST3(ucomisd,          "ucomisd",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2E),                            Resets_CF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // unordered compare doubles
+INST3(comiss,           "comiss",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2F),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // ordered compare singles
+INST3(comisd,           "comisd",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2F),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // ordered compare doubles
+INST3(ucomiss,          "ucomiss",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2E),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // unordered compare singles
+INST3(ucomisd,          "ucomisd",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2E),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // unordered compare doubles
 
 // SSE2 packed single/double comparison operations.
 // Note that these instructions not only compare but also overwrite the first source.
@@ -659,10 +659,10 @@ INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,     
 
 
 //    id                nm                  um      mr                                                                   flags
-INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            INS_FLAGS_None )
-INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            INS_FLAGS_None )
+INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            Reads_DF )
+INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            Reads_DF )
 #if defined(TARGET_AMD64)
-INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            INS_FLAGS_None )
+INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            Reads_DF )
 #endif // defined(TARGET_AMD64)
 INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            Reads_DF   )
 INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            Reads_DF   )
