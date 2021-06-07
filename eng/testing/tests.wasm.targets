@@ -69,8 +69,7 @@
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
-      <BundleFiles Include="@(WasmSatelliteAssemblies)"         TargetDir="publish/%(WasmSatelliteAssemblies.CultureName)" />
-      <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish" />
+      <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish\%(WasmAssembliesToBundle.RecursiveDir)" />
 
       <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
     </ItemGroup>
@@ -124,17 +123,17 @@
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssemblies)" />
+    </ItemGroup>
+
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-
-      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
-
+      <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll"/>
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
-      <WasmFilesToIncludeInFileSystem
-              Include="@(WasmSatelliteAssemblies)"
-              TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.FileName)%(WasmSatelliteAssemblies.Extension)"
-              Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'" />
 
       <_CopyLocalPaths
               Include="@(PublishItemsOutputGroupOutputs)"
