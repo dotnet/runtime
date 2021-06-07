@@ -3213,6 +3213,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	if (cfg->compile_llvm)
 		cfg->explicit_null_checks = TRUE;
+	if (cfg->explicit_null_checks && method->wrapper_type == MONO_WRAPPER_OTHER &&
+		(mono_marshal_get_wrapper_info (method)->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG ||
+		 mono_marshal_get_wrapper_info (method)->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)) {
+		/* These wrappers contain loads/stores which can't fail */
+		cfg->explicit_null_checks = FALSE;
+	}
 
 	/*
 	if (!mono_debug_count ())
