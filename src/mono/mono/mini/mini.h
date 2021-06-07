@@ -140,6 +140,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -629,7 +630,9 @@ enum {
 	BB_EXCEPTION_UNSAFE     = 1 << 3,
 	BB_EXCEPTION_HANDLER    = 1 << 4,
 	/* for Native Client, mark the blocks that can be jumped to indirectly */
-	BB_INDIRECT_JUMP_TARGET = 1 << 5 
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 ,
+	/* Contains code with some side effects */
+	BB_HAS_SIDE_EFFECTS = 1 << 6,
 };
 
 typedef struct MonoMemcpyArgs {

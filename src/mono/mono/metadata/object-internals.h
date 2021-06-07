@@ -1751,7 +1751,7 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error);
 MonoObjectHandle
 mono_object_clone_handle (MonoObjectHandle obj, MonoError *error);
 
-MonoObject *
+MONO_COMPONENT_API MonoObject *
 mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error);
 
 MonoObjectHandle

@@ -23,6 +23,7 @@
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -2166,7 +2167,48 @@ bool
 ep_rt_mono_write_event_module_load (MonoImage *image);
 
 bool
+ep_rt_mono_write_event_module_unload (MonoImage *image);
+
+bool
 ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_type_load_start (MonoType *type);
+
+bool
+ep_rt_mono_write_event_type_load_stop (MonoType *type);
+
+bool
+ep_rt_mono_write_event_exception_thrown (MonoObject *object);
+
+bool
+ep_rt_mono_write_event_exception_clause (
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
+	const uint8_t *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
 
 bool
 ep_rt_write_event_threadpool_worker_thread_start (
