@@ -181,7 +181,7 @@ namespace HostActivation.Tests
 
             public void Dispose()
             {
-                // StandaloneAppFixture.Dispose();
+                StandaloneAppFixture.Dispose();
             }
         }
     }
