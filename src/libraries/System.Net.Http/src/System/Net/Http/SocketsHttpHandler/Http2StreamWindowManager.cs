@@ -69,7 +69,7 @@ namespace System.Net.Http
             private TimeSpan _lastWindowUpdate;
 
             private long _magic = 1;
-            private readonly TimeSpan _start;
+            private TimeSpan _start;
             private readonly StringBuilder _msgBuilder = new StringBuilder();
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
@@ -105,9 +105,10 @@ namespace System.Net.Http
                         // Trace info:
                         _msgBuilder.Clear();
                         _msgBuilder.Append($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
-                        if (_streamWindowSize >= 8 * 1024 * 1024)
+                        if (_streamWindowSize >= 8 * 1024 * 1024 && _start != TimeSpan.Zero)
                         {
                             _msgBuilder.Append($"reached 8M window in {(currentTime - _start).TotalSeconds} sec");
+                            _start = TimeSpan.Zero;
                         }
                         _msgBuilder.Append(Environment.NewLine);
                         _stream.TraceFlowControl(_msgBuilder.ToString());
