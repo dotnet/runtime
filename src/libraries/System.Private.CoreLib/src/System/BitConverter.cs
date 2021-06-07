@@ -865,17 +865,7 @@ namespace System
         /// <returns>A 64-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ulong DoubleToUInt64Bits(double value)
-        {
-            // Workaround for https://github.com/dotnet/runtime/issues/11413
-            if (Sse2.X64.IsSupported)
-            {
-                Vector128<ulong> vec = Vector128.CreateScalarUnsafe(value).AsUInt64();
-                return Sse2.X64.ConvertToUInt64(vec);
-            }
-
-            return *((ulong*)&value);
-        }
+        public static unsafe ulong DoubleToUInt64Bits(double value) => (ulong)DoubleToInt64Bits(value);
 
         /// <summary>
         /// Converts the specified 64-bit unsigned integer to a double-precision floating point number.
@@ -884,17 +874,7 @@ namespace System
         /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe double UInt64BitsToDouble(ulong value)
-        {
-            // Workaround for https://github.com/dotnet/runtime/issues/11413
-            if (Sse2.X64.IsSupported)
-            {
-                Vector128<double> vec = Vector128.CreateScalarUnsafe(value).AsDouble();
-                return vec.ToScalar();
-            }
-
-            return *((double*)&value);
-        }
+        public static unsafe double UInt64BitsToDouble(ulong value) => Int64BitsToDouble((ulong)value);
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit unsigned integer.
@@ -903,17 +883,7 @@ namespace System
         /// <returns>A 32-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe uint SingleToUInt32Bits(float value)
-        {
-            // Workaround for https://github.com/dotnet/runtime/issues/11413
-            if (Sse2.IsSupported)
-            {
-                Vector128<uint> vec = Vector128.CreateScalarUnsafe(value).AsUInt32();
-                return Sse2.ConvertToUInt32(vec);
-            }
-
-            return *((uint*)&value);
-        }
+        public static unsafe uint SingleToUInt32Bits(float value) => (uint)SingleToInt32Bits(value);
 
         /// <summary>
         /// Converts the specified 32-bit unsigned integer to a single-precision floating point number.
@@ -922,17 +892,7 @@ namespace System
         /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe float UInt32BitsToSingle(uint value)
-        {
-            // Workaround for https://github.com/dotnet/runtime/issues/11413
-            if (Sse2.IsSupported)
-            {
-                Vector128<float> vec = Vector128.CreateScalarUnsafe(value).AsSingle();
-                return vec.ToScalar();
-            }
-
-            return *((float*)&value);
-        }
+        public static unsafe float UInt32BitsToSingle(uint value) => Int32BitsToSingle((int)value);
 
         /// <summary>
         /// Converts the specified half-precision floating point number to a 16-bit unsigned integer.
@@ -941,10 +901,7 @@ namespace System
         /// <returns>A 16-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ushort HalfToUInt16Bits(Half value)
-        {
-            return *((ushort*)&value);
-        }
+        public static unsafe ushort HalfToUInt16Bits(Half value) => (ushort)HalfToInt16Bits(value);
 
         /// <summary>
         /// Converts the specified 16-bit unsigned integer to a half-precision floating point number.
@@ -953,9 +910,6 @@ namespace System
         /// <returns>A half-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Half UInt16BitsToHalf(ushort value)
-        {
-            return *(Half*)&value;
-        }
+        public static unsafe Half UInt16BitsToHalf(ushort value) => Int16BitsToHalf((short)value);
     }
 }
