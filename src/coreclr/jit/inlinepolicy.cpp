@@ -316,6 +316,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ArgIsStructByValue++;
                 break;
 
+            case InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS:
+                m_FldAccessOverArgStruct++;
+                break;
+
             case InlineObservation::CALLEE_ARG_FEEDS_CAST:
                 m_ArgCasted++;
                 break;
@@ -584,6 +588,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_BinaryExprWithCns);
     XATTR_I4(m_ArgCasted);
     XATTR_I4(m_ArgIsStructByValue);
+    XATTR_I4(m_FldAccessOverArgStruct);
     XATTR_I4(m_FoldableBox);
     XATTR_I4(m_Intrinsic);
     XATTR_I4(m_UncondBranch);
@@ -982,6 +987,12 @@ double DefaultPolicy::DetermineMultiplier()
     if (m_ArgIsStructByValue > 0)
     {
         JITDUMP("\n%d arguments are structs passed by value.", m_ArgIsStructByValue);
+    }
+
+    if (m_FldAccessOverArgStruct > 0)
+    {
+        // Such ldfld/stfld are cheap for promotable structs
+        JITDUMP("\n%d ldfld or stfld over arguments which are structs", m_ArgIsStructByValue);
     }
 
     if (m_FoldableBox > 0)
@@ -2376,6 +2387,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_BinaryExprWithCns);
     fprintf(file, ",%u", m_ArgCasted);
     fprintf(file, ",%u", m_ArgIsStructByValue);
+    fprintf(file, ",%u", m_FldAccessOverArgStruct);
     fprintf(file, ",%u", m_FoldableBox);
     fprintf(file, ",%u", m_Intrinsic);
     fprintf(file, ",%u", m_UncondBranch);
