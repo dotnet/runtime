@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>{TFM}</TargetFramework>
-    <RuntimeIdentifiers>{RIDs}</RuntimeIdentifiers>
+    <TargetFrameworks>{TFMs}</TargetFrameworks>
     <TestPackageId>{PackageId}</TestPackageId>
     <TestPackageVersion>{PackageVersion}</TestPackageVersion>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->

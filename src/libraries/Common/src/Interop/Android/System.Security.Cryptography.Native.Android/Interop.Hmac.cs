@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -29,5 +30,29 @@ internal static partial class Interop
 
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_HmacCurrent")]
         internal static extern int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
+
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
+        private static unsafe extern int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, ref int mdSize);
+
+        internal static unsafe int HmacOneShot(IntPtr type, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            int size = destination.Length;
+            const int Success = 1;
+
+            fixed (byte* pKey = key)
+            fixed (byte* pSource = source)
+            fixed (byte* pDestination = destination)
+            {
+                int result = HmacOneShot(type, pKey, key.Length, pSource, source.Length, pDestination, ref size);
+
+                if (result != Success)
+                {
+                    Debug.Assert(result == 0);
+                    throw CreateOpenSslCryptographicException();
+                }
+            }
+
+            return size;
+        }
     }
 }

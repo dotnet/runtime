@@ -1102,4 +1102,6 @@ enum mcPackets
     PacketCR_CrSigInstHandleMap                = 185,
 };
 
-#endif
+void SetDebugDumpVariables();
+
+#endif // _MethodContext

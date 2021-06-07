@@ -51,6 +51,8 @@ namespace Microsoft.Extensions.Primitives
         public string Value { get { throw null; } }
         public System.ReadOnlyMemory<char> AsMemory() { throw null; }
         public System.ReadOnlySpan<char> AsSpan() { throw null; }
+        public System.ReadOnlySpan<char> AsSpan(int start) { throw null; }
+        public System.ReadOnlySpan<char> AsSpan(int start, int length) { throw null; }
         public static int Compare(Microsoft.Extensions.Primitives.StringSegment a, Microsoft.Extensions.Primitives.StringSegment b, System.StringComparison comparisonType) { throw null; }
         public bool EndsWith(string text, System.StringComparison comparisonType) { throw null; }
         public bool Equals(Microsoft.Extensions.Primitives.StringSegment other) { throw null; }

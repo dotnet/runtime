@@ -107,6 +107,15 @@
 
     <ItemGroup>
       <EmscriptenEnvVars Include="PATH=$(_EmscriptenPrependPATHProperty)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+
+      <!--
+        Python defaults to the system charset, and thus expects the files it's reading to
+        match that. But that might not always be true. Eg. system charset=gbk, failing to read
+        utf-8 files
+
+        See https://github.com/dotnet/runtime/issues/53367 for the motivating issue
+      -->
+      <EmscriptenEnvVars Include="PYTHONUTF8=1" />
     </ItemGroup>
   </Target>
 

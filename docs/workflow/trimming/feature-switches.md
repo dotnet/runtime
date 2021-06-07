@@ -17,7 +17,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | HttpActivityPropagationSupport | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
 | UseNativeHttpHandler | System.Net.Http.UseNativeHttpHandler | HttpClient uses by default platform native implementation of HttpMessageHandler if set to true. |
 | StartupHookSupport | System.StartupHookProvider.IsSupported | Startup hooks are disabled when set to false. Startup hook related functionality can be trimmed. |
-| TBD | System.Threading.Thread.EnableAutoreleasePool | When set to true, creates an NSAutoreleasePool for each thread and thread pool work item on applicable platforms. |
+| AutoreleasePoolSupport | System.Threading.Thread.EnableAutoreleasePool | When set to true, creates an NSAutoreleasePool for each thread and thread pool work item on applicable platforms. |
 | CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
 | EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
 | BuiltInComInteropSupport | System.Runtime.InteropServices.BuiltInComInterop.IsSupported | Built-in COM support is trimmed when set to false. |

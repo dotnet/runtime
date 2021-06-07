@@ -65,6 +65,12 @@ namespace Internal.TypeSystem
             throw new TypeSystemException.BadImageFormatException(message);
         }
 
+        [System.Diagnostics.DebuggerHidden]
+        public static void ThrowMarshalDirectiveException()
+        {
+            throw new TypeSystemException.MarshalDirectiveException(ExceptionStringID.MarshalDirectiveGeneric);
+        }
+
         private static partial class Format
         {
             public static string OwningModule(TypeDesc type)

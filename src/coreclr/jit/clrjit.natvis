@@ -157,6 +157,14 @@ The .NET Foundation licenses this file to you under the MIT license.
     <DisplayString>IG{igNum,d}</DisplayString>
   </Type>
 
+  <Type Name="emitter::instrDesc">
+    <DisplayString Condition="(_idInsFmt == IF_RRD) || (_idInsFmt == IF_RWR) || (_idInsFmt == IF_RRW)">{_idIns,en} {_idReg1,en}</DisplayString>
+    <DisplayString Condition="(_idInsFmt == IF_RRD_CNS) || (_idInsFmt == IF_RWR_CNS) || (_idInsFmt == IF_RRW_CNS)">{_idIns,en} {_idReg1,en}, {_idLargeCns,d}</DisplayString>
+    <DisplayString Condition="(_idInsFmt == IF_RRW_SHF) &amp;&amp; (_idLargeCns != 0)">{_idIns,en} {_idReg1,en}, {_idLargeCns,d}</DisplayString>
+    <DisplayString Condition="(_idInsFmt == IF_RRW_SHF) &amp;&amp; (_idLargeCns == 0)">{_idIns,en} {_idReg1,en}, {_idSmallCns,d}</DisplayString>
+    <DisplayString>{_idIns,en}</DisplayString>
+  </Type>
+
   <!-- utils -->
    <Type Name="jitstd::list&lt;*&gt;">
     <DisplayString Condition="m_nSize > 0">Size={m_nSize}</DisplayString>

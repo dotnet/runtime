@@ -1540,7 +1540,7 @@ MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
-/* inst_c0 contains a SimdOp, inst_c1 might contain additional data */
+/* inst_c0 contains an INTRINS_ enum, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
 MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)
 MINI_OP(OP_XOP_X_X, "xop_x_x", XREG, XREG, NONE)

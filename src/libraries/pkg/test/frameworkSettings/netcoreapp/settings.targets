@@ -4,10 +4,6 @@
   <PropertyGroup>
     <ShouldVerifyClosure>true</ShouldVerifyClosure>
     <ShouldVerifyTypes>true</ShouldVerifyTypes>
-
-    <!-- ensure that we get runtime assemblies in ReferenceCopyLocalPaths -->
-    <SelfContained>true</SelfContained>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

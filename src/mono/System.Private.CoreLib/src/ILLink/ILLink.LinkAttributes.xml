@@ -93,6 +93,12 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.Versioning.TargetPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>

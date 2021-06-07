@@ -26,6 +26,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class SyncHttpHandler_PostScenarioTest : PostScenarioTest
     {
         public SyncHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }

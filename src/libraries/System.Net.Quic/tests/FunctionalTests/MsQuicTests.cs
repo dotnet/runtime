@@ -96,6 +96,56 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
+        public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
+        {
+            using QuicListener listener = CreateQuicListener(maxUnidirectionalStreams: 1);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+
+            // No stream openned yet, should return immediately.
+            Assert.True(clientConnection.WaitForAvailableUnidirectionalStreamsAsync().IsCompletedSuccessfully);
+
+            // Open one stream, should wait till it closes.
+            QuicStream stream = clientConnection.OpenUnidirectionalStream();
+            ValueTask waitTask = clientConnection.WaitForAvailableUnidirectionalStreamsAsync();
+            Assert.False(waitTask.IsCompleted);
+            Assert.Throws<QuicException>(() => clientConnection.OpenUnidirectionalStream());
+
+            // Close the stream, the waitTask should finish as a result.
+            stream.Dispose();
+            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
+        public async Task WaitForAvailableBidirectionStreamsAsyncWorks()
+        {
+            using QuicListener listener = CreateQuicListener(maxBidirectionalStreams: 1);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+
+            // No stream openned yet, should return immediately.
+            Assert.True(clientConnection.WaitForAvailableBidirectionalStreamsAsync().IsCompletedSuccessfully);
+
+            // Open one stream, should wait till it closes.
+            QuicStream stream = clientConnection.OpenBidirectionalStream();
+            ValueTask waitTask = clientConnection.WaitForAvailableBidirectionalStreamsAsync();
+            Assert.False(waitTask.IsCompleted);
+            Assert.Throws<QuicException>(() => clientConnection.OpenBidirectionalStream());
+
+            // Close the stream, the waitTask should finish as a result.
+            stream.Dispose();
+            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        [Fact]
         [OuterLoop("May take several seconds")]
         public async Task SetListenerTimeoutWorksWithSmallTimeout()
         {
@@ -234,7 +284,7 @@ namespace System.Net.Quic.Tests
             int res = await serverStream.ReadAsync(memory);
             Assert.Equal(12, res);
             ReadOnlyMemory<ReadOnlyMemory<byte>> romrom = new ReadOnlyMemory<ReadOnlyMemory<byte>>(new ReadOnlyMemory<byte>[] { helloWorld, helloWorld });
-            
+
             await clientStream.WriteAsync(romrom);
 
             res = await serverStream.ReadAsync(memory);
@@ -254,7 +304,7 @@ namespace System.Net.Quic.Tests
                 {
                     var acceptTask = serverConnection.AcceptStreamAsync();
                     await serverConnection.CloseAsync(errorCode: 0);
-                    // make sure 
+                    // make sure
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
                 });
         }

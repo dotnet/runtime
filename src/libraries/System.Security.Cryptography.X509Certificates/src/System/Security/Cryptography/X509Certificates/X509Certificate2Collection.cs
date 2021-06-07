@@ -7,10 +7,11 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
+using System.Collections.Generic;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public class X509Certificate2Collection : X509CertificateCollection
+    public class X509Certificate2Collection : X509CertificateCollection, IEnumerable<X509Certificate2>
     {
         public X509Certificate2Collection()
         {
@@ -132,6 +133,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return new X509Certificate2Enumerator(this);
         }
+
+        IEnumerator<X509Certificate2> IEnumerable<X509Certificate2>.GetEnumerator() => GetEnumerator();
 
         public void Import(byte[] rawData)
         {

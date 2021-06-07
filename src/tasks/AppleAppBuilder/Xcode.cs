@@ -47,6 +47,7 @@ internal class Xcode
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
         string monoInclude,
@@ -181,6 +182,11 @@ internal class Xcode
             aotList += $" {name}";
         }
 
+        foreach (string asmLinkFile in asmLinkFiles)
+        {
+            toLink += $"    {asmLinkFile}{Environment.NewLine}";
+        }
+
         string frameworks = "";
         if ((Target == TargetNames.iOS) || (Target == TargetNames.iOSsim) || (Target == TargetNames.MacCatalyst))
         {
@@ -198,7 +204,8 @@ internal class Xcode
         {
             defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
-        else if (forceAOT)
+
+        if (forceAOT)
         {
             defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }

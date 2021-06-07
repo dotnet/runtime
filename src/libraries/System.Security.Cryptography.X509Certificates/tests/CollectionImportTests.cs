@@ -383,7 +383,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "test.local",
                 };
 
-                string[] actualSubjects = certs.OfType<X509Certificate2>().
+                string[] actualSubjects = certs.
                     Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
                     ToArray();
 
@@ -397,7 +397,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     true,
                 };
 
-                bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
+                bool[] actualHasPrivateKeys = certs.
                     Select(cert => cert.HasPrivateKey).
                     ToArray();
 

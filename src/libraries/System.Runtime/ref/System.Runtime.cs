@@ -3717,6 +3717,8 @@ namespace System
         public System.String Replace(System.String oldValue, System.String? newValue) { throw null; }
         public System.String Replace(System.String oldValue, System.String? newValue, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public System.String Replace(System.String oldValue, System.String? newValue, System.StringComparison comparisonType) { throw null; }
+        public System.String ReplaceLineEndings() { throw null; }
+        public System.String ReplaceLineEndings(System.String replacementText) { throw null; }
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[]? separator) { throw null; }

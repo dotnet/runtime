@@ -109,6 +109,7 @@
 
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
+    <FeatureMono>true</FeatureMono>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
@@ -194,6 +195,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.Mono.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
       <Compile Include="$(BclSourcesRoot)\System\IO\Stream.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
@@ -305,6 +307,37 @@
     <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
         DestinationFolder="$(RuntimeBinDir)"
         SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Setup eventing file generation -->
+  <ItemGroup>
+    <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
+    <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.Mono.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.Mono.cs</Link>
+    </EventingSourceFile>
+    <Compile Include="@(EventingSourceFile)" />
+  </ItemGroup>
+
+  <Target Name="GenerateEventingFiles"
+          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
+          Outputs="@(EventingSourceFile)"
+          DependsOnTargets="FindPython"
+          BeforeTargets="BeforeCompile">
+
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Mono.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <PropertyGroup>
+      <_PythonWarningParameter>-Wall</_PythonWarningParameter>
+      <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>
+      <_EventingSourceFileDirectory>%(EventingSourceFile.RootDir)%(EventingSourceFile.Directory)</_EventingSourceFileDirectory>
+      <_EventingSourceFileDirectory Condition="HasTrailingSlash('$(_EventingSourceFileDirectory)')">$(_EventingSourceFileDirectory.TrimEnd('\'))</_EventingSourceFileDirectory>
+    </PropertyGroup>
+
+    <Exec Command="$(PYTHON) -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot; --runtimeflavor mono" />
+
+    <ItemGroup>
+      <FileWrites Include="@(EventingSourceFile)" />
+    </ItemGroup>
   </Target>
 
 </Project>

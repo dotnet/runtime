@@ -587,7 +587,7 @@ namespace System.Net.Http
 
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 

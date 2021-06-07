@@ -357,7 +357,7 @@ namespace System.Net.Http.Headers
             {
                 if (headers[i] is HttpHeaders hh)
                 {
-                    foreach (KeyValuePair<string, string[]> header in hh.EnumerateWithoutValidation())
+                    foreach (KeyValuePair<string, HeaderStringValues> header in hh.NonValidated)
                     {
                         foreach (string headerValue in header.Value)
                         {

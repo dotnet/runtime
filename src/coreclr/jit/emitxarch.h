@@ -98,7 +98,7 @@ static bool IsMovInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
 
-bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags);
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
 
 bool hasRexPrefix(code_t code)
 {
@@ -171,6 +171,10 @@ void SetContains256bitAVX(bool value)
 
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
+bool DoesWriteZeroFlag(instruction ins);
+bool DoesResetOverflowAndCarryFlags(instruction ins);
+bool IsFlagsAlwaysModified(instrDesc* id);
+
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
     return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));

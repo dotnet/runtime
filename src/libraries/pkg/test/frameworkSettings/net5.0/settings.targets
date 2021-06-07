@@ -1,7 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
-  </PropertyGroup>
   <ItemGroup>
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />

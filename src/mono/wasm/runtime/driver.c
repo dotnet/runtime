@@ -191,6 +191,9 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 				break;
 		}
 	}, log_level, message, fatal, log_domain, user_data);
+
+	if (fatal)
+		exit (1);
 }
 
 typedef uint32_t target_mword;

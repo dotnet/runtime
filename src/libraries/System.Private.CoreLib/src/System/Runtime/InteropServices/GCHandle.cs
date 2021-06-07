@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices
                     }
 
                     Debug.Assert(target is Array);
-                    return (IntPtr)Unsafe.AsPointer(ref Unsafe.As<Array>(target).GetRawArrayData());
+                    return (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array>(target)));
                 }
 
                 return (IntPtr)Unsafe.AsPointer(ref target.GetRawData());

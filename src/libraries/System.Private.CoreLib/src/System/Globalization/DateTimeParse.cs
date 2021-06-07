@@ -1050,6 +1050,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case TokenType.JapaneseEraToken:
+                    if (GlobalizationMode.Invariant)
+                    {
+                        Debug.Fail("Should never be reached");
+                        return false;
+                    }
+
                     // Special case for Japanese.  We allow Japanese era name to be used even if the calendar is not Japanese Calendar.
                     result.calendar = JapaneseCalendar.GetDefaultInstance();
                     dtfi = DateTimeFormatInfo.GetJapaneseCalendarDTFI();
@@ -1066,6 +1072,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case TokenType.TEraToken:
+                    if (GlobalizationMode.Invariant)
+                    {
+                        Debug.Fail("Should never be reached");
+                        return false;
+                    }
+
                     result.calendar = TaiwanCalendar.GetDefaultInstance();
                     dtfi = DateTimeFormatInfo.GetTaiwanCalendarDTFI();
                     if (result.era != -1)

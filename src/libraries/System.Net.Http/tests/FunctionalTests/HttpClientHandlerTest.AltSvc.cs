@@ -18,11 +18,12 @@ namespace System.Net.Http.Functional.Tests
         /// <summary>
         /// HTTP/3 tests by default use prenegotiated HTTP/3. To test Alt-Svc upgrades, that must be disabled.
         /// </summary>
-        protected override HttpClient CreateHttpClient()
+        private HttpClient CreateHttpClient(Version version)
         {
-            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version30);
-
-            return CreateHttpClient(handler);
+            var client = CreateHttpClient();
+            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+            client.DefaultRequestVersion = version;
+            return client;
         }
 
         [Theory]
@@ -41,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
             // The second request is expected to come in on this HTTP/3 server.
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
 
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = CreateHttpClient(fromVersion);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = firstServer.AcceptConnectionSendResponseAndCloseAsync(additionalHeaders: new[]
@@ -69,7 +70,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = CreateHttpClient(HttpVersion.Version20);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>
@@ -94,7 +95,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = CreateHttpClient(HttpVersion.Version20);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>

@@ -1067,7 +1067,6 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
                 else
                 {
                     X509ChainElement certElement = chain.ChainElements
-                        .OfType<X509ChainElement>()
                         .Single(e => e.Certificate.Subject == cert.Subject);
 
                     const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;
@@ -1154,7 +1153,6 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                 else
                 {
                     X509ChainElement certElement = chain.ChainElements
-                        .OfType<X509ChainElement>()
                         .Single(e => e.Certificate.Subject == intermediateCert.Subject);
 
                     const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;

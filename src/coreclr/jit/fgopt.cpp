@@ -3799,6 +3799,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update flags
         //
+        switchTree->gtFlags = switchTree->AsOp()->gtOp1->gtFlags;
         dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
         jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
         dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;

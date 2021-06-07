@@ -3663,7 +3663,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCo
     EmitLoadNativeValue(pslILEmit);                 // dest
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_ARRAY_DATA, 1, 1);
+    pslILEmit->EmitCALL(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_MDARRAY, 1, 1);
     pslILEmit->EmitCONV_I();
 
     EmitLoadManagedValue(pslILEmit);
@@ -3707,7 +3707,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* ps
     pslILEmit->EmitSTLOC(m_dwPinnedLocalNum);
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_ARRAY_DATA, 1, 1);
+    pslILEmit->EmitCALL(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_MDARRAY, 1, 1);
     pslILEmit->EmitCONV_I();
 
     pslILEmit->EmitLDLOC(m_dwOffsetLocalNum);

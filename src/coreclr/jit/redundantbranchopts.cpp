@@ -264,17 +264,38 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     assert(domBlock->bbJumpKind == BBJ_COND);
 
     // If the dominating block is not the immediate dominator
-    // we would need to duplicate a lot of code to thread
-    // the jumps. Pass for now.
+    // we might need to duplicate a lot of code to thread
+    // the jumps. See if that's the case.
     //
-    if (domBlock != block->bbIDom)
+    const bool isIDom = domBlock == block->bbIDom;
+    if (!isIDom)
     {
-        JITDUMP(" -- not idom, so no threading\n");
-        return false;
+        // Walk up the dom tree until we hit dom block.
+        //
+        // If none of the doms in the stretch are BBJ_COND,
+        // then we must have already optimized them, and
+        // so should not have to duplicate code to thread.
+        //
+        BasicBlock* idomBlock = block->bbIDom;
+        while ((idomBlock != nullptr) && (idomBlock != domBlock))
+        {
+            if (idomBlock->bbJumpKind == BBJ_COND)
+            {
+                JITDUMP(" -- " FMT_BB " not closest branching dom, so no threading\n", idomBlock->bbNum);
+                return false;
+            }
+            JITDUMP(" -- bypassing %sdom " FMT_BB " as it was already optimized\n",
+                    (idomBlock == block->bbIDom) ? "i" : "", idomBlock->bbNum);
+            idomBlock = idomBlock->bbIDom;
+        }
+
+        // If we didn't bail out above, we should have reached domBlock.
+        //
+        assert(idomBlock == domBlock);
     }
 
-    JITDUMP("Both successors of IDom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", domBlock->bbNum,
-            block->bbNum);
+    JITDUMP("Both successors of %sdom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", isIDom ? "i" : "",
+            domBlock->bbNum, block->bbNum);
 
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.

@@ -22,6 +22,8 @@ static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
 
 static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
 
+static ep_rt_execution_checkpoint_array_t _ep_rundown_execution_checkpoints = { 0 };
+
 /*
  * Forward declares of all static functions.
  */
@@ -335,6 +337,37 @@ ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 }
 
 /*
+ * EventPipeExecutionCheckpoint.
+ */
+
+EventPipeExecutionCheckpoint *
+ep_execution_checkpoint_alloc (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	EventPipeExecutionCheckpoint *instance = ep_rt_object_alloc (EventPipeExecutionCheckpoint);
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->name = name ? ep_rt_utf8_string_dup (name) : NULL;
+	instance->timestamp = timestamp;
+
+ep_on_exit:
+	return instance;
+
+ep_on_error:
+	ep_execution_checkpoint_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+void
+ep_execution_checkpoint_free (EventPipeExecutionCheckpoint *execution_checkpoint)
+{
+	ep_return_void_if_nok (execution_checkpoint != NULL);
+	ep_rt_object_free (execution_checkpoint);
+}
+
+/*
  * EventPipe.
  */
 
@@ -514,7 +547,7 @@ disable_holding_lock (
 				{
 					config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
 					{
-						ep_session_execute_rundown (session);
+						ep_session_execute_rundown (session, &_ep_rundown_execution_checkpoints);
 					}
 					config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
 				}
@@ -1263,6 +1296,8 @@ ep_init (void)
 	ep_rt_session_id_array_alloc (&_ep_deferred_enable_session_ids);
 	ep_rt_session_id_array_alloc (&_ep_deferred_disable_session_ids);
 
+	ep_rt_execution_checkpoint_array_alloc (&_ep_rundown_execution_checkpoints);
+
 	EP_LOCK_ENTER (section1)
 		ep_volatile_store_eventpipe_state (EP_STATE_INITIALIZED);
 	EP_LOCK_EXIT (section1)
@@ -1341,6 +1376,17 @@ ep_shutdown (void)
 		if (session)
 			ep_disable ((EventPipeSessionID)session);
 	}
+
+	ep_rt_execution_checkpoint_array_iterator_t checkpoint_iterator;
+	EventPipeExecutionCheckpoint *checkpoint;
+	checkpoint_iterator = ep_rt_execution_checkpoint_array_iterator_begin (&_ep_rundown_execution_checkpoints);
+	while (!ep_rt_execution_checkpoint_array_iterator_end (&_ep_rundown_execution_checkpoints, &checkpoint_iterator)) {
+		checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&checkpoint_iterator);
+		if (checkpoint)
+			ep_rt_utf8_string_free (checkpoint->name);
+		ep_rt_execution_checkpoint_array_iterator_next (&checkpoint_iterator);
+	}
+	ep_rt_execution_checkpoint_array_free (&_ep_rundown_execution_checkpoints);
 
 	ep_rt_session_id_array_free (&_ep_deferred_enable_session_ids);
 	ep_rt_session_id_array_free (&_ep_deferred_disable_session_ids);
@@ -1456,6 +1502,35 @@ ep_get_wait_handle (EventPipeSessionID session_id)
 {
 	EventPipeSession *const session = ep_get_session (session_id);
 	return session ? ep_rt_wait_event_get_wait_handle (ep_session_get_wait_event (session)) : 0;
+}
+
+bool
+ep_add_rundown_execution_checkpoint (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	ep_requires_lock_not_held ();
+
+	bool result = false;
+
+	EventPipeExecutionCheckpoint *exec_checkpoint = ep_execution_checkpoint_alloc (name, timestamp);
+	ep_raise_error_if_nok (exec_checkpoint != NULL);
+
+	EP_LOCK_ENTER (section1)
+		ep_raise_error_if_nok_holding_lock (ep_rt_execution_checkpoint_array_append (&_ep_rundown_execution_checkpoints, exec_checkpoint), section1);
+		exec_checkpoint = NULL;
+	EP_LOCK_EXIT (section1)
+
+	result = true;
+
+ep_on_exit:
+	ep_requires_lock_not_held ();
+	return result;
+
+ep_on_error:
+	ep_execution_checkpoint_free (exec_checkpoint);
+	EP_ASSERT (result == false);
+	ep_exit_error_handler ();
 }
 
 /*

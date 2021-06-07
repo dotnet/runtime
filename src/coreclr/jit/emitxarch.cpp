@@ -150,6 +150,98 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteZeroFlag: check if the instruction write the
+//     ZF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the ZF flag, false otherwise.
+//
+bool emitter::DoesWriteZeroFlag(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
+}
+
+//------------------------------------------------------------------------
+// DoesResetOverflowAndCarryFlags: check if the instruction resets the
+//     OF and CF flag to 0.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction resets the OF and CF flag, false otherwise.
+//
+bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & INS_FLAGS_Resets_CF_OF_Flags) != 0;
+}
+
+//------------------------------------------------------------------------
+// IsFlagsAlwaysModified: check if the instruction guarantee to modify any flags.
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    false, if instruction is guaranteed to not modify any flag.
+//    true, if instruction will modify some flag.
+//
+bool emitter::IsFlagsAlwaysModified(instrDesc* id)
+{
+    instruction ins = id->idIns();
+    insFormat   fmt = id->idInsFmt();
+
+    if (fmt == IF_RRW_SHF)
+    {
+        if (id->idIsLargeCns())
+        {
+            return true;
+        }
+        else if (id->idSmallCns() == 0)
+        {
+            switch (ins)
+            {
+                // If shift-amount for below instructions is 0, then flags are unaffected.
+                case INS_rcl_N:
+                case INS_rcr_N:
+                case INS_rol_N:
+                case INS_ror_N:
+                case INS_shl_N:
+                case INS_shr_N:
+                case INS_sar_N:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+    }
+    else if (fmt == IF_RRW)
+    {
+        switch (ins)
+        {
+            // If shift-amount for below instructions is 0, then flags are unaffected.
+            // So, to be conservative, do not optimize if the instruction has register
+            // as the shift-amount operand.
+            case INS_rcl:
+            case INS_rcr:
+            case INS_rol:
+            case INS_ror:
+            case INS_shl:
+            case INS_shr:
+            case INS_sar:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
 //
@@ -225,9 +317,9 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 //                       the same values as if there were a compare to 0
 //
 // Arguments:
-//    reg - register of interest
-//    opSize - size of register
-//    needsOCFlags - additionally check the overflow and carry flags
+//    reg     - register of interest
+//    opSize  - size of register
+//    treeOps - type of tree node operation
 //
 // Return Value:
 //    true if the previous instruction set the flags for reg
@@ -235,17 +327,19 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 //
 // Notes:
 //    Currently only looks back one instruction.
-bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags)
+bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps)
 {
     assert(reg != REG_NA);
+
     // Don't look back across IG boundaries (possible control flow)
     if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
 
-    instrDesc* id  = emitLastIns;
-    insFormat  fmt = id->idInsFmt();
+    instrDesc*  id      = emitLastIns;
+    instruction lastIns = id->idIns();
+    insFormat   fmt     = id->idInsFmt();
 
     // make sure op1 is a reg
     switch (fmt)
@@ -264,7 +358,6 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
         case IF_RRD:
         case IF_RRW:
             break;
-
         default:
             return false;
     }
@@ -274,34 +367,20 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
         return false;
     }
 
-    switch (id->idIns())
+    // Certain instruction like and, or and xor modifies exactly same flags
+    // as "test" instruction.
+    // They reset OF and CF to 0 and modifies SF, ZF and PF.
+    if (DoesResetOverflowAndCarryFlags(lastIns))
     {
-        case INS_adc:
-        case INS_add:
-        case INS_dec:
-        case INS_dec_l:
-        case INS_inc:
-        case INS_inc_l:
-        case INS_neg:
-        case INS_shr_1:
-        case INS_shl_1:
-        case INS_sar_1:
-        case INS_sbb:
-        case INS_sub:
-        case INS_xadd:
-            if (needsOCFlags)
-            {
-                return false;
-            }
-            FALLTHROUGH;
-        // these always set OC to 0
-        case INS_and:
-        case INS_or:
-        case INS_xor:
-            return id->idOpSize() == opSize;
+        return id->idOpSize() == opSize;
+    }
 
-        default:
-            break;
+    if ((treeOps == GT_EQ) || (treeOps == GT_NE))
+    {
+        if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
     }
 
     return false;

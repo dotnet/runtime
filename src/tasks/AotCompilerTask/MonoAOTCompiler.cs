@@ -7,10 +7,12 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Reflection.PortableExecutable;
 
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
@@ -217,10 +219,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new ArgumentException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.", nameof(AotModulesTableLanguage));
         }
 
-        if (!string.IsNullOrEmpty(AotModulesTablePath))
-        {
-            GenerateAotModulesTable(Assemblies, Profilers);
-        }
+        if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(Assemblies, Profilers))
+            return false;
 
         string? monoPaths = null;
         if (AdditionalAssemblySearchPaths != null)
@@ -431,13 +431,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private void GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers)
+    private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers)
     {
         var symbols = new List<string>();
         foreach (var asm in assemblies)
         {
-            var name = Path.GetFileNameWithoutExtension(asm.ItemSpec).Replace ('.', '_').Replace ('-', '_');
-            symbols.Add($"mono_aot_module_{name}_info");
+            string asmPath = asm.ItemSpec;
+            if (!File.Exists(asmPath))
+            {
+                Log.LogError($"Could not find assembly {asmPath}");
+                return false;
+            }
+
+            if (!TryGetAssemblyName(asmPath, out string? assemblyName))
+                return false;
+
+            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_');
+            symbols.Add($"mono_aot_module_{symbolName}_info");
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(AotModulesTablePath!)!);
@@ -503,6 +513,34 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new NotSupportedException();
             }
             Log.LogMessage(MessageImportance.Low, $"Generated {AotModulesTablePath}");
+        }
+
+        return true;
+    }
+
+    private bool TryGetAssemblyName(string asmPath, [NotNullWhen(true)] out string? assemblyName)
+    {
+        assemblyName = null;
+
+        try
+        {
+            using var fs = new FileStream(asmPath, FileMode.Open, FileAccess.Read);
+            using var peReader = new PEReader(fs);
+            MetadataReader mr = peReader.GetMetadataReader();
+            assemblyName = mr.GetAssemblyDefinition().GetAssemblyName().Name;
+
+            if (string.IsNullOrEmpty(assemblyName))
+            {
+                Log.LogError($"Could not get assembly name for {asmPath}");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.LogError($"Failed to get assembly name for {asmPath}: {ex.Message}");
+            return false;
         }
     }
 }

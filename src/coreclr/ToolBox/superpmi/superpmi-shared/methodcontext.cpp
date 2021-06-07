@@ -18,9 +18,6 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-bool g_debugRec = false;
-bool g_debugRep = false;
-
 // static variable initialization
 Hash MethodContext::m_hash;
 
@@ -4807,6 +4804,7 @@ void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
     printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
         GetStringLiteral->GetBuffer(value.B), value.A);
+    GetStringLiteral->Unlock();
 }
 
 const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
@@ -5468,6 +5466,7 @@ void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agno
             printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
         }
+        AllocPgoInstrumentationBySchema->Unlock();
     }
     printf("}");
 }
@@ -5637,6 +5636,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 
             printf("}\n");
         }
+        GetPgoInstrumentationResults->Unlock();
     }
     printf("} data_index-%u", value.data_index);
 }
@@ -7120,4 +7120,31 @@ void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
         isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
     }
 
+}
+
+
+bool g_debugRec = false;
+bool g_debugRep = false;
+
+void SetDebugDumpVariables()
+{
+    static WCHAR* g_debugRecStr = nullptr;
+    static WCHAR* g_debugRepStr = nullptr;
+    if (g_debugRecStr == nullptr)
+    {
+        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
+    }
+    if (g_debugRepStr == nullptr)
+    {
+        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+    }
+
+    if (0 == wcscmp(g_debugRecStr, W("1")))
+    {
+        g_debugRec = true;
+    }
+    if (0 == wcscmp(g_debugRepStr, W("1")))
+    {
+        g_debugRep = true;
+    }
 }

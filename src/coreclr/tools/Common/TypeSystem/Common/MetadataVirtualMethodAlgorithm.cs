@@ -330,11 +330,8 @@ namespace Internal.TypeSystem
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetAllMethods())
+            foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (!candidate.IsVirtual)
-                    continue;
-
                 if (candidate.Name == name)
                 {
                     if (candidate.Signature.Equals(sig))
@@ -810,11 +807,8 @@ namespace Internal.TypeSystem
             {
                 do
                 {
-                    foreach (MethodDesc m in type.GetAllMethods())
+                    foreach (MethodDesc m in type.GetAllVirtualMethods())
                     {
-                        if (!m.IsVirtual)
-                            continue;
-
                         MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
                         if (!alreadyEnumerated.Contains(possibleVirtual))
                         {
