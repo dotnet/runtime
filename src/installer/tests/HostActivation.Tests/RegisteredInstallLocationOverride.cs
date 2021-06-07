@@ -69,11 +69,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Debug.Assert(locationsList.Count >= 1);
             if (OperatingSystem.IsWindows())
             {
-                // Only the first location is used on Windows
-                using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{locationsList[0].Architecture}"))
-                {
-                    dotnetLocationKey.SetValue("InstallLocation", locationsList[0].Path);
-                }
+                foreach (var location in locationsList)
+                    using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{location.Architecture}"))
+                        dotnetLocationKey.SetValue("InstallLocation", location.Path);
             }
             else
             {

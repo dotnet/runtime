@@ -348,23 +348,25 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
-pal::string_t get_dotnet_root_env_var_name()
+bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    pal::string_t dotnet_root_arch = _X("DOTNET_ROOT_"), path;
-    dotnet_root_arch.append(to_upper(get_arch()));
-    if (pal::getenv(dotnet_root_arch.c_str(), &path))
-        return dotnet_root_arch;
+    *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
+    dotnet_root_env_var_name->append(to_upper(get_arch()));
+    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+        return true;
 
 #if defined(WIN32)
     if (pal::is_running_in_wow64())
     {
-        return pal::string_t(_X("DOTNET_ROOT(x86)"));
+        *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
+        return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
     }
 #endif
 
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
-    return pal::string_t(_X("DOTNET_ROOT"));
+    *dotnet_root_env_var_name = _X("DOTNET_ROOT");
+    return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
 }
 
 /**

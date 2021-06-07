@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath, sharedState.RepoDirectories.BuildArchitecture)
+                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath, sharedState.RepoDirectories.BuildArchitecture)
+                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 

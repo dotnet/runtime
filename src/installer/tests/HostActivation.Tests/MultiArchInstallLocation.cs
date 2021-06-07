@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -26,16 +27,14 @@ namespace HostActivation.Tests
             var fixture = sharedTestState.StandaloneAppFixture
                 .Copy();
 
-            // Removing hostfxr from the app's folder will force us to get DOTNET_ROOT env.
-            File.Delete(fixture.TestProject.HostFxrDll);
             var appExe = fixture.TestProject.AppExe;
             var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
-                .EnvironmentVariable($"DOTNET_ROOT_{arch}", fixture.SdkDotnet.BinPath)
                 .DotNetRoot(fixture.BuiltDotnet.BinPath, arch)
                 .Execute()
-                .Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT_{arch}");
+                .Should().Pass()
+                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT_{arch}");
         }
 
         [Fact]
@@ -44,15 +43,14 @@ namespace HostActivation.Tests
             var fixture = sharedTestState.StandaloneAppFixture
                 .Copy();
 
-            // Removing hostfxr from the app's folder will force us to get DOTNET_ROOT env.
-            File.Delete(fixture.TestProject.HostFxrDll);
             var appExe = fixture.TestProject.AppExe;
             var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(fixture.BuiltDotnet.BinPath)
                 .Execute()
-                .Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT");
+                .Should().Pass()
+                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT=");
         }
 
         [Fact]
@@ -61,17 +59,47 @@ namespace HostActivation.Tests
             var fixture = sharedTestState.StandaloneAppFixture
                 .Copy();
 
-            // Removing hostfxr from the app's folder will force us to get DOTNET_ROOT env.
-            File.Delete(fixture.TestProject.HostFxrDll);
             var appExe = fixture.TestProject.AppExe;
             var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
-                .EnvironmentVariable("DOTNET_ROOT", "non_existent_path")
-                .EnvironmentVariable($"DOTNET_ROOT_{arch}", fixture.SdkDotnet.BinPath)
+                .DotNetRoot("non_existent_path")
+                .DotNetRoot(fixture.BuiltDotnet.BinPath, arch)
                 .Execute()
-                .Should().HaveStdErrContaining($"DOTNET_ROOT_{arch}")
+                .Should().Pass()
+                .And.HaveStdErrContaining($"DOTNET_ROOT_{arch}")
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GlobalInstallation_WindowsX86(bool setArchSpecificDotnetRoot)
+        {
+            var fixture = sharedTestState.StandaloneAppFixture
+                .Copy();
+
+            if (RuntimeInformation.OSArchitecture != Architecture.X86)
+                return;
+
+            var appExe = fixture.TestProject.AppExe;
+            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var dotnet = fixture.BuiltDotnet.BinPath;
+            var command = Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(dotnet);
+
+            if (setArchSpecificDotnetRoot)
+                command.DotNetRoot(dotnet, arch);
+
+            var result = command.Execute();
+            result.Should().Pass();
+
+            if (setArchSpecificDotnetRoot)
+                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT_X86=[{dotnet}] as runtime location.");
+            else
+                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT(x86)=[{dotnet}] as runtime location.");
         }
 
         [Fact]
@@ -81,9 +109,7 @@ namespace HostActivation.Tests
             var fixture = sharedTestState.StandaloneAppFixture
                 .Copy();
 
-            File.Delete(fixture.TestProject.HostFxrDll);
             var appExe = fixture.TestProject.AppExe;
-
             var arch1 = fixture.RepoDirProvider.BuildArchitecture;
             var path1 = "a/b/c";
             var arch2 = "someArch";
@@ -116,9 +142,7 @@ namespace HostActivation.Tests
             var fixture = sharedTestState.StandaloneAppFixture
                 .Copy();
 
-            File.Delete(fixture.TestProject.HostFxrDll);
             var appExe = fixture.TestProject.AppExe;
-
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
                 registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
@@ -148,8 +172,8 @@ namespace HostActivation.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
                 var fixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 fixture
-                    .EnsureRestored()
-                    .BuildProject();
+                    .EnsureRestoredForRid(fixture.CurrentRid)
+                    .PublishProject(runtime: fixture.CurrentRid, selfContained: false);
 
                 StandaloneAppFixture = fixture;
                 BaseDirectory = Path.GetDirectoryName(StandaloneAppFixture.SdkDotnet.GreatestVersionHostFxrFilePath);
