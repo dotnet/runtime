@@ -130,7 +130,9 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
-      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+      - script: |
+          $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+          setx PATH "$(Build.SourcesDirectory)\native-tools\bin;%PATH%"
         displayName: Install native dependencies
 
     # Build
