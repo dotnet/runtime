@@ -569,9 +569,9 @@ void GenTree::DumpNodeSizes(FILE* fp)
 
 void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 {
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgWalkTreePre(stmt->GetRootNodePointer(), visitor, pCallBackData);
         }
@@ -12417,7 +12417,7 @@ void Compiler::gtDispStmt(Statement* stmt, const char* msg /* = nullptr */)
 //
 void Compiler::gtDispBlockStmts(BasicBlock* block)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         gtDispStmt(stmt);
         printf("\n");
