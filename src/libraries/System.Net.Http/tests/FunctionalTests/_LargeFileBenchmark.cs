@@ -35,8 +35,8 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => _listener?.Dispose();
 
         private const double LengthMb = 100;
-        private const string BenchmarkServer = "10.194.114.94";
-        //private const string BenchmarkServer = "192.168.0.152";
+        //private const string BenchmarkServer = "10.194.114.94";
+        private const string BenchmarkServer = "192.168.0.152";
         // private const string BenchmarkServer = "127.0.0.1:5000";
 
         [Theory]
@@ -46,46 +46,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(BenchmarkServer)]
         public Task Download11_Run2(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run2", hostName, false, LengthMb);
-
-        // [Theory]
-        // [InlineData("10.194.114.94")]
-        // public Task Download20_DefaultWindow(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, LengthMb);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 64)]
-        public Task Download20_SpecificWindow_Run0(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 256)]
-        [InlineData(BenchmarkServer, 384)]
-        public Task Download20_SpecificWindow_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 512)]
-        [InlineData(BenchmarkServer, 768)]
-        public Task Download20_SpecificWindow_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 1024)]
-        [InlineData(BenchmarkServer, 1280)]
-        [InlineData(BenchmarkServer, 1536)]
-        public Task Download20_SpecificWindow_Run3(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 1792)]
-        [InlineData(BenchmarkServer, 2048)]
-        [InlineData(BenchmarkServer, 2560)]
-        [InlineData(BenchmarkServer, 3072)]
-        [InlineData(BenchmarkServer, 4096)]
-        [InlineData(BenchmarkServer, 5120)]
-        [InlineData(BenchmarkServer, 6144)]
-        [InlineData(BenchmarkServer, 8192)]
-        [InlineData(BenchmarkServer, 10240)]
-        [InlineData(BenchmarkServer, 12288)]
-        [InlineData(BenchmarkServer, 14336)]
-        [InlineData(BenchmarkServer, 16384)]
-        public Task Download20_SpecificWindow_Run4(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
 
         [Theory]
         [InlineData(BenchmarkServer, 1024)]
@@ -104,21 +64,22 @@ namespace System.Net.Http.Functional.Tests
         public Task Download20_SpecificWindow_MegaBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 4096)]
-        public Task Download20_SpecificWindow_4M_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+        [InlineData(BenchmarkServer, 64)]
+        [InlineData(BenchmarkServer, 128)]
+        [InlineData(BenchmarkServer, 256)]
+        [InlineData(BenchmarkServer, 512)]
+        [InlineData(BenchmarkServer, 1024)]
+        [InlineData(BenchmarkServer, 2048)]
+        public Task Download20_SpecificWindow_KiloBytes_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 4096)]
-        public Task Download20_SpecificWindow_4M_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 16384)]
-        public Task Download20_SpecificWindow_16M_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        [InlineData(BenchmarkServer, 16384)]
-        public Task Download20_SpecificWindow_16M_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
+        [InlineData(BenchmarkServer, 64)]
+        [InlineData(BenchmarkServer, 128)]
+        [InlineData(BenchmarkServer, 256)]
+        [InlineData(BenchmarkServer, 512)]
+        [InlineData(BenchmarkServer, 1024)]
+        [InlineData(BenchmarkServer, 2048)]
+        public Task Download20_SpecificWindow_KiloBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         private Task Download20_SpecificWindow(string hostName, int initialWindowKbytes)
         {
