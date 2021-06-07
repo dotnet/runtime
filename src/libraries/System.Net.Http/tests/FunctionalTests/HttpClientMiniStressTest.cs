@@ -40,7 +40,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_Mock : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http3_Mock(ITestOutputHelper output) : base(output) { }
