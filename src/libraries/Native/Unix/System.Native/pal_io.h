@@ -41,6 +41,14 @@ typedef struct
     // add more fields when needed.
 } ProcessStatus;
 
+// NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
+//       assertions in pal_networking.c that validate this.
+typedef struct
+{
+    uint8_t* Base;
+    uintptr_t Count;
+} IOVector;
+
 /* Provide consistent access to nanosecond fields, if they exist. */
 /* Seconds are always available through st_atime, st_mtime, st_ctime. */
 
@@ -750,11 +758,11 @@ PALEXPORT int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferS
  *
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
  */
-PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset);
+PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);
 
 /**
  * Writes the number of bytes specified in the buffers into the specified, opened file descriptor at specified offset.
  *
  * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
  */
-PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset);
+PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);

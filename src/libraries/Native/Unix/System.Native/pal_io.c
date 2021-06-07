@@ -1480,7 +1480,7 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
-int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset)
+int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
     assert(vectorCount >= 0);
@@ -1488,13 +1488,13 @@ int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCo
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV
-    while ((count = preadv(fileDescriptor, vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
     {
-        struct iovec vector = vectors[i];
-        while ((current = pread(fileDescriptor, vector.iov_base, vector.iov_len, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+        IOVector vector = vectors[i];
+        while ((current = pread(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
 
         if (current < 0)
         {
@@ -1509,7 +1509,7 @@ int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCo
         // a) We have reached EOF.
         // b) The operation was interrupted by a signal handler.
         // To mimic preadv, we stop on the first incomplete operation.
-        if (current != (int64_t)vector.iov_len)
+        if (current != (int64_t)vector.Count)
         {
             return count;
         }
@@ -1520,7 +1520,7 @@ int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCo
     return count;
 }
 
-int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset)
+int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
     assert(vectorCount >= 0);
@@ -1528,13 +1528,13 @@ int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorC
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV
-    while ((count = pwritev(fileDescriptor, vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
     {
-        struct iovec vector = vectors[i];
-        while ((current = pwrite(fileDescriptor, vector.iov_base, vector.iov_len, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+        IOVector vector = vectors[i];
+        while ((current = pwrite(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
 
         if (current < 0)
         {
@@ -1549,7 +1549,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorC
         // a) There was not enough space available or the file is too large for given file system.
         // b) The operation was interrupted by a signal handler.
         // To mimic pwritev, we stop on the first incomplete operation.
-        if (current != (int64_t)vector.iov_len)
+        if (current != (int64_t)vector.Count)
         {
             return count;
         }
