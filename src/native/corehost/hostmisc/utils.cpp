@@ -352,8 +352,8 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
 {
     *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
     dotnet_root_env_var_name->append(to_upper(get_arch()));
-    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
-        return true;
+    if (pal::getenv(dotnet_root_env_var_name->c_str(), recv))
+        return pal::file_exists(*recv);
 
 #if defined(WIN32)
     if (pal::is_running_in_wow64())

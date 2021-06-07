@@ -417,7 +417,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     FILE* install_location_file = pal::file_open(install_location_file_path, "r");
     if (install_location_file == nullptr)
     {
-        trace::error(_X("The install_location file '%s' failed to open with error %d."), install_location_file_path.c_str(), errno);
+        trace::error(_X("The install_location file ['%s'] failed to open: %s."), install_location_file_path.c_str(), pal::strerror(errno));
         return false;
     }
 
