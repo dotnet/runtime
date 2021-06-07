@@ -204,7 +204,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             TaskCompletionSource? bidirectionalTcs = null;
             lock (state)
             {
-                unidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
                 bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
                 state.NewUnidirectionalStreamsAvailable = null;
                 state.NewBidirectionalStreamsAvailable = null;
