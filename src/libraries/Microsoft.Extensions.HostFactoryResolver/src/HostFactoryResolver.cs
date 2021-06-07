@@ -37,14 +37,14 @@ namespace Microsoft.Extensions.Hosting
             return ResolveFactory<THostBuilder>(assembly, CreateHostBuilder);
         }
 
-        public static Func<string[], IHostBuilder>? ResolveHostBuilderFactory(Assembly assembly)
+        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, Action<object>? configureHostBuilder = null)
         {
             if (assembly.EntryPoint is null)
             {
                 return null;
             }
 
-            return args => new DeferredHostBuilder(args, assembly.EntryPoint);
+            return args => new HostingListener(args, assembly.EntryPoint, configureHostBuilder).CreateHost();
         }
 
         private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
@@ -109,14 +109,13 @@ namespace Microsoft.Extensions.Hosting
                 };
             }
 
-            var deferredFactory = ResolveHostBuilderFactory(assembly);
-            if (deferredFactory != null)
+            var hostFactory = ResolveHostFactory(assembly, builder => { });
+            if (hostFactory != null)
             {
                 return args =>
                 {
-                    var hostBuilder = deferredFactory(args);
-                    var host = hostBuilder.Build();
-                    return host.Services;
+                    var host = hostFactory(args);
+                    return GetServiceProvider(host);
                 };
             }
 
@@ -140,39 +139,27 @@ namespace Microsoft.Extensions.Hosting
             return (IServiceProvider?)servicesProperty?.GetValue(host);
         }
 
-        // This host builder captures calls to the IHostBuilder then replays them on the application's
-        // IHostBuilder when the event fires
-        private class DeferredHostBuilder : IHostBuilder, IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+        private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
         {
-            public IDictionary<object, object> Properties { get; } = new Dictionary<object, object>();
-
             private readonly string[] _args;
             private readonly MethodInfo _entryPoint;
 
-            private readonly TaskCompletionSource<IHost> _hostTcs = new();
+            private readonly TaskCompletionSource<object> _hostTcs = new();
             private IDisposable? _disposable;
 
-            private Action<IHostBuilder> _configure;
+            private Action<object>? _configure;
 
             // The amount of time we wait for the diagnostic source events to fire
-            private static readonly TimeSpan _waitTimeout = TimeSpan.FromSeconds(20);
+            private static readonly TimeSpan s_waitTimeout = TimeSpan.FromSeconds(20);
 
-            public DeferredHostBuilder(string[] args, MethodInfo entryPoint)
+            public HostingListener(string[] args, MethodInfo entryPoint, Action<object>? configure)
             {
                 _args = args;
                 _entryPoint = entryPoint;
-                _configure = b =>
-                {
-                    // Copy the properties from this builder into the builder
-                    // that we're going to receive
-                    foreach (var pair in Properties)
-                    {
-                        b.Properties[pair.Key] = pair.Value;
-                    }
-                };
+                _configure = configure;
             }
 
-            public IHost Build()
+            public object CreateHost()
             {
                 using var subscription = DiagnosticListener.AllListeners.Subscribe(this);
 
@@ -192,7 +179,7 @@ namespace Microsoft.Extensions.Hosting
                             _entryPoint.Invoke(null, new object[] { _args });
                         }
 
-                        // Try to set an exception if the entrypoint returns gracefully, this will force
+                        // Try to set an exception if the entry point returns gracefully, this will force
                         // build to throw
                         _hostTcs.TrySetException(new InvalidOperationException("Unable to build IHost"));
                     }
@@ -222,14 +209,14 @@ namespace Microsoft.Extensions.Hosting
                 try
                 {
                     // Wait before throwing an exception
-                    if (!_hostTcs.Task.Wait(_waitTimeout))
+                    if (!_hostTcs.Task.Wait(s_waitTimeout))
                     {
                         throw new InvalidOperationException("Unable to build IHost");
                     }
                 }
                 catch (AggregateException) when (_hostTcs.Task.IsCompleted)
                 {
-                    // Lets this propogate out of the call to GetAwaiter().GetResult()
+                    // Lets this propagate out of the call to GetAwaiter().GetResult()
                 }
 
                 Debug.Assert(_hostTcs.Task.IsCompleted);
@@ -237,42 +224,6 @@ namespace Microsoft.Extensions.Hosting
                 return _hostTcs.Task.GetAwaiter().GetResult();
             }
 
-            public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
-            {
-                _configure += b => b.ConfigureAppConfiguration(configureDelegate);
-                return this;
-            }
-
-            public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
-            {
-                _configure += b => b.ConfigureContainer(configureDelegate);
-                return this;
-            }
-
-            public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
-            {
-                _configure += b => b.ConfigureHostConfiguration(configureDelegate);
-                return this;
-            }
-
-            public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
-            {
-                _configure += b => b.ConfigureServices(configureDelegate);
-                return this;
-            }
-
-            public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
-            {
-                _configure += b => b.UseServiceProviderFactory(factory);
-                return this;
-            }
-
-            public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
-            {
-                _configure += b => b.UseServiceProviderFactory(factory);
-                return this;
-            }
-            
             public void OnCompleted()
             {
                 _disposable?.Dispose();
@@ -297,7 +248,7 @@ namespace Microsoft.Extensions.Hosting
                 {
                     if (value.Value is IHostBuilder builder)
                     {
-                        _configure(builder);
+                        _configure?.Invoke(builder);
                     }
                 }
 
