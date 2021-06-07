@@ -218,7 +218,12 @@ namespace System.Text.Json.Serialization.Metadata
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, typeNumberHandling, ref ignoredMembers);
+                                    CacheMember(
+                                        currentType,
+                                        propertyInfo.PropertyType,
+                                        propertyInfo,
+                                        typeNumberHandling,
+                                        ref ignoredMembers);
                                 }
                                 else
                                 {
@@ -244,7 +249,12 @@ namespace System.Text.Json.Serialization.Metadata
                                 {
                                     if (hasJsonInclude || Options.IncludeFields)
                                     {
-                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, typeNumberHandling, ref ignoredMembers);
+                                        CacheMember(
+                                            currentType,
+                                            fieldInfo.FieldType,
+                                            fieldInfo,
+                                            typeNumberHandling,
+                                            ref ignoredMembers);
                                     }
                                 }
                                 else
@@ -266,13 +276,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                             properties = currentType.GetProperties(bindingFlags);
                         };
-
-                        if (DetermineExtensionDataProperty())
-                        {
-                            // Remove from cache since it is handled independently.
-                            Debug.Assert(DataExtensionProperty != null);
-                            PropertyCache.Remove(DataExtensionProperty.NameAsString);
-                        }
 
                         if (converter.ConstructorIsParameterized)
                         {
@@ -316,40 +319,55 @@ namespace System.Text.Json.Serialization.Metadata
             JsonNumberHandling? typeNumberHandling,
             ref Dictionary<string, MemberInfo>? ignoredMembers)
         {
+            bool hasExtensionAttribute = DoesPropertyHaveAttribute(memberType, typeof(JsonExtensionDataAttribute));
+            if (hasExtensionAttribute & DataExtensionProperty != null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
+            }
+
             JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, typeNumberHandling, Options);
             Debug.Assert(jsonPropertyInfo.NameAsString != null);
 
-            string memberName = memberInfo.Name;
-
-            // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-            if (!PropertyCache!.TryAdd(jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+            if (hasExtensionAttribute)
             {
-                JsonPropertyInfo other = PropertyCache[jsonPropertyInfo.NameAsString]!;
-
-                if (other.IsIgnored)
-                {
-                    // Overwrite previously cached property since it has [JsonIgnore].
-                    PropertyCache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
-                }
-                else if (
-                    // Does the current property have `JsonIgnoreAttribute`?
-                    !jsonPropertyInfo.IsIgnored &&
-                    // Is the current property hidden by the previously cached property
-                    // (with `new` keyword, or by overriding)?
-                    other.MemberInfo!.Name != memberName &&
-                    // Was a property with the same CLR name was ignored? That property hid the current property,
-                    // thus, if it was ignored, the current property should be ignored too.
-                    ignoredMembers?.ContainsKey(memberName) != true)
-                {
-                    // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
-                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
-                }
-                // Ignore the current property.
+                Debug.Assert(DataExtensionProperty == null);
+                ValidateAndAssignDataExtensionProperty(jsonPropertyInfo);
+                Debug.Assert(DataExtensionProperty != null);
             }
-
-            if (jsonPropertyInfo.IsIgnored)
+            else
             {
-                (ignoredMembers ??= new Dictionary<string, MemberInfo>()).Add(memberName, memberInfo);
+                string memberName = memberInfo.Name;
+
+                // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                if (!PropertyCache!.TryAdd(jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                {
+                    JsonPropertyInfo other = PropertyCache[jsonPropertyInfo.NameAsString]!;
+
+                    if (other.IsIgnored)
+                    {
+                        // Overwrite previously cached property since it has [JsonIgnore].
+                        PropertyCache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                    }
+                    else if (
+                        // Does the current property have `JsonIgnoreAttribute`?
+                        !jsonPropertyInfo.IsIgnored &&
+                        // Is the current property hidden by the previously cached property
+                        // (with `new` keyword, or by overriding)?
+                        other.MemberInfo!.Name != memberName &&
+                        // Was a property with the same CLR name was ignored? That property hid the current property,
+                        // thus, if it was ignored, the current property should be ignored too.
+                        ignoredMembers?.ContainsKey(memberName) != true)
+                    {
+                        // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
+                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
+                    }
+                    // Ignore the current property.
+                }
+
+                if (jsonPropertyInfo.IsIgnored)
+                {
+                    (ignoredMembers ??= new Dictionary<string, MemberInfo>()).Add(memberName, memberInfo);
+                }
             }
         }
 
@@ -487,55 +505,36 @@ namespace System.Text.Json.Serialization.Metadata
             return propertyInfo != null && (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true);
         }
 
-        private bool DetermineExtensionDataProperty()
+        private void ValidateAndAssignDataExtensionProperty(JsonPropertyInfo jsonPropertyInfo)
         {
-            JsonPropertyInfo? jsonPropertyInfo = GetPropertyWithUniqueAttribute(typeof(JsonExtensionDataAttribute));
-            if (jsonPropertyInfo != null)
+            Type memberType = jsonPropertyInfo.DeclaredPropertyType;
+            JsonConverter? converter = null;
+            if (typeof(IDictionary<string, object>).IsAssignableFrom(memberType) ||
+                typeof(IDictionary<string, JsonElement>).IsAssignableFrom(memberType) ||
+                // Avoid a reference to typeof(JsonNode) to support trimming.
+                (memberType.FullName == JsonObjectTypeName && ReferenceEquals(memberType.Assembly, GetType().Assembly)))
             {
-                JsonConverter? converter = null;
-                Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
-                if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) ||
-                    // Avoid a reference to typeof(JsonNode) to support trimming.
-                    (declaredPropertyType.FullName == JsonObjectTypeName && ReferenceEquals(declaredPropertyType.Assembly, GetType().Assembly)))
-                {
-                    converter = Options.GetConverterInternal(declaredPropertyType);
-                    Debug.Assert(converter != null);
-                }
+                converter = Options.GetConverterInternal(memberType);
+                Debug.Assert(converter != null);
+            }
 
-                if (converter == null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
-                }
+            if (converter == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
+            }
 
-                DataExtensionProperty = jsonPropertyInfo;
+            DataExtensionProperty = jsonPropertyInfo;
+        }
+
+        private bool DoesPropertyHaveAttribute(MemberInfo memberInfo, Type attributeType)
+        {
+            Attribute? attribute = memberInfo.GetCustomAttribute(attributeType);
+            if (attribute != null)
+            {
                 return true;
             }
 
             return false;
-        }
-
-        private JsonPropertyInfo? GetPropertyWithUniqueAttribute(Type attributeType)
-        {
-            Debug.Assert(PropertyCache != null);
-            JsonPropertyInfo? property = null;
-
-            foreach (JsonPropertyInfo? jsonPropertyInfo in PropertyCache.Values)
-            {
-                Debug.Assert(jsonPropertyInfo!.MemberInfo != null);
-                Attribute? attribute = jsonPropertyInfo.MemberInfo.GetCustomAttribute(attributeType);
-                if (attribute != null)
-                {
-                    if (property != null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, attributeType);
-                    }
-
-                    property = jsonPropertyInfo;
-                }
-            }
-
-            return property;
         }
 
         private static JsonParameterInfo AddConstructorParameter(

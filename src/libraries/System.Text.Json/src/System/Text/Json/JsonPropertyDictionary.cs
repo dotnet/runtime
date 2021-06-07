@@ -14,25 +14,25 @@ namespace System.Text.Json
     {
         private const int ListToDictionaryThreshold = 9;
 
-        private Dictionary<string, T?>? _dictionary;
-        private readonly List<KeyValuePair<string, T?>> _list;
+        private Dictionary<string, T?>? _propertyDictionary;
+        private readonly List<KeyValuePair<string, T?>> _propertyList;
 
         private StringComparer _stringComparer;
 
         public JsonPropertyDictionary(bool caseInsensitive)
         {
             _stringComparer = caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            _list = new List<KeyValuePair<string, T?>>();
+            _propertyList = new List<KeyValuePair<string, T?>>();
         }
 
         public JsonPropertyDictionary(bool caseInsensitive, int capacity)
         {
             _stringComparer = caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            _list = new List<KeyValuePair<string, T?>>(capacity);
+            _propertyList = new List<KeyValuePair<string, T?>>(capacity);
         }
 
         // Enable direct access to the List for performance reasons.
-        public List<KeyValuePair<string, T?>> List => _list;
+        public List<KeyValuePair<string, T?>> List => _propertyList;
 
         public void Add(string propertyName, T? value)
         {
@@ -79,8 +79,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
             }
 
-            _list.Clear();
-            _dictionary?.Clear();
+            _propertyList.Clear();
+            _propertyDictionary?.Clear();
         }
 
         public bool ContainsKey(string propertyName)
@@ -97,7 +97,7 @@ namespace System.Text.Json
         {
             get
             {
-                return _list.Count;
+                return _propertyList.Count;
             }
         }
 
@@ -136,7 +136,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentOutOfRangeException_NodeArrayIndexNegative(nameof(index));
             }
 
-            foreach (KeyValuePair<string, T?> item in _list)
+            foreach (KeyValuePair<string, T?> item in _propertyList)
             {
                 if (index >= array.Length)
                 {
@@ -149,7 +149,7 @@ namespace System.Text.Json
 
         public IEnumerator<KeyValuePair<string, T?>> GetEnumerator()
         {
-            foreach (KeyValuePair<string, T?> item in _list)
+            foreach (KeyValuePair<string, T?> item in _propertyList)
             {
                 yield return item;
             }
@@ -166,13 +166,13 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            if (_dictionary != null)
+            if (_propertyDictionary != null)
             {
-                return _dictionary.TryGetValue(propertyName, out value);
+                return _propertyDictionary.TryGetValue(propertyName, out value);
             }
             else
             {
-                foreach (KeyValuePair<string, T?> item in _list)
+                foreach (KeyValuePair<string, T?> item in _propertyList)
                 {
                     if (_stringComparer.Equals(propertyName, item.Key))
                     {
@@ -203,11 +203,11 @@ namespace System.Text.Json
 
             set
             {
-                SetValue(propertyName, value, null);
+                SetValue(propertyName, value);
             }
         }
 
-        public T? SetValue(string propertyName, T? value, Action? assignParent)
+        public T? SetValue(string propertyName, T? value, Action? assignParent = null)
         {
             if (IsReadOnly)
             {
@@ -223,17 +223,17 @@ namespace System.Text.Json
 
             T? existing = null;
 
-            if (_dictionary != null)
+            if (_propertyDictionary != null)
             {
                 // Fast path if item doesn't exist in dictionary.
-                if (JsonHelpers.TryAdd(_dictionary, propertyName, value))
+                if (JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
                 {
                     assignParent?.Invoke();
-                    _list.Add(new KeyValuePair<string, T?>(propertyName, value));
+                    _propertyList.Add(new KeyValuePair<string, T?>(propertyName, value));
                     return null;
                 }
 
-                existing = _dictionary[propertyName];
+                existing = _propertyDictionary[propertyName];
                 if (ReferenceEquals(existing, value))
                 {
                     // Ignore if the same value.
@@ -244,13 +244,13 @@ namespace System.Text.Json
             int i = FindValueIndex(propertyName);
             if (i >= 0)
             {
-                if (_dictionary != null)
+                if (_propertyDictionary != null)
                 {
-                    _dictionary[propertyName] = value;
+                    _propertyDictionary[propertyName] = value;
                 }
                 else
                 {
-                    KeyValuePair<string, T?> current = _list[i];
+                    KeyValuePair<string, T?> current = _propertyList[i];
                     if (ReferenceEquals(current.Value, value))
                     {
                         // Ignore if the same value.
@@ -261,13 +261,13 @@ namespace System.Text.Json
                 }
 
                 assignParent?.Invoke();
-                _list[i] = new KeyValuePair<string, T?>(propertyName, value);
+                _propertyList[i] = new KeyValuePair<string, T?>(propertyName, value);
             }
             else
             {
                 assignParent?.Invoke();
-                _dictionary?.Add(propertyName, value);
-                _list.Add(new KeyValuePair<string, T?>(propertyName, value));
+                _propertyDictionary?.Add(propertyName, value);
+                _propertyList.Add(new KeyValuePair<string, T?>(propertyName, value));
                 Debug.Assert(existing == null);
             }
 
@@ -276,27 +276,10 @@ namespace System.Text.Json
 
         private void AddValue(string propertyName, T? value)
         {
-            if (IsReadOnly)
+            if (!TryAddValue(propertyName, value))
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowArgumentException_DuplicateKey(propertyName);
             }
-
-            CreateDictionaryIfThreshold();
-
-            if (_dictionary == null)
-            {
-                // Verify there are no duplicates before adding.
-                if (ContainsProperty(propertyName))
-                {
-                    ThrowHelper.ThrowArgumentException_DuplicateKey(propertyName);
-                }
-            }
-            else
-            {
-                _dictionary.Add(propertyName, value);
-            }
-
-            _list.Add(new KeyValuePair<string, T?>(propertyName, value));
         }
 
         private bool TryAddValue(string propertyName, T? value)
@@ -308,7 +291,7 @@ namespace System.Text.Json
 
             CreateDictionaryIfThreshold();
 
-            if (_dictionary == null)
+            if (_propertyDictionary == null)
             {
                 // Verify there are no duplicates before adding.
                 if (ContainsProperty(propertyName))
@@ -318,21 +301,21 @@ namespace System.Text.Json
             }
             else
             {
-               if (!JsonHelpers.TryAdd(_dictionary, propertyName, value))
+                if (!JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
                 {
                     return false;
                 }
             }
 
-            _list.Add(new KeyValuePair<string, T?>(propertyName, value));
+            _propertyList.Add(new KeyValuePair<string, T?>(propertyName, value));
             return true;
         }
 
-        public void CreateDictionaryIfThreshold()
+        private void CreateDictionaryIfThreshold()
         {
-            if (_dictionary == null && _list.Count > ListToDictionaryThreshold)
+            if (_propertyDictionary == null && _propertyList.Count > ListToDictionaryThreshold)
             {
-                _dictionary = JsonHelpers.CreateDictionaryFromCollection(_list, _stringComparer);
+                _propertyDictionary = JsonHelpers.CreateDictionaryFromCollection(_propertyList, _stringComparer);
             }
         }
 
@@ -364,12 +347,12 @@ namespace System.Text.Json
 
         private bool ContainsProperty(string propertyName)
         {
-            if (_dictionary != null)
+            if (_propertyDictionary != null)
             {
-                return _dictionary.ContainsKey(propertyName);
+                return _propertyDictionary.ContainsKey(propertyName);
             }
 
-            foreach (KeyValuePair<string, T?> item in _list)
+            foreach (KeyValuePair<string, T?> item in _propertyList)
             {
                 if (_stringComparer.Equals(propertyName, item.Key))
                 {
@@ -382,9 +365,9 @@ namespace System.Text.Json
 
         private int FindValueIndex(string propertyName)
         {
-            for (int i = 0; i < _list.Count; i++)
+            for (int i = 0; i < _propertyList.Count; i++)
             {
-                KeyValuePair<string, T?> current = _list[i];
+                KeyValuePair<string, T?> current = _propertyList[i];
                 if (_stringComparer.Equals(propertyName, current.Key))
                 {
                     return i;
@@ -403,24 +386,24 @@ namespace System.Text.Json
                 ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
             }
 
-            if (_dictionary != null)
+            if (_propertyDictionary != null)
             {
-                if (!_dictionary.TryGetValue(propertyName, out existing))
+                if (!_propertyDictionary.TryGetValue(propertyName, out existing))
                 {
                     return false;
                 }
 
-                bool success = _dictionary.Remove(propertyName);
+                bool success = _propertyDictionary.Remove(propertyName);
                 Debug.Assert(success);
             }
 
-            for (int i = 0; i < _list.Count; i++)
+            for (int i = 0; i < _propertyList.Count; i++)
             {
-                KeyValuePair<string, T?> current = _list[i];
+                KeyValuePair<string, T?> current = _propertyList[i];
 
                 if (_stringComparer.Equals(current.Key, propertyName))
                 {
-                    _list.RemoveAt(i);
+                    _propertyList.RemoveAt(i);
                     existing = current.Value;
                     return true;
                 }

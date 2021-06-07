@@ -25,7 +25,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public void Add(string propertyName, JsonNode? value)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             _dictionary.Add(propertyName, value);
             value?.AssignParent(this);
@@ -85,7 +85,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public bool ContainsKey(string propertyName)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             return _dictionary.ContainsKey(propertyName);
         }
@@ -97,7 +97,7 @@ namespace System.Text.Json.Nodes
         {
             get
             {
-                Initialize();
+                InitializeIfRequired();
                 Debug.Assert(_dictionary != null);
                 return _dictionary.Count;
             }
@@ -120,7 +120,7 @@ namespace System.Text.Json.Nodes
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
 
             bool success = _dictionary.TryRemoveProperty(propertyName, out JsonNode? removedNode);
@@ -141,7 +141,7 @@ namespace System.Text.Json.Nodes
         /// </returns>
         bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             return _dictionary.Contains(item);
         }
@@ -165,7 +165,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             _dictionary.CopyTo(array, index);
         }
@@ -178,7 +178,7 @@ namespace System.Text.Json.Nodes
         /// </returns>
         public IEnumerator<KeyValuePair<string, JsonNode?>> GetEnumerator()
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             return _dictionary.GetEnumerator();
         }
@@ -201,7 +201,7 @@ namespace System.Text.Json.Nodes
         {
             get
             {
-                Initialize();
+                InitializeIfRequired();
                 Debug.Assert(_dictionary != null);
                 return _dictionary.Keys;
             }
@@ -214,7 +214,7 @@ namespace System.Text.Json.Nodes
         {
             get
             {
-                Initialize();
+                InitializeIfRequired();
                 Debug.Assert(_dictionary != null);
                 return _dictionary.Values;
             }
@@ -236,7 +236,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             return _dictionary.TryGetValue(propertyName, out jsonNode);
         }
@@ -254,12 +254,12 @@ namespace System.Text.Json.Nodes
         /// </returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             return _dictionary.GetEnumerator();
         }
 
-        private void Initialize()
+        private void InitializeIfRequired()
         {
             if (_dictionary != null)
             {
@@ -286,7 +286,6 @@ namespace System.Text.Json.Nodes
                 _jsonElement = null;
             }
 
-            dictionary.CreateDictionaryIfThreshold();
             _dictionary = dictionary;
         }
     }
