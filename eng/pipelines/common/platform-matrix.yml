@@ -43,8 +43,6 @@ jobs:
         image: windowsservercore-2004-helix-webassembly-amd64-20210422161149-94a50b5
         registry: mcr
       jobParameters:
-        pool:
-          vmImage: 'windows-2019'
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
