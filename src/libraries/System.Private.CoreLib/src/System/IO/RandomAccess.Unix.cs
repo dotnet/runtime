@@ -37,7 +37,7 @@ namespace System.IO
         private static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
-            Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count ];
+            Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count];
 
             for (int i = 0; i < buffers.Count; i++)
             {
@@ -64,12 +64,11 @@ namespace System.IO
         private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
             CancellationToken cancellationToken)
         {
-            return new ValueTask<int>(
-                new TaskFactory<int>(
-                        cancellationToken,
-                        TaskCreationOptions.None,
-                        TaskContinuationOptions.DenyChildAttach,
-                        TaskScheduler.Default)
+            return new ValueTask<int>(Task.Factory.StartNew(state =>
+            {
+                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state;
+                return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
+            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
                     .StartNew(() => ReadAtOffset(handle, buffer.Span, fileOffset), cancellationToken));
         }
 
@@ -97,14 +96,14 @@ namespace System.IO
 
         private static unsafe long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
-            MemoryHandle[] handles = new MemoryHandle[buffers.Count ];
+            MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count ];
 
             for (int i = 0; i < buffers.Count; i++)
             {
                 ReadOnlyMemory<byte> buffer = buffers[i];
                 MemoryHandle memoryHandle = buffer.Pin();
-                vectors[i] = new Interop.Sys.IOVector {Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length};
+                vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
                 handles[i] = memoryHandle;
             }
 

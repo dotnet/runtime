@@ -48,7 +48,7 @@ namespace Microsoft.Win32.SafeHandles
                     NtCreateFile(fullPath, mode, access, share, options, preallocationSize),
                     ownsHandle: true,
                     options,
-                    Interop.Kernel32.FileTypes.FILE_TYPE_DISK); // similarly to FileStream, we assume that only disk files can be referenced by path on Windows
+                    Interop.Kernel32.FileTypes.FILE_TYPE_DISK); // similar to FileStream, we assume that only disk files can be referenced by path on Windows
 
                 fileHandle.InitThreadPoolBindingIfNeeded();
 

@@ -29,7 +29,7 @@ namespace System.IO
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path = null)
         {
             NativeOverlapped nativeOverlapped = GetNativeOverlapped(fileOffset);
-            int r = ReadFileNative(handle, buffer, true, &nativeOverlapped, out int errorCode);
+            int r = ReadFileNative(handle, buffer, syncUsingOverlapped: true, &nativeOverlapped, out int errorCode);
 
             if (r == -1)
             {
