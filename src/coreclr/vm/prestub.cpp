@@ -470,16 +470,41 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
         {
             LOG_USING_R2R_CODE(this);
 
+#ifdef FEATURE_TIERED_COMPILATION
+            // Finalize the optimization tier before SetNativeCode() is called
+            bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
 #ifdef FEATURE_CODE_VERSIONING
                 pConfig->SetGeneratedOrLoadedNewCode();
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-                if (shouldTier)
+                if (shouldCountCalls)
                 {
                     _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                     pConfig->SetShouldCountCalls();
+                }
+#endif
+
+#ifdef FEATURE_MULTICOREJIT
+                // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+                // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+                // of R2R code are also recorded.
+                if (pConfig->NeedsMulticoreJitNotification())
+                {
+                    _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+                    _ASSERTE(!pConfig->IsForMulticoreJit());
+
+                    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                    if (mcJitManager.IsRecorderActive())
+                    {
+                        if (MulticoreJitManager::IsMethodSupported(this))
+                        {
+                            mcJitManager.RecordMethodJitOrLoad(this);
+                        }
+                    }
                 }
 #endif
             }
@@ -602,16 +627,17 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         }
     }
 #endif
+
     return pCode;
 }
 
-PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit)
+PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pConfig != NULL);
     _ASSERTE(pConfig->GetMethodDesc() == this);
-    _ASSERTE(pWasTier0Jit != NULL);
-    _ASSERTE(!*pWasTier0Jit);
+    _ASSERTE(pWasTier0 != NULL);
+    _ASSERTE(!*pWasTier0);
 
     MulticoreJitCodeInfo codeInfo;
 #ifdef FEATURE_MULTICOREJIT
@@ -625,9 +651,9 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
         #ifdef FEATURE_TIERED_COMPILATION
             if (!codeInfo.IsNull())
             {
-                if (codeInfo.WasTier0Jit())
+                if (codeInfo.WasTier0())
                 {
-                    *pWasTier0Jit = true;
+                    *pWasTier0 = true;
                 }
                 if (codeInfo.JitSwitchedToOptimized())
                 {
@@ -803,13 +829,13 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
             if (codeVersion.IsDefaultVersion())
             {
-                bool wasTier0Jit = false;
-                pCode = GetMulticoreJitCode(pConfig, &wasTier0Jit);
+                bool wasTier0 = false;
+                pCode = GetMulticoreJitCode(pConfig, &wasTier0);
                 if (pCode != NULL)
                 {
                 #ifdef FEATURE_TIERED_COMPILATION
                     // Finalize the optimization tier before SetNativeCode() is called
-                    bool shouldCountCalls = wasTier0Jit && pConfig->FinalizeOptimizationTierForTier0Jit();
+                    bool shouldCountCalls = wasTier0 && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
                 #endif
 
                     if (pConfig->SetNativeCode(pCode, &pCode))
@@ -1079,7 +1105,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Finalize the optimization tier before SetNativeCode() is called
-    bool shouldCountCalls = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0Jit();
+    bool shouldCountCalls = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
@@ -1126,7 +1152,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         {
             if (MulticoreJitManager::IsMethodSupported(this))
             {
-                mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
+                mcJitManager.RecordMethodJitOrLoad(this); // Tell multi-core JIT manager to record method on successful JITting
             }
         }
     }
@@ -1325,10 +1351,27 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
 }
 
 #ifdef FEATURE_TIERED_COMPILATION
+// This function should be called before SetNativeCode() for consistency with usage of FinalizeOptimizationTierForTier0Jit
+bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
+{
+    _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
+    _ASSERTE(!JitSwitchedToOptimized());
+
+    if (!IsForMulticoreJit())
+    {
+        return true; // should count calls if SetNativeCode() succeeds
+    }
+
+    // When using multi-core JIT, the loaded code would not be used until the method is called. Record some information that may
+    // be used later when the method is called.
+    ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
+    return false; // don't count calls
+}
+
 // This function should be called before SetNativeCode() to update the optimization tier if necessary before SetNativeCode() is
 // called. As soon as SetNativeCode() is called, another thread may get the native code and the optimization tier for that code
 // version, and it should have already been finalized.
-bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Jit()
+bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
 {
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
 
@@ -1336,7 +1379,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Jit()
     {
         // When using multi-core JIT, the jitted code would not be used until the method is called. Don't make changes to the
         // optimization tier yet, just record some information that may be used later when the method is called.
-        ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0Jit();
+        ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
         return false; // don't count calls
     }
 
@@ -2229,19 +2272,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         if (pCode == NULL)
         {
             pCode = GetStubForInteropMethod(this);
-#ifdef FEATURE_MULTICOREJIT
-            if (pCode)
-            {
-                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                if (mcJitManager.IsRecorderActive())
-                {
-                    if (MulticoreJitManager::IsMethodSupported(this))
-                    {
-                        mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
-                    }
-                }
-            }
-#endif // FEATURE_MULTICOREJIT
         }
 
         GetOrCreatePrecode();

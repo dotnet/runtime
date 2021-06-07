@@ -261,6 +261,14 @@ namespace Internal.TypeSystem
             return type.Context.GetAllMethods(type);
         }
 
+        /// <summary>
+        /// Retrieves all virtual methods on a type, including the ones injected by the type system context.
+        /// </summary>
+        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        {
+            return type.Context.GetAllVirtualMethods(type);
+        }
+
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualSlots(type);
