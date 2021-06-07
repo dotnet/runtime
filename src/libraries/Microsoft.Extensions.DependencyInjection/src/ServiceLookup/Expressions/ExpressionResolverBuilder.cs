@@ -28,7 +28,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(IDictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
         private static readonly ParameterExpression Sync = Expression.Variable(typeof(object), ScopeParameter.Name + "sync");
-        private static readonly ParameterExpression IsRootScope = Expression.Variable(typeof(bool), ScopeParameter.Name + "isRootScope");
         private static readonly BinaryExpression ResolvedServicesVariableAssignment =
             Expression.Assign(ResolvedServices,
                 Expression.Property(
@@ -91,7 +90,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
                     Expression.Block(
-                        new[] { IsRootScope, ResolvedServices, Sync },
+                        new[] { ResolvedServices, Sync },
                         ResolvedServicesVariableAssignment,
                         SyncVariableAssignment,
                         BuildScopedExpression(callSite)),
