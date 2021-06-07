@@ -5,28 +5,28 @@
 // Not meant to be used outside of this class (TODO make private to this file when project converted to TS)
 function load_config() {
     // since this file loads before emsdk we don't have environment vars yet, so we define them locally
-    var ENVIRONMENT_IS_NODE = typeof process === "object";
-    var ENVIRONMENT_IS_WEB = typeof window === "object";
+    const ENVIRONMENT_IS_NODE = typeof process === "object";
+    const ENVIRONMENT_IS_WEB = typeof window === "object";
 
     // In some cases there may be no Module object (such as in tests)
     // so we no-op during the callback
-    let callback = typeof Module !== "undefined" ? Module['onConfigLoaded'] : (_) => {};
+    const callback = typeof Module !== "undefined" ? Module['onConfigLoaded'] : (_) => {};
 
     if (ENVIRONMENT_IS_NODE){
         try {
-            var config = JSON.parse(require("./mono-config.json"));
+            const config = JSON.parse(require("./mono-config.json"));
             callback(config);
         } catch(e) {
             callback({error: "Error loading mono-config.json file from current directory"});
         }
     } else if (ENVIRONMENT_IS_WEB){
-        var xobj = new XMLHttpRequest();
+        const xobj = new XMLHttpRequest();
         xobj.overrideMimeType("application/json");
         xobj.open("GET", "./mono-config.json", true);
         xobj.onreadystatechange = function() {
             if (xobj.readyState == XMLHttpRequest.DONE) {
                 if (xobj.status === 0 || (xobj.status >= 200 && xobj.status < 400)) {
-                    var config = JSON.parse(xobj.responseText);
+                    const config = JSON.parse(xobj.responseText);
                     callback(config);
                 } else {
                     // error if the request to load the file was successful but loading failed
@@ -47,7 +47,7 @@ function load_config() {
         }
     } else { // shell or worker
         try {
-            var config = JSON.parse(read("./mono-config.json")); // read is a v8 debugger command
+            const config = JSON.parse(read("./mono-config.json")); // read is a v8 debugger command
             callback(config);
         } catch(e) {
             callback({error: "Error loading mono-config.json file from current directory"});
