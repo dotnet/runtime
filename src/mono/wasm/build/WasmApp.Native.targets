@@ -150,6 +150,7 @@
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <PropertyGroup>
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
@@ -207,10 +208,10 @@
   </Target>
 
   <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
-    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
-    <Exec Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
+    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       Assemblies="@(_WasmAssembliesInternal)"
@@ -338,8 +339,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
-    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -392,7 +393,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </ItemGroup>
 
     <MonoAOTCompiler
-      CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
+      CompilerBinaryPath="$(_MonoAotCrossCompilerPath)"
       OutputDir="$(_WasmIntermediateOutputPath)"
       Mode="$(AOTMode)"
       OutputType="AsmOnly"

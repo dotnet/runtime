@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
+using System.Tests;
 
 using Xunit;
 
@@ -1421,7 +1421,17 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetHeaderStrings_SetValidAndInvalidHeaderValues_AllHeaderValuesReturned()
+        public void NonValidated_Default_Empty()
+        {
+            HttpHeadersNonValidated v = default;
+            Assert.Equal(0, v.Count);
+            Assert.Empty(v);
+            Assert.False(v.TryGetValues("Host", out HeaderStringValues values));
+            Assert.Empty(values);
+        }
+
+        [Fact]
+        public void NonValidated_SetValidAndInvalidHeaderValues_AllHeaderValuesReturned()
         {
             MockHeaderParser parser = new MockHeaderParser("---");
             MockHeaders headers = new MockHeaders(parser);
@@ -1431,16 +1441,25 @@ namespace System.Net.Http.Tests
             headers.TryAddWithoutValidation(headers.Descriptor, "value2,value3");
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue);
 
-            foreach (var header in headers.GetHeaderStrings())
+            string expectedValue = "value2,value3---" + invalidHeaderValue + "---" + parsedPrefix + "1";
+
+            Assert.Equal(1, headers.NonValidated.Count);
+
+            int iterations = 0;
+            foreach (KeyValuePair<string, HeaderStringValues> header in headers.NonValidated)
             {
-                Assert.Equal(headers.Descriptor.Name, header.Key);
                 // Note that raw values don't get parsed but just added to the result.
-                Assert.Equal("value2,value3---" + invalidHeaderValue + "---" + parsedPrefix + "1", header.Value);
+                iterations++;
+                Assert.Equal(headers.Descriptor.Name, header.Key);
+                Assert.Equal(3, header.Value.Count);
+                Assert.Equal(expectedValue, header.Value.ToString());
             }
+
+            Assert.Equal(1, iterations);
         }
 
         [Fact]
-        public void GetHeaderStrings_SetMultipleHeaders_AllHeaderValuesReturned()
+        public void NonValidated_SetMultipleHeaders_AllHeaderValuesReturned()
         {
             MockHeaderParser parser = new MockHeaderParser(true);
             MockHeaders headers = new MockHeaders(parser);
@@ -1456,17 +1475,17 @@ namespace System.Net.Http.Tests
             string[] expectedHeaderValues = { parsedPrefix + "1", "value2", "", "value41, value42" };
             int i = 0;
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (KeyValuePair<string, HeaderStringValues> header in headers.NonValidated)
             {
                 Assert.NotEqual(expectedHeaderNames.Length, i);
                 Assert.Equal(expectedHeaderNames[i], header.Key);
-                Assert.Equal(expectedHeaderValues[i], header.Value);
+                Assert.Equal(expectedHeaderValues[i], header.Value.ToString());
                 i++;
             }
         }
 
         [Fact]
-        public void GetHeaderStrings_SetMultipleValuesOnSingleValueHeader_AllHeaderValuesReturned()
+        public void NonValidated_SetMultipleValuesOnSingleValueHeader_AllHeaderValuesReturned()
         {
             MockHeaderParser parser = new MockHeaderParser(false);
             MockHeaders headers = new MockHeaders(parser);
@@ -1474,11 +1493,75 @@ namespace System.Net.Http.Tests
             headers.TryAddWithoutValidation(headers.Descriptor, "value1");
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix);
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (KeyValuePair<string, HeaderStringValues> header in headers.NonValidated)
             {
                 Assert.Equal(headers.Descriptor.Name, header.Key);
                 // Note that the added rawPrefix did not get parsed
-                Assert.Equal("value1, " + rawPrefix, header.Value);
+                Assert.Equal("value1, " + rawPrefix, header.Value.ToString());
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
+        [Fact]
+        public void NonValidated_ValidAndInvalidValues_DictionaryMembersWork()
+        {
+            var headers = new HttpResponseHeaders();
+            IReadOnlyDictionary<string, HeaderStringValues> nonValidated = headers.NonValidated;
+
+            Assert.True(headers.TryAddWithoutValidation("Location", "http:/invalidLocation"));
+            Assert.True(headers.TryAddWithoutValidation("Location", "http:/anotherLocation"));
+            Assert.True(headers.TryAddWithoutValidation("Date", "not a date"));
+
+            Assert.Equal(2, nonValidated.Count);
+
+            Assert.True(nonValidated.ContainsKey("Location"));
+            Assert.True(nonValidated.ContainsKey("Date"));
+
+            Assert.False(nonValidated.ContainsKey("Age"));
+            Assert.False(nonValidated.TryGetValue("Age", out _));
+            Assert.Throws<KeyNotFoundException>(() => nonValidated["Age"]);
+
+            Assert.True(nonValidated.TryGetValue("Location", out HeaderStringValues locations));
+            Assert.Equal(2, locations.Count);
+            Assert.Equal(new[] { "http:/invalidLocation", "http:/anotherLocation" }, locations.ToArray());
+            Assert.Equal("http:/invalidLocation, http:/anotherLocation", locations.ToString());
+
+            Assert.True(nonValidated.TryGetValue("Date", out HeaderStringValues dates));
+            Assert.Equal(1, dates.Count);
+            Assert.Equal(new[] { "not a date" }, dates.ToArray());
+            Assert.Equal("not a date", dates.ToString());
+
+            dates = nonValidated["Date"];
+            Assert.Equal(1, dates.Count);
+            Assert.Equal(new[] { "not a date" }, dates.ToArray());
+            Assert.Equal("not a date", dates.ToString());
+
+            Assert.Equal(new HashSet<string> { "Location", "Date" }, nonValidated.Keys.ToHashSet());
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
+        [Fact]
+        public void NonValidated_ValidInvalidAndRaw_AllReturned()
+        {
+            var headers = new HttpResponseHeaders();
+            IReadOnlyDictionary<string, HeaderStringValues> nonValidated = headers.NonValidated;
+
+            // Parsed value
+            headers.Date = new DateTimeOffset(1, 2, 3, 4, 5, 6, TimeSpan.Zero);
+
+            // Invalid value
+            headers.TryAddWithoutValidation("Date", "not a date");
+            foreach (KeyValuePair<string, IEnumerable<string>> _ in headers) { }
+
+            // Raw value
+            headers.TryAddWithoutValidation("Date", "another not a date");
+
+            // All three show up
+            Assert.Equal(1, nonValidated.Count);
+            Assert.Equal(3, nonValidated["Date"].Count);
+            using (new ThreadCultureChange(new CultureInfo("en-US")))
+            {
+                Assert.Equal(new HashSet<string> { "not a date", "another not a date", "Sat, 03 Feb 0001 04:05:06 GMT" }, nonValidated["Date"].ToHashSet());
             }
         }
 
@@ -1562,7 +1645,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
 
-            var enumerator = headers.GetEnumerator();
+            IEnumerator<KeyValuePair<string, IEnumerable<string>>> enumerator = headers.GetEnumerator();
             Assert.False(enumerator.MoveNext());
         }
 
@@ -1577,7 +1660,7 @@ namespace System.Net.Http.Tests
             // The value added with TryAddWithoutValidation() wasn't parsed yet.
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
-            var enumerator = headers.GetEnumerator();
+            IEnumerator<KeyValuePair<string, IEnumerable<string>>> enumerator = headers.GetEnumerator();
 
             // Getting the enumerator doesn't trigger parsing.
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
@@ -1610,7 +1693,7 @@ namespace System.Net.Http.Tests
             headers.Add(customHeaderName, string.Empty);
             headers.Add(headers.Descriptor, string.Empty);
 
-            var enumerator = headers.GetEnumerator();
+            IEnumerator<KeyValuePair<string, IEnumerable<string>>> enumerator = headers.GetEnumerator();
 
             Assert.True(enumerator.MoveNext());
             Assert.Equal(customHeaderName, enumerator.Current.Key);
@@ -1631,7 +1714,7 @@ namespace System.Net.Http.Tests
 
             System.Collections.IEnumerable headersAsIEnumerable = headers;
 
-            var enumerator = headersAsIEnumerable.GetEnumerator();
+            IEnumerator enumerator = headersAsIEnumerable.GetEnumerator();
 
             KeyValuePair<string, IEnumerable<string>> currentValue;
 
@@ -2046,6 +2129,64 @@ namespace System.Net.Http.Tests
             Assert.Equal(0, destination.Count());
             Assert.False(destination.Contains(known1Header), "destination contains 'known' header.");
             Assert.False(destination.Contains("custom"), "destination contains 'custom' header.");
+        }
+
+        [Fact]
+        public void HeaderStringValues_Default_Empty()
+        {
+            HeaderStringValues v = default;
+            Assert.Equal(0, v.Count);
+            Assert.Empty(v);
+            Assert.Equal(string.Empty, v.ToString());
+        }
+
+        [Fact]
+        public void HeaderStringValues_Constructed_ProducesExpectedResults()
+        {
+            // 0 strings
+            foreach (HeaderStringValues hsv in new[] { new HeaderStringValues(KnownHeaders.Accept.Descriptor, Array.Empty<string>()) })
+            {
+                Assert.Equal(0, hsv.Count);
+
+                HeaderStringValues.Enumerator e = hsv.GetEnumerator();
+
+                Assert.False(e.MoveNext());
+
+                Assert.Equal(string.Empty, hsv.ToString());
+            }
+
+            // 1 string
+            foreach (HeaderStringValues hsv in new[] { new HeaderStringValues(KnownHeaders.Accept.Descriptor, "hello"), new HeaderStringValues(KnownHeaders.Accept.Descriptor, new[] { "hello" }) })
+            {
+                Assert.Equal(1, hsv.Count);
+
+                HeaderStringValues.Enumerator e = hsv.GetEnumerator();
+
+                Assert.True(e.MoveNext());
+                Assert.Equal("hello", e.Current);
+
+                Assert.False(e.MoveNext());
+
+                Assert.Equal("hello", hsv.ToString());
+            }
+
+            // 2 strings
+            foreach (HeaderStringValues hsv in new[] { new HeaderStringValues(KnownHeaders.Accept.Descriptor, new[] { "hello", "world" }) })
+            {
+                Assert.Equal(2, hsv.Count);
+
+                HeaderStringValues.Enumerator e = hsv.GetEnumerator();
+
+                Assert.True(e.MoveNext());
+                Assert.Equal("hello", e.Current);
+
+                Assert.True(e.MoveNext());
+                Assert.Equal("world", e.Current);
+
+                Assert.False(e.MoveNext());
+
+                Assert.Equal("hello, world", hsv.ToString());
+            }
         }
 
         public static IEnumerable<object[]> GetInvalidHeaderNames()

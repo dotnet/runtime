@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public sealed class X509ChainElementEnumerator : IEnumerator
+    public sealed class X509ChainElementEnumerator : IEnumerator, IEnumerator<X509ChainElement>
     {
         private readonly X509ChainElementCollection _chainElements;
         private int _current;
@@ -30,6 +31,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 return Current;
             }
+        }
+
+        void IDisposable.Dispose()
+        {
         }
 
         public bool MoveNext()
