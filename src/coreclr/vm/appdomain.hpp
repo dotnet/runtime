@@ -2092,7 +2092,7 @@ public:
         return &m_RefClassFactCrst;
     }
 
-    void LogMethodWithPollutedProfile(CORINFO_METHOD_HANDLE method);
+    void LogMethodWithPollutedProfile(CORINFO_METHOD_HANDLE method, unsigned bbNum);
     void ListMethodsWithPollutedProfile();
 
 #ifndef DACCESS_COMPILE

@@ -1565,17 +1565,14 @@ PhaseStatus Compiler::fgInsertProfileValidators()
     bool modified = false;
     for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        if (block->hasProfileWeight() && (block->bbWeight == 0.0f) &&
-            ((block->bbJumpKind == BBJ_RETURN) ||
-             (block->bbJumpKind == BBJ_ALWAYS) ||
-             (block->bbJumpKind == BBJ_NONE) ||
-             (block->bbJumpKind == BBJ_COND)))
+        if (block->hasProfileWeight() && (block->getBBWeight(this) == BB_ZERO_WEIGHT))
         {
             // TODO: don't emit validator if the block is dominated by other cold blocks
 
             // Pass CORINFO_METHOD_HANDLE
             GenTreeCall::Use* const args = gtNewCallArgs(
-                gtNewIconNode(reinterpret_cast<ssize_t>(info.compMethodHnd), TYP_I_IMPL));
+                gtNewIconNode(reinterpret_cast<ssize_t>(info.compMethodHnd), TYP_I_IMPL),
+                gtNewIconNode(block->bbNum, TYP_INT));
 
             GenTree* call = fgMorphCall(gtNewHelperCallNode(CORINFO_HELP_PROFILE_VALIDATOR, TYP_VOID, args));
             gtSetEvalOrder(call);

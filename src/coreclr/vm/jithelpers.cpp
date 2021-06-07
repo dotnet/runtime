@@ -5322,12 +5322,12 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
 }
 HCIMPLEND
 
-HCIMPL1(void, JIT_ProfileValidator, CORINFO_METHOD_HANDLE methodHnd)
+HCIMPL2(void, JIT_ProfileValidator, CORINFO_METHOD_HANDLE methodHnd, unsigned bbNum)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
 
-    AppDomain::GetCurrentDomain()->LogMethodWithPollutedProfile(methodHnd);
+    AppDomain::GetCurrentDomain()->LogMethodWithPollutedProfile(methodHnd, bbNum);
 }
 HCIMPLEND
 

@@ -2394,7 +2394,7 @@ EEClassFactoryInfoHashTable* AppDomain::SetupClassFactHash()
     return m_pRefClassFactHash;
 }
 
-void AppDomain::LogMethodWithPollutedProfile(CORINFO_METHOD_HANDLE method)
+void AppDomain::LogMethodWithPollutedProfile(CORINFO_METHOD_HANDLE method, unsigned bbNum)
 {
     CrstHolder ch(&m_MethodsWithPollutedProfileCrst);
 
@@ -2457,7 +2457,10 @@ void AppDomain::ListMethodsWithPollutedProfile()
             {
                 HashDatum value = s_methodsWithPollutedProfiles->IterateGetValue(&iter);
                 const UINT64 counter = reinterpret_cast<UINT64>(value);
-                fprintf(file, "%s, %llu\n", method->GetName(), counter);
+
+                LPCUTF8 nameSpace;
+                LPCUTF8 scope = method->GetMethodTable()->GetFullyQualifiedNameInfo(&nameSpace);
+                fprintf(file, "%s::%s, %llu\n", scope, method->GetName(), counter);
             }
         }
         keepGoing = s_methodsWithPollutedProfiles->IterateNext(&iter);
