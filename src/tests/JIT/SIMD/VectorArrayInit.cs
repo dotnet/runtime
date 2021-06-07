@@ -10,6 +10,14 @@ internal partial class VectorTest
     private const int Pass = 100;
     private const int Fail = -1;
 
+    private const int DefaultSeed = 20010415;
+    private static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
     private class VectorArrayInitTest<T> where T : struct, IComparable<T>, IEquatable<T>
     {
         public static int VectorArrayInit(int size, Random random)
@@ -120,7 +128,7 @@ internal partial class VectorTest
     private static int Main()
     {
         int returnVal = Pass;
-        Random random = new Random(100);
+        Random random = new Random(Seed);
 
         if (VectorArrayInitTest<Single>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
         if (VectorArrayInitTest<Single>.VectorArrayInit(12, random) == Fail) returnVal = Fail;

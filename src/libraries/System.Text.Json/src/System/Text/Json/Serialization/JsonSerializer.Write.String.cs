@@ -23,7 +23,8 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes{TValue}(TValue, JsonSerializerOptions?)"/>
         /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
-        public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             return Write(value, GetRuntimeType(value), options);
         }
@@ -46,9 +47,10 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes(object?, Type, JsonSerializerOptions?)"/>
         /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static string Serialize(
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerOptions? options = null)
         {
             return Write(
@@ -109,6 +111,7 @@ namespace System.Text.Json
             return WriteUsingMetadata(value, GetTypeInfo(context, runtimeType));
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static string Write<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
         {
             JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);

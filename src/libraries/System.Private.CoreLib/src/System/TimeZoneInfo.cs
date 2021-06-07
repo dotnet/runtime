@@ -6,7 +6,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -53,8 +52,6 @@ namespace System
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
         private const string UtcId = "UTC";
         private const string LocalId = "Local";
-
-        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
 
         private static CachedData s_cachedData = new CachedData();
 

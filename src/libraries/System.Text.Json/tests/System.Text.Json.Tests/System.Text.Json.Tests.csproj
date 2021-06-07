@@ -4,6 +4,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+
+    <!-- these tests depend on the pdb files. Causes test failures like:
+          [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -11,6 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
@@ -185,8 +191,10 @@
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Compile Include="Serialization\IsExternalInit.cs" />
-  </ItemGroup>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>

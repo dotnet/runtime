@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal class DelegatedStream : Stream
+    internal abstract class DelegatedStream : Stream
     {
         private readonly Stream _stream;
 
@@ -109,8 +108,7 @@ namespace System.Net
             if (!CanRead)
                 throw new NotSupportedException(SR.ReadNotSupported);
 
-            int read = _stream.EndRead(asyncResult);
-            return read;
+            return _stream.EndRead(asyncResult);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
@@ -136,8 +134,7 @@ namespace System.Net
             if (!CanRead)
                 throw new NotSupportedException(SR.ReadNotSupported);
 
-            int read = _stream.Read(buffer, offset, count);
-            return read;
+            return _stream.Read(buffer, offset, count);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -148,13 +145,20 @@ namespace System.Net
             return _stream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!CanRead)
+                throw new NotSupportedException(SR.ReadNotSupported);
+
+            return _stream.ReadAsync(buffer, cancellationToken);
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             if (!CanSeek)
                 throw new NotSupportedException(SR.SeekNotSupported);
 
-            long position = _stream.Seek(offset, origin);
-            return position;
+            return _stream.Seek(offset, origin);
         }
 
         public override void SetLength(long value)
@@ -179,6 +183,14 @@ namespace System.Net
                 throw new NotSupportedException(SR.WriteNotSupported);
 
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!CanWrite)
+                throw new NotSupportedException(SR.WriteNotSupported);
+
+            return _stream.WriteAsync(buffer, cancellationToken);
         }
     }
 }

@@ -101,7 +101,7 @@ namespace System.Text.Json.Tests
   ""One"",
   ""II"",
   ""3""
-]", json);
+]", json, ignoreLineEndingDifferences: true);
         }
 
         [Fact]

@@ -22,7 +22,7 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => TcpListener.Create(66000));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -127,7 +127,9 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(0)] // Sync
         [InlineData(1)] // Async
-        [InlineData(2)] // APM
+        [InlineData(2)] // Async with Cancellation
+        [InlineData(3)] // APM
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Accept_AcceptsPendingSocketOrClient(int mode)
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -140,6 +142,7 @@ namespace System.Net.Sockets.Tests
                 {
                     0 => listener.AcceptSocket(),
                     1 => await listener.AcceptSocketAsync(),
+                    2 => await listener.AcceptSocketAsync(CancellationToken.None),
                     _ => await Task.Factory.FromAsync(listener.BeginAcceptSocket, listener.EndAcceptSocket, null),
                 })
                 {
@@ -155,6 +158,7 @@ namespace System.Net.Sockets.Tests
                 {
                     0 => listener.AcceptTcpClient(),
                     1 => await listener.AcceptTcpClientAsync(),
+                    2 => await listener.AcceptTcpClientAsync(CancellationToken.None),
                     _ => await Task.Factory.FromAsync(listener.BeginAcceptTcpClient, listener.EndAcceptTcpClient, null),
                 })
                 {

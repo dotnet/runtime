@@ -72,6 +72,7 @@ mono_alcs_init (void)
 	mono_coop_mutex_init (&alc_list_lock);
 
 	default_alc = mono_alc_create (FALSE);
+	default_alc->gchandle = mono_gchandle_new_internal (NULL, FALSE);
 }
 
 MonoAssemblyLoadContext *
@@ -189,6 +190,9 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 	alc->pinvoke_scopes = NULL;
 	mono_coop_mutex_destroy (&alc->pinvoke_lock);
 
+	g_free (alc->name);
+	alc->name = NULL;
+
 	// TODO: alc unloaded profiler event
 }
 
@@ -224,7 +228,8 @@ mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc)
 }
 
 gpointer
-ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC (gpointer this_gchandle_ptr, MonoBoolean is_default_alc, MonoBoolean collectible, MonoError *error)
+ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC (gpointer this_gchandle_ptr, const char *name,
+																				 MonoBoolean is_default_alc, MonoBoolean collectible, MonoError *error)
 {
 	/* If the ALC is collectible, this_gchandle is weak, otherwise it's strong. */
 	MonoGCHandle this_gchandle = (MonoGCHandle)this_gchandle_ptr;
@@ -233,10 +238,18 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC 
 	if (is_default_alc) {
 		alc = default_alc;
 		g_assert (alc);
-		if (!alc->gchandle)
-			alc->gchandle = this_gchandle;
-	} else
+
+		// Change target of the existing GCHandle
+		mono_gchandle_set_target (alc->gchandle, mono_gchandle_get_target_internal (this_gchandle));
+		mono_gchandle_free_internal (this_gchandle);
+	} else {
 		alc = mono_alc_create_individual (this_gchandle, collectible, error);
+	}
+
+	if (name)
+		alc->name = g_strdup (name);
+	else
+		alc->name = g_strdup ("<default>");
 
 	return alc;
 }
@@ -406,6 +419,9 @@ mono_alc_is_default (MonoAssemblyLoadContext *alc)
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 {
+	if (alc_gchandle == default_alc->gchandle)
+		return default_alc;
+
 	HANDLE_FUNCTION_ENTER ();
 	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
 	MonoAssemblyLoadContext *alc = MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
@@ -426,6 +442,9 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	char* aname_str = NULL;
 
 	if (mono_runtime_get_no_exec ())
+		return NULL;
+
+	if (!mono_gchandle_get_target_internal (alc->gchandle))
 		return NULL;
 
 	HANDLE_FUNCTION_ENTER ();
@@ -577,7 +596,7 @@ mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 	mono_assembly_addref (ass);
 	// Prepending here will break the test suite with frequent InvalidCastExceptions, so we have to append
 	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, ass);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC '%s'[%p], ref_count=%d", ass->aname.name, ass, alc->name, (gpointer)alc, ass->ref_count);
 	mono_alc_assemblies_unlock (alc);
 
 	alcs_lock ();

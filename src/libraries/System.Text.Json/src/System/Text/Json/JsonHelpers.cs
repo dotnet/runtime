@@ -11,12 +11,6 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-        // Members accessed by the serializer when deserializing.
-        public const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
-            DynamicallyAccessedMemberTypes.PublicConstructors |
-            DynamicallyAccessedMemberTypes.PublicProperties |
-            DynamicallyAccessedMemberTypes.PublicFields;
-
         /// <summary>
         /// Returns the span for the given reader.
         /// </summary>
@@ -121,6 +115,28 @@ namespace System.Text.Json
             return false;
 #else
             return dictionary.TryAdd(key, value);
+#endif
+        }
+
+        /// <summary>
+        /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
+        /// </summary>
+        public static Dictionary<TKey, TValue> CreateDictionaryFromCollection<TKey, TValue>(
+            IEnumerable<KeyValuePair<TKey, TValue>> collection,
+            IEqualityComparer<TKey> comparer)
+            where TKey : notnull
+        {
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            var dictionary = new Dictionary<TKey, TValue>(comparer);
+
+            foreach (KeyValuePair<TKey, TValue> item in collection)
+            {
+                dictionary.Add(item.Key, item.Value);
+            }
+
+            return dictionary;
+#else
+            return new Dictionary<TKey, TValue>(collection: collection, comparer);
 #endif
         }
 

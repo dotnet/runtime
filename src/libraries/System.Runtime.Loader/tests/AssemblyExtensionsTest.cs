@@ -30,5 +30,19 @@ namespace System.Reflection.Metadata
             Assert.Throws<InvalidOperationException>(() =>
                 AssemblyExtensions.ApplyUpdate(typeof(AssemblyExtensions).Assembly, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
         }
+
+        [Fact]
+        public void GetApplyUpdateCapabilitiesIsCallable()
+        {
+            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
+            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+
+            Assert.NotNull(mi);
+
+            var result = mi.Invoke(null, null);
+
+            Assert.NotNull(result);
+            Assert.Equal(typeof(string), result.GetType());
+        }
     }
 }

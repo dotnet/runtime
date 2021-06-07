@@ -24,9 +24,9 @@ namespace System.Runtime.Caching
         private ManualResetEvent _insertBlock;
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
-        private readonly PerfCounters _perfCounters;
+        private readonly Counters _perfCounters;
 
-        internal MemoryCacheStore(MemoryCache cache, PerfCounters perfCounters)
+        internal MemoryCacheStore(MemoryCache cache, Counters perfCounters)
         {
             _cache = cache;
             _perfCounters = perfCounters;
@@ -75,8 +75,8 @@ namespace System.Runtime.Caching
             entry.CallNotifyOnChanged();
             if (_perfCounters != null)
             {
-                _perfCounters.Increment(PerfCounterName.Entries);
-                _perfCounters.Increment(PerfCounterName.Turnover);
+                _perfCounters.Increment(CounterName.Entries);
+                _perfCounters.Increment(CounterName.Turnover);
             }
         }
 
@@ -110,8 +110,8 @@ namespace System.Runtime.Caching
                 }
                 if (_perfCounters != null)
                 {
-                    _perfCounters.Decrement(PerfCounterName.Entries);
-                    _perfCounters.Increment(PerfCounterName.Turnover);
+                    _perfCounters.Decrement(CounterName.Entries);
+                    _perfCounters.Increment(CounterName.Turnover);
                 }
             }
         }
@@ -138,17 +138,17 @@ namespace System.Runtime.Caching
 
                 if (updatePerfCounters && _perfCounters != null)
                 {
-                    _perfCounters.Increment(PerfCounterName.Hits);
-                    _perfCounters.Increment(PerfCounterName.HitRatio);
-                    _perfCounters.Increment(PerfCounterName.HitRatioBase);
+                    _perfCounters.Increment(CounterName.Hits);
+                    _perfCounters.Increment(CounterName.HitRatio);
+                    _perfCounters.Increment(CounterName.HitRatioBase);
                 }
             }
             else
             {
                 if (updatePerfCounters && _perfCounters != null)
                 {
-                    _perfCounters.Increment(PerfCounterName.Misses);
-                    _perfCounters.Increment(PerfCounterName.HitRatioBase);
+                    _perfCounters.Increment(CounterName.Misses);
+                    _perfCounters.Increment(CounterName.HitRatioBase);
                 }
             }
         }
@@ -407,7 +407,7 @@ namespace System.Runtime.Caching
             if (trimmed > 0 && _perfCounters != null)
             {
                 // Update values for perfcounters
-                _perfCounters.IncrementBy(PerfCounterName.Trims, trimmed);
+                _perfCounters.IncrementBy(CounterName.Trims, trimmed);
             }
 
 #if DEBUG

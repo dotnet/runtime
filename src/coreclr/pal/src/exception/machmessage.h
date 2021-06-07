@@ -44,7 +44,8 @@ using namespace CorUnix;
 // This macro terminates the process with some useful debug info as above, but for the general failure points
 // that have nothing to do with Mach.
 #define NONPAL_RETAIL_ASSERT(_msg, ...) do {                                    \
-        printf("%s: %u: " _msg "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__);   \
+        fprintf(stdout, "%s: %u: " _msg "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__);   \
+        fflush(stdout);                                                         \
         abort();                                                                \
     } while (false)
 
@@ -67,7 +68,7 @@ using namespace CorUnix;
 
 // Debug-only output with printf-style formatting.
 #define NONPAL_TRACE(_format, ...) do {                                              \
-        if (NONPAL_TRACE_ENABLED) printf("NONPAL_TRACE: " _format, ## __VA_ARGS__);  \
+        if (NONPAL_TRACE_ENABLED) { fprintf(stdout, "NONPAL_TRACE: " _format, ## __VA_ARGS__); fflush(stdout); }  \
     } while (false)
 
 #else // _DEBUG

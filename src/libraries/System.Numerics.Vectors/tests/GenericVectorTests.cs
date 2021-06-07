@@ -487,7 +487,7 @@ namespace System.Numerics.Tests
         private void TestIndexerOutOfRange<T>() where T : struct
         {
             Vector<T> vector = Vector<T>.One;
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 T value = vector[Vector<T>.Count];
             });

@@ -4,9 +4,10 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -567,6 +568,16 @@ namespace System.Text.Json
 
                 return _memberAccessorStrategy;
             }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal void RootBuiltInConvertersAndTypeInfoCreator()
+        {
+            RootBuiltInConverters();
+            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
         }
 
         internal JsonTypeInfo GetOrAddClass(Type type)

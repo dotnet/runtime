@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.DependencyInjection
         // Event source doesn't support large payloads so we chunk formatted call site tree
         private const int MaxChunkSize = 10 * 1024;
 
-
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
@@ -62,13 +61,10 @@ namespace Microsoft.Extensions.DependencyInjection
             WriteEvent(5, serviceProviderHashCode, scopedServicesResolved, disposableServices);
         }
 
-        [NonEvent]
-        public void ScopeDisposed(ServiceProviderEngine engine, ScopeState state)
+        [Event(6, Level = EventLevel.Error)]
+        public void ServiceRealizationFailed(string? exceptionMessage)
         {
-            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
-            {
-                ScopeDisposed(engine.GetHashCode(), state.ResolvedServicesCount, state.DisposableServicesCount);
-            }
+            WriteEvent(6, exceptionMessage);
         }
 
         [NonEvent]
@@ -103,6 +99,15 @@ namespace Microsoft.Extensions.DependencyInjection
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
             {
                 DynamicMethodBuilt(serviceType.ToString(), methodSize);
+            }
+        }
+
+        [NonEvent]
+        public void ServiceRealizationFailed(Exception exception)
+        {
+            if (IsEnabled(EventLevel.Error, EventKeywords.All))
+            {
+                ServiceRealizationFailed(exception.ToString());
             }
         }
     }

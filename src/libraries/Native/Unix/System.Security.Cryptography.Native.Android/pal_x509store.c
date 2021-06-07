@@ -20,7 +20,7 @@ typedef enum
 
 // Returns whether or not the store contains the specified alias
 // If the entry exists, the flags parameter is set based on the contents of the entry
-static bool ContainsEntryForAlias(
+ARGS_NON_NULL_ALL static bool ContainsEntryForAlias(
     JNIEnv* env, jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert, jstring alias, EntryFlags* flags)
 {
     bool ret = false;
@@ -72,6 +72,7 @@ cleanup:
     return ret;
 }
 
+ARGS_NON_NULL_ALL
 static bool ContainsMatchingCertificateForAlias(JNIEnv* env,
                                                 jobject /*KeyStore*/ store,
                                                 jobject /*X509Certificate*/ cert,
@@ -89,12 +90,13 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
                                                     jobject /*X509Certificate*/ cert,
                                                     const char* hashString)
 {
-    assert(store != NULL);
-    assert(cert != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cert);
+    abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
 
-    jstring alias = JSTRING(hashString);
+    jstring alias = make_java_string(env, hashString);
     EntryFlags flags;
     if (ContainsEntryForAlias(env, store, cert, alias, &flags))
     {
@@ -124,9 +126,10 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
                                                                   PAL_KeyAlgorithm algorithm,
                                                                   const char* hashString)
 {
-    assert(store != NULL);
-    assert(cert != NULL);
-    assert(key != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cert);
+    abort_if_invalid_pointer_argument (key);
+    abort_if_invalid_pointer_argument (hashString);
 
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
@@ -134,7 +137,7 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
     INIT_LOCALS(loc, alias, certs);
     jobject privateKey = NULL;
 
-    loc[alias] = JSTRING(hashString);
+    loc[alias] = make_java_string(env, hashString);
 
     EntryFlags flags;
     if (ContainsEntryForAlias(env, store, cert, loc[alias], &flags))
@@ -192,7 +195,7 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
 
     // X509Certificate[] certs = new X509Certificate[] { cert };
     // store.setKeyEntry(alias, privateKey, null, certs);
-    loc[certs] = (*env)->NewObjectArray(env, 1, g_X509CertClass, cert);
+    loc[certs] = make_java_object_array(env, 1, g_X509CertClass, cert);
     (*env)->CallVoidMethod(env, store, g_KeyStoreSetKeyEntry, loc[alias], privateKey, NULL, loc[certs]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
@@ -212,17 +215,19 @@ bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store
                                                       jobject /*X509Certificate*/ cert,
                                                       const char* hashString)
 {
-    assert(store != NULL);
-    assert(cert != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cert);
+    abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
-    jstring alias = JSTRING(hashString);
+    jstring alias = make_java_string(env, hashString);
 
     bool containsCert = ContainsMatchingCertificateForAlias(env, store, cert, alias);
     (*env)->DeleteLocalRef(env, alias);
     return containsCert;
 }
 
+ARGS_NON_NULL_ALL
 static void* HandleFromKeys(JNIEnv* env,
                             jobject /*PublicKey*/ publicKey,
                             jobject /*PrivateKey*/ privateKey,
@@ -244,12 +249,12 @@ static void* HandleFromKeys(JNIEnv* env,
         return AndroidCryptoNative_NewRsaFromKeys(env, publicKey, privateKey);
     }
 
-    LOG_INFO("Ignoring unknown privake key type");
+    LOG_INFO("Ignoring unknown private key type");
     *algorithm = PAL_UnknownAlgorithm;
     return NULL;
 }
 
-static int32_t
+ARGS_NON_NULL_ALL static int32_t
 EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesCallback cb, void* context)
 {
     int32_t ret = FAIL;
@@ -319,13 +324,14 @@ int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ 
                                                            EnumCertificatesCallback cb,
                                                            void* context)
 {
-    assert(store != NULL);
-    assert(cb != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cb);
 
     JNIEnv* env = GetJNIEnv();
     return EnumerateCertificates(env, store, cb, context);
 }
 
+ARGS_NON_NULL_ALL
 static bool SystemAliasFilter(JNIEnv* env, jstring alias)
 {
     const char systemPrefix[] = "system:";
@@ -338,7 +344,7 @@ static bool SystemAliasFilter(JNIEnv* env, jstring alias)
 }
 
 typedef bool (*FilterAliasFunction)(JNIEnv* env, jstring alias);
-static int32_t EnumerateTrustedCertificates(
+ARGS_NON_NULL_ALL static int32_t EnumerateTrustedCertificates(
     JNIEnv* env, jobject /*KeyStore*/ store, bool systemOnly, EnumTrustedCertificatesCallback cb, void* context)
 {
     int32_t ret = FAIL;
@@ -391,7 +397,7 @@ int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool systemOnl
                                                                   EnumTrustedCertificatesCallback cb,
                                                                   void* context)
 {
-    assert(cb != NULL);
+    abort_if_invalid_pointer_argument (cb);
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
@@ -399,7 +405,7 @@ int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool systemOnl
 
     // KeyStore store = KeyStore.getInstance("AndroidCAStore");
     // store.load(null, null);
-    loc[storeType] = JSTRING("AndroidCAStore");
+    loc[storeType] = make_java_string(env, "AndroidCAStore");
     loc[store] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[storeType]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[store], g_KeyStoreLoad, NULL, NULL);
@@ -419,7 +425,7 @@ jobject /*KeyStore*/ AndroidCryptoNative_X509StoreOpenDefault(void)
 
     // KeyStore store = KeyStore.getInstance("AndroidKeyStore");
     // store.load(null, null);
-    jstring storeType = JSTRING("AndroidKeyStore");
+    jstring storeType = make_java_string(env, "AndroidKeyStore");
     jobject store = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, storeType);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, store, g_KeyStoreLoad, NULL, NULL);
@@ -435,11 +441,11 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
                                                        jobject /*X509Certificate*/ cert,
                                                        const char* hashString)
 {
-    assert(store != NULL);
+    abort_if_invalid_pointer_argument (store);
 
     JNIEnv* env = GetJNIEnv();
 
-    jstring alias = JSTRING(hashString);
+    jstring alias = make_java_string(env, hashString);
     if (!ContainsMatchingCertificateForAlias(env, store, cert, alias))
     {
         // Certificate is not in store - nothing to do

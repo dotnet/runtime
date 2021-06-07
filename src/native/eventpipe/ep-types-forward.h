@@ -31,6 +31,7 @@ typedef struct _EventPipeProvider EventPipeProvider;
 typedef struct _EventPipeProviderCallbackData EventPipeProviderCallbackData;
 typedef struct _EventPipeProviderCallbackDataQueue EventPipeProviderCallbackDataQueue;
 typedef struct _EventPipeProviderConfiguration EventPipeProviderConfiguration;
+typedef struct _EventPipeExecutionCheckpoint EventPipeExecutionCheckpoint;
 typedef struct _EventPipeSession EventPipeSession;
 typedef struct _EventPipeSessionProvider EventPipeSessionProvider;
 typedef struct _EventPipeSessionProviderList EventPipeSessionProviderList;
@@ -144,7 +145,8 @@ typedef enum {
 	EP_SESSION_TYPE_FILE,
 	EP_SESSION_TYPE_LISTENER,
 	EP_SESSION_TYPE_IPCSTREAM,
-	EP_SESSION_TYPE_SYNCHRONOUS
+	EP_SESSION_TYPE_SYNCHRONOUS,
+	EP_SESSION_TYPE_FILESTREAM
 } EventPipeSessionType ;
 
 typedef enum {

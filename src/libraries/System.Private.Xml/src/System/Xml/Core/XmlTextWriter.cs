@@ -792,7 +792,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
 
-                if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }

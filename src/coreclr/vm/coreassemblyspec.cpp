@@ -32,7 +32,6 @@
 
 #include "../binder/inc/coreclrbindercommon.h"
 #include "../binder/inc/applicationcontext.hpp"
-#ifndef DACCESS_COMPILE
 
 STDAPI BinderAddRefPEImage(PEImage *pPEImage)
 {
@@ -438,8 +437,6 @@ void BaseAssemblySpec::InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIden
         }
     }
 }
-
-#endif // DACCESS_COMPILE
 
 VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
 {

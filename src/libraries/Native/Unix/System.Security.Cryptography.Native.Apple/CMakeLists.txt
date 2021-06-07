@@ -10,8 +10,6 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
-    pal_keyderivation.c
-    pal_keychain.c
     pal_random.c
     pal_rsa.c
     pal_sec.c
@@ -19,10 +17,26 @@ set(NATIVECRYPTO_SOURCES
     pal_signverify.c
     pal_ssl.c
     pal_symmetric.c
-    pal_trust.c
     pal_x509.c
     pal_x509chain.c
 )
+
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(NATIVECRYPTO_SOURCES
+        ${NATIVECRYPTO_SOURCES}
+        pal_keychain_ios.c
+        pal_x509_ios.c
+    )
+else()
+    set(NATIVECRYPTO_SOURCES
+        ${NATIVECRYPTO_SOURCES}
+        pal_keychain_macos.c
+        pal_keyderivation_macos.c
+        pal_seckey_macos.c
+        pal_trust_macos.c
+        pal_x509_macos.c
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST)
     add_definitions(-DTARGET_MACCATALYST)
@@ -44,7 +58,7 @@ if (GEN_SHARED_LIB)
     )
 endif()
 
-if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     set(NATIVECRYPTO_SOURCES ${NATIVECRYPTO_SOURCES} entrypoints.c)
 endif()
 

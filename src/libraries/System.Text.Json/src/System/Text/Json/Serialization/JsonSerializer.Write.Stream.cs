@@ -27,7 +27,8 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static Task SerializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        public static Task SerializeAsync<TValue>(
             Stream utf8Json,
             TValue value,
             JsonSerializerOptions? options = null,
@@ -65,10 +66,11 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static Task SerializeAsync(
             Stream utf8Json,
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -137,7 +139,7 @@ namespace System.Text.Json
         public static Task SerializeAsync(
             Stream utf8Json,
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {
@@ -159,6 +161,7 @@ namespace System.Text.Json
                 cancellationToken);
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static Task WriteAsync<TValue>(
             Stream utf8Json,
             in TValue value,

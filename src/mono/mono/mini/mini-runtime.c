@@ -164,7 +164,6 @@ static void mini_metadata_update_init (MonoError *error);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
 
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -378,7 +377,10 @@ void *(mono_global_codeman_reserve) (int size)
 
 	if (!global_codeman) {
 		/* This can happen during startup */
-		global_codeman = mono_code_manager_new ();
+		if (!mono_compile_aot)
+			global_codeman = mono_code_manager_new ();
+		else
+			global_codeman = mono_code_manager_new_aot ();
 		return mono_code_manager_reserve (global_codeman, size);
 	}
 	else {
@@ -498,15 +500,14 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoMemoryManager *mem_m
 	if (!info)
 		return;
 
-	if (mem_manager) {
-		copy = mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (MonoTrampInfo));
-	} else {
+	if (mem_manager)
+		copy = mono_mem_manager_alloc0 (mem_manager, sizeof (MonoTrampInfo));
+	else
 		copy = g_new0 (MonoTrampInfo, 1);
-	}
 
 	copy->code = info->code;
 	copy->code_size = info->code_size;
-	copy->name = g_strdup (info->name);
+	copy->name = mem_manager ? mono_mem_manager_strdup (mem_manager, info->name) : g_strdup (info->name);
 	copy->method = info->method;
 
 	if (info->unwind_ops) {
@@ -1430,11 +1431,11 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		if (method && method->dynamic) {
 			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
-			MonoMemoryManager *mem_manager = m_method_get_mem_manager (method);
+			MonoMemoryManager *method_mem_manager = method ? m_method_get_mem_manager (method) : mem_manager;
 			if (mono_aot_only) {
-				jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_alloc (method_mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				jump_table = (void **)mono_mem_manager_code_reserve (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_code_reserve (method_mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 		}
 
@@ -1501,7 +1502,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 				}
 			}
 		}
-		target = (char*)mono_vtable_get_static_field_data (vtable) + patch_info->data.field->offset;
+		target = mono_static_field_get_addr (vtable, patch_info->data.field);
 		break;
 	}
 	case MONO_PATCH_INFO_RVA: {
@@ -2922,10 +2923,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
 	info->use_interp = use_interp;
-	if (mono_llvm_only && method->string_ctor)
-		info->sig = mono_marshal_get_string_ctor_signature (method);
-	else
-		info->sig = mono_method_signature_internal (method);
+	info->sig = mono_method_signature_internal (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	(void)invoke;
@@ -3017,7 +3015,13 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 	}
 
 	if (!info->dyn_call_info) {
-		if (mono_llvm_only) {
+		/*
+		 * Can't use the normal llvmonly code for string ctors since the gsharedvt out wrapper passes
+		 * an extra arg, which the string ctor methods don't have, which causes signature mismatches
+		 * on wasm. Instead, call string ctors normally using a direct runtime invoke wrapper
+		 * which is AOTed for each ctor.
+		 */
+		if (mono_llvm_only && !method->string_ctor) {
 #ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
 			g_assert_not_reached ();
 #endif
@@ -3059,6 +3063,8 @@ exit:
 	g_free (info);
 	return ret;
 }
+
+static GENERATE_GET_CLASS_WITH_CACHE (nullbyrefreturn_ex, "Mono", "NullByRefReturnException");
 
 static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
@@ -3128,11 +3134,29 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
+	if (sig->ret->byref) {
+		if (*(gpointer*)retval == NULL) {
+			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
+			MonoObject *ex = mono_object_new_checked (klass, error);
+			mono_error_assert_ok (error);
+			mono_error_set_exception_instance (error, (MonoException*)ex);
+			return NULL;
+		}
+	}
+
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (info->ret_box_class)
-			return mono_value_box_checked (info->ret_box_class, retval, error);
-		else
-			return *(MonoObject**)retval;
+		if (info->ret_box_class) {
+			if (sig->ret->byref) {
+				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
+			} else {
+				return mono_value_box_checked (info->ret_box_class, retval, error);
+			}
+		} else {
+			if (sig->ret->byref)
+				return **(MonoObject***)retval;
+			else
+				return *(MonoObject**)retval;
+		}
 	} else {
 		return NULL;
 	}
@@ -3332,7 +3356,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	if (info->use_interp) {
 		result = mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
 		return_val_if_nok (error, NULL);
-	} else if (mono_llvm_only) {
+	} else if (mono_llvm_only && !method->string_ctor) {
 		result = mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
 		if (!is_ok (error))
 			return NULL;
@@ -3646,7 +3670,7 @@ mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 	}
 
 	if (!vtable_trampolines [index])
-		vtable_trampolines [index] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
+		vtable_trampolines [index] = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
 	return vtable_trampolines [index];
 }
 
@@ -4221,6 +4245,8 @@ mini_init (const char *filename, const char *runtime_version)
 		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, mono)
 	};
 
+	mono_component_event_pipe_100ns_ticks_start ();
+
 	MONO_VES_INIT_BEGIN ();
 
 	CHECKED_MONO_INIT ();
@@ -4270,8 +4296,12 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_tls_init_runtime_keys ();
 
-	if (!global_codeman)
-		global_codeman = mono_code_manager_new ();
+	if (!global_codeman) {
+		if (!mono_compile_aot)
+			global_codeman = mono_code_manager_new ();
+		else
+			global_codeman = mono_code_manager_new_aot ();
+	}
 
 	memset (&callbacks, 0, sizeof (callbacks));
 	callbacks.create_ftnptr = mini_create_ftnptr;
@@ -4324,7 +4354,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mini_parse_debug_options ();
 	}
 
-	mono_code_manager_init ();
+	mono_code_manager_init (mono_compile_aot);
 
 #ifdef MONO_ARCH_HAVE_CODE_CHUNK_TRACKING
 
@@ -4422,6 +4452,15 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mini_debug_options.collect_pagefault_stats)
 		mono_aot_set_make_unreadable (TRUE);
 
+	/* set no-exec before the default ALC is created */
+	if (mono_compile_aot) {
+		/*
+		 * Avoid running managed code when AOT compiling, since the platform
+		 * might only support aot-only execution.
+		 */
+		mono_runtime_set_no_exec (TRUE);
+	}
+
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
@@ -4431,6 +4470,10 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_component_diagnostics_server ()->disable ();
 
 	mono_component_event_pipe ()->init ();
+
+	// EventPipe up is now up and running, convert 100ns ticks since runtime init into EventPipe compatbile timestamp (using negative delta to represent timestamp in past).
+	// Add RuntimeInit execution checkpoint using converted timestamp.
+	mono_component_event_pipe ()->add_rundown_execution_checkpoint_2 ("RuntimeInit", mono_component_event_pipe ()->convert_100ns_ticks_to_timestamp_t (-mono_component_event_pipe_100ns_ticks_stop ()));
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
@@ -4477,13 +4520,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	register_trampolines (domain);
-
-	if (mono_compile_aot)
-		/*
-		 * Avoid running managed code when AOT compiling, since the platform
-		 * might only support aot-only execution.
-		 */
-		mono_runtime_set_no_exec (TRUE);
 
 	mono_mem_account_register_counters ();
 
@@ -5112,8 +5148,6 @@ mini_get_default_mem_manager (void)
 gpointer
 mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 {
-	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
-
 	static gboolean inited = FALSE;
 	static int generic_virtual_trampolines_size = 0;
 
@@ -5124,7 +5158,7 @@ mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 	}
 	generic_virtual_trampolines_size += size;
 
-	return mono_mem_manager_code_reserve (mem_manager, size);
+	return mono_mem_manager_code_reserve (m_class_get_mem_manager (vtable->klass), size);
 }
 
 MonoException*

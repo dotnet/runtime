@@ -91,7 +91,7 @@ build_native()
     fi
 
     if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCLR_CMAKE_TARGET_MACCATALYST=1 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -282,7 +282,13 @@ elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
 else
-  __NumProc=$(nproc --all)
+  if command -v nproc > /dev/null 2>&1; then
+    __NumProc=$(nproc --all)
+  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+    __NumProc=$(getconf _NPROCESSORS_ONLN)
+  else
+    __NumProc=1
+  fi
 fi
 
 while :; do
@@ -427,6 +433,10 @@ while :; do
 
         x64|-x64)
             __BuildArch=x64
+            ;;
+
+        s390x|-s390x)
+            __BuildArch=s390x
             ;;
 
         wasm|-wasm)

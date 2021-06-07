@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -32,6 +33,8 @@ namespace System.Reflection.TypeLoading.Ecma
             throw new FileNotFoundException(SR.Format(SR.FileNotFoundModule, moduleName));
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "The code has a fallback using a ModuleResolveEventHandler")]
         private FileStream? FindModuleNextToAssembly(string moduleName)
         {
             Assembly containingAssembly = this;

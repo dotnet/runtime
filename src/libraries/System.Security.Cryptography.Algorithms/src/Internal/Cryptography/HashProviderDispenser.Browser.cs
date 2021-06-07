@@ -26,6 +26,15 @@ namespace Internal.Cryptography
 
         public static class OneShotHashProvider
         {
+            public static unsafe int MacData(
+                string hashAlgorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination)
+            {
+                throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported);
+            }
+
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 HashProvider provider = HashProviderDispenser.CreateHashProvider(hashAlgorithmId);

@@ -431,6 +431,10 @@ namespace System.Runtime.Serialization
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffset((DateTimeOffsetAdapter)obj);
             }
+            else if (objType == Globals.TypeOfMemoryStreamAdapter)
+            {
+                obj = MemoryStreamAdapter.GetMemoryStream((MemoryStreamAdapter)obj);
+            }
             else if (obj is IKeyValuePairAdapter)
             {
                 obj = classContract.GetKeyValuePairMethodInfo!.Invoke(obj, Array.Empty<object>())!;

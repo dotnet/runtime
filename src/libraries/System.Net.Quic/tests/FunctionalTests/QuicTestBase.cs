@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Security;
-using System.Threading.Tasks;
 using System.Net.Quic.Implementations;
-using Xunit;
-using System.Threading;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Net.Quic.Tests
 {
@@ -21,12 +22,20 @@ namespace System.Net.Quic.Tests
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
+        public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+
+        public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
+            return true;
+        }
+
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
+                ServerCertificate = ServerCertificate
             };
         }
 
@@ -35,7 +44,7 @@ namespace System.Net.Quic.Tests
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => { return true; }
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
             };
         }
 
@@ -44,15 +53,29 @@ namespace System.Net.Quic.Tests
             return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
         }
 
-        internal QuicListener CreateQuicListener()
+        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
-            return CreateQuicListener(new IPEndPoint(IPAddress.Loopback, 0));
+            var options = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
+                MaxUnidirectionalStreams = maxUnidirectionalStreams,
+                MaxBidirectionalStreams = maxBidirectionalStreams
+            };
+            return CreateQuicListener(options);
         }
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            return new QuicListener(ImplementationProvider, endpoint, GetSslServerAuthenticationOptions());
+            var options = new QuicListenerOptions()
+            {
+                ListenEndPoint = endpoint,
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+            };
+            return CreateQuicListener(options);
         }
+
+        private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
 
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
         {

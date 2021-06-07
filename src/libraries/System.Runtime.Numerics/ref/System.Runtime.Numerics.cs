@@ -165,9 +165,9 @@ namespace System.Numerics
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
-    public partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable
+    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable
     {
-        private int _dummyPrimitive;
+        private readonly int _dummyPrimitive;
         public static readonly System.Numerics.Complex ImaginaryOne;
         public static readonly System.Numerics.Complex Infinity;
         public static readonly System.Numerics.Complex NaN;

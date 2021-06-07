@@ -412,8 +412,6 @@ EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
 
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv);
-
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);
 

@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.DataExtensionProperty);
                             state.Current.JsonPropertyNameAsString = dataExtKey;
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo);
+                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo, options);
                         }
 
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
@@ -109,7 +109,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.DataExtensionProperty);
 
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo);
+                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo, options);
                             object extDictionary = jsonPropertyInfo.GetValueAsObject(obj)!;
 
                             if (extDictionary is IDictionary<string, JsonElement> dict)
@@ -199,6 +199,7 @@ namespace System.Text.Json.Serialization.Converters
                         obj: null!,
                         unescapedPropertyName,
                         ref state,
+                        options,
                         out _,
                         createExtensionProperty: false);
 
@@ -289,6 +290,7 @@ namespace System.Text.Json.Serialization.Converters
                             obj: null!,
                             unescapedPropertyName,
                             ref state,
+                            options,
                             out bool useExtensionProperty,
                             createExtensionProperty: false);
 

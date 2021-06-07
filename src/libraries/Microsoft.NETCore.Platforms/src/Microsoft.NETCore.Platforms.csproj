@@ -1,14 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.SDK">
-  <!-- These are wrapper project files for packaging.-->
+<Project Sdk="Microsoft.NET.SDK">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
+    <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
+    <!-- The only output of this project is the package as the tasks aren't packaged. -->
+    <GeneratePackageOnBuild Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</GeneratePackageOnBuild>
 
     <IsSourceProject>false</IsSourceProject>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
     <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
@@ -20,6 +24,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Compile Include="BuildTask.Desktop.cs" />
     <Compile Include="AssemblyResolver.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,9 +40,9 @@
   <ItemGroup>
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
-    <Content Include="_._" PackagePath="lib/netstandard1.0" />
+    <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />

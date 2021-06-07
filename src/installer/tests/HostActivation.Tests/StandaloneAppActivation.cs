@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .ExitCode;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 exitCode.Should().Be(-2147450731);
             }
@@ -107,7 +107,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .ExitCode;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 exitCode.Should().Be(-2147450748);
             }
@@ -237,14 +237,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void Running_AppHost_with_GUI_No_Console()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -263,14 +258,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void Running_AppHost_with_GUI_Traces()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 

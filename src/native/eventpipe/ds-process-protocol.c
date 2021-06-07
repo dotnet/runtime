@@ -67,6 +67,12 @@ process_protocol_helper_resume_runtime_startup (
 
 static
 bool
+process_protocol_helper_set_environment_variable (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream);
+
+static
+bool
 process_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -443,6 +449,89 @@ process_protocol_helper_resume_runtime_startup (
 	return result;
 }
 
+DiagnosticsSetEnvironmentVariablePayload *
+ds_set_environment_variable_payload_alloc (void)
+{
+	return ep_rt_object_alloc (DiagnosticsSetEnvironmentVariablePayload);
+}
+
+void
+ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload)
+{
+	ep_return_void_if_nok (payload != NULL);
+	ep_rt_byte_array_free (payload->incoming_buffer);
+	ep_rt_object_free (payload);
+}
+
+static
+uint8_t *
+set_environment_variable_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	DiagnosticsSetEnvironmentVariablePayload *instance = ds_set_environment_variable_payload_alloc ();
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->incoming_buffer = buffer;
+
+	if (!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->name) ||
+		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->value))
+		ep_raise_error ();
+
+ep_on_exit:
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_set_environment_variable_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+static
+bool
+process_protocol_helper_set_environment_variable (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream)
+{
+	EP_ASSERT (message != NULL);
+	EP_ASSERT (stream != NULL);
+
+	if (!stream)
+		return false;
+
+    bool result = false;
+    DiagnosticsSetEnvironmentVariablePayload *payload = (DiagnosticsSetEnvironmentVariablePayload *)ds_ipc_message_try_parse_payload (message, set_environment_variable_command_try_parse_payload);
+	if (!payload) {
+		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
+		ep_raise_error ();
+	}
+
+	ds_ipc_result_t ipc_result;
+	ipc_result = ds_rt_set_environment_variable (payload->name, payload->value);
+	if (ipc_result != DS_IPC_S_OK) {
+		ds_ipc_message_send_error (stream, ipc_result);
+		ep_raise_error ();
+	} else {
+		ds_ipc_message_send_success (stream, ipc_result);
+	}
+
+	result = true;
+
+ep_on_exit:
+	ds_set_environment_variable_payload_free (payload);
+    ds_ipc_stream_free (stream);
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ep_exit_error_handler ();
+}
+
 static
 bool
 process_protocol_helper_unknown_command (
@@ -474,6 +563,9 @@ ds_process_protocol_helper_handle_ipc_message (
 		break;
 	case DS_PROCESS_COMMANDID_GET_PROCESS_ENV:
 		result = process_protocol_helper_get_process_env (message, stream);
+		break;
+	case DS_PROCESS_COMMANDID_SET_ENV_VAR:
+		result = process_protocol_helper_set_environment_variable (message, stream);
 		break;
 	default:
 		result = process_protocol_helper_unknown_command (message, stream);

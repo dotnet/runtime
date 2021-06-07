@@ -219,7 +219,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20210309143118-005aab4
+        image: ubuntu-18.04-webassembly-20210519131124-ba00c14
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -228,6 +228,8 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WebAssembly on Windows
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml
@@ -239,7 +241,7 @@ jobs:
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
-      platform: Browser_wasm
+      platform: Browser_wasm_win
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}

@@ -26,6 +26,10 @@ int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeRSA);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
+        if (__builtin_available(macOS 10.15, iOS 13, tvOS 13, *))
+        {
+            CFDictionaryAddValue(attributes, kSecUseDataProtectionKeychain, kCFBooleanTrue);
+        }
 
         *pPrivateKey = SecKeyCreateRandomKey(attributes, pErrorOut);
         if (*pPrivateKey != NULL)
@@ -160,13 +164,6 @@ int32_t AppleCryptoNative_RsaSignaturePrimitive(
 {
     return RsaPrimitive(
         privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSASignatureRaw, SecKeyCreateSignature);
-}
-
-int32_t AppleCryptoNative_RsaDecryptionPrimitive(
-    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
-{
-    return RsaPrimitive(
-        privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateDecryptedData);
 }
 
 int32_t AppleCryptoNative_RsaEncryptionPrimitive(

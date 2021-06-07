@@ -24,7 +24,8 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
             => ReadUsingOptions<TValue>(utf8Json, typeof(TValue), options);
 
         /// <summary>
@@ -46,7 +47,8 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
-        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
             {
@@ -119,11 +121,11 @@ namespace System.Text.Json
             return ReadUsingMetadata<object?>(utf8Json, GetTypeInfo(context, returnType));
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-            return ReadUsingMetadata<TValue>(utf8Json, GetTypeInfo(returnType, options));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
+            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
         }
     }
 }

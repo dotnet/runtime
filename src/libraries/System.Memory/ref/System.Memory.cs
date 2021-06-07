@@ -505,6 +505,7 @@ namespace System.Runtime.InteropServices
         public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
         public static System.Span<T> CreateSpan<T>(ref T reference, int length) { throw null; }
         public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
+        public static ref byte GetArrayDataReference(System.Array array) { throw null; }
         public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
         public static ref T GetReference<T>(System.Span<T> span) { throw null; }
         public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }

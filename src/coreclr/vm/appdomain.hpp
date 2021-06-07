@@ -22,11 +22,9 @@
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
 #include "domainfile.h"
-#include "objectlist.h"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
-#include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
 
 #ifdef FEATURE_MULTICOREJIT
@@ -1858,8 +1856,6 @@ public:
     void TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
-
-    void GetCacheAssemblyList(SetSHash<PTR_DomainAssembly>& assemblyList);
 
     //****************************************************************************************
     // Returns and Inserts assemblies into a lookup cache based on the binding information

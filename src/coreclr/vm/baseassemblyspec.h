@@ -106,13 +106,6 @@ public:
     BOOL IsCoreLibSatellite() const;
     BOOL IsCoreLib();
 
-    // Returns true
-    inline BOOL HasUniqueIdentity() const
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return TRUE;
-    }
-
     enum CompareExFlags
     {
         ASC_Default                 = 0x00, // Default comparison policy.

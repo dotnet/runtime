@@ -195,9 +195,6 @@ namespace System.Runtime.InteropServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(RuntimeMethodHandleInternal m);
 
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool IsComSupportedInternal();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
 
@@ -211,14 +208,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
-
-        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
-        {
-            var rt = (RuntimeType)structureType;
-            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: true)!;
-            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
-            return structure;
-        }
 
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
@@ -236,11 +225,12 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object? obj);
 
-        internal static bool IsComSupported { get; } = InitializeIsComSupported();
-
-        private static bool InitializeIsComSupported() => IsComSupportedInternal();
-
 #if TARGET_WINDOWS
+        internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern bool IsBuiltInComSupportedInternal();
+
         /// <summary>
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
@@ -296,7 +286,7 @@ namespace System.Runtime.InteropServices
         // on Marshal for more consistent API surface.
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -443,7 +433,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -457,7 +447,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -484,7 +474,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -512,7 +502,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static int FinalReleaseComObject(object o)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -536,7 +526,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -567,7 +557,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static bool SetComObjectData(object obj, object key, object? data)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -597,7 +587,7 @@ namespace System.Runtime.InteropServices
         [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -652,7 +642,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -672,7 +662,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -686,7 +676,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -697,7 +687,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -711,7 +701,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -722,7 +712,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -736,7 +726,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -764,10 +754,11 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetEndComSlot(Type t);
 
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [SupportedOSPlatform("windows")]
         public static object BindToMoniker(string monikerName)
         {
-            if (!IsComSupported)
+            if (!IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -780,12 +771,19 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
+        // Revist after https://github.com/mono/linker/issues/1989 is fixed
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
+            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void CreateBindCtx(uint reserved, out IBindCtx ppbc);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
+            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IMoniker ppmk);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
+            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
 
@@ -799,5 +797,10 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
+
+#if DEBUG // Used for testing in Checked or Debug
+        [DllImport(RuntimeHelpers.QCall)]
+        internal static unsafe extern delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
+#endif
     }
 }

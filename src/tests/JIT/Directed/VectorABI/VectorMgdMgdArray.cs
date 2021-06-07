@@ -24,7 +24,15 @@ public static class VectorMgdMgd
     private const int PASS = 100;
     private const int FAIL = 0;
 
-    static Random random = new Random(12345);
+    private const int DefaultSeed = 20010415;
+    private static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
+    static Random random = new Random(Seed);
 
     public static T GetValueFromInt<T>(int value)
     {

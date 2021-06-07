@@ -12,8 +12,6 @@ using System.Text;
 using System.Threading;
 using System.Security;
 
-using Internal.IO;
-
 namespace System
 {
     public sealed partial class TimeZoneInfo
@@ -36,6 +34,8 @@ namespace System
             "Universal",
             "Zulu"
         };
+
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {

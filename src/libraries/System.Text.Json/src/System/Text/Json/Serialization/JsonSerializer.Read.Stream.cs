@@ -39,7 +39,8 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static ValueTask<TValue?> DeserializeAsync<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        public static ValueTask<TValue?> DeserializeAsync<TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -75,9 +76,10 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
-            [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType,
+            Type returnType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -197,7 +199,8 @@ namespace System.Text.Json
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
-        public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -212,6 +215,7 @@ namespace System.Text.Json
 
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 
+            [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
             static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(
                 Stream utf8Json,
                 JsonSerializerOptions options,
@@ -220,7 +224,7 @@ namespace System.Text.Json
                 var bufferState = new ReadAsyncBufferState(options.DefaultBufferSize);
                 // Hardcode the queue converter to avoid accidental use of custom converters
                 JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
-                JsonTypeInfo jsonTypeInfo = new JsonTypeInfo(typeof(Queue<TValue>), converter, typeof(Queue<TValue>), options);
+                JsonTypeInfo jsonTypeInfo = CreateQueueJsonTypeInfo<TValue>(converter, options);
                 ReadStack readStack = default;
                 readStack.Initialize(jsonTypeInfo, supportContinuation: true);
                 var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
@@ -247,6 +251,11 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
+        private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
+            new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, typeof(Queue<TValue>), queueOptions);
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,
@@ -389,6 +398,7 @@ namespace System.Text.Json
             return value;
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static ValueTask<TValue?> ReadAllUsingOptionsAsync<TValue>(
             Stream utf8Json,
             Type returnType,
