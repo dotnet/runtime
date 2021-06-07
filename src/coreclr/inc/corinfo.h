@@ -608,6 +608,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
 
+    CORINFO_HELP_PROFILE_VALIDATOR,         // Notify runtime if a cold block is called
+
     CORINFO_HELP_COUNT,
 };
 

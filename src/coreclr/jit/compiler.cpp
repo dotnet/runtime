@@ -5095,6 +5095,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Insert profile validators
+    if (!compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && opts.OptimizationEnabled() &&
+        fgFirstBB->hasProfileWeight())
+    {
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInsertProfileValidators);
+    }
+
     // Determine start of cold region if we are hot/cold splitting
     //
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);

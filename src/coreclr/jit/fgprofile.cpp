@@ -1560,6 +1560,41 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
+PhaseStatus Compiler::fgInsertProfileValidators()
+{
+    bool modified = false;
+    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        if (block->hasProfileWeight() && (block->bbWeight == 0.0f) &&
+            // I am only interesting in these blocks for now:
+            ((block->bbJumpKind == BBJ_RETURN) ||
+             (block->bbJumpKind == BBJ_ALWAYS) ||
+             (block->bbJumpKind == BBJ_NONE) ||
+             (block->bbJumpKind == BBJ_COND)))
+        {
+            // TODO: don't emit validator if the block is dominated by other cold blocks
+
+            // Pass CORINFO_METHOD_HANDLE and block's id
+            GenTreeCall::Use* const args = gtNewCallArgs(
+                gtNewIconNode(reinterpret_cast<ssize_t>(info.compMethodHnd), TYP_I_IMPL),
+                gtNewIconNode(block->bbID, TYP_UINT));
+
+            GenTree* call = fgMorphCall(gtNewHelperCallNode(CORINFO_HELP_PROFILE_VALIDATOR, TYP_VOID, args));
+            gtSetEvalOrder(call);
+            block->bbFlags |= BBF_HAS_CALL;
+
+            Statement* newStmt = fgNewStmtAtBeg(block, call);
+            if (fgStmtListThreaded)
+            {
+                gtSetStmtInfo(newStmt);
+                fgSetStmtSeq(newStmt);
+            }
+            modified = true;
+        }
+    }
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 //------------------------------------------------------------------------
 // fgInstrumentMethod: add instrumentation probes to the method
 //

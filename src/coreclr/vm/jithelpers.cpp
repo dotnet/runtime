@@ -5322,6 +5322,15 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
 }
 HCIMPLEND
 
+HCIMPL2(void, JIT_ProfileValidator, CORINFO_METHOD_HANDLE methodHnd, unsigned blockId)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+    // TODO: add to a global hashmap [methodHnd - counter] ?
+    printf("PGO_WARN: Cold block is called in %s for BB%u!\n", GetMethod(methodHnd)->GetName(), blockId);
+}
+HCIMPLEND
+
 // Version of helper above used when the count is 64-bit
 HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
 {

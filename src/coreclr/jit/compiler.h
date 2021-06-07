@@ -5728,6 +5728,7 @@ protected:
 
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
+    PhaseStatus fgInsertProfileValidators();
     PhaseStatus fgIncorporateProfileData();
     void        fgIncorporateBlockCounts();
     void        fgIncorporateEdgeCounts();
