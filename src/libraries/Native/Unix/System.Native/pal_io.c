@@ -1506,7 +1506,7 @@ int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCo
         count += current;
 
         // Incomplete pread operation may happen for two reasons:
-        // a) We have reached EOF (the next call to pread would return 0).
+        // a) We have reached EOF.
         // b) The operation was interrupted by a signal handler.
         // To mimic preadv, we stop on the first incomplete operation. 
         if (current != vector.iov_len)
@@ -1545,7 +1545,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorC
 
         count += current;
 
-        // Incomplete write operation may happen for few reasons:
+        // Incomplete pwrite operation may happen for few reasons:
         // a) There was not enough space available or the file is too large for given file system.
         // b) The operation was interrupted by a signal handler.
         // To mimic pwritev, we stop on the first incomplete operation. 
