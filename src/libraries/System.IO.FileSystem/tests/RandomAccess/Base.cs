@@ -44,6 +44,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.Pipes aren't supported on browser")]
         public void ThrowsNotSupportedExceptionForUnseekableFile()
         {
             using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
