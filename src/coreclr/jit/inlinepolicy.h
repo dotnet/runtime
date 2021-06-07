@@ -103,13 +103,12 @@ public:
         , m_FldAccessOverArgStruct(0)
         , m_FoldableBox(0)
         , m_Intrinsic(0)
-        , m_UncondBranch(0)
         , m_BackwardJump(0)
-        , m_ThrowBlocks(0)
-        , m_ArgIsFinal(0)
-        , m_ArgIsFinalSigIsNot(0)
+        , m_ThrowBlock(0)
+        , m_ArgIsExactCls(0)
+        , m_ArgIsExactClsSigIsNot(0)
         , m_ArgIsConst(0)
-        , m_ArgIsBoxed(0)
+        , m_ArgIsBoxedAtCallsite(0)
         , m_FoldableIntrinsic(0)
         , m_FoldableExpr(0)
         , m_FoldableExprUn(0)
@@ -198,13 +197,12 @@ protected:
     unsigned                m_FldAccessOverArgStruct;
     unsigned                m_FoldableBox;
     unsigned                m_Intrinsic;
-    unsigned                m_UncondBranch;
     unsigned                m_BackwardJump;
-    unsigned                m_ThrowBlocks;
-    unsigned                m_ArgIsFinal;
-    unsigned                m_ArgIsFinalSigIsNot;
+    unsigned                m_ThrowBlock;
+    unsigned                m_ArgIsExactCls;
+    unsigned                m_ArgIsExactClsSigIsNot;
     unsigned                m_ArgIsConst;
-    unsigned                m_ArgIsBoxed;
+    unsigned                m_ArgIsBoxedAtCallsite;
     unsigned                m_FoldableIntrinsic;
     unsigned                m_FoldableExpr;
     unsigned                m_FoldableExprUn;

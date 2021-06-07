@@ -337,19 +337,15 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLEE_THROW_BLOCK:
-                m_ThrowBlocks++;
-                break;
-
-            case InlineObservation::CALLEE_UNCOND_BRANCH:
-                m_UncondBranch++;
+                m_ThrowBlock++;
                 break;
 
             case InlineObservation::CALLSITE_ARG_EXACT_CLS:
-                m_ArgIsFinal++;
+                m_ArgIsExactCls++;
                 break;
 
             case InlineObservation::CALLSITE_ARG_BOXED:
-                m_ArgIsBoxed++;
+                m_ArgIsBoxedAtCallsite++;
                 break;
 
             case InlineObservation::CALLSITE_ARG_CONST:
@@ -357,7 +353,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
-                m_ArgIsFinalSigIsNot++;
+                m_ArgIsExactClsSigIsNot++;
                 break;
 
             case InlineObservation::CALLSITE_FOLDABLE_INTRINSIC:
@@ -382,6 +378,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
             case InlineObservation::CALLSITE_HAS_PROFILE:
                 m_HasProfile = value;
+                break;
+
+            case InlineObservation::CALLSITE_IN_TRY_REGION:
+                m_CallsiteIsInTryRegion = value;
                 break;
 
             case InlineObservation::CALLEE_HAS_SIMD:
@@ -482,11 +482,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
             }
 
             case InlineObservation::CALLSITE_IN_NORETURN_REGION:
-                m_IsCallsiteInNoReturnRegion = true;
-                break;
-
-            case InlineObservation::CALLSITE_IN_TRY_REGION:
-                m_CallsiteIsInTryRegion = true;
+                m_IsCallsiteInNoReturnRegion = value;
                 break;
 
             case InlineObservation::CALLSITE_IN_LOOP:
@@ -591,13 +587,12 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_FldAccessOverArgStruct);
     XATTR_I4(m_FoldableBox);
     XATTR_I4(m_Intrinsic);
-    XATTR_I4(m_UncondBranch);
     XATTR_I4(m_BackwardJump);
-    XATTR_I4(m_ThrowBlocks);
-    XATTR_I4(m_ArgIsFinal);
-    XATTR_I4(m_ArgIsFinalSigIsNot);
+    XATTR_I4(m_ThrowBlock);
+    XATTR_I4(m_ArgIsExactCls);
+    XATTR_I4(m_ArgIsExactClsSigIsNot);
     XATTR_I4(m_ArgIsConst);
-    XATTR_I4(m_ArgIsBoxed);
+    XATTR_I4(m_ArgIsBoxedAtCallsite);
     XATTR_I4(m_FoldableIntrinsic);
     XATTR_I4(m_FoldableExpr);
     XATTR_I4(m_FoldableExprUn);
@@ -937,22 +932,27 @@ double DefaultPolicy::DetermineMultiplier()
             break;
     }
 
+    
     if (m_ReturnsStructByValue)
     {
-        // It'd be nice to also note 'newobj/initobj' for structs
-        // but we currently don't resolve such tokens.
+        // For structs-passed-by-value we might avoid expensive copy operations if we inline
         JITDUMP("\nInline candidate returns a struct by value.");
+    }
+
+    if (m_ArgIsStructByValue > 0)
+    {
+        // Same here
+        JITDUMP("\n%d arguments are structs passed by value.", m_ArgIsStructByValue);
     }
 
     if (m_IsCalleeGeneric && !m_IsCallerGeneric)
     {
-        // Especially if such a callee has many foldable branches like
-        // 'typeof(T) == typeof(T2)' we should try harder to inline it.
+        // Especially, if such a callee has many foldable branches like 'typeof(T) == typeof(T2)'
         JITDUMP("\nInline candidate is generic and caller is not.");
     }
     else if (m_IsCalleeGeneric && m_IsCallerGeneric)
     {
-        JITDUMP("\nBoth caller and inline candidate are generic.");
+        JITDUMP("\nInline candidate and its caller are generic.");
     }
 
     if (m_IsCallsiteInNoReturnRegion)
@@ -962,7 +962,7 @@ double DefaultPolicy::DetermineMultiplier()
         //   throw new ArgumentException(SR.GetMessage());
         //
         // ^ Here we have two calls inside a BBJ_THROW block
-        // NOTE: Unfortunately, we're not able to detect ThrowHelpers calls yet.
+        // Unfortunately, we're not able to detect ThrowHelpers calls yet.
         JITDUMP("\nCallsite is in a no-return region.");
     }
 
@@ -984,11 +984,6 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.", m_ArgCasted);
     }
 
-    if (m_ArgIsStructByValue > 0)
-    {
-        JITDUMP("\n%d arguments are structs passed by value.", m_ArgIsStructByValue);
-    }
-
     if (m_FldAccessOverArgStruct > 0)
     {
         // Such ldfld/stfld are cheap for promotable structs
@@ -1008,11 +1003,6 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d intrinsics.", m_Intrinsic);
     }
 
-    if (m_UncondBranch > 0)
-    {
-        JITDUMP("\nInline has %d unconditional branches.", m_UncondBranch);
-    }
-
     if (m_BinaryExprWithCns > 0)
     {
         // In some cases we're not able to detect potentially foldable expressions, e.g.:
@@ -1025,43 +1015,43 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has %d binary expressions with constants.", m_BinaryExprWithCns);
     }
 
-    if (m_ThrowBlocks > 0)
+    if (m_ThrowBlock > 0)
     {
         // 'throw' opcode and its friends (Exception's ctor, its exception message, etc) significantly increase
         // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
         // the end of the functions and don't impact Register Allocations.
         // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
-        JITDUMP("\nInline has %d throw blocks.", m_ThrowBlocks);
+        JITDUMP("\nInline has %d throw blocks.", m_ThrowBlock);
     }
 
-    if (m_ArgIsBoxed > 0)
+    if (m_ArgIsBoxedAtCallsite > 0)
     {
-        // Callsite is going to box n arguments. We might be able to avoid it if we inline?
+        // Callsite is going to box n arguments. We might avoid boxing after inlining.
         // Example:
         //
         //  void DoNothing(object o) {} // o is unused, so the boxing is redundant
         //
         //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
         //
-        JITDUMP("\nCallsite is going to box %d arguments.", m_ArgIsBoxed);
+        JITDUMP("\nCallsite is going to box %d arguments.", m_ArgIsBoxedAtCallsite);
     }
 
-    if (m_ArgIsFinalSigIsNot > 0)
+    if (m_ArgIsExactClsSigIsNot > 0)
     {
         // If we inline such a callee - we'll be able to devirtualize all the calls for such arguments
         // Example:
         //
         //  int Callee(object o) => o.GetHashCode(); // virtual call
         //
-        //  int Caller(string s) => Callee(s); // String is 'final'
+        //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
         //
-        JITDUMP("\nCallsite passes %d arguments of sealed classes while callee accepts non final ones.",
-                m_ArgIsFinalSigIsNot);
+        JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.",
+                m_ArgIsExactClsSigIsNot);
     }
 
-    if (m_ArgIsFinal > 0)
+    if (m_ArgIsExactCls > 0)
     {
-        JITDUMP("\nCallsite passes %d arguments of sealed classes.", m_ArgIsFinal);
+        JITDUMP("\nCallsite passes %d arguments of exact classes.", m_ArgIsExactCls);
     }
 
     if (m_ArgIsConst > 0)
@@ -1096,7 +1086,7 @@ double DefaultPolicy::DetermineMultiplier()
     if (m_DivByCns > 0)
     {
         // E.g. callee has "x / arg0" where arg0 is a const at the call site -
-        // we'll avoid the expensive DIV instruction after inlining.
+        // we'll avoid a very expensive DIV instruction after inlining.
         JITDUMP("\nInline has %d Div-by-constArg expressions.", m_DivByCns);
     }
 
@@ -1106,8 +1096,6 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d backward jumps (loops?).", m_BackwardJump);
         if (callSiteIsInLoop)
         {
-            // Should we try to avoid such cases or on the contrary -
-            // we'll be able to align this nested loop?
             JITDUMP(" And is inlined into a loop.")
         }
     }
@@ -2390,13 +2378,12 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_FldAccessOverArgStruct);
     fprintf(file, ",%u", m_FoldableBox);
     fprintf(file, ",%u", m_Intrinsic);
-    fprintf(file, ",%u", m_UncondBranch);
     fprintf(file, ",%u", m_BackwardJump);
-    fprintf(file, ",%u", m_ThrowBlocks);
-    fprintf(file, ",%u", m_ArgIsFinal);
-    fprintf(file, ",%u", m_ArgIsFinalSigIsNot);
+    fprintf(file, ",%u", m_ThrowBlock);
+    fprintf(file, ",%u", m_ArgIsExactCls);
+    fprintf(file, ",%u", m_ArgIsExactClsSigIsNot);
     fprintf(file, ",%u", m_ArgIsConst);
-    fprintf(file, ",%u", m_ArgIsBoxed);
+    fprintf(file, ",%u", m_ArgIsBoxedAtCallsite);
     fprintf(file, ",%u", m_FoldableIntrinsic);
     fprintf(file, ",%u", m_FoldableExpr);
     fprintf(file, ",%u", m_FoldableExprUn);
