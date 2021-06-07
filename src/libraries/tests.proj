@@ -237,6 +237,7 @@
 
     <!-- App Launch Failure https://github.com/dotnet/runtime/issues/53813 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.AttributedModel/tests/System.Composition.AttributeModel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Web.HttpUtility/tests/System.Web.HttpUtility.Tests.csproj" />
   </ItemGroup>
 
