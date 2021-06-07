@@ -150,7 +150,7 @@ namespace System.IO.Strategies
                 // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
                 // \\.\CON, so we'll only allow the \\?\ syntax.
 
-                int fileType = Interop.Kernel32.GetFileType(handle);
+                int fileType = handle.GetFileType();
                 if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
                 {
                     int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN

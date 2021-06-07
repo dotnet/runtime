@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal const FileOptions NoBuffering = (FileOptions)(0x20000000);
+        internal const FileOptions NoBuffering = (FileOptions)0x20000000;
         private FileOptions _fileOptions = (FileOptions)(-1);
         private int _fileType = -1;
 
@@ -24,12 +24,11 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, FileOptions fileOptions, int fileType) : base(ownsHandle)
+        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, FileOptions fileOptions) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
 
             _fileOptions = fileOptions;
-            _fileType = fileType;
         }
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
@@ -47,8 +46,7 @@ namespace Microsoft.Win32.SafeHandles
                 SafeFileHandle fileHandle = new SafeFileHandle(
                     NtCreateFile(fullPath, mode, access, share, options, preallocationSize),
                     ownsHandle: true,
-                    options,
-                    Interop.Kernel32.FileTypes.FILE_TYPE_DISK); // similar to FileStream, we assume that only disk files can be referenced by path on Windows
+                    options);
 
                 fileHandle.InitThreadPoolBindingIfNeeded();
 
@@ -183,9 +181,9 @@ namespace Microsoft.Win32.SafeHandles
             return _fileOptions = result;
         }
 
-        private int GetFileType()
+        internal int GetFileType()
         {
-            if (_fileType != -1)
+            if (_fileType == -1)
             {
                 _fileType = Interop.Kernel32.GetFileType(this);
 
