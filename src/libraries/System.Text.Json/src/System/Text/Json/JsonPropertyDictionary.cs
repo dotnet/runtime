@@ -219,7 +219,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            CreateDictionaryIfThreshold();
+            CreateDictionaryIfThresholdMet();
 
             T? existing = null;
 
@@ -289,7 +289,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
             }
 
-            CreateDictionaryIfThreshold();
+            CreateDictionaryIfThresholdMet();
 
             if (_propertyDictionary == null)
             {
@@ -311,7 +311,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private void CreateDictionaryIfThreshold()
+        private void CreateDictionaryIfThresholdMet()
         {
             if (_propertyDictionary == null && _propertyList.Count > ListToDictionaryThreshold)
             {
