@@ -705,23 +705,19 @@ namespace System.Diagnostics.Tracing
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         protected EventSource(EventSourceSettings settings, params string[]? traits)
         {
-            if (!IsSupported)
-                return;
-
+            if (IsSupported)
+            {
 #if FEATURE_PERFTRACING
-            m_eventHandleTable = new TraceLoggingEventHandleTable();
+                m_eventHandleTable = new TraceLoggingEventHandleTable();
 #endif
-            m_config = ValidateSettings(settings);
-            Initialize(traits);
-        }
+                m_config = ValidateSettings(settings);
 
-        private void Initialize(string[]? traits)
-        {
-            Type myType = this.GetType();
-            Guid eventSourceGuid = GetGuid(myType);
-            string eventSourceName = GetName(myType);
+                Type myType = this.GetType();
+                Guid eventSourceGuid = GetGuid(myType);
+                string eventSourceName = GetName(myType);
 
-            Initialize(eventSourceGuid, eventSourceName, traits);
+                Initialize(eventSourceGuid, eventSourceName, traits);
+            }
         }
 
 #if FEATURE_PERFTRACING
