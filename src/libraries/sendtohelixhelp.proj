@@ -54,7 +54,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
+    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path, this also gives us an isolated packages folder -->
     <NeedsDotNetSdk>true</NeedsDotNetSdk>
     <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
 
@@ -80,9 +80,9 @@
 
   <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+    <HelixCommand>$(HelixCommand) /bl:%HELIX_WORKITEM_UPLOAD_ROOT%\%HELIX_WORKITEM_FRIENDLYNAME%.package.test.binlog</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
