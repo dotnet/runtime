@@ -60,8 +60,8 @@ internal static partial class Interop
         [SuppressGCTransition]
         internal static extern int GetReadDirRBufferSize();
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR", SetLastError = false)]
-        internal static unsafe partial int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, out DirectoryEntry outputEntry);
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR")]
+        internal static unsafe extern int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, DirectoryEntry* outputEntry);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static partial int CloseDir(IntPtr dir);
