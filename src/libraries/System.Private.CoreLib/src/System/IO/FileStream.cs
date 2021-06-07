@@ -76,7 +76,7 @@ namespace System.IO
             }
             else if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(bufferSize));
             }
             else if (handle.IsClosed)
             {
@@ -199,7 +199,7 @@ namespace System.IO
         {
             if (position < 0 || length < 0)
             {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(position < 0 ? nameof(position) : nameof(length));
             }
             else if (_strategy.IsClosed)
             {
@@ -217,7 +217,7 @@ namespace System.IO
         {
             if (position < 0 || length < 0)
             {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(position < 0 ? nameof(position) : nameof(length));
             }
             else if (_strategy.IsClosed)
             {
