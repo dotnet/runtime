@@ -8929,8 +8929,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isExplicitTailCall     = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
             const bool isLateDevirtualization = false;
-            impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
-                                &exactContextHnd, isLateDevirtualization, isExplicitTailCall, rawILOffset);
+            impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags,
+                                &callInfo->contextHandle, &exactContextHnd, isLateDevirtualization, isExplicitTailCall,
+                                rawILOffset);
         }
 
         if (impIsThis(obj))
@@ -20890,10 +20891,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
-    CORINFO_METHOD_HANDLE   derivedMethod = dvInfo.devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE  exactContext  = dvInfo.exactContext;
-    CORINFO_CLASS_HANDLE    derivedClass  = NO_CLASS_HANDLE;
-    CORINFO_RESOLVED_TOKEN *pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
+    CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
+    CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.exactContext;
+    CORINFO_CLASS_HANDLE    derivedClass          = NO_CLASS_HANDLE;
+    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
 
     if (derivedMethod != nullptr)
     {
@@ -21184,8 +21185,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                     beforeArg->SetNext(gtNewCallArgs(methodTableArg));
                                 }
 
-                                call->gtCallMethHnd    = unboxedEntryMethod;
-                                derivedMethod          = unboxedEntryMethod;
+                                call->gtCallMethHnd   = unboxedEntryMethod;
+                                derivedMethod         = unboxedEntryMethod;
                                 pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
                                 // Method attributes will differ because unboxed entry point is shared
@@ -21218,7 +21219,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             call->gtCallThisArg = gtNewCallArgs(localCopyThis);
                             call->gtCallMethHnd = unboxedEntryMethod;
                             call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
-                            derivedMethod = unboxedEntryMethod;
+                            derivedMethod         = unboxedEntryMethod;
                             pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
                             optimizedTheBox = true;
@@ -21332,7 +21333,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         call->gtCallThisArg = gtNewCallArgs(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
                         call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
-                        derivedMethod = unboxedEntryMethod;
+                        derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
                     }
                 }
