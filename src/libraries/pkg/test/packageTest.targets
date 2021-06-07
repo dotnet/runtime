@@ -87,7 +87,7 @@
       <ReferenceCopyLocalPaths Original="%(Identity)" />
       <_referenceCopyLocalPathsPackages Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" 
                                       Condition="'%(ReferenceCopyLocalPaths.RuntimeIdentifier)' == ''"
-                                      Exclude="@(ReferencePath->'%(NuGetPackageId)');@(_ConflictPackageFiles->'%(NuGetPackageId)');$(TestPackageId)" />
+                                      Exclude="@(ReferencePath->'%(NuGetPackageId)');$(TestPackageId)" />
       <RuntimeLibToTestDependency Include="@(_referenceCopyLocalPathsPackages->'%(Original)')" />
     </ItemGroup>
 
