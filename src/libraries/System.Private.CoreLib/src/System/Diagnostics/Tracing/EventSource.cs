@@ -671,7 +671,7 @@ namespace System.Diagnostics.Tracing
         /// the ETW provider name.
         /// </summary>
         protected EventSource()
-            : this(EventSourceSettings.EtwManifestEventFormat, null)
+            : this(EventSourceSettings.EtwManifestEventFormat)
         {
         }
 
@@ -1547,8 +1547,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private unsafe void Initialize(Guid eventSourceGuid, string eventSourceName, string[]? traits)
         {
-            Debug.Assert(IsSupported);
-
             try
             {
                 m_traits = traits;
