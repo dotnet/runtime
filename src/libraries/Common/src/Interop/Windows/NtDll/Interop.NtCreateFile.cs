@@ -17,11 +17,11 @@ internal static partial class Interop
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private static extern unsafe uint NtCreateFile(
-            out IntPtr FileHandle,
+        private static unsafe extern uint NtCreateFile(
+            IntPtr* FileHandle,
             DesiredAccess DesiredAccess,
-            ref OBJECT_ATTRIBUTES ObjectAttributes,
-            out IO_STATUS_BLOCK IoStatusBlock,
+            OBJECT_ATTRIBUTES* ObjectAttributes,
+            IO_STATUS_BLOCK* IoStatusBlock,
             long* AllocationSize,
             FileAttributes FileAttributes,
             FileShare ShareAccess,
@@ -59,11 +59,13 @@ internal static partial class Interop
                     rootDirectory,
                     securityQualityOfService);
 
+                IntPtr handle;
+                IO_STATUS_BLOCK statusBlock;
                 uint status = NtCreateFile(
-                    out IntPtr handle,
+                    &handle,
                     desiredAccess,
-                    ref attributes,
-                    out IO_STATUS_BLOCK statusBlock,
+                    &attributes,
+                    &statusBlock,
                     AllocationSize: preallocationSize,
                     fileAttributes,
                     shareAccess,
