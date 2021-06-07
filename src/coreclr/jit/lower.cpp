@@ -5185,10 +5185,36 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         int    postShift;
         bool   simpleMul = false;
 
+        unsigned bits = type == TYP_INT ? 32 : 64;
+        // if the dividend operand is AND or RSZ with a constant then the number of input bits can be reduced
+        if (dividend->OperIs(GT_AND))
+        {
+            size_t maskCns = static_cast<size_t>(
+                dividend->gtGetOp1()->IsCnsIntOrI()   ? dividend->gtGetOp1()->AsIntCon()->IconValue()
+                : dividend->gtGetOp2()->IsCnsIntOrI() ? dividend->gtGetOp2()->AsIntCon()->IconValue()
+                                                      : 0);
+            if (maskCns)
+            {
+                DWORD index;
+#ifdef TARGET_64BIT
+                _BitScanReverse64(&index, maskCns);
+#else
+                _BitScanReverse(&index, maskCns);
+#endif
+                bits = index + 1;
+            }
+        }
+        else if (dividend->OperIs(GT_RSZ) && dividend->gtGetOp2()->IsCnsIntOrI())
+        {
+            size_t shiftCns = static_cast<size_t>(dividend->gtGetOp2()->AsIntCon()->IconValue());
+            if (shiftCns < bits)
+                bits -= static_cast<unsigned>(shiftCns);
+        }
+
         if (type == TYP_INT)
         {
-            magic =
-                MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift, &postShift);
+            magic = MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift,
+                                                    &postShift, bits);
 
 #ifdef TARGET_64BIT
             // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
@@ -5200,7 +5226,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                               ))
             {
                 magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
-                                                        &postShift, 32);
+                                                        &postShift, bits);
             }
             // otherwise just widen to regular multiplication
             else
@@ -5213,8 +5239,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         else
         {
 #ifdef TARGET_64BIT
-            magic =
-                MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift, &postShift);
+            magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
+                                                    &postShift, bits);
 #else
             unreached();
 #endif
