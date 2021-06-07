@@ -1428,4 +1428,30 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientSendTest_Sync(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;
     }
+
+    public sealed class CustomHttpClientTest
+    {
+        private sealed class CustomHttpClient : HttpClientHandler
+        {
+            public Task<HttpResponseMessage> PublicSendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default) =>
+                SendAsync(request, cancellationToken);
+
+            public HttpResponseMessage PublicSend(HttpRequestMessage request, CancellationToken cancellationToken = default) =>
+                Send(request, cancellationToken);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void Send_NullRequest_ThrowsException()
+        {
+            using var client = new CustomHttpClient();
+            AssertExtensions.Throws<ArgumentNullException>("request", () => client.PublicSend(null));
+        }
+
+        [Fact]
+        public async Task SendAsync_NullRequest_ThrowsException()
+        {
+            using var client = new CustomHttpClient();
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.PublicSendAsync(null));
+        }
+    }
 }
