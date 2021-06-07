@@ -1194,7 +1194,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                ModuleToken declToken = resolver.GetModuleTokenForMethod(impl.GetTypicalMethodDefinition(), throwIfNotFound: false);
+                ModuleToken declToken = resolver.GetModuleTokenForMethod(decl.GetTypicalMethodDefinition(), throwIfNotFound: false);
                 if (declToken.IsNull)
                 {
                     return false;
