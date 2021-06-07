@@ -300,11 +300,8 @@ namespace System.IO
 
         // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with the GENERIC_READ right, and the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
-        // "This function is not supported for 32-bit applications by WOW64 on Itanium-based systems."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
-            => IntPtr.Size != sizeof(int)
-                && handle.IsAsync
-                && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
+            => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
 
         private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle,
             IReadOnlyList<Memory<byte>> buffers, long fileOffset, int totalBytes, CancellationToken cancellationToken)
@@ -340,7 +337,7 @@ namespace System.IO
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset);
                 Debug.Assert(pinnedSegments.Pointer != null);
 
-                if (Interop.Kernel32.ReadFileScatter(handle, (Interop.Kernel32.FILE_SEGMENT_ELEMENT*)pinnedSegments.Pointer, bytesToRead, IntPtr.Zero, nativeOverlapped) == 0)
+                if (Interop.Kernel32.ReadFileScatter(handle, (long*)pinnedSegments.Pointer, bytesToRead, IntPtr.Zero, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
@@ -473,7 +470,7 @@ namespace System.IO
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async WriteFile operation.
-                if (Interop.Kernel32.WriteFileGather(handle, (Interop.Kernel32.FILE_SEGMENT_ELEMENT*)pinnedSegments.Pointer, bytesToWrite, IntPtr.Zero, nativeOverlapped) == 0)
+                if (Interop.Kernel32.WriteFileGather(handle, (long*)pinnedSegments.Pointer, bytesToWrite, IntPtr.Zero, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
@@ -507,8 +504,8 @@ namespace System.IO
         private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) PrepareMemorySegments(IReadOnlyList<Memory<byte>> buffers)
         {
             // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            Interop.Kernel32.FILE_SEGMENT_ELEMENT[] fileSegments = new Interop.Kernel32.FILE_SEGMENT_ELEMENT[buffers.Count + 1];
-            fileSegments[buffers.Count].Buffer = IntPtr.Zero;
+            long[] fileSegments = new long[buffers.Count + 1];
+            fileSegments[buffers.Count] = 0;
 
             MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
             for (int i = 0; i < buffers.Count; i++)
@@ -516,7 +513,7 @@ namespace System.IO
                 Memory<byte> buffer = buffers[i];
                 MemoryHandle memoryHandle = buffer.Pin();
                 memoryHandles[i] = memoryHandle;
-                fileSegments[i] = new Interop.Kernel32.FILE_SEGMENT_ELEMENT { Buffer = new IntPtr(memoryHandle.Pointer) };
+                fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
             }
 
             return (fileSegments.AsMemory().Pin(), memoryHandles);
@@ -525,8 +522,8 @@ namespace System.IO
         private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) PrepareMemorySegments(IReadOnlyList<ReadOnlyMemory<byte>> buffers)
         {
             // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            Interop.Kernel32.FILE_SEGMENT_ELEMENT[] fileSegments = new Interop.Kernel32.FILE_SEGMENT_ELEMENT[buffers.Count + 1];
-            fileSegments[buffers.Count].Buffer = IntPtr.Zero;
+            long[] fileSegments = new long[buffers.Count + 1];
+            fileSegments[buffers.Count] = 0;
 
             MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
             for (int i = 0; i < buffers.Count; i++)
@@ -534,7 +531,7 @@ namespace System.IO
                 ReadOnlyMemory<byte> buffer = buffers[i];
                 MemoryHandle memoryHandle = buffer.Pin();
                 memoryHandles[i] = memoryHandle;
-                fileSegments[i] = new Interop.Kernel32.FILE_SEGMENT_ELEMENT { Buffer = new IntPtr(memoryHandle.Pointer) };
+                fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
             }
 
             return (fileSegments.AsMemory().Pin(), memoryHandles);

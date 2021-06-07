@@ -9,19 +9,10 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [StructLayout(LayoutKind.Explicit, Size = 8)]
-        internal unsafe struct FILE_SEGMENT_ELEMENT
-        {
-            [FieldOffset(0)]
-            public IntPtr Buffer;
-            [FieldOffset(0)]
-            public ulong Alignment;
-        }
-
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe int ReadFileScatter(
             SafeHandle handle,
-            FILE_SEGMENT_ELEMENT* segments,
+            long* segments,
             int numBytesToRead,
             IntPtr reserved_mustBeZero,
             NativeOverlapped* overlapped);
@@ -29,7 +20,7 @@ internal static partial class Interop
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe int WriteFileGather(
             SafeHandle handle,
-            FILE_SEGMENT_ELEMENT* segments,
+            long* segments,
             int numBytesToWrite,
             IntPtr reserved_mustBeZero,
             NativeOverlapped* overlapped);
