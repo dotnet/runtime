@@ -117,7 +117,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 catch (ArgumentException ex)
                 {
-                    if (ownsHandle)
+                    if (OwnsHandle)
                     {
                         // We should close the handle so that the handle is not open until SafeFileHandle GC
                         Dispose();

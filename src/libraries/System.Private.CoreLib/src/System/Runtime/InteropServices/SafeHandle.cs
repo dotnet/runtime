@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Combined ref count and closed/disposed flags (so we can atomically modify them).</summary>
         private volatile int _state;
         /// <summary>Whether we can release this handle.</summary>
-        protected readonly bool ownsHandle;
+        private readonly bool _ownsHandle;
         /// <summary>Whether constructor completed.</summary>
         private volatile bool _fullyInitialized;
 
@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
         {
             handle = invalidHandleValue;
             _state = StateBits.RefCountOne; // Ref count 1 and not closed or disposed.
-            this.ownsHandle = ownsHandle;
+            _ownsHandle = ownsHandle;
 
             if (!ownsHandle)
             {
@@ -73,6 +73,8 @@ namespace System.Runtime.InteropServices
             }
         }
 #endif
+
+        internal bool OwnsHandle => _ownsHandle;
 
         protected internal void SetHandle(IntPtr handle) => this.handle = handle;
 
@@ -215,7 +217,7 @@ namespace System.Runtime.InteropServices
                 // transitioning the handle to closed, however, since setting the closed
                 // state will cause IsInvalid to always return true.
                 performRelease = ((oldState & (StateBits.RefCount | StateBits.Closed)) == StateBits.RefCountOne) &&
-                                 ownsHandle &&
+                                 _ownsHandle &&
                                  !IsInvalid;
 
                 // Attempt the update to the new state, fail and retry if the initial
