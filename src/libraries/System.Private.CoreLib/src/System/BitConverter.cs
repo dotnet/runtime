@@ -874,7 +874,7 @@ namespace System
         /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe double UInt64BitsToDouble(ulong value) => Int64BitsToDouble((ulong)value);
+        public static unsafe double UInt64BitsToDouble(ulong value) => Int64BitsToDouble((long)value);
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit unsigned integer.
