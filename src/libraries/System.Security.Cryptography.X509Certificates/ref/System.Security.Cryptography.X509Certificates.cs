@@ -278,7 +278,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override string ToString(bool verbose) { throw null; }
         public bool Verify() { throw null; }
     }
-    public partial class X509Certificate2Collection : System.Security.Cryptography.X509Certificates.X509CertificateCollection
+    public partial class X509Certificate2Collection : System.Security.Cryptography.X509Certificates.X509CertificateCollection, System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2>, System.Collections.IEnumerable
     {
         public X509Certificate2Collection() { }
         public X509Certificate2Collection(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
@@ -307,8 +307,9 @@ namespace System.Security.Cryptography.X509Certificates
         public void Remove(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2[] certificates) { }
+        System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509Certificate2> System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2>.GetEnumerator() { throw null; }
     }
-    public sealed partial class X509Certificate2Enumerator : System.Collections.IEnumerator
+    public sealed partial class X509Certificate2Enumerator : System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509Certificate2>, System.Collections.IEnumerator, System.IDisposable
     {
         internal X509Certificate2Enumerator() { }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Current { get { throw null; } }
@@ -317,6 +318,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Reset() { }
         bool System.Collections.IEnumerator.MoveNext() { throw null; }
         void System.Collections.IEnumerator.Reset() { }
+        void System.IDisposable.Dispose() { }
     }
     public partial class X509CertificateCollection : System.Collections.CollectionBase
     {
@@ -370,7 +372,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.X509Certificates.X509ChainStatus[] ChainElementStatus { get { throw null; } }
         public string Information { get { throw null; } }
     }
-    public sealed partial class X509ChainElementCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    public sealed partial class X509ChainElementCollection : System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509ChainElement>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         internal X509ChainElementCollection() { }
         public int Count { get { throw null; } }
@@ -379,16 +381,18 @@ namespace System.Security.Cryptography.X509Certificates
         public object SyncRoot { get { throw null; } }
         public void CopyTo(System.Security.Cryptography.X509Certificates.X509ChainElement[] array, int index) { }
         public System.Security.Cryptography.X509Certificates.X509ChainElementEnumerator GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509ChainElement> System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509ChainElement>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    public sealed partial class X509ChainElementEnumerator : System.Collections.IEnumerator
+    public sealed partial class X509ChainElementEnumerator : System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509ChainElement>, System.Collections.IEnumerator, System.IDisposable
     {
         internal X509ChainElementEnumerator() { }
         public System.Security.Cryptography.X509Certificates.X509ChainElement Current { get { throw null; } }
         object System.Collections.IEnumerator.Current { get { throw null; } }
         public bool MoveNext() { throw null; }
         public void Reset() { }
+        void System.IDisposable.Dispose() { }
     }
     public sealed partial class X509ChainPolicy
     {
@@ -479,7 +483,7 @@ namespace System.Security.Cryptography.X509Certificates
         public bool Critical { get { throw null; } set { } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
-    public sealed partial class X509ExtensionCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    public sealed partial class X509ExtensionCollection : System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509Extension>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public X509ExtensionCollection() { }
         public int Count { get { throw null; } }
@@ -490,16 +494,18 @@ namespace System.Security.Cryptography.X509Certificates
         public int Add(System.Security.Cryptography.X509Certificates.X509Extension extension) { throw null; }
         public void CopyTo(System.Security.Cryptography.X509Certificates.X509Extension[] array, int index) { }
         public System.Security.Cryptography.X509Certificates.X509ExtensionEnumerator GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509Extension> System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509Extension>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    public sealed partial class X509ExtensionEnumerator : System.Collections.IEnumerator
+    public sealed partial class X509ExtensionEnumerator : System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509Extension>, System.Collections.IEnumerator, System.IDisposable
     {
         internal X509ExtensionEnumerator() { }
         public System.Security.Cryptography.X509Certificates.X509Extension Current { get { throw null; } }
         object System.Collections.IEnumerator.Current { get { throw null; } }
         public bool MoveNext() { throw null; }
         public void Reset() { }
+        void System.IDisposable.Dispose() { }
     }
     public enum X509FindType
     {

@@ -164,7 +164,6 @@ static void mini_metadata_update_init (MonoError *error);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
 
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -4246,6 +4245,8 @@ mini_init (const char *filename, const char *runtime_version)
 		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, mono)
 	};
 
+	mono_component_event_pipe_100ns_ticks_start ();
+
 	MONO_VES_INIT_BEGIN ();
 
 	CHECKED_MONO_INIT ();
@@ -4469,6 +4470,10 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_component_diagnostics_server ()->disable ();
 
 	mono_component_event_pipe ()->init ();
+
+	// EventPipe up is now up and running, convert 100ns ticks since runtime init into EventPipe compatbile timestamp (using negative delta to represent timestamp in past).
+	// Add RuntimeInit execution checkpoint using converted timestamp.
+	mono_component_event_pipe ()->add_rundown_execution_checkpoint_2 ("RuntimeInit", mono_component_event_pipe ()->convert_100ns_ticks_to_timestamp_t (-mono_component_event_pipe_100ns_ticks_stop ()));
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
