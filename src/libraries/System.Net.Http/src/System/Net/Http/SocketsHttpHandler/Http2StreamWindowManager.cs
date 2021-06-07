@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,6 +69,8 @@ namespace System.Net.Http
             private TimeSpan _lastWindowUpdate;
 
             private long _magic = 1;
+            private readonly TimeSpan _start;
+            private readonly StringBuilder _msgBuilder = new StringBuilder();
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
@@ -75,6 +78,7 @@ namespace System.Net.Http
                 _magic = connection._pool.Settings._streamWindowMagicMultiplier;
                 _stream.TraceFlowControl($" magic:{_magic} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
                 _lastWindowUpdate = _stopwatch.Elapsed;
+                _start = _lastWindowUpdate;
             }
 
             public override void AdjustWindow(int bytesConsumed)
@@ -98,7 +102,15 @@ namespace System.Net.Http
                         windowSizeIncrement += _streamWindowSize;
                         _streamWindowSize *= 2;
 
-                        _stream.TraceFlowControl($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold} \n | {GetDiagnostics()}");
+                        // Trace info:
+                        _msgBuilder.Clear();
+                        _msgBuilder.Append($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
+                        if (_streamWindowSize >= 8 * 1024 * 1024)
+                        {
+                            _msgBuilder.Append($"reached 8M window in {(currentTime - _start).TotalSeconds} sec");
+                        }
+                        _msgBuilder.Append(Environment.NewLine);
+                        _stream.TraceFlowControl(_msgBuilder.ToString());
                     }
                     else
                     {
