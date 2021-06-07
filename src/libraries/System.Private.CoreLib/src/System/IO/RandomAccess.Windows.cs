@@ -289,9 +289,9 @@ namespace System.IO
                     totalBytes += buffers[i].Length;
                 }
 
-                if (totalBytes < int.MaxValue) // the ReadFileScatter API uses int, not long
+                if (totalBytes <= int.MaxValue) // the ReadFileScatter API uses int, not long
                 {
-                    return ReadScatterAtOffsetSingleSyscallAsync(handle, buffers, fileOffset, cancellationToken);
+                    return ReadScatterAtOffsetSingleSyscallAsync(handle, buffers, fileOffset, (int)totalBytes, cancellationToken);
                 }
             }
 
@@ -307,7 +307,7 @@ namespace System.IO
                 && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
 
         private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle,
-            IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
+            IReadOnlyList<Memory<byte>> buffers, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
             if (buffers.Count == 1)
             {
@@ -315,7 +315,7 @@ namespace System.IO
                 return await ReadAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken).ConfigureAwait(false);
             }
 
-            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) = PrepareMemorySegments(buffers);
+            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) = PrepareMemorySegments(buffers);
 
             try
             {
@@ -410,9 +410,9 @@ namespace System.IO
                     totalBytes += buffers[i].Length;
                 }
 
-                if (totalBytes < int.MaxValue) // the ReadFileScatter API uses int, not long
+                if (totalBytes <= int.MaxValue) // the ReadFileScatter API uses int, not long
                 {
-                    return WriteGatherAtOffsetSingleSyscallAsync(handle, buffers, fileOffset, cancellationToken);
+                    return WriteGatherAtOffsetSingleSyscallAsync(handle, buffers, fileOffset, (int)totalBytes, cancellationToken);
                 }
             }
 
@@ -440,14 +440,14 @@ namespace System.IO
         }
 
         private static async ValueTask<long> WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
-            long fileOffset, CancellationToken cancellationToken)
+            long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
             if (buffers.Count == 1)
             {
                 return await WriteAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken).ConfigureAwait(false);
             }
 
-            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) = PrepareMemorySegments(buffers);
+            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) = PrepareMemorySegments(buffers);
 
             try
             {
@@ -504,53 +504,40 @@ namespace System.IO
             return new ValueTask<int>(vts, vts.Version);
         }
 
-        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) PrepareMemorySegments(IReadOnlyList<Memory<byte>> buffers)
+        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) PrepareMemorySegments(IReadOnlyList<Memory<byte>> buffers)
         {
             // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
             Interop.Kernel32.FILE_SEGMENT_ELEMENT[] fileSegments = new Interop.Kernel32.FILE_SEGMENT_ELEMENT[buffers.Count + 1];
             fileSegments[buffers.Count].Buffer = IntPtr.Zero;
 
             MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
-            int totalBytes = 0;
             for (int i = 0; i < buffers.Count; i++)
             {
                 Memory<byte> buffer = buffers[i];
                 MemoryHandle memoryHandle = buffer.Pin();
                 memoryHandles[i] = memoryHandle;
                 fileSegments[i] = new Interop.Kernel32.FILE_SEGMENT_ELEMENT { Buffer = new IntPtr(memoryHandle.Pointer) };
-
-                checked
-                {
-                    totalBytes += buffer.Length;
-                }
             }
 
-            return (fileSegments.AsMemory().Pin(), memoryHandles, totalBytes);
+            return (fileSegments.AsMemory().Pin(), memoryHandles);
         }
 
-        // any ideas on geting rid of the code duplication are more than welcomed
-        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles, int totalBytes) PrepareMemorySegments(IReadOnlyList<ReadOnlyMemory<byte>> buffers)
+        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) PrepareMemorySegments(IReadOnlyList<ReadOnlyMemory<byte>> buffers)
         {
             // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
             Interop.Kernel32.FILE_SEGMENT_ELEMENT[] fileSegments = new Interop.Kernel32.FILE_SEGMENT_ELEMENT[buffers.Count + 1];
             fileSegments[buffers.Count].Buffer = IntPtr.Zero;
 
             MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
-            int totalBytes = 0;
             for (int i = 0; i < buffers.Count; i++)
             {
                 ReadOnlyMemory<byte> buffer = buffers[i];
                 MemoryHandle memoryHandle = buffer.Pin();
                 memoryHandles[i] = memoryHandle;
                 fileSegments[i] = new Interop.Kernel32.FILE_SEGMENT_ELEMENT { Buffer = new IntPtr(memoryHandle.Pointer) };
-
-                checked
-                {
-                    totalBytes += buffer.Length;
-                }
             }
 
-            return (fileSegments.AsMemory().Pin(), memoryHandles, totalBytes);
+            return (fileSegments.AsMemory().Pin(), memoryHandles);
         }
 
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)

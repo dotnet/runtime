@@ -72,7 +72,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe (uint status, IntPtr handle) CreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal static unsafe (uint status, IntPtr handle) NtCreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             // For mitigating local elevation of privilege attack through named pipes
             // make sure we always call NtCreateFile with SECURITY_ANONYMOUS so that the

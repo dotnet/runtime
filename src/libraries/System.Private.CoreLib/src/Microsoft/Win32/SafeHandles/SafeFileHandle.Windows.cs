@@ -61,15 +61,15 @@ namespace Microsoft.Win32.SafeHandles
             uint ntStatus;
             IntPtr fileHandle;
 
-            const string mandatoryNtPrefix = @"\??\";
-            if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
+            const string MandatoryNtPrefix = @"\??\";
+            if (fullPath.StartsWith(MandatoryNtPrefix, StringComparison.Ordinal))
             {
-                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(fullPath, mode, access, share, options, preallocationSize);
+                (ntStatus, fileHandle) = Interop.NtDll.NtCreateFile(fullPath, mode, access, share, options, preallocationSize);
             }
             else
             {
                 var vsb = new ValueStringBuilder(stackalloc char[1024]);
-                vsb.Append(mandatoryNtPrefix);
+                vsb.Append(MandatoryNtPrefix);
 
                 if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
                 {
@@ -80,7 +80,7 @@ namespace Microsoft.Win32.SafeHandles
                     vsb.Append(fullPath);
                 }
 
-                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
+                (ntStatus, fileHandle) = Interop.NtDll.NtCreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
                 vsb.Dispose();
             }
 

@@ -59,9 +59,9 @@ namespace System.IO
                     if (bytesRead == buffer.Length)
                     {
                         uint newLength = (uint)buffer.Length * 2;
-                        if (newLength > MaxByteArrayLength)
+                        if (newLength > Array.MaxLength)
                         {
-                            newLength = (uint)Math.Max(MaxByteArrayLength, buffer.Length + 1);
+                            newLength = (uint)Math.Max(Array.MaxLength, buffer.Length + 1);
                         }
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
