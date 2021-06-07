@@ -20,8 +20,6 @@
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <_PreCommand Condition="'$(OS)' != 'Windows_NT'">WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build</_PreCommand>
     <_PreCommand Condition="'$(OS)' == 'Windows_NT'">set WasmBuildSupportDir=%HELIX_CORRELATION_PAYLOAD%/build &amp;</_PreCommand>
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) set DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 &amp;</_PreCommand>
   </PropertyGroup>
 
   <PropertyGroup>
