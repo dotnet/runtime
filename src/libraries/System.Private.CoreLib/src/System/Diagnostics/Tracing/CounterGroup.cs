@@ -120,7 +120,7 @@ namespace System.Diagnostics.Tracing
 
         private DateTime _timeStampSinceCollectionStarted;
         private int _pollingIntervalInMilliseconds;
-        private DateTime _nextPollingTimeStamp;
+        private DateTime _nextPollingTimeStamp = DateTime.MaxValue;
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
@@ -128,6 +128,7 @@ namespace System.Diagnostics.Tracing
             if (pollingIntervalInSeconds <= 0)
             {
                 _pollingIntervalInMilliseconds = 0;
+                _nextPollingTimeStamp = DateTime.MaxValue;
             }
             else if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
@@ -188,6 +189,7 @@ namespace System.Diagnostics.Tracing
         private void DisableTimer()
         {
             _pollingIntervalInMilliseconds = 0;
+            _nextPollingTimeStamp = DateTime.MaxValue;
             s_counterGroupEnabledList?.Remove(this);
         }
 
@@ -250,11 +252,14 @@ namespace System.Diagnostics.Tracing
 
                 lock (s_counterGroupLock)
                 {
-                    _timeStampSinceCollectionStarted = now;
-                    do
+                    if (_eventSource.IsEnabled())
                     {
-                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
-                    } while (_nextPollingTimeStamp <= now);
+                        _timeStampSinceCollectionStarted = now;
+                        do
+                        {
+                            _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
+                        } while (_nextPollingTimeStamp <= now);
+                    }
                 }
             }
         }
