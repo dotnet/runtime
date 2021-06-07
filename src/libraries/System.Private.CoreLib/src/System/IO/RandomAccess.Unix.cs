@@ -48,14 +48,19 @@ namespace System.IO
             }
 
             long result;
-            fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+            try
             {
-                result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
+                fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+                {
+                    result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
+                }
             }
-
-            foreach (MemoryHandle memoryHandle in handles)
+            finally
             {
-                memoryHandle.Dispose();
+                foreach (MemoryHandle memoryHandle in handles)
+                {
+                    memoryHandle.Dispose();
+                }
             }
 
             return FileStreamHelpers.CheckFileCall(result, path: null);
@@ -105,14 +110,19 @@ namespace System.IO
             }
 
             long result;
-            fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+            try
             {
-                result = Interop.Sys.PWriteV(handle, pinnedVectors, buffers.Count, fileOffset);
+                fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+                {
+                    result = Interop.Sys.PWriteV(handle, pinnedVectors, buffers.Count, fileOffset);
+                }
             }
-
-            foreach (MemoryHandle memoryHandle in handles)
+            finally
             {
-                memoryHandle.Dispose();
+                foreach (MemoryHandle memoryHandle in handles)
+                {
+                    memoryHandle.Dispose();
+                }
             }
 
             return FileStreamHelpers.CheckFileCall(result, path: null);
