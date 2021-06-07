@@ -26,8 +26,8 @@
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
   <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
-  <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
-  <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
+  <Import Condition="'$(_targetFrameworkIdentifier)' != ''" Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
+  <Import Condition="'$(TargetFramework)' != ''" Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
   
   <ItemGroup>
     <!-- Type duplicated: https://github.com/dotnet/runtime/issues/33998 -->
