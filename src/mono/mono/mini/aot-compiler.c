@@ -1157,7 +1157,13 @@ arch_init (MonoAotCompile *acfg)
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16 -float-abi=hard");
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #elif defined(ARM_FPU_VFP)
+
+#if defined(TARGET_ARM)
+		// +d16 triggers a warning on arm
+		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon");
+#else
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16");
+#endif
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #else
 		g_string_append (acfg->llc_args, " -mattr=+soft-float");
