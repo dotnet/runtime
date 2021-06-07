@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Configuration
     /// </summary>
     public static class LoggerProviderOptions
     {
-        internal const string TrimmingRequiresUnreferencedCodeMessage = "Some parts of TOptions and its dependent types may be trimmed. Ensure the necessary constructors and properties are preserved.";
+        internal const string TrimmingRequiresUnreferencedCodeMessage = "TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.";
 
         /// <summary>
         /// Indicates that settings for <typeparamref name="TProvider"/> should be loaded into <typeparamref name="TOptions"/> type.

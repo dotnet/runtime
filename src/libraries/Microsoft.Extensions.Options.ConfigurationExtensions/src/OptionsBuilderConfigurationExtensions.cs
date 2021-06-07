@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class OptionsBuilderConfigurationExtensions
     {
-        internal const string TrimmingRequiredUnreferencedCodeMessage = "Some parts of TOptions and its dependent types may be trimmed. Ensure the necessary constructors and properties are preserved.";
+        internal const string TrimmingRequiredUnreferencedCodeMessage = "TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.";
 
         /// <summary>
         /// Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.
