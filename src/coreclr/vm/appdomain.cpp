@@ -47,7 +47,6 @@
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
 #include "olevariant.h"
-#include "rcwrefcache.h"
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
 
@@ -2118,9 +2117,9 @@ AppDomain::AppDomain()
 #ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
 #endif //FEATURE_COMINTEROP
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)  
+#ifdef FEATURE_COMWRAPPERS
     m_pRCWRefCache = NULL;
-#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#endif // FEATURE_COMWRAPPERS
 
     m_handleStore = NULL;
 
@@ -4424,7 +4423,7 @@ void AppDomain::NotifyDebuggerUnload()
 
 #ifndef CROSSGEN_COMPILE
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#ifdef FEATURE_COMWRAPPERS
 
 RCWRefCache *AppDomain::GetRCWRefCache()
 {
@@ -4446,7 +4445,7 @@ RCWRefCache *AppDomain::GetRCWRefCache()
     }
     RETURN m_pRCWRefCache;
 }
-#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_COMINTEROP
 

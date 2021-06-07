@@ -49,9 +49,9 @@ class TypeEquivalenceHashTable;
 #ifdef FEATURE_COMINTEROP
 class RCWCache;
 #endif //FEATURE_COMINTEROP
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#ifdef FEATURE_COMWRAPPERS
 class RCWRefCache;
-#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#endif // FEATURE_COMWRAPPERS
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -1974,13 +1974,12 @@ public:
         return m_pRCWCache;
     }
 
-    RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+#ifdef FEATURE_COMWRAPPERS
 public:
     RCWRefCache *GetRCWRefCache();
-#endif // defined(FEATURE_COMWRAPPERS) && !defined(FEATURE_COMINTEROP)
+#endif // FEATURE_COMWRAPPERS
 
     TPIndex GetTPIndex()
     {
@@ -2248,10 +2247,10 @@ private:
     // this cache stores the RCWs in this domain
     RCWCache *m_pRCWCache;
 #endif //FEATURE_COMINTEROP
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#ifdef FEATURE_COMWRAPPERS
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
-#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#endif // FEATURE_COMWRAPPERS
 
     // The thread-pool index of this app domain among existing app domains (starting from 1)
     TPIndex m_tpIndex;
