@@ -152,12 +152,25 @@
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
       <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
     </PropertyGroup>
+    <PropertyGroup>
+      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+    </PropertyGroup>
     <ItemGroup>
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Runtime.WindowsRuntime.dll">
+      <_AotExcludeAssemblies Include="$(PublishDir)System.Runtime.WindowsRuntime.dll" />
+      <_AotExcludeAssemblies Include="@(NativeLibraries->'$(PublishDir)%(Identity)')" />
+
+      <!-- JustInterp only needs to AOT CoreLib, the other assemblies will just get added to BundleAssemblies via _BundleNonAotAssemblies -->
+      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)System.Private.CoreLib.dll" />
+      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' != 'JustInterp'" Include="$(PublishDir)*.dll" />
+
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="@(_AotIncludeAssemblies)" Exclude="@(_AotExcludeAssemblies)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
+      <_BundleNonAotAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Private.CoreLib.dll" />
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)"
@@ -167,7 +180,7 @@
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
         OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="Full"
+        Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.m"
@@ -176,6 +189,10 @@
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
+
+    <ItemGroup>
+      <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
+    </ItemGroup>
 
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->

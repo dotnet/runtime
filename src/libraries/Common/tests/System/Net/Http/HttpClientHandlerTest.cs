@@ -1235,7 +1235,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29424")]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()

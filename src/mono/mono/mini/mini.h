@@ -140,6 +140,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -629,7 +630,9 @@ enum {
 	BB_EXCEPTION_UNSAFE     = 1 << 3,
 	BB_EXCEPTION_HANDLER    = 1 << 4,
 	/* for Native Client, mark the blocks that can be jumped to indirectly */
-	BB_INDIRECT_JUMP_TARGET = 1 << 5 
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 ,
+	/* Contains code with some side effects */
+	BB_HAS_SIDE_EFFECTS = 1 << 6,
 };
 
 typedef struct MonoMemcpyArgs {
@@ -2892,38 +2895,6 @@ enum {
 	SIMD_PREFETCH_MODE_1,
 	SIMD_PREFETCH_MODE_2,
 };
-
-/* SIMD operations */
-typedef enum {
-	SIMD_OP_AES_IMC,
-	SIMD_OP_AES_ENC,
-	SIMD_OP_AES_ENCLAST,
-	SIMD_OP_AES_DEC,
-	SIMD_OP_AES_DECLAST,
-	SIMD_OP_ARM64_CRC32B,
-	SIMD_OP_ARM64_CRC32H,
-	SIMD_OP_ARM64_CRC32W,
-	SIMD_OP_ARM64_CRC32X,
-	SIMD_OP_ARM64_CRC32CB,
-	SIMD_OP_ARM64_CRC32CH,
-	SIMD_OP_ARM64_CRC32CW,
-	SIMD_OP_ARM64_CRC32CX,
-	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64,
-	SIMD_OP_ARM64_AES_AESMC,
-	SIMD_OP_ARM64_SHA1C,
-	SIMD_OP_ARM64_SHA1H,
-	SIMD_OP_ARM64_SHA1M,
-	SIMD_OP_ARM64_SHA1P,
-	SIMD_OP_ARM64_SHA1SU0,
-	SIMD_OP_ARM64_SHA1SU1,
-	SIMD_OP_ARM64_SHA256H,
-	SIMD_OP_ARM64_SHA256H2,
-	SIMD_OP_ARM64_SHA256SU0,
-	SIMD_OP_ARM64_SHA256SU1,
-	SIMD_OP_ARM64_PMULL64_LOWER,
-	SIMD_OP_ARM64_PMULL64_UPPER,
-} SimdOp;
 
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);

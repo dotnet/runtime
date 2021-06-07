@@ -831,8 +831,10 @@ void LinearScan::setBlockSequence()
     }
 #endif // TRACK_LSRA_STATS
 
+    JITDUMP("Start LSRA Block Sequence: \n");
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
+        JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
         blockSequence[bbSeqCount] = block;
         markBlockVisited(block);
         bbSeqCount++;
@@ -931,6 +933,7 @@ void LinearScan::setBlockSequence()
             // (i.e. pred-first or random, since layout order is handled above).
             if (!BlockSetOps::IsMember(compiler, readySet, succ->bbNum))
             {
+                JITDUMP("\tSucc block: " FMT_BB, succ->bbNum);
                 addToBlockSequenceWorkList(readySet, succ, predSet);
                 BlockSetOps::AddElemD(compiler, readySet, succ->bbNum);
             }
@@ -954,27 +957,18 @@ void LinearScan::setBlockSequence()
                 // If we don't encounter all blocks by traversing the regular successor links, do a full
                 // traversal of all the blocks, and add them in layout order.
                 // This may include:
-                //   - internal-only blocks (in the fgAddCodeList) which may not be in the flow graph
-                //     (these are not even in the bbNext links).
+                //   - internal-only blocks which may not be in the flow graph
                 //   - blocks that have become unreachable due to optimizations, but that are strongly
                 //     connected (these are not removed)
                 //   - EH blocks
 
-                for (Compiler::AddCodeDsc* desc = compiler->fgAddCodeList; desc != nullptr; desc = desc->acdNext)
+                for (BasicBlock* seqBlock = compiler->fgFirstBB; seqBlock; seqBlock = seqBlock->bbNext)
                 {
-                    if (!isBlockVisited(block))
+                    if (!isBlockVisited(seqBlock))
                     {
-                        addToBlockSequenceWorkList(readySet, block, predSet);
-                        BlockSetOps::AddElemD(compiler, readySet, block->bbNum);
-                    }
-                }
-
-                for (BasicBlock* block = compiler->fgFirstBB; block; block = block->bbNext)
-                {
-                    if (!isBlockVisited(block))
-                    {
-                        addToBlockSequenceWorkList(readySet, block, predSet);
-                        BlockSetOps::AddElemD(compiler, readySet, block->bbNum);
+                        JITDUMP("\tUnvisited block: " FMT_BB, seqBlock->bbNum);
+                        addToBlockSequenceWorkList(readySet, seqBlock, predSet);
+                        BlockSetOps::AddElemD(compiler, readySet, seqBlock->bbNum);
                     }
                 }
                 verifiedAllBBs = true;
@@ -994,20 +988,13 @@ void LinearScan::setBlockSequence()
         assert(isBlockVisited(block));
     }
 
-    JITDUMP("LSRA Block Sequence: ");
+    JITDUMP("Final LSRA Block Sequence: \n");
     int i = 1;
     for (BasicBlock *block = startBlockSequence(); block != nullptr; ++i, block = moveToNextBlock())
     {
         JITDUMP(FMT_BB, block->bbNum);
 
-        if (block->isMaxBBWeight())
-        {
-            JITDUMP("(MAX) ");
-        }
-        else
-        {
-            JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
-        }
+        JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
 
         if (blockInfo[block->bbNum].hasEHBoundaryIn)
         {
@@ -1119,10 +1106,10 @@ void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlo
 
     // If either a rarely run block or all its preds are already sequenced, use block's weight to sequence
     bool useBlockWeight = block->isRunRarely() || BlockSetOps::IsSubset(compiler, sequencedBlockSet, predSet);
+    JITDUMP(", Criteria: %s", useBlockWeight ? "weight" : "bbNum");
 
     BasicBlockList* prevNode = nullptr;
     BasicBlockList* nextNode = blockSequenceWorkList;
-
     while (nextNode != nullptr)
     {
         int seqResult;
@@ -1160,6 +1147,17 @@ void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlo
     {
         prevNode->next = newListNode;
     }
+
+#ifdef DEBUG
+    nextNode = blockSequenceWorkList;
+    JITDUMP(", Worklist: [");
+    while (nextNode != nullptr)
+    {
+        JITDUMP(FMT_BB " ", nextNode->block->bbNum);
+        nextNode = nextNode->next;
+    }
+    JITDUMP("]\n");
+#endif
 }
 
 void LinearScan::removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode)

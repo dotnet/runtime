@@ -61,6 +61,8 @@ internal delegate int LDAP_SASL_INTERACT_PROC(IntPtr ld, uint flags, IntPtr defa
 
 internal static partial class Interop
 {
+    public const string LDAP_SASL_SIMPLE = null;
+
     internal static partial class Ldap
     {
         static Ldap()
@@ -75,10 +77,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_initialize(out IntPtr ld, string hostname);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_init", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern IntPtr ldap_init(string hostName, int portNumber);
+        public static extern int ldap_initialize(out IntPtr ld, string uri);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s", CharSet = CharSet.Ansi)]
         public static extern int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
@@ -126,6 +125,9 @@ internal static partial class Interop
         public static extern int ldap_set_option_ptr([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref IntPtr inValue);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
+        public static extern int ldap_set_option_string([In] ConnectionHandle ldapHandle, [In] LdapOption option, string inValue);
+
+        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
         public static extern int ldap_set_option_referral([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref LdapReferralCallback outValue);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s", CharSet = CharSet.Ansi)]
@@ -143,14 +145,11 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference", CharSet = CharSet.Ansi)]
         public static extern int ldap_parse_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
 
+        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s", CharSet = CharSet.Ansi)]
+        internal static extern int ldap_sasl_bind([In] ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
+
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
         internal static extern int ldap_sasl_interactive_bind([In] ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, [MarshalAs(UnmanagedType.FunctionPtr)] LDAP_SASL_INTERACT_PROC proc, IntPtr defaults);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_simple_bind_s", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_simple_bind([In] ConnectionHandle ld, string who, string passwd);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_bind_s", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_bind_s([In] ConnectionHandle ld, string who, string passwd, int method);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string", CharSet = CharSet.Ansi)]
         public static extern IntPtr ldap_err2string(int err);

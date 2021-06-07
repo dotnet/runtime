@@ -813,4 +813,9 @@ int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, 
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, optype, cmd, p1, p2);
 }
 
+int local_RSA_test_flags(const RSA *r, int flags)
+{
+    return r->flags & flags;
+}
+
 #endif

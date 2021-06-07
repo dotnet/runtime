@@ -23,6 +23,7 @@ namespace System.IO
     // routines such as Delete, etc.
     public static class File
     {
+        // Don't use Array.MaxLength. MS.IO.Redist targets .NET Framework.
         private const int MaxByteArrayLength = 0x7FFFFFC7;
         private static Encoding? s_UTF8NoBOM;
 

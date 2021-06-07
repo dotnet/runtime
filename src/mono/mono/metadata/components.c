@@ -14,6 +14,9 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
+#include "mono/utils/mono-time.h"
+
+static gint64 event_pipe_100ns_ticks;
 
 typedef MonoComponent * (*MonoComponentInitFn) (void);
 
@@ -193,3 +196,15 @@ get_component (const MonoComponentEntry *component, MonoDl **lib_out)
 	return initfn();
 }
 #endif
+
+void
+mono_component_event_pipe_100ns_ticks_start (void)
+{
+	event_pipe_100ns_ticks = mono_100ns_ticks ();
+}
+
+gint64
+mono_component_event_pipe_100ns_ticks_stop (void)
+{
+	return mono_100ns_ticks () - event_pipe_100ns_ticks;
+}
