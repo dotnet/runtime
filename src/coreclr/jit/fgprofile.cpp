@@ -1560,7 +1560,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
-PhaseStatus Compiler::fgInsertGuardsInColdBlocks()
+PhaseStatus Compiler::fgInsertProfileValidators()
 {
     bool modified = false;
     for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
