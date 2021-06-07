@@ -848,7 +848,7 @@ namespace System
         }
 
         /// <summary>
-        /// Converts the specified 16-bit unsigned integer to a half-precision floating point number.
+        /// Converts the specified 16-bit signed integer to a half-precision floating point number.
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>A half-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
