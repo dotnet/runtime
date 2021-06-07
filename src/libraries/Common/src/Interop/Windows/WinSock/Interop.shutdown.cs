@@ -8,9 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError shutdown(
-            [In] SafeSocketHandle socketHandle,
-            [In] int how);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError shutdown(
+            SafeSocketHandle socketHandle,
+            int how);
     }
 }
