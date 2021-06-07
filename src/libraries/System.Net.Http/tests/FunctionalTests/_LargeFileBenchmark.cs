@@ -185,6 +185,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Download20_StaticRtt(string hostName, int ratio)
         {
             _listener.Enabled = true;
+            _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
             var handler = new SocketsHttpHandler
             {
                 FakeRtt = await EstimateRttAsync(hostName),
