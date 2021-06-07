@@ -1007,9 +1007,14 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
         emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
 
-        if (emitLastIns->idIns() != INS_mov_eliminated)
+        if (emitLastEmittedIns != nullptr)
         {
-            emitLastEmittedIns = emitLastIns;
+            // Unlike with emitLastIns, we might be null if the group only contains
+            // elided instructions, in which case we'll only update in that scenario
+
+            assert(emitCurIGfreeBase <= (BYTE*)emitLastEmittedIns);
+            assert((BYTE*)emitLastEmittedIns < emitCurIGfreeBase + sz);
+            emitLastEmittedIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastEmittedIns - (BYTE*)emitCurIGfreeBase));
         }
     }
 
@@ -1354,6 +1359,18 @@ void emitter::appendToCurIG(instrDesc* id)
         // when appending to the current IG.
 
         emitLastEmittedIns = emitLastIns;
+    }
+    else if (emitCurIGsize == 0)
+    {
+        // If we are part of a new instruction group
+        // then we need to null out the last instruction
+        // so that we aren't incorrectly tracking across
+        // block boundaries.
+
+        // TOOD-CQ: We should also be able to track across
+        // extended instruction groups to allow more opts
+
+        emitLastEmittedIns = nullptr;
     }
     emitCurIGsize += id->idCodeSize();
 }
