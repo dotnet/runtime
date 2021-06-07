@@ -117,8 +117,11 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 catch (ArgumentException ex)
                 {
-                    // We should close the handle so that the handle is not open until SafeFileHandle GC
-                    Dispose();
+                    if (ownsHandle)
+                    {
+                        // We should close the handle so that the handle is not open until SafeFileHandle GC
+                        Dispose();
+                    }
 
                     throw new IOException(SR.IO_BindHandleFailed, ex);
                 }
