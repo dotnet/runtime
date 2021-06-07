@@ -1485,12 +1485,12 @@ int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCo
     assert(vectors != NULL);
     assert(vectorCount >= 0);
 
-    ssize_t count = 0;
+    int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV
     while ((count = preadv(fileDescriptor, vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
-    ssize_t current;
+    int64_t current;
     for (int i = 0; i < vectorCount; i++)
     {
         struct iovec vector = vectors[i];
@@ -1508,16 +1508,16 @@ int64_t SystemNative_PReadV(intptr_t fd, struct iovec* vectors, int32_t vectorCo
         // Incomplete pread operation may happen for two reasons:
         // a) We have reached EOF.
         // b) The operation was interrupted by a signal handler.
-        // To mimic preadv, we stop on the first incomplete operation. 
-        if (current != vector.iov_len)
+        // To mimic preadv, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.iov_len)
         {
-            return (int64_t)count;
+            return count;
         }
     }
 #endif
 
     assert(count >= -1);
-    return (int64_t)count;
+    return count;
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorCount, int64_t fileOffset)
@@ -1525,12 +1525,12 @@ int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorC
     assert(vectors != NULL);
     assert(vectorCount >= 0);
 
-    ssize_t count = 0;
+    int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV
     while ((count = pwritev(fileDescriptor, vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
-    ssize_t current;
+    int64_t current;
     for (int i = 0; i < vectorCount; i++)
     {
         struct iovec vector = vectors[i];
@@ -1548,14 +1548,14 @@ int64_t SystemNative_PWriteV(intptr_t fd, struct iovec* vectors, int32_t vectorC
         // Incomplete pwrite operation may happen for few reasons:
         // a) There was not enough space available or the file is too large for given file system.
         // b) The operation was interrupted by a signal handler.
-        // To mimic pwritev, we stop on the first incomplete operation. 
-        if (current != vector.iov_len)
+        // To mimic pwritev, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.iov_len)
         {
-            return (int64_t)count;
+            return count;
         }
     }
 #endif
 
     assert(count >= -1);
-    return (int64_t)count;
+    return count;
 }
