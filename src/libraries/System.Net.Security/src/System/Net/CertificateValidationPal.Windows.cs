@@ -54,7 +54,7 @@ namespace System.Net
 
                     fixed (char* namePtr = hostName)
                     {
-                        eppStruct.pwszServerName = namePtr;
+                        eppStruct.pwszServerName = (ushort*)namePtr;
                         cppStruct.dwFlags |=
                             (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                              ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
