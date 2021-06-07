@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
