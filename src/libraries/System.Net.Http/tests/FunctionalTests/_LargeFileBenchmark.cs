@@ -34,9 +34,10 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 100;
+        private const double LengthMb = 400;
         //private const string BenchmarkServer = "10.194.114.94";
         private const string BenchmarkServer = "192.168.0.152";
+        private const string BenchmarkServerGo = "192.168.0.152:5002";
         // private const string BenchmarkServer = "127.0.0.1:5000";
 
         [Theory]
@@ -64,21 +65,23 @@ namespace System.Net.Http.Functional.Tests
         public Task Download20_SpecificWindow_MegaBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 64)]
-        [InlineData(BenchmarkServer, 128)]
-        [InlineData(BenchmarkServer, 256)]
-        [InlineData(BenchmarkServer, 512)]
-        [InlineData(BenchmarkServer, 1024)]
-        [InlineData(BenchmarkServer, 2048)]
+        //[InlineData(BenchmarkServer, 64)]
+        //[InlineData(BenchmarkServer, 128)]
+        //[InlineData(BenchmarkServer, 256)]
+        //[InlineData(BenchmarkServer, 512)]
+        //[InlineData(BenchmarkServer, 1024)]
+        //[InlineData(BenchmarkServer, 2048)]
+        [InlineData(BenchmarkServer, 4096)]
         public Task Download20_SpecificWindow_KiloBytes_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 64)]
-        [InlineData(BenchmarkServer, 128)]
-        [InlineData(BenchmarkServer, 256)]
-        [InlineData(BenchmarkServer, 512)]
-        [InlineData(BenchmarkServer, 1024)]
-        [InlineData(BenchmarkServer, 2048)]
+        //[InlineData(BenchmarkServer, 64)]
+        //[InlineData(BenchmarkServer, 128)]
+        //[InlineData(BenchmarkServer, 256)]
+        //[InlineData(BenchmarkServer, 512)]
+        //[InlineData(BenchmarkServer, 1024)]
+        //[InlineData(BenchmarkServer, 2048)]
+        [InlineData(BenchmarkServer, 4096)]
         public Task Download20_SpecificWindow_KiloBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         private Task Download20_SpecificWindow(string hostName, int initialWindowKbytes)
@@ -91,25 +94,23 @@ namespace System.Net.Http.Functional.Tests
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler);
         }
 
+        public static TheoryData<string, int> Download20_ServerAndRatio = new TheoryData<string, int>
+        {
+            { BenchmarkServer, 8 },
+            { BenchmarkServer, 4 },
+            { BenchmarkServer, 2 },
+            { BenchmarkServerGo, 8 },
+            { BenchmarkServerGo, 4 },
+            { BenchmarkServerGo, 2 },
+        };
+
 
         [Theory]
-        //[InlineData(BenchmarkServer)]
-        [InlineData("10.194.114.94:5001", 8)]
-        [InlineData("10.194.114.94:5001", 4)]
-        [InlineData("10.194.114.94:5001", 2)]
-        [InlineData("10.194.114.94:5002", 8)]
-        [InlineData("10.194.114.94:5002", 4)]
-        [InlineData("10.194.114.94:5002", 2)]
+        [MemberData(nameof(Download20_ServerAndRatio))]
         public Task Download20_Dynamic_SingleStream_Run1(string hostName, int ratio) => Download20_Dynamic_SingleStream(hostName, ratio);
 
         [Theory]
-        //[InlineData(BenchmarkServer)]
-        [InlineData("10.194.114.94:5001", 8)]
-        [InlineData("10.194.114.94:5001", 4)]
-        [InlineData("10.194.114.94:5001", 2)]
-        [InlineData("10.194.114.94:5002", 8)]
-        [InlineData("10.194.114.94:5002", 4)]
-        [InlineData("10.194.114.94:5002", 2)]
+        [MemberData(nameof(Download20_ServerAndRatio))]
         public Task Download20_Dynamic_SingleStream_Run2(string hostName, int ratio) => Download20_Dynamic_SingleStream(hostName, ratio);
 
         private async Task Download20_Dynamic_SingleStream(string hostName, int ratio)
@@ -124,23 +125,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        //[InlineData(BenchmarkServer)]
-        [InlineData("10.194.114.94:5001", 8)]
-        [InlineData("10.194.114.94:5001", 4)]
-        [InlineData("10.194.114.94:5001", 2)]
-        [InlineData("10.194.114.94:5002", 8)]
-        [InlineData("10.194.114.94:5002", 4)]
-        [InlineData("10.194.114.94:5002", 2)]
+        [MemberData(nameof(Download20_ServerAndRatio))]
         public Task Download20_StaticRtt_Run1(string hostName, int ratio) => Download20_StaticRtt(hostName, ratio);
 
         [Theory]
-        //[InlineData(BenchmarkServer)]
-        [InlineData("10.194.114.94:5001", 8)]
-        [InlineData("10.194.114.94:5001", 4)]
-        [InlineData("10.194.114.94:5001", 2)]
-        [InlineData("10.194.114.94:5002", 8)]
-        [InlineData("10.194.114.94:5002", 4)]
-        [InlineData("10.194.114.94:5002", 2)]
+        [MemberData(nameof(Download20_ServerAndRatio))]
         public Task Download20_StaticRtt_Run2(string hostName, int ratio) => Download20_StaticRtt(hostName, ratio);
 
         public async Task Download20_StaticRtt(string hostName, int ratio)
