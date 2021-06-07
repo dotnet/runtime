@@ -216,7 +216,7 @@
     <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="BuildProjects;HarvestVersionValidation;ArchiveHelixItems" />
+  <Target Name="Build" DependsOnTargets="BuildProjects;ArchiveHelixItems" />
 
   <!-- define test to do nothing, for this project Build does all the testing -->
   <Target Name="Test" />
