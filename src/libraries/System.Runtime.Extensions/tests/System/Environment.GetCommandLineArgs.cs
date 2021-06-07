@@ -63,10 +63,11 @@ namespace System.Tests
             Assert.Contains("GetCommandLineArgs_Invoke_ReturnsExpected", cmdLineArgs[3]);
 
             // Check the arguments sent to the method.
-            Assert.Equal(args.Length, cmdLineArgs.Length - 5);
+            Assert.Equal(args.Length * 2, cmdLineArgs.Length - 5);
             for (int i = 0; i < args.Length; i++)
             {
-                Assert.Equal(args[i], cmdLineArgs[i + 5]);
+                Assert.Equal(typeof(string).AssemblyQualifiedName, cmdLineArgs[i * 2 + 5]);
+                Assert.Equal(args[i], cmdLineArgs[i * 2 + 1 + 5]);
             }
 
             return RemoteExecutor.SuccessExitCode;

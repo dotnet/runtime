@@ -145,16 +145,6 @@ namespace System.Net.Http.Tests
         {
             RemoteExecutor.Invoke((input, host, port, user, password) =>
             {
-                // Remote exec does not allow to pass null at this moment.
-                if (user == "null")
-                {
-                    user = null;
-                }
-                if (password == "null")
-                {
-                    password = null;
-                }
-
                 Environment.SetEnvironmentVariable("all_proxy", input);
                 IWebProxy p;
                 Uri u;
@@ -175,7 +165,7 @@ namespace System.Net.Http.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, _input, _host, _port, _user ?? "null", _password ?? "null").Dispose();
+            }, _input, _host, _port, _user, _password).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
