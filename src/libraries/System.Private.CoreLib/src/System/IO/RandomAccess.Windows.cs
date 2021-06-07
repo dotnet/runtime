@@ -467,7 +467,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(pinnedSegments.Pointer != null);
 
                 // Queue an async WriteFile operation.
                 if (Interop.Kernel32.WriteFileGather(handle, (long*)pinnedSegments.Pointer, bytesToWrite, IntPtr.Zero, nativeOverlapped) == 0)
