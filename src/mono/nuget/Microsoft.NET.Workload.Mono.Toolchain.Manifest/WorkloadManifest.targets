@@ -8,6 +8,8 @@
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
 
+    <Import Condition="'$(RuntimeIdentifier)' != 'browser-wasm'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+
     <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android' and '$(RunAOTCompilation)' == 'true'">
