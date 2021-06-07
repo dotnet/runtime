@@ -88,6 +88,9 @@ namespace Wasm.Build.Tests
                 public static int Main()
                 {
                     Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
+
+                    // if this gets printed, then we didn't crash!
+                    Console.WriteLine(""Hello, World!"");
                     return 42;
                 }
             }";
