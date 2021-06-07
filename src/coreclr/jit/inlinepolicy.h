@@ -97,8 +97,7 @@ public:
         , m_ArgFeedsConstantTest(0)
         , m_ArgFeedsRangeCheck(0)
         , m_ConstantArgFeedsConstantTest(0)
-        , m_UnknownFeedsConstantTest(0)
-        , m_ReturnsConstantTest(0)
+        , m_BinaryExprWithCns(0)
         , m_ArgCasted(0)
         , m_ArgIsStructByValue(0)
         , m_FoldableBox(0)
@@ -192,8 +191,7 @@ protected:
     unsigned                m_ArgFeedsConstantTest;
     unsigned                m_ArgFeedsRangeCheck;
     unsigned                m_ConstantArgFeedsConstantTest;
-    unsigned                m_UnknownFeedsConstantTest;
-    unsigned                m_ReturnsConstantTest;
+    unsigned                m_BinaryExprWithCns;
     unsigned                m_ArgCasted;
     unsigned                m_ArgIsStructByValue;
     unsigned                m_FoldableBox;

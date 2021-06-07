@@ -308,12 +308,8 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsFromPromotableValueClass = value;
                 break;
 
-            case InlineObservation::CALLEE_UNKNOWN_CONSTANT_TEST:
-                m_UnknownFeedsConstantTest++;
-                break;
-
-            case InlineObservation::CALLEE_RETURN_CONST_CMP:
-                m_ReturnsConstantTest++;
+            case InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS:
+                m_BinaryExprWithCns++;
                 break;
 
             case InlineObservation::CALLEE_ARG_STRUCT:
@@ -585,8 +581,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_ArgFeedsConstantTest);
     XATTR_I4(m_ArgFeedsRangeCheck);
     XATTR_I4(m_ConstantArgFeedsConstantTest);
-    XATTR_I4(m_UnknownFeedsConstantTest);
-    XATTR_I4(m_ReturnsConstantTest);
+    XATTR_I4(m_BinaryExprWithCns);
     XATTR_I4(m_ArgCasted);
     XATTR_I4(m_ArgIsStructByValue);
     XATTR_I4(m_FoldableBox);
@@ -1007,7 +1002,7 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d unconditional branches.", m_UncondBranch);
     }
 
-    if (m_UnknownFeedsConstantTest > 0)
+    if (m_BinaryExprWithCns > 0)
     {
         // In some cases we're not able to detect potentially foldable expressions, e.g.:
         //
@@ -1016,13 +1011,7 @@ double DefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        JITDUMP("\nInline candidate has %d constant tests against unknown nodes.", m_UnknownFeedsConstantTest);
-    }
-
-    if (m_ReturnsConstantTest > 0)
-    {
-        // E.g. if such tails feed conditions at the call site
-        JITDUMP("\nInline candidate has %d 'return x cmp CNS' tails.", m_ReturnsConstantTest);
+        JITDUMP("\nInline candidate has %d binary expressions with constants.", m_BinaryExprWithCns);
     }
 
     if (m_ThrowBlocks > 0)
@@ -2384,8 +2373,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
     fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
     fprintf(file, ",%u", m_CallsiteDepth);
-    fprintf(file, ",%u", m_UnknownFeedsConstantTest);
-    fprintf(file, ",%u", m_ReturnsConstantTest);
+    fprintf(file, ",%u", m_BinaryExprWithCns);
     fprintf(file, ",%u", m_ArgCasted);
     fprintf(file, ",%u", m_ArgIsStructByValue);
     fprintf(file, ",%u", m_FoldableBox);

@@ -18940,7 +18940,6 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         }
     }
 
-
     if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
         (info.compClassAttr & CORINFO_FLG_SHAREDINST))
     {

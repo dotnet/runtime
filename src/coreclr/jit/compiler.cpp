@@ -1472,7 +1472,7 @@ void Compiler::compShutdown()
         if (file != nullptr)
         {
             InlineStrategy::FinalizeXml(file);
-            fflush(file);
+            fclose(file);
         }
         else
         {
