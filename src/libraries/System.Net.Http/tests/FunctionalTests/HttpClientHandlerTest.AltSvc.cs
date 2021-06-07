@@ -20,9 +20,9 @@ namespace System.Net.Http.Functional.Tests
         /// </summary>
         private HttpClient CreateHttpClient(Version version)
         {
-            var client = base.CreateHttpClient();
+            var client = CreateHttpClient();
             client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-            client.DefaultRequestVersion = version ?? UseVersion;
+            client.DefaultRequestVersion = version;
             return client;
         }
 
