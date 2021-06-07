@@ -130,7 +130,7 @@ jobs:
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'windows-2019'
+          vmImage: 'windows-latest'
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
