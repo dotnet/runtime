@@ -35,12 +35,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ScopeParameter,
                     typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)));
 
-        private static readonly BinaryExpression IsRootScopeVariableAssignment =
-            Expression.Assign(IsRootScope,
-                Expression.Property(
-                    ScopeParameter,
-                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public)));
-
         private static readonly BinaryExpression SyncVariableAssignment =
             Expression.Assign(Sync,
                 Expression.Property(
@@ -51,6 +45,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
                     Expression.Call(ScopeParameter, CaptureDisposableMethodInfo, CaptureDisposableParameter),
                     CaptureDisposableParameter);
+
+        private static readonly ConstantExpression CallSiteRuntimeResolverInstanceExpression = Expression.Constant(
+            CallSiteRuntimeResolver.Instance,
+            typeof(CallSiteRuntimeResolver));
 
         private readonly ServiceProviderEngineScope _rootScope;
 
@@ -94,7 +92,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
                     Expression.Block(
                         new[] { IsRootScope, ResolvedServices, Sync },
-                        IsRootScopeVariableAssignment,
                         ResolvedServicesVariableAssignment,
                         SyncVariableAssignment,
                         BuildScopedExpression(callSite)),
@@ -216,12 +213,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 callSite,
                 typeof(ServiceCallSite));
 
-            ConstantExpression resolverExpression = Expression.Constant(
-                CallSiteRuntimeResolver.Instance,
-                typeof(CallSiteRuntimeResolver));
-
             MethodCallExpression resolveRootScopeExpression = Expression.Call(
-                resolverExpression,
+                CallSiteRuntimeResolverInstanceExpression,
                 ResolveCallSiteAndScopeMethodInfo,
                 callSiteExpression,
                 ScopeParameter);
@@ -233,8 +226,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ParameterExpression resolvedVariable = Expression.Variable(typeof(object), "resolved");
 
             ParameterExpression resolvedServices = ResolvedServices;
-
-            ParameterExpression isRootScope = IsRootScope;
 
             MethodCallExpression tryGetValueExpression = Expression.Call(
                 resolvedServices,
@@ -280,12 +271,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
 
             return Expression.Condition(
-                    isRootScope,
+                    Expression.Property(
+                        ScopeParameter,
+                        typeof(ServiceProviderEngineScope)
+                            .GetProperty(nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public)),
                     resolveRootScopeExpression,
                     Expression.Block(
-                    typeof(object),
-                    new[] { lockWasTaken },
-                    Expression.TryFinally(tryBody, finallyBody))
+                        typeof(object),
+                        new[] { lockWasTaken },
+                        Expression.TryFinally(tryBody, finallyBody))
                 );
         }
 

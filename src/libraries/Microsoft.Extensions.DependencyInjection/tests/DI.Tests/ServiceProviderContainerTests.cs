@@ -1119,11 +1119,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var scope = sp.CreateScope();
             for (int i = 0; i < 50; i++)
             {
-                scope.ServiceProvider.GetRequiredService<A>();
+                Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
                 Thread.Sleep(10); // Give the background thread time to compile
             }
-
-            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
         }
         
         [Fact]
@@ -1142,8 +1140,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
                 Thread.Sleep(10); // Give the background thread time to compile
             }
-
-            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
         }
 
         private async Task<bool> ResolveUniqueServicesConcurrently()
