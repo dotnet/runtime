@@ -66,7 +66,7 @@ namespace System.IO
         {
             return new ValueTask<int>(Task.Factory.StartNew(state =>
             {
-                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state;
+                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state!;
                 return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
             }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
         }
@@ -76,7 +76,7 @@ namespace System.IO
         {
             return new ValueTask<long>(Task.Factory.StartNew(state =>
             {
-                var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state;
+                var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state!;
                 return ReadScatterAtOffset(args.handle, args.buffers, args.fileOffset);
             }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
         }
@@ -123,7 +123,7 @@ namespace System.IO
         {
             return new ValueTask<int>(Task.Factory.StartNew(state =>
             {
-                var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state;
+                var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state!;
                 return WriteAtOffset(args.handle, args.buffer.Span, args.fileOffset);
             }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
         }
@@ -133,7 +133,7 @@ namespace System.IO
         {
             return new ValueTask<long>(Task.Factory.StartNew(state =>
             {
-                var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state;
+                var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state!;
                 return WriteGatherAtOffset(args.handle, args.buffers, args.fileOffset);
             }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
         }
