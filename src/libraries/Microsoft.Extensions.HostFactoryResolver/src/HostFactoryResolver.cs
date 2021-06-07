@@ -246,21 +246,15 @@ namespace Microsoft.Extensions.Hosting
             {
                 if (value.Key == "HostBuilding")
                 {
-                    if (value.Value is IHostBuilder builder)
-                    {
-                        _configure?.Invoke(builder);
-                    }
+                    _configure?.Invoke(value.Value!);
                 }
 
                 if (value.Key == "HostBuilt")
                 {
-                    if (value.Value is IHost host)
-                    {
-                        _hostTcs.TrySetResult(host);
+                    _hostTcs.TrySetResult(value.Value!);
 
-                        // Stop the host from running further
-                        throw new StopTheHostException();
-                    }
+                    // Stop the host from running further
+                    throw new StopTheHostException();
                 }
             }
 
