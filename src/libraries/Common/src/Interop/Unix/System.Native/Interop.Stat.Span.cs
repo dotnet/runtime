@@ -13,8 +13,8 @@ internal static partial class Interop
         // without putting too much pressure on the stack.
         private const int StackBufferSize = 256;
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
-        internal static extern int Stat(ref byte path, out FileStatus output);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
+        internal static partial int Stat(ref byte path, out FileStatus output);
 
         internal static int Stat(ReadOnlySpan<char> path, out FileStatus output)
         {
@@ -24,8 +24,8 @@ internal static partial class Interop
             return result;
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", SetLastError = true)]
-        internal static extern int LStat(ref byte path, out FileStatus output);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", SetLastError = true)]
+        internal static partial int LStat(ref byte path, out FileStatus output);
 
         internal static int LStat(ReadOnlySpan<char> path, out FileStatus output)
         {

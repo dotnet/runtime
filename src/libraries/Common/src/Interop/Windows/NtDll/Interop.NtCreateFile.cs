@@ -16,8 +16,8 @@ internal static partial class Interop
 
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
-        [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private static extern unsafe uint NtCreateFile(
+        [GeneratedDllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        private static unsafe partial uint NtCreateFile(
             out IntPtr FileHandle,
             DesiredAccess DesiredAccess,
             ref OBJECT_ATTRIBUTES ObjectAttributes,
