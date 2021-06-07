@@ -5,8 +5,6 @@
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
-
     <_WasmBuildNativeCoreDependsOn>
       _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
@@ -152,6 +150,7 @@
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <PropertyGroup>
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
