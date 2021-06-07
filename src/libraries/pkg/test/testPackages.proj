@@ -46,7 +46,7 @@
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="$(RepoRoot)NuGet.config">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
+      <DestinationFolder>$(TestSupportDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">
       <DestinationFolder>$(TestToolsDir)eng/</DestinationFolder>
