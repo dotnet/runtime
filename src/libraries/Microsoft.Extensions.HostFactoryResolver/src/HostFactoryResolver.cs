@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Hosting
             private Action<IHostBuilder> _configure;
 
             // The amount of time we wait for the diagnostic source events to fire
-            private static readonly TimeSpan _waitTimeout = TimeSpan.FromSeconds(5);
+            private static readonly TimeSpan _waitTimeout = TimeSpan.FromSeconds(20);
 
             public DeferredHostBuilder(string[] args, MethodInfo entryPoint)
             {

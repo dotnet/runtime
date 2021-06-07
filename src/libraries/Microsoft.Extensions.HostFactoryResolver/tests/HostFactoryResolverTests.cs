@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderInvalidSignature.Program))]
         public void CreateHostBuilderPattern__Invalid_CantFindServiceProvider()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly);
 
@@ -140,7 +140,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
         public void NoSpecialEntryPointPattern()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly);
 
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternThrows.Program))]
         public void NoSpecialEntryPointPatternThrows()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternThrows.Program).Assembly);
 
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternExits.Program))]
         public void NoSpecialEntryPointPatternExits()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternExits.Program).Assembly);
 
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternHangs.Program))]
         public void NoSpecialEntryPointPatternHangs()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternHangs.Program).Assembly);
 
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternMainNoArgs.Program))]
         public void NoSpecialEntryPointPatternMainNoArgs()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly);
 
@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ConditionalFact(nameof(RequirementsMet))]
         public void TopLevelStatements()
         {
-            RemoteExecutor.Invoke(() => 
+            using var _ = RemoteExecutor.Invoke(() => 
             {
                 var assembly = Assembly.Load("TopLevelStatements");
                 var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly);
