@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
                                         extraItems: $"<EmbeddedResource Include=\"..\\resx\\*\" />");
 
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest(projectName, "TestClass"),
+                        initProject: () => CreateProgramForCultureTest($"{projectName}.words", "TestClass"),
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         id: id);
 
@@ -81,7 +81,7 @@ namespace Wasm.Build.Tests
                                         extraItems: $"<ProjectReference Include=\"..\\LibraryWithResources\\LibraryWithResources.csproj\" />");
 
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest(projectName, "LibraryWithResources.Class1"),
+                        initProject: () => CreateProgramForCultureTest("LibraryWithResources.words", "LibraryWithResources.Class1"),
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         id: id);
 
@@ -109,7 +109,7 @@ namespace Wasm.Build.Tests
 
             System.Console.WriteLine ($"--- aot: {buildArgs.AOT}");
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest(projectName, "TestClass"),
+                        initProject: () => CreateProgramForCultureTest($"{projectName}.words", "TestClass"),
                         dotnetWasmFromRuntimePack: false,
                         id: id);
 
@@ -124,10 +124,10 @@ namespace Wasm.Build.Tests
         }
 #pragma warning restore xUnit1026
 
-        private void CreateProgramForCultureTest(string projectName, string typeName)
+        private void CreateProgramForCultureTest(string resourceName, string typeName)
             => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"),
                                 s_cultureResourceTestProgram
-                                    .Replace("##RESOURCE_NAME##", $"{projectName}.words")
+                                    .Replace("##RESOURCE_NAME##", resourceName)
                                     .Replace("##TYPE_NAME##", typeName));
 
         private const string s_resourcesProjectTemplate =
