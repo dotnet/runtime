@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class NetSecurityNative
     {
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_IsNtlmInstalled")]
-        internal static extern bool IsNtlmInstalled();
+        internal static extern int IsNtlmInstalled();
     }
 }
