@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>net6.0;netstandard2.0;net461</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <!-- TODO: Remove when the package ships with .NET 6. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
@@ -24,17 +24,13 @@ System.IO.Hashing.XxHash32</PackageDescription>
     <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
   </ItemGroup>
-  <Choose>
-    <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-      <ItemGroup>
-        <Reference Include="System.Buffers" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-        <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
 </Project>

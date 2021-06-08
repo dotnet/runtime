@@ -18,7 +18,7 @@ namespace System.IO.Hashing
 
         private readonly uint _seed;
         private State _state;
-        private byte[] _holdback;
+        private byte[]? _holdback;
         private int _length;
 
         /// <summary>
