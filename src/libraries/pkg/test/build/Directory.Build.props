@@ -3,5 +3,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)Versions.props" />
+  <Import Project="Versions.props" />
+  <Import Project="netfxreference.props" />
 </Project>
