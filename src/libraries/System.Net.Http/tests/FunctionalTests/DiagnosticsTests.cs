@@ -1101,37 +1101,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_NullRequest_ThrowsArgumentNullException()
-        {
-            RemoteExecutor.Invoke(async () =>
-            {
-                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(null);
-                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-                {
-                    diagnosticListenerObserver.Enable();
-
-                    using (MyHandler handler = new MyHandler())
-                    {
-                        // Getting the Task first from the .SendAsync() call also tests
-                        // that the exception comes from the async Task path.
-                        Task t = handler.SendAsync(null);
-                        await Assert.ThrowsAsync<ArgumentNullException>(() => t);
-                    }
-                }
-
-                diagnosticListenerObserver.Disable();
-            }).Dispose();
-        }
-
-        private class MyHandler : HttpClientHandler
-        {
-            internal Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
-            {
-                return SendAsync(request, CancellationToken.None);
-            }
-        }
-
         private static T GetPropertyValueFromAnonymousTypeInstance<T>(object obj, string propertyName)
         {
             Type t = obj.GetType();

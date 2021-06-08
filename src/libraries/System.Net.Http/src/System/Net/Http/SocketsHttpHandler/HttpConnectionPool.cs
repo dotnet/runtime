@@ -75,10 +75,6 @@ namespace System.Net.Http
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
-
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
         private readonly bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
@@ -287,6 +283,7 @@ namespace System.Net.Http
         [SupportedOSPlatformGuard("macOS")]
         [SupportedOSPlatformGuard("Windows")]
         internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
@@ -667,7 +664,6 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
@@ -767,7 +763,6 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP3 cannot be used.
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]

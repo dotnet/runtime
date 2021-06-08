@@ -59,7 +59,7 @@
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
-        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"

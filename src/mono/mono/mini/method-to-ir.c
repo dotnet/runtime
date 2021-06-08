@@ -6498,11 +6498,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		for (int i = 0; i < header->num_clauses; ++i) {
-			MonoExceptionClause *clause = &header->clauses [i];
-			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-				cfg->interp_entry_only = TRUE;
-		}
+		if (!cfg->method->wrapper_type && header->num_clauses)
+			cfg->interp_entry_only = TRUE;
 
 		if (cfg->interp_entry_only)
 			emit_llvmonly_interp_entry (cfg, header);
@@ -8355,7 +8352,8 @@ calli_end:
 		case MONO_CEE_LDIND_REF:
 			--sp;
 
-			MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
+			if (!(ins_flag & MONO_INST_NONULLCHECK))
+				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
 
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (ldind_to_type (il_op)), sp [0], 0, ins_flag);
 			*sp++ = ins;
@@ -11305,13 +11303,12 @@ mono_ldptr:
 			inline_costs += 1;
 			break;
 		case MONO_CEE_NO_:
-			if (ip [2] & 1)
+			if (ip [2] & CEE_NO_TYPECHECK)
 				ins_flag |= MONO_INST_NOTYPECHECK;
-			if (ip [2] & 2)
+			if (ip [2] & CEE_NO_RANGECHECK)
 				ins_flag |= MONO_INST_NORANGECHECK;
-			/* we ignore the no-nullcheck for now since we
-			 * really do it explicitly only when doing callvirt->call
-			 */
+			if (ip [2] & CEE_NO_NULLCHECK)
+				ins_flag |= MONO_INST_NONULLCHECK;
 			break;
 		case MONO_CEE_RETHROW: {
 			MonoInst *load;
