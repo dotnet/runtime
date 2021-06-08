@@ -474,6 +474,12 @@ namespace System
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
+        [DoesNotReturn]
+        internal static void ArgumentOutOfRangeException_Enum_Value()
+        {
+            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
