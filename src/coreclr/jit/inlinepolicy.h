@@ -129,8 +129,7 @@ public:
         , m_IsNoReturnKnown(false)
         , m_ReturnsStructByValue(false)
         , m_IsFromValueClass(false)
-        , m_IsCalleeGeneric(false)
-        , m_IsCallerGeneric(false)
+        , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
         , m_HasProfile(false)
     {
@@ -223,8 +222,7 @@ protected:
     bool                    m_IsNoReturnKnown : 1;
     bool                    m_ReturnsStructByValue : 1;
     bool                    m_IsFromValueClass : 1;
-    bool                    m_IsCalleeGeneric : 1;
-    bool                    m_IsCallerGeneric : 1;
+    bool                    m_NonGenericCallsGeneric : 1;
     bool                    m_IsCallsiteInNoReturnRegion : 1;
     bool                    m_HasProfile : 1;
 };

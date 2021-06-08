@@ -18912,40 +18912,47 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         }
     }
 
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
-        (info.compClassAttr & CORINFO_FLG_SHAREDINST))
+    bool callsiteIsGeneric = (rootCompiler->info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+                             (rootCompiler->info.compClassAttr & CORINFO_FLG_SHAREDINST);
+
+    bool calleeIsGeneric = (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+                           (info.compClassAttr & CORINFO_FLG_SHAREDINST);
+
+    if (!callsiteIsGeneric && calleeIsGeneric)
     {
-        inlineResult->Note(InlineObservation::CALLEE_GENERIC);
+        inlineResult->Note(InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC);
     }
-    else if ((rootCompiler->info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
-             (rootCompiler->info.compClassAttr & CORINFO_FLG_SHAREDINST))
+
+    if (pInlineInfo != nullptr)
     {
-        inlineResult->Note(InlineObservation::CALLSITE_GENERIC);
-    }
+        // Inspect callee's arguments (and the actual values at the callsite for them)
+        CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
+        CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
 
-    // Inspect callee's arguments (and the actual values at the callsite for them)
-    CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
-    CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
+        GenTreeCall::Use* argUse = pInlineInfo->iciCall->AsCall()->gtCallArgs;
 
-    GenTreeCall::Use* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtCallArgs;
-    for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
-    {
-        CORINFO_CLASS_HANDLE sigClass;
-        CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-        sigClass                     = info.compCompHnd->getArgClass(&sig, sigArg);
-        GenTree* argNode             = (argUse == nullptr) ? nullptr : argUse->GetNode()->gtSkipPutArgType();
-
-        if (corType == CORINFO_TYPE_VALUECLASS)
+        for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
         {
-            inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
-        }
-        else if (corType == CORINFO_TYPE_BYREF)
-        {
-            corType = info.compCompHnd->getChildType(sigClass, &sigClass);
-        }
+            assert(argUse != nullptr);
 
-        if (argNode != nullptr)
-        {
+            CORINFO_CLASS_HANDLE sigClass;
+            CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
+            GenTree*             argNode = argUse->GetNode()->gtSkipPutArgType();
+
+            if (corType == CORINFO_TYPE_CLASS)
+            {
+                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+            }
+            else if (corType == CORINFO_TYPE_VALUECLASS)
+            {
+                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+            }
+            else if (corType == CORINFO_TYPE_BYREF)
+            {
+                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+                corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
+            }
+
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
@@ -18973,10 +18980,10 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             {
                 inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
             }
-        }
 
-        sigArg = info.compCompHnd->getArgNext(sigArg);
-        argUse = argUse == nullptr ? nullptr : argUse->GetNext();
+            sigArg = info.compCompHnd->getArgNext(sigArg);
+            argUse = argUse->GetNext();
+        }
     }
 
     // Note if the callee's return type is a value type

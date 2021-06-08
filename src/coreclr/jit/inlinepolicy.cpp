@@ -296,12 +296,8 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsFromValueClass = value;
                 break;
 
-            case InlineObservation::CALLEE_GENERIC:
-                m_IsCalleeGeneric = value;
-                break;
-
-            case InlineObservation::CALLSITE_GENERIC:
-                m_IsCallerGeneric = value;
+            case InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC:
+                m_NonGenericCallsGeneric = value;
                 break;
 
             case InlineObservation::CALLEE_CLASS_PROMOTABLE:
@@ -613,8 +609,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsNoReturnKnown);
     XATTR_B(m_ReturnsStructByValue);
     XATTR_B(m_IsFromValueClass);
-    XATTR_B(m_IsCalleeGeneric);
-    XATTR_B(m_IsCallerGeneric);
+    XATTR_B(m_NonGenericCallsGeneric);
     XATTR_B(m_IsCallsiteInNoReturnRegion);
     XATTR_B(m_HasProfile);
     fprintf(file, " />\n");
@@ -932,7 +927,6 @@ double DefaultPolicy::DetermineMultiplier()
             break;
     }
 
-    
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline
@@ -945,14 +939,10 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\n%d arguments are structs passed by value.", m_ArgIsStructByValue);
     }
 
-    if (m_IsCalleeGeneric && !m_IsCallerGeneric)
+    if (m_NonGenericCallsGeneric)
     {
         // Especially, if such a callee has many foldable branches like 'typeof(T) == typeof(T2)'
         JITDUMP("\nInline candidate is generic and caller is not.");
-    }
-    else if (m_IsCalleeGeneric && m_IsCallerGeneric)
-    {
-        JITDUMP("\nInline candidate and its caller are generic.");
     }
 
     if (m_IsCallsiteInNoReturnRegion)
@@ -2391,8 +2381,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_DivByCns);
     fprintf(file, ",%u", m_ReturnsStructByValue ? 1 : 0);
     fprintf(file, ",%u", m_IsFromValueClass ? 1 : 0);
-    fprintf(file, ",%u", m_IsCalleeGeneric ? 1 : 0);
-    fprintf(file, ",%u", m_IsCallerGeneric ? 1 : 0);
+    fprintf(file, ",%u", m_NonGenericCallsGeneric ? 1 : 0);
     fprintf(file, ",%u", m_IsCallsiteInNoReturnRegion ? 1 : 0);
     fprintf(file, ",%u", m_HasProfile ? 1 : 0);
 }
