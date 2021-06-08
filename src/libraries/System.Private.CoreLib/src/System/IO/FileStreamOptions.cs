@@ -5,8 +5,8 @@ namespace System.IO
 {
     public sealed class FileStreamOptions
     {
-        private FileMode? _mode;
-        private FileAccess? _access;
+        private FileMode _mode = FileMode.Open;
+        private FileAccess _access = FileAccess.Read;
         private FileShare _share = FileStream.DefaultShare;
         private FileOptions _options;
         private long _preallocationSize;
@@ -16,29 +16,14 @@ namespace System.IO
         /// One of the enumeration values that determines how to open or create the file.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
-        /// <exception cref="T:System.ArgumentException">When <paramref name="value" /> is <see cref="System.IO.FileMode.Append" /> but <see cref="Access" />  is not <see cref="System.IO.FileAccess.Write" />.
-        ///  -or-
-        /// <see cref="Access" /> is <see cref="System.IO.FileAccess.Read" /> while given mode requires <see cref="System.IO.FileAccess.Write" />.
-        /// </exception>
         public FileMode Mode
         {
-            get => _mode.HasValue ? _mode.GetValueOrDefault() : FileMode.Open;
+            get => _mode;
             set
             {
                 if (value < FileMode.CreateNew || value > FileMode.Append)
                 {
                     ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
-                }
-                else if (_access.HasValue && (_access & FileAccess.Read) != 0 && value == FileMode.Append)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(value));
-                }
-                else if (_access.HasValue && (_access & FileAccess.Write) == 0)
-                {
-                    if (value == FileMode.Truncate || value == FileMode.CreateNew || value == FileMode.Create || value == FileMode.Append)
-                    {
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, value, _access), nameof(value));
-                    }
                 }
 
                 _mode = value;
@@ -49,29 +34,14 @@ namespace System.IO
         /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="System.IO.FileStream.CanRead" /> and <see cref="System.IO.FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
-        /// <exception cref="T:System.ArgumentException">When <see cref="Mode" /> is <see cref="System.IO.FileMode.Append" /> but <paramref name="value" />  is not <see cref="System.IO.FileAccess.Write" />.
-        ///  -or-
-        /// <see cref="Mode" /> requires <see cref="System.IO.FileAccess.Write" /> while <paramref name="value" /> is <see cref="System.IO.FileAccess.Read" />.
-        /// </exception>
         public FileAccess Access
         {
-            get => _access.HasValue ? _access.GetValueOrDefault() : (_mode.HasValue && _mode == FileMode.Append) ? FileAccess.Write : FileAccess.ReadWrite;
+            get => _access;
             set
             {
                 if (value < FileAccess.Read || value > FileAccess.ReadWrite)
                 {
                     ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
-                }
-                else if ((value & FileAccess.Read) != 0 && _mode.HasValue && _mode == FileMode.Append)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(value));
-                }
-                else if ((value & FileAccess.Write) == 0 && _mode.HasValue)
-                {
-                    if (_mode == FileMode.Truncate || _mode == FileMode.CreateNew || _mode == FileMode.Create || _mode == FileMode.Append)
-                    {
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, _mode, value), nameof(value));
-                    }
                 }
 
                 _access = value;

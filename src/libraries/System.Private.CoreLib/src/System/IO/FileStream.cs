@@ -177,6 +177,17 @@ namespace System.IO
             {
                 throw new ArgumentNullException(nameof(options));
             }
+            else if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
+            {
+                throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(options));
+            }
+            else if ((options.Access & FileAccess.Write) == 0)
+            {
+                if (options.Mode == FileMode.Truncate || options.Mode == FileMode.CreateNew || options.Mode == FileMode.Create || options.Mode == FileMode.Append)
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, options.Mode, options.Access), nameof(options));
+                }
+            }
             else if ((options.Access & FileAccess.Write) == FileAccess.Write)
             {
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);

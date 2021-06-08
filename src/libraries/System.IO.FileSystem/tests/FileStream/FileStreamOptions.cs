@@ -24,9 +24,37 @@ namespace System.IO.Tests
             Assert.Equal("options", ex.ParamName);
         }
 
+        [Theory]
+        [InlineData(FileMode.Create)]
+        [InlineData(FileMode.CreateNew)]
+        [InlineData(FileMode.Append)]
+        [InlineData(FileMode.Truncate)]
+        public void ModesThatRequireWriteAccessThrowWhenReadAccessIsProvided(FileMode fileMode)
+        {
+            Assert.Throws<ArgumentException>(() => new FileStream(GetTestFilePath(), new FileStreamOptions
+            {
+                Mode = fileMode,
+                Access = FileAccess.Read
+            }));
+        }
+
+        [Theory]
+        [InlineData(FileAccess.Read)]
+        [InlineData(FileAccess.ReadWrite)]
+        public void AppendWorksOnlyForWriteAccess(FileAccess fileAccess)
+        {
+            Assert.Throws<ArgumentException>(() => new FileStream(GetTestFilePath(), new FileStreamOptions
+            {
+                Mode = FileMode.Append,
+                Access = fileAccess
+            }));
+        }
+
         [Fact]
         public void Mode()
         {
+            Assert.Equal(FileMode.Open, new FileStreamOptions().Mode);
+
             FileMode[] validValues = Enum.GetValues<FileMode>();
 
             foreach (var vaidValue in validValues)
@@ -36,21 +64,12 @@ namespace System.IO.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { Mode = validValues.Min() - 1 });
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { Mode = validValues.Max() + 1 });
-
-            var readOnlyOptions = new FileStreamOptions { Access = FileAccess.Read };
-            foreach (FileMode writingMode in WritingModes())
-            {
-                Assert.Throws<ArgumentException>(() => readOnlyOptions.Mode = writingMode);
-            }
-            var readWriteOptions = new FileStreamOptions { Access = FileAccess.ReadWrite };
-            Assert.Throws<ArgumentException>(() => readWriteOptions.Mode = FileMode.Append);
         }
 
         [Fact]
         public void Access()
         {
-            Assert.Equal(FileAccess.ReadWrite, new FileStreamOptions().Access);
-            Assert.Equal(FileAccess.Write, new FileStreamOptions() { Mode = FileMode.Append }.Access);
+            Assert.Equal(FileAccess.Read, new FileStreamOptions().Access);
 
             FileAccess[] validValues = Enum.GetValues<FileAccess>();
 
@@ -61,16 +80,6 @@ namespace System.IO.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { Access = validValues.Min() - 1 });
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { Access = validValues.Max() + 1 });
-
-            var appendOptions = new FileStreamOptions { Mode = FileMode.Append };
-            Assert.Throws<ArgumentException>(() => appendOptions.Access = FileAccess.Read);
-            Assert.Throws<ArgumentException>(() => appendOptions.Access = FileAccess.ReadWrite);
-
-            foreach (FileMode writingMode in WritingModes())
-            {
-                FileStreamOptions writingOptions = new FileStreamOptions { Access = FileAccess.Write, Mode = writingMode };
-                Assert.Throws<ArgumentException>(() => writingOptions.Access = FileAccess.Read);
-            }
         }
 
         [Fact]
