@@ -116,7 +116,7 @@ namespace System.Net.Sockets
                 Running,
                 RunningWithPendingCancellation,
                 Complete,
-                Cancelled
+                Canceled
             }
 
             private int _state; // Actually AsyncOperation.State.
@@ -156,7 +156,7 @@ namespace System.Net.Sockets
 
                 // Set state to Running, unless we've been canceled
                 int oldState = Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
-                if (oldState == (int)State.Cancelled)
+                if (oldState == (int)State.Canceled)
                 {
                     TraceWithContext(context, "Exit, Previously canceled");
                     return OperationResult.Cancelled;
@@ -167,8 +167,7 @@ namespace System.Net.Sockets
                 // Try to perform the IO
                 if (DoTryComplete(context))
                 {
-                    int state = Volatile.Read(ref _state);
-                    Debug.Assert(state is (int)State.Running or (int)State.RunningWithPendingCancellation, $"Unexpected operation state: {(State)state}");
+                    Debug.Assert((State)Volatile.Read(ref _state) is State.Running or State.RunningWithPendingCancellation, "Unexpected operation state");
 
                     Volatile.Write(ref _state, (int)State.Complete);
 
@@ -183,7 +182,7 @@ namespace System.Net.Sockets
                     int state = Volatile.Read(ref _state);
                     Debug.Assert(state is (int)State.Running or (int)State.RunningWithPendingCancellation, $"Unexpected operation state: {(State)state}");
 
-                    newState = (state == (int)State.Running ? (int)State.Waiting : (int)State.Cancelled);
+                    newState = (state == (int)State.Running ? (int)State.Waiting : (int)State.Canceled);
                     if (state == Interlocked.CompareExchange(ref _state, newState, state))
                     {
                         break;
@@ -192,7 +191,7 @@ namespace System.Net.Sockets
                     // Race to update the state. Loop and try again.
                 }
 
-                if (newState == (int)State.Cancelled)
+                if (newState == (int)State.Canceled)
                 {
                     ProcessCancellation();
                     TraceWithContext(context, "Exit, Newly cancelled");
@@ -214,12 +213,12 @@ namespace System.Net.Sockets
                 while (true)
                 {
                     int state = Volatile.Read(ref _state);
-                    if (state is (int)State.Complete or (int)State.Cancelled or (int)State.RunningWithPendingCancellation)
+                    if (state is (int)State.Complete or (int)State.Canceled or (int)State.RunningWithPendingCancellation)
                     {
                         return false;
                     }
 
-                    newState = (state == (int)State.Waiting ? (int)State.Cancelled : (int)State.RunningWithPendingCancellation);
+                    newState = (state == (int)State.Waiting ? (int)State.Canceled : (int)State.RunningWithPendingCancellation);
                     if (state == Interlocked.CompareExchange(ref _state, newState, state))
                     {
                         break;
@@ -245,7 +244,7 @@ namespace System.Net.Sockets
             {
                 Trace("Enter");
 
-                Debug.Assert(_state == (int)State.Cancelled);
+                Debug.Assert(_state == (int)State.Canceled);
 
                 ErrorCode = SocketError.OperationAborted;
 
