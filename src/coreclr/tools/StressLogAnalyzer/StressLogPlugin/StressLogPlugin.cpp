@@ -542,7 +542,7 @@ static ThreadStressLogDesc s_threadStressLogDesc[MAX_THREADSTRESSLOGS];
 static int s_threadStressLogCount;
 static LONG s_wrappedWriteThreadCount;
 
-static const LONG MAX_MESSAGE_COUNT = 1024 * 1024 * 1024;
+static const LONG MAX_MESSAGE_COUNT = 64 * 1024 * 1024;
 static StressThreadAndMsg* s_threadMsgBuf;
 static volatile LONG s_msgCount = 0;
 static volatile LONG s_totalMsgCount = 0;
