@@ -18933,7 +18933,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         CORINFO_CLASS_HANDLE sigClass;
         CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
         sigClass                     = info.compCompHnd->getArgClass(&sig, sigArg);
-        GenTree* argNode             = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
+        GenTree* argNode             = (argUse == nullptr) ? nullptr : argUse->GetNode()->gtSkipPutArgType();
 
         if (corType == CORINFO_TYPE_VALUECLASS)
         {
@@ -18962,7 +18962,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
                         inlineResult->Note(InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT);
                     }
                 }
-                // Arg is a reference type in the signature, but a value type was passed.
+                // Arg is a reference type in the signature and a boxed value type was passed.
                 else if (isArgValueType && (corType == CORINFO_TYPE_CLASS))
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_ARG_BOXED);
