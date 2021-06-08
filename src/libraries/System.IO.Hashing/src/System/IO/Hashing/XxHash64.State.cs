@@ -24,6 +24,7 @@ namespace System.IO.Hashing
             private ulong _acc3;
             private ulong _acc4;
             private readonly ulong _smallAcc;
+            private bool _hadFullStripe;
 
             internal State(ulong seed)
             {
@@ -33,6 +34,7 @@ namespace System.IO.Hashing
                 _acc4 = seed - Prime64_1;
 
                 _smallAcc = seed + Prime64_5;
+                _hadFullStripe = false;
             }
 
             internal void ProcessStripe(ReadOnlySpan<byte> source)
@@ -44,6 +46,8 @@ namespace System.IO.Hashing
                 _acc2 = ApplyRound(_acc2, source.Slice(sizeof(ulong)));
                 _acc3 = ApplyRound(_acc3, source.Slice(2 * sizeof(ulong)));
                 _acc4 = ApplyRound(_acc4, source.Slice(3 * sizeof(ulong)));
+
+                _hadFullStripe = true;
             }
 
             private static ulong MergeAccumulator(ulong acc, ulong accN)
@@ -87,7 +91,7 @@ namespace System.IO.Hashing
 
             internal readonly ulong Complete(int length, ReadOnlySpan<byte> remaining)
             {
-                ulong acc = length >= StripeSize ? Converge() : _smallAcc;
+                ulong acc = _hadFullStripe ? Converge() : _smallAcc;
 
                 acc += (ulong)length;
 

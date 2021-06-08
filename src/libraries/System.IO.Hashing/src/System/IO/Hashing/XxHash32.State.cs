@@ -25,6 +25,7 @@ namespace System.IO.Hashing
             private uint _acc3;
             private uint _acc4;
             private readonly uint _smallAcc;
+            private bool _hadFullStripe;
 
             internal State(uint seed)
             {
@@ -34,6 +35,7 @@ namespace System.IO.Hashing
                 _acc4 = seed - Prime32_1;
 
                 _smallAcc = seed + Prime32_5;
+                _hadFullStripe = false;
             }
 
             internal void ProcessStripe(ReadOnlySpan<byte> source)
@@ -45,6 +47,8 @@ namespace System.IO.Hashing
                 _acc2 = ApplyRound(_acc2, source.Slice(sizeof(uint)));
                 _acc3 = ApplyRound(_acc3, source.Slice(2 * sizeof(uint)));
                 _acc4 = ApplyRound(_acc4, source.Slice(3 * sizeof(uint)));
+
+                _hadFullStripe = true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,7 +72,7 @@ namespace System.IO.Hashing
 
             internal readonly uint Complete(int length, ReadOnlySpan<byte> remaining)
             {
-                uint acc = length >= StripeSize ? Converge() : _smallAcc;
+                uint acc = _hadFullStripe ? Converge() : _smallAcc;
 
                 acc += (uint)length;
 
