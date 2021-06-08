@@ -73,11 +73,10 @@
 
     <ItemGroup>
       <SupportedPackage>
-        <ProjectDir>$(TestProjectDir)%(Identity)/</ProjectDir>
+        <ProjectDir>$(TestProjectDir)%(Identity)\</ProjectDir>
       </SupportedPackage>
       <SupportedPackage>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <AssetsFile>%(ProjectDir)obj/project.assets.json</AssetsFile>
       </SupportedPackage>
     </ItemGroup>
   </Target>
@@ -120,15 +119,15 @@
           DependsOnTargets="GenerateProjects"
           AfterTargets="Build;Test">
     <ItemGroup>
-      <TestProject Include="$(TestDir)$(TestProjectName)" />
+      <TestProject Include="$(TestDir)$(TestProjectName)" Condition="'$(PackagesToTest)' == ''" />
+      <TestProject Include="%(SupportedPackage.ProjectFile)" Condition="'$(PackagesToTest)' != ''" />
     </ItemGroup>
     
     <MSBuild Projects="@(TestProject)"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestorePackagesPath=$(TestPackageDir)"
              Targets="Restore" />
 
-    <MSBuild Projects="@(TestProject)"
-             Targets="Test" />
+    <MSBuild Projects="@(TestProject)" />
   </Target>
 
 </Project>
