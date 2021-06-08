@@ -86,14 +86,48 @@ enum GCtype : unsigned
 };
 
 #if defined(TARGET_XARCH)
-enum insFlags: uint8_t
+enum insFlags : uint32_t
 {
-    INS_FLAGS_None = 0x00,
-    INS_FLAGS_ReadsFlags = 0x01,
-    INS_FLAGS_WritesFlags = 0x02,
-    INS_FLAGS_x87Instr = 0x04,
-    INS_Flags_IsDstDstSrcAVXInstruction = 0x08,
-    INS_Flags_IsDstSrcSrcAVXInstruction = 0x10,
+    INS_FLAGS_None = 0,
+
+    // Reads EFLAGS
+    INS_FLAGS_ReadsCF = 1 << 0,
+    INS_FLAGS_ReadsPF = 1 << 1,
+    INS_FLAGS_ReadsAF = 1 << 2,
+    INS_FLAGS_ReadsZF = 1 << 3,
+    INS_FLAGS_ReadsSF = 1 << 4,
+    INS_FLAGS_ReadsDF = 1 << 5,
+    INS_FLAGS_ReadsOF = 1 << 6,
+    INS_FLAGS_ReadsAllFlagsExceptAF = INS_FLAGS_ReadsCF | INS_FLAGS_ReadsPF | INS_FLAGS_ReadsZF | INS_FLAGS_ReadsSF | INS_FLAGS_ReadsOF,
+    INS_FLAGS_Reads_CF_ZF_Flags = INS_FLAGS_ReadsCF | INS_FLAGS_ReadsZF,
+    INS_FLAGS_Reads_OF_SF_Flags = INS_FLAGS_ReadsOF | INS_FLAGS_ReadsSF,
+    INS_FLAGS_Reads_OF_SF_ZF_Flags = INS_FLAGS_ReadsOF | INS_FLAGS_ReadsSF | INS_FLAGS_ReadsZF,
+    INS_FLAGS_ReadsAllFlags = INS_FLAGS_ReadsAF | INS_FLAGS_ReadsAllFlagsExceptAF,
+
+    // Writes EFLAGS
+    INS_FLAGS_WritesCF = 1 << 7,
+    INS_FLAGS_WritesPF = 1 << 8,
+    INS_FLAGS_WritesAF = 1 << 9,
+    INS_FLAGS_WritesZF = 1 << 10,
+    INS_FLAGS_WritesSF = 1 << 11,
+    INS_FLAGS_WritesDF = 1 << 12,
+    INS_FLAGS_WritesOF = 1 << 13,
+    INS_FLAGS_WritesAllFlagsExceptCF = INS_FLAGS_WritesPF | INS_FLAGS_WritesAF | INS_FLAGS_WritesZF | INS_FLAGS_WritesSF | INS_FLAGS_WritesOF,
+    INS_FLAGS_WritesAllFlagsExceptOF = INS_FLAGS_WritesCF | INS_FLAGS_WritesPF | INS_FLAGS_WritesAF | INS_FLAGS_WritesZF | INS_FLAGS_WritesSF,
+    INS_FLAGS_WritesAllFlags = INS_FLAGS_WritesCF | INS_FLAGS_WritesAllFlagsExceptCF,
+
+    // Resets EFLAGS
+    INS_FLAGS_Resets_OF_Flags       = 1 << 14,
+    INS_FLAGS_Resets_CF_OF_Flags    = 1 << 15,
+    INS_FLAGS_Resets_OF_SF_PF_Flags = 1 << 16,
+    INS_FLAGS_ResetsAllFlagsExceptZF = 1 << 17,
+
+    // x87 instruction
+    INS_FLAGS_x87Instr = 1 << 18,
+
+    // Avx
+    INS_Flags_IsDstDstSrcAVXInstruction = 1 << 19,
+    INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 20,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,

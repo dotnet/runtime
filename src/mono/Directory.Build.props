@@ -61,9 +61,12 @@
 
   <PropertyGroup>
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(RuntimeBinDir), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
-    <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</MonoAotCrossCompilerPath>
-    <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
+  <ItemGroup>
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+  </ItemGroup>
 
   <!-- Paths for Mobile App Projects  -->
   <PropertyGroup>

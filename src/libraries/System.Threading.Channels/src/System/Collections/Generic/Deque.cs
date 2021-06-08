@@ -63,6 +63,12 @@ namespace System.Collections.Generic
             return item;
         }
 
+        public T PeekHead()
+        {
+            Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
+            return _array[_head];
+        }
+
         public T DequeueTail()
         {
             Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining

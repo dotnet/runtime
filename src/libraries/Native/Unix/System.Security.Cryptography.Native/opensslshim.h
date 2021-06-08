@@ -362,6 +362,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_sha512) \
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
+    REQUIRED_FUNCTION(HMAC) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
     REQUIRED_FUNCTION(HMAC_CTX_copy) \
     FALLBACK_FUNCTION(HMAC_CTX_free) \
@@ -797,6 +798,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_sha512 EVP_sha512_ptr
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
+#define HMAC HMAC_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr
 #define HMAC_CTX_copy HMAC_CTX_copy_ptr
 #define HMAC_CTX_free HMAC_CTX_free_ptr

@@ -7,21 +7,11 @@
 // See the article on hints in MSDN for more information on their necessity and use:
 //    http://msdn.microsoft.com/en-us/library/dd997977.aspx
 
-#define foreach_treenode_execution_order(__node, __stmt) for (;;)
-
 #define foreach_block(__compiler, __block) for (;;)
 
 #define FOREACH_REGISTER_FILE(file) for (;;)
 
 // From jit.h
 
-#define DECLARE_TYPED_ENUM(tag,baseType) enum tag : baseType
-
-#define END_DECLARE_TYPED_ENUM(tag,baseType) ;
-
 #define INDEBUG(x)          x
-#define INDEBUG_COMMA(x)    x,
 #define DEBUGARG(x)         , x
-
-#define PROTO_ARG(x)   x ,
-#define PROTO_ARGL(x)  , x
