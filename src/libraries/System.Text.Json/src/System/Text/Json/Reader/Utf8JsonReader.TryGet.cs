@@ -608,6 +608,29 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Parses the current JSON token value from the source as a <see cref="TimeSpan"/>.
+        /// Returns the value if the entire UTF-8 encoded token value can be successfully parsed to a <see cref="TimeSpan"/>
+        /// value.
+        /// Throws exceptions otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        /// <exception cref="FormatException">
+        /// Thrown if the JSON token value is of an unsupported format. The Constant ("c") TimeSpan Format Specifier is supported.
+        /// </exception>
+        public TimeSpan GetTimeSpan()
+        {
+            if (!TryGetTimeSpan(out TimeSpan value))
+            {
+                throw ThrowHelper.GetFormatException(DataType.TimeSpan);
+            }
+
+            return value;
+        }
+
+        /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="Guid"/>.
         /// Returns the value if the entire UTF-8 encoded token value can be successfully parsed to a <see cref="Guid"/>
         /// value.
@@ -1176,6 +1199,74 @@ namespace System.Text.Json
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
             if (JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Parses the current JSON token value from the source as a <see cref="TimeSpan"/>.
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully
+        /// parsed to a <see cref="TimeSpan"/> value.
+        /// Returns <see langword="false"/> otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        public bool TryGetTimeSpan(out TimeSpan value)
+        {
+            if (TokenType != JsonTokenType.String)
+            {
+                throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
+            }
+
+            return TryGetTimeSpanCore(out value);
+        }
+
+        internal bool TryGetTimeSpanCore(out TimeSpan value)
+        {
+            ReadOnlySpan<byte> span = stackalloc byte[0];
+
+            if (HasValueSequence)
+            {
+                long sequenceLength = ValueSequence.Length;
+
+                if (!JsonHelpers.IsValidTimeSpanParseLength(sequenceLength))
+                {
+                    value = default;
+                    return false;
+                }
+
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedTimeSpanParseLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
+                ValueSequence.CopyTo(stackSpan);
+                span = stackSpan;
+            }
+            else
+            {
+                if (!JsonHelpers.IsValidTimeSpanParseLength(ValueSpan.Length))
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
+            }
+
+            if (_stringHasEscaping)
+            {
+                return JsonReaderHelper.TryGetEscapedTimeSpan(span, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (JsonHelpers.TryParseAsConstantFormat(span, out TimeSpan tmp))
             {
                 value = tmp;
                 return true;

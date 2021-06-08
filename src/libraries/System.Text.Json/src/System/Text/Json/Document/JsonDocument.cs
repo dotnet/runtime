@@ -709,6 +709,41 @@ namespace System.Text.Json
             return false;
         }
 
+        internal bool TryGetValue(int index, out TimeSpan value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (!JsonHelpers.IsValidTimeSpanParseLength(segment.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren)
+            {
+                return JsonReaderHelper.TryGetEscapedTimeSpan(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (JsonHelpers.TryParseAsConstantFormat(segment, out TimeSpan tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
         internal bool TryGetValue(int index, out Guid value)
         {
             CheckNotDisposed();

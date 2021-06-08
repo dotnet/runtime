@@ -63,6 +63,7 @@ namespace System.Text.Json
         public sbyte GetSByte() { throw null; }
         public float GetSingle() { throw null; }
         public string? GetString() { throw null; }
+        public System.TimeSpan GetTimeSpan() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ushort GetUInt16() { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -87,6 +88,7 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public bool TryGetSByte(out sbyte value) { throw null; }
         public bool TryGetSingle(out float value) { throw null; }
+        public bool TryGetTimeSpan(out System.TimeSpan value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt16(out ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -345,6 +347,7 @@ namespace System.Text.Json
         public sbyte GetSByte() { throw null; }
         public float GetSingle() { throw null; }
         public string? GetString() { throw null; }
+        public System.TimeSpan GetTimeSpan() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ushort GetUInt16() { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -366,6 +369,7 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public bool TryGetSByte(out sbyte value) { throw null; }
         public bool TryGetSingle(out float value) { throw null; }
+        public bool TryGetTimeSpan(out System.TimeSpan value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt16(out ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -477,6 +481,7 @@ namespace System.Text.Json
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, string? value) { }
+        public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.TimeSpan value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.DateTime value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.DateTimeOffset value) { }
@@ -484,6 +489,7 @@ namespace System.Text.Json
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, string? value) { }
+        public void WriteString(System.ReadOnlySpan<char> propertyName, System.TimeSpan value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteString(string propertyName, System.DateTime value) { }
         public void WriteString(string propertyName, System.DateTimeOffset value) { }
@@ -491,6 +497,7 @@ namespace System.Text.Json
         public void WriteString(string propertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(string propertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(string propertyName, string? value) { }
+        public void WriteString(string propertyName, System.TimeSpan value) { }
         public void WriteString(string propertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.DateTime value) { }
         public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.DateTimeOffset value) { }
@@ -498,6 +505,7 @@ namespace System.Text.Json
         public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(System.Text.Json.JsonEncodedText propertyName, string? value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.TimeSpan value) { }
         public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteStringValue(System.DateTime value) { }
         public void WriteStringValue(System.DateTimeOffset value) { }
@@ -505,6 +513,7 @@ namespace System.Text.Json
         public void WriteStringValue(System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteStringValue(System.ReadOnlySpan<char> value) { }
         public void WriteStringValue(string? value) { }
+        public void WriteStringValue(System.TimeSpan value) { }
         public void WriteStringValue(System.Text.Json.JsonEncodedText value) { }
     }
 }
@@ -887,6 +896,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<float> SingleConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<string> StringConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.TimeSpan> TimeSpanConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<ushort> UInt16Converter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]

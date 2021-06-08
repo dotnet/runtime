@@ -296,6 +296,31 @@ namespace System.Text.Json
             return false;
         }
 
+        public static bool TryGetEscapedTimeSpan(ReadOnlySpan<byte> source, out TimeSpan value)
+        {
+            int backslash = source.IndexOf(JsonConstants.BackSlash);
+            Debug.Assert(backslash != -1);
+
+            Debug.Assert(source.Length <= JsonConstants.MaximumEscapedTimeSpanParseLength);
+            Span<byte> sourceUnescaped = stackalloc byte[source.Length];
+
+            Unescape(source, sourceUnescaped, backslash, out int written);
+            Debug.Assert(written > 0);
+
+            sourceUnescaped = sourceUnescaped.Slice(0, written);
+            Debug.Assert(!sourceUnescaped.IsEmpty);
+
+            if (sourceUnescaped.Length <= JsonConstants.MaximumTimeSpanParseLength
+                && JsonHelpers.TryParseAsConstantFormat(sourceUnescaped, out TimeSpan tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
         public static bool TryGetEscapedGuid(ReadOnlySpan<byte> source, out Guid value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedGuidLength);

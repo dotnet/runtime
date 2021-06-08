@@ -1398,5 +1398,86 @@ namespace System.Text.Json.Tests
             test(testString, isFinalBlock: true);
             test(testString, isFinalBlock: false);
         }
+
+        [Theory]
+        [InlineData("11:18:00", true)]
+        [InlineData("11:18", false)]
+        public static void TestingGetTimeSpan(string testString, bool expectedValid)
+        {
+            void ExecuteTest(bool hasValueSequence)
+            {
+                byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+                Utf8JsonReader json;
+                if (hasValueSequence)
+                {
+                    ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+                    json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+                }
+                else
+                {
+                    json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+                }
+
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+                Assert.Equal(hasValueSequence, json.HasValueSequence);
+
+                if (expectedValid)
+                {
+                    Assert.Equal(TimeSpan.Parse(testString), json.GetTimeSpan());
+                }
+                else
+                {
+                    try
+                    {
+                        json.GetTimeSpan();
+                        Assert.True(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.True(ex is FormatException);
+                    }
+                }
+            }
+
+            ExecuteTest(false);
+            ExecuteTest(true);
+        }
+
+        [Theory]
+        [InlineData("11:18:00", true)]
+        [InlineData("-100.11:18:00.9999999", true)]
+        [InlineData("11:18:00.123", true)]
+        [InlineData("11:18", false)] // hh:mm:ss is the minimum you can specify
+        [InlineData("11:18:00.12345678", false)] // only 7 fractional digits supported
+        [InlineData("12345678901.11:18:00", false)] // only 10 day digits supported
+        public static void TestingTryGetTimeSpan(string testString, bool expectedValid)
+        {
+            void ExecuteTest(bool hasValueSequence)
+            {
+                byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+                Utf8JsonReader json;
+                if (hasValueSequence)
+                {
+                    ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+                    json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+                }
+                else
+                {
+                    json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+                }
+
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+                Assert.Equal(hasValueSequence, json.HasValueSequence);
+
+                bool result = json.TryGetTimeSpan(out TimeSpan value);
+                Assert.Equal(expectedValid, result);
+                Assert.Equal(expectedValid ? TimeSpan.Parse(testString) : default, value);
+            }
+
+            ExecuteTest(false);
+            ExecuteTest(true);
+        }
     }
 }

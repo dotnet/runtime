@@ -1096,6 +1096,57 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        ///   Attempts to represent the current JSON string as a <see cref="TimeSpan"/>.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a TimeSpan representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as a <see cref="TimeSpan"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetTimeSpan(out TimeSpan value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as a <see cref="TimeSpan"/>.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a TimeSpan representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>The value of the element as a <see cref="TimeSpan"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.String"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="TimeSpan"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public TimeSpan GetTimeSpan()
+        {
+            if (TryGetTimeSpan(out TimeSpan value))
+            {
+                return value;
+            }
+
+            throw ThrowHelper.GetFormatException();
+        }
+
+        /// <summary>
         ///   Attempts to represent the current JSON string as a <see cref="Guid"/>.
         /// </summary>
         /// <param name="value">Receives the value.</param>

@@ -50,6 +50,7 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
+    <Compile Include="System\Text\Json\JsonHelpers.TimeSpan.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SingleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\StringConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeSpanConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt16Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
@@ -245,6 +247,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Literal.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.String.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.TimeSpan.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.UnsignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Bytes.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Comment.cs" />
@@ -259,6 +262,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Literal.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.TimeSpan.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\TypeExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />

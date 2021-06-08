@@ -87,6 +87,9 @@ namespace System.Text.Json
             (DateTimeParseNumFractionDigits - DateTimeNumFractionDigits)); // Like StandardFormat 'O' for DateTimeOffset, but allowing 9 additional (up to 16) fraction digits.
         public const int MinimumDateTimeParseLength = 10; // YYYY-MM-DD
         public const int MaximumEscapedDateTimeOffsetParseLength = MaxExpansionFactorWhileEscaping * MaximumDateTimeOffsetParseLength;
+        public const int MinimumTimeSpanParseLength = 8; // hh:mm:ss
+        public const int MaximumTimeSpanParseLength = 28; // -dddddddddd.hh:mm:ss.fffffff
+        public const int MaximumEscapedTimeSpanParseLength = MaxExpansionFactorWhileEscaping * MaximumTimeSpanParseLength;
 
         // Encoding Helpers
         public const char HighSurrogateStart = '\ud800';

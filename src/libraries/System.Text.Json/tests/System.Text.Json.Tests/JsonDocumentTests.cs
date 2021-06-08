@@ -1433,6 +1433,36 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [InlineData("11:18:00", true)]
+        [InlineData("11:18", false)]
+        public static void ReadTimeSpan(string testString, bool expectedValid)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+
+            using (JsonDocument doc = JsonDocument.Parse(dataUtf8, default))
+            {
+                JsonElement root = doc.RootElement;
+
+                TimeSpan expectedTimeSpan = TimeSpan.Parse(testString);
+
+                Assert.Equal(JsonValueKind.String, root.ValueKind);
+
+                bool result = root.TryGetTimeSpan(out TimeSpan TimeSpanVal);
+                Assert.Equal(expectedValid, result);
+                Assert.Equal(expectedValid ? expectedTimeSpan : default, TimeSpanVal);
+
+                if (expectedValid)
+                {
+                    Assert.Equal(expectedTimeSpan, root.GetTimeSpan());
+                }
+                else
+                {
+                    Assert.Throws<FormatException>(() => root.GetTimeSpan());
+                }
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(JsonGuidTestData.ValidGuidTests), MemberType = typeof(JsonGuidTestData))]
         [MemberData(nameof(JsonGuidTestData.ValidHexGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void ReadGuid(string jsonString, string expectedStr)

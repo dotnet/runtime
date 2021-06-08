@@ -6104,6 +6104,72 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true, true, "message")]
+        [InlineData(true, false, "message")]
+        [InlineData(false, true, "message")]
+        [InlineData(false, false, "message")]
+        [InlineData(true, true, "mess><age")]
+        [InlineData(true, false, "mess><age")]
+        [InlineData(false, true, "mess><age")]
+        [InlineData(false, false, "mess><age")]
+        [InlineData(true, true, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        [InlineData(true, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        [InlineData(false, true, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        [InlineData(false, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")]
+        public void WriteTimeSpanValue(bool formatted, bool skipValidation, string keyString)
+        {
+            var random = new Random(42);
+            const int numberOfItems = 1_000;
+
+            var timeSpans = new TimeSpan[numberOfItems];
+            for (int i = 0; i < numberOfItems; i++)
+                timeSpans[i] = TimeSpan.FromTicks(random.Next(int.MaxValue));
+
+            string expectedStr = GetTimeSpansExpectedString(prettyPrint: formatted, keyString, timeSpans, escape: true);
+
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
+            ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
+
+            for (int i = 0; i < 3; i++)
+            {
+                var output = new ArrayBufferWriter<byte>(1024);
+                using var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+                jsonUtf8.WriteStartObject();
+
+                switch (i)
+                {
+                    case 0:
+                        for (int j = 0; j < numberOfItems; j++)
+                            jsonUtf8.WriteString(keyString, timeSpans[j]);
+                        jsonUtf8.WriteStartArray(keyString);
+                        break;
+                    case 1:
+                        for (int j = 0; j < numberOfItems; j++)
+                            jsonUtf8.WriteString(keyUtf16, timeSpans[j]);
+                        jsonUtf8.WriteStartArray(keyUtf16);
+                        break;
+                    case 2:
+                        for (int j = 0; j < numberOfItems; j++)
+                            jsonUtf8.WriteString(keyUtf8, timeSpans[j]);
+                        jsonUtf8.WriteStartArray(keyUtf8);
+                        break;
+                }
+
+                jsonUtf8.WriteStringValue(timeSpans[0]);
+                jsonUtf8.WriteStringValue(timeSpans[1]);
+                jsonUtf8.WriteEndArray();
+
+                jsonUtf8.WriteEndObject();
+                jsonUtf8.Flush();
+
+                JsonTestHelper.AssertContents(expectedStr, output);
+            }
+        }
+
         // NOTE: WriteLargeKeyOrValue test is constrained to run on Windows and MacOSX because it causes
         //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
@@ -6578,6 +6644,17 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output);
                 jsonUtf8.WriteStartObject();
                 Guid value = Guid.NewGuid();
+                jsonUtf8.WriteString(text, value);
+                jsonUtf8.Flush();
+
+                JsonTestHelper.AssertContents($"{{{expectedMessage}:\"{value.ToString()}\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStartObject();
+                TimeSpan value = new TimeSpan(2, 18, 30);
                 jsonUtf8.WriteString(text, value);
                 jsonUtf8.Flush();
 
@@ -7682,6 +7759,38 @@ namespace System.Text.Json.Tests
             json.WriteStartArray();
             json.WriteValue(dates[0]);
             json.WriteValue(dates[1]);
+            json.WriteEnd();
+
+            json.WriteEnd();
+
+            json.Flush();
+
+            return Encoding.UTF8.GetString(ms.ToArray());
+        }
+
+        private static string GetTimeSpansExpectedString(bool prettyPrint, string keyString, TimeSpan[] timeSpans, bool escape = false)
+        {
+            var ms = new MemoryStream();
+            TextWriter streamWriter = new StreamWriter(ms, new UTF8Encoding(false), 1024, true);
+
+            var json = new JsonTextWriter(streamWriter)
+            {
+                Formatting = prettyPrint ? Formatting.Indented : Formatting.None,
+                StringEscapeHandling = StringEscapeHandling.EscapeHtml,
+            };
+
+            json.WriteStartObject();
+
+            for (int i = 0; i < timeSpans.Length; i++)
+            {
+                json.WritePropertyName(keyString, escape);
+                json.WriteValue(timeSpans[i]);
+            }
+
+            json.WritePropertyName(keyString, escape);
+            json.WriteStartArray();
+            json.WriteValue(timeSpans[0]);
+            json.WriteValue(timeSpans[1]);
             json.WriteEnd();
 
             json.WriteEnd();
