@@ -26,7 +26,8 @@ namespace System.Text.Json.Nodes.Tests
                 @"""MyDecimal"":3.3," +
                 @"""MyDateTime"":""2019-01-30T12:01:02Z""," +
                 @"""MyDateTimeOffset"":""2019-01-30T12:01:02+01:00""," +
-                @"""MyGuid"":""1b33498a-7b7d-4dda-9c13-f6aa4ab449a6""" + // note lowercase
+                @"""MyGuid"":""1b33498a-7b7d-4dda-9c13-f6aa4ab449a6""," + // note lowercase
+                @"""MyTimeSpan"":""23:59:59.9999999""" +
                 @"}";
 
         [Fact]
@@ -51,6 +52,7 @@ namespace System.Text.Json.Nodes.Tests
             jObject["MyDateTime"] = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
             jObject["MyDateTimeOffset"] = new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0));
             jObject["MyGuid"] = new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6");
+            jObject["MyTimeSpan"] = TimeSpan.Parse("23:59:59.9999999");
 
             string expected = ExpectedPrimitiveJson;
 
@@ -84,6 +86,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), (DateTime)jObject["MyDateTime"]);
             Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), (DateTimeOffset)jObject["MyDateTimeOffset"]);
             Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"), (Guid)jObject["MyGuid"]);
+            Assert.Equal(TimeSpan.Parse("23:59:59.9999999"), (TimeSpan)jObject["MyTimeSpan"]);
         }
 
         [Fact]
@@ -110,6 +113,8 @@ namespace System.Text.Json.Nodes.Tests
                 (DateTimeOffset)(JsonNode)new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)));
             Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"),
                 (Guid)(JsonNode)new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"));
+            Assert.Equal(TimeSpan.Parse("23:59:59.9999999"),
+                (TimeSpan)(JsonNode)TimeSpan.Parse("23:59:59.9999999"));
         }
 
         [Fact]
@@ -132,6 +137,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Null((DateTime?)(JsonValue)null);
             Assert.Null((DateTimeOffset?)(JsonValue)null);
             Assert.Null((Guid?)(JsonValue)null);
+            Assert.Null((TimeSpan?)(JsonValue)null);
         }
 
         [Fact]
@@ -154,6 +160,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.NotNull((DateTime?)(JsonValue)new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc));
             Assert.NotNull((DateTimeOffset?)(JsonValue)new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)));
             Assert.NotNull((Guid?)(JsonValue)new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"));
+            Assert.NotNull((TimeSpan?)(JsonValue)TimeSpan.Parse("23:59:59.9999999"));
         }
 
         [Fact]
@@ -176,6 +183,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Null((JsonValue?)(DateTime?)null);
             Assert.Null((JsonValue?)(DateTimeOffset?)null);
             Assert.Null((JsonValue?)(Guid?)null);
+            Assert.Null((JsonValue?)(TimeSpan?)null);
         }
 
         [Fact]
@@ -197,6 +205,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.NotNull((JsonValue?)(DateTime?)new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc));
             Assert.NotNull((JsonValue?)(DateTimeOffset?)new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)));
             Assert.NotNull((JsonValue?)(Guid?)new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"));
+            Assert.NotNull((JsonValue?)(TimeSpan?)TimeSpan.Parse("23:59:59.9999999"));
         }
 
         [Fact]

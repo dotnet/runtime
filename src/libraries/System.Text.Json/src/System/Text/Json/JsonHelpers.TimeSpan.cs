@@ -65,7 +65,21 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryParseAsConstantFormat(ReadOnlySpan<byte> source, out TimeSpan value)
         {
-            return Utf8Parser.TryParse(source, out value, out int _, 'c');
+            bool result = Utf8Parser.TryParse(source, out TimeSpan tmpValue, out int bytesConsumed, 'c');
+
+            // Note: Utf8Parser.TryParse will return true for invalid input so
+            // long as it starts with an integer. Example: "2021-06-08" or
+            // "1$$$$$$$$$$". We need to check bytesConsumed to know if the
+            // entire source was actually valid.
+
+            if (result && source.Length == bytesConsumed)
+            {
+                value = tmpValue;
+                return true;
+            }
+
+            value = default;
+            return false;
         }
     }
 }

@@ -152,6 +152,11 @@ namespace System.Text.Json.Nodes
                         return (TypeToConvert)(object)element.GetDateTimeOffset();
                     }
 
+                    if (typeof(TypeToConvert) == typeof(TimeSpan) || typeof(TypeToConvert) == typeof(TimeSpan?))
+                    {
+                        return (TypeToConvert)(object)element.GetTimeSpan();
+                    }
+
                     if (typeof(TypeToConvert) == typeof(Guid) || typeof(TypeToConvert) == typeof(Guid?))
                     {
                         return (TypeToConvert)(object)element.GetGuid();
@@ -288,6 +293,13 @@ namespace System.Text.Json.Nodes
                     if (typeof(TypeToConvert) == typeof(DateTimeOffset) || typeof(TypeToConvert) == typeof(DateTimeOffset?))
                     {
                         success = element.TryGetDateTimeOffset(out DateTimeOffset value);
+                        result = (TypeToConvert)(object)value;
+                        return success;
+                    }
+
+                    if (typeof(TypeToConvert) == typeof(TimeSpan) || typeof(TypeToConvert) == typeof(TimeSpan?))
+                    {
+                        success = element.TryGetTimeSpan(out TimeSpan value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }

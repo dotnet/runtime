@@ -124,6 +124,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.False(jValue.TryGetValue(out DateTime _));
             Assert.False(jValue.TryGetValue(out DateTimeOffset _));
             Assert.False(jValue.TryGetValue(out Guid _));
+            Assert.False(jValue.TryGetValue(out TimeSpan _));
         }
 
         [Fact]
@@ -148,6 +149,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.False(jValue.TryGetValue(out DateTime _));
             Assert.False(jValue.TryGetValue(out DateTimeOffset _));
             Assert.False(jValue.TryGetValue(out Guid _));
+            Assert.False(jValue.TryGetValue(out TimeSpan _));
         }
 
         [Fact]
@@ -172,6 +174,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.False(jValue.TryGetValue(out bool _));
             Assert.False(jValue.TryGetValue(out DateTime _));
             Assert.False(jValue.TryGetValue(out DateTimeOffset _));
+            Assert.False(jValue.TryGetValue(out TimeSpan _));
         }
 
         [Theory]
@@ -198,6 +201,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.False(jValue.TryGetValue(out decimal _));
             Assert.False(jValue.TryGetValue(out bool _));
             Assert.False(jValue.TryGetValue(out Guid _));
+            Assert.False(jValue.TryGetValue(out TimeSpan _));
         }
 
         [Fact]
@@ -219,6 +223,32 @@ namespace System.Text.Json.Nodes.Tests
             Assert.False(jValue.TryGetValue(out decimal _));
             Assert.False(jValue.TryGetValue(out string _));
             Assert.False(jValue.TryGetValue(out char _));
+            Assert.False(jValue.TryGetValue(out DateTime _));
+            Assert.False(jValue.TryGetValue(out DateTimeOffset _));
+            Assert.False(jValue.TryGetValue(out Guid _));
+            Assert.False(jValue.TryGetValue(out TimeSpan _));
+        }
+
+        [Fact]
+        public static void TryGetValue_FromTimeSpan()
+        {
+            JsonValue jValue = JsonNode.Parse("\"1:18:00.1\"").AsValue();
+
+            Assert.True(jValue.TryGetValue(out TimeSpan _));
+            Assert.True(jValue.TryGetValue(out string _));
+            Assert.False(jValue.TryGetValue(out char _));
+            Assert.False(jValue.TryGetValue(out byte _));
+            Assert.False(jValue.TryGetValue(out short _));
+            Assert.False(jValue.TryGetValue(out int _));
+            Assert.False(jValue.TryGetValue(out long _));
+            Assert.False(jValue.TryGetValue(out sbyte _));
+            Assert.False(jValue.TryGetValue(out ushort _));
+            Assert.False(jValue.TryGetValue(out uint _));
+            Assert.False(jValue.TryGetValue(out ulong _));
+            Assert.False(jValue.TryGetValue(out float _));
+            Assert.False(jValue.TryGetValue(out double _));
+            Assert.False(jValue.TryGetValue(out decimal _));
+            Assert.False(jValue.TryGetValue(out bool _));
             Assert.False(jValue.TryGetValue(out DateTime _));
             Assert.False(jValue.TryGetValue(out DateTimeOffset _));
             Assert.False(jValue.TryGetValue(out Guid _));

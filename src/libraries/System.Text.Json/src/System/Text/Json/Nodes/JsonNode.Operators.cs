@@ -66,6 +66,18 @@ namespace System.Text.Json.Nodes
         public static implicit operator JsonNode?(DateTimeOffset? value) => JsonValue.Create(value);
 
         /// <summary>
+        ///   Defines an implicit conversion of a given <see cref="TimeSpan"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="TimeSpan"/> to implicitly convert.</param>
+        public static implicit operator JsonNode(TimeSpan value) => JsonValue.Create(value);
+
+        /// <summary>
+        ///   Defines an implicit conversion of a given <see cref="TimeSpan"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="TimeSpan"/> to implicitly convert.</param>
+        public static implicit operator JsonNode?(TimeSpan? value) => JsonValue.Create(value);
+
+        /// <summary>
         ///   Defines an implicit conversion of a given <see cref="decimal"/> to a <see cref="JsonNode"/>.
         /// </summary>
         /// <param name="value">A <see cref="decimal"/> to implicitly convert.</param>
@@ -270,6 +282,18 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="value">A <see cref="DateTimeOffset"/> to implicitly convert.</param>
         public static explicit operator DateTimeOffset?(JsonNode? value) => value?.GetValue<DateTimeOffset>();
+
+        /// <summary>
+        ///   Defines an explicit conversion of a given <see cref="TimeSpan"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="TimeSpan"/> to implicitly convert.</param>
+        public static explicit operator TimeSpan(JsonNode value) => value.GetValue<TimeSpan>();
+
+        /// <summary>
+        ///   Defines an explicit conversion of a given <see cref="TimeSpan"/> to a <see cref="JsonNode"/>.
+        /// </summary>
+        /// <param name="value">A <see cref="TimeSpan"/> to implicitly convert.</param>
+        public static explicit operator TimeSpan?(JsonNode? value) => value?.GetValue<TimeSpan>();
 
         /// <summary>
         ///   Defines an explicit conversion of a given <see cref="decimal"/> to a <see cref="JsonNode"/>.

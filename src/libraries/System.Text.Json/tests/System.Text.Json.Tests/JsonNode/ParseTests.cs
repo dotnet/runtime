@@ -49,6 +49,13 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(2, dtOffset.Minute);
             Assert.Equal(3, dtOffset.Second);
             Assert.Equal(new TimeSpan(1,15,0), dtOffset.Offset);
+
+            TimeSpan ts = JsonNode.Parse("\"10.12:18:00\"").GetValue<TimeSpan>();
+            Assert.Equal(10, ts.Days);
+            Assert.Equal(12, ts.Hours);
+            Assert.Equal(18, ts.Minutes);
+            Assert.Equal(0, ts.Seconds);
+            Assert.Equal(new TimeSpan(10, 12, 18, 0), ts);
         }
 
         [Fact]
@@ -102,11 +109,13 @@ namespace System.Text.Json.Nodes.Tests
             Assert.True(JsonNode.Parse("\"2020-07-08T00:00:00\"").AsValue().TryGetValue(out DateTime? _));
             Assert.True(JsonNode.Parse("\"ed957609-cdfe-412f-88c1-02daca1b4f51\"").AsValue().TryGetValue(out Guid? _));
             Assert.True(JsonNode.Parse("\"2020-07-08T01:02:03+01:15\"").AsValue().TryGetValue(out DateTimeOffset? _));
+            Assert.True(JsonNode.Parse("\"-100.23:59:59\"").AsValue().TryGetValue(out TimeSpan? _));
 
             JsonValue? jValue = JsonNode.Parse("\"Hello!\"").AsValue();
             Assert.False(jValue.TryGetValue(out int _));
             Assert.False(jValue.TryGetValue(out DateTime _));
             Assert.False(jValue.TryGetValue(out DateTimeOffset _));
+            Assert.False(jValue.TryGetValue(out TimeSpan _));
             Assert.False(jValue.TryGetValue(out Guid _));
         }
 

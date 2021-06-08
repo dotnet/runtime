@@ -93,6 +93,22 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        public static JsonValue Create(TimeSpan value, JsonNodeOptions? options = null) => new JsonValueTrimmable<TimeSpan>(value, JsonMetadataServices.TimeSpanConverter);
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        public static JsonValue? Create(TimeSpan? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<TimeSpan>(value.Value, JsonMetadataServices.TimeSpanConverter) : null;
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(decimal value, JsonNodeOptions? options = null) => new JsonValueTrimmable<decimal>(value, JsonMetadataServices.DecimalConverter);
 
         /// <summary>

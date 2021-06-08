@@ -559,6 +559,7 @@ namespace System.Text.Json.Nodes
         public static explicit operator char (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator System.DateTime (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator System.DateTimeOffset (System.Text.Json.Nodes.JsonNode value) { throw null; }
+        public static explicit operator System.TimeSpan (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator decimal (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator double (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator System.Guid (System.Text.Json.Nodes.JsonNode value) { throw null; }
@@ -570,6 +571,7 @@ namespace System.Text.Json.Nodes
         public static explicit operator char? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
         public static explicit operator System.DateTimeOffset? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
         public static explicit operator System.DateTime? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
+        public static explicit operator System.TimeSpan? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
         public static explicit operator decimal? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
         public static explicit operator double? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
         public static explicit operator System.Guid? (System.Text.Json.Nodes.JsonNode? value) { throw null; }
@@ -600,6 +602,7 @@ namespace System.Text.Json.Nodes
         public static implicit operator System.Text.Json.Nodes.JsonNode (char value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (System.DateTime value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (System.DateTimeOffset value) { throw null; }
+        public static implicit operator System.Text.Json.Nodes.JsonNode (System.TimeSpan value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (decimal value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (double value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (System.Guid value) { throw null; }
@@ -611,6 +614,7 @@ namespace System.Text.Json.Nodes
         public static implicit operator System.Text.Json.Nodes.JsonNode? (char? value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode? (System.DateTimeOffset? value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode? (System.DateTime? value) { throw null; }
+        public static implicit operator System.Text.Json.Nodes.JsonNode? (System.TimeSpan? value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode? (decimal? value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode? (double? value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode? (System.Guid? value) { throw null; }
@@ -681,6 +685,7 @@ namespace System.Text.Json.Nodes
         public static System.Text.Json.Nodes.JsonValue Create(char value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(System.DateTime value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(System.DateTimeOffset value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
+        public static System.Text.Json.Nodes.JsonValue Create(System.TimeSpan value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(decimal value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(double value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(System.Guid value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
@@ -692,6 +697,7 @@ namespace System.Text.Json.Nodes
         public static System.Text.Json.Nodes.JsonValue? Create(char? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(System.DateTimeOffset? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(System.DateTime? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
+        public static System.Text.Json.Nodes.JsonValue? Create(System.TimeSpan? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(decimal? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(double? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(System.Guid? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
