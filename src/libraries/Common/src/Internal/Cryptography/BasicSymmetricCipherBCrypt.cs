@@ -74,15 +74,7 @@ namespace Internal.Cryptography
 
                 try
                 {
-                    if (_encrypting)
-                    {
-                        numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, rented);
-                    }
-                    else
-                    {
-                        numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, rented);
-                    }
-
+                    numBytesWritten = BCryptTransform(input, rented);
                     rented.AsSpan(0, numBytesWritten).CopyTo(output);
                 }
                 finally
@@ -92,14 +84,7 @@ namespace Internal.Cryptography
             }
             else
             {
-                if (_encrypting)
-                {
-                    numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output);
-                }
-                else
-                {
-                    numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
-                }
+                numBytesWritten = BCryptTransform(input, rented);
             }
 
             if (numBytesWritten != input.Length)
@@ -111,6 +96,13 @@ namespace Internal.Cryptography
             }
 
             return numBytesWritten;
+
+            int BCryptTransform(ReadOnlySpan<byte> input, Span<byte> output)
+            {
+                return _encrypting ?
+                    Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, rented) :
+                    Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, rented);
+            }
         }
 
         public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
