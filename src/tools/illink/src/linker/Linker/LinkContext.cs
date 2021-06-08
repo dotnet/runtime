@@ -307,6 +307,11 @@ namespace Mono.Linker
 			return _resolver.Resolve (reference);
 		}
 
+		public AssemblyDefinition Resolve (AssemblyNameReference name)
+		{
+			return _resolver.Resolve (name);
+		}
+
 		public void RegisterAssembly (AssemblyDefinition assembly)
 		{
 			if (SeenFirstTime (assembly)) {
