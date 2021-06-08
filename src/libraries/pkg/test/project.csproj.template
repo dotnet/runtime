@@ -1,4 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <PropertyGroup>
+    <DirectoryBuildPropsPath>$(SupportFilesDir)Directory.Build.props</DirectoryBuildPropsPath>
+    <DirectoryBuildTargetsPath>$(SupportFilesDir)Directory.Build.targets</DirectoryBuildTargetsPath>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <TargetFrameworks>{TargetFrameworks}</TargetFrameworks>
@@ -18,4 +24,5 @@
     <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
   </ItemGroup>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

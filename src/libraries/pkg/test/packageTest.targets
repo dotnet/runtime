@@ -1,14 +1,9 @@
 <Project>
-  <PropertyGroup Condition="'$(TargetFramework)' != ''">
-    <_targetFrameworkVersionIndex>$(TargetFramework.IndexOfAny(".-0123456789"))</_targetFrameworkVersionIndex>
-    <_targetFrameworkIdentifier Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(TargetFramework.SubString(0, $(_targetFrameworkVersionIndex)))</_targetFrameworkIdentifier>
-    <!-- For net5.0 and later use netcoreapp folder. -->
-    <_targetFrameworkIdentifier Condition="'$(_targetFrameworkIdentifier)' == 'net' and !$(TargetFramework.StartsWith('net4'))">netcoreapp</_targetFrameworkIdentifier>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != ''">
+    <_targetFrameworkIdentifier>$(TargetFrameworkIdentifier.Substring(1).ToLower())</_targetFrameworkIdentifier>
   </PropertyGroup>
 
   <PropertyGroup>
-    <ToolsDir>$(MSBuildThisFileDirectory)tools\</ToolsDir>
-
     <RestoreSources>
       https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
@@ -23,12 +18,17 @@
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
-  <Import Project="tools\build\Packaging.common.targets" />
-  <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
+  <Import Project="build\Packaging.common.targets" />
+  <!-- Import framework settings. -->
+  <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets"
+          Condition="'$(_targetFrameworkIdentifier)' != ''"  />
   <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
+  <!-- Import package settings. -->
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
-  <Import Condition="'$(_targetFrameworkIdentifier)' != ''" Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
-  <Import Condition="'$(TargetFramework)' != ''" Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
+  <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets"
+          Condition="'$(_targetFrameworkIdentifier)' != ''" />
+  <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets"
+          Condition="'$(TargetFramework)' != ''" />
   
   <ItemGroup>
     <!-- Type duplicated: https://github.com/dotnet/runtime/issues/33998 -->

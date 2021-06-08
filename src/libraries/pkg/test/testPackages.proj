@@ -1,5 +1,5 @@
 <Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
     <PackageNamePattern>[a-zA-z\.]*\.</PackageNamePattern>
@@ -29,12 +29,11 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TestDir>$(ArtifactsBinDir)testPkg/</TestDir>
-    <TestSupportDir>$(TestDir)support/</TestSupportDir>
+    <TestDir>$(ArtifactsBinDir)testPkg\</TestDir>
+    <TestSupportDir>$(TestDir)support\</TestSupportDir>
     <TestProjectName>test.msbuild</TestProjectName>
     <TestProject>$(TestSupportDir)$(TestProjectName)</TestProject>
-    <TestToolsDir>$(TestSupportDir)tools/</TestToolsDir>
-    <TestProjectDir>$(TestDir)projects/</TestProjectDir>
+    <TestProjectDir>$(TestDir)projects\</TestProjectDir>
     <TestPackageDir>$(ArtifactsBinDir)testPackages</TestPackageDir>
     <TestDotNetPath>$(DotNetRoot)dotnet</TestDotNetPath>
 
@@ -42,19 +41,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestSupportFile Include="$(RepositoryEngineeringDir)Versions.props;
-                              $(RepositoryEngineeringDir)targetingpacks.targets;
-                              $(LibrariesProjectRoot)shims\netfxreference.props"
-                     DestinationFolder="$(TestToolsDir)" />
-    <TestSupportFile Include="$(PackagingTaskDir)..\..\**\*.*"
-                     Exclude="$(PackagingTaskDir)..\..\*.*"
-                     DestinationFolder="$(TestToolsDir)%(RecursiveDir)" />
-    <TestSupportFile Include="props\Directory.Build.*"
-                     DestinationFolder="$(TestDir)" />
-    <TestSupportFile Include="**\*.targets"
-                     DestinationFolder="$(TestSupportDir)%(RecursiveDir)" />
+    <!-- The main entry point file: test.msbuild -->
     <TestSupportFile Include="$(TestProjectName)"
                      DestinationFolder="$(TestSupportDir)" />
+    <!-- msbuild support files and the packaging VerifyClosure assembly. -->
+    <TestSupportFile Include="$(RepositoryEngineeringDir)Versions.props;
+                              $(RepositoryEngineeringDir)targetingpacks.targets;
+                              $(LibrariesProjectRoot)shims\netfxreference.props;
+                              packageTest.targets;
+                              Directory.Build.props;
+                              Directory.Build.targets"
+                     DestinationFolder="$(TestSupportDir)" />
+    <TestSupportFile Include="$(PackagingTaskDir)..\..\**\*.*"
+                     Exclude="$(PackagingTaskDir)..\..\*.*"
+                     DestinationFolder="$(TestSupportDir)%(RecursiveDir)" />
+    <!-- frameworksettings and packagesettings -->
+    <TestSupportFile Include="frameworkSettings\**\*"
+                     DestinationFolder="$(TestSupportDir)frameworkSettings\%(RecursiveDir)" />
+    <TestSupportFile Include="packageSettings\**\*"
+                     DestinationFolder="$(TestSupportDir)packageSettings\%(RecursiveDir)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -196,5 +201,5 @@
   <!-- define test to do nothing, for this project Build does all the testing -->
   <Target Name="Test" />
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+  <Import Project="..\Directory.Build.targets" />
 </Project>

@@ -1,9 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <SupportFilesDir>$(MSBuildThisFileDirectory)support\</SupportFilesDir>
-  </PropertyGroup>
-
-  <Import Project="$(SupportFilesDir)tools\Versions.props" />
-  <Import Project="$(SupportFilesDir)tools\targetingpacks.targets" />
-  <Import Project="$(SupportFilesDir)packageTest.targets" />
-</Project>
