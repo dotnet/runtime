@@ -32,9 +32,30 @@ DumpWriter::OpenDump(const char* dumpFileName)
     return true;
 }
 
+void
+DumpWriter::WriteCrashReport(std::string& dumpFileName)
+{
+    std::string crashReportFile(dumpFileName);
+    crashReportFile.append(".crashreport.json");
+    printf("Writing crash report to file %s\n", crashReportFile.c_str());
+
+    JsonWriter writer;
+    if (!writer.OpenWriter(crashReportFile.c_str())) {
+        return;
+    }
+    try
+    {
+        WriteCrashReport(writer);
+        writer.CloseWriter();
+    }
+    catch (const std::exception& e)
+    {
+    }
+}
+
 // Write all of the given buffer, handling short writes and EINTR. Return true iff successful.
 bool
-DumpWriter::WriteData(const void* buffer, size_t length)
+DumpWriter::WriteData(int fd, const void* buffer, size_t length)
 {
     const uint8_t* data = (const uint8_t*)buffer;
 
@@ -42,7 +63,7 @@ DumpWriter::WriteData(const void* buffer, size_t length)
     while (done < length) {
         ssize_t written;
         do {
-            written = write(m_fd, data + done, length - done);
+            written = write(fd, data + done, length - done);
         } while (written == -1 && errno == EINTR);
 
         if (written < 1) {

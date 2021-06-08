@@ -30,6 +30,10 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 
 #endif
 
+extern const std::string GetFileName(const std::string& fileName);
+extern std::string FormatString(const char* format, ...);
+extern std::string FormatGuid(const GUID* guid);
+
 class CrashInfo : public ICLRDataEnumMemoryRegionsCallback,
 #ifdef __APPLE__
     public MachOReader
@@ -42,6 +46,9 @@ private:
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
+    bool m_crashReport;                             // if true, crash reporting enabled
+    pid_t m_crashThread;                            // crashing thread id or 0 if none
+    uint32_t m_signal;                              // crash signal code or 0 if none
     std::string m_name;                             // exe name
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
@@ -61,9 +68,10 @@ private:
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
+    std::set<ModuleInfo> m_moduleInfos;             // module infos (base address and module name)
 
 public:
-    CrashInfo(pid_t pid);
+    CrashInfo(pid_t pid, bool crashReport, pid_t crashThread, uint32_t signal);
     virtual ~CrashInfo();
 
     bool Initialize();
@@ -73,6 +81,10 @@ public:
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
     uint64_t GetBaseAddress(uint64_t ip);
+    uint64_t GetBaseAddress(const char* moduleName);
+    const ModuleInfo* GetModuleInfo(uint64_t baseAddress);
+    void AddModuleAddress(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
+    void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
     void InsertMemoryRegion(uint64_t address, size_t size);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
@@ -82,6 +94,9 @@ public:
 #ifdef __APPLE__
     inline vm_map_t Task() const { return m_task; }
 #endif
+    inline const bool CrashReport() const { return m_crashReport; }
+    inline const pid_t CrashThread() const { return m_crashThread; }
+    inline const uint32_t Signal() const { return m_signal; }
     inline const std::string& Name() const { return m_name; }
 
     inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }

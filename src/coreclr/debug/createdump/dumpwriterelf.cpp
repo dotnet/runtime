@@ -3,6 +3,14 @@
 
 #include "createdump.h"
 
+//
+// Write the crash report info to the json file
+//
+void
+DumpWriter::WriteCrashReport(JsonWriter& writer)
+{
+}
+
 // Write the core dump file:
 //   ELF header
 //   Single section header (Shdr) for 64 bit program header count
@@ -15,8 +23,11 @@
 //      alignment
 //   memory blocks
 bool
-DumpWriter::WriteDump()
+DumpWriter::WriteDump(std::string& dumpFileName)
 {
+    if (!OpenDump(dumpFileName.c_str())) {
+        return false;
+    }
     // Write the ELF header
     Ehdr ehdr;
     memset(&ehdr, 0, sizeof(Ehdr));
